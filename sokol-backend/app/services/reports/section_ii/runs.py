@@ -1,5 +1,5 @@
 import copy
-from typing import List, Tuple
+from typing import List
 
 import xml.etree.ElementTree as ET
 
@@ -40,21 +40,3 @@ def add_run_fragment(p, frag: RunFragment, default_font: dict, italic: bool = Fa
         return
     t = ET.SubElement(r, f"{{{W_NS}}}t", attrib={f"{{{XML_NS}}}space": "preserve"})
     t.text = frag.text.replace("\x00", "")
-
-
-def split_run_fragments(runs: List[RunFragment], split_idx: int) -> Tuple[List[RunFragment], List[RunFragment]]:
-    before: List[RunFragment] = []
-    after: List[RunFragment] = []
-    remaining = max(0, split_idx)
-    for frag in runs:
-        text = frag.text
-        if remaining >= len(text):
-            before.append(RunFragment(text=text, rPr=copy.deepcopy(frag.rPr), br_before=frag.br_before))
-            remaining -= len(text)
-            continue
-        if remaining > 0:
-            before.append(RunFragment(text=text[:remaining], rPr=copy.deepcopy(frag.rPr), br_before=frag.br_before))
-            text = text[remaining:]
-            remaining = 0
-        after.append(RunFragment(text=text, rPr=copy.deepcopy(frag.rPr), br_before=frag.br_before))
-    return before, after

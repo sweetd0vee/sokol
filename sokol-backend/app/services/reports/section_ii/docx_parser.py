@@ -15,7 +15,6 @@ from app.services.reports.section_ii.docx_blocks import (
     clone_runs,
     extract_document_blocks,
     extract_name_runs_from_tables,
-    get_text_from_xml as get_text_from_xml_blocks,
     load_document_xml,
     runs_to_text,
 )
@@ -38,17 +37,12 @@ from app.services.reports.section_ii.models import (
 from app.services.reports.section_ii.patterns import (
     AUDIT_REC_LABEL_RE,
     OBS_BLOCK_START_RE,
-    OBS_START_RE,
     REC_LABEL_RE,
     SROK_MARK_RE,
     W_NS,
 )
 XML_NS = "http://www.w3.org/XML/1998/namespace"
 
-SECTION3_BLOCK_RE = re.compile(
-    r"^\s*(?:III|3)\s*[.)–—\-:]?\s+\S|^\s*Раздел\s+3[.\s]",
-    re.IGNORECASE,
-)
 STRUCTURED_REC_LABEL_RE = re.compile(
     r"(?:^|\n)\s*(?:Аудиторск\w*\s+рекомендац\w*|Рекомендаци[яи]|Мероприятия\s+после\s+аудита)\s*[:—–\-]",
     re.IGNORECASE,
@@ -58,22 +52,6 @@ OBJECT_HEAD_RE = re.compile(
     r"(?:^|\n)\s*Руководител[ья]\s+объекта\s+аудита\s*[:—–\-]",
     re.IGNORECASE,
 )
-
-
-def get_document_text(doc) -> str:
-    """Извлекает весь текст из документа (параграфы + таблицы) — ВСЕ наблюдения."""
-    parts = []
-    for para in doc.paragraphs:
-        text = para.text.strip()
-        if text:
-            parts.append(text)
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                text = cell.text.strip()
-                if text:
-                    parts.append(text)
-    return "\n".join(parts)
 
 
 def parse_observations(text: str) -> List[Observation]:
@@ -89,17 +67,6 @@ def parse_observations(text: str) -> List[Observation]:
     - Срок (Срок – DD.MM.YYYY)
     """
     return parse_text_observations(text)
-
-
-def parse_observations_from_doc(doc) -> List[Observation]:
-    """Парсит наблюдения из документа python-docx."""
-    text = get_document_text(doc)
-    return parse_observations(text)
-
-
-def get_text_from_xml(root) -> str:
-    """Compatibility wrapper for callers that still import from docx_parser."""
-    return get_text_from_xml_blocks(root)
 
 
 def _find_section3_flat_block_idx(blocks, min_block_idx: int = 0) -> int:
@@ -275,44 +242,6 @@ def _slice_runs_by_offsets(
     return _remove_text_spans_from_runs(runs, remove_spans)
 
 
-def _runs_to_chars(runs: List[RunFragment]) -> List[Tuple[RunFragment, str, bool]]:
-    chars: List[Tuple[RunFragment, str, bool]] = []
-    for frag in runs:
-        if frag.br_before:
-            chars.append((frag, "\n", True))
-        text = frag.text or ""
-        if frag.is_tab and text == "":
-            chars.append((frag, "\t", False))
-            continue
-        for ch in text:
-            chars.append((frag, ch, False))
-    return chars
-
-
-def _runs_from_chars(chars: List[Tuple[RunFragment, str, bool]]) -> List[RunFragment]:
-    result: List[RunFragment] = []
-    pending_break = False
-    current_source: Optional[RunFragment] = None
-    for frag, ch, is_break_marker in chars:
-        if is_break_marker:
-            pending_break = True
-            continue
-        if not result:
-            result.append(_clone_fragment_with_text(frag, ch, pending_break))
-            current_source = frag
-            pending_break = False
-            continue
-        prev = result[-1]
-        same_style = current_source is frag and prev.is_tab == frag.is_tab and not pending_break
-        if same_style:
-            prev.text = (prev.text or "") + ch
-        else:
-            result.append(_clone_fragment_with_text(frag, ch, pending_break))
-            current_source = frag
-            pending_break = False
-    return result
-
-
 def _remove_text_spans_from_runs(
     runs: List[RunFragment],
     spans: List[Tuple[int, int]],
@@ -402,10 +331,6 @@ def _split_runs_by_explicit_breaks(runs: List[RunFragment]) -> List[List[RunFrag
     if current:
         lines.append(current)
     return lines
-
-
-def _remove_service_lines_preserving_runs(runs: List[RunFragment]) -> List[RunFragment]:
-    return _remove_text_spans_from_runs(runs, _service_line_spans(_runs_to_text(runs)))
 
 
 def _clean_structured_recommendation_lines(text: str) -> List[str]:
@@ -558,63 +483,6 @@ def _strip_images_from_runs(runs: List[RunFragment]) -> List[RunFragment]:
     return cleaned_runs
 
 
-def _normalize_recommendation_runs(runs: List[RunFragment]) -> List[RunFragment]:
-    normalized: List[RunFragment] = []
-    at_line_start = True
-    for frag in runs:
-        if frag.br_before:
-            at_line_start = True
-        if frag.is_tab:
-            if not at_line_start:
-                normalized.append(
-                    RunFragment(
-                        text="",
-                        rPr=copy.deepcopy(frag.rPr) if frag.rPr is not None else None,
-                        br_before=frag.br_before,
-                        is_tab=True,
-                    )
-                )
-                at_line_start = False
-            continue
-        text = frag.text or ""
-        if not text:
-            if frag.br_before:
-                normalized.append(RunFragment(text="", br_before=True))
-                at_line_start = True
-            continue
-        text = re.sub(r"\n[ \t]+", "\n", text)
-        parts = text.split("\n")
-        for idx, part in enumerate(parts):
-            br_before = frag.br_before if idx == 0 else True
-            if br_before:
-                at_line_start = True
-            if part:
-                lead_len = len(part) - len(part.lstrip(" \t"))
-                if lead_len:
-                    lead_ws = part[:lead_len]
-                    rest = part[lead_len:]
-                    if at_line_start:
-                        part = rest
-                    else:
-                        if normalized and (normalized[-1].text or normalized[-1].is_tab):
-                            normalized[-1].text = (normalized[-1].text or "") + lead_ws
-                        part = rest
-            if part == "":
-                if br_before:
-                    normalized.append(RunFragment(text="", br_before=True))
-                at_line_start = True
-                continue
-            normalized.append(
-                RunFragment(
-                    text=part,
-                    rPr=copy.deepcopy(frag.rPr) if frag.rPr is not None else None,
-                    br_before=br_before,
-                )
-            )
-            at_line_start = False
-    return normalized
-
-
 def _trim_rec_runs_to_last_srok(runs: List[RunFragment]) -> List[RunFragment]:
     text = _runs_to_text_no_breaks(runs)
     matches = list(SROK_MARK_RE.finditer(text))
@@ -737,15 +605,6 @@ def _extract_rec_entries_from_framed_paragraphs(blocks: List[DocumentBlock]) -> 
         flush_group()
     flush_group()
     return entries
-
-
-def parse_observations_from_file(file_path: str) -> List[Observation]:
-    """Парсит наблюдения из .docx файла (ZIP + XML, без python-docx)."""
-    root = load_document_xml(file_path)
-    blocks, _textboxes = extract_document_blocks(root)
-    section3_start = _find_section3_flat_block_idx(blocks)
-    text = "\n".join(block.text for block in blocks[section3_start:] if block.text.strip())
-    return parse_observations(text)
 
 
 def _iter_observation_starts(blocks, section3_start: int) -> List[Tuple[int, str]]:

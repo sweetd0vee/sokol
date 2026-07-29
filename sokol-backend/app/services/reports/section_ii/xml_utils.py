@@ -171,18 +171,6 @@ def _find_insert_index_from_toc(body, section1_start: int, toc_max_idx: int) -> 
     return None
 
 
-def _paragraph_style_id(el) -> Optional[str]:
-    if el is None:
-        return None
-    p_pr = el.find(f"./{{{W_NS}}}pPr")
-    if p_pr is None:
-        return None
-    p_style = p_pr.find(f"./{{{W_NS}}}pStyle")
-    if p_style is None:
-        return None
-    return p_style.get(f"{{{W_NS}}}val") or p_style.get("val")
-
-
 def _is_section2_heading_paragraph(text: str) -> bool:
     normalized = (text or "").strip()
     if not normalized:
@@ -191,16 +179,6 @@ def _is_section2_heading_paragraph(text: str) -> bool:
         return True
     lowered = normalized.lower()
     return "основные результаты аудита" in lowered and "рекомендац" in lowered
-
-
-def _body_has_section2_heading(blocks, start_idx: int, end_idx: int) -> bool:
-    for i in range(start_idx, min(end_idx, len(blocks))):
-        btype, el = blocks[i]
-        if btype != "p":
-            continue
-        if _is_section2_heading_paragraph(_paragraph_text(btype, el)):
-            return True
-    return False
 
 
 def _find_first_top_level_boundary_after(

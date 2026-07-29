@@ -3,18 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Input } from '../ui/Input';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
-
-const FULL_NAME_SHORT_REGEX = /^[A-Za-zА-Яа-яЁё-]+ [A-ZА-ЯЁ]\.[A-ZА-ЯЁ]\.$/;
-
-const normalizeFullNameShort = (value: string) => {
-  const compact = value.trim().replace(/\s+/g, ' ');
-  const match = compact.match(/^([A-Za-zА-Яа-яЁё-]+)\s+([A-Za-zА-Яа-яЁё])\.?\s*([A-Za-zА-Яа-яЁё])\.?$/);
-  if (!match) {
-    return compact;
-  }
-  const [, lastName, firstInitial, middleInitial] = match;
-  return `${lastName} ${firstInitial.toUpperCase()}.${middleInitial.toUpperCase()}.`;
-};
+import { isValidFullNameShort, normalizeFullNameShort } from '../../utils/fullName';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -31,7 +20,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       const normalizedFullName = normalizeFullNameShort(fullName);
-      if (!FULL_NAME_SHORT_REGEX.test(normalizedFullName)) {
+      if (!isValidFullNameShort(normalizedFullName)) {
         setError('Введите Фамилию И.О. в формате, например: Иванов И.О.');
         return;
       }

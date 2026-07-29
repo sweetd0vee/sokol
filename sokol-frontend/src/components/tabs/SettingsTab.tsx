@@ -158,8 +158,8 @@ export function SettingsTab() {
       await queryClient.invalidateQueries({ queryKey: ['settings', 'auditors'] });
       setNewAuditorName('');
       setIsAddAuditorOpen(false);
-    } catch (error) {
-      console.error('createAuditor failed', error);
+    } catch {
+      // keep modal open; user can retry
     }
   };
   const handleRequestEditAuditor = (key: string, name: string, id?: Auditor['id']) => {
@@ -185,8 +185,8 @@ export function SettingsTab() {
       await updateAuditor(editAuditorCandidate.id, { full_name: trimmedName });
       await queryClient.invalidateQueries({ queryKey: ['settings', 'auditors'] });
       setEditAuditorCandidate(null);
-    } catch (error) {
-      console.error('updateAuditor failed', error);
+    } catch {
+      // keep modal open; user can retry
     }
   };
   const handleRequestEditAuditType = (key: string, code: string, name: string, id?: string | number) => {
@@ -215,8 +215,8 @@ export function SettingsTab() {
       await updateAuditType(identifier, { code: trimmedCode, name: trimmedName });
       await queryClient.invalidateQueries({ queryKey: ['settings', 'audit-types'] });
       setEditAuditTypeCandidate(null);
-    } catch (error) {
-      console.error('updateAuditType failed', error);
+    } catch {
+      // keep modal open; user can retry
     }
   };
   const handleRequestEditRating = (key: string, label: string, id?: string | number) => {
@@ -243,8 +243,8 @@ export function SettingsTab() {
       await updateEffectivenessRating(identifier, { label: trimmedLabel });
       await queryClient.invalidateQueries({ queryKey: ['settings', 'effectiveness-ratings'] });
       setEditRatingCandidate(null);
-    } catch (error) {
-      console.error('updateEffectivenessRating failed', error);
+    } catch {
+      // keep modal open; user can retry
     }
   };
   const handleRequestAddAuditType = () => {
@@ -268,8 +268,8 @@ export function SettingsTab() {
       setNewAuditTypeCode('');
       setNewAuditTypeName('');
       setIsAddAuditTypeOpen(false);
-    } catch (error) {
-      console.error('createAuditType failed', error);
+    } catch {
+      // keep modal open; user can retry
     }
   };
   const handleRequestAddRating = () => {
@@ -290,8 +290,8 @@ export function SettingsTab() {
       await queryClient.invalidateQueries({ queryKey: ['settings', 'effectiveness-ratings'] });
       setNewRatingLabel('');
       setIsAddRatingOpen(false);
-    } catch (error) {
-      console.error('createEffectivenessRating failed', error);
+    } catch {
+      // keep modal open; user can retry
     }
   };
 
@@ -306,7 +306,6 @@ export function SettingsTab() {
           key={`${key}-actions`}
           onEdit={() => handleRequestEditAuditor(key, auditor.full_name, auditor.id)}
           onDelete={() => handleRequestDelete('auditors', key, auditor.id)}
-          variant="dark"
         />,
       ],
     };
@@ -323,7 +322,6 @@ export function SettingsTab() {
           key={`${key}-actions`}
           onEdit={() => handleRequestEditAuditType(key, type.code, type.name, identifier)}
           onDelete={() => handleRequestDelete('auditTypes', key, identifier)}
-          variant="dark"
         />,
       ],
     };
@@ -339,7 +337,6 @@ export function SettingsTab() {
           key={`${key}-actions`}
           onEdit={() => handleRequestEditRating(key, rating.label, identifier)}
           onDelete={() => handleRequestDelete('ratings', key, identifier)}
-          variant="dark"
         />,
       ],
     };

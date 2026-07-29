@@ -213,10 +213,6 @@ def resolve_section2_heading_text(
     return default
 
 
-def paragraph_has_section2_marker(paragraph_xml: str) -> bool:
-    return is_section2_heading_text(_collect_text(paragraph_xml))
-
-
 def add_bookmarks_to_paragraph(
     paragraph: ET.Element,
     bookmark_names: Iterable[str],

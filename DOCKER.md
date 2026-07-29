@@ -12,6 +12,10 @@
 | Ollama | http://localhost:11434 |
 | LanguageTool (profile `extras`) | http://localhost:8010 |
 
+> В Docker API на **8800**. Локальный `run_dev.ps1` без Docker слушает **8802** — см. корневой [README.md](README.md).
+
+LanguageTool в profile `extras` — опциональный сервис; **приложение к нему не обращается**.
+
 ## Перед первым запуском
 
 ```powershell
@@ -22,7 +26,7 @@ copy .env.example .env
 copy sokol-backend\docker\app\.env.example sokol-backend\docker\app\.env
 ```
 
-В проде замените `POSTGRES_PASSWORD` / `DATABASE_URL` и MinIO/mail на реальные секреты. Файлы `.env` в git не коммитятся.
+В проде замените `POSTGRES_PASSWORD` / `DATABASE_URL` на реальные секреты. Файлы `.env` в git не коммитятся.
 
 ## Запуск
 
@@ -63,13 +67,7 @@ docker compose up --build -d api ollama ui
 docker compose --profile extras up -d languagetool
 ```
 
-И в `.env` / `sokol-backend/docker/app/.env` укажите:
-
-```
-SOKOL_LT_URL=http://languagetool:8010
-```
-
-затем `docker compose up -d api`.
+Сервис поднимается на порту 8010; переменные `SOKOL_LT_*` в env зарезервированы, но код API их не читает.
 
 ## Данные на диске
 
@@ -84,10 +82,10 @@ SOKOL_LT_URL=http://languagetool:8010
 |---------|-------------|
 | `sber/sokol-be:master` not found | Запускайте с `--build` из корня |
 | UI не видит API | Проверьте `http://localhost:8800/docs` и CORS `http://localhost:5180` |
-| Ollama timeout / нет модели | `docker exec ollama ollama list` и `ollama pull …` |
-| Порт занят | Освободите 5180 / 8800 / 11434 |
+| Ollama timeout / нет модели | `docker exec ollama ollama list` и `ollama pull qwen2.5:14b` |
+| Порт занят | Освободите 5180 / 8800 / 11434 / 5433 |
 
-Альтернативы (старые пути):
+Альтернативы (частичный стек):
 
 - Backend-only: `sokol-backend/docker/app/docker-compose.yml`
 - Frontend-only (сеть `sokol` уже есть): `sokol-frontend/docker/docker-compose.yml`

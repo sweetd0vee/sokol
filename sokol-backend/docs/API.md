@@ -99,6 +99,19 @@ MIME: OOXML DOCX или `application/octet-stream`.
 | `POST` | `/tools/section-ii-links` | DOCX | То же + bookmarks/hyperlinks к наблюдениям; `*_section_ii_links.docx` |
 | `POST` | `/tools/memorandum` | DOCX | ДЗ из АЗ с готовым Разделом II; `*_dz.docx` |
 | `POST` | `/tools/parse-recommendations` | `application/json` | массив рекомендаций из таблицы Раздела II АЗ |
+| `GET` | `/tools/audit-opinion/default-prompt` | JSON `{ "prompt": "..." }` | дефолтный промпт для раздела I |
+| `GET` | `/tools/audit-opinion/models` | JSON `{ "models": [...], "default_model": "..." }` | список моделей Ollama; **502**, если Ollama недоступна |
+| `POST` | `/tools/audit-opinion` | DOCX | раздел I «Аудиторское мнение»; имя `*_section_i.docx` |
+
+**`POST /tools/audit-opinion`** — `multipart/form-data`:
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `file` | файл `.docx` | исходный АЗ |
+| `prompt` | string (form) | опционально; пусто → дефолтный промпт |
+| `model` | string (form) | опционально; пусто → `SOKOL_OLLAMA_MODEL` |
+
+Ошибки Ollama → **502**. Timeout клиента на фронте: **600s** (остальные tools — 120s).
 
 **`ParsedRecommendationItem`:**
 

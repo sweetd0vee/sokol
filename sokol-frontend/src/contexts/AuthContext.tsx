@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, type ReactNode } from 'react';
-import { AUTH_STORAGE_KEY, LAST_LOGIN_KEY } from '../constants/storage';
+import { AUTH_STORAGE_KEY } from '../constants/storage';
 import { AuthContext, type AuthContextValue, type User } from './auth';
 
 interface AuthProviderProps {
@@ -40,7 +40,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
     setUser(userData);
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userData));
-    localStorage.setItem(LAST_LOGIN_KEY, new Date().toISOString());
     return true;
   }, []);
 

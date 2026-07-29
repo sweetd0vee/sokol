@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Одностраничное приложение внутреннего аудита: CRUD проверок/рекомендаций, справочники, клиентский экспорт таблиц, вызов backend DOCX-tools, заготовка аналитики и профиля.
+Одностраничное приложение внутреннего аудита: CRUD проверок/рекомендаций, справочники, клиентский экспорт таблиц, вызов backend DOCX-tools (включая аудиторское мнение через Ollama), заготовка аналитики и профиля.
 
 ## Структура `src/`
 
@@ -17,7 +17,7 @@ src/
 │   ├── checks/              # CheckFormPage, attachments, recommendations block
 │   ├── recommendations/     # Form, closure, selects
 │   ├── attachments/         # FileAttachmentsPanel
-│   ├── tools/               # DocxToolPanel
+│   ├── tools/               # DocxToolPanel, AuditOpinionPanel
 │   ├── settings/            # table card, actions, helpers
 │   ├── profile/             # ProfilePage
 │   ├── tabs/                # Checks, Recommendations, Analytics, Tools, Settings, Kantsler
@@ -105,7 +105,7 @@ flowchart LR
 | `api/checks.ts` | CRUD `/checks` |
 | `api/recommendations.ts` | CRUD + `parse-recommendations` |
 | `api/settings.ts` | auditors / audit_types / effectiveness_ratings |
-| `api/tools.ts` | section-ii, section-ii-links, memorandum → blob, timeout 120s |
+| `api/tools.ts` | section-ii, section-ii-links, memorandum (timeout 120s); audit-opinion + prompt/models (timeout 600s) |
 | `api/analytics.ts` | `GET /analytics/by-person` — **на backend endpoint отсутствует** |
 | `api/mappers.ts` | API ↔ frontend types (id string, нормализация статусов) |
 | `api/errors.ts` | `ApiError`, FastAPI 422, blob errors |
@@ -140,6 +140,7 @@ flowchart TB
   Outlet --> AnalyticsTab
   Outlet --> ToolsTab
   ToolsTab --> DocxToolPanel
+  ToolsTab --> AuditOpinionPanel
   Outlet --> SettingsTab
   SettingsTab --> SettingsTableCard
   Outlet --> ProfilePage
@@ -167,13 +168,14 @@ flowchart TB
 
 ### Инструменты
 
-`ToolsTab` → `DocxToolPanel` → `api/tools.ts`:
+`ToolsTab` → `DocxToolPanel` / `AuditOpinionPanel` → `api/tools.ts`:
 
-| UI-действие | Endpoint |
-|-------------|----------|
-| Раздел II | `POST /tools/section-ii` |
-| Раздел II + ссылки | `POST /tools/section-ii-links` |
-| Докладная | `POST /tools/memorandum` |
+| UI-действие | Endpoint | Timeout |
+|-------------|----------|---------|
+| Раздел II | `POST /tools/section-ii` | 120s |
+| Раздел II + ссылки | `POST /tools/section-ii-links` | 120s |
+| Докладная | `POST /tools/memorandum` | 120s |
+| Аудиторское мнение | `POST /tools/audit-opinion` (+ GET prompt/models) | 600s |
 
 ### Экспорт таблиц (клиент)
 

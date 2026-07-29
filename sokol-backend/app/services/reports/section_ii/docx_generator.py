@@ -67,29 +67,6 @@ _CONTENT_TYPES_PATH = "[Content_Types].xml"
 _DOCUMENT_RELS_PATH = "word/_rels/document.xml.rels"
 
 
-def _block_has_page_break(el) -> bool:
-    for sect_pr in el.iter(f"{{{W_NS}}}sectPr"):
-        sect_type = sect_pr.find(f"./{{{W_NS}}}type")
-        if sect_type is None:
-            continue
-        val = sect_type.get(f"{{{W_NS}}}val") or sect_type.get("val")
-        if val == "nextPage":
-            return True
-    last_break_idx = -1
-    last_text_idx = -1
-    idx = 0
-    for node in el.iter():
-        if node.tag == f"{{{W_NS}}}br":
-            br_type = node.get(f"{{{W_NS}}}type") or node.get("type")
-            if br_type == "page":
-                last_break_idx = idx
-        elif node.tag == f"{{{W_NS}}}t":
-            if node.text:
-                last_text_idx = idx
-        idx += 1
-    return last_break_idx > last_text_idx
-
-
 def _create_page_break_paragraph() -> ET.Element:
     p = ET.Element(f"{{{W_NS}}}p")
     r = ET.SubElement(p, f"{{{W_NS}}}r")

@@ -85,6 +85,7 @@ npm run build
 | 500 / ECONNREFUSED на `/api` | Запустить backend на **8802** или поправить `VITE_DEV_API_PORT` |
 | CORS | `SOKOL_CORS_ORIGINS=http://localhost:5180` + restart API |
 | Аналитика всегда ошибка | Backend не реализует `/api/v1/analytics/by-person` — см. code review |
+| Audit-opinion 502 / timeout | Нужна Ollama с моделью; клиентский timeout 600s |
 | `vite: Permission denied` | `chmod +x node_modules/.bin/vite` (Unix) |
 | Rollup native missing | удалить `node_modules` + lockfile → `npm install` |
 | Порт 5180 занят | сменить `VITE_DEV_SERVER_PORT` или освободить порт |

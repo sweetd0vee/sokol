@@ -1,12 +1,11 @@
 import re
 from typing import List, Optional, Tuple
 
-from app.services.reports.section_ii.models import Observation, RunFragment
+from app.services.reports.section_ii.models import Observation
 from app.services.reports.section_ii.patterns import (
     CHAPTER_RE,
     NAME_CUTOFF_PATTERNS,
     OBS_LINE_START_RE,
-    OBS_START_RE,
     REC_LABEL_RE,
     ROMAN_HEADING_RE,
     SROK_TAIL_RE,
@@ -95,43 +94,6 @@ def parse_heading_line(p_text: str) -> Tuple[Optional[str], str, str]:
         title_part = sub_match.group(2).strip().split("\n")[0]
         return ("subchapter", num, title_part)
     return (None, "", "")
-
-
-def build_heading_map(paragraphs: List[Tuple[str, List[RunFragment]]]) -> dict:
-    from app.services.reports.section_ii.heading_detection import build_block_heading_state
-
-    class _Block:
-        def __init__(self, text: str, runs: List[RunFragment]):
-            self.text = text
-            self.runs = runs
-            self.cell_index = None
-
-    blocks = [_Block(text, runs) for text, runs in paragraphs]
-    _state, heading_map = build_block_heading_state(blocks, min_block_idx=0)
-    if heading_map:
-        return heading_map
-
-    pending_num = ""
-    pending = False
-    for p_text, _runs in paragraphs:
-        if not p_text.strip():
-            continue
-        heading_type, num, title_part = parse_heading_line(p_text)
-        if heading_type not in ("chapter", "roman"):
-            continue
-        if title_part:
-            heading_map[num] = title_part
-            pending = False
-            pending_num = ""
-        else:
-            pending = True
-            pending_num = num
-            continue
-        if pending and p_text.strip() and not OBS_START_RE.search(p_text):
-            heading_map[pending_num] = p_text.strip().split("\n")[0]
-            pending = False
-            pending_num = ""
-    return heading_map
 
 
 def extract_materiality_from_text(text: str) -> str:

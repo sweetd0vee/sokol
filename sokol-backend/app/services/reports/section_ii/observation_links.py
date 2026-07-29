@@ -39,14 +39,6 @@ def bookmark_name_for_observation(number: str) -> str:
     return f"{_SOKOL_OBS_BOOKMARK_PREFIX}{safe}"
 
 
-def build_observation_anchor_map(observation_numbers: Iterable[str]) -> Dict[str, str]:
-    return {
-        number: bookmark_name_for_observation(number)
-        for number in observation_numbers
-        if number
-    }
-
-
 def _collect_text(xml_fragment: str) -> str:
     return "".join(match.group("text") for match in _TEXT_NODE_RE.finditer(xml_fragment))
 

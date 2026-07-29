@@ -22,7 +22,6 @@ type FileAttachmentsPanelProps = {
   columnsClassName?: string;
   embedded?: boolean;
   compact?: boolean;
-  fillHeight?: boolean;
   hideSlotLabel?: boolean;
   className?: string;
 };
@@ -32,14 +31,12 @@ function AttachmentCard({
   fileCount,
   onOpen,
   compact = false,
-  fillHeight = false,
   hideLabel = false,
 }: {
   label: string;
   fileCount: number;
   onOpen: () => void;
   compact?: boolean;
-  fillHeight?: boolean;
   hideLabel?: boolean;
 }) {
   return (
@@ -48,12 +45,9 @@ function AttachmentCard({
       onClick={onOpen}
       className={[
         'flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white text-center transition hover:border-[#6699FF] hover:bg-[#6699FF]/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6699FF]/40 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-[#6699FF]/10',
-        fillHeight
-          ? 'min-h-[6.5rem] h-full px-2 py-2'
-          : compact
-            ? 'min-h-[6.5rem] px-2 py-2'
-            : 'min-h-[12rem] flex-col px-4 py-5',
-        !compact && !fillHeight ? 'flex-col' : 'flex-col gap-1',
+        compact
+          ? 'min-h-[6.5rem] flex-col gap-1 px-2 py-2'
+          : 'min-h-[12rem] flex-col px-4 py-5',
       ].join(' ')}
     >
       {!hideLabel && (
@@ -178,7 +172,6 @@ export function FileAttachmentsPanel({
   columnsClassName = 'grid-cols-1 md:grid-cols-2 xl:grid-cols-4',
   embedded = false,
   compact = false,
-  fillHeight = false,
   hideSlotLabel = false,
   className = '',
 }: FileAttachmentsPanelProps) {
@@ -214,7 +207,7 @@ export function FileAttachmentsPanel({
   const content = (
     <>
       {title && <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{title}</div>}
-      <div className={`grid gap-4 ${fillHeight ? 'h-full' : ''} ${columnsClassName}`}>
+      <div className={`grid gap-4 ${columnsClassName}`}>
         {slots.map((slot) => (
           <AttachmentCard
             key={slot.id}
@@ -222,7 +215,6 @@ export function FileAttachmentsPanel({
             fileCount={countFilesForSlot(files, slot.id)}
             onOpen={() => setOpenSlotId(slot.id)}
             compact={compact}
-            fillHeight={fillHeight}
             hideLabel={hideSlotLabel}
           />
         ))}
@@ -242,7 +234,7 @@ export function FileAttachmentsPanel({
   );
 
   if (embedded) {
-    return <div className={[fillHeight ? 'h-full' : 'space-y-4', className].filter(Boolean).join(' ')}>{content}</div>;
+    return <div className={['space-y-4', className].filter(Boolean).join(' ')}>{content}</div>;
   }
 
   return (

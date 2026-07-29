@@ -6,6 +6,7 @@ import {
   type RecommendationClosureForm,
 } from '../../constants/recommendationClosure';
 import { FORM_FIELD_CLASS, FORM_FIELD_WIDE_CLASS, FORM_ROW_3 } from '../../constants/formLayout';
+import { toIsoDate } from '../../utils/dates';
 
 const EQUAL_CONTROL_CLASS = 'form-equal-control';
 
@@ -28,10 +29,6 @@ function toDate(value: string) {
   }
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function toIsoDate(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 export function RecommendationClosureSection({
@@ -97,7 +94,7 @@ export function RecommendationClosureSection({
           <div className={FORM_FIELD_CLASS}>
             <DatePicker
               selected={toDate(value.extension1Date)}
-              onChange={(date) => patch({ extension1Date: date ? toIsoDate(date) : '' })}
+              onChange={(date) => patch({ extension1Date: toIsoDate(date) ?? '' })}
               placeholder="Выберите дату переноса"
               labelClassName={labelClassName}
               inputClassName={[
@@ -147,7 +144,7 @@ export function RecommendationClosureSection({
           <div className={FORM_FIELD_CLASS}>
             <DatePicker
               selected={toDate(value.removeFromControlDate)}
-              onChange={(date) => patch({ removeFromControlDate: date ? toIsoDate(date) : '' })}
+              onChange={(date) => patch({ removeFromControlDate: toIsoDate(date) ?? '' })}
               placeholder="Выберите дату снятия с контроля"
               labelClassName={labelClassName}
               inputClassName={[

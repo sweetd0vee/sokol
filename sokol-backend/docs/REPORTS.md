@@ -1,6 +1,6 @@
 # Генерация и разбор документов (Reports)
 
-Два независимых пайплайна в `app/services/reports/`. HTTP-обёртка: `app/api/v1/endpoints/instruments_reports.py`.
+Три пайплайна в `app/services/reports/` (section_ii, memorandum, audit_opinion). HTTP-обёртка: `app/api/v1/endpoints/instruments_reports.py`.
 
 ## Общие правила upload
 
@@ -130,7 +130,28 @@ MemorandumSource
 
 ---
 
-## 3. Карта классов reports (сводка)
+## 3. Раздел I — аудиторское мнение (Ollama)
+
+**Endpoints:**  
+`GET /api/v1/tools/audit-opinion/default-prompt`  
+`GET /api/v1/tools/audit-opinion/models`  
+`POST /api/v1/tools/audit-opinion`
+
+**Пакет:** `app/services/reports/audit_opinion/`
+
+| Модуль | Роль |
+|--------|------|
+| `processor.py` | `process_document()` — извлечь наблюдения → вызвать LLM → вставить/заменить текст раздела I в DOCX |
+| `ollama_client.py` | `list_models`, chat API (`/api/chat`), URL/model/timeout из Settings / env |
+| `prompts.py` | `DEFAULT_AUDIT_OPINION_PROMPT`, placeholder наблюдений |
+
+**Env:** `SOKOL_OLLAMA_URL`, `SOKOL_OLLAMA_MODEL` (default `qwen2.5:14b`), `SOKOL_OLLAMA_TIMEOUT_S` (default 600).
+
+**Зависимость:** запущенный Ollama с нужной моделью (`ollama pull qwen2.5:14b`). Без Ollama `GET …/models` и `POST …/audit-opinion` отвечают **502**.
+
+---
+
+## 4. Карта классов reports (сводка)
 
 ```mermaid
 classDiagram
@@ -184,4 +205,5 @@ classDiagram
 - Upload целиком в RAM.
 - Нет хранения исходников/результатов в object storage.
 - LanguageTool в Compose **не подключён** к пайплайну.
+- Аудиторское мнение зависит от внешней Ollama (таймауты до 10 мин).
 - Хрупкость к нестандартной вёрстке АЗ: эвристики заголовков и таблиц.

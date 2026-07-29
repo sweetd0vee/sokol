@@ -48,17 +48,6 @@ def _apply_cell_props(tc, width: int, grid_span: int) -> None:
     _add_tc_borders(tcPr)
 
 
-def _set_row_height(tr: ET.Element, height: str) -> None:
-    trPr = tr.find(f"{{{W_NS}}}trPr")
-    if trPr is None:
-        trPr = ET.SubElement(tr, f"{{{W_NS}}}trPr")
-    ET.SubElement(
-        trPr,
-        f"{{{W_NS}}}trHeight",
-        attrib={f"{{{W_NS}}}val": height, f"{{{W_NS}}}hRule": "atLeast"},
-    )
-
-
 def _add_paragraph_with_props(parent, alignment: str = "both"):
     p = ET.SubElement(parent, f"{{{W_NS}}}p")
     pPr = ET.SubElement(p, f"{{{W_NS}}}pPr")

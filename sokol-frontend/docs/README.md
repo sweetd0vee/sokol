@@ -11,12 +11,12 @@
 | [RUNBOOK.md](RUNBOOK.md) | Установка, env, Docker, проверки |
 | [BPMN.md](BPMN.md) | BPMN 2.0 XML основных процессов |
 | [SECTION_II_ALGORITHM.md](SECTION_II_ALGORITHM.md) | Полный алгоритм парсинга АЗ и генерации таблицы Раздела II |
-| [UI_STANDARDS.md](UI_STANDARDS.md) | Размеры блоков/окон (px), сетка форм, стандарты цветов с кодами |
+| [UI_STANDARDS.md](UI_STANDARDS.md) | Размеры блоков/окон (px), сетка форм, стандарты цветов |
 | [CODE_REVIEW.md](CODE_REVIEW.md) | Замечания по коду и риски |
 
 ## Кратко о приложении
 
-SPA «Сокол» (React 19 + Vite 7): проверки, рекомендации, аналитика, DOCX-инструменты, справочники, профиль. Данные — через `/api/v1` к `sokol-backend`. Auth — **stub** (localStorage), Keycloak планируется.
+SPA «Сокол» (React 19 + Vite 7): проверки, рекомендации, аналитика, DOCX-инструменты (Раздел II, ДЗ, аудиторское мнение), справочники, профиль. Данные — через `/api/v1` к `sokol-backend`. Auth — **stub** (localStorage), Keycloak планируется.
 
 ## Стек
 
@@ -31,9 +31,9 @@ SPA «Сокол» (React 19 + Vite 7): проверки, рекомендаци
 
 ## Dev-порты (актуально)
 
-| Сервис | Порт |
-|--------|------|
-| Vite UI | **5180** (`VITE_DEV_SERVER_PORT`) |
-| API proxy target | **8802** (`VITE_DEV_API_PORT`) |
+| Режим | UI | API |
+|-------|----|-----|
+| Локальная разработка | **5180** | **8802** (`VITE_DEV_API_PORT`) |
+| Docker (коробка) | **5180** | **8800** (`VITE_API_URL`) |
 
-Прокси Vite: `/api` → `http://127.0.0.1:8802`. Backend должен слушать тот же порт (`run_dev.ps1`).
+Локально: прокси Vite `/api` → `http://127.0.0.1:8802`. Backend: `run_dev.ps1`.

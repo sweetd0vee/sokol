@@ -90,9 +90,9 @@ MinIO, MailHog, LanguageTool в инфраструктуре, но прилож�
 
 CRUD, cascade delete, enum round-trip, tools multipart — только ручная проверка / Swagger.
 
-#### M6. Рассинхрон портов в документации экосистемы
+#### M6. Два порта API (Docker vs local)
 
-`run_dev.ps1` → **8802**, корневой README часто **8800**, Docker CMD **8800**. Ломает onboarding.
+`run_dev.ps1` → **8802**, Docker → **8800**. Документация (корневой README, DOCKER.md, `*/docs`) это фиксирует; риск — запутать новичка, если не читать таблицу портов. Опционально унифицировать в коде (см. ROADMAP фаза 0).
 
 ### Low
 
@@ -141,7 +141,7 @@ CRUD, cascade delete, enum round-trip, tools multipart — только ручн
 1. Auth (хотя бы API key / JWT для внутренней сети).
 2. Alembic + зафиксировать enum’ы статусов рекомендаций.
 3. Analytics endpoint **или** отключить вкладку / client-side fallback.
-4. Выравнять порты 8800/8802 во всех README/env/compose.
+4. (Опционально) Унифицировать порты 8800/8802 в коде; docs уже описывают оба режима.
 5. Streaming upload + concurrency limit для `/tools`.
 6. API tests (TestClient + тестовая БД).
 7. CI: compileall + unittest + (позже) lint.

@@ -91,9 +91,9 @@
 
 Нет Vitest/RTL/Playwright в scripts. Регрессии mappers/status enums ловятся поздно.
 
-#### M6. Порты в старых docs / Docker
+#### M6. Два порта API (Docker vs local)
 
-`.env.development` = **8802**, часть Docker/README всё ещё 8800 — onboarding-ошибки.
+`.env.development` = **8802**, Docker UI → API **8800**. README/`docs` это документируют; путаница возможна при смешении режимов без сверки таблицы портов.
 
 ### Low
 

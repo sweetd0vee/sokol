@@ -2,23 +2,19 @@
 
 Backend service for internal use. Python 3.12.
 
-## Порты (локальная разработка)
+## Порты
 
-| Сервис        | URL |
-|---------------|-----|
-| API           | http://localhost:8800 |
-| Swagger UI    | http://localhost:8800/docs |
-| ReDoc         | http://localhost:8800/redoc |
-| Postgres      | localhost:5433 |
-| LanguageTool  | http://localhost:8010 |
-| Frontend (UI) | http://localhost:5180 — см. `sokol-frontend/README.md` |
+| Режим | API | Swagger | Postgres |
+|-------|-----|---------|----------|
+| **Локальная разработка** (`run_dev.ps1`) | http://localhost:8802 | http://localhost:8802/docs | localhost:5433 |
+| **Docker** (корневой compose) | http://localhost:8800 | http://localhost:8800/docs | localhost:5433 |
 
-Порт API **8800** и UI **5180** заданы в `sokol-frontend/.env.development` (прокси Vite). При смене порта API обновите и `SOKOL_CORS_ORIGINS` в `.secrets/sokol.env`.
+Frontend UI: http://localhost:5180 — прокси Vite в dev нацелен на **8802** (`sokol-frontend/.env.development`). При смене порта API обновите `VITE_DEV_API_PORT` и `SOKOL_CORS_ORIGINS`.
 
 ## Requirements
 
 - Python 3.12
-- Docker / Docker Compose (optional, for DB + LanguageTool)
+- Docker / Docker Compose (optional, for DB + full stack + Ollama)
 
 ## Локальный запуск
 
@@ -46,7 +42,7 @@ copy .secrets\sokol.env.example .secrets\sokol.env
 или вручную:
 
 ```powershell
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8800
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8802
 ```
 
 ### Linux / macOS
@@ -57,7 +53,7 @@ python3.12 -m venv venv
 source venv/bin/activate
 python -m pip install -r requirements.txt
 cp .secrets/sokol.env.example .secrets/sokol.env
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8800
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8802
 ```
 
 ### Пример `.secrets/sokol.env`
@@ -67,75 +63,79 @@ APP_NAME=SOKOL API
 API_V1_PREFIX=/api/v1
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db
 
-SOKOL_LT_URL=http://localhost:8010
-SOKOL_LT_LANG=auto
 SOKOL_MAX_UPLOAD_MB=100
 SOKOL_CORS_ORIGINS=http://localhost:5180
+
+SOKOL_OLLAMA_URL=http://localhost:11434
+SOKOL_OLLAMA_MODEL=qwen2.5:14b
+SOKOL_OLLAMA_TIMEOUT_S=600
 ```
 
-## Docker (DB + API + LanguageTool)
+`SOKOL_LT_*` в example зарезервированы; код приложения LanguageTool не вызывает.
 
-Перед запуском убедитесь, что есть файл `sokol-backend/.secrets/sokol.env`.
+## Docker
 
-Из каталога `sokol-backend/docker/app`:
+Полный стек (рекомендуется): из корня репозитория — см. [DOCKER.md](../DOCKER.md).
+
+Backend-only compose: каталог `sokol-backend/docker/app`:
 
 ```bash
 docker compose up --build -d
 ```
 
-Сервисы после старта:
-
 - API: http://localhost:8800
 - Postgres: localhost:5433
-- LanguageTool: http://localhost:8010
 
 ## Environment variables
 
-- `DATABASE_URL` — async SQLAlchemy URL (обязателен для старта).
-- `SOKOL_CORS_ORIGINS` — разрешённые origin фронтенда (для dev: `http://localhost:5180`).
-- `SOKOL_LT_URL` — LanguageTool URL (set to enable spellcheck).
-- `SOKOL_LT_LANG` — LanguageTool language, default `auto`.
-- `SOKOL_MAX_UPLOAD_MB` — max upload size for `.docx`, default `100`.
+| Переменная | Назначение |
+|------------|------------|
+| `DATABASE_URL` | async SQLAlchemy URL (обязателен) |
+| `SOKOL_CORS_ORIGINS` | origins фронтенда через запятую (dev: `http://localhost:5180`) |
+| `SOKOL_MAX_UPLOAD_MB` | лимит upload `.docx`, default `100` |
+| `SOKOL_OLLAMA_URL` | URL Ollama (default `http://localhost:11434`) |
+| `SOKOL_OLLAMA_MODEL` | модель по умолчанию (`qwen2.5:14b`) |
+| `SOKOL_OLLAMA_TIMEOUT_S` | timeout LLM-запроса, default `600` |
 
-## Генерация Раздела II и ДЗ
+## Генерация документов
 
-Логика находится в `app/services/reports/` (модули `section_ii` и `memorandum`). API: `POST /api/v1/tools/section-ii`, `POST /api/v1/tools/memorandum`.
+Логика в `app/services/reports/`:
+
+| Пайплайн | Endpoint |
+|----------|----------|
+| Раздел II АЗ | `POST /api/v1/tools/section-ii` (+ `-links`) |
+| Докладная записка | `POST /api/v1/tools/memorandum` |
+| Парсинг рекомендаций | `POST /api/v1/tools/parse-recommendations` |
+| Раздел I / аудиторское мнение (Ollama) | `POST /api/v1/tools/audit-opinion` |
 
 ## Документация проекта
 
-Подробная backend-документация находится в `docs/`:
+Подробная backend-документация в `docs/`:
 
-- `docs/ARCHITECTURE.md` — архитектура и слои приложения.
-- `docs/API.md` — HTTP API и контракты endpoints.
-- `docs/DATA_AND_DB.md` — модели данных, БД, seed/import.
-- `docs/REPORTS.md` — генерация Раздела II, ДЗ и парсинг `.docx`.
-- `docs/DEVELOPMENT.md` — запуск, Docker, env, тесты и эксплуатация.
-- `docs/CODE_REVIEW.md` — ревью текущего состояния и риски.
-- `docs/ROADMAP.md` — план дальнейшего развития.
+- `docs/ARCHITECTURE.md` — архитектура и слои
+- `docs/API.md` — HTTP API и контракты
+- `docs/DATA_AND_DB.md` — модели, БД, seed/import
+- `docs/REPORTS.md` — Раздел II, ДЗ, audit opinion
+- `docs/DEVELOPMENT.md` — запуск, Docker, env, тесты
+- `docs/CODE_REVIEW.md` — ревью и риски
+- `docs/ROADMAP.md` — план развития
 
 ## Проверки качества
 
-Компиляция Python-файлов:
-
 ```bash
 python -m compileall app scripts tests
-```
-
-Unit-тесты:
-
-```bash
 python -m unittest discover -s tests
 ```
 
-Тесты покрывают генерацию Раздела II, формирование ДЗ и XML/bookmark-утилиты для `.docx`.
+Тесты покрывают генерацию Раздела II, ДЗ и XML/bookmark-утилиты для `.docx` (**61** test, 1 skipped).
 
 ## Частые проблемы
 
 **Порт занят** (`WinError 10013` / `10048`):
 
 ```powershell
-netstat -ano | findstr :8800
+netstat -ano | findstr :8802
 taskkill /PID <номер_процесса> /F
 ```
 
-Затем снова запустите uvicorn на порту **8800**.
+Затем снова `.\run_dev.ps1` (порт **8802**).

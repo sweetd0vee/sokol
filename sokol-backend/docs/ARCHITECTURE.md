@@ -20,7 +20,7 @@ sokol-backend/
 │   ├── db/                     # session, init_db, seeds, ad-hoc migrate_*.py
 │   ├── models/                 # SQLAlchemy ORM
 │   ├── schemas/                # Pydantic v2
-│   ├── services/reports/       # section_ii + memorandum
+│   ├── services/reports/       # section_ii + memorandum + audit_opinion
 │   └── utils/                  # check_key, paths
 ├── tests/                      # unittest (DOCX)
 ├── scripts/                    # seed Excel, helpers
@@ -54,6 +54,8 @@ flowchart TB
     TOOLS[instruments_reports.py]
     SII[section_ii/*]
     MEM[memorandum/*]
+    AO[audit_opinion/*]
+    OLL[(Ollama)]
   end
 
   Client --> MW --> EP
@@ -64,6 +66,8 @@ flowchart TB
   EP --> TOOLS
   TOOLS --> SII
   TOOLS --> MEM
+  TOOLS --> AO
+  AO --> OLL
 ```
 
 | Слой | Роль | Что не делает |
@@ -107,7 +111,7 @@ flowchart TB
 
 | Символ | Тип | Ответственность |
 |--------|-----|-----------------|
-| `Settings` | `BaseSettings` | `app_name`, `api_v1_prefix`, `database_url` |
+| `Settings` | `BaseSettings` | `app_name`, `api_v1_prefix`, `database_url`, Ollama URL/model/timeout |
 | `Base` | DeclarativeBase | метаданные ORM |
 | `get_db_session` | async generator | session per request |
 
@@ -206,6 +210,14 @@ Enum’ы: `CheckStatus`, `RecommendationStatus`, `RecommendationAdditionalStatu
 | `docx_generator.py` | новый DOCX через **python-docx** |
 | `memorandum_doc_parser.py` | парсер готовой ДЗ (в tools сейчас используется путь через АЗ) |
 
+### DOCX: аудиторское мнение (`services/reports/audit_opinion`)
+
+| Модуль | Роль |
+|--------|------|
+| `processor.py` | оркестрация: наблюдения → Ollama → правка раздела I |
+| `ollama_client.py` | HTTP к Ollama (`/api/tags`, `/api/chat`) |
+| `prompts.py` | дефолтный промпт и placeholder |
+
 ### Утилиты
 
 | Символ | Назначение |
@@ -261,6 +273,18 @@ flowchart LR
   D --> F[download *_dz.docx]
 ```
 
+## Поток: аудиторское мнение
+
+```mermaid
+flowchart LR
+  A[POST /tools/audit-opinion] --> B[extract observations]
+  B --> C[Ollama chat]
+  C --> D{OK?}
+  D -->|no| E[502 / 400]
+  D -->|yes| F[write Section I into DOCX]
+  F --> G[download *_section_i.docx]
+```
+
 ## Явные non-goals (текущий код)
 
 - Auth / RBAC / JWT
@@ -275,6 +299,6 @@ flowchart LR
 | Контракт | Backend | Frontend |
 |----------|---------|----------|
 | CRUD checks/recommendations/settings | есть | `src/api/*.ts` + mappers |
-| Tools DOCX | `/tools/*` | `src/api/tools.ts`, `ToolsTab` |
+| Tools DOCX + audit-opinion | `/tools/*` | `src/api/tools.ts`, `ToolsTab`, `AuditOpinionPanel` |
 | Analytics by person | **нет** | `src/api/analytics.ts` → 404 |
 | Auth header | не требуется | stub login в localStorage |

@@ -4,6 +4,7 @@
 
 - Python 3.12+
 - PostgreSQL (локально или Docker)
+- Опционально: Ollama (для `/tools/audit-opinion`)
 - Windows: PowerShell + venv; Linux/macOS: bash
 
 ## Быстрый старт (Windows)
@@ -42,6 +43,9 @@ SOKOL_CORS_ORIGINS=http://localhost:5180
 | `DATABASE_URL` | `Settings` | asyncpg URL (обязательно) |
 | `SOKOL_CORS_ORIGINS` | `main.py` | origins через запятую |
 | `SOKOL_MAX_UPLOAD_MB` | `instruments_reports` | лимит upload (default 100) |
+| `SOKOL_OLLAMA_URL` | `Settings` | Ollama base URL |
+| `SOKOL_OLLAMA_MODEL` | `Settings` | модель по умолчанию |
+| `SOKOL_OLLAMA_TIMEOUT_S` | `Settings` | timeout LLM (default 600) |
 
 `SOKOL_LT_*` и сервисы MinIO/MailHog/LanguageTool из Compose **не используются** кодом приложения.
 
@@ -50,11 +54,10 @@ SOKOL_CORS_ORIGINS=http://localhost:5180
 После поднятия Postgres:
 
 ```bash
-# пример: через python -c / скрипт init_db в проекте
 python -c "import asyncio; from app.db.init_db import init_db; asyncio.run(init_db())"
 ```
 
-(точные entrypoints см. в `app/db/init_db.py` и README корня backend.)
+(точные entrypoints см. в `app/db/init_db.py`.)
 
 Seed: модули `seed_*.py`, `import_seed_data.py`, `scripts/generate_seed_excel.py`.
 
@@ -62,10 +65,12 @@ Seed: модули `seed_*.py`, `import_seed_data.py`, `scripts/generate_seed_ex
 
 ## Docker
 
-Каталог `docker/`: Compose (API, Postgres, опционально MinIO/MailHog/LT).  
-API Dockerfile: Python 3.12-slim, CMD uvicorn на **8800** внутри контейнера (маппинг портов — в compose).
+Полный стек: корневой `docker-compose.yml` (API на **8800**, UI, Postgres, Ollama) — см. [DOCKER.md](../../DOCKER.md).
 
-Для локальной разработки чаще удобнее venv + `run_dev.ps1` + Postgres из compose.
+Каталог `docker/`: Compose (API, Postgres, опционально MinIO/MailHog/LT).  
+API Dockerfile: Python 3.12-slim, CMD uvicorn на **8800** внутри контейнера.
+
+Для локальной разработки чаще удобнее venv + `run_dev.ps1` (**8802**) + Postgres из compose.
 
 ## Качество
 
@@ -74,7 +79,7 @@ python -m compileall app scripts tests
 python -m unittest discover -s tests
 ```
 
-На момент обновления docs: **60 tests OK** (фокус — section_ii / memorandum / bookmarks / links).
+На момент обновления docs: **61 tests** (1 skipped); фокус — section_ii / memorandum / bookmarks / links.
 
 Нет pytest-конфига как основного раннера; CI в репозитории backend не описан как обязательный.
 
@@ -84,7 +89,8 @@ python -m unittest discover -s tests
 |---------|---------|----------|
 | `DATABASE_URL is required` | нет `.secrets/sokol.env` | скопировать example |
 | CORS errors с UI | origins не совпадают с портом Vite | выставить `SOKOL_CORS_ORIGINS=http://localhost:5180` |
-| UI ходит на 8800, API на 8802 | рассинхрон README / env | сверить `run_dev.ps1` и `VITE_DEV_API_PORT` |
+| UI ходит на 8800, API на 8802 | Docker vs local | сверить `run_dev.ps1` и `VITE_DEV_API_PORT` |
+| 502 на audit-opinion | Ollama не запущена / нет модели | `ollama serve` + `ollama pull qwen2.5:14b` |
 | 413 на upload | файл > лимита | увеличить `SOKOL_MAX_UPLOAD_MB` |
 | Port already in use | старый uvicorn | `netstat` / taskkill на 8802 |
 
