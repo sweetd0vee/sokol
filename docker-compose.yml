@@ -1,0 +1,99 @@
+# Коробочный стек SOKOL: Postgres + API + Ollama + Frontend
+# Запуск из корня репозитория: см. README / DOCKER.md
+name: sokol
+
+services:
+  db:
+    image: postgres:16-bookworm
+    container_name: postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sokol_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - ~/docker-share/postgres-data-sokol:/var/lib/postgresql/data
+    networks:
+      - sokol
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-sokol_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./sokol-backend
+      dockerfile: docker/app/Dockerfile
+    image: sber/sokol-be:master
+    container_name: backend
+    hostname: backend
+    restart: unless-stopped
+    env_file:
+      - ./sokol-backend/docker/app/.env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/sokol_db}
+      SOKOL_CORS_ORIGINS: ${SOKOL_CORS_ORIGINS:-http://localhost:5180}
+      SOKOL_LT_URL: ${SOKOL_LT_URL:-}
+      SOKOL_LT_LANG: ${SOKOL_LT_LANG:-auto}
+      SOKOL_MAX_UPLOAD_MB: ${SOKOL_MAX_UPLOAD_MB:-100}
+      SOKOL_OLLAMA_URL: ${SOKOL_OLLAMA_URL:-http://ollama:11434}
+      SOKOL_OLLAMA_MODEL: ${SOKOL_OLLAMA_MODEL:-qwen2.5:14b}
+      SOKOL_OLLAMA_TIMEOUT_S: ${SOKOL_OLLAMA_TIMEOUT_S:-600}
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    ports:
+      - "8800:8800"
+    networks:
+      - sokol
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    hostname: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ~/docker-share/ollama:/root/.ollama
+    networks:
+      - sokol
+
+  ui:
+    build:
+      context: ./sokol-frontend
+      dockerfile: docker/Dockerfile
+    image: sber/sokol-fe:master
+    container_name: frontend
+    hostname: frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "5180:5180"
+    environment:
+      # Браузер ходит на опубликованный порт API на хосте
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8800}
+    networks:
+      - sokol
+
+  # Опционально: docker compose --profile extras up -d
+  languagetool:
+    profiles: ["extras"]
+    image: silviof/docker-languagetool:latest
+    container_name: sokol_languagetool
+    hostname: sokol_languagetool
+    restart: unless-stopped
+    ports:
+      - "8010:8010"
+    networks:
+      - sokol
+
+networks:
+  sokol:
+    name: sokol

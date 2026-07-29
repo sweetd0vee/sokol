@@ -1,0 +1,1 @@
+"""SOKOL backend app package."""

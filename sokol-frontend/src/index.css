@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white text-gray-900 antialiased;
+  }
+}
+
+/**
+ * Edit-form field rows: every field box is the same width as in a 4-column row.
+ * 3-column rows use the same field width and the same gutters, aligned to the left.
+ */
+@layer components {
+  .form-row-4 {
+    display: grid;
+    grid-template-columns: 1fr;
+    row-gap: 0.75rem;
+  }
+
+  .form-row-3 {
+    display: flex;
+    flex-direction: column;
+    row-gap: 0.75rem;
+  }
+
+  .form-row-3 > * {
+    min-width: 0;
+    width: 100%;
+  }
+
+  @media (min-width: 768px) {
+    .form-row-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      column-gap: 2.75rem;
+      row-gap: 0.75rem;
+    }
+
+    .form-row-3 {
+      flex-direction: row;
+      justify-content: flex-start;
+      align-items: flex-start;
+      column-gap: 2.75rem;
+    }
+
+    /* Same width and gutters as .form-row-4; leftover space stays on the right */
+    .form-row-3 > * {
+      flex: 0 0 calc((100% - 8.25rem) / 4);
+      width: calc((100% - 8.25rem) / 4);
+      max-width: calc((100% - 8.25rem) / 4);
+    }
+
+    /* Text fields that should use the leftover width of a 3-column row */
+    .form-row-3 > .form-field-wide {
+      flex: 1 1 auto;
+      width: auto;
+      max-width: none;
+    }
+  }
+
+  /* Forced equal control height (beats conflicting py-* utilities). */
+  .form-equal-control {
+    box-sizing: border-box;
+    height: 2.5rem !important;
+    min-height: 2.5rem !important;
+    max-height: 2.5rem !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 2.375rem;
+  }
+}

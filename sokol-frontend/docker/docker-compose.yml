@@ -1,0 +1,22 @@
+name: sokol
+
+services:
+  ui:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: sber/sokol-fe:master
+    container_name: frontend
+    hostname: frontend
+    restart: unless-stopped
+    ports:
+      - "5180:5180"
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8800}
+    networks:
+      - sokol
+
+networks:
+  sokol:
+    name: sokol
+    external: true

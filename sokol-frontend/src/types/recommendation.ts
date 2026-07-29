@@ -1,0 +1,40 @@
+export type RecommendationStatus = 'completed' | 'unresolved' | 'on_control' | 'in_progress';
+
+export type RecommendationAdditionalStatus = 'on_time' | 'deadline_violated' | 'on_control';
+
+export type MaterialityLevel = 'низкий' | 'средний' | 'высокий';
+
+export type RecommendationIndicator =
+  | 'не указан'
+  | 'в процессе'
+  | 'ожидает'
+  | 'не решено'
+  | 'исполнено';
+
+export interface Recommendation {
+  id: string;
+  serial_number: string;
+  sequence_number: number;
+  name: string;
+  description: string;
+  indicator: RecommendationIndicator;
+  materiality_level: MaterialityLevel;
+  audit_object: string;
+  deadline: string;
+  auditor: string;
+  manager: string;
+  status: RecommendationStatus;
+  additional_status: RecommendationAdditionalStatus;
+  created_at?: string;
+  actual_completion_date?: string;
+  extension_1_reason?: string;
+  extension_1_date?: string;
+  extension_1_comment?: string;
+  extension_2_reason?: string;
+  extension_2_comment?: string;
+  remove_from_control_reason?: string;
+  remove_from_control_date?: string;
+  remove_from_control_comment?: string;
+  closure_verification_status?: string;
+  closure_information?: string;
+}

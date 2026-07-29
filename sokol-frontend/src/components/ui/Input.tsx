@@ -1,0 +1,68 @@
+import type { ChangeEvent, FocusEvent, ReactNode } from 'react';
+
+interface InputProps {
+  label?: string;
+  value: string;
+  onChange: (value: string) => void;
+  onBlur?: (event: FocusEvent<HTMLInputElement>) => void;
+  type?: 'text' | 'number' | 'email' | 'password';
+  placeholder?: string;
+  className?: string;
+  inputClassName?: string;
+  labelClassName?: string;
+  rightElement?: ReactNode;
+  readOnly?: boolean;
+}
+
+export function Input({
+  label,
+  value,
+  onChange,
+  onBlur,
+  type = 'text',
+  placeholder,
+  className = '',
+  inputClassName = '',
+  labelClassName = '',
+  rightElement,
+  readOnly = false,
+}: InputProps) {
+  const inputClasses = [
+    'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sber-light dark:focus:ring-sber-light/25',
+    rightElement ? 'pr-10' : '',
+    inputClassName,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <div className={className}>
+      {label && (
+        <label
+          className={[
+            'mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300',
+            labelClassName,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        <input
+          type={type}
+          value={value}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+          onBlur={onBlur}
+          placeholder={placeholder}
+          readOnly={readOnly}
+          className={inputClasses}
+        />
+        {rightElement && (
+          <div className="absolute inset-y-0 right-2 flex items-center">{rightElement}</div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,44 @@
+/* Стили для react-datepicker в синих цветах */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__header {
+  background-color: #003366 !important;
+  border-color: #003366 !important;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+  color: white !important;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #003366 !important;
+}
+
+.react-datepicker__day:hover {
+  background-color: rgba(0, 51, 102, 0.2) !important;
+}
+
+.dark .react-datepicker {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .react-datepicker__header {
+  background-color: #003366 !important;
+  border-color: #334155 !important;
+}
+
+.dark .react-datepicker__day,
+.dark .react-datepicker__day-name,
+.dark .react-datepicker__current-month {
+  color: #e2e8f0 !important;
+}
+
+.dark .react-datepicker__day:hover {
+  background-color: rgba(102, 153, 255, 0.2) !important;
+}
