@@ -84,7 +84,8 @@ export function RecommendationFormPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationState = (location.state as RecommendationFormLocationState | null) ?? {};
-  const { checks, recommendations, addRecommendation, updateRecommendation } = useSokolData();
+  const { checks, recommendations, addRecommendation, updateRecommendation, updateCheck } =
+    useSokolData();
   const isEditMode = Boolean(id);
   const fromCheckForm = Boolean(navigationState.returnTo && navigationState.checkFormDraft);
 
@@ -107,6 +108,9 @@ export function RecommendationFormPage() {
   const [auditObject, setAuditObject] = useState('');
   const [deadline, setDeadline] = useState<Date | null>(null);
   const [auditor, setAuditor] = useState('');
+  const [checkLeader, setCheckLeader] = useState(
+    () => navigationState.checkFormDraft?.checkLeader ?? '',
+  );
   const [manager, setManager] = useState('');
   const [status, setStatus] = useState<Recommendation['status'] | ''>('');
   const [additionalStatus, setAdditionalStatus] = useState<Recommendation['additional_status'] | ''>('');
@@ -144,6 +148,16 @@ export function RecommendationFormPage() {
     [checks, serialNumber],
   );
 
+  useEffect(() => {
+    if (linkedCheck) {
+      setCheckLeader(linkedCheck.check_leader ?? '');
+      return;
+    }
+    if (navigationState.checkFormDraft?.checkLeader) {
+      setCheckLeader(navigationState.checkFormDraft.checkLeader);
+    }
+  }, [linkedCheck?.id, linkedCheck?.check_leader, navigationState.checkFormDraft?.checkLeader]);
+
   const checkDisplayName = useMemo(() => {
     if (fromCheckForm && navigationState.checkFormDraft?.checkName.trim()) {
       return navigationState.checkFormDraft.checkName.trim();
@@ -162,6 +176,7 @@ export function RecommendationFormPage() {
   }, [isEditMode, recommendations, serialNumber, source?.sequence_number]);
 
   const { options: auditorOptions } = useAuditorOptions(auditor);
+  const { options: leaderOptions } = useAuditorOptions(checkLeader);
   const { options: managerOptions } = useAuditorOptions(manager);
   const { options: auditObjectOptions } = useAuditObjectOptions(auditObject);
   const requiredFieldErrors = useMemo(() => {
@@ -250,6 +265,11 @@ export function RecommendationFormPage() {
   const backPath = fromCheckForm ? navigationState.returnTo! : '/recommendations';
   const backLabel = fromCheckForm ? 'Назад к проверке' : 'Назад к списку';
 
+  const withUpdatedCheckLeaderDraft = (draft: NonNullable<RecommendationFormLocationState['checkFormDraft']>) => ({
+    ...draft,
+    checkLeader,
+  });
+
   const returnToCheckForm = () => {
     if (!fromCheckForm || !navigationState.checkFormDraft) {
       navigate(backPath);
@@ -257,13 +277,13 @@ export function RecommendationFormPage() {
     }
     const returnState: CheckFormLocationState = {
       check: navigationState.checkFormDraft.existingCheck,
-      restoredDraft: navigationState.checkFormDraft,
+      restoredDraft: withUpdatedCheckLeaderDraft(navigationState.checkFormDraft),
     };
     navigate(backPath, { replace: true, state: returnState });
   };
 
   const buildPayload = (trimmedDescription: string): Recommendation => {
-    const resolvedAuditor = auditor || linkedCheck?.check_leader || navigationState.auditor || 'Не указан';
+    const resolvedAuditor = auditor || checkLeader || navigationState.auditor || 'Не указан';
     const resolvedManager = manager || 'Не указан';
     const resolvedAuditObject = auditObject || 'Не указан';
 
@@ -289,7 +309,7 @@ export function RecommendationFormPage() {
   const buildCreateAnotherPrefill = () => ({
     serialNumber,
     auditObject,
-    auditor: auditor || linkedCheck?.check_leader || navigationState.auditor || '',
+    auditor: auditor || checkLeader || navigationState.auditor || '',
     manager,
     deadline,
     status,
@@ -297,6 +317,13 @@ export function RecommendationFormPage() {
     indicator,
     materialityLevel,
   });
+
+  const persistCheckLeaderIfNeeded = async () => {
+    if (!linkedCheck || !checkLeader.trim() || checkLeader === linkedCheck.check_leader) {
+      return;
+    }
+    await updateCheck({ ...linkedCheck, check_leader: checkLeader });
+  };
 
   const applyCreateAnotherPrefill = (
     prefill: ReturnType<typeof buildCreateAnotherPrefill>,
@@ -321,7 +348,7 @@ export function RecommendationFormPage() {
       replace,
       state: {
         serialNumber,
-        auditor: linkedCheck?.check_leader || source?.auditor || navigationState.auditor || '',
+        auditor: checkLeader || source?.auditor || navigationState.auditor || '',
       } satisfies RecommendationFormLocationState,
     });
   };
@@ -344,6 +371,7 @@ export function RecommendationFormPage() {
     setIsSaving(true);
     try {
       const payload = buildPayload(trimmedDescription);
+      await persistCheckLeaderIfNeeded();
 
       if (isEditMode) {
         await updateRecommendation(payload);
@@ -365,7 +393,7 @@ export function RecommendationFormPage() {
       if (fromCheckForm && navigationState.checkFormDraft) {
         const returnState: CheckFormLocationState = {
           check: navigationState.checkFormDraft.existingCheck,
-          restoredDraft: navigationState.checkFormDraft,
+          restoredDraft: withUpdatedCheckLeaderDraft(navigationState.checkFormDraft),
         };
         navigate(navigationState.returnTo!, { replace: true, state: returnState });
         return;
@@ -561,15 +589,15 @@ export function RecommendationFormPage() {
           </div>
 
           <div className={FORM_ROW_3}>
-            <Input
+            <Select
               label="Руководитель проверки"
-              value={linkedCheck?.check_leader ?? ''}
-              onChange={() => undefined}
-              readOnly
-              placeholder="Не указан"
+              value={checkLeader}
+              onChange={setCheckLeader}
+              options={leaderOptions}
+              placeholder="Выберите руководителя"
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
-              inputClassName={FORM_SERVICE_INPUT_CLASS}
+              inputClassName={FORM_INPUT_CLASS}
             />
             <Select
               label="Руководитель объекта аудита"

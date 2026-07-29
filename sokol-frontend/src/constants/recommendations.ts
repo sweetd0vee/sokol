@@ -109,10 +109,10 @@ export const INDICATOR_OPTIONS: {
   dotClassName: string;
 }[] = [
   { value: 'не указан', label: 'Не указан', dotClassName: 'bg-transparent border border-gray-300' },
-  { value: 'в процессе', label: 'В процессе', dotClassName: 'bg-yellow-100' },
+  { value: 'в процессе', label: 'В процессе', dotClassName: 'bg-[#FBEB8D]' },
   { value: 'ожидает', label: 'Ожидает', dotClassName: 'bg-gray-200' },
-  { value: 'не решено', label: 'Не решено', dotClassName: 'bg-red-100' },
-  { value: 'исполнено', label: 'Исполнено', dotClassName: 'bg-green-100' },
+  { value: 'не решено', label: 'Не решено', dotClassName: 'bg-[#FF4347]' },
+  { value: 'исполнено', label: 'Исполнено', dotClassName: 'bg-[#A9D18E]' },
 ];
 
 export function getIndicatorLabel(value: RecommendationIndicator | '' | null | undefined) {
@@ -153,9 +153,9 @@ export const MATERIALITY_LEVEL_OPTIONS: {
   label: string;
   dotClassName: string;
 }[] = [
-  { value: 'низкий', label: 'Низкий', dotClassName: 'bg-green-100' },
-  { value: 'средний', label: 'Средний', dotClassName: 'bg-yellow-100' },
-  { value: 'высокий', label: 'Высокий', dotClassName: 'bg-red-100' },
+  { value: 'низкий', label: 'Низкий', dotClassName: 'bg-[#A9D18E]' },
+  { value: 'средний', label: 'Средний', dotClassName: 'bg-[#FBEB8D]' },
+  { value: 'высокий', label: 'Высокий', dotClassName: 'bg-[#FF4347]' },
 ];
 
 export function getMaterialityLevelLabel(value: MaterialityLevel) {
