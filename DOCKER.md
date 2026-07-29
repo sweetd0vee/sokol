@@ -10,11 +10,8 @@
 | API / Swagger | http://localhost:8800/docs |
 | Postgres | localhost:5433 |
 | Ollama | http://localhost:11434 |
-| LanguageTool (profile `extras`) | http://localhost:8010 |
 
 > В Docker API на **8800**. Локальный `run_dev.ps1` без Docker слушает **8802** — см. корневой [README.md](README.md).
-
-LanguageTool в profile `extras` — опциональный сервис; **приложение к нему не обращается**.
 
 ## Перед первым запуском
 
@@ -60,14 +57,6 @@ docker compose down
 ```powershell
 docker compose up --build -d api ollama ui
 ```
-
-## Опционально: LanguageTool
-
-```powershell
-docker compose --profile extras up -d languagetool
-```
-
-Сервис поднимается на порту 8010; переменные `SOKOL_LT_*` в env зарезервированы, но код API их не читает.
 
 ## Данные на диске
 

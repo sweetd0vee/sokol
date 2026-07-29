@@ -71,8 +71,6 @@ SOKOL_OLLAMA_MODEL=qwen2.5:14b
 SOKOL_OLLAMA_TIMEOUT_S=600
 ```
 
-`SOKOL_LT_*` в example зарезервированы; код приложения LanguageTool не вызывает.
-
 ## Docker
 
 Полный стек (рекомендуется): из корня репозитория — см. [DOCKER.md](../DOCKER.md).

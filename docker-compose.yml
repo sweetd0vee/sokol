@@ -80,18 +80,6 @@ services:
     networks:
       - sokol
 
-  # Опционально: docker compose --profile extras up -d
-  languagetool:
-    profiles: ["extras"]
-    image: silviof/docker-languagetool:latest
-    container_name: sokol_languagetool
-    hostname: sokol_languagetool
-    restart: unless-stopped
-    ports:
-      - "8010:8010"
-    networks:
-      - sokol
-
 networks:
   sokol:
     name: sokol

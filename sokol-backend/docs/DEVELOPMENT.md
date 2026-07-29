@@ -47,7 +47,7 @@ SOKOL_CORS_ORIGINS=http://localhost:5180
 | `SOKOL_OLLAMA_MODEL` | `Settings` | модель по умолчанию |
 | `SOKOL_OLLAMA_TIMEOUT_S` | `Settings` | timeout LLM (default 600) |
 
-`SOKOL_LT_*` и сервисы MinIO/MailHog/LanguageTool из Compose **не используются** кодом приложения.
+`SOKOL_OLLAMA_*` — см. таблицу выше. Сервисы MinIO/MailHog из Compose **не используются** кодом приложения.
 
 ## Инициализация БД
 
@@ -67,7 +67,7 @@ Seed: модули `seed_*.py`, `import_seed_data.py`, `scripts/generate_seed_ex
 
 Полный стек: корневой `docker-compose.yml` (API на **8800**, UI, Postgres, Ollama) — см. [DOCKER.md](../../DOCKER.md).
 
-Каталог `docker/`: Compose (API, Postgres, опционально MinIO/MailHog/LT).  
+Каталог `docker/`: Compose (API, Postgres, опционально MinIO/MailHog).  
 API Dockerfile: Python 3.12-slim, CMD uvicorn на **8800** внутри контейнера.
 
 Для локальной разработки чаще удобнее venv + `run_dev.ps1` (**8802**) + Postgres из compose.

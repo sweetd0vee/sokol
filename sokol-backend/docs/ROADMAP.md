@@ -7,7 +7,7 @@
 - [x] Зафиксировать в документации два режима портов: Docker **8800**, local `run_dev.ps1` **8802** (+ фронт `.env.development`).
 - [ ] (Опционально) Унифицировать порт API в коде (один порт для Docker и local), если onboarding всё ещё путает.
 - [ ] Свести конфиг в один `Settings` (CORS, max upload).
-- [ ] Пометить/убрать неиспользуемые Compose-сервисы (MinIO, MailHog, LT) или завести feature flags.
+- [ ] Пометить/убрать неиспользуемые Compose-сервисы (MinIO, MailHog) или завести feature flags.
 - [ ] Закрыть разрыв **Analytics**: endpoint `/api/v1/analytics/by-person` или смена контракта фронта.
 
 ## Фаза 1 — данные и миграции (1–2 недели)
@@ -30,7 +30,6 @@
 - [ ] Каталог золотых АЗ в CI.
 - [ ] Рефакторинг `docx_generator` / `docx_parser` на фазы.
 - [ ] Тесты / устойчивость `audit_opinion` (моки Ollama, golden DOCX).
-- [ ] Опционально: LanguageTool post-check текста рекомендаций.
 
 ## Фаза 4 — продукт
 

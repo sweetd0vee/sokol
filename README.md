@@ -11,8 +11,6 @@
 
 Локально API слушает **8802** (`sokol-backend/run_dev.ps1`), фронт проксирует `/api` туда же (`VITE_DEV_API_PORT=8802` в `sokol-frontend/.env.development`). В Docker API опубликован на **8800**.
 
-LanguageTool (profile `extras`, порт 8010) в compose есть, но **кодом приложения не используется**.
-
 ---
 
 ## Коробочный запуск (Docker)

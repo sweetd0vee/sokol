@@ -291,7 +291,7 @@ flowchart LR
 - Alembic-миграции (только `create_all` + `app/db/migrate_*.py`)
 - Celery / Redis / фоновые очереди
 - S3 / MinIO в коде приложения (сервис может быть в Compose, но не используется)
-- LanguageTool / MailHog в коде
+- MailHog в коде (MinIO в Compose extras есть, приложением не используется)
 - Analytics API (`/api/v1/analytics/*` **отсутствует**, хотя фронт его вызывает)
 
 ## Связь с фронтендом
