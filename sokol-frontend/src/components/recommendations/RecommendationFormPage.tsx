@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { DatePicker } from '../ui/DatePicker';
@@ -29,7 +28,7 @@ import {
 } from '../../utils/checkFormNavigation';
 import { MaterialitySelect } from './MaterialitySelect';
 import { IndicatorSelect } from './IndicatorSelect';
-import { RecommendationClosureSection } from './RecommendationClosureSection';
+import { CollapsibleFormBlock, RecommendationClosureSection } from './RecommendationClosureSection';
 import { FileAttachmentsPanel } from '../attachments/FileAttachmentsPanel';
 import {
   RECOMMENDATION_ATTACHMENT_SLOTS,
@@ -119,7 +118,7 @@ export function RecommendationFormPage() {
   const [closure, setClosure] = useState<RecommendationClosureForm>(EMPTY_RECOMMENDATION_CLOSURE);
   const [formResetKey, setFormResetKey] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [isControlZoneOpen, setIsControlZoneOpen] = useState(true);
+  const [isExecutionDeadlineOpen, setIsExecutionDeadlineOpen] = useState(true);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
 
   useEffect(() => {
@@ -190,10 +189,8 @@ export function RecommendationFormPage() {
       closureInformation: !closure.closureInformation.trim(),
       actualCompletionDate: !closure.actualCompletionDate,
       extension1Date: !closure.extension1Date,
-      extension1Reason: !closure.extension1Reason.trim(),
       extension1Comment: !closure.extension1Comment.trim(),
       removeFromControlDate: !closure.removeFromControlDate,
-      removeFromControlReason: !closure.removeFromControlReason,
       removeFromControlComment: !closure.removeFromControlComment.trim(),
     };
     return {
@@ -201,6 +198,19 @@ export function RecommendationFormPage() {
       hasErrors: Object.values(errors).some(Boolean),
     };
   }, [auditObject, closure, deadline, description, indicator, manager]);
+
+  useEffect(() => {
+    if (
+      showValidationErrors &&
+      (requiredFieldErrors.actualCompletionDate || requiredFieldErrors.closureInformation)
+    ) {
+      setIsExecutionDeadlineOpen(true);
+    }
+  }, [
+    showValidationErrors,
+    requiredFieldErrors.actualCompletionDate,
+    requiredFieldErrors.closureInformation,
+  ]);
 
   const isKeyBlockFilled = isNonEmpty(serialNumber);
 
@@ -230,16 +240,8 @@ export function RecommendationFormPage() {
   );
 
   const isControlZoneFilled = useMemo(() => {
-    const extensionFields = [
-      closure.extension1Date,
-      closure.extension1Reason,
-      closure.extension1Comment,
-    ];
-    const removeFields = [
-      closure.removeFromControlDate,
-      closure.removeFromControlReason,
-      closure.removeFromControlComment,
-    ];
+    const extensionFields = [closure.extension1Date, closure.extension1Comment];
+    const removeFields = [closure.removeFromControlDate, closure.removeFromControlComment];
     const groupComplete = (fields: string[]) => {
       const filledCount = fields.filter(isNonEmpty).length;
       return filledCount === 0 || filledCount === fields.length;
@@ -362,9 +364,6 @@ export function RecommendationFormPage() {
       setShowValidationErrors(true);
     }
     if (!serialNumber || !trimmedDescription || !status || !additionalStatus || requiredFieldErrors.hasErrors) {
-      if (mode === 'save') {
-        setIsControlZoneOpen(true);
-      }
       return;
     }
 
@@ -626,106 +625,89 @@ export function RecommendationFormPage() {
         </div>
 
         <div className={formSectionClass(isControlZoneFilled)}>
-          <button
-            type="button"
-            onClick={() => setIsControlZoneOpen((open) => !open)}
-            className="flex w-full items-center gap-2 text-left"
-            aria-expanded={isControlZoneOpen}
-          >
-            <ChevronDown
-              size={18}
-              className={[
-                'shrink-0 text-gray-500 transition-transform',
-                isControlZoneOpen ? 'rotate-180' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
+          <div className={FORM_SECTION_TITLE_CLASS}>Контрольная зона</div>
+          <div className={`mt-4 ${FORM_STACK_CLASS}`}>
+            <RecommendationClosureSection
+              embedded
+              hideClosureInformation
+              hideActualCompletionDate
+              value={closure}
+              onChange={setClosure}
+              inputClassName={FORM_INPUT_CLASS}
+              labelClassName={FORM_LABEL_CLASS}
+              blockTitleClassName={FORM_SECTION_TITLE_CLASS}
+              stackClassName={FORM_STACK_CLASS}
+              errorFields={
+                showValidationErrors
+                  ? {
+                      extension1Date: requiredFieldErrors.extension1Date,
+                      extension1Comment: requiredFieldErrors.extension1Comment,
+                      removeFromControlDate: requiredFieldErrors.removeFromControlDate,
+                      removeFromControlComment: requiredFieldErrors.removeFromControlComment,
+                    }
+                  : {}
+              }
             />
-            <span className={FORM_SECTION_TITLE_CLASS}>Контрольная зона</span>
-          </button>
-
-          {isControlZoneOpen && (
-            <div className={`mt-4 ${FORM_STACK_CLASS}`}>
-              <div className={FORM_STACK_CLASS}>
-                <div className={FORM_SECTION_TITLE_CLASS}>Срок исполнения</div>
-                <div className={`${FORM_ROW_3} items-start`}>
-                  <div className={FORM_FIELD_CLASS}>
-                    <DatePicker
-                      selected={toInputDate(closure.actualCompletionDate)}
-                      onChange={(date) =>
-                        setClosure((current) => ({
-                          ...current,
-                          actualCompletionDate: date
-                            ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-                            : '',
-                        }))
-                      }
-                      placeholder="Выберите дату"
-                      inputClassName={[
-                        FORM_INPUT_CLASS,
-                        showValidationErrors && requiredFieldErrors.actualCompletionDate
-                          ? REQUIRED_FIELD_ERROR_CLASS
+            <CollapsibleFormBlock
+              title="Срок исполнения"
+              titleClassName={FORM_SECTION_TITLE_CLASS}
+              open={isExecutionDeadlineOpen}
+              onToggle={() => setIsExecutionDeadlineOpen((current) => !current)}
+              className={FORM_STACK_CLASS}
+            >
+              <div className={`${FORM_ROW_3} items-start`}>
+                <div className={`${FORM_FIELD_CLASS} space-y-3`}>
+                  <DatePicker
+                    selected={toInputDate(closure.actualCompletionDate)}
+                    onChange={(date) =>
+                      setClosure((current) => ({
+                        ...current,
+                        actualCompletionDate: date
+                          ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
                           : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                    />
-                  </div>
-                  <div className={FORM_FIELD_CLASS}>
-                    <FileAttachmentsPanel
-                      key={formResetKey}
-                      embedded
-                      compact
-                      hideSlotLabel
-                      slots={[...RECOMMENDATION_ATTACHMENT_SLOTS]}
-                      columnsClassName="grid-cols-1"
-                    />
-                  </div>
-                  <div className={FORM_FIELD_WIDE_CLASS}>
-                    <Textarea
-                      value={closure.closureInformation}
-                      onChange={(closureInformation) =>
-                        setClosure((current) => ({ ...current, closureInformation }))
-                      }
-                      placeholder="Информация о закрытии"
-                      rows={4}
-                      inputClassName={[
-                        'text-sm py-1.5 min-h-[6.5rem] max-h-48 resize-none overflow-y-auto',
-                        showValidationErrors && requiredFieldErrors.closureInformation
-                          ? REQUIRED_FIELD_ERROR_CLASS
-                          : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                    />
-                  </div>
+                      }))
+                    }
+                    placeholder="Выберите дату"
+                    inputClassName={[
+                      FORM_INPUT_CLASS,
+                      showValidationErrors && requiredFieldErrors.actualCompletionDate
+                        ? REQUIRED_FIELD_ERROR_CLASS
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                  />
+                  <FileAttachmentsPanel
+                    key={formResetKey}
+                    embedded
+                    compact
+                    hideSlotLabel
+                    slots={[...RECOMMENDATION_ATTACHMENT_SLOTS]}
+                    columnsClassName="grid-cols-1"
+                  />
+                </div>
+                <div className={`${FORM_FIELD_WIDE_CLASS} flex flex-col self-stretch`}>
+                  <Textarea
+                    value={closure.closureInformation}
+                    onChange={(closureInformation) =>
+                      setClosure((current) => ({ ...current, closureInformation }))
+                    }
+                    placeholder="Информация о закрытии"
+                    rows={1}
+                    className="flex h-full min-h-0 w-full flex-1 flex-col"
+                    inputClassName={[
+                      'box-border h-full min-h-0 flex-1 resize-none overflow-y-auto text-sm py-1.5',
+                      showValidationErrors && requiredFieldErrors.closureInformation
+                        ? REQUIRED_FIELD_ERROR_CLASS
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                  />
                 </div>
               </div>
-              <RecommendationClosureSection
-                embedded
-                hideClosureInformation
-                hideActualCompletionDate
-                value={closure}
-                onChange={setClosure}
-                inputClassName={FORM_INPUT_CLASS}
-                labelClassName={FORM_LABEL_CLASS}
-                blockTitleClassName={FORM_SECTION_TITLE_CLASS}
-                stackClassName={FORM_STACK_CLASS}
-                errorFields={
-                  showValidationErrors
-                    ? {
-                        extension1Date: requiredFieldErrors.extension1Date,
-                        extension1Reason: requiredFieldErrors.extension1Reason,
-                        extension1Comment: requiredFieldErrors.extension1Comment,
-                        removeFromControlDate: requiredFieldErrors.removeFromControlDate,
-                        removeFromControlReason: requiredFieldErrors.removeFromControlReason,
-                        removeFromControlComment: requiredFieldErrors.removeFromControlComment,
-                      }
-                    : {}
-                }
-              />
-            </div>
-          )}
+            </CollapsibleFormBlock>
+          </div>
         </div>
 
         <div className="space-y-3">

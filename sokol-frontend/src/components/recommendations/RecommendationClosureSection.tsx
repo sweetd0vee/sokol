@@ -1,14 +1,10 @@
+import { useEffect, useState, type ReactNode } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { DatePicker } from '../ui/DatePicker';
-import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
-import {
-  REMOVE_FROM_CONTROL_REASON_OPTIONS,
-  type RecommendationClosureForm,
-} from '../../constants/recommendationClosure';
+import { type RecommendationClosureForm } from '../../constants/recommendationClosure';
 import { FORM_FIELD_CLASS, FORM_FIELD_WIDE_CLASS, FORM_ROW_3 } from '../../constants/formLayout';
 import { toIsoDate } from '../../utils/dates';
-
-const EQUAL_CONTROL_CLASS = 'form-equal-control';
 
 type RecommendationClosureSectionProps = {
   value: RecommendationClosureForm;
@@ -31,6 +27,48 @@ function toDate(value: string) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+const COMMENT_TEXTAREA_CLASS =
+  'box-border h-full min-h-[9.75rem] flex-1 resize-none overflow-y-auto text-sm py-1.5';
+
+export function CollapsibleFormBlock({
+  title,
+  titleClassName,
+  open,
+  onToggle,
+  children,
+  className = '',
+}: {
+  title: string;
+  titleClassName: string;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-2 text-left"
+        aria-expanded={open}
+      >
+        <ChevronDown
+          size={18}
+          className={[
+            'shrink-0 text-gray-500 transition-transform',
+            open ? 'rotate-180' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        />
+        <span className={titleClassName}>{title}</span>
+      </button>
+      {open ? children : null}
+    </div>
+  );
+}
+
 export function RecommendationClosureSection({
   value,
   onChange,
@@ -43,12 +81,25 @@ export function RecommendationClosureSection({
   blockTitleClassName = 'text-base font-semibold text-gray-900',
   stackClassName = 'space-y-6',
 }: RecommendationClosureSectionProps) {
+  const [extensionOpen, setExtensionOpen] = useState(true);
+  const [removeOpen, setRemoveOpen] = useState(true);
+
+  useEffect(() => {
+    if (errorFields.extension1Date || errorFields.extension1Comment) {
+      setExtensionOpen(true);
+    }
+  }, [errorFields.extension1Date, errorFields.extension1Comment]);
+
+  useEffect(() => {
+    if (errorFields.removeFromControlDate || errorFields.removeFromControlComment) {
+      setRemoveOpen(true);
+    }
+  }, [errorFields.removeFromControlDate, errorFields.removeFromControlComment]);
+
   const patch = (partial: Partial<RecommendationClosureForm>) => {
     onChange({ ...value, ...partial });
   };
   const invalidClass = 'border-[#e59a9a] focus:border-[#d9534f] focus:ring-[#f3c5c5]';
-  const textareaClassName =
-    'text-sm py-1.5 min-h-[6.5rem] max-h-48 resize-none overflow-y-auto';
 
   const content = (
     <>
@@ -59,7 +110,7 @@ export function RecommendationClosureSection({
           placeholder="Информация о закрытии"
           rows={4}
           inputClassName={[
-            textareaClassName,
+            'text-sm py-1.5 min-h-[6.5rem] max-h-48 resize-none overflow-y-auto',
             errorFields.closureInformation ? invalidClass : '',
           ]
             .filter(Boolean)
@@ -88,8 +139,13 @@ export function RecommendationClosureSection({
         />
       )}
 
-      <div className={stackClassName}>
-        <div className={blockTitleClassName}>Перенос срока</div>
+      <CollapsibleFormBlock
+        title="Перенос срока"
+        titleClassName={blockTitleClassName}
+        open={extensionOpen}
+        onToggle={() => setExtensionOpen((current) => !current)}
+        className={stackClassName}
+      >
         <div className={`${FORM_ROW_3} items-start`}>
           <div className={FORM_FIELD_CLASS}>
             <DatePicker
@@ -105,30 +161,16 @@ export function RecommendationClosureSection({
                 .join(' ')}
             />
           </div>
-          <div className={FORM_FIELD_CLASS}>
-            <Textarea
-              value={value.extension1Reason}
-              onChange={(extension1Reason) => patch({ extension1Reason })}
-              placeholder="Укажите причину"
-              rows={4}
-              labelClassName={labelClassName}
-              inputClassName={[
-                textareaClassName,
-                errorFields.extension1Reason ? invalidClass : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            />
-          </div>
-          <div className={FORM_FIELD_WIDE_CLASS}>
+          <div className={`${FORM_FIELD_WIDE_CLASS} flex flex-col self-stretch`}>
             <Textarea
               value={value.extension1Comment}
               onChange={(extension1Comment) => patch({ extension1Comment })}
               placeholder="Комментарий"
-              rows={4}
+              rows={1}
               labelClassName={labelClassName}
+              className="flex h-full min-h-0 w-full flex-1 flex-col"
               inputClassName={[
-                textareaClassName,
+                COMMENT_TEXTAREA_CLASS,
                 errorFields.extension1Comment ? invalidClass : '',
               ]
                 .filter(Boolean)
@@ -136,10 +178,15 @@ export function RecommendationClosureSection({
             />
           </div>
         </div>
-      </div>
+      </CollapsibleFormBlock>
 
-      <div className={stackClassName}>
-        <div className={blockTitleClassName}>Снять с контроля</div>
+      <CollapsibleFormBlock
+        title="Снять с контроля"
+        titleClassName={blockTitleClassName}
+        open={removeOpen}
+        onToggle={() => setRemoveOpen((current) => !current)}
+        className={stackClassName}
+      >
         <div className={`${FORM_ROW_3} items-start`}>
           <div className={FORM_FIELD_CLASS}>
             <DatePicker
@@ -149,37 +196,22 @@ export function RecommendationClosureSection({
               labelClassName={labelClassName}
               inputClassName={[
                 inputClassName,
-                EQUAL_CONTROL_CLASS,
                 errorFields.removeFromControlDate ? invalidClass : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
             />
           </div>
-          <div className={FORM_FIELD_CLASS}>
-            <Select
-              value={value.removeFromControlReason}
-              onChange={(removeFromControlReason) => patch({ removeFromControlReason })}
-              options={REMOVE_FROM_CONTROL_REASON_OPTIONS}
-              labelClassName={labelClassName}
-              inputClassName={[
-                inputClassName,
-                EQUAL_CONTROL_CLASS,
-                errorFields.removeFromControlReason ? invalidClass : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            />
-          </div>
-          <div className={FORM_FIELD_WIDE_CLASS}>
+          <div className={`${FORM_FIELD_WIDE_CLASS} flex flex-col self-stretch`}>
             <Textarea
               value={value.removeFromControlComment}
               onChange={(removeFromControlComment) => patch({ removeFromControlComment })}
               placeholder="Комментарий"
-              rows={4}
+              rows={1}
               labelClassName={labelClassName}
+              className="flex h-full min-h-0 w-full flex-1 flex-col"
               inputClassName={[
-                textareaClassName,
+                COMMENT_TEXTAREA_CLASS,
                 errorFields.removeFromControlComment ? invalidClass : '',
               ]
                 .filter(Boolean)
@@ -187,7 +219,7 @@ export function RecommendationClosureSection({
             />
           </div>
         </div>
-      </div>
+      </CollapsibleFormBlock>
     </>
   );
 
