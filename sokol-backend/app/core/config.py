@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     database_url: str = ""
     sokol_ollama_url: str = "http://localhost:11434"
-    sokol_ollama_model: str = "qwen2.5:14b"
+    sokol_ollama_model: str = "qwen3.5:35b"
     sokol_ollama_timeout_s: float = 600
 
     model_config = SettingsConfigDict(

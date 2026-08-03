@@ -22,7 +22,7 @@
 copy .env.example .env
 copy sokol-backend\docker\app\.env.example sokol-backend\docker\app\.env
 docker compose up --build -d
-docker exec -it ollama ollama pull qwen2.5:14b
+docker exec -it ollama ollama pull qwen3.5:35b
 ```
 
 UI: http://localhost:5180 · API: http://localhost:8800/docs

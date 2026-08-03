@@ -55,7 +55,7 @@ def _ollama_url() -> str:
 
 
 def _ollama_model() -> str:
-    return settings.sokol_ollama_model or os.getenv("SOKOL_OLLAMA_MODEL", "qwen2.5:14b")
+    return settings.sokol_ollama_model or os.getenv("SOKOL_OLLAMA_MODEL", "qwen3.5:35b")
 
 
 def _ollama_timeout() -> float:

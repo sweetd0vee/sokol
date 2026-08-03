@@ -33,8 +33,8 @@ copy sokol-backend\docker\app\.env.example sokol-backend\docker\app\.env
 # 1) Собрать и поднять стек (db уже может быть запущен — compose его подхватит)
 docker compose up --build -d
 
-# 2) Скачать модель для Ollama (один раз; ~9 GB для qwen2.5:14b)
-docker exec -it ollama ollama pull qwen2.5:14b
+# 2) Скачать модель для Ollama (один раз; qwen3.5:35b)
+docker exec -it ollama ollama pull qwen3.5:35b
 
 # 3) Проверка
 docker compose ps
@@ -71,7 +71,7 @@ docker compose up --build -d api ollama ui
 |---------|-------------|
 | `sber/sokol-be:master` not found | Запускайте с `--build` из корня |
 | UI не видит API | Проверьте `http://localhost:8800/docs` и CORS `http://localhost:5180` |
-| Ollama timeout / нет модели | `docker exec ollama ollama list` и `ollama pull qwen2.5:14b` |
+| Ollama timeout / нет модели | `docker exec ollama ollama list` и `ollama pull qwen3.5:35b` |
 | Порт занят | Освободите 5180 / 8800 / 11434 / 5433 |
 
 Альтернативы (частичный стек):

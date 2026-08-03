@@ -101,7 +101,7 @@ export function AuditOpinionPanel({
           err instanceof Error ? err.message : 'Не удалось загрузить список моделей Ollama.';
         setModelsError(message);
         if (!model) {
-          onModelChange('qwen2.5:14b');
+          onModelChange('qwen3.5:35b');
         }
       })
       .finally(() => {

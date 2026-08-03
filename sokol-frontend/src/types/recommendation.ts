@@ -35,6 +35,8 @@ export interface Recommendation {
   remove_from_control_reason?: string;
   remove_from_control_date?: string;
   remove_from_control_comment?: string;
+  deadline_extensions?: { date?: string | null; comment?: string | null }[];
+  control_removals?: { date?: string | null; comment?: string | null }[];
   closure_verification_status?: string;
   closure_information?: string;
 }

@@ -32,7 +32,7 @@ FastAPI-сервис внутреннего аудита «Сокол»:
 | SQLAlchemy + asyncpg | 2.0 / 0.31 |
 | PostgreSQL | 16 (Docker, host port 5433) |
 | DOCX | `python-docx` + низкоуровневый ZIP/XML (`zipfile`, ElementTree) |
-| LLM | Ollama (`qwen2.5:14b` по умолчанию) |
+| LLM | Ollama (`qwen3.5:35b` по умолчанию) |
 | Тесты | `unittest` — **61** (1 skipped); фокус DOCX-пайплайн |
 
 ## Порты

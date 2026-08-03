@@ -6,6 +6,35 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.models.recommendations import RecommendationAdditionalStatus, RecommendationStatus
 
 
+class ClosureDateCommentItem(BaseModel):
+    date: Optional[date] = None
+    comment: Optional[str] = None
+
+    @field_validator('date', mode='before')
+    @classmethod
+    def empty_date_to_none(cls, value: object) -> object:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            cleaned = value.strip()
+            if not cleaned:
+                return None
+            try:
+                date.fromisoformat(cleaned[:10])
+            except ValueError:
+                return None
+            return cleaned[:10]
+        return value
+
+
+def _normalize_closure_items(value: object) -> object:
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        return []
+    return value
+
+
 class RecommendationBase(BaseModel):
     serial_number: str = Field(..., min_length=1, max_length=32)
     name: str = Field(..., min_length=1)
@@ -28,6 +57,8 @@ class RecommendationBase(BaseModel):
     remove_from_control_reason: Optional[str] = Field(None, max_length=64)
     remove_from_control_date: Optional[date] = None
     remove_from_control_comment: Optional[str] = None
+    deadline_extensions: Optional[list[ClosureDateCommentItem]] = None
+    control_removals: Optional[list[ClosureDateCommentItem]] = None
     closure_verification_status: Optional[str] = Field(None, max_length=64)
     closure_information: Optional[str] = None
 
@@ -53,6 +84,11 @@ class RecommendationBase(BaseModel):
                 return None
             return cleaned[:10]
         return value
+
+    @field_validator('deadline_extensions', 'control_removals', mode='before')
+    @classmethod
+    def normalize_closure_lists(cls, value: object) -> object:
+        return _normalize_closure_items(value)
 
 
 class RecommendationCreate(RecommendationBase):
@@ -80,6 +116,8 @@ class RecommendationUpdate(BaseModel):
     remove_from_control_reason: Optional[str] = Field(None, max_length=64)
     remove_from_control_date: Optional[date] = None
     remove_from_control_comment: Optional[str] = None
+    deadline_extensions: Optional[list[ClosureDateCommentItem]] = None
+    control_removals: Optional[list[ClosureDateCommentItem]] = None
     closure_verification_status: Optional[str] = Field(None, max_length=64)
     closure_information: Optional[str] = None
 
@@ -104,6 +142,11 @@ class RecommendationUpdate(BaseModel):
                 return None
             return cleaned[:10]
         return value
+
+    @field_validator('deadline_extensions', 'control_removals', mode='before')
+    @classmethod
+    def normalize_closure_lists(cls, value: object) -> object:
+        return _normalize_closure_items(value)
 
 
 class RecommendationRead(RecommendationBase):

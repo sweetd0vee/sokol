@@ -56,7 +56,7 @@ async def create_recommendation(
     recommendation_in: RecommendationCreate,
     check_id: int,
 ) -> Recommendation:
-    data = recommendation_in.model_dump()
+    data = recommendation_in.model_dump(mode="json")
     if not data.get("created_at"):
         data["created_at"] = date.today()
     data["sequence_number"] = await _get_next_sequence_number(session, check_id)
@@ -113,7 +113,7 @@ async def update_recommendation(
     recommendation_in: RecommendationUpdate,
     check_id: Optional[int] = None,
 ) -> Recommendation:
-    update_data = recommendation_in.model_dump(exclude_unset=True)
+    update_data = recommendation_in.model_dump(mode="json", exclude_unset=True)
     previous_check_id = recommendation.check_id
 
     if check_id is not None:

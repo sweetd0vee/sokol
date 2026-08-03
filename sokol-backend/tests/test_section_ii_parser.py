@@ -18,7 +18,10 @@ from app.services.reports.section_ii.docx_parser import (
     parse_observations,
     parse_observations_from_file_with_runs,
 )
-from app.services.reports.section_ii.docx_generator import process_document
+from app.services.reports.section_ii.docx_generator import (
+    MATERIALITY_DISPLAY_SIZE_EMU,
+    process_document,
+)
 from app.services.reports.section_ii.models import RunFragment
 from app.services.reports.section_ii.patterns import W_NS
 from app.services.reports.section_ii.table_builder import create_table_xml
@@ -766,7 +769,7 @@ class SectionIIParserTest(unittest.TestCase):
         self.assertIn("relationships/image", rels_xml)
         self.assertIn("r:embed", document_xml)
         self.assertIn("wp:inline", document_xml)
-        self.assertIn("361905", document_xml)
+        self.assertIn(str(MATERIALITY_DISPLAY_SIZE_EMU), document_xml)
         self.assertNotIn(">высокий<", document_xml)
         self.assertEqual(struct.unpack(">II", high_image[16:24]), (38, 38))
         self.assertEqual(_png_center_pixel_rgba(high_image), (255, 67, 71, 255))

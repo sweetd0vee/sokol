@@ -32,7 +32,8 @@ import { CollapsibleFormBlock, RecommendationClosureSection } from './Recommenda
 import { FileAttachmentsPanel } from '../attachments/FileAttachmentsPanel';
 import {
   RECOMMENDATION_ATTACHMENT_SLOTS,
-  EMPTY_RECOMMENDATION_CLOSURE,
+  createEmptyRecommendationClosure,
+  hasIncompleteClosureRows,
   closureFromRecommendation,
   closureToRecommendationFields,
   type RecommendationClosureForm,
@@ -115,7 +116,9 @@ export function RecommendationFormPage() {
   const [additionalStatus, setAdditionalStatus] = useState<Recommendation['additional_status'] | ''>('');
   const [indicator, setIndicator] = useState<RecommendationIndicator>('не указан');
   const [materialityLevel, setMaterialityLevel] = useState<MaterialityLevel>('средний');
-  const [closure, setClosure] = useState<RecommendationClosureForm>(EMPTY_RECOMMENDATION_CLOSURE);
+  const [closure, setClosure] = useState<RecommendationClosureForm>(() =>
+    createEmptyRecommendationClosure(),
+  );
   const [formResetKey, setFormResetKey] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isExecutionDeadlineOpen, setIsExecutionDeadlineOpen] = useState(true);
@@ -188,10 +191,8 @@ export function RecommendationFormPage() {
       indicator: !indicator || indicator === 'не указан',
       closureInformation: !closure.closureInformation.trim(),
       actualCompletionDate: !closure.actualCompletionDate,
-      extension1Date: !closure.extension1Date,
-      extension1Comment: !closure.extension1Comment.trim(),
-      removeFromControlDate: !closure.removeFromControlDate,
-      removeFromControlComment: !closure.removeFromControlComment.trim(),
+      extensions: hasIncompleteClosureRows(closure.extensions),
+      removals: hasIncompleteClosureRows(closure.removals),
     };
     return {
       ...errors,
@@ -240,18 +241,18 @@ export function RecommendationFormPage() {
   );
 
   const isControlZoneFilled = useMemo(() => {
-    const extensionFields = [closure.extension1Date, closure.extension1Comment];
-    const removeFields = [closure.removeFromControlDate, closure.removeFromControlComment];
-    const groupComplete = (fields: string[]) => {
-      const filledCount = fields.filter(isNonEmpty).length;
-      return filledCount === 0 || filledCount === fields.length;
-    };
+    const rowComplete = (row: { date: string; comment: string }) =>
+      isNonEmpty(row.date) && isNonEmpty(row.comment);
+    const rowEmpty = (row: { date: string; comment: string }) =>
+      !isNonEmpty(row.date) && !isNonEmpty(row.comment);
+    const groupComplete = (rows: { date: string; comment: string }[]) =>
+      rows.every((row) => rowEmpty(row) || rowComplete(row));
 
     return (
       isNonEmpty(closure.closureInformation) &&
       isNonEmpty(closure.actualCompletionDate) &&
-      groupComplete(extensionFields) &&
-      groupComplete(removeFields)
+      groupComplete(closure.extensions) &&
+      groupComplete(closure.removals)
     );
   }, [closure]);
 
@@ -340,7 +341,7 @@ export function RecommendationFormPage() {
     setIndicator(prefill.indicator);
     setMaterialityLevel(prefill.materialityLevel);
     setDescription('');
-    setClosure(EMPTY_RECOMMENDATION_CLOSURE);
+    setClosure(createEmptyRecommendationClosure());
     setFormResetKey((current) => current + 1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -640,10 +641,8 @@ export function RecommendationFormPage() {
               errorFields={
                 showValidationErrors
                   ? {
-                      extension1Date: requiredFieldErrors.extension1Date,
-                      extension1Comment: requiredFieldErrors.extension1Comment,
-                      removeFromControlDate: requiredFieldErrors.removeFromControlDate,
-                      removeFromControlComment: requiredFieldErrors.removeFromControlComment,
+                      extensions: requiredFieldErrors.extensions,
+                      removals: requiredFieldErrors.removals,
                     }
                   : {}
               }

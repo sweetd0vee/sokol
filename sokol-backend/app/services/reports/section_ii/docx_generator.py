@@ -43,6 +43,8 @@ CT_NS = "http://schemas.openxmlformats.org/package/2006/content-types"
 EMU_PER_CM = 360000
 EMU_PER_METER = EMU_PER_CM * 100
 DEFAULT_PNG_PIXELS_PER_METER = 3780
+# Размер круга существенности в таблице Раздела II (~0.75 см).
+MATERIALITY_DISPLAY_SIZE_EMU = int(0.75 * EMU_PER_CM)
 
 # Регистрируем префиксы для корректной сериализации новых XML-фрагментов.
 for prefix, uri in [("w", W_NS), ("r", R_NS), ("wp", WP_NS), ("a", A_NS), ("pic", PIC_NS)]:
@@ -180,6 +182,16 @@ def _png_natural_extent_emu(payload: bytes) -> tuple[int, int]:
     return cx, cy
 
 
+def _materiality_display_extent_emu(payload: bytes) -> tuple[int, int]:
+    """Масштабирует PNG до целевого размера в таблице (сохраняя пропорции)."""
+    cx, cy = _png_natural_extent_emu(payload)
+    max_side = max(cx, cy)
+    if max_side <= MATERIALITY_DISPLAY_SIZE_EMU:
+        return cx, cy
+    scale = MATERIALITY_DISPLAY_SIZE_EMU / max_side
+    return max(1, int(round(cx * scale))), max(1, int(round(cy * scale)))
+
+
 def _build_materiality_image_package_parts(
     zf: zipfile.ZipFile,
     observations,
@@ -240,7 +252,7 @@ def _build_materiality_image_package_parts(
         )
         with open(image_path, "rb") as image_file:
             payload = image_file.read()
-        cx, cy = _png_natural_extent_emu(payload)
+        cx, cy = _materiality_display_extent_emu(payload)
         media_payloads[media_path] = payload
         image_info[level] = {"rel_id": rel_id, "cx": cx, "cy": cy}
 

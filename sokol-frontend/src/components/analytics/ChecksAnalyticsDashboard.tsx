@@ -1,0 +1,668 @@
+import { useMemo, useState, type ReactNode } from 'react';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import { X } from 'lucide-react';
+import type { Check } from '../../types/check';
+import { DatePicker } from '../ui/DatePicker';
+import { Select } from '../ui/Select';
+import { SegmentedControl } from '../ui/SegmentedControl';
+import { Button } from '../ui/Button';
+import { LIST_ACTION_BUTTON_CLASS } from '../../constants/formLayout';
+import {
+  buildAuditorDistribution,
+  buildAuditorPeriodMatrix,
+  buildCompletionShare,
+  buildCumulativeSeries,
+  buildDocumentReadiness,
+  buildDurationDistribution,
+  buildPeriodSeries,
+  buildStatusDistribution,
+  buildTypeDistribution,
+  buildTypeStatusBreakdown,
+  buildViewDistribution,
+  buildViewRadar,
+  collectCheckLeaders,
+  filterChecksForAnalytics,
+  summarizeChecks,
+  type PeriodGranularity,
+} from '../../utils/checkAnalytics';
+
+const GRANULARITY_OPTIONS: { value: PeriodGranularity; label: string }[] = [
+  { value: 'month', label: 'Месяц' },
+  { value: 'quarter', label: 'Квартал' },
+  { value: 'year', label: 'Год' },
+];
+
+const CHART_COLORS = ['#003366', '#2563EB', '#6699FF', '#1D4ED8', '#94A3B8', '#0EA5E9', '#64748B'];
+
+const STATUS_STACK = [
+  { key: 'not_started', label: 'Запланировано', color: '#94A3B8' },
+  { key: 'in_progress', label: 'В процессе', color: '#2563EB' },
+  { key: 'completed', label: 'Завершено', color: '#003366' },
+] as const;
+
+type ChecksAnalyticsDashboardProps = {
+  checks: Check[];
+};
+
+function ChartCard({
+  title,
+  description,
+  children,
+  className = '',
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={`rounded-xl border border-gray-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-800 ${className}`}
+    >
+      <div className="mb-3 space-y-0.5">
+        <h3 className="text-sm font-semibold text-sber-dark dark:text-sber-light">{title}</h3>
+        <p className="text-xs text-gray-500 dark:text-slate-400">{description}</p>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function KpiCard({ label, value, hint, suffix }: { label: string; value: number; hint?: string; suffix?: string }) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 dark:border-slate-700 dark:bg-slate-800">
+      <p className="text-xs text-gray-500 dark:text-slate-400">{label}</p>
+      <p className="mt-0.5 text-xl font-semibold text-sber-dark dark:text-sber-light">
+        {value}
+        {suffix ? <span className="ml-0.5 text-sm font-medium">{suffix}</span> : null}
+      </p>
+      {hint ? <p className="mt-0.5 text-[11px] text-gray-400 dark:text-slate-500">{hint}</p> : null}
+    </div>
+  );
+}
+
+function EmptyChart({ message, heightClass = 'h-52' }: { message: string; heightClass?: string }) {
+  return (
+    <div
+      className={`flex ${heightClass} items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-500 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-400`}
+    >
+      {message}
+    </div>
+  );
+}
+
+export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardProps) {
+  const [granularity, setGranularity] = useState<PeriodGranularity>('quarter');
+  const [dateFrom, setDateFrom] = useState<Date | null>(null);
+  const [dateTo, setDateTo] = useState<Date | null>(null);
+  const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
+  const [auditorToAdd, setAuditorToAdd] = useState('');
+
+  const leaderOptions = useMemo(() => {
+    const names = collectCheckLeaders(checks);
+    return names
+      .filter((name) => !selectedAuditors.includes(name))
+      .map((name) => ({ value: name, label: name }));
+  }, [checks, selectedAuditors]);
+
+  const filteredChecks = useMemo(
+    () =>
+      filterChecksForAnalytics(checks, {
+        dateFrom,
+        dateTo,
+        auditors: selectedAuditors,
+        granularity,
+      }),
+    [checks, dateFrom, dateTo, selectedAuditors, granularity],
+  );
+
+  const summary = useMemo(() => summarizeChecks(filteredChecks), [filteredChecks]);
+  const completionShare = useMemo(() => buildCompletionShare(filteredChecks), [filteredChecks]);
+  const periodSeries = useMemo(
+    () => buildPeriodSeries(filteredChecks, granularity),
+    [filteredChecks, granularity],
+  );
+  const cumulativeSeries = useMemo(
+    () => buildCumulativeSeries(filteredChecks, granularity),
+    [filteredChecks, granularity],
+  );
+  const statusDistribution = useMemo(
+    () => buildStatusDistribution(filteredChecks),
+    [filteredChecks],
+  );
+  const typeDistribution = useMemo(() => buildTypeDistribution(filteredChecks), [filteredChecks]);
+  const viewDistribution = useMemo(() => buildViewDistribution(filteredChecks), [filteredChecks]);
+  const auditorDistribution = useMemo(
+    () => buildAuditorDistribution(filteredChecks),
+    [filteredChecks],
+  );
+  const auditorMatrix = useMemo(
+    () => buildAuditorPeriodMatrix(filteredChecks, granularity),
+    [filteredChecks, granularity],
+  );
+  const durationDistribution = useMemo(
+    () => buildDurationDistribution(filteredChecks),
+    [filteredChecks],
+  );
+  const documentReadiness = useMemo(
+    () => buildDocumentReadiness(filteredChecks),
+    [filteredChecks],
+  );
+  const typeStatusBreakdown = useMemo(
+    () => buildTypeStatusBreakdown(filteredChecks),
+    [filteredChecks],
+  );
+  const viewRadar = useMemo(() => buildViewRadar(filteredChecks), [filteredChecks]);
+  const maxAuditorCount = auditorDistribution[0]?.value ?? 1;
+
+  const periodLabel =
+    granularity === 'month' ? 'месяцам' : granularity === 'quarter' ? 'кварталам' : 'годам';
+
+  const addAuditor = (value: string) => {
+    if (!value || selectedAuditors.includes(value)) {
+      return;
+    }
+    setSelectedAuditors((prev) => [...prev, value]);
+    setAuditorToAdd('');
+  };
+
+  const removeAuditor = (value: string) => {
+    setSelectedAuditors((prev) => prev.filter((item) => item !== value));
+  };
+
+  const resetFilters = () => {
+    setGranularity('quarter');
+    setDateFrom(null);
+    setDateTo(null);
+    setSelectedAuditors([]);
+    setAuditorToAdd('');
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-5xl space-y-4">
+      <section className="rounded-xl border border-gray-200 bg-gray-50 p-3.5 dark:border-slate-700 dark:bg-slate-800/60">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold text-sber-dark dark:text-sber-light">
+              Фильтры дашборда
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-slate-400">
+              Выбор по дате старта и руководителям — все блоки ниже обновятся сразу.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={resetFilters}
+            className={`${LIST_ACTION_BUTTON_CLASS} border border-gray-300 bg-white text-gray-700 hover:border-sber-dark/40 hover:text-sber-dark dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200`}
+          >
+            Сбросить
+          </button>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-1.5 md:col-span-2 lg:col-span-1">
+            <p className="text-sm font-medium text-gray-700 dark:text-slate-300">Период</p>
+            <SegmentedControl
+              value={granularity}
+              options={GRANULARITY_OPTIONS}
+              onChange={setGranularity}
+            />
+          </div>
+          <DatePicker
+            label="Дата старта с"
+            selected={dateFrom}
+            onChange={setDateFrom}
+            maxDate={dateTo}
+            labelClassName="text-sm"
+            inputClassName="py-1.5 text-sm"
+          />
+          <DatePicker
+            label="Дата старта по"
+            selected={dateTo}
+            onChange={setDateTo}
+            minDate={dateFrom}
+            labelClassName="text-sm"
+            inputClassName="py-1.5 text-sm"
+          />
+        </div>
+
+        <div className="mt-3 space-y-2.5">
+          <div className="flex flex-wrap items-end gap-3">
+            <Select
+              label="Добавить аудитора"
+              value={auditorToAdd}
+              onChange={addAuditor}
+              options={leaderOptions}
+              placeholder="Выберите из списка"
+              className="min-w-[220px] flex-1"
+              labelClassName="text-sm"
+              inputClassName="py-1.5 text-sm"
+            />
+            <Button
+              variant="ghost"
+              className="h-[38px] px-3 text-sm"
+              disabled={selectedAuditors.length === 0}
+              onClick={() => setSelectedAuditors([])}
+            >
+              Очистить
+            </Button>
+          </div>
+          {selectedAuditors.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {selectedAuditors.map((auditor) => (
+                <span
+                  key={auditor}
+                  className="inline-flex items-center gap-1 rounded-lg border border-sber-dark/20 bg-white px-2 py-0.5 text-xs text-sber-dark dark:border-sber-light/30 dark:bg-slate-800 dark:text-sber-light"
+                >
+                  {auditor}
+                  <button
+                    type="button"
+                    onClick={() => removeAuditor(auditor)}
+                    className="rounded p-0.5 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    aria-label={`Убрать ${auditor}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500 dark:text-slate-400">
+              Аудиторы не выбраны — показаны все руководители.
+            </p>
+          )}
+        </div>
+      </section>
+
+      <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-5">
+        <KpiCard label="Всего" value={summary.total} hint={`из ${checks.length}`} />
+        <KpiCard label="Запланировано" value={summary.not_started} />
+        <KpiCard label="В процессе" value={summary.in_progress} />
+        <KpiCard label="Завершено" value={summary.completed} />
+        <KpiCard label="Доля завершённых" value={completionShare} suffix="%" />
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <ChartCard
+          title={`Динамика по ${periodLabel}`}
+          description="Старты проверок в периоде"
+        >
+          {periodSeries.length === 0 ? (
+            <EmptyChart message="Нет данных" />
+          ) : (
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={periodSeries} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="checksArea" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2563EB" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#2563EB" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Area
+                    type="monotone"
+                    dataKey="total"
+                    name="Проверки"
+                    stroke="#003366"
+                    fill="url(#checksArea)"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+
+        <ChartCard
+          title="Накопительный итог"
+          description="Сколько проверок накопилось к концу периода"
+        >
+          {cumulativeSeries.length === 0 ? (
+            <EmptyChart message="Нет данных" />
+          ) : (
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={cumulativeSeries} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="cumulative"
+                    name="Накопительно"
+                    stroke="#1D4ED8"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: '#003366' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+
+        <ChartCard
+          title={`Статусы по ${periodLabel}`}
+          description="Состав статусов внутри периода"
+        >
+          {periodSeries.length === 0 ? (
+            <EmptyChart message="Нет данных" />
+          ) : (
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={periodSeries} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  {STATUS_STACK.map((status) => (
+                    <Bar
+                      key={status.key}
+                      dataKey={status.key}
+                      name={status.label}
+                      stackId="status"
+                      fill={status.color}
+                    />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+
+        <ChartCard
+          title="Тип × статус"
+          description="Как статусы распределены по типам проверок"
+        >
+          {typeStatusBreakdown.length === 0 ? (
+            <EmptyChart message="Нет данных" />
+          ) : (
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={typeStatusBreakdown} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  {STATUS_STACK.map((status) => (
+                    <Bar
+                      key={status.key}
+                      dataKey={status.key}
+                      name={status.label}
+                      stackId="typeStatus"
+                      fill={status.color}
+                    />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <ChartCard title="Статусы" description="Доли текущей выборки">
+          {statusDistribution.length === 0 ? (
+            <EmptyChart message="Нет данных" heightClass="h-48" />
+          ) : (
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusDistribution}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="45%"
+                    innerRadius={42}
+                    outerRadius={68}
+                    paddingAngle={2}
+                  >
+                    {statusDistribution.map((entry, index) => (
+                      <Cell
+                        key={entry.name}
+                        fill={STATUS_STACK[index]?.color ?? CHART_COLORS[index % CHART_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+
+        <ChartCard title="Типы" description="Плановые / внеплановые / контрольные">
+          {typeDistribution.length === 0 ? (
+            <EmptyChart message="Нет данных" heightClass="h-48" />
+          ) : (
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={typeDistribution}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="45%"
+                    outerRadius={68}
+                  >
+                    {typeDistribution.map((entry, index) => (
+                      <Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+
+        <ChartCard title="Виды (radar)" description="Профиль направлений проверок">
+          {viewRadar.length === 0 ? (
+            <EmptyChart message="Нет данных" heightClass="h-48" />
+          ) : (
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={viewRadar} cx="50%" cy="50%" outerRadius="70%">
+                  <PolarGrid stroke="#E5E7EB" />
+                  <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10 }} />
+                  <PolarRadiusAxis tick={{ fontSize: 10 }} />
+                  <Radar
+                    name="Проверки"
+                    dataKey="value"
+                    stroke="#003366"
+                    fill="#6699FF"
+                    fillOpacity={0.45}
+                  />
+                  <Tooltip />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <ChartCard
+          title="Нагрузка по аудиторам"
+          description="Топ руководителей в выборке"
+        >
+          {auditorDistribution.length === 0 ? (
+            <EmptyChart message="Нет данных" />
+          ) : (
+            <div className="space-y-2.5">
+              {auditorDistribution.slice(0, 8).map((item) => (
+                <div key={item.name} className="space-y-1">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="truncate text-gray-700 dark:text-slate-200">{item.name}</span>
+                    <span className="tabular-nums font-medium text-sber-dark dark:text-sber-light">
+                      {item.value}
+                    </span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-slate-700">
+                    <div
+                      className="h-full rounded-full bg-sber-dark dark:bg-sber-light"
+                      style={{ width: `${Math.max((item.value / maxAuditorCount) * 100, 4)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </ChartCard>
+
+        <ChartCard
+          title="Длительность проверок"
+          description="По разнице даты старта и окончания"
+        >
+          {durationDistribution.length === 0 ? (
+            <EmptyChart message="Нет данных с датой окончания" />
+          ) : (
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={durationDistribution} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Bar dataKey="value" name="Проверки" fill="#0EA5E9" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+
+        <ChartCard
+          title="Готовность документов"
+          description="Есть номер/дата приказа, программы, АЗ, ДЗ"
+        >
+          {documentReadiness.every((item) => item.filled === 0 && item.empty === 0) ? (
+            <EmptyChart message="Нет данных" />
+          ) : (
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={documentReadiness} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="filled" name="Заполнено" stackId="docs" fill="#003366" />
+                  <Bar dataKey="empty" name="Пусто" stackId="docs" fill="#E5E7EB" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+
+        <ChartCard title="Виды проверок" description="ИТ, бизнес, риски и др.">
+          {viewDistribution.length === 0 ? (
+            <EmptyChart message="Нет данных" />
+          ) : (
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={viewDistribution}
+                  layout="vertical"
+                  margin={{ top: 6, right: 10, left: 4, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 10 }} />
+                  <Tooltip />
+                  <Bar dataKey="value" name="Проверки" fill="#6699FF" radius={[0, 6, 6, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+      </div>
+
+      <ChartCard
+        title={`Матрица: аудитор × ${periodLabel.slice(0, -2)}`}
+        description="Кто сколько проверок стартовал в каждом периоде"
+        className="overflow-hidden"
+      >
+        {auditorMatrix.rows.length === 0 || auditorMatrix.periods.length === 0 ? (
+          <EmptyChart message="Нет данных" heightClass="h-40" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border-collapse text-xs">
+              <thead>
+                <tr className="bg-sber-dark text-left text-white">
+                  <th className="px-2.5 py-1.5 font-medium">Руководитель</th>
+                  {auditorMatrix.periods.map((period) => (
+                    <th key={period.key} className="px-2.5 py-1.5 font-medium whitespace-nowrap">
+                      {period.label}
+                    </th>
+                  ))}
+                  <th className="px-2.5 py-1.5 font-medium">Итого</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditorMatrix.rows.map((row) => (
+                  <tr
+                    key={row.auditor}
+                    className="border-b border-gray-100 dark:border-slate-700"
+                  >
+                    <td className="px-2.5 py-1.5 font-medium text-gray-800 dark:text-slate-100">
+                      {row.auditor}
+                    </td>
+                    {auditorMatrix.periods.map((period) => {
+                      const value = row.byPeriod[period.key] ?? 0;
+                      return (
+                        <td
+                          key={period.key}
+                          className={`px-2.5 py-1.5 tabular-nums ${
+                            value > 0
+                              ? 'bg-sber-light/15 text-sber-dark dark:bg-sber-light/10 dark:text-sber-light'
+                              : 'text-gray-400'
+                          }`}
+                        >
+                          {value || '—'}
+                        </td>
+                      );
+                    })}
+                    <td className="px-2.5 py-1.5 font-semibold tabular-nums text-sber-dark dark:text-sber-light">
+                      {row.total}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </ChartCard>
+    </div>
+  );
+}

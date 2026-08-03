@@ -1,7 +1,8 @@
 from datetime import date
 from enum import Enum
+from typing import Any
 
-from sqlalchemy import Date, Enum as SAEnum, ForeignKey, Integer, String, Text
+from sqlalchemy import Date, Enum as SAEnum, ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -61,6 +62,8 @@ class Recommendation(Base):
     remove_from_control_reason: Mapped[str | None] = mapped_column(String(64), nullable=True)
     remove_from_control_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     remove_from_control_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    deadline_extensions: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+    control_removals: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
     closure_verification_status: Mapped[str | None] = mapped_column(String(64), nullable=True)
     closure_information: Mapped[str | None] = mapped_column(Text, nullable=True)
 

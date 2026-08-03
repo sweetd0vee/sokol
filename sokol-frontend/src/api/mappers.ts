@@ -53,6 +53,8 @@ export type ApiRecommendation = {
   remove_from_control_reason?: string | null;
   remove_from_control_date?: string | null;
   remove_from_control_comment?: string | null;
+  deadline_extensions?: { date?: string | null; comment?: string | null }[] | null;
+  control_removals?: { date?: string | null; comment?: string | null }[] | null;
   closure_verification_status?: string | null;
   closure_information?: string | null;
 };
@@ -137,6 +139,8 @@ export function mapRecommendationFromApi(api: ApiRecommendation): Recommendation
     remove_from_control_reason: api.remove_from_control_reason ?? undefined,
     remove_from_control_date: api.remove_from_control_date ?? undefined,
     remove_from_control_comment: api.remove_from_control_comment ?? undefined,
+    deadline_extensions: api.deadline_extensions ?? undefined,
+    control_removals: api.control_removals ?? undefined,
     closure_verification_status: api.closure_verification_status ?? undefined,
     closure_information: api.closure_information ?? undefined,
   };
@@ -167,6 +171,8 @@ export function mapRecommendationToCreate(
     remove_from_control_reason: recommendation.remove_from_control_reason || null,
     remove_from_control_date: recommendation.remove_from_control_date || null,
     remove_from_control_comment: recommendation.remove_from_control_comment || null,
+    deadline_extensions: recommendation.deadline_extensions ?? [],
+    control_removals: recommendation.control_removals ?? [],
     closure_verification_status: recommendation.closure_verification_status || null,
     closure_information: recommendation.closure_information || null,
   };

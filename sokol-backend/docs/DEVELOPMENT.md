@@ -90,7 +90,7 @@ python -m unittest discover -s tests
 | `DATABASE_URL is required` | нет `.secrets/sokol.env` | скопировать example |
 | CORS errors с UI | origins не совпадают с портом Vite | выставить `SOKOL_CORS_ORIGINS=http://localhost:5180` |
 | UI ходит на 8800, API на 8802 | Docker vs local | сверить `run_dev.ps1` и `VITE_DEV_API_PORT` |
-| 502 на audit-opinion | Ollama не запущена / нет модели | `ollama serve` + `ollama pull qwen2.5:14b` |
+| 502 на audit-opinion | Ollama не запущена / нет модели | `ollama serve` + `ollama pull qwen3.5:35b` |
 | 413 на upload | файл > лимита | увеличить `SOKOL_MAX_UPLOAD_MB` |
 | Port already in use | старый uvicorn | `netstat` / taskkill на 8802 |
 

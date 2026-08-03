@@ -183,67 +183,69 @@ export function ToolsTab() {
     <div className={`w-full ${FORM_STACK_CLASS}`}>
       <PageHeader title="Инструменты аудита" />
 
-      <SegmentedControl value={activeTab} options={TOOL_TABS} onChange={setActiveTab} />
+      <div className="w-full space-y-8">
+        <SegmentedControl value={activeTab} options={TOOL_TABS} onChange={setActiveTab} />
 
-      {activeTab === 'az' && (
-        <div className={`w-full ${FORM_STACK_CLASS}`}>
-          <div className={TOOLS_SECTION_CLASS}>
-            <div className={TOOLS_SECTION_TITLE_CLASS}>Парсинг</div>
-            <div className="space-y-8">
-              <DocxToolPanel
-                title="1. Генерация Раздела II Аудиторского Заключения"
-                description="Загрузите Аудиторское Заключение в формате .docx без Раздела II, чтобы сгенерировать таблицу с основными результатами аудита и аудиторскими рекомендациями"
-                file={azFile}
-                onFileChange={handleAzFileChange}
-                onProcess={handleGenerateSectionII}
-                isProcessing={isAzProcessing}
-                error={azError}
-              />
-              <DocxToolPanel
-                title="2. Генерация Раздела II Аудиторского Заключения (с гиперссылками)"
-                description="То же, что в пункте 1, но название каждого наблюдения в таблице будет гиперссылкой на это наблюдение в тексте документа"
-                file={azLinksFile}
-                onFileChange={handleAzLinksFileChange}
-                onProcess={handleGenerateSectionIIWithLinks}
-                isProcessing={isAzLinksProcessing}
-                error={azLinksError}
+        {activeTab === 'az' && (
+          <div className="w-full space-y-8">
+            <div className={TOOLS_SECTION_CLASS}>
+              <div className={TOOLS_SECTION_TITLE_CLASS}>Парсинг</div>
+              <div className="space-y-8">
+                <DocxToolPanel
+                  title="1. Парсинг Раздела II Аудиторского Заключения"
+                  description="Загрузите Аудиторское Заключение в формате .docx без Раздела II, чтобы собрать таблицу с основными результатами аудита и аудиторскими рекомендациями."
+                  file={azFile}
+                  onFileChange={handleAzFileChange}
+                  onProcess={handleGenerateSectionII}
+                  isProcessing={isAzProcessing}
+                  error={azError}
+                />
+                <DocxToolPanel
+                  title="2. Парсинг Раздела II Аудиторского Заключения (с гиперссылками)"
+                  description="То же, что в пункте 1, но название каждого наблюдения в таблице будет гиперссылкой на это наблюдение в тексте документа."
+                  file={azLinksFile}
+                  onFileChange={handleAzLinksFileChange}
+                  onProcess={handleGenerateSectionIIWithLinks}
+                  isProcessing={isAzLinksProcessing}
+                  error={azLinksError}
+                />
+              </div>
+            </div>
+
+            <div className={TOOLS_SECTION_CLASS}>
+              <div className={TOOLS_SECTION_TITLE_CLASS}>Генерация</div>
+              <AuditOpinionPanel
+                title="1. Генерация аудиторского мнения"
+                description="Загрузите Аудиторское Заключение в формате .docx без заполненного Раздела I (заголовок «I. Аудиторское мнение по итогам проверки» должен быть). Модель Ollama подготовит саммари по наблюдениям и рекомендациям на 2–3 страницы и вставит текст в Раздел I с жёлтой подсветкой."
+                file={azOpinionFile}
+                onFileChange={handleAzOpinionFileChange}
+                prompt={azOpinionPrompt}
+                onPromptChange={handleAzOpinionPromptChange}
+                model={azOpinionModel}
+                onModelChange={handleAzOpinionModelChange}
+                onProcess={handleGenerateAuditOpinion}
+                isProcessing={isAzOpinionProcessing}
+                error={azOpinionError}
               />
             </div>
           </div>
+        )}
 
+        {activeTab === 'dz' && (
           <div className={TOOLS_SECTION_CLASS}>
             <div className={TOOLS_SECTION_TITLE_CLASS}>Генерация</div>
-            <AuditOpinionPanel
-              title="1. Генерация аудиторского мнения"
-              description="Загрузите Аудиторское Заключение в формате .docx без заполненного Раздела I (заголовок «I. Аудиторское мнение по итогам проверки» должен быть). Модель Ollama подготовит саммари по наблюдениям и рекомендациям на 2–3 страницы и вставит текст в Раздел I с жёлтой подсветкой."
-              file={azOpinionFile}
-              onFileChange={handleAzOpinionFileChange}
-              prompt={azOpinionPrompt}
-              onPromptChange={handleAzOpinionPromptChange}
-              model={azOpinionModel}
-              onModelChange={handleAzOpinionModelChange}
-              onProcess={handleGenerateAuditOpinion}
-              isProcessing={isAzOpinionProcessing}
-              error={azOpinionError}
+            <DocxToolPanel
+              title="1. Генерация Докладной Записки"
+              description="Загрузите Аудиторское Заключение в формате .docx с Разделом II, чтобы сгенерировать Докладную Записку."
+              file={dzFile}
+              onFileChange={handleDzFileChange}
+              onProcess={handleGenerateMemorandum}
+              isProcessing={isDzProcessing}
+              error={dzError}
             />
           </div>
-        </div>
-      )}
-
-      {activeTab === 'dz' && (
-        <div className={TOOLS_SECTION_CLASS}>
-          <div className={TOOLS_SECTION_TITLE_CLASS}>Генерация</div>
-          <DocxToolPanel
-            title="1. Генерация Докладной Записки"
-            description="Загрузите Аудиторское Заключение в формате .docx с Разделом II, чтобы сгенерировать Докладную Записку"
-            file={dzFile}
-            onFileChange={handleDzFileChange}
-            onProcess={handleGenerateMemorandum}
-            isProcessing={isDzProcessing}
-            error={dzError}
-          />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

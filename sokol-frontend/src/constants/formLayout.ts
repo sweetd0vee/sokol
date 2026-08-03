@@ -7,9 +7,9 @@ export const FORM_STACK_CLASS = 'space-y-3';
 
 const FORM_SECTION_CLASS = 'space-y-3 rounded-lg border border-[#b8bec8] bg-gray-50 p-3';
 
-/** Section with all required fields already filled — skip while scanning the form. */
+/** Section with all required fields filled — dark blue border, no gray fill. */
 const FORM_FILLED_SECTION_CLASS =
-  'space-y-3 rounded-lg border border-[#b8bec8] bg-gray-100 p-3';
+  'space-y-3 rounded-lg border border-sber-dark bg-gray-50 p-3';
 
 export function formSectionClass(filled: boolean) {
   return filled ? FORM_FILLED_SECTION_CLASS : FORM_SECTION_CLASS;

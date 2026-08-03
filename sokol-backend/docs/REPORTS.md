@@ -145,9 +145,9 @@ MemorandumSource
 | `ollama_client.py` | `list_models`, chat API (`/api/chat`), URL/model/timeout из Settings / env |
 | `prompts.py` | `DEFAULT_AUDIT_OPINION_PROMPT`, placeholder наблюдений |
 
-**Env:** `SOKOL_OLLAMA_URL`, `SOKOL_OLLAMA_MODEL` (default `qwen2.5:14b`), `SOKOL_OLLAMA_TIMEOUT_S` (default 600).
+**Env:** `SOKOL_OLLAMA_URL`, `SOKOL_OLLAMA_MODEL` (default `qwen3.5:35b`), `SOKOL_OLLAMA_TIMEOUT_S` (default 600).
 
-**Зависимость:** запущенный Ollama с нужной моделью (`ollama pull qwen2.5:14b`). Без Ollama `GET …/models` и `POST …/audit-opinion` отвечают **502**.
+**Зависимость:** запущенный Ollama с нужной моделью (`ollama pull qwen3.5:35b`). Без Ollama `GET …/models` и `POST …/audit-opinion` отвечают **502**.
 
 ---
 

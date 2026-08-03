@@ -67,7 +67,7 @@ SOKOL_MAX_UPLOAD_MB=100
 SOKOL_CORS_ORIGINS=http://localhost:5180
 
 SOKOL_OLLAMA_URL=http://localhost:11434
-SOKOL_OLLAMA_MODEL=qwen2.5:14b
+SOKOL_OLLAMA_MODEL=qwen3.5:35b
 SOKOL_OLLAMA_TIMEOUT_S=600
 ```
 
@@ -92,7 +92,7 @@ docker compose up --build -d
 | `SOKOL_CORS_ORIGINS` | origins фронтенда через запятую (dev: `http://localhost:5180`) |
 | `SOKOL_MAX_UPLOAD_MB` | лимит upload `.docx`, default `100` |
 | `SOKOL_OLLAMA_URL` | URL Ollama (default `http://localhost:11434`) |
-| `SOKOL_OLLAMA_MODEL` | модель по умолчанию (`qwen2.5:14b`) |
+| `SOKOL_OLLAMA_MODEL` | модель по умолчанию (`qwen3.5:35b`) |
 | `SOKOL_OLLAMA_TIMEOUT_S` | timeout LLM-запроса, default `600` |
 
 ## Генерация документов

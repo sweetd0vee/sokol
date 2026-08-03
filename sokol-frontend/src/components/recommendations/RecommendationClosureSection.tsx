@@ -1,9 +1,14 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { DatePicker } from '../ui/DatePicker';
 import { Textarea } from '../ui/Textarea';
-import { type RecommendationClosureForm } from '../../constants/recommendationClosure';
-import { FORM_FIELD_CLASS, FORM_FIELD_WIDE_CLASS, FORM_ROW_3 } from '../../constants/formLayout';
+import {
+  createClosureDateCommentRow,
+  isClosureRowIncomplete,
+  type ClosureDateCommentRow,
+  type RecommendationClosureForm,
+} from '../../constants/recommendationClosure';
+import { FORM_ACTION_BUTTON_CLASS, FORM_FIELD_CLASS, FORM_FIELD_WIDE_CLASS, FORM_ROW_3 } from '../../constants/formLayout';
 import { toIsoDate } from '../../utils/dates';
 
 type RecommendationClosureSectionProps = {
@@ -12,7 +17,10 @@ type RecommendationClosureSectionProps = {
   embedded?: boolean;
   hideClosureInformation?: boolean;
   hideActualCompletionDate?: boolean;
-  errorFields?: Partial<Record<keyof RecommendationClosureForm, boolean>>;
+  errorFields?: {
+    extensions?: boolean;
+    removals?: boolean;
+  };
   inputClassName?: string;
   labelClassName?: string;
   blockTitleClassName?: string;
@@ -29,6 +37,8 @@ function toDate(value: string) {
 
 const COMMENT_TEXTAREA_CLASS =
   'box-border h-full min-h-[9.75rem] flex-1 resize-none overflow-y-auto text-sm py-1.5';
+
+const ADD_BUTTON_CLASS = `inline-flex items-center gap-1.5 rounded-lg border-2 border-[#6699FF] px-3 py-1.5 text-sm font-medium text-[#6699FF] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white ${FORM_ACTION_BUTTON_CLASS}`;
 
 export function CollapsibleFormBlock({
   title,
@@ -69,6 +79,83 @@ export function CollapsibleFormBlock({
   );
 }
 
+function DateCommentRows({
+  rows,
+  onChange,
+  datePlaceholder,
+  showErrors,
+  inputClassName,
+  labelClassName,
+}: {
+  rows: ClosureDateCommentRow[];
+  onChange: (rows: ClosureDateCommentRow[]) => void;
+  datePlaceholder: string;
+  showErrors: boolean;
+  inputClassName: string;
+  labelClassName: string;
+}) {
+  const invalidClass = 'border-[#e59a9a] focus:border-[#d9534f] focus:ring-[#f3c5c5]';
+
+  const updateRow = (id: string, partial: Partial<Pick<ClosureDateCommentRow, 'date' | 'comment'>>) => {
+    onChange(rows.map((row) => (row.id === id ? { ...row, ...partial } : row)));
+  };
+
+  const removeRow = (id: string) => {
+    if (rows.length <= 1) {
+      onChange([createClosureDateCommentRow()]);
+      return;
+    }
+    onChange(rows.filter((row) => row.id !== id));
+  };
+
+  return (
+    <div className="space-y-3">
+      {rows.map((row) => {
+        const incomplete = showErrors && isClosureRowIncomplete(row);
+        return (
+          <div key={row.id} className={`${FORM_ROW_3} items-start`}>
+            <div className={`${FORM_FIELD_CLASS} space-y-2`}>
+              <DatePicker
+                selected={toDate(row.date)}
+                onChange={(date) => updateRow(row.id, { date: toIsoDate(date) ?? '' })}
+                placeholder={datePlaceholder}
+                labelClassName={labelClassName}
+                inputClassName={[inputClassName, incomplete ? invalidClass : '']
+                  .filter(Boolean)
+                  .join(' ')}
+              />
+              {rows.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeRow(row.id)}
+                  className="inline-flex items-center justify-center rounded-lg p-1.5 text-gray-500 transition hover:bg-red-50 hover:text-red-600"
+                  aria-label="Удалить строку"
+                  title="Удалить"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+            <div className={`${FORM_FIELD_WIDE_CLASS} flex flex-col self-stretch`}>
+              <Textarea
+                value={row.comment}
+                onChange={(comment) => updateRow(row.id, { comment })}
+                placeholder="Комментарий"
+                rows={1}
+                labelClassName={labelClassName}
+                className="flex h-full min-h-0 w-full flex-1 flex-col"
+                inputClassName={[COMMENT_TEXTAREA_CLASS, incomplete ? invalidClass : '']
+                  .filter(Boolean)
+                  .join(' ')}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function RecommendationClosureSection({
   value,
   onChange,
@@ -85,21 +172,20 @@ export function RecommendationClosureSection({
   const [removeOpen, setRemoveOpen] = useState(true);
 
   useEffect(() => {
-    if (errorFields.extension1Date || errorFields.extension1Comment) {
+    if (errorFields.extensions) {
       setExtensionOpen(true);
     }
-  }, [errorFields.extension1Date, errorFields.extension1Comment]);
+  }, [errorFields.extensions]);
 
   useEffect(() => {
-    if (errorFields.removeFromControlDate || errorFields.removeFromControlComment) {
+    if (errorFields.removals) {
       setRemoveOpen(true);
     }
-  }, [errorFields.removeFromControlDate, errorFields.removeFromControlComment]);
+  }, [errorFields.removals]);
 
   const patch = (partial: Partial<RecommendationClosureForm>) => {
     onChange({ ...value, ...partial });
   };
-  const invalidClass = 'border-[#e59a9a] focus:border-[#d9534f] focus:ring-[#f3c5c5]';
 
   const content = (
     <>
@@ -109,12 +195,7 @@ export function RecommendationClosureSection({
           onChange={(closureInformation) => patch({ closureInformation })}
           placeholder="Информация о закрытии"
           rows={4}
-          inputClassName={[
-            'text-sm py-1.5 min-h-[6.5rem] max-h-48 resize-none overflow-y-auto',
-            errorFields.closureInformation ? invalidClass : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
+          inputClassName="text-sm py-1.5 min-h-[6.5rem] max-h-48 resize-none overflow-y-auto"
         />
       )}
 
@@ -130,12 +211,7 @@ export function RecommendationClosureSection({
           }
           placeholder="Выберите дату исполнения"
           labelClassName={labelClassName}
-          inputClassName={[
-            inputClassName,
-            errorFields.actualCompletionDate ? invalidClass : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
+          inputClassName={inputClassName}
         />
       )}
 
@@ -146,37 +222,23 @@ export function RecommendationClosureSection({
         onToggle={() => setExtensionOpen((current) => !current)}
         className={stackClassName}
       >
-        <div className={`${FORM_ROW_3} items-start`}>
-          <div className={FORM_FIELD_CLASS}>
-            <DatePicker
-              selected={toDate(value.extension1Date)}
-              onChange={(date) => patch({ extension1Date: toIsoDate(date) ?? '' })}
-              placeholder="Выберите дату переноса"
-              labelClassName={labelClassName}
-              inputClassName={[
-                inputClassName,
-                errorFields.extension1Date ? invalidClass : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            />
-          </div>
-          <div className={`${FORM_FIELD_WIDE_CLASS} flex flex-col self-stretch`}>
-            <Textarea
-              value={value.extension1Comment}
-              onChange={(extension1Comment) => patch({ extension1Comment })}
-              placeholder="Комментарий"
-              rows={1}
-              labelClassName={labelClassName}
-              className="flex h-full min-h-0 w-full flex-1 flex-col"
-              inputClassName={[
-                COMMENT_TEXTAREA_CLASS,
-                errorFields.extension1Comment ? invalidClass : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            />
-          </div>
+        <div className="space-y-3">
+          <DateCommentRows
+            rows={value.extensions}
+            onChange={(extensions) => patch({ extensions })}
+            datePlaceholder="Выберите дату переноса"
+            showErrors={Boolean(errorFields.extensions)}
+            inputClassName={inputClassName}
+            labelClassName={labelClassName}
+          />
+          <button
+            type="button"
+            onClick={() => patch({ extensions: [...value.extensions, createClosureDateCommentRow()] })}
+            className={ADD_BUTTON_CLASS}
+          >
+            <Plus size={16} />
+            Добавить
+          </button>
         </div>
       </CollapsibleFormBlock>
 
@@ -187,37 +249,23 @@ export function RecommendationClosureSection({
         onToggle={() => setRemoveOpen((current) => !current)}
         className={stackClassName}
       >
-        <div className={`${FORM_ROW_3} items-start`}>
-          <div className={FORM_FIELD_CLASS}>
-            <DatePicker
-              selected={toDate(value.removeFromControlDate)}
-              onChange={(date) => patch({ removeFromControlDate: toIsoDate(date) ?? '' })}
-              placeholder="Выберите дату снятия с контроля"
-              labelClassName={labelClassName}
-              inputClassName={[
-                inputClassName,
-                errorFields.removeFromControlDate ? invalidClass : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            />
-          </div>
-          <div className={`${FORM_FIELD_WIDE_CLASS} flex flex-col self-stretch`}>
-            <Textarea
-              value={value.removeFromControlComment}
-              onChange={(removeFromControlComment) => patch({ removeFromControlComment })}
-              placeholder="Комментарий"
-              rows={1}
-              labelClassName={labelClassName}
-              className="flex h-full min-h-0 w-full flex-1 flex-col"
-              inputClassName={[
-                COMMENT_TEXTAREA_CLASS,
-                errorFields.removeFromControlComment ? invalidClass : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            />
-          </div>
+        <div className="space-y-3">
+          <DateCommentRows
+            rows={value.removals}
+            onChange={(removals) => patch({ removals })}
+            datePlaceholder="Выберите дату снятия с контроля"
+            showErrors={Boolean(errorFields.removals)}
+            inputClassName={inputClassName}
+            labelClassName={labelClassName}
+          />
+          <button
+            type="button"
+            onClick={() => patch({ removals: [...value.removals, createClosureDateCommentRow()] })}
+            className={ADD_BUTTON_CLASS}
+          >
+            <Plus size={16} />
+            Добавить
+          </button>
         </div>
       </CollapsibleFormBlock>
     </>
