@@ -484,3 +484,38 @@ export function buildCheckLinkDistribution(recommendations: Recommendation[]): N
     .sort((a, b) => b.value - a.value)
     .slice(0, 12);
 }
+
+export function buildMaterialityToStatusSankey(recommendations: Recommendation[]) {
+  const materialityNodes = MATERIALITY_KEYS.map((level) => getMaterialityLevelLabel(level));
+  const statusNodes = STATUS_KEYS.map((status) => getRecommendationStatusLabel(status));
+  const nodes = [...materialityNodes, ...statusNodes].map((name) => ({ name }));
+  const linkMap = new Map<string, number>();
+
+  recommendations.forEach((item) => {
+    const source = materialityNodes.indexOf(getMaterialityLevelLabel(item.materiality_level));
+    const target = materialityNodes.length + statusNodes.indexOf(getRecommendationStatusLabel(item.status));
+    const key = `${source}->${target}`;
+    linkMap.set(key, (linkMap.get(key) ?? 0) + 1);
+  });
+
+  const links = [...linkMap.entries()].map(([key, value]) => {
+    const [source, target] = key.split('->').map(Number);
+    return { source, target, value };
+  });
+
+  return { nodes, links };
+}
+
+export function buildStatusFunnelNative(recommendations: Recommendation[]) {
+  const summary = summarizeRecommendations(recommendations);
+  return [
+    { name: 'Всего', value: summary.total, fill: '#6366F1' },
+    {
+      name: 'Активные',
+      value: summary.byStatus.on_control + summary.byStatus.in_progress + summary.byStatus.unresolved,
+      fill: '#F59E0B',
+    },
+    { name: 'В процессе', value: summary.byStatus.in_progress, fill: '#FB923C' },
+    { name: 'Исполнено', value: summary.byStatus.completed, fill: '#22C55E' },
+  ];
+}

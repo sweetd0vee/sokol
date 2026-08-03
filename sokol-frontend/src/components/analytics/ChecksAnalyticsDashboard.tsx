@@ -24,14 +24,24 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { X } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 import type { Check } from '../../types/check';
 import { DatePicker } from '../ui/DatePicker';
 import { Select } from '../ui/Select';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { Button } from '../ui/Button';
 import { LIST_ACTION_BUTTON_CLASS } from '../../constants/formLayout';
-import { ChartCard, EmptyChart, KpiCard, PALETTE } from './AnalyticsChartPrimitives';
+import { ChartCard, EmptyChart, ExportSectionToolbar, KpiCard, PALETTE } from './AnalyticsChartPrimitives';
+import {
+  ANALYTICS_EXPORT_FORMATS,
+  exportChecksDashboard,
+  type AnalyticsExportFormat,
+} from '../../utils/analyticsExport';
+import {
+  CHECK_EXPORT_SECTIONS,
+  type CheckExportSectionId,
+} from '../../constants/analyticsExportSections';
+import { useExportSections } from '../../hooks/useExportSections';
 import {
   buildAuditorDistribution,
   buildAuditorPeriodMatrix,
@@ -101,6 +111,12 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
   const [dateTo, setDateTo] = useState<Date | null>(null);
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [auditorToAdd, setAuditorToAdd] = useState('');
+  const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('xlsx');
+  const [isExporting, setIsExporting] = useState(false);
+
+  const exportSections = useExportSections(
+    CHECK_EXPORT_SECTIONS.map((s) => s.id) as CheckExportSectionId[],
+  );
 
   const leaderOptions = useMemo(() => {
     const names = collectCheckLeaders(checks);
@@ -182,114 +198,196 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
     setAuditorToAdd('');
   };
 
+  const handleExport = async () => {
+    if (filteredChecks.length === 0 || isExporting) {
+      return;
+    }
+    if (exportSections.selectedSections.length === 0) {
+      window.alert('Выберите хотя бы один дашборд для экспорта');
+      return;
+    }
+    setIsExporting(true);
+    try {
+      await exportChecksDashboard(
+        {
+          checks,
+          filteredChecks,
+          granularity,
+          dateFrom,
+          dateTo,
+          auditors: selectedAuditors,
+          selectedSections: exportSections.selectedSections,
+        },
+        exportFormat,
+      );
+    } catch (error) {
+      console.error('Analytics export failed', error);
+      window.alert(
+        `Не удалось экспортировать отчёт: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`,
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-4">
-      <section className="rounded-xl border border-gray-200 bg-gray-50 p-3.5 dark:border-slate-700 dark:bg-slate-800/60">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div>
+    <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-start">
+      <aside className="w-full shrink-0 space-y-3 lg:sticky lg:top-4 lg:w-72">
+        <section className="rounded-xl border border-gray-200 bg-gray-50 p-3.5 text-left dark:border-slate-700 dark:bg-slate-800/60">
+          <div className="mb-3 space-y-1">
             <h3 className="text-base font-semibold text-sber-dark dark:text-sber-light">
-              Фильтры дашборда
+              Метрики и фильтры
             </h3>
             <p className="text-xs text-gray-500 dark:text-slate-400">
-              Выбор по дате старта и руководителям — все блоки ниже обновятся сразу.
+              Выберите период, даты и аудиторов — по ним строятся дашборды.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={resetFilters}
-            className={`${LIST_ACTION_BUTTON_CLASS} border border-gray-300 bg-white text-gray-700 hover:border-sber-dark/40 hover:text-sber-dark dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200`}
-          >
-            Сбросить
-          </button>
-        </div>
 
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <div className="space-y-1.5 md:col-span-2 lg:col-span-1">
-            <p className="text-sm font-medium text-gray-700 dark:text-slate-300">Период</p>
-            <SegmentedControl
-              value={granularity}
-              options={GRANULARITY_OPTIONS}
-              onChange={setGranularity}
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-gray-700 dark:text-slate-300">Период</p>
+              <SegmentedControl
+                value={granularity}
+                options={GRANULARITY_OPTIONS}
+                onChange={setGranularity}
+                className="w-full flex-col items-stretch"
+                buttonClassName="min-w-0 w-full"
+              />
+            </div>
+            <DatePicker
+              label="Дата старта с"
+              selected={dateFrom}
+              onChange={setDateFrom}
+              maxDate={dateTo}
+              labelClassName="text-sm"
+              inputClassName="py-1.5 text-sm"
             />
-          </div>
-          <DatePicker
-            label="Дата старта с"
-            selected={dateFrom}
-            onChange={setDateFrom}
-            maxDate={dateTo}
-            labelClassName="text-sm"
-            inputClassName="py-1.5 text-sm"
-          />
-          <DatePicker
-            label="Дата старта по"
-            selected={dateTo}
-            onChange={setDateTo}
-            minDate={dateFrom}
-            labelClassName="text-sm"
-            inputClassName="py-1.5 text-sm"
-          />
-        </div>
-
-        <div className="mt-3 space-y-2.5">
-          <div className="flex flex-wrap items-end gap-3">
+            <DatePicker
+              label="Дата старта по"
+              selected={dateTo}
+              onChange={setDateTo}
+              minDate={dateFrom}
+              labelClassName="text-sm"
+              inputClassName="py-1.5 text-sm"
+            />
             <Select
               label="Добавить аудитора"
               value={auditorToAdd}
               onChange={addAuditor}
               options={leaderOptions}
               placeholder="Выберите из списка"
-              className="min-w-[220px] flex-1"
+              className="w-full"
               labelClassName="text-sm"
               inputClassName="py-1.5 text-sm"
             />
             <Button
               variant="ghost"
-              className="h-[38px] px-3 text-sm"
+              className="h-[38px] w-full px-3 text-sm"
               disabled={selectedAuditors.length === 0}
               onClick={() => setSelectedAuditors([])}
             >
-              Очистить
+              Очистить аудиторов
             </Button>
-          </div>
-          {selectedAuditors.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {selectedAuditors.map((auditor) => (
-                <span
-                  key={auditor}
-                  className="inline-flex items-center gap-1 rounded-lg border border-sber-dark/20 bg-white px-2 py-0.5 text-xs text-sber-dark dark:border-sber-light/30 dark:bg-slate-800 dark:text-sber-light"
-                >
-                  {auditor}
-                  <button
-                    type="button"
-                    onClick={() => removeAuditor(auditor)}
-                    className="rounded p-0.5 hover:bg-gray-100 dark:hover:bg-slate-700"
-                    aria-label={`Убрать ${auditor}`}
+            {selectedAuditors.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {selectedAuditors.map((auditor) => (
+                  <span
+                    key={auditor}
+                    className="inline-flex items-center gap-1 rounded-lg border border-sber-dark/20 bg-white px-2 py-0.5 text-xs text-sber-dark dark:border-sber-light/30 dark:bg-slate-800 dark:text-sber-light"
                   >
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-gray-500 dark:text-slate-400">
-              Аудиторы не выбраны — показаны все руководители.
-            </p>
-          )}
-        </div>
-      </section>
+                    {auditor}
+                    <button
+                      type="button"
+                      onClick={() => removeAuditor(auditor)}
+                      className="rounded p-0.5 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      aria-label={`Убрать ${auditor}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                Аудиторы не выбраны — показаны все руководители.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={resetFilters}
+              className={`${LIST_ACTION_BUTTON_CLASS} w-full border border-gray-300 bg-white text-gray-700 hover:border-sber-dark/40 hover:text-sber-dark dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200`}
+            >
+              Сбросить фильтры
+            </button>
+          </div>
+        </section>
 
-      <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-5">
-        <KpiCard label="Всего" value={summary.total} hint={`из ${checks.length}`} tone="violet" />
-        <KpiCard label="Запланировано" value={summary.not_started} tone="slate" />
-        <KpiCard label="В процессе" value={summary.in_progress} tone="amber" />
-        <KpiCard label="Завершено" value={summary.completed} tone="green" />
-        <KpiCard label="Доля завершённых" value={completionShare} suffix="%" tone="blue" />
-      </div>
+        <section className="rounded-xl border border-gray-200 bg-white p-3.5 text-left dark:border-slate-700 dark:bg-slate-800">
+          <h3 className="mb-2 text-sm font-semibold text-sber-dark dark:text-sber-light">Экспорт</h3>
+          <div className="space-y-2">
+            <ExportSectionToolbar
+              selectedCount={exportSections.selectedCount}
+              totalCount={exportSections.totalCount}
+              onSelectAll={exportSections.selectAll}
+              onClearAll={exportSections.clearAll}
+            />
+            <label className="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={exportSections.isSelected('source')}
+                onChange={() => exportSections.toggleSection('source')}
+                className="h-3.5 w-3.5 accent-sber-dark"
+              />
+              Исходные данные в отчёт
+            </label>
+            <div className="flex flex-col gap-2">
+              <select
+                value={exportFormat}
+                onChange={(event) => setExportFormat(event.target.value as AnalyticsExportFormat)}
+                className="w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              >
+                {ANALYTICS_EXPORT_FORMATS.map((format) => (
+                  <option key={format.value} value={format.value}>
+                    {format.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={isExporting || filteredChecks.length === 0}
+                className={`${LIST_ACTION_BUTTON_CLASS} w-full gap-1.5 bg-[#90EE90] text-gray-800 hover:bg-[#7fdc7f] disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-900`}
+              >
+                <Download className="h-4 w-4" />
+                {isExporting ? 'Экспорт...' : 'Экспорт'}
+              </button>
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <div className="min-w-0 flex-1 space-y-4 text-left">
+      <ChartCard
+        title="Сводка KPI"
+        description="Ключевые показатели текущей выборки"
+        exportSelected={exportSections.isSelected('summary')}
+        onToggleExport={() => exportSections.toggleSection('summary')}
+      >
+        <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-5">
+          <KpiCard label="Всего" value={summary.total} hint={`из ${checks.length}`} tone="violet" />
+          <KpiCard label="Запланировано" value={summary.not_started} tone="slate" />
+          <KpiCard label="В процессе" value={summary.in_progress} tone="amber" />
+          <KpiCard label="Завершено" value={summary.completed} tone="green" />
+          <KpiCard label="Доля завершённых" value={completionShare} suffix="%" tone="blue" />
+        </div>
+      </ChartCard>
 
       <div className="grid gap-3 md:grid-cols-2">
         <ChartCard
           title={`Динамика по ${periodLabel}`}
           description="Старты проверок в периоде"
+          exportSelected={exportSections.isSelected('periods')}
+          onToggleExport={() => exportSections.toggleSection('periods')}
         >
           {periodSeries.length === 0 ? (
             <EmptyChart message="Нет данных" />
@@ -324,6 +422,8 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Накопительный итог"
           description="Сколько проверок накопилось к концу периода"
+          exportSelected={exportSections.isSelected('cumulative')}
+          onToggleExport={() => exportSections.toggleSection('cumulative')}
         >
           {cumulativeSeries.length === 0 ? (
             <EmptyChart message="Нет данных" />
@@ -352,6 +452,8 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title={`Статусы по ${periodLabel}`}
           description="Состав статусов внутри периода"
+          exportSelected={exportSections.isSelected('statusByPeriod')}
+          onToggleExport={() => exportSections.toggleSection('statusByPeriod')}
         >
           {periodSeries.length === 0 ? (
             <EmptyChart message="Нет данных" />
@@ -382,6 +484,8 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Тип × статус"
           description="Как статусы распределены по типам проверок"
+          exportSelected={exportSections.isSelected('typeStatus')}
+          onToggleExport={() => exportSections.toggleSection('typeStatus')}
         >
           {typeStatusBreakdown.length === 0 ? (
             <EmptyChart message="Нет данных" />
@@ -411,7 +515,12 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
-        <ChartCard title="Статусы" description="Доли текущей выборки">
+        <ChartCard
+          title="Статусы"
+          description="Доли текущей выборки"
+          exportSelected={exportSections.isSelected('statuses')}
+          onToggleExport={() => exportSections.toggleSection('statuses')}
+        >
           {statusDistribution.length === 0 ? (
             <EmptyChart message="Нет данных" heightClass="h-48" />
           ) : (
@@ -443,7 +552,12 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
           )}
         </ChartCard>
 
-        <ChartCard title="Типы" description="Плановые / внеплановые / контрольные">
+        <ChartCard
+          title="Типы"
+          description="Плановые / внеплановые / контрольные"
+          exportSelected={exportSections.isSelected('types')}
+          onToggleExport={() => exportSections.toggleSection('types')}
+        >
           {typeDistribution.length === 0 ? (
             <EmptyChart message="Нет данных" heightClass="h-48" />
           ) : (
@@ -470,7 +584,12 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
           )}
         </ChartCard>
 
-        <ChartCard title="Виды (radar)" description="Профиль направлений проверок">
+        <ChartCard
+          title="Виды (radar)"
+          description="Профиль направлений проверок"
+          exportSelected={exportSections.isSelected('views')}
+          onToggleExport={() => exportSections.toggleSection('views')}
+        >
           {viewRadar.length === 0 ? (
             <EmptyChart message="Нет данных" heightClass="h-48" />
           ) : (
@@ -499,6 +618,8 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Нагрузка по аудиторам"
           description="Топ руководителей в выборке"
+          exportSelected={exportSections.isSelected('auditors')}
+          onToggleExport={() => exportSections.toggleSection('auditors')}
         >
           {auditorDistribution.length === 0 ? (
             <EmptyChart message="Нет данных" />
@@ -527,6 +648,8 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Длительность проверок"
           description="По разнице даты старта и окончания"
+          exportSelected={exportSections.isSelected('durations')}
+          onToggleExport={() => exportSections.toggleSection('durations')}
         >
           {durationDistribution.length === 0 ? (
             <EmptyChart message="Нет данных с датой окончания" />
@@ -548,6 +671,8 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Готовность документов"
           description="Есть номер/дата приказа, программы, АЗ, ДЗ"
+          exportSelected={exportSections.isSelected('documents')}
+          onToggleExport={() => exportSections.toggleSection('documents')}
         >
           {documentReadiness.every((item) => item.filled === 0 && item.empty === 0) ? (
             <EmptyChart message="Нет данных" />
@@ -568,7 +693,12 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
           )}
         </ChartCard>
 
-        <ChartCard title="Виды проверок" description="ИТ, бизнес, риски и др.">
+        <ChartCard
+          title="Виды проверок"
+          description="ИТ, бизнес, риски и др."
+          exportSelected={exportSections.isSelected('views')}
+          onToggleExport={() => exportSections.toggleSection('views')}
+        >
           {viewDistribution.length === 0 ? (
             <EmptyChart message="Нет данных" />
           ) : (
@@ -596,6 +726,8 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
           title="Radial по статусам"
           description="Круговая шкала объёмов статусов"
           accentClassName="border-amber-200 dark:border-amber-900/40"
+          exportSelected={exportSections.isSelected('statuses')}
+          onToggleExport={() => exportSections.toggleSection('statuses')}
         >
           {statusDistribution.length === 0 ? (
             <EmptyChart message="Нет данных" />
@@ -626,6 +758,8 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
           title="Treemap аудиторов"
           description="Площадь = число проверок руководителя"
           accentClassName="border-fuchsia-200 dark:border-fuchsia-900/40"
+          exportSelected={exportSections.isSelected('auditors')}
+          onToggleExport={() => exportSections.toggleSection('auditors')}
         >
           {auditorDistribution.length === 0 ? (
             <EmptyChart message="Нет данных" />
@@ -653,6 +787,8 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         description="Кто сколько проверок стартовал в каждом периоде"
         className="overflow-hidden"
         accentClassName="border-indigo-200 dark:border-indigo-900/40"
+        exportSelected={exportSections.isSelected('auditorMatrix')}
+        onToggleExport={() => exportSections.toggleSection('auditorMatrix')}
       >
         {auditorMatrix.rows.length === 0 || auditorMatrix.periods.length === 0 ? (
           <EmptyChart message="Нет данных" heightClass="h-40" />
@@ -704,6 +840,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
           </div>
         )}
       </ChartCard>
+      </div>
     </div>
   );
 }
