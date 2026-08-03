@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -16,8 +16,11 @@ import {
   PolarRadiusAxis,
   Radar,
   RadarChart,
+  RadialBar,
+  RadialBarChart,
   ResponsiveContainer,
   Tooltip,
+  Treemap,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -28,6 +31,7 @@ import { Select } from '../ui/Select';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { Button } from '../ui/Button';
 import { LIST_ACTION_BUTTON_CLASS } from '../../constants/formLayout';
+import { ChartCard, EmptyChart, KpiCard, PALETTE } from './AnalyticsChartPrimitives';
 import {
   buildAuditorDistribution,
   buildAuditorPeriodMatrix,
@@ -53,62 +57,41 @@ const GRANULARITY_OPTIONS: { value: PeriodGranularity; label: string }[] = [
   { value: 'year', label: 'Год' },
 ];
 
-const CHART_COLORS = ['#003366', '#2563EB', '#6699FF', '#1D4ED8', '#94A3B8', '#0EA5E9', '#64748B'];
+const CHART_COLORS = ['#003366', '#2563EB', '#6699FF', '#22C55E', '#EAB308', '#EF4444', '#A855F7', '#06B6D4'];
 
 const STATUS_STACK = [
   { key: 'not_started', label: 'Запланировано', color: '#94A3B8' },
-  { key: 'in_progress', label: 'В процессе', color: '#2563EB' },
-  { key: 'completed', label: 'Завершено', color: '#003366' },
+  { key: 'in_progress', label: 'В процессе', color: '#F59E0B' },
+  { key: 'completed', label: 'Завершено', color: '#22C55E' },
 ] as const;
 
 type ChecksAnalyticsDashboardProps = {
   checks: Check[];
 };
 
-function ChartCard({
-  title,
-  description,
-  children,
-  className = '',
-}: {
-  title: string;
-  description: string;
-  children: ReactNode;
-  className?: string;
+function TreemapContent(props: {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  name?: string;
+  fill?: string;
 }) {
+  const { x = 0, y = 0, width = 0, height = 0, name = '', fill = '#2563EB' } = props;
+  if (width < 36 || height < 24) {
+    return (
+      <g>
+        <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" strokeWidth={2} />
+      </g>
+    );
+  }
   return (
-    <section
-      className={`rounded-xl border border-gray-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-800 ${className}`}
-    >
-      <div className="mb-3 space-y-0.5">
-        <h3 className="text-sm font-semibold text-sber-dark dark:text-sber-light">{title}</h3>
-        <p className="text-xs text-gray-500 dark:text-slate-400">{description}</p>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function KpiCard({ label, value, hint, suffix }: { label: string; value: number; hint?: string; suffix?: string }) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 dark:border-slate-700 dark:bg-slate-800">
-      <p className="text-xs text-gray-500 dark:text-slate-400">{label}</p>
-      <p className="mt-0.5 text-xl font-semibold text-sber-dark dark:text-sber-light">
-        {value}
-        {suffix ? <span className="ml-0.5 text-sm font-medium">{suffix}</span> : null}
-      </p>
-      {hint ? <p className="mt-0.5 text-[11px] text-gray-400 dark:text-slate-500">{hint}</p> : null}
-    </div>
-  );
-}
-
-function EmptyChart({ message, heightClass = 'h-52' }: { message: string; heightClass?: string }) {
-  return (
-    <div
-      className={`flex ${heightClass} items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-500 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-400`}
-    >
-      {message}
-    </div>
+    <g>
+      <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" strokeWidth={2} rx={6} />
+      <text x={x + 8} y={y + 18} fill="#fff" fontSize={11} fontWeight={600}>
+        {name.length > 18 ? `${name.slice(0, 16)}…` : name}
+      </text>
+    </g>
   );
 }
 
@@ -296,11 +279,11 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
       </section>
 
       <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-5">
-        <KpiCard label="Всего" value={summary.total} hint={`из ${checks.length}`} />
-        <KpiCard label="Запланировано" value={summary.not_started} />
-        <KpiCard label="В процессе" value={summary.in_progress} />
-        <KpiCard label="Завершено" value={summary.completed} />
-        <KpiCard label="Доля завершённых" value={completionShare} suffix="%" />
+        <KpiCard label="Всего" value={summary.total} hint={`из ${checks.length}`} tone="violet" />
+        <KpiCard label="Запланировано" value={summary.not_started} tone="slate" />
+        <KpiCard label="В процессе" value={summary.in_progress} tone="amber" />
+        <KpiCard label="Завершено" value={summary.completed} tone="green" />
+        <KpiCard label="Доля завершённых" value={completionShare} suffix="%" tone="blue" />
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
@@ -608,10 +591,68 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         </ChartCard>
       </div>
 
+      <div className="grid gap-3 md:grid-cols-2">
+        <ChartCard
+          title="Radial по статусам"
+          description="Круговая шкала объёмов статусов"
+          accentClassName="border-amber-200 dark:border-amber-900/40"
+        >
+          {statusDistribution.length === 0 ? (
+            <EmptyChart message="Нет данных" />
+          ) : (
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadialBarChart
+                  innerRadius="18%"
+                  outerRadius="90%"
+                  data={statusDistribution.map((item, index) => ({
+                    ...item,
+                    fill: STATUS_STACK.find((status) => status.label === item.name)?.color
+                      ?? CHART_COLORS[index % CHART_COLORS.length],
+                  }))}
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  <RadialBar background dataKey="value" cornerRadius={6} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Tooltip />
+                </RadialBarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+
+        <ChartCard
+          title="Treemap аудиторов"
+          description="Площадь = число проверок руководителя"
+          accentClassName="border-fuchsia-200 dark:border-fuchsia-900/40"
+        >
+          {auditorDistribution.length === 0 ? (
+            <EmptyChart message="Нет данных" />
+          ) : (
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <Treemap
+                  data={auditorDistribution.slice(0, 10).map((item, index) => ({
+                    name: item.name,
+                    size: item.value,
+                    fill: PALETTE[index % PALETTE.length],
+                  }))}
+                  dataKey="size"
+                  stroke="#fff"
+                  content={<TreemapContent />}
+                />
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+      </div>
+
       <ChartCard
         title={`Матрица: аудитор × ${periodLabel.slice(0, -2)}`}
         description="Кто сколько проверок стартовал в каждом периоде"
         className="overflow-hidden"
+        accentClassName="border-indigo-200 dark:border-indigo-900/40"
       >
         {auditorMatrix.rows.length === 0 || auditorMatrix.periods.length === 0 ? (
           <EmptyChart message="Нет данных" heightClass="h-40" />
