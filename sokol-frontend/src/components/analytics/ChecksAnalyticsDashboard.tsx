@@ -234,13 +234,10 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
     <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-start">
       <aside className="w-full shrink-0 space-y-3 lg:sticky lg:top-4 lg:w-72">
         <section className="rounded-xl border border-gray-200 bg-gray-50 p-3.5 text-left dark:border-slate-700 dark:bg-slate-800/60">
-          <div className="mb-3 space-y-1">
+          <div className="mb-3">
             <h3 className="text-base font-semibold text-sber-dark dark:text-sber-light">
               Метрики и фильтры
             </h3>
-            <p className="text-xs text-gray-500 dark:text-slate-400">
-              Выберите период, даты и аудиторов — по ним строятся дашборды.
-            </p>
           </div>
 
           <div className="space-y-3">
