@@ -156,7 +156,7 @@ export function RecommendationsTab() {
   const { options: managerOptions } = useAuditorOptions(manager);
   const { options: auditObjectOptions } = useAuditObjectOptions(auditObject);
 
-  const { recommendations, deleteRecommendation } = useSokolData();
+  const { recommendations, checks, deleteRecommendation } = useSokolData();
 
   const filteredRecommendations = useMemo(() => {
     return recommendations.filter((recommendation) => {
@@ -312,7 +312,12 @@ export function RecommendationsTab() {
     }
     setIsExporting(true);
     try {
-      await exportRecommendationsTable(sortedRecommendations, exportFormat, 'recommendations');
+      await exportRecommendationsTable(
+        sortedRecommendations,
+        checks,
+        exportFormat,
+        'recommendations',
+      );
     } finally {
       setIsExporting(false);
     }

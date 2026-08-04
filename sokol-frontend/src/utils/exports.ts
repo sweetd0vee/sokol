@@ -86,6 +86,7 @@ const CHECK_COLUMN_KEYS = [
 const RECOMMENDATION_TABLE_COLUMN_KEYS = [
   'ID',
   'Ключ',
+  'Название проверки',
   'Название',
   'Объект аудита',
   'Индикатор',
@@ -580,10 +581,18 @@ function toCheckRows(checks: Check[]): ExportRow[] {
   }));
 }
 
-function toRecommendationTableRows(recommendations: Recommendation[]): ExportRow[] {
+function toRecommendationTableRows(
+  recommendations: Recommendation[],
+  checks: Check[],
+): ExportRow[] {
+  const checkNameByKey = new Map(
+    checks.map((check) => [check.serial_number, check.check_name?.trim() ?? ''] as const),
+  );
+
   return recommendations.map((recommendation) => ({
     ID: recommendation.id,
     Ключ: recommendation.serial_number,
+    'Название проверки': checkNameByKey.get(recommendation.serial_number) ?? '',
     Название: recommendation.name,
     'Объект аудита': recommendation.audit_object,
     Индикатор: getIndicatorLabel(recommendation.indicator),
@@ -621,8 +630,12 @@ function excelBorder() {
   return { top: edge, bottom: edge, left: edge, right: edge };
 }
 
-async function exportRecommendationsTableXlsx(recommendations: Recommendation[], filename: string) {
-  const rows = toRecommendationTableRows(recommendations);
+async function exportRecommendationsTableXlsx(
+  recommendations: Recommendation[],
+  checks: Check[],
+  filename: string,
+) {
+  const rows = toRecommendationTableRows(recommendations, checks);
   const headers = getHeaders(rows, RECOMMENDATION_TABLE_COLUMN_KEYS);
   const indicatorIcons = await preloadIndicatorIcons(rows.map((row) => toCellText(row.Индикатор)));
 
@@ -741,8 +754,12 @@ async function exportRecommendationsTableXlsx(recommendations: Recommendation[],
   );
 }
 
-async function exportRecommendationsTableDocx(recommendations: Recommendation[], filename: string) {
-  const rows = toRecommendationTableRows(recommendations);
+async function exportRecommendationsTableDocx(
+  recommendations: Recommendation[],
+  checks: Check[],
+  filename: string,
+) {
+  const rows = toRecommendationTableRows(recommendations, checks);
   const indicatorIcons = await preloadIndicatorIcons(rows.map((row) => toCellText(row.Индикатор)));
   await exportRowsDocx(
     rows,
@@ -753,8 +770,12 @@ async function exportRecommendationsTableDocx(recommendations: Recommendation[],
   );
 }
 
-async function exportRecommendationsTablePdf(recommendations: Recommendation[], filename: string) {
-  const rows = toRecommendationTableRows(recommendations);
+async function exportRecommendationsTablePdf(
+  recommendations: Recommendation[],
+  checks: Check[],
+  filename: string,
+) {
+  const rows = toRecommendationTableRows(recommendations, checks);
   const indicatorIcons = await preloadIndicatorIcons(rows.map((row) => toCellText(row.Индикатор)));
   exportRowsPdf(
     rows,
@@ -786,19 +807,20 @@ export async function exportChecks(
 
 export async function exportRecommendationsTable(
   recommendations: Recommendation[],
+  checks: Check[],
   format: ExportFormat,
   filenameBase: string
 ) {
   const filename = `${filenameBase}.${format}`;
   switch (format) {
     case 'xlsx':
-      await exportRecommendationsTableXlsx(recommendations, filename);
+      await exportRecommendationsTableXlsx(recommendations, checks, filename);
       break;
     case 'docx':
-      await exportRecommendationsTableDocx(recommendations, filename);
+      await exportRecommendationsTableDocx(recommendations, checks, filename);
       break;
     case 'pdf':
-      await exportRecommendationsTablePdf(recommendations, filename);
+      await exportRecommendationsTablePdf(recommendations, checks, filename);
       break;
   }
 }

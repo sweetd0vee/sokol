@@ -32,6 +32,7 @@ export type RecommendationFormLocationState = {
   recommendation?: Recommendation;
   serialNumber?: string;
   auditor?: string;
+  checkLeader?: string;
   returnTo?: string;
   checkFormDraft?: CheckFormDraft;
 };

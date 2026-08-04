@@ -209,7 +209,7 @@ export function CheckFormPage() {
     navigate('/recommendations/new', {
       state: {
         serialNumber: checkKey,
-        auditor: checkLeader,
+        checkLeader,
         returnTo,
         checkFormDraft: buildCheckFormDraft(),
       },

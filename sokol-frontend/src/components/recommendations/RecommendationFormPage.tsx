@@ -18,7 +18,7 @@ import {
 } from '../../constants/recommendations';
 import { fetchRecommendation } from '../../api/recommendations';
 import { useSokolData } from '../../contexts/sokolData';
-import { useAuditorOptions } from '../../hooks/useReferenceOptions';
+import { toNameOptions, useAuditorOptions } from '../../hooks/useReferenceOptions';
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
 import { isNonEmpty, toInputDate, toIsoDate } from '../../utils/dates';
 import {
@@ -90,16 +90,22 @@ export function RecommendationFormPage() {
     enabled: isEditMode && Boolean(id) && !navigationState.recommendation && !recommendationFromContext,
   });
 
-  const source =
-    navigationState.recommendation ?? recommendationFromContext ?? fetchedRecommendation;
+  const source = isEditMode
+    ? (navigationState.recommendation ?? recommendationFromContext ?? fetchedRecommendation)
+    : navigationState.recommendation;
 
-  const [serialNumber, setSerialNumber] = useState('');
+  const [serialNumber, setSerialNumber] = useState(
+    () => navigationState.serialNumber ?? '',
+  );
   const [description, setDescription] = useState('');
   const [auditObject, setAuditObject] = useState('');
   const [deadline, setDeadline] = useState<Date | null>(null);
-  const [auditor, setAuditor] = useState('');
+  const [auditor, setAuditor] = useState(() => navigationState.auditor ?? '');
   const [checkLeader, setCheckLeader] = useState(
-    () => navigationState.checkFormDraft?.checkLeader ?? '',
+    () =>
+      navigationState.checkLeader ||
+      navigationState.checkFormDraft?.checkLeader ||
+      '',
   );
   const [manager, setManager] = useState('');
   const [status, setStatus] = useState<Recommendation['status'] | ''>('');
@@ -114,7 +120,7 @@ export function RecommendationFormPage() {
   const [showValidationErrors, setShowValidationErrors] = useState(false);
 
   useEffect(() => {
-    if (source) {
+    if (isEditMode && source) {
       setSerialNumber(source.serial_number);
       setDescription(source.description || source.name);
       setAuditObject(source.audit_object);
@@ -129,10 +135,32 @@ export function RecommendationFormPage() {
       return;
     }
     if (!isEditMode) {
+      const prefillingLeader =
+        navigationState.checkLeader || navigationState.checkFormDraft?.checkLeader || '';
       setSerialNumber(navigationState.serialNumber ?? '');
+      setDescription('');
+      setAuditObject('');
+      setDeadline(null);
       setAuditor(navigationState.auditor ?? '');
+      setCheckLeader(prefillingLeader);
+      setManager('');
+      setStatus('');
+      setAdditionalStatus('');
+      setIndicator('не указан');
+      setMaterialityLevel('средний');
+      setClosure(createEmptyRecommendationClosure());
+      setShowValidationErrors(false);
+      setIsExecutionDeadlineOpen(true);
     }
-  }, [source, isEditMode, navigationState.serialNumber, navigationState.auditor]);
+  }, [
+    source,
+    isEditMode,
+    navigationState.serialNumber,
+    navigationState.auditor,
+    navigationState.checkLeader,
+    navigationState.checkFormDraft?.checkLeader,
+    location.key,
+  ]);
 
   const linkedCheck = useMemo(
     () => checks.find((check) => check.serial_number === serialNumber),
@@ -144,10 +172,17 @@ export function RecommendationFormPage() {
       setCheckLeader(linkedCheck.check_leader ?? '');
       return;
     }
-    if (navigationState.checkFormDraft?.checkLeader) {
-      setCheckLeader(navigationState.checkFormDraft.checkLeader);
+    const prefillingLeader =
+      navigationState.checkLeader || navigationState.checkFormDraft?.checkLeader || '';
+    if (prefillingLeader) {
+      setCheckLeader(prefillingLeader);
     }
-  }, [linkedCheck?.id, linkedCheck?.check_leader, navigationState.checkFormDraft?.checkLeader]);
+  }, [
+    linkedCheck?.id,
+    linkedCheck?.check_leader,
+    navigationState.checkLeader,
+    navigationState.checkFormDraft?.checkLeader,
+  ]);
 
   const checkDisplayName = useMemo(() => {
     if (fromCheckForm && navigationState.checkFormDraft?.checkName.trim()) {
@@ -155,6 +190,14 @@ export function RecommendationFormPage() {
     }
     return linkedCheck?.check_name?.trim() ?? '';
   }, [fromCheckForm, linkedCheck?.check_name, navigationState.checkFormDraft?.checkName]);
+
+  const isKeyLocked =
+    isEditMode || fromCheckForm || Boolean(navigationState.serialNumber);
+
+  const checkKeyOptions = useMemo(
+    () => toNameOptions(checks.map((check) => check.serial_number), serialNumber),
+    [checks, serialNumber],
+  );
 
   const sequenceNumber = useMemo(() => {
     if (isEditMode && source?.sequence_number) {
@@ -238,12 +281,14 @@ export function RecommendationFormPage() {
     const resolvedAuditor = auditor || checkLeader || navigationState.auditor || 'Не указан';
     const resolvedManager = manager || 'Не указан';
     const resolvedAuditObject = auditObject || 'Не указан';
+    const resolvedSequenceNumber =
+      isEditMode && source?.sequence_number ? source.sequence_number : sequenceNumber;
 
     return {
-      id: source?.id ?? '0',
+      id: isEditMode ? (source?.id ?? '0') : '0',
       serial_number: serialNumber,
-      sequence_number: source?.sequence_number ?? sequenceNumber,
-      name: buildRecommendationName(trimmedDescription, source?.sequence_number ?? sequenceNumber),
+      sequence_number: resolvedSequenceNumber,
+      name: buildRecommendationName(trimmedDescription, resolvedSequenceNumber),
       description: trimmedDescription,
       indicator,
       materiality_level: materialityLevel,
@@ -253,7 +298,10 @@ export function RecommendationFormPage() {
       manager: resolvedManager,
       status: status as Recommendation['status'],
       additional_status: additionalStatus as Recommendation['additional_status'],
-      created_at: source?.created_at ?? new Date().toISOString().slice(0, 10),
+      created_at:
+        isEditMode && source?.created_at
+          ? source.created_at
+          : new Date().toISOString().slice(0, 10),
       ...closureToRecommendationFields(closure),
     };
   };
@@ -268,11 +316,13 @@ export function RecommendationFormPage() {
 
 
   const openCreateAnotherByCheck = (replace = false) => {
+    const leader =
+      checkLeader || linkedCheck?.check_leader || navigationState.checkLeader || '';
     navigate('/recommendations/new', {
       replace,
       state: {
         serialNumber,
-        auditor: checkLeader || source?.auditor || navigationState.auditor || '',
+        checkLeader: leader,
       } satisfies RecommendationFormLocationState,
     });
   };
@@ -282,9 +332,7 @@ export function RecommendationFormPage() {
     if (isSaving) {
       return;
     }
-    if (mode === 'save') {
-      setShowValidationErrors(true);
-    }
+    setShowValidationErrors(true);
     if (!serialNumber || !trimmedDescription || !status || !additionalStatus || requiredFieldErrors.hasErrors) {
       return;
     }
@@ -368,30 +416,46 @@ export function RecommendationFormPage() {
       <form onSubmit={handleSubmit} className={FORM_STACK_CLASS}>
         <div className={FORM_SECTION_CLASS}>
           <div className={FORM_ROW_4}>
-            <Input
-              label="Ключ"
-              value={serialNumber}
-              onChange={() => undefined}
-              readOnly
-              placeholder="Не указан"
-              className={FORM_FIELD_CLASS}
-              labelClassName={FORM_LABEL_CLASS}
-              inputClassName={`${FORM_SERVICE_INPUT_CLASS} tracking-wide text-gray-800`}
-            />
+            {isKeyLocked ? (
+              <Input
+                label="Ключ"
+                value={serialNumber}
+                onChange={() => undefined}
+                readOnly
+                placeholder="Не указан"
+                className={FORM_FIELD_CLASS}
+                labelClassName={FORM_LABEL_CLASS}
+                inputClassName={`${FORM_SERVICE_INPUT_CLASS} tracking-wide text-gray-800`}
+              />
+            ) : (
+              <Select
+                label="Ключ"
+                value={serialNumber}
+                onChange={setSerialNumber}
+                options={checkKeyOptions}
+                placeholder="Выберите ключ"
+                className={FORM_FIELD_CLASS}
+                labelClassName={FORM_LABEL_CLASS}
+                inputClassName={[
+                  FORM_INPUT_CLASS,
+                  showValidationErrors && !serialNumber ? FORM_FIELD_ERROR_CLASS : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              />
+            )}
           </div>
 
-          {serialNumber && (
-            <Textarea
-              label="Название"
-              value={checkDisplayName}
-              onChange={() => undefined}
-              readOnly
-              placeholder="Не указано"
-              rows={4}
-              labelClassName={FORM_LABEL_CLASS}
-              inputClassName={`${FORM_TEXTAREA_CLASS} text-gray-800`}
-            />
-          )}
+          <Textarea
+            label="Название"
+            value={checkDisplayName}
+            onChange={() => undefined}
+            readOnly
+            placeholder={serialNumber ? 'Не указано' : 'Выберите ключ проверки'}
+            rows={4}
+            labelClassName={FORM_LABEL_CLASS}
+            inputClassName={`${FORM_TEXTAREA_CLASS} text-gray-800`}
+          />
         </div>
 
         <div className={FORM_SECTION_CLASS}>
