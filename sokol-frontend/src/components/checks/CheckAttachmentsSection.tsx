@@ -52,7 +52,7 @@ function AttachmentCard({ label, fileCount, onOpen }: AttachmentCardProps) {
     <button
       type="button"
       onClick={onOpen}
-      className="flex min-h-[6.5rem] w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-[#003366] bg-white px-2 py-4 text-center transition hover:border-[#6699FF] hover:bg-[#6699FF]/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6699FF]/40 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-[#6699FF]/10"
+      className="flex min-h-[6.5rem] w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-[#4B5563] bg-white px-2 py-4 text-center transition hover:border-[#6699FF] hover:bg-[#6699FF]/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6699FF]/40 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-[#6699FF]/10"
     >
       <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">{label}</span>
       {fileCount > 0 && (
@@ -184,7 +184,7 @@ function DocumentMetaFields({
         placeholder="Введите номер"
         className="min-w-0 w-full"
         labelClassName="text-sm"
-        inputClassName="text-sm py-1.5 !border-[#003366]"
+        inputClassName="text-sm py-1.5 !border-[#4B5563]"
       />
       <DatePicker
         label="Дата"
@@ -193,7 +193,7 @@ function DocumentMetaFields({
         className="min-w-0 w-full"
         fieldClassName="w-full"
         labelClassName="text-sm"
-        inputClassName="text-sm py-1.5 !border-[#003366]"
+        inputClassName="text-sm py-1.5 !border-[#4B5563]"
       />
     </div>
   );

@@ -40,7 +40,7 @@ function toInputDate(value?: string) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-const FORM_SERVICE_INPUT_CLASS = 'border-2 !border-[#003366] bg-green-100 text-sm py-1.5';
+const FORM_SERVICE_INPUT_CLASS = 'border-2 !border-[#4B5563] bg-green-100 text-sm py-1.5';
 
 function isNonEmpty(value: string | null | undefined) {
   return Boolean(value?.toString().trim());
@@ -78,10 +78,10 @@ export function CheckFormPage() {
   const [azDocumentDate, setAzDocumentDate] = useState<Date | null>(toInputDate(existing?.az_document_date));
   const [dzDocumentNumber, setDzDocumentNumber] = useState(existing?.dz_document_number ?? '');
   const [dzDocumentDate, setDzDocumentDate] = useState<Date | null>(toInputDate(existing?.dz_document_date));
-  const [processEffectiveness, setProcessEffectiveness] = useState('');
-  const [svkEffectiveness, setSvkEffectiveness] = useState('');
-  const [surEffectiveness, setSurEffectiveness] = useState('');
-  const [svikEffectiveness, setSvikEffectiveness] = useState('');
+  const [processEffectiveness, setProcessEffectiveness] = useState(existing?.process_effectiveness ?? '');
+  const [svkEffectiveness, setSvkEffectiveness] = useState(existing?.svk_effectiveness ?? '');
+  const [surEffectiveness, setSurEffectiveness] = useState(existing?.sur_effectiveness ?? '');
+  const [svikEffectiveness, setSvikEffectiveness] = useState(existing?.svik_effectiveness ?? '');
   const { options: leaderOptions } = useAuditorOptions(checkLeader);
   const { options: effectivenessOptions } = useEffectivenessRatingOptions(
     processEffectiveness,
@@ -295,6 +295,10 @@ export function CheckFormPage() {
       az_document_date: toIsoDate(azDocumentDate),
       dz_document_number: dzDocumentNumber || undefined,
       dz_document_date: toIsoDate(dzDocumentDate),
+      process_effectiveness: processEffectiveness || undefined,
+      svk_effectiveness: svkEffectiveness || undefined,
+      sur_effectiveness: surEffectiveness || undefined,
+      svik_effectiveness: svikEffectiveness || undefined,
     };
 
     if (isEditMode && existing?.id) {
@@ -328,7 +332,7 @@ export function CheckFormPage() {
             placeholder="Краткое название"
             rows={4}
             labelClassName={FORM_LABEL_CLASS}
-            inputClassName="text-sm py-1.5 min-h-[6.5rem] max-h-48 resize-none overflow-y-auto !border-[#003366]"
+            inputClassName="text-sm py-1.5 min-h-[6.5rem] max-h-48 resize-none overflow-y-auto !border-[#4B5563]"
           />
           <div className={FORM_ROW_3}>
             <Select

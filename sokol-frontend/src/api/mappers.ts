@@ -27,6 +27,10 @@ export type ApiCheck = {
   az_document_date?: string | null;
   dz_document_number?: string | null;
   dz_document_date?: string | null;
+  process_effectiveness?: string | null;
+  svk_effectiveness?: string | null;
+  sur_effectiveness?: string | null;
+  svik_effectiveness?: string | null;
 };
 
 export type ApiRecommendation = {
@@ -84,6 +88,10 @@ export function mapCheckFromApi(api: ApiCheck): Check {
     az_document_date: optionalDate(api.az_document_date),
     dz_document_number: optionalDate(api.dz_document_number),
     dz_document_date: optionalDate(api.dz_document_date),
+    process_effectiveness: api.process_effectiveness ?? undefined,
+    svk_effectiveness: api.svk_effectiveness ?? undefined,
+    sur_effectiveness: api.sur_effectiveness ?? undefined,
+    svik_effectiveness: api.svik_effectiveness ?? undefined,
   };
 }
 
@@ -107,6 +115,10 @@ export function mapCheckToCreate(check: Check): Omit<ApiCheck, 'id'> {
     az_document_date: check.az_document_date ?? null,
     dz_document_number: check.dz_document_number ?? null,
     dz_document_date: check.dz_document_date ?? null,
+    process_effectiveness: check.process_effectiveness ?? null,
+    svk_effectiveness: check.svk_effectiveness ?? null,
+    sur_effectiveness: check.sur_effectiveness ?? null,
+    svik_effectiveness: check.svik_effectiveness ?? null,
   };
 }
 

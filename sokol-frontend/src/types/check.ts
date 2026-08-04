@@ -24,4 +24,8 @@ export interface Check {
   az_document_date?: string;
   dz_document_number?: string;
   dz_document_date?: string;
+  process_effectiveness?: string;
+  svk_effectiveness?: string;
+  sur_effectiveness?: string;
+  svik_effectiveness?: string;
 }

@@ -25,6 +25,10 @@ class CheckBase(BaseModel):
     az_document_date: Optional[date] = None
     dz_document_number: Optional[str] = Field(None, max_length=128)
     dz_document_date: Optional[date] = None
+    process_effectiveness: Optional[str] = Field(None, max_length=128)
+    svk_effectiveness: Optional[str] = Field(None, max_length=128)
+    sur_effectiveness: Optional[str] = Field(None, max_length=128)
+    svik_effectiveness: Optional[str] = Field(None, max_length=128)
 
 
 class CheckCreate(CheckBase):
@@ -49,6 +53,10 @@ class CheckUpdate(BaseModel):
     az_document_date: Optional[date] = None
     dz_document_number: Optional[str] = Field(None, max_length=128)
     dz_document_date: Optional[date] = None
+    process_effectiveness: Optional[str] = Field(None, max_length=128)
+    svk_effectiveness: Optional[str] = Field(None, max_length=128)
+    sur_effectiveness: Optional[str] = Field(None, max_length=128)
+    svik_effectiveness: Optional[str] = Field(None, max_length=128)
 
 
 class CheckRead(CheckBase):

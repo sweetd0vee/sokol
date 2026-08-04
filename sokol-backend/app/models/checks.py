@@ -38,6 +38,10 @@ class Check(Base):
     az_document_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     dz_document_number: Mapped[str | None] = mapped_column(String(128), nullable=True)
     dz_document_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    process_effectiveness: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    svk_effectiveness: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    sur_effectiveness: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    svik_effectiveness: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     recommendations: Mapped[list["Recommendation"]] = relationship(
         "Recommendation",

@@ -3,13 +3,13 @@
 /** Moderately wide edit form, left-aligned in the content area. */
 export const FORM_PAGE_CLASS = 'w-full max-w-7xl';
 
-export const FORM_STACK_CLASS = 'space-y-3';
+export const FORM_STACK_CLASS = 'space-y-5';
 
-const FORM_SECTION_CLASS = 'space-y-3 rounded-lg border border-[#003366] bg-white p-3';
+const FORM_SECTION_CLASS = 'space-y-3 rounded-lg border border-[#4B5563] bg-white p-3';
 
-/** Section with all required fields filled — dark blue border. */
+/** Section with all required fields filled — dark gray border. */
 const FORM_FILLED_SECTION_CLASS =
-  'space-y-3 rounded-lg border border-[#003366] bg-white p-3';
+  'space-y-3 rounded-lg border border-[#4B5563] bg-white p-3';
 
 export function formSectionClass(filled: boolean) {
   return filled ? FORM_FILLED_SECTION_CLASS : FORM_SECTION_CLASS;
@@ -19,7 +19,7 @@ export const FORM_SECTION_TITLE_CLASS = 'text-lg font-semibold text-gray-900';
 
 export const FORM_LABEL_CLASS = 'text-sm';
 
-export const FORM_INPUT_CLASS = 'text-sm py-1.5 !border-[#003366]';
+export const FORM_INPUT_CLASS = 'text-sm py-1.5 !border-[#4B5563]';
 
 /**
  * Field rows (see index.css).

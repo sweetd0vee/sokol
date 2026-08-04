@@ -12,7 +12,12 @@ import {
   getRecommendationStatusLabel,
 } from '../constants/recommendations';
 import { parseDateValue, toEndOfDayMs, toStartOfDayMs } from './dates';
-import { getPeriodBucket, type PeriodBucket, type PeriodGranularity } from './analyticsPeriod';
+import {
+  getPeriodBucket,
+  isDateInSelectedPeriods,
+  type PeriodBucket,
+  type PeriodGranularity,
+} from './analyticsPeriod';
 
 export type { PeriodGranularity, PeriodBucket };
 
@@ -22,6 +27,7 @@ export type RecommendationAnalyticsFilters = {
   auditors: string[];
   materialityLevels: MaterialityLevel[];
   granularity: PeriodGranularity;
+  selectedPeriods: string[];
 };
 
 export type NamedCount = {
@@ -111,6 +117,9 @@ export function filterRecommendationsForAnalytics(
       return false;
     }
     if (materialitySet.size > 0 && !materialitySet.has(item.materiality_level)) {
+      return false;
+    }
+    if (!isDateInSelectedPeriods(deadlineMs, filters.granularity, filters.selectedPeriods)) {
       return false;
     }
     return true;

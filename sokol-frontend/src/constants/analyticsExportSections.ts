@@ -12,6 +12,10 @@ export const CHECK_EXPORT_SECTIONS = [
   { id: 'auditors', label: 'Аудиторы', sheetName: 'Аудиторы', headerFill: '1E40AF' },
   { id: 'durations', label: 'Длительность', sheetName: 'Длительность', headerFill: '0369A1' },
   { id: 'documents', label: 'Документы', sheetName: 'Документы', headerFill: 'BE123C' },
+  { id: 'effectiveness', label: 'Оценка эффективности', sheetName: 'Оценка эффективности', headerFill: '065F46' },
+  { id: 'effectivenessByArea', label: 'Оценки по областям', sheetName: 'Оценки по областям', headerFill: '0E7490' },
+  { id: 'effectivenessByPeriod', label: 'Оценки по периодам', sheetName: 'Оценки по периодам', headerFill: 'B45309' },
+  { id: 'effectivenessByAuditor', label: 'Оценки по аудиторам', sheetName: 'Оценки аудиторы', headerFill: '1E40AF' },
   { id: 'auditorMatrix', label: 'Матрица аудитор×период', sheetName: 'Матрица аудитор-период', headerFill: '4338CA' },
   { id: 'source', label: 'Исходные данные', sheetName: 'Исходные данные', headerFill: '003366' },
 ] as const;

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -37,6 +37,7 @@ import type { MaterialityLevel, Recommendation } from '../../types/recommendatio
 import { MATERIALITY_LEVEL_OPTIONS } from '../../constants/recommendations';
 import { Select } from '../ui/Select';
 import { SegmentedControl } from '../ui/SegmentedControl';
+import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { Button } from '../ui/Button';
 import { LIST_ACTION_BUTTON_CLASS } from '../../constants/formLayout';
 import { ChartCard, EmptyChart, ExportSectionToolbar, KpiCard, PALETTE } from './AnalyticsChartPrimitives';
@@ -50,6 +51,8 @@ import {
   type RecommendationExportSectionId,
 } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
+import { collectPeriodOptions, periodGranularityHint } from '../../utils/analyticsPeriod';
+import { parseDateValue } from '../../utils/dates';
 import {
   ADDITIONAL_STATUS_COLORS,
   buildAdditionalStatusDistribution,
@@ -127,6 +130,7 @@ export function RecommendationsAnalyticsDashboard({
   recommendations,
 }: RecommendationsAnalyticsDashboardProps) {
   const [granularity, setGranularity] = useState<PeriodGranularity>('quarter');
+  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [selectedMateriality, setSelectedMateriality] = useState<MaterialityLevel[]>([]);
   const [auditorToAdd, setAuditorToAdd] = useState('');
@@ -143,6 +147,23 @@ export function RecommendationsAnalyticsDashboard({
       .map((name) => ({ value: name, label: name }));
   }, [recommendations, selectedAuditors]);
 
+  const periodOptions = useMemo(
+    () =>
+      collectPeriodOptions(
+        recommendations.map((item) => parseDateValue(item.deadline)),
+        granularity,
+      ).map((period) => ({ value: period.key, label: period.label })),
+    [recommendations, granularity],
+  );
+
+  useEffect(() => {
+    const valid = new Set(periodOptions.map((option) => option.value));
+    setSelectedPeriods((prev) => {
+      const next = prev.filter((key) => valid.has(key));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [periodOptions]);
+
   const filtered = useMemo(
     () =>
       filterRecommendationsForAnalytics(recommendations, {
@@ -151,8 +172,9 @@ export function RecommendationsAnalyticsDashboard({
         auditors: selectedAuditors,
         materialityLevels: selectedMateriality,
         granularity,
+        selectedPeriods,
       }),
-    [recommendations, selectedAuditors, selectedMateriality, granularity],
+    [recommendations, selectedAuditors, selectedMateriality, granularity, selectedPeriods],
   );
 
   const summary = useMemo(() => summarizeRecommendations(filtered), [filtered]);
@@ -209,6 +231,7 @@ export function RecommendationsAnalyticsDashboard({
 
   const resetFilters = () => {
     setGranularity('quarter');
+    setSelectedPeriods([]);
     setSelectedAuditors([]);
     setSelectedMateriality([]);
     setAuditorToAdd('');
@@ -263,9 +286,21 @@ export function RecommendationsAnalyticsDashboard({
               <SegmentedControl
                 value={granularity}
                 options={GRANULARITY_OPTIONS}
-                onChange={setGranularity}
+                onChange={(next) => {
+                  setGranularity(next);
+                  setSelectedPeriods([]);
+                }}
                 className="w-full flex-col items-stretch"
                 buttonClassName="min-w-0 w-full"
+              />
+              <MultiCheckboxSelect
+                label="Выбор периода"
+                options={periodOptions}
+                value={selectedPeriods}
+                onChange={setSelectedPeriods}
+                placeholder="Все периоды"
+                hint={periodGranularityHint(granularity)}
+                labelClassName="text-sm"
               />
             </div>
             <div className="space-y-2">

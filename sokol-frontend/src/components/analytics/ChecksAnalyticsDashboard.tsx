@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -28,6 +28,7 @@ import { Download, X } from 'lucide-react';
 import type { Check } from '../../types/check';
 import { Select } from '../ui/Select';
 import { SegmentedControl } from '../ui/SegmentedControl';
+import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { Button } from '../ui/Button';
 import { LIST_ACTION_BUTTON_CLASS } from '../../constants/formLayout';
 import { ChartCard, EmptyChart, ExportSectionToolbar, KpiCard, PALETTE } from './AnalyticsChartPrimitives';
@@ -41,6 +42,8 @@ import {
   type CheckExportSectionId,
 } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
+import { collectPeriodOptions, periodGranularityHint } from '../../utils/analyticsPeriod';
+import { parseDateValue } from '../../utils/dates';
 import {
   buildAuditorDistribution,
   buildAuditorPeriodMatrix,
@@ -48,6 +51,10 @@ import {
   buildCumulativeSeries,
   buildDocumentReadiness,
   buildDurationDistribution,
+  buildEffectivenessAuditorRows,
+  buildEffectivenessByArea,
+  buildEffectivenessDistribution,
+  buildEffectivenessPeriodSeries,
   buildPeriodSeries,
   buildStatusDistribution,
   buildTypeDistribution,
@@ -55,8 +62,11 @@ import {
   buildViewDistribution,
   buildViewRadar,
   collectCheckLeaders,
+  collectEffectivenessRatingOptions,
+  EFFECTIVENESS_AREA_OPTIONS,
   filterChecksForAnalytics,
   summarizeChecks,
+  type EffectivenessArea,
   type PeriodGranularity,
 } from '../../utils/checkAnalytics';
 
@@ -67,6 +77,17 @@ const GRANULARITY_OPTIONS: { value: PeriodGranularity; label: string }[] = [
 ];
 
 const CHART_COLORS = ['#003366', '#4F7FA8', '#7FA3C4', '#6B9F7C', '#B89750', '#B56E6E', '#8682A4', '#5B91A0'];
+
+const EFFECTIVENESS_COLORS = [
+  '#6B9F7C',
+  '#7FA3C4',
+  '#B89750',
+  '#B56E6E',
+  '#8682A4',
+  '#5B91A0',
+  '#9AA3B0',
+  '#003366',
+];
 
 const STATUS_STACK = [
   { key: 'not_started', label: 'Запланировано', color: '#9AA3B0' },
@@ -106,6 +127,9 @@ function TreemapContent(props: {
 
 export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardProps) {
   const [granularity, setGranularity] = useState<PeriodGranularity>('quarter');
+  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
+  const [effectivenessArea, setEffectivenessArea] = useState<EffectivenessArea>('any');
+  const [selectedEffectivenessRatings, setSelectedEffectivenessRatings] = useState<string[]>([]);
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [auditorToAdd, setAuditorToAdd] = useState('');
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('xlsx');
@@ -122,13 +146,57 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
       .map((name) => ({ value: name, label: name }));
   }, [checks, selectedAuditors]);
 
+  const periodOptions = useMemo(
+    () =>
+      collectPeriodOptions(
+        checks.map((check) => parseDateValue(check.start_date)),
+        granularity,
+      ).map((period) => ({ value: period.key, label: period.label })),
+    [checks, granularity],
+  );
+
+  const effectivenessRatingOptions = useMemo(
+    () =>
+      collectEffectivenessRatingOptions(checks, effectivenessArea).map((label) => ({
+        value: label,
+        label,
+      })),
+    [checks, effectivenessArea],
+  );
+
+  useEffect(() => {
+    const valid = new Set(periodOptions.map((option) => option.value));
+    setSelectedPeriods((prev) => {
+      const next = prev.filter((key) => valid.has(key));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [periodOptions]);
+
+  useEffect(() => {
+    const valid = new Set(effectivenessRatingOptions.map((option) => option.value));
+    setSelectedEffectivenessRatings((prev) => {
+      const next = prev.filter((key) => valid.has(key));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [effectivenessRatingOptions]);
+
   const filteredChecks = useMemo(
     () =>
       filterChecksForAnalytics(checks, {
         auditors: selectedAuditors,
         granularity,
+        selectedPeriods,
+        effectivenessArea,
+        selectedEffectivenessRatings,
       }),
-    [checks, selectedAuditors, granularity],
+    [
+      checks,
+      selectedAuditors,
+      granularity,
+      selectedPeriods,
+      effectivenessArea,
+      selectedEffectivenessRatings,
+    ],
   );
 
   const summary = useMemo(() => summarizeChecks(filteredChecks), [filteredChecks]);
@@ -168,10 +236,54 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
     [filteredChecks],
   );
   const viewRadar = useMemo(() => buildViewRadar(filteredChecks), [filteredChecks]);
+  const effectivenessDistribution = useMemo(
+    () => buildEffectivenessDistribution(filteredChecks, effectivenessArea),
+    [filteredChecks, effectivenessArea],
+  );
+  const effectivenessByArea = useMemo(
+    () => buildEffectivenessByArea(filteredChecks),
+    [filteredChecks],
+  );
+  const effectivenessPeriodSeries = useMemo(
+    () => buildEffectivenessPeriodSeries(filteredChecks, granularity, effectivenessArea),
+    [filteredChecks, granularity, effectivenessArea],
+  );
+  const effectivenessAuditorRows = useMemo(
+    () => buildEffectivenessAuditorRows(filteredChecks, effectivenessArea).slice(0, 8),
+    [filteredChecks, effectivenessArea],
+  );
+  const effectivenessPeriodChartData = useMemo(
+    () =>
+      effectivenessPeriodSeries.map((row) => {
+        const point: Record<string, string | number> = {
+          label: row.label,
+          total: row.total,
+        };
+        effectivenessByArea.ratings.forEach((rating) => {
+          point[rating] = row.byRating[rating] ?? 0;
+        });
+        return point;
+      }),
+    [effectivenessPeriodSeries, effectivenessByArea.ratings],
+  );
+  const effectivenessAreaChartData = useMemo(
+    () =>
+      effectivenessByArea.rows.map((row) => {
+        const point: Record<string, string | number> = { area: row.area };
+        effectivenessByArea.ratings.forEach((rating) => {
+          point[rating] = row.byRating[rating] ?? 0;
+        });
+        return point;
+      }),
+    [effectivenessByArea],
+  );
   const maxAuditorCount = auditorDistribution[0]?.value ?? 1;
 
   const periodLabel =
     granularity === 'month' ? 'месяцам' : granularity === 'quarter' ? 'кварталам' : 'годам';
+  const effectivenessAreaLabel =
+    EFFECTIVENESS_AREA_OPTIONS.find((item) => item.value === effectivenessArea)?.label ??
+    'Все области';
 
   const addAuditor = (value: string) => {
     if (!value || selectedAuditors.includes(value)) {
@@ -187,6 +299,9 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
 
   const resetFilters = () => {
     setGranularity('quarter');
+    setSelectedPeriods([]);
+    setEffectivenessArea('any');
+    setSelectedEffectivenessRatings([]);
     setSelectedAuditors([]);
     setAuditorToAdd('');
   };
@@ -237,9 +352,45 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
               <SegmentedControl
                 value={granularity}
                 options={GRANULARITY_OPTIONS}
-                onChange={setGranularity}
+                onChange={(next) => {
+                  setGranularity(next);
+                  setSelectedPeriods([]);
+                }}
                 className="w-full flex-col items-stretch"
                 buttonClassName="min-w-0 w-full"
+              />
+              <MultiCheckboxSelect
+                label="Выбор периода"
+                options={periodOptions}
+                value={selectedPeriods}
+                onChange={setSelectedPeriods}
+                placeholder="Все периоды"
+                hint={periodGranularityHint(granularity)}
+                labelClassName="text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-gray-700 dark:text-slate-300">
+                Оценка эффективности
+              </p>
+              <SegmentedControl
+                value={effectivenessArea}
+                options={EFFECTIVENESS_AREA_OPTIONS}
+                onChange={(next) => {
+                  setEffectivenessArea(next);
+                  setSelectedEffectivenessRatings([]);
+                }}
+                className="w-full flex-col items-stretch"
+                buttonClassName="min-w-0 w-full"
+              />
+              <MultiCheckboxSelect
+                label="Значения оценки"
+                options={effectivenessRatingOptions}
+                value={selectedEffectivenessRatings}
+                onChange={setSelectedEffectivenessRatings}
+                placeholder="Все оценки"
+                hint="Отметьте оценки для среза дашбордов"
+                labelClassName="text-sm"
               />
             </div>
             <Select
@@ -749,6 +900,158 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
                   content={<TreemapContent />}
                 />
               </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <ChartCard
+          title="Оценка эффективности"
+          description={`Распределение: ${effectivenessAreaLabel}`}
+          accentClassName="border-slate-200 dark:border-slate-700"
+          exportSelected={exportSections.isSelected('effectiveness')}
+          onToggleExport={() => exportSections.toggleSection('effectiveness')}
+        >
+          {effectivenessDistribution.length === 0 ? (
+            <EmptyChart message="Нет данных" />
+          ) : (
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={effectivenessDistribution}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={78}
+                    label={({ name, percent }) =>
+                      `${name}: ${Math.round((percent ?? 0) * 100)}%`
+                    }
+                  >
+                    {effectivenessDistribution.map((entry, index) => (
+                      <Cell
+                        key={entry.name}
+                        fill={EFFECTIVENESS_COLORS[index % EFFECTIVENESS_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+
+        <ChartCard
+          title="Оценки по областям"
+          description="Процесс / СВК / СУР / СВИК"
+          accentClassName="border-slate-200 dark:border-slate-700"
+          exportSelected={exportSections.isSelected('effectivenessByArea')}
+          onToggleExport={() => exportSections.toggleSection('effectivenessByArea')}
+        >
+          {effectivenessAreaChartData.length === 0 ? (
+            <EmptyChart message="Нет данных" />
+          ) : (
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={effectivenessAreaChartData} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="area" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  {effectivenessByArea.ratings.map((rating, index) => (
+                    <Bar
+                      key={rating}
+                      dataKey={rating}
+                      stackId="eff"
+                      fill={EFFECTIVENESS_COLORS[index % EFFECTIVENESS_COLORS.length]}
+                    />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <ChartCard
+          title={`Оценки по ${periodLabel}`}
+          description={`Динамика: ${effectivenessAreaLabel}`}
+          accentClassName="border-slate-200 dark:border-slate-700"
+          exportSelected={exportSections.isSelected('effectivenessByPeriod')}
+          onToggleExport={() => exportSections.toggleSection('effectivenessByPeriod')}
+        >
+          {effectivenessPeriodChartData.length === 0 ? (
+            <EmptyChart message="Нет данных" />
+          ) : (
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={effectivenessPeriodChartData} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  {effectivenessByArea.ratings.map((rating, index) => (
+                    <Bar
+                      key={rating}
+                      dataKey={rating}
+                      stackId="effPeriod"
+                      fill={EFFECTIVENESS_COLORS[index % EFFECTIVENESS_COLORS.length]}
+                    />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartCard>
+
+        <ChartCard
+          title="Оценки по аудиторам"
+          description={`Топ руководителей: ${effectivenessAreaLabel}`}
+          accentClassName="border-slate-200 dark:border-slate-700"
+          exportSelected={exportSections.isSelected('effectivenessByAuditor')}
+          onToggleExport={() => exportSections.toggleSection('effectivenessByAuditor')}
+        >
+          {effectivenessAuditorRows.length === 0 ? (
+            <EmptyChart message="Нет данных" />
+          ) : (
+            <div className="h-52 overflow-auto">
+              <table className="min-w-full border-collapse text-xs">
+                <thead>
+                  <tr className="bg-sber-dark text-left text-white">
+                    <th className="px-2.5 py-1.5 font-medium">Руководитель</th>
+                    {effectivenessByArea.ratings.map((rating) => (
+                      <th key={rating} className="px-2.5 py-1.5 font-medium whitespace-nowrap">
+                        {rating}
+                      </th>
+                    ))}
+                    <th className="px-2.5 py-1.5 font-medium">Итого</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {effectivenessAuditorRows.map((row) => (
+                    <tr key={row.auditor} className="border-b border-gray-100 dark:border-slate-700">
+                      <td className="px-2.5 py-1.5 font-medium text-gray-800 dark:text-slate-100">
+                        {row.auditor}
+                      </td>
+                      {effectivenessByArea.ratings.map((rating) => (
+                        <td key={rating} className="px-2.5 py-1.5 tabular-nums text-gray-700 dark:text-slate-200">
+                          {row.byRating[rating] ?? 0}
+                        </td>
+                      ))}
+                      <td className="px-2.5 py-1.5 font-semibold tabular-nums text-sber-dark dark:text-sber-light">
+                        {row.total}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </ChartCard>
