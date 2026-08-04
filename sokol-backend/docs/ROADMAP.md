@@ -1,51 +1,56 @@
 # Roadmap — backend
 
-Актуально на август 2026. Порядок — по ценности для стабильности и стыка с UI.
+**Актуально:** август 2026  
+**Единый план:** [PLAN.md](../../PLAN.md) — приоритеты, фазы, спринты, матрица prod-readiness.
 
-## Фаза 0 — согласование и гигиена (1–3 дня)
+Ниже — backlog, специфичный для API и DOCX. Порядок согласован с общим планом.
 
-- [x] Зафиксировать в документации два режима портов: Docker **8800**, local `run_dev.ps1` **8802** (+ фронт `.env.development`).
-- [ ] (Опционально) Унифицировать порт API в коде (один порт для Docker и local), если onboarding всё ещё путает.
-- [ ] Свести конфиг в один `Settings` (CORS, max upload).
-- [ ] Пометить/убрать неиспользуемые Compose-сервисы (MinIO, MailHog) или завести feature flags.
-- [x] Разрыв **Analytics** закрыт на фронте (клиентские дашборды); серверный endpoint — опционально при росте данных.
+## Фаза 0 — гигиена
 
-## Фаза 1 — данные и миграции (1–2 недели)
+- [x] Зафиксировать порты: Docker **8800**, local `run_dev.ps1` **8802**.
+- [x] Analytics API не нужен — фронт считает на клиенте.
+- [ ] Унифицировать порт API в коде (опционально, если onboarding путает).
+- [ ] Единый `Settings` (CORS, max upload) вместо разрозненного `os.getenv`.
+- [ ] MinIO/MailHog — `profiles: [experimental]` или удалить из default compose.
 
-- [ ] Внедрить Alembic; baseline от текущей схемы.
+## Фаза 1 — миграции и CI
+
+- [ ] Alembic: baseline от текущей схемы.
 - [ ] Перенести `migrate_*.py` в ревизии.
-- [ ] Prod: запрет `create_all` как единственного механизма.
-- [ ] Integration tests CRUD на тестовой БД.
+- [ ] Prod: только `alembic upgrade head`, не `create_all`.
+- [ ] Integration tests: TestClient + тестовая Postgres (CRUD smoke).
+- [ ] GitHub Actions: `compileall`, `unittest`.
 
-## Фаза 2 — безопасность (2–4 недели)
+## Фаза 2 — безопасность
 
-- [ ] OIDC/Keycloak или JWT; `Authorization` на всех мутациях и чтении домена.
-- [ ] Роли: просмотр / редактирование / admin справочников.
-- [ ] Аудит логирования критичных операций (delete check, tools generate).
+- [ ] JWT/OIDC (Keycloak); `Authorization` на `/api/v1/*`.
+- [ ] Роли: auditor / admin.
+- [ ] Audit log: delete check, tools generate, settings mutate.
 
-## Фаза 3 — DOCX platform (ongoing)
+## Фаза 3 — DOCX platform
 
-- [ ] Семафор/очередь на `/tools`.
-- [ ] Streaming upload на диск.
-- [ ] Каталог золотых АЗ в CI.
+- [ ] Streaming upload на диск; семафор concurrent jobs.
 - [ ] Рефакторинг `docx_generator` / `docx_parser` на фазы.
-- [ ] Тесты / устойчивость `audit_opinion` (моки Ollama, golden DOCX).
+- [ ] Golden `.docx` в CI.
+- [ ] Тесты audit-opinion (мок Ollama).
+- [ ] Единые exception handlers.
 
 ## Фаза 4 — продукт
 
-- [ ] Хранение вложений (MinIO) + метаданные в БД.
-- [ ] Server-side pagination/filter, используемые фронтом.
-- [ ] Нормализация аудиторов/типов (FK или validation).
-- [ ] Экспорт/импорт пакетных операций через API.
+- [ ] Attachments: MinIO + metadata в БД.
+- [ ] Server-side pagination/filter (используется фронтом).
+- [ ] FK или validation справочников vs доменные строки.
+- [ ] CRUD **наблюдений** (для frontend UI).
+- [ ] (Опционально) analytics API при росте объёма данных.
 
-## Метрики готовности к prod
+## Метрики (сводка)
 
 | Критерий | Сейчас | Цель |
 |----------|--------|------|
 | Auth | нет | обязательно |
 | Миграции | create_all | Alembic |
-| CI | нет | unittest + lint на PR |
-| Analytics | разрыв FE/BE | согласовано |
-| Upload | in-memory | stream + limit concurrency |
+| CI | нет | unittest на PR |
+| Upload | in-memory | stream + concurrency |
 | API tests | нет | smoke CRUD + tools |
-| Ollama / audit-opinion | есть в tools | моки + healthcheck в CI |
+
+Полная таблица — в [PLAN.md](../../PLAN.md#матрица-готовности-к-промышленной-эксплуатации).

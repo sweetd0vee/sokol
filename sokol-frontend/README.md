@@ -80,7 +80,7 @@ VITE_DEV_API_PORT=8802
 - `src/hooks` — переиспользуемые React hooks
 - `src/utils` — даты, экспорт, скачивание файлов, проверка `.docx`
 
-Документация: [docs/README.md](docs/README.md).
+Документация: [docs/README.md](docs/README.md) · план развития: [PLAN.md](../PLAN.md).
 
 ## Актуальные маршруты
 

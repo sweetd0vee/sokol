@@ -116,7 +116,8 @@ docker compose up --build -d
 - `docs/REPORTS.md` — Раздел II, ДЗ, audit opinion
 - `docs/DEVELOPMENT.md` — запуск, Docker, env, тесты
 - `docs/CODE_REVIEW.md` — ревью и риски
-- `docs/ROADMAP.md` — план развития
+- [PLAN.md](../PLAN.md) — единый план развития (все компоненты)
+- `docs/ROADMAP.md` — backend backlog
 
 ## Проверки качества
 

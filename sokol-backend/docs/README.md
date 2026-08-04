@@ -1,6 +1,6 @@
 # SOKOL Backend — документация
 
-Каталог описывает **актуальное** состояние backend (август 2026): архитектуру, API, модель данных, DOCX-пайплайны (включая Ollama), разработку, код-ревью и roadmap.
+Каталог описывает **актуальное** состояние backend (август 2026). **План развития:** [PLAN.md](../../PLAN.md).
 
 ## Что читать
 
@@ -12,7 +12,7 @@
 | [REPORTS.md](REPORTS.md) | Раздел II АЗ, гиперссылки, ДЗ, парсинг, аудиторское мнение |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Локальный запуск, env, Docker, тесты |
 | [CODE_REVIEW.md](CODE_REVIEW.md) | Замечания по коду и риски |
-| [ROADMAP.md](ROADMAP.md) | Рекомендуемые следующие шаги |
+| [ROADMAP.md](ROADMAP.md) | Backend backlog (детали — в [PLAN.md](../../PLAN.md)) |
 
 ## Кратко о сервисе
 

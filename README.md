@@ -2,6 +2,8 @@
 
 Внутренний инструмент аудита: веб-интерфейс (React) + API (FastAPI) + PostgreSQL. Опционально — Ollama для генерации раздела I («Аудиторское мнение»).
 
+**План развития:** [PLAN.md](PLAN.md) — фазы, приоритеты, спринты и критерии готовности к prod.
+
 ## Порты
 
 | Режим | UI | API / Swagger | Postgres | Ollama |
@@ -82,22 +84,27 @@ npm run dev
 ```
 sokol/
 ├── docker-compose.yml      # коробочный стек (db + api + ollama + ui)
+├── PLAN.md                 # единый план развития и реализации
 ├── DOCKER.md
 ├── README.md
 ├── sokol-backend/          # FastAPI API
-│   ├── docs/               # архитектура, API, БД, reports, roadmap
-│   └── …
-└── sokol-frontend/         # React + Vite
-    ├── docs/               # архитектура, user stories, runbook, UI
-    └── …
+│   └── docs/               # архитектура, API, БД, reports, roadmap
+├── sokol-frontend/         # React + Vite
+│   └── docs/               # архитектура, user stories, runbook, UI
+└── sokol-instruments/      # legacy Streamlit-прототип DOCX (не основной стек)
 ```
 
-Подробнее:
+Документация:
 
-- [DOCKER.md](DOCKER.md) — compose, тома, Ollama, troubleshooting
-- [sokol-backend/README.md](sokol-backend/README.md) — env, Docker, тесты
-- [sokol-frontend/README.md](sokol-frontend/README.md) — скрипты, env, маршруты
-- [sokol-backend/docs/](sokol-backend/docs/README.md) · [sokol-frontend/docs/](sokol-frontend/docs/README.md)
+| Документ | Назначение |
+|----------|------------|
+| [PLAN.md](PLAN.md) | План фаз, спринты, prod-readiness |
+| [DOCKER.md](DOCKER.md) | Compose, тома, Ollama, troubleshooting |
+| [sokol-backend/README.md](sokol-backend/README.md) | Env, Docker, тесты API |
+| [sokol-frontend/README.md](sokol-frontend/README.md) | Скрипты, env, маршруты |
+| [sokol-backend/docs/](sokol-backend/docs/README.md) | Архитектура и API backend |
+| [sokol-frontend/docs/](sokol-frontend/docs/README.md) | Архитектура и UX frontend |
+| [sokol-instruments/README.md](sokol-instruments/README.md) | Legacy Streamlit (только для справки) |
 
 ## Текущие возможности
 

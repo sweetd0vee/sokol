@@ -135,15 +135,9 @@ CRUD, cascade delete, enum round-trip, tools multipart — только ручн
 
 ---
 
-## Приоритетный план фиксов
+## Приоритетный план
 
-1. Auth (хотя бы API key / JWT для внутренней сети).
-2. Alembic + зафиксировать enum’ы статусов рекомендаций.
-3. (Опционально) серверная аналитика при росте объёма — сейчас FE считает на клиенте.
-4. (Опционально) Унифицировать порты 8800/8802 в коде; docs уже описывают оба режима.
-5. Streaming upload + concurrency limit для `/tools`.
-6. API tests (TestClient + тестовая БД).
-7. CI: compileall + unittest + (позже) lint.
+Сводный план фаз, спринтов и критериев prod — в **[PLAN.md](../../PLAN.md)**. Backend backlog по фазам — [ROADMAP.md](ROADMAP.md).
 
 ---
 

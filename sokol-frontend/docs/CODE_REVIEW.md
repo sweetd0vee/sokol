@@ -116,13 +116,7 @@
 
 ## Приоритетный план
 
-1. Убрать или пометить fake password change.
-2. Выравнять порты 8802 во всех env/docs/compose (по желанию).
-3. Подписать вложения как non-persistent **или** сделать upload.
-4. Auth interceptor + реальный login.
-5. Vitest на mappers + smoke Playwright login→checks list.
-6. Подключить server-side filters в списках; при росте данных — серверная аналитика (опционально).
-7. Довести «Наблюдения» (API) или явно оставить как stub.
+Сводный план фаз, спринтов и критериев prod — в **[PLAN.md](../../PLAN.md)**. Frontend backlog по фазам — [ROADMAP.md](ROADMAP.md).
 
 ---
 
