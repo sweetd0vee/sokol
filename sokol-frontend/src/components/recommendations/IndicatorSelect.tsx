@@ -10,10 +10,10 @@ import type { RecommendationIndicator } from '../../types/recommendation';
 export const INDICATOR_ICONS: Partial<
   Record<RecommendationIndicator, { Icon: LucideIcon; className: string }>
 > = {
-  'в процессе': { Icon: Clock, className: 'text-[#FBEB8D]' },
+  'в процессе': { Icon: Clock, className: 'text-yellow-500' },
   ожидает: { Icon: Hourglass, className: 'text-gray-500' },
-  'не решено': { Icon: AlertTriangle, className: 'text-[#FF4347]' },
-  исполнено: { Icon: Check, className: 'text-[#A9D18E]' },
+  'не решено': { Icon: AlertTriangle, className: 'text-red-500' },
+  исполнено: { Icon: Check, className: 'text-green-500' },
 };
 
 type IndicatorSelectProps = {

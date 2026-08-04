@@ -85,7 +85,7 @@ export function ProfilePage() {
     <div className="w-full max-w-7xl space-y-3">
       <h2 className="text-xl font-bold text-sber-dark dark:text-sber-light">Профиль</h2>
 
-      <div className="space-y-3 rounded-lg border border-[#b8bec8] bg-gray-50 p-3">
+      <div className="space-y-3 rounded-lg border border-[#b8bec8] bg-white p-3">
         <div className="flex flex-col items-start gap-4">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-start">
             <button
