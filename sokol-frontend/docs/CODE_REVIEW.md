@@ -1,6 +1,6 @@
 # Code Review — sokol-frontend
 
-**Дата:** 2026-07-28  
+**Дата:** 2026-08-04 (актуализация findings; исходный разбор 2026-07-28)  
 **Метод:** статический разбор актуального `src/` + сверка с backend API.  
 **Область:** routing, contexts, API, вкладки, формы, tools, settings, profile.
 
@@ -15,10 +15,10 @@
 | Производительность (статика) | 6.5/10 |
 | Тесты | 1/10 |
 | Безопасность | 3/10 |
-| Согласованность с backend | 5/10 |
+| Согласованность с backend | 7/10 |
 | Документация (после обновления) | 8/10 |
 
-**Итого ≈ 6.4/10.** Сильный UX-каркас и API-обвязка CRUD/tools; критичны stub-auth, мёртвый analytics-контракт и отсутствие тестов.
+**Итого ≈ 6.6/10.** Сильный UX-каркас и API-обвязка CRUD/tools; аналитика считается на клиенте; критичны stub-auth и отсутствие тестов.
 
 ---
 
@@ -45,15 +45,10 @@
 **Риск:** любой, кто открыл UI к открытому API, работает с полными данными.  
 **Рекомендация:** Keycloak/OIDC + interceptor; AuthGuard должен проверять валидность токена, не только localStorage flag.
 
-#### H2. Analytics сломан на стыке с backend
+#### H2. ~~Analytics сломан на стыке с backend~~ — снято (август 2026)
 
-`api/analytics.ts` → `GET /api/v1/analytics/by-person`, но в `sokol-backend` router analytics **нет**.
-
-**Риск:** вкладка всегда в ErrorState; ложное ожидание готовности фичи.  
-**Рекомендация (выбрать одно):**
-- реализовать endpoint на backend; или
-- считать агрегаты на клиенте из `checks`/`recommendations`; или
-- скрыть вкладку / показать «в разработке».
+Ранее: `api/analytics.ts` → несуществующий `GET /analytics/by-person`.  
+**Сейчас:** `AnalyticsTab` агрегирует checks/recommendations из `SokolDataContext` на клиенте; `api/analytics.ts` удалён. Ограничение: нет серверных агрегатов при росте объёма данных (см. M1).
 
 #### H3. Смена пароля — fake success UX
 
@@ -83,7 +78,7 @@
 
 **Рекомендация:** hooks `useTableFilters`, вынести table toolbar / filter bar.
 
-#### M4. «Мои» / «Обо мне» завязаны на localStorage ФИО
+#### M4. «Мои» завязаны на localStorage ФИО
 
 Не совпадает с будущим SSO displayName; опечатка в профиле → пустой список.
 
@@ -103,7 +98,7 @@
 
 #### L3. Зависимость `xlsx` + `xlsx-js-style` — дублирование; нужен `npm audit` в CI
 
-#### L4. QueryClient: `retry: 1` глобально — для 404 analytics даёт лишний повтор
+#### L4. QueryClient: `retry: 1` глобально — лишний повтор на транзиентных сетевых ошибках (мелочь)
 
 ---
 
@@ -112,21 +107,22 @@
 Предыдущий `CODE_REVIEW.md` указывал:
 
 - нестабильные ключи справочников без `id` → **исправлено** (UUID с API);
-- delete/persistence справочников только локально → **исправлено** (API delete/create/update).
+- delete/persistence справочников только локально → **исправлено** (API delete/create/update);
+- мёртвый контракт `analytics/by-person` → **снято** (клиентские дашборды из SokolData).
 
-Не опирайтесь на старые пункты 1, 3, 4 прежней редакции.
+Не опирайтесь на старые пункты 1, 3, 4 прежней редакции и на H2 про analytics API.
 
 ---
 
 ## Приоритетный план
 
-1. Закрыть Analytics (endpoint / client / hide).
-2. Убрать или пометить fake password change.
-3. Выравнять порты 8802 во всех env/docs/compose.
-4. Подписать вложения как non-persistent **или** сделать upload.
-5. Auth interceptor + реальный login.
-6. Vitest на mappers + smoke Playwright login→checks list.
-7. Подключить server-side filters в списках.
+1. Убрать или пометить fake password change.
+2. Выравнять порты 8802 во всех env/docs/compose (по желанию).
+3. Подписать вложения как non-persistent **или** сделать upload.
+4. Auth interceptor + реальный login.
+5. Vitest на mappers + smoke Playwright login→checks list.
+6. Подключить server-side filters в списках; при росте данных — серверная аналитика (опционально).
+7. Довести «Наблюдения» (API) или явно оставить как stub.
 
 ---
 
@@ -141,6 +137,6 @@
 | section-ii-links | ✅ | ✅ | OK |
 | memorandum | ✅ | ✅ | OK |
 | parse-recommendations | ✅ | ✅ | OK |
-| analytics/by-person | ✅ | ❌ | **разрыв** |
+| analytics API | ❌ (client-side) | ❌ | OK — FE не вызывает |
 | Auth Bearer | ❌ | ❌ | оба stub |
 | File attachments | UI only | ❌ | не в scope API |

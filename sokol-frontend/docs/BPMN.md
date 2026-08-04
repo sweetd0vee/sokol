@@ -1,6 +1,6 @@
 # BPMN Diagrams (XML)
 
-Актуально для процессов UI июля 2026. XML ниже импортируется в Camunda Modeler / bpmn.io
+Актуально для процессов UI августа 2026. XML ниже импортируется в Camunda Modeler / bpmn.io
 (может потребоваться auto-layout). Связанные user stories: [USER_STORIES.md](USER_STORIES.md).
 
 **Замечание:** диаграмма «Change password» отражает UI-процесс; реального API смены пароля нет

@@ -292,7 +292,7 @@ flowchart LR
 - Celery / Redis / фоновые очереди
 - S3 / MinIO в коде приложения (сервис может быть в Compose, но не используется)
 - MailHog в коде (MinIO в Compose extras есть, приложением не используется)
-- Analytics API (`/api/v1/analytics/*` **отсутствует**, хотя фронт его вызывает)
+- Analytics API (`/api/v1/analytics/*` **отсутствует**; фронт считает аналитику на клиенте из загруженных checks/recommendations)
 
 ## Связь с фронтендом
 
@@ -300,5 +300,5 @@ flowchart LR
 |----------|---------|----------|
 | CRUD checks/recommendations/settings | есть | `src/api/*.ts` + mappers |
 | Tools DOCX + audit-opinion | `/tools/*` | `src/api/tools.ts`, `ToolsTab`, `AuditOpinionPanel` |
-| Analytics by person | **нет** | `src/api/analytics.ts` → 404 |
+| Analytics | **нет API** | клиентские дашборды из SokolData |
 | Auth header | не требуется | stub login в localStorage |

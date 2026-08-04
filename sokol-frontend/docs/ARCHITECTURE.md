@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Одностраничное приложение внутреннего аудита: CRUD проверок/рекомендаций, справочники, клиентский экспорт таблиц, вызов backend DOCX-tools (включая аудиторское мнение через Ollama), заготовка аналитики и профиля.
+Одностраничное приложение внутреннего аудита: CRUD проверок/рекомендаций, справочники, клиентский экспорт таблиц, клиентские дашборды аналитики, вызов backend DOCX-tools (включая аудиторское мнение через Ollama), заготовки наблюдений/планирования/канцлера и профиль.
 
 ## Структура `src/`
 
@@ -16,17 +16,19 @@ src/
 │   ├── layout/              # AppLayout, AuthLayout, Sidebar
 │   ├── checks/              # CheckFormPage, attachments, recommendations block
 │   ├── recommendations/     # Form, closure, selects
+│   ├── observations/        # ObservationFormPage (заготовка)
+│   ├── analytics/           # Checks/Recommendations dashboards, chart primitives
 │   ├── attachments/         # FileAttachmentsPanel
 │   ├── tools/               # DocxToolPanel, AuditOpinionPanel
 │   ├── settings/            # table card, actions, helpers
 │   ├── profile/             # ProfilePage
-│   ├── tabs/                # Checks, Recommendations, Analytics, Tools, Settings, Kantsler
+│   ├── tabs/                # Checks, Recommendations, Observations, Analytics, Planning, Tools, Settings, Kantsler
 │   └── ui/                  # Button, Input, Select, Modal, DatePicker, …
 ├── contexts/                # Auth, SokolData
 ├── hooks/                   # useAuth, reference options, current user name
 ├── types/                   # Check, Recommendation
 ├── constants/               # enums/labels, form layout, storage keys
-├── utils/                   # dates, export, checkKey, attachments, navigation
+├── utils/                   # dates, exports, analytics*, checkKey, attachments, navigation
 └── config/env.ts            # API_BASE_URL
 ```
 
@@ -45,7 +47,7 @@ flowchart TB
   AC --> Login["/login AuthLayout"]
   AC --> Guard[AuthGuard]
   Guard --> Layout[AppLayout]
-  Layout --> Pages["checks | recommendations | analytics | tools | kantsler | settings | profile"]
+  Layout --> Pages["checks | recommendations | observations | analytics | planning | tools | kantsler | settings | profile"]
 ```
 
 | Route | Компонент | Доступ |
@@ -54,7 +56,9 @@ flowchart TB
 | `/` | redirect → `/checks` | AuthGuard |
 | `/checks`, `/checks/new`, `/checks/:id/edit` | list / form | protected |
 | `/recommendations`, `.../new`, `.../:id/edit` | list / form | protected |
+| `/observations`, `.../new`, `.../:id/edit` | list / form (заготовка, без API) | protected |
 | `/analytics` | `AnalyticsTab` | protected |
+| `/planning` | stub | protected |
 | `/tools` | `ToolsTab` | protected |
 | `/kantsler` | stub | protected |
 | `/settings` | `SettingsTab` | protected |
@@ -81,7 +85,7 @@ flowchart LR
   RQ --> API
   SokolCtx --> RQ
   SettingsTab --> RQ
-  AnalyticsTab --> RQ
+  AnalyticsTab --> SokolCtx
   ToolsTab --> API
   Local --> Filters[фильтры / формы / файлы]
 ```
@@ -90,10 +94,10 @@ flowchart LR
 |------|------------|
 | **AuthContext** | `user`, login/logout; hydrate из `sokol_auth` |
 | **SokolDataContext** | checks (limit 500) + recommendations (limit 1000) через RQ; CRUD helpers; связи recommendation↔check |
-| **React Query** | кэш списков, settings, analytics |
+| **React Query** | кэш списков checks/recommendations, settings |
 | **localStorage** | auth, профиль ФИО, avatar data URL |
 | **location.state** | черновики форм проверки/рекомендации при кросс-навигации |
-| **Component state** | фильтры, пагинация, модалки, `File` вложений |
+| **Component state** | фильтры, пагинация, модалки, `File` вложений, фильтры дашбордов |
 
 **Redux/Zustand нет.**
 
@@ -106,7 +110,6 @@ flowchart LR
 | `api/recommendations.ts` | CRUD + `parse-recommendations` |
 | `api/settings.ts` | auditors / audit_types / effectiveness_ratings |
 | `api/tools.ts` | section-ii, section-ii-links, memorandum (timeout 120s); audit-opinion + prompt/models (timeout 600s) |
-| `api/analytics.ts` | `GET /analytics/by-person` — **на backend endpoint отсутствует** |
 | `api/mappers.ts` | API ↔ frontend types (id string, нормализация статусов) |
 | `api/errors.ts` | `ApiError`, FastAPI 422, blob errors |
 
@@ -137,7 +140,12 @@ flowchart TB
   RecommendationFormPage --> RecommendationClosureSection
   RecommendationFormPage --> FileAttachmentsPanel
 
+  Outlet --> ObservationsTab
+  Outlet --> ObservationFormPage
   Outlet --> AnalyticsTab
+  AnalyticsTab --> ChecksAnalyticsDashboard
+  AnalyticsTab --> RecommendationsAnalyticsDashboard
+  Outlet --> PlanningTab
   Outlet --> ToolsTab
   ToolsTab --> DocxToolPanel
   ToolsTab --> AuditOpinionPanel
@@ -151,7 +159,7 @@ flowchart TB
 
 `Button`, `Input`, `Select`, `Textarea`, `DatePicker`, `Modal` / `ConfirmDialog`, `PageHeader`, `SegmentedControl`, `StateMessage` (Loading/Error/Empty).
 
-Дизайн: Tailwind + палитра `sber` (navy `#003366`, accent `#6699FF`). Таблицы с тёмным header. Формы — CSS grid helpers `.form-row-3` / `.form-row-4`.
+Дизайн: Tailwind + палитра `sber` (navy `#003366`, accent `#6699FF`). Таблицы с тёмным header. Формы — токены `constants/formLayout.ts` + CSS grid helpers `.form-row-3` / `.form-row-4` (см. [UI_STANDARDS.md](UI_STANDARDS.md)).
 
 ## Ключевые модули домена
 
@@ -176,6 +184,14 @@ flowchart TB
 | Раздел II + ссылки | `POST /tools/section-ii-links` | 120s |
 | Докладная | `POST /tools/memorandum` | 120s |
 | Аудиторское мнение | `POST /tools/audit-opinion` (+ GET prompt/models) | 600s |
+
+### Аналитика
+
+- `AnalyticsTab` — вкладки «Проверки» / «Рекомендации».
+- Данные из `SokolDataContext` (уже загруженные checks/recommendations); отдельного analytics API **нет**.
+- Агрегации: `utils/checkAnalytics.ts`, `utils/recommendationAnalytics.ts`, период — `utils/analyticsPeriod.ts`.
+- Дашборды: `ChecksAnalyticsDashboard`, `RecommendationsAnalyticsDashboard` (Recharts).
+- Экспорт: `utils/analyticsExport.ts`, `utils/analyticsVisualExport.ts` (XLSX / PDF / визуальные отчёты).
 
 ### Экспорт таблиц (клиент)
 
@@ -285,9 +301,9 @@ sequenceDiagram
 
 1. Таблицы фильтруются **на клиенте** после bulk-fetch (500/1000) — не server-driven pagination UI.
 2. Вложения не персистятся.
-3. Analytics зависит от несуществующего backend endpoint.
+3. Аналитика считается **на клиенте** по уже загруженным данным — нет серверных агрегатов и отдельного analytics API.
 4. Auth stub — нет защиты API.
-5. «Канцлер» — заглушка СЭД.
+5. «Наблюдения» — UI-заготовка без backend; «Планирование» и «Канцлер» — заглушки.
 6. Нет frontend unit/e2e test script в `package.json`.
 
 ## Связь с backend docs

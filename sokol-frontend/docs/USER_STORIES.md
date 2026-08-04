@@ -1,6 +1,6 @@
 # Пользовательские истории и диаграммы
 
-Актуально для UI июля 2026 (React SPA + FastAPI). Роли ниже — логические; технической RBAC пока нет (stub login).
+Актуально для UI августа 2026 (React SPA + FastAPI). Роли ниже — логические; технической RBAC пока нет (stub login).
 
 ## Роли
 
@@ -34,6 +34,7 @@
 - Блок вложений — локальные `File`, **без upload на API**.
 - Блок рекомендаций проверки + переход к созданию рекомендации с возвратом черновика через `location.state`.
 - Импорт рекомендаций из АЗ: `POST /tools/parse-recommendations` → preview → create.
+- Стили секций/полей — общие токены `constants/formLayout.ts`.
 
 ### US-05 Экспорт проверок
 
@@ -51,15 +52,19 @@
 ### US-08 Рекомендации
 
 - Список с фильтрами (аудитор, руководитель, статусы, объект, срок), бейджи материальности/индикатора.
-- Форма: описание, статусы, срок, закрытие (продления, снятие с контроля).
+- Форма: описание, статусы, срок, контрольная зона (срок исполнения → снять с контроля → перенос срока).
+- Поля «Статус» / «Дополнительный статус» подсвечиваются теми же цветами, что бейджи в таблице.
 - Экспорт XLSX/DOCX/PDF.
 - Данные: `GET /api/v1/recommendations?limit=1000`.
 
 ### US-09 Аналитика
 
-- Фильтр сотрудник + период, режим «Обо мне».
-- UI вызывает `GET /api/v1/analytics/by-person`.
-- **Ограничение:** endpoint на backend **не реализован** — вкладка показывает ошибку API до появления сервиса или client-side fallback.
+Как аналитик, я хочу видеть сводки по проверкам и рекомендациям.
+
+- Вкладки «Проверки» / «Рекомендации» (`AnalyticsTab`).
+- Данные из уже загруженного `SokolDataContext` (checks + recommendations); **отдельного analytics API нет**.
+- Фильтры периода и срезы на клиенте (`checkAnalytics` / `recommendationAnalytics`).
+- Экспорт дашбордов: таблицы и визуальные отчёты (`analyticsExport` / `analyticsVisualExport`).
 
 ### US-10 Инструменты
 
@@ -78,6 +83,14 @@
 
 - Заглушка «в разработке» (будущая интеграция с СЭД).
 
+### US-13 Наблюдения
+
+- UI списка и формы (`/observations`) — **заготовка**; backend/API пока отсутствуют, данные не персистятся.
+
+### US-14 Планирование
+
+- Заглушка «в разработке» (`/planning`).
+
 ---
 
 ## Диаграммы
@@ -90,7 +103,9 @@ flowchart LR
   Checks --> CheckForm[Форма проверки]
   Checks --> Recs[Рекомендации]
   Recs --> RecForm[Форма рекомендации]
+  Checks --> Observations[Наблюдения]
   Checks --> Analytics[Аналитика]
+  Checks --> Planning[Планирование]
   Checks --> Kantsler[Канцлер]
   Checks --> Tools[Инструменты]
   Checks --> Settings[Настройки]
@@ -118,6 +133,21 @@ sequenceDiagram
   Tab->>Exp: rows + columns
   Exp-->>U: download file
   Note over Exp: без вызова backend
+```
+
+### Аналитика (клиент)
+
+```mermaid
+sequenceDiagram
+  participant U as Пользователь
+  participant AT as AnalyticsTab
+  participant SD as SokolDataContext
+  participant Dash as Checks/Recs Dashboard
+  U->>AT: открыть аналитику
+  AT->>SD: checks + recommendations
+  AT->>Dash: агрегации + Recharts
+  U->>Dash: экспорт XLSX/PDF
+  Note over Dash: без analytics API
 ```
 
 ### DOCX tools

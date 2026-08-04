@@ -131,7 +131,7 @@ MIME: OOXML DOCX или `application/octet-stream`.
 
 ## Чего нет в API
 
-- `/api/v1/analytics/*` — фронт (`fetchAnalyticsByPerson`) ожидает endpoint, backend его **не реализует**.
+- `/api/v1/analytics/*` — **не реализован**; фронт считает аналитику на клиенте и этот endpoint не вызывает.
 - Auth, upload вложений проверок, WebSocket, batch-import Excel через API.
 
 ---
