@@ -67,6 +67,39 @@ export function getRecommendationAdditionalStatusBadgeClass(
   }
 }
 
+/** Same table badge colors for form selects (inline — native <select> ignores many Tailwind bg utilities). */
+export function getRecommendationStatusFieldStyle(
+  value: RecommendationStatus | '' | null | undefined,
+): { backgroundColor: string } | undefined {
+  switch (value) {
+    case 'completed':
+      return { backgroundColor: '#dcfce7' };
+    case 'unresolved':
+      return { backgroundColor: '#fee2e2' };
+    case 'on_control':
+      return { backgroundColor: '#e5e7eb' };
+    case 'in_progress':
+      return { backgroundColor: '#fef9c3' };
+    default:
+      return undefined;
+  }
+}
+
+export function getRecommendationAdditionalStatusFieldStyle(
+  value: RecommendationAdditionalStatus | '' | null | undefined,
+): { backgroundColor: string } | undefined {
+  switch (value) {
+    case 'on_time':
+      return { backgroundColor: '#dcfce7' };
+    case 'deadline_violated':
+      return { backgroundColor: '#fee2e2' };
+    case 'on_control':
+      return { backgroundColor: '#e5e7eb' };
+    default:
+      return undefined;
+  }
+}
+
 export function normalizeRecommendationStatus(value: string | null | undefined): RecommendationStatus {
   switch (value) {
     case 'completed':

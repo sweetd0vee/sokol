@@ -11,8 +11,8 @@ import {
   INDICATOR_OPTIONS,
   RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS,
   RECOMMENDATION_STATUS_OPTIONS,
-  getRecommendationAdditionalStatusBadgeClass,
-  getRecommendationStatusBadgeClass,
+  getRecommendationAdditionalStatusFieldStyle,
+  getRecommendationStatusFieldStyle,
   normalizeRecommendationAdditionalStatus,
   normalizeRecommendationIndicator,
   normalizeRecommendationStatus,
@@ -500,7 +500,8 @@ export function RecommendationFormPage() {
               placeholder="Выберите статус"
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
-              inputClassName={`${FORM_EQUAL_CONTROL_CLASS} ${getRecommendationStatusBadgeClass(status)}`}
+              inputClassName={FORM_EQUAL_CONTROL_CLASS}
+              inputStyle={getRecommendationStatusFieldStyle(status)}
             />
             <Select
               label="Дополнительный статус"
@@ -512,7 +513,8 @@ export function RecommendationFormPage() {
               placeholder="Выберите дополнительный статус"
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
-              inputClassName={`${FORM_EQUAL_CONTROL_CLASS} ${getRecommendationAdditionalStatusBadgeClass(additionalStatus)}`}
+              inputClassName={FORM_EQUAL_CONTROL_CLASS}
+              inputStyle={getRecommendationAdditionalStatusFieldStyle(additionalStatus)}
             />
             <IndicatorSelect
               label="Индикатор"
