@@ -13,9 +13,9 @@ import { getErrorMessage } from '../../api/errors';
 import { downloadBlob } from '../../utils/download';
 import { isDocxFile } from '../../utils/docx';
 import {
+  FORM_SECTION_CLASS,
   FORM_SECTION_TITLE_CLASS,
   FORM_STACK_CLASS,
-  formSectionClass,
 } from '../../constants/formLayout';
 
 const TOOL_TABS = [
@@ -23,7 +23,7 @@ const TOOL_TABS = [
   { value: 'dz' as const, label: 'ДЗ' },
 ];
 
-const TOOLS_SECTION_CLASS = `${formSectionClass(false)} w-full dark:border-slate-600 dark:bg-slate-800/60`;
+const TOOLS_SECTION_CLASS = `${FORM_SECTION_CLASS} w-full dark:border-slate-600 dark:bg-slate-800/60`;
 const TOOLS_SECTION_TITLE_CLASS = `${FORM_SECTION_TITLE_CLASS} dark:text-slate-100`;
 
 const buildSectionIIOutputName = (name: string, withHyperlinks = false) =>

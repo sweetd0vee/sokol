@@ -11,14 +11,18 @@ import {
   type RecommendationClosureForm,
 } from '../../constants/recommendationClosure';
 import {
-  FORM_ACTION_BUTTON_CLASS,
   FORM_FIELD_CLASS,
+  FORM_FIELD_ERROR_CLASS,
   FORM_FIELD_WIDE_CLASS,
   FORM_INPUT_CLASS,
+  FORM_LABEL_CLASS,
+  FORM_OUTLINE_BUTTON_CLASS,
   FORM_ROW_3,
   FORM_SECTION_INNER_STACK_CLASS,
+  FORM_SECTION_TITLE_CLASS,
+  FORM_TEXTAREA_CLASS,
 } from '../../constants/formLayout';
-import { toIsoDate } from '../../utils/dates';
+import { toInputDate, toIsoDate } from '../../utils/dates';
 
 type RecommendationClosureSectionProps = {
   value: RecommendationClosureForm;
@@ -26,7 +30,6 @@ type RecommendationClosureSectionProps = {
   embedded?: boolean;
   hideClosureInformation?: boolean;
   hideActualCompletionDate?: boolean;
-  attachmentResetKey?: number;
   errorFields?: {
     extensions?: boolean;
     removals?: boolean;
@@ -37,18 +40,10 @@ type RecommendationClosureSectionProps = {
   stackClassName?: string;
 };
 
-function toDate(value: string) {
-  if (!value) {
-    return null;
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
 const COMMENT_TEXTAREA_CLASS =
   `${FORM_INPUT_CLASS} box-border h-full min-h-[9.75rem] flex-1 resize-none overflow-y-auto`;
 
-const ADD_BUTTON_CLASS = `inline-flex items-center gap-1.5 rounded-lg border-2 border-[#6699FF] px-3 py-1.5 text-sm font-medium text-[#6699FF] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white ${FORM_ACTION_BUTTON_CLASS}`;
+const ADD_BUTTON_CLASS = `${FORM_OUTLINE_BUTTON_CLASS} gap-1.5`;
 
 export function CollapsibleFormBlock({
   title,
@@ -104,7 +99,6 @@ function DateCommentRows({
   inputClassName: string;
   labelClassName: string;
 }) {
-  const invalidClass = 'border-[#e59a9a] focus:border-[#d9534f] focus:ring-[#f3c5c5]';
 
   const updateRow = (id: string, partial: Partial<Pick<ClosureDateCommentRow, 'date' | 'comment'>>) => {
     onChange(rows.map((row) => (row.id === id ? { ...row, ...partial } : row)));
@@ -126,11 +120,11 @@ function DateCommentRows({
           <div key={row.id} className={`${FORM_ROW_3} items-start`}>
             <div className={`${FORM_FIELD_CLASS} space-y-3`}>
               <DatePicker
-                selected={toDate(row.date)}
+                selected={toInputDate(row.date)}
                 onChange={(date) => updateRow(row.id, { date: toIsoDate(date) ?? '' })}
                 placeholder={datePlaceholder}
                 labelClassName={labelClassName}
-                inputClassName={[inputClassName, incomplete ? invalidClass : '']
+                inputClassName={[inputClassName, incomplete ? FORM_FIELD_ERROR_CLASS : '']
                   .filter(Boolean)
                   .join(' ')}
               />
@@ -154,7 +148,7 @@ function DateCommentRows({
                 rows={1}
                 labelClassName={labelClassName}
                 className="flex h-full min-h-0 w-full flex-1 flex-col"
-                inputClassName={[COMMENT_TEXTAREA_CLASS, incomplete ? invalidClass : '']
+                inputClassName={[COMMENT_TEXTAREA_CLASS, incomplete ? FORM_FIELD_ERROR_CLASS : '']
                   .filter(Boolean)
                   .join(' ')}
               />
@@ -172,11 +166,10 @@ export function RecommendationClosureSection({
   embedded = false,
   hideClosureInformation = false,
   hideActualCompletionDate = false,
-  attachmentResetKey = 0,
   errorFields = {},
   inputClassName = FORM_INPUT_CLASS,
-  labelClassName = 'text-sm leading-relaxed',
-  blockTitleClassName = 'text-lg font-semibold leading-snug text-gray-900',
+  labelClassName = FORM_LABEL_CLASS,
+  blockTitleClassName = FORM_SECTION_TITLE_CLASS,
   stackClassName = FORM_SECTION_INNER_STACK_CLASS,
 }: RecommendationClosureSectionProps) {
   const [extensionOpen, setExtensionOpen] = useState(true);
@@ -200,7 +193,6 @@ export function RecommendationClosureSection({
 
   const removal = value.removals[0] ?? createClosureDateCommentRow();
   const removalIncomplete = Boolean(errorFields.removals) && isClosureRowIncomplete(removal);
-  const removalInvalidClass = 'border-[#e59a9a] focus:border-[#d9534f] focus:ring-[#f3c5c5]';
   const updateRemoval = (partial: Partial<Pick<ClosureDateCommentRow, 'date' | 'comment'>>) => {
     const next = { ...removal, ...partial };
     const rest = value.removals.slice(1);
@@ -215,18 +207,16 @@ export function RecommendationClosureSection({
           onChange={(closureInformation) => patch({ closureInformation })}
           placeholder="Информация о закрытии"
           rows={4}
-          inputClassName={`${FORM_INPUT_CLASS} min-h-[6.5rem] max-h-48 resize-none overflow-y-auto`}
+          inputClassName={FORM_TEXTAREA_CLASS}
         />
       )}
 
       {!hideActualCompletionDate && (
         <DatePicker
-          selected={toDate(value.actualCompletionDate)}
+          selected={toInputDate(value.actualCompletionDate)}
           onChange={(date) =>
             patch({
-              actualCompletionDate: date
-                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-                : '',
+              actualCompletionDate: toIsoDate(date) ?? '',
             })
           }
           placeholder="Выберите дату исполнения"
@@ -245,16 +235,15 @@ export function RecommendationClosureSection({
         <div className={`${FORM_ROW_3} items-start`}>
           <div className={`${FORM_FIELD_CLASS} space-y-5`}>
             <DatePicker
-              selected={toDate(removal.date)}
+              selected={toInputDate(removal.date)}
               onChange={(date) => updateRemoval({ date: toIsoDate(date) ?? '' })}
               placeholder="Выберите дату снятия с контроля"
               labelClassName={labelClassName}
-              inputClassName={[inputClassName, removalIncomplete ? removalInvalidClass : '']
+              inputClassName={[inputClassName, removalIncomplete ? FORM_FIELD_ERROR_CLASS : '']
                 .filter(Boolean)
                 .join(' ')}
             />
             <FileAttachmentsPanel
-              key={attachmentResetKey}
               embedded
               compact
               hideSlotLabel
@@ -272,7 +261,7 @@ export function RecommendationClosureSection({
               className="flex h-full min-h-0 w-full flex-1 flex-col"
               inputClassName={[
                 `${FORM_INPUT_CLASS} box-border h-full min-h-0 flex-1 resize-none overflow-y-auto`,
-                removalIncomplete ? removalInvalidClass : '',
+                removalIncomplete ? FORM_FIELD_ERROR_CLASS : '',
               ]
                 .filter(Boolean)
                 .join(' ')}

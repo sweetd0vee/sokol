@@ -16,7 +16,13 @@ import {
   formatFileSize,
   getFileExtension,
 } from '../../utils/checkAttachments';
-import { FORM_ROW_4, FORM_SECTION_TITLE_CLASS, formSectionClass } from '../../constants/formLayout';
+import {
+  FORM_INPUT_CLASS,
+  FORM_LABEL_CLASS,
+  FORM_ROW_4,
+  FORM_SECTION_CLASS,
+  FORM_SECTION_TITLE_CLASS,
+} from '../../constants/formLayout';
 
 const EMPTY_FILES: Record<AttachmentFileGroup, CheckAttachmentItem[]> = {
   order: [],
@@ -38,7 +44,6 @@ type CheckAttachmentsSectionProps = {
   program: DocumentFields;
   az: DocumentFields;
   dz: DocumentFields;
-  filled?: boolean;
 };
 
 type AttachmentCardProps = {
@@ -183,8 +188,8 @@ function DocumentMetaFields({
         onChange={onDocumentNumberChange}
         placeholder="Введите номер"
         className="min-w-0 w-full"
-        labelClassName="text-sm leading-relaxed"
-        inputClassName="text-sm py-1.5 leading-relaxed focus:!border-gray-400 focus:!ring-gray-300/40"
+        labelClassName={FORM_LABEL_CLASS}
+        inputClassName={FORM_INPUT_CLASS}
       />
       <DatePicker
         label="Дата"
@@ -192,8 +197,8 @@ function DocumentMetaFields({
         onChange={onDocumentDateChange}
         className="min-w-0 w-full"
         fieldClassName="w-full"
-        labelClassName="text-sm leading-relaxed"
-        inputClassName="text-sm py-1.5 leading-relaxed focus:!border-gray-400 focus:!ring-gray-300/40"
+        labelClassName={FORM_LABEL_CLASS}
+        inputClassName={FORM_INPUT_CLASS}
       />
     </div>
   );
@@ -204,7 +209,6 @@ export function CheckAttachmentsSection({
   program,
   az,
   dz,
-  filled = false,
 }: CheckAttachmentsSectionProps) {
   const [files, setFiles] = useState(EMPTY_FILES);
   const [openSlot, setOpenSlot] = useState<AttachmentSlot | null>(null);
@@ -240,7 +244,7 @@ export function CheckAttachmentsSection({
   };
 
   return (
-    <div className={formSectionClass(filled)}>
+    <div className={FORM_SECTION_CLASS}>
       <div className={FORM_SECTION_TITLE_CLASS}>Вложения</div>
 
       <div className={FORM_ROW_4}>

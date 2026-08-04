@@ -7,7 +7,7 @@ import { getErrorMessage } from '../../api/errors';
 import { normalizeRecommendationDeadline } from '../../utils/recommendationDeadline';
 import { ACCEPTED_DOCX, isDocxFile } from '../../utils/docx';
 import { useSokolData } from '../../contexts/sokolData';
-import { FORM_FIELD_CLASS, FORM_ROW_3, FORM_SECTION_TITLE_CLASS, formSectionClass } from '../../constants/formLayout';
+import { FORM_FIELD_CLASS, FORM_ROW_3, FORM_SECTION_CLASS, FORM_SECTION_TITLE_CLASS } from '../../constants/formLayout';
 
 type CheckRecommendationsBlockProps = {
   checkKey: string;
@@ -37,8 +37,8 @@ export function CheckRecommendationsBlock({
   const canAdd = Boolean(checkKey.trim()) && checkSaved;
   const docxFlowActive = Boolean(importAzFileName || isParsing || parseError || parsedPreview.length > 0);
 
-  const existingForCheck = useMemo(
-    () => getRecommendationsByCheckKey(checkKey),
+  const storedRecommendations = useMemo(
+    () => (checkKey ? getRecommendationsByCheckKey(checkKey) : []),
     [checkKey, getRecommendationsByCheckKey],
   );
 
@@ -51,7 +51,7 @@ export function CheckRecommendationsBlock({
   ): Recommendation => ({
     id: '0',
     serial_number: checkKey,
-    sequence_number: existingForCheck.length + index + 1,
+    sequence_number: storedRecommendations.length + index + 1,
     name: draft.name.trim(),
     description: draft.name.trim(),
     indicator: 'не указан',
@@ -143,12 +143,8 @@ export function CheckRecommendationsBlock({
     }
   };
 
-  const storedRecommendations = useMemo(
-    () => (checkKey ? getRecommendationsByCheckKey(checkKey) : []),
-    [checkKey, getRecommendationsByCheckKey],
-  );
-
   const recommendationCount = storedRecommendations.length;
+
 
   const recommendationWord = useMemo(() => {
     const n = recommendationCount;
@@ -162,7 +158,7 @@ export function CheckRecommendationsBlock({
   }, [recommendationCount]);
 
   return (
-    <div className={formSectionClass(recommendationCount > 0)}>
+    <div className={FORM_SECTION_CLASS}>
       <input
         ref={fileInputRef}
         type="file"

@@ -62,18 +62,10 @@ function AttachmentCard({
           {fileCount} {filesWord(fileCount)}
         </span>
       )}
-      {!compact && (
-        <span className="inline-flex items-center gap-2 text-sm font-medium text-[#6699FF]">
-          <Paperclip size={16} />
-          Управление вложениями
-        </span>
-      )}
-      {compact && (
-        <span className="inline-flex items-center gap-1 text-sm font-medium text-[#6699FF]">
-          <Paperclip size={14} />
-          Управление вложениями
-        </span>
-      )}
+      <span className={`inline-flex items-center text-sm font-medium text-[#6699FF] ${compact ? 'gap-1' : 'gap-2'}`}>
+        <Paperclip size={compact ? 14 : 16} />
+        Управление вложениями
+      </span>
     </button>
   );
 }

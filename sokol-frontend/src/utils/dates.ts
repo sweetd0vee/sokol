@@ -31,3 +31,16 @@ export function toIsoDate(date: Date | null): string | undefined {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+/** Parse an ISO/date string into a local Date for date pickers, or null if empty/invalid. */
+export function toInputDate(value?: string | null): Date | null {
+  if (!value) {
+    return null;
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function isNonEmpty(value: string | null | undefined) {
+  return Boolean(value?.toString().trim());
+}

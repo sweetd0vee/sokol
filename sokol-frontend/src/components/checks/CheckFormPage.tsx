@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
@@ -10,7 +10,7 @@ import {
   buildCheckKeySeeds,
   generateCheckSerialNumber,
 } from '../../utils/checkKey';
-import { toIsoDate, toStartOfDayMs } from '../../utils/dates';
+import { toInputDate, toIsoDate, toStartOfDayMs } from '../../utils/dates';
 import { useSokolData } from '../../contexts/sokolData';
 import { useAuditorOptions, useEffectivenessRatingOptions } from '../../hooks/useReferenceOptions';
 import { CheckAttachmentsSection } from './CheckAttachmentsSection';
@@ -23,32 +23,18 @@ import {
   FORM_FIELD_CLASS,
   FORM_INPUT_CLASS,
   FORM_LABEL_CLASS,
+  FORM_OUTLINE_BUTTON_CLASS,
   FORM_PAGE_CLASS,
   FORM_ROW_3,
   FORM_ROW_4,
+  FORM_SAVE_BUTTON_CLASS,
+  FORM_SECTION_CLASS,
   FORM_SECTION_TITLE_CLASS,
+  FORM_SERVICE_INPUT_CLASS,
   FORM_STACK_CLASS,
-  FORM_ACTION_BUTTON_CLASS,
-  formSectionClass,
+  FORM_TEXTAREA_CLASS,
 } from '../../constants/formLayout';
 
-function toInputDate(value?: string) {
-  if (!value) {
-    return null;
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-const FORM_SERVICE_INPUT_CLASS = `${FORM_INPUT_CLASS} bg-green-100`;
-
-function isNonEmpty(value: string | null | undefined) {
-  return Boolean(value?.toString().trim());
-}
-
-function isDocumentMetaFilled(documentNumber: string, documentDate: Date | null) {
-  return isNonEmpty(documentNumber) && Boolean(documentDate);
-}
 
 export function CheckFormPage() {
   const { id } = useParams();
@@ -141,45 +127,6 @@ export function CheckFormPage() {
       existing: buildCheckKeySeeds(seedChecks),
     });
   })();
-
-  const isCheckBlockFilled = useMemo(
-    () =>
-      isNonEmpty(checkName) &&
-      isNonEmpty(checkType) &&
-      isNonEmpty(checkView) &&
-      isNonEmpty(checkLeader) &&
-      Boolean(startDate) &&
-      Boolean(endDate) &&
-      isNonEmpty(checkKey),
-    [checkKey, checkLeader, checkName, checkType, checkView, endDate, startDate],
-  );
-
-  const isAttachmentsBlockFilled = useMemo(
-    () =>
-      isDocumentMetaFilled(orderDocumentNumber, orderDocumentDate) &&
-      isDocumentMetaFilled(programDocumentNumber, programDocumentDate) &&
-      isDocumentMetaFilled(azDocumentNumber, azDocumentDate) &&
-      isDocumentMetaFilled(dzDocumentNumber, dzDocumentDate),
-    [
-      azDocumentDate,
-      azDocumentNumber,
-      dzDocumentDate,
-      dzDocumentNumber,
-      orderDocumentDate,
-      orderDocumentNumber,
-      programDocumentDate,
-      programDocumentNumber,
-    ],
-  );
-
-  const isEffectivenessBlockFilled = useMemo(
-    () =>
-      isNonEmpty(processEffectiveness) &&
-      isNonEmpty(svkEffectiveness) &&
-      isNonEmpty(surEffectiveness) &&
-      isNonEmpty(svikEffectiveness),
-    [processEffectiveness, surEffectiveness, svikEffectiveness, svkEffectiveness],
-  );
 
   useEffect(() => {
     const restoredDraft = (location.state as CheckFormLocationState | null)?.restoredDraft;
@@ -316,14 +263,14 @@ export function CheckFormPage() {
         <h2 className="text-xl font-bold text-sber-dark">{heading}</h2>
         <Link
           to="/checks"
-          className={`inline-flex items-center rounded-lg border-2 border-[#6699FF] px-3 py-1.5 text-sm font-medium text-[#6699FF] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white ${FORM_ACTION_BUTTON_CLASS}`}
+          className={FORM_OUTLINE_BUTTON_CLASS}
         >
           Назад к списку
         </Link>
       </div>
 
       <form onSubmit={handleSubmit} className={FORM_STACK_CLASS}>
-        <div className={formSectionClass(isCheckBlockFilled)}>
+        <div className={FORM_SECTION_CLASS}>
           <div className={FORM_SECTION_TITLE_CLASS}>Проверка</div>
           <Textarea
             label="Название"
@@ -332,7 +279,7 @@ export function CheckFormPage() {
             placeholder="Краткое название"
             rows={4}
             labelClassName={FORM_LABEL_CLASS}
-            inputClassName={`${FORM_INPUT_CLASS} min-h-[6.5rem] max-h-48 resize-none overflow-y-auto`}
+            inputClassName={FORM_TEXTAREA_CLASS}
           />
           <div className={FORM_ROW_3}>
             <Select
@@ -405,7 +352,6 @@ export function CheckFormPage() {
         </div>
 
         <CheckAttachmentsSection
-          filled={isAttachmentsBlockFilled}
           order={{
             documentNumber: orderDocumentNumber,
             onDocumentNumberChange: setOrderDocumentNumber,
@@ -432,7 +378,7 @@ export function CheckFormPage() {
           }}
         />
 
-        <div className={formSectionClass(isEffectivenessBlockFilled)}>
+        <div className={FORM_SECTION_CLASS}>
           <div className={FORM_SECTION_TITLE_CLASS}>Оценка эффективности</div>
           <div className={FORM_ROW_4}>
             <Select
@@ -488,7 +434,7 @@ export function CheckFormPage() {
         <div className="flex flex-wrap justify-start gap-3">
           <button
             type="submit"
-            className={`inline-flex items-center rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] ${FORM_ACTION_BUTTON_CLASS}`}
+            className={FORM_SAVE_BUTTON_CLASS}
           >
             Сохранить
           </button>

@@ -8,7 +8,6 @@ import { Textarea } from '../ui/Textarea';
 import { LoadingState } from '../ui/StateMessage';
 import type { MaterialityLevel, Recommendation, RecommendationIndicator } from '../../types/recommendation';
 import {
-  INDICATOR_OPTIONS,
   RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS,
   RECOMMENDATION_STATUS_OPTIONS,
   getRecommendationAdditionalStatusFieldStyle,
@@ -21,7 +20,7 @@ import { fetchRecommendation } from '../../api/recommendations';
 import { useSokolData } from '../../contexts/sokolData';
 import { useAuditorOptions } from '../../hooks/useReferenceOptions';
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
-import { toIsoDate } from '../../utils/dates';
+import { isNonEmpty, toInputDate, toIsoDate } from '../../utils/dates';
 import {
   type CheckFormLocationState,
   type RecommendationFormLocationState,
@@ -39,27 +38,24 @@ import {
   type RecommendationClosureForm,
 } from '../../constants/recommendationClosure';
 import {
+  FORM_EQUAL_CONTROL_CLASS,
   FORM_FIELD_CLASS,
+  FORM_FIELD_ERROR_CLASS,
   FORM_FIELD_WIDE_CLASS,
   FORM_INPUT_CLASS,
   FORM_LABEL_CLASS,
+  FORM_OUTLINE_BUTTON_CLASS,
   FORM_PAGE_CLASS,
   FORM_ROW_3,
   FORM_ROW_4,
+  FORM_SAVE_BUTTON_CLASS,
+  FORM_SECTION_CLASS,
   FORM_SECTION_INNER_STACK_CLASS,
   FORM_SECTION_TITLE_CLASS,
+  FORM_SERVICE_INPUT_CLASS,
   FORM_STACK_CLASS,
-  FORM_ACTION_BUTTON_CLASS,
-  formSectionClass,
+  FORM_TEXTAREA_CLASS,
 } from '../../constants/formLayout';
-
-function toInputDate(value?: string) {
-  if (!value) {
-    return null;
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
 
 function buildRecommendationName(description: string, sequenceNumber: number) {
   const firstLine = description
@@ -72,14 +68,6 @@ function buildRecommendationName(description: string, sequenceNumber: number) {
   return `Рекомендация ${sequenceNumber}`;
 }
 
-const REQUIRED_FIELD_ERROR_CLASS = 'border-[#e59a9a] focus:border-[#d9534f] focus:ring-[#f3c5c5]';
-const FORM_SERVICE_INPUT_CLASS = `${FORM_INPUT_CLASS} bg-green-100`;
-const FORM_EQUAL_CONTROL_CLASS = `form-equal-control ${FORM_INPUT_CLASS}`;
-const FORM_TEXTAREA_CLASS = `${FORM_INPUT_CLASS} min-h-[6.5rem] max-h-48 resize-none overflow-y-auto`;
-
-function isNonEmpty(value: string | null | undefined) {
-  return Boolean(value?.toString().trim());
-}
 
 export function RecommendationFormPage() {
   const { id } = useParams();
@@ -121,7 +109,6 @@ export function RecommendationFormPage() {
   const [closure, setClosure] = useState<RecommendationClosureForm>(() =>
     createEmptyRecommendationClosure(),
   );
-  const [formResetKey, setFormResetKey] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isExecutionDeadlineOpen, setIsExecutionDeadlineOpen] = useState(true);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
@@ -215,48 +202,8 @@ export function RecommendationFormPage() {
     requiredFieldErrors.closureInformation,
   ]);
 
-  const isKeyBlockFilled = isNonEmpty(serialNumber);
 
-  const isRecommendationBlockFilled = useMemo(
-    () =>
-      isNonEmpty(description) &&
-      Boolean(status) &&
-      Boolean(additionalStatus) &&
-      isNonEmpty(auditObject) &&
-      Boolean(deadline) &&
-      isNonEmpty(auditor) &&
-      isNonEmpty(manager) &&
-      Boolean(materialityLevel) &&
-      Boolean(indicator) &&
-      indicator !== 'не указан',
-    [
-      additionalStatus,
-      auditObject,
-      auditor,
-      deadline,
-      description,
-      indicator,
-      manager,
-      materialityLevel,
-      status,
-    ],
-  );
 
-  const isControlZoneFilled = useMemo(() => {
-    const rowComplete = (row: { date: string; comment: string }) =>
-      isNonEmpty(row.date) && isNonEmpty(row.comment);
-    const rowEmpty = (row: { date: string; comment: string }) =>
-      !isNonEmpty(row.date) && !isNonEmpty(row.comment);
-    const groupComplete = (rows: { date: string; comment: string }[]) =>
-      rows.every((row) => rowEmpty(row) || rowComplete(row));
-
-    return (
-      isNonEmpty(closure.closureInformation) &&
-      isNonEmpty(closure.actualCompletionDate) &&
-      groupComplete(closure.extensions) &&
-      groupComplete(closure.removals)
-    );
-  }, [closure]);
 
   const heading = (() => {
     if (isEditMode) {
@@ -311,17 +258,6 @@ export function RecommendationFormPage() {
     };
   };
 
-  const buildCreateAnotherPrefill = () => ({
-    serialNumber,
-    auditObject,
-    auditor: auditor || checkLeader || navigationState.auditor || '',
-    manager,
-    deadline,
-    status,
-    additionalStatus,
-    indicator,
-    materialityLevel,
-  });
 
   const persistCheckLeaderIfNeeded = async () => {
     if (!linkedCheck || !checkLeader.trim() || checkLeader === linkedCheck.check_leader) {
@@ -330,23 +266,6 @@ export function RecommendationFormPage() {
     await updateCheck({ ...linkedCheck, check_leader: checkLeader });
   };
 
-  const applyCreateAnotherPrefill = (
-    prefill: ReturnType<typeof buildCreateAnotherPrefill>,
-  ) => {
-    setSerialNumber(prefill.serialNumber);
-    setAuditObject(prefill.auditObject);
-    setAuditor(prefill.auditor);
-    setManager(prefill.manager);
-    setDeadline(prefill.deadline);
-    setStatus(prefill.status);
-    setAdditionalStatus(prefill.additionalStatus);
-    setIndicator(prefill.indicator);
-    setMaterialityLevel(prefill.materialityLevel);
-    setDescription('');
-    setClosure(createEmptyRecommendationClosure());
-    setFormResetKey((current) => current + 1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   const openCreateAnotherByCheck = (replace = false) => {
     navigate('/recommendations/new', {
@@ -358,7 +277,7 @@ export function RecommendationFormPage() {
     });
   };
 
-  const saveRecommendation = async (mode: 'save' | 'createAnother' | 'createAnotherCheckOnly') => {
+  const saveRecommendation = async (mode: 'save' | 'createAnotherCheckOnly') => {
     const trimmedDescription = description.trim();
     if (isSaving) {
       return;
@@ -383,10 +302,6 @@ export function RecommendationFormPage() {
 
       await addRecommendation(payload);
 
-      if (mode === 'createAnother') {
-        applyCreateAnotherPrefill(buildCreateAnotherPrefill());
-        return;
-      }
       if (mode === 'createAnotherCheckOnly') {
         openCreateAnotherByCheck(true);
         return;
@@ -436,14 +351,14 @@ export function RecommendationFormPage() {
           <button
             type="button"
             onClick={returnToCheckForm}
-            className={`inline-flex items-center rounded-lg border-2 border-[#6699FF] px-3 py-1.5 text-sm font-medium text-[#6699FF] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white ${FORM_ACTION_BUTTON_CLASS}`}
+            className={FORM_OUTLINE_BUTTON_CLASS}
           >
             {backLabel}
           </button>
         ) : (
           <Link
             to={backPath}
-            className={`inline-flex items-center rounded-lg border-2 border-[#6699FF] px-3 py-1.5 text-sm font-medium text-[#6699FF] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white ${FORM_ACTION_BUTTON_CLASS}`}
+            className={FORM_OUTLINE_BUTTON_CLASS}
           >
             {backLabel}
           </Link>
@@ -451,7 +366,7 @@ export function RecommendationFormPage() {
       </div>
 
       <form onSubmit={handleSubmit} className={FORM_STACK_CLASS}>
-        <div className={formSectionClass(isKeyBlockFilled)}>
+        <div className={FORM_SECTION_CLASS}>
           <div className={FORM_ROW_4}>
             <Input
               label="Ключ"
@@ -479,7 +394,7 @@ export function RecommendationFormPage() {
           )}
         </div>
 
-        <div className={formSectionClass(isRecommendationBlockFilled)}>
+        <div className={FORM_SECTION_CLASS}>
           <div className={FORM_SECTION_TITLE_CLASS}>Рекомендация</div>
 
           <div className={FORM_ROW_4}>
@@ -520,12 +435,11 @@ export function RecommendationFormPage() {
               label="Индикатор"
               value={indicator}
               onChange={(value) => setIndicator(value as RecommendationIndicator)}
-              options={INDICATOR_OPTIONS}
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
               inputClassName={[
                 FORM_EQUAL_CONTROL_CLASS,
-                showValidationErrors && requiredFieldErrors.indicator ? REQUIRED_FIELD_ERROR_CLASS : '',
+                showValidationErrors && requiredFieldErrors.indicator ? FORM_FIELD_ERROR_CLASS : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
@@ -540,7 +454,7 @@ export function RecommendationFormPage() {
             labelClassName={FORM_LABEL_CLASS}
             inputClassName={[
               FORM_TEXTAREA_CLASS,
-              showValidationErrors && requiredFieldErrors.description ? REQUIRED_FIELD_ERROR_CLASS : '',
+              showValidationErrors && requiredFieldErrors.description ? FORM_FIELD_ERROR_CLASS : '',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -568,7 +482,7 @@ export function RecommendationFormPage() {
               inputClassName={[
                 FORM_INPUT_CLASS,
                 showValidationErrors && requiredFieldErrors.auditObject
-                  ? REQUIRED_FIELD_ERROR_CLASS
+                  ? FORM_FIELD_ERROR_CLASS
                   : '',
               ]
                 .filter(Boolean)
@@ -584,7 +498,7 @@ export function RecommendationFormPage() {
               inputClassName={[
                 FORM_INPUT_CLASS,
                 showValidationErrors && requiredFieldErrors.deadline
-                  ? REQUIRED_FIELD_ERROR_CLASS
+                  ? FORM_FIELD_ERROR_CLASS
                   : '',
               ]
                 .filter(Boolean)
@@ -613,7 +527,7 @@ export function RecommendationFormPage() {
               labelClassName={FORM_LABEL_CLASS}
               inputClassName={[
                 FORM_INPUT_CLASS,
-                showValidationErrors && requiredFieldErrors.manager ? REQUIRED_FIELD_ERROR_CLASS : '',
+                showValidationErrors && requiredFieldErrors.manager ? FORM_FIELD_ERROR_CLASS : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
@@ -629,7 +543,7 @@ export function RecommendationFormPage() {
           </div>
         </div>
 
-        <div className={formSectionClass(isControlZoneFilled)}>
+        <div className={FORM_SECTION_CLASS}>
           <div className={FORM_SECTION_TITLE_CLASS}>Контрольная зона</div>
           <div className={FORM_SECTION_INNER_STACK_CLASS}>
             <CollapsibleFormBlock
@@ -646,23 +560,20 @@ export function RecommendationFormPage() {
                     onChange={(date) =>
                       setClosure((current) => ({
                         ...current,
-                        actualCompletionDate: date
-                          ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-                          : '',
+                        actualCompletionDate: toIsoDate(date) ?? '',
                       }))
                     }
                     placeholder="Выберите дату"
                     inputClassName={[
                       FORM_INPUT_CLASS,
                       showValidationErrors && requiredFieldErrors.actualCompletionDate
-                        ? REQUIRED_FIELD_ERROR_CLASS
+                        ? FORM_FIELD_ERROR_CLASS
                         : '',
                     ]
                       .filter(Boolean)
                       .join(' ')}
                   />
                   <FileAttachmentsPanel
-                    key={formResetKey}
                     embedded
                     compact
                     hideSlotLabel
@@ -682,7 +593,7 @@ export function RecommendationFormPage() {
                     inputClassName={[
                       `${FORM_INPUT_CLASS} box-border h-full min-h-0 flex-1 resize-none overflow-y-auto`,
                       showValidationErrors && requiredFieldErrors.closureInformation
-                        ? REQUIRED_FIELD_ERROR_CLASS
+                        ? FORM_FIELD_ERROR_CLASS
                         : '',
                     ]
                       .filter(Boolean)
@@ -695,13 +606,8 @@ export function RecommendationFormPage() {
               embedded
               hideClosureInformation
               hideActualCompletionDate
-              attachmentResetKey={formResetKey}
               value={closure}
               onChange={setClosure}
-              inputClassName={FORM_INPUT_CLASS}
-              labelClassName={FORM_LABEL_CLASS}
-              blockTitleClassName={FORM_SECTION_TITLE_CLASS}
-              stackClassName={FORM_SECTION_INNER_STACK_CLASS}
               errorFields={
                 showValidationErrors
                   ? {
@@ -724,7 +630,7 @@ export function RecommendationFormPage() {
             <button
               type="submit"
               disabled={isSaving}
-              className={`inline-flex items-center rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] disabled:cursor-not-allowed disabled:opacity-50 ${FORM_ACTION_BUTTON_CLASS}`}
+              className={`${FORM_SAVE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
             >
               {isSaving ? 'Сохранение...' : 'Сохранить'}
             </button>
@@ -732,7 +638,7 @@ export function RecommendationFormPage() {
               type="button"
               onClick={() => void handleCreateAnotherCheckOnly()}
               disabled={isSaving}
-              className={`inline-flex items-center rounded-lg border-2 border-[#6699FF] px-3 py-1.5 text-sm font-medium text-[#6699FF] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white disabled:cursor-not-allowed disabled:opacity-50 ${FORM_ACTION_BUTTON_CLASS}`}
+              className={`${FORM_OUTLINE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
             >
               Создать еще
             </button>

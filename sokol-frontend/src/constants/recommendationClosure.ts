@@ -41,8 +41,6 @@ export function createEmptyRecommendationClosure(): RecommendationClosureForm {
   };
 }
 
-export const EMPTY_RECOMMENDATION_CLOSURE = createEmptyRecommendationClosure();
-
 type ClosureListItem = { date?: string | null; comment?: string | null };
 
 function rowsFromList(items?: ClosureListItem[] | null): ClosureDateCommentRow[] {
