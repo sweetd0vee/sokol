@@ -40,7 +40,7 @@ function toInputDate(value?: string) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-const FORM_SERVICE_INPUT_CLASS = 'border-2 !border-[#4B5563] bg-green-100 text-sm py-1.5';
+const FORM_SERVICE_INPUT_CLASS = `${FORM_INPUT_CLASS} bg-green-100`;
 
 function isNonEmpty(value: string | null | undefined) {
   return Boolean(value?.toString().trim());
@@ -332,7 +332,7 @@ export function CheckFormPage() {
             placeholder="Краткое название"
             rows={4}
             labelClassName={FORM_LABEL_CLASS}
-            inputClassName="text-sm py-1.5 min-h-[6.5rem] max-h-48 resize-none overflow-y-auto !border-[#4B5563]"
+            inputClassName={`${FORM_INPUT_CLASS} min-h-[6.5rem] max-h-48 resize-none overflow-y-auto`}
           />
           <div className={FORM_ROW_3}>
             <Select
@@ -390,8 +390,8 @@ export function CheckFormPage() {
                 value={checkKey}
                 onChange={() => undefined}
                 placeholder=""
-                labelClassName={`${FORM_LABEL_CLASS} font-semibold`}
-                inputClassName={`${FORM_SERVICE_INPUT_CLASS} font-bold tracking-wide text-gray-800 text-center`}
+                labelClassName={FORM_LABEL_CLASS}
+                inputClassName={`${FORM_SERVICE_INPUT_CLASS} tracking-wide text-gray-800`}
                 readOnly
               />
               {missingKeyFields.length > 0 && (

@@ -3,23 +3,30 @@
 /** Moderately wide edit form, left-aligned in the content area. */
 export const FORM_PAGE_CLASS = 'w-full max-w-7xl';
 
-export const FORM_STACK_CLASS = 'space-y-5';
+/** Vertical gap between major form sections. */
+export const FORM_STACK_CLASS = 'space-y-8';
 
-const FORM_SECTION_CLASS = 'space-y-3 rounded-lg border border-[#4B5563] bg-white p-3';
+const FORM_SECTION_CLASS =
+  'space-y-5 rounded-lg border border-[#b8bec8] bg-white p-5 leading-relaxed';
 
-/** Section with all required fields filled — dark gray border. */
+/** Section with all required fields already filled — skip while scanning the form. */
 const FORM_FILLED_SECTION_CLASS =
-  'space-y-3 rounded-lg border border-[#4B5563] bg-white p-3';
+  'space-y-5 rounded-lg border border-[#b8bec8] bg-white p-5 leading-relaxed';
 
 export function formSectionClass(filled: boolean) {
   return filled ? FORM_FILLED_SECTION_CLASS : FORM_SECTION_CLASS;
 }
 
-export const FORM_SECTION_TITLE_CLASS = 'text-lg font-semibold text-gray-900';
+/** Shared inner spacing inside a form section (matches section space-y). */
+export const FORM_SECTION_INNER_STACK_CLASS = 'space-y-5';
 
-export const FORM_LABEL_CLASS = 'text-sm';
+export const FORM_SECTION_TITLE_CLASS = 'text-lg font-semibold leading-snug text-gray-900';
 
-export const FORM_INPUT_CLASS = 'text-sm py-1.5 !border-[#4B5563]';
+export const FORM_LABEL_CLASS = 'text-sm leading-relaxed';
+
+/** Default field chrome — soft gray border, muted focus (no bright blue outline). */
+export const FORM_INPUT_CLASS =
+  'text-sm py-1.5 leading-relaxed focus:!border-gray-400 focus:!ring-gray-300/40';
 
 /**
  * Field rows (see index.css).

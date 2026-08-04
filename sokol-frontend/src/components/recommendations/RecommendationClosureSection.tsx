@@ -8,7 +8,7 @@ import {
   type ClosureDateCommentRow,
   type RecommendationClosureForm,
 } from '../../constants/recommendationClosure';
-import { FORM_ACTION_BUTTON_CLASS, FORM_FIELD_CLASS, FORM_FIELD_WIDE_CLASS, FORM_ROW_3 } from '../../constants/formLayout';
+import { FORM_ACTION_BUTTON_CLASS, FORM_FIELD_CLASS, FORM_FIELD_WIDE_CLASS, FORM_INPUT_CLASS, FORM_ROW_3, FORM_SECTION_INNER_STACK_CLASS } from '../../constants/formLayout';
 import { toIsoDate } from '../../utils/dates';
 
 type RecommendationClosureSectionProps = {
@@ -36,7 +36,7 @@ function toDate(value: string) {
 }
 
 const COMMENT_TEXTAREA_CLASS =
-  'box-border h-full min-h-[9.75rem] flex-1 resize-none overflow-y-auto text-sm py-1.5';
+  `${FORM_INPUT_CLASS} box-border h-full min-h-[9.75rem] flex-1 resize-none overflow-y-auto`;
 
 const ADD_BUTTON_CLASS = `inline-flex items-center gap-1.5 rounded-lg border-2 border-[#6699FF] px-3 py-1.5 text-sm font-medium text-[#6699FF] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white ${FORM_ACTION_BUTTON_CLASS}`;
 
@@ -109,12 +109,12 @@ function DateCommentRows({
   };
 
   return (
-    <div className="space-y-3">
+    <div className={FORM_SECTION_INNER_STACK_CLASS}>
       {rows.map((row) => {
         const incomplete = showErrors && isClosureRowIncomplete(row);
         return (
           <div key={row.id} className={`${FORM_ROW_3} items-start`}>
-            <div className={`${FORM_FIELD_CLASS} space-y-2`}>
+            <div className={`${FORM_FIELD_CLASS} space-y-3`}>
               <DatePicker
                 selected={toDate(row.date)}
                 onChange={(date) => updateRow(row.id, { date: toIsoDate(date) ?? '' })}
@@ -163,10 +163,10 @@ export function RecommendationClosureSection({
   hideClosureInformation = false,
   hideActualCompletionDate = false,
   errorFields = {},
-  inputClassName = 'text-base py-3',
-  labelClassName = 'text-base',
-  blockTitleClassName = 'text-base font-semibold text-gray-900',
-  stackClassName = 'space-y-6',
+  inputClassName = FORM_INPUT_CLASS,
+  labelClassName = 'text-sm leading-relaxed',
+  blockTitleClassName = 'text-lg font-semibold leading-snug text-gray-900',
+  stackClassName = FORM_SECTION_INNER_STACK_CLASS,
 }: RecommendationClosureSectionProps) {
   const [extensionOpen, setExtensionOpen] = useState(true);
   const [removeOpen, setRemoveOpen] = useState(true);
@@ -195,7 +195,7 @@ export function RecommendationClosureSection({
           onChange={(closureInformation) => patch({ closureInformation })}
           placeholder="Информация о закрытии"
           rows={4}
-          inputClassName="text-sm py-1.5 min-h-[6.5rem] max-h-48 resize-none overflow-y-auto"
+          inputClassName={`${FORM_INPUT_CLASS} min-h-[6.5rem] max-h-48 resize-none overflow-y-auto`}
         />
       )}
 
@@ -222,7 +222,7 @@ export function RecommendationClosureSection({
         onToggle={() => setExtensionOpen((current) => !current)}
         className={stackClassName}
       >
-        <div className="space-y-3">
+        <div className={FORM_SECTION_INNER_STACK_CLASS}>
           <DateCommentRows
             rows={value.extensions}
             onChange={(extensions) => patch({ extensions })}
@@ -249,7 +249,7 @@ export function RecommendationClosureSection({
         onToggle={() => setRemoveOpen((current) => !current)}
         className={stackClassName}
       >
-        <div className="space-y-3">
+        <div className={FORM_SECTION_INNER_STACK_CLASS}>
           <DateCommentRows
             rows={value.removals}
             onChange={(removals) => patch({ removals })}
@@ -276,7 +276,7 @@ export function RecommendationClosureSection({
   }
 
   return (
-    <div className={`${stackClassName} rounded-lg border border-gray-200 bg-gray-50 p-4`}>
+    <div className={`${stackClassName} rounded-lg border border-[#b8bec8] bg-white p-5 leading-relaxed`}>
       {content}
     </div>
   );

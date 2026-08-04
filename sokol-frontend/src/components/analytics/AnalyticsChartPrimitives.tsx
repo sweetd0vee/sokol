@@ -4,6 +4,7 @@ import { Expand, FileDown, Image, Minimize2, MoreVertical, X } from 'lucide-reac
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { registerDashboardChart } from '../../utils/dashboardChartRegistry';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
@@ -160,6 +161,7 @@ export function ChartCard({
   children,
   className = '',
   accentClassName = 'border-gray-200 dark:border-slate-700',
+  exportSectionId,
   exportSelected,
   onToggleExport,
 }: {
@@ -168,6 +170,7 @@ export function ChartCard({
   children: ReactNode;
   className?: string;
   accentClassName?: string;
+  exportSectionId?: string;
   exportSelected?: boolean;
   onToggleExport?: () => void;
 }) {
@@ -176,6 +179,18 @@ export function ChartCard({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
+
+  useEffect(() => {
+    if (!exportSectionId) {
+      return undefined;
+    }
+    return registerDashboardChart({
+      id: exportSectionId,
+      title,
+      description,
+      getNode: () => captureRef.current,
+    });
+  }, [exportSectionId, title, description]);
 
   useEffect(() => {
     if (!isFullscreen) {

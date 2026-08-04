@@ -83,7 +83,7 @@ export function IndicatorSelect({
           aria-controls={listId}
           onClick={() => setOpen((current) => !current)}
           className={[
-            'flex w-full items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 text-left text-gray-900 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sber-light dark:focus:ring-sber-light/25',
+            'flex w-full items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 text-left text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-300/40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-400 dark:focus:ring-slate-500/30',
             inputClassName || 'py-2',
           ]
             .filter(Boolean)

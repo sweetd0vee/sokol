@@ -207,9 +207,9 @@ export function CheckRecommendationsBlock({
       </div>
 
       {docxFlowActive && (
-        <div className="space-y-3 border-t border-gray-200 pt-4">
+        <div className="space-y-5 border-t border-gray-200 pt-5">
           {importAzFileName && !isParsing && (
-            <p className="text-sm text-gray-600">
+            <p className="text-sm leading-relaxed text-gray-600">
               Файл: <span className="font-medium text-gray-800">{importAzFileName}</span>
             </p>
           )}
@@ -221,8 +221,8 @@ export function CheckRecommendationsBlock({
           )}
           {parseError && <ErrorState title="Ошибка" description={parseError} />}
           {parsedPreview.length > 0 && !isParsing && (
-            <div className="space-y-3">
-              <p className="text-sm text-gray-600">
+            <div className="space-y-4">
+              <p className="text-sm leading-relaxed text-gray-600">
                 В документе найдено {parsedPreview.length} рекомендаций.
               </p>
               <div className={FORM_ROW_3}>
@@ -242,7 +242,7 @@ export function CheckRecommendationsBlock({
       )}
 
       <p
-        className={`text-sm leading-snug ${
+        className={`text-sm leading-relaxed ${
           recommendationCount > 0 ? 'text-gray-800' : 'text-gray-500'
         }`}
       >

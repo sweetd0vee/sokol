@@ -46,6 +46,7 @@ import {
   FORM_PAGE_CLASS,
   FORM_ROW_3,
   FORM_ROW_4,
+  FORM_SECTION_INNER_STACK_CLASS,
   FORM_SECTION_TITLE_CLASS,
   FORM_STACK_CLASS,
   FORM_ACTION_BUTTON_CLASS,
@@ -72,8 +73,9 @@ function buildRecommendationName(description: string, sequenceNumber: number) {
 }
 
 const REQUIRED_FIELD_ERROR_CLASS = 'border-[#e59a9a] focus:border-[#d9534f] focus:ring-[#f3c5c5]';
-const FORM_SERVICE_INPUT_CLASS = 'border-2 border-gray-400 bg-green-100 text-sm py-1.5';
-const FORM_EQUAL_CONTROL_CLASS = 'form-equal-control text-sm';
+const FORM_SERVICE_INPUT_CLASS = `${FORM_INPUT_CLASS} bg-green-100`;
+const FORM_EQUAL_CONTROL_CLASS = `form-equal-control ${FORM_INPUT_CLASS}`;
+const FORM_TEXTAREA_CLASS = `${FORM_INPUT_CLASS} min-h-[6.5rem] max-h-48 resize-none overflow-y-auto`;
 
 function isNonEmpty(value: string | null | undefined) {
   return Boolean(value?.toString().trim());
@@ -458,8 +460,8 @@ export function RecommendationFormPage() {
               readOnly
               placeholder="Не указан"
               className={FORM_FIELD_CLASS}
-              labelClassName={`${FORM_LABEL_CLASS} font-semibold`}
-              inputClassName={`${FORM_SERVICE_INPUT_CLASS} font-bold tracking-wide text-gray-800 text-center`}
+              labelClassName={FORM_LABEL_CLASS}
+              inputClassName={`${FORM_SERVICE_INPUT_CLASS} tracking-wide text-gray-800`}
             />
           </div>
 
@@ -472,7 +474,7 @@ export function RecommendationFormPage() {
               placeholder="Не указано"
               rows={4}
               labelClassName={FORM_LABEL_CLASS}
-              inputClassName="border-2 border-gray-400 bg-white text-sm py-1.5 min-h-[6.5rem] max-h-48 resize-none overflow-y-auto text-gray-800"
+              inputClassName={`${FORM_TEXTAREA_CLASS} text-gray-800`}
             />
           )}
         </div>
@@ -488,7 +490,7 @@ export function RecommendationFormPage() {
               readOnly
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
-              inputClassName={`border border-gray-400 bg-white font-bold text-center ${FORM_EQUAL_CONTROL_CLASS}`}
+              inputClassName={FORM_EQUAL_CONTROL_CLASS}
             />
             <Select
               label="Статус"
@@ -535,7 +537,7 @@ export function RecommendationFormPage() {
             rows={4}
             labelClassName={FORM_LABEL_CLASS}
             inputClassName={[
-              'text-sm py-1.5 min-h-[6.5rem] max-h-48 resize-none overflow-y-auto',
+              FORM_TEXTAREA_CLASS,
               showValidationErrors && requiredFieldErrors.description ? REQUIRED_FIELD_ERROR_CLASS : '',
             ]
               .filter(Boolean)
@@ -627,7 +629,7 @@ export function RecommendationFormPage() {
 
         <div className={formSectionClass(isControlZoneFilled)}>
           <div className={FORM_SECTION_TITLE_CLASS}>Контрольная зона</div>
-          <div className={`mt-4 ${FORM_STACK_CLASS}`}>
+          <div className={FORM_SECTION_INNER_STACK_CLASS}>
             <RecommendationClosureSection
               embedded
               hideClosureInformation
@@ -637,7 +639,7 @@ export function RecommendationFormPage() {
               inputClassName={FORM_INPUT_CLASS}
               labelClassName={FORM_LABEL_CLASS}
               blockTitleClassName={FORM_SECTION_TITLE_CLASS}
-              stackClassName={FORM_STACK_CLASS}
+              stackClassName={FORM_SECTION_INNER_STACK_CLASS}
               errorFields={
                 showValidationErrors
                   ? {
@@ -652,10 +654,10 @@ export function RecommendationFormPage() {
               titleClassName={FORM_SECTION_TITLE_CLASS}
               open={isExecutionDeadlineOpen}
               onToggle={() => setIsExecutionDeadlineOpen((current) => !current)}
-              className={FORM_STACK_CLASS}
+              className={FORM_SECTION_INNER_STACK_CLASS}
             >
               <div className={`${FORM_ROW_3} items-start`}>
-                <div className={`${FORM_FIELD_CLASS} space-y-3`}>
+                <div className={`${FORM_FIELD_CLASS} space-y-5`}>
                   <DatePicker
                     selected={toInputDate(closure.actualCompletionDate)}
                     onChange={(date) =>
@@ -695,7 +697,7 @@ export function RecommendationFormPage() {
                     rows={1}
                     className="flex h-full min-h-0 w-full flex-1 flex-col"
                     inputClassName={[
-                      'box-border h-full min-h-0 flex-1 resize-none overflow-y-auto text-sm py-1.5',
+                      `${FORM_INPUT_CLASS} box-border h-full min-h-0 flex-1 resize-none overflow-y-auto`,
                       showValidationErrors && requiredFieldErrors.closureInformation
                         ? REQUIRED_FIELD_ERROR_CLASS
                         : '',
@@ -709,29 +711,29 @@ export function RecommendationFormPage() {
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-5">
           {showValidationErrors && requiredFieldErrors.hasErrors && (
-            <div className="rounded-lg border border-[#e8b4b4] bg-[#fff3f3] px-4 py-2 text-sm font-medium text-[#a63d3d]">
+            <div className="rounded-lg border border-[#e8b4b4] bg-[#fff3f3] px-4 py-2 text-sm font-medium leading-relaxed text-[#a63d3d]">
               Заполните необходимые поля
             </div>
           )}
-        <div className="flex flex-wrap justify-start gap-3">
-          <button
-            type="submit"
-            disabled={isSaving}
-            className={`inline-flex items-center rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] disabled:cursor-not-allowed disabled:opacity-50 ${FORM_ACTION_BUTTON_CLASS}`}
-          >
-            {isSaving ? 'Сохранение...' : 'Сохранить'}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleCreateAnotherCheckOnly()}
-            disabled={isSaving}
-            className={`inline-flex items-center rounded-lg border-2 border-[#6699FF] px-3 py-1.5 text-sm font-medium text-[#6699FF] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white disabled:cursor-not-allowed disabled:opacity-50 ${FORM_ACTION_BUTTON_CLASS}`}
-          >
-            Создать еще
-          </button>
-        </div>
+          <div className="flex flex-wrap justify-start gap-3">
+            <button
+              type="submit"
+              disabled={isSaving}
+              className={`inline-flex items-center rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] disabled:cursor-not-allowed disabled:opacity-50 ${FORM_ACTION_BUTTON_CLASS}`}
+            >
+              {isSaving ? 'Сохранение...' : 'Сохранить'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleCreateAnotherCheckOnly()}
+              disabled={isSaving}
+              className={`inline-flex items-center rounded-lg border-2 border-[#6699FF] px-3 py-1.5 text-sm font-medium text-[#6699FF] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white disabled:cursor-not-allowed disabled:opacity-50 ${FORM_ACTION_BUTTON_CLASS}`}
+            >
+              Создать еще
+            </button>
+          </div>
         </div>
       </form>
     </div>

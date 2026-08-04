@@ -45,6 +45,7 @@ import {
   summarizeRecommendations,
 } from './recommendationAnalytics';
 import { formatRuDate } from './dates';
+import { exportVisualAnalyticsReport } from './analyticsVisualExport';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
@@ -1356,20 +1357,59 @@ export async function exportChecksDashboard(
   input: ChecksDashboardExportInput,
   format: AnalyticsExportFormat,
 ) {
-  if (format === 'xlsx') {
-    exportChecksDashboardXlsx(input);
-    return;
-  }
-  exportChecksDashboardPdf(input);
+  const { checks, filteredChecks, granularity, auditors, selectedSections } = input;
+  await exportVisualAnalyticsReport({
+    format,
+    kind: 'checks',
+    documentTitle: 'Аналитика проверок',
+    filenamePrefix: 'analytics-checks',
+    selectedSections,
+    meta: [
+      ['Группировка', granularityLabel(granularity)],
+      ['Аудиторы', auditors.length ? auditors.join(', ') : 'Все'],
+      ['Записей в выборке', String(filteredChecks.length)],
+      ['Всего в системе', String(checks.length)],
+      ['Дашбордов в отчёте', String(selectedSections.filter((id) => id !== 'source').length)],
+      ['Сформировано', new Date().toLocaleString('ru-RU')],
+    ],
+  });
 }
 
 export async function exportRecommendationsDashboard(
   input: RecommendationsDashboardExportInput,
   format: AnalyticsExportFormat,
 ) {
-  if (format === 'xlsx') {
-    exportRecommendationsDashboardXlsx(input);
-    return;
-  }
-  exportRecommendationsDashboardPdf(input);
+  const {
+    recommendations,
+    filteredRecommendations,
+    granularity,
+    dateFrom,
+    dateTo,
+    auditors,
+    materialityLevels,
+    selectedSections,
+  } = input;
+  await exportVisualAnalyticsReport({
+    format,
+    kind: 'recommendations',
+    documentTitle: 'Аналитика рекомендаций',
+    filenamePrefix: 'analytics-recommendations',
+    selectedSections,
+    meta: [
+      ['Группировка', granularityLabel(granularity)],
+      ['Срок с', formatFilterDate(dateFrom)],
+      ['Срок по', formatFilterDate(dateTo)],
+      ['Аудиторы', auditors.length ? auditors.join(', ') : 'Все'],
+      [
+        'Существенность',
+        materialityLevels.length
+          ? materialityLevels.map((level) => getMaterialityLevelLabel(level)).join(', ')
+          : 'Все уровни',
+      ],
+      ['Записей в выборке', String(filteredRecommendations.length)],
+      ['Всего в системе', String(recommendations.length)],
+      ['Дашбордов в отчёте', String(selectedSections.filter((id) => id !== 'source').length)],
+      ['Сформировано', new Date().toLocaleString('ru-RU')],
+    ],
+  });
 }

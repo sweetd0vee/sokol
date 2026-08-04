@@ -408,15 +408,9 @@ export function RecommendationsAnalyticsDashboard({
               onSelectAll={exportSections.selectAll}
               onClearAll={exportSections.clearAll}
             />
-            <label className="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-300">
-              <input
-                type="checkbox"
-                checked={exportSections.isSelected('source')}
-                onChange={() => exportSections.toggleSection('source')}
-                className="h-3.5 w-3.5 accent-sber-dark"
-              />
-              Исходные данные в отчёт
-            </label>
+            <p className="text-xs text-gray-500 dark:text-slate-400">
+              В отчёт попадут отмеченные дашборды как готовые графики (по листу / странице на каждый).
+            </p>
             <div className="flex flex-col gap-2">
               <select
                 value={exportFormat}
@@ -447,7 +441,8 @@ export function RecommendationsAnalyticsDashboard({
       <ChartCard
         title="Сводка KPI"
         description="Ключевые показатели текущей выборки"
-        exportSelected={exportSections.isSelected('summary')}
+        exportSectionId="summary"
+          exportSelected={exportSections.isSelected('summary')}
         onToggleExport={() => exportSections.toggleSection('summary')}
       >
         <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -465,6 +460,7 @@ export function RecommendationsAnalyticsDashboard({
           title={`Динамика сроков по ${periodLabel}`}
           description="Сколько рекомендаций приходится на каждый период срока"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="periods"
           exportSelected={exportSections.isSelected('periods')}
           onToggleExport={() => exportSections.toggleSection('periods')}
         >
@@ -498,6 +494,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Накопление и исполнение"
           description="Всего vs исполнено нарастающим итогом"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="cumulative"
           exportSelected={exportSections.isSelected('cumulative')}
           onToggleExport={() => exportSections.toggleSection('cumulative')}
         >
@@ -525,6 +522,7 @@ export function RecommendationsAnalyticsDashboard({
           title={`Существенность по ${periodLabel}`}
           description="Низкий / средний / высокий в динамике"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="materialityByPeriod"
           exportSelected={exportSections.isSelected('materialityByPeriod')}
           onToggleExport={() => exportSections.toggleSection('materialityByPeriod')}
         >
@@ -552,6 +550,7 @@ export function RecommendationsAnalyticsDashboard({
           title={`Статусы по ${periodLabel}`}
           description="Цветной stacked по статусам исполнения"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="statusByPeriod"
           exportSelected={exportSections.isSelected('statusByPeriod')}
           onToggleExport={() => exportSections.toggleSection('statusByPeriod')}
         >
@@ -587,6 +586,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Существенность"
           description="Цвета уровней риска"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="materiality"
           exportSelected={exportSections.isSelected('materiality')}
           onToggleExport={() => exportSections.toggleSection('materiality')}
         >
@@ -613,6 +613,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Статусы"
           description="Исполнено / не решено / контроль"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="statuses"
           exportSelected={exportSections.isSelected('statuses')}
           onToggleExport={() => exportSections.toggleSection('statuses')}
         >
@@ -639,6 +640,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Срок исполнения"
           description="В срок / нарушен / на контроле"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="additionalStatuses"
           exportSelected={exportSections.isSelected('additionalStatuses')}
           onToggleExport={() => exportSections.toggleSection('additionalStatuses')}
         >
@@ -667,6 +669,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Индикаторы"
           description="Цветовые метки состояния"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="indicators"
           exportSelected={exportSections.isSelected('indicators')}
           onToggleExport={() => exportSections.toggleSection('indicators')}
         >
@@ -695,6 +698,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Горизонт сроков"
           description="Просрочка и ближайшие дедлайны"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="deadlines"
           exportSelected={exportSections.isSelected('deadlines')}
           onToggleExport={() => exportSections.toggleSection('deadlines')}
         >
@@ -723,6 +727,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Воронка исполнения"
           description="От общего объёма к закрытым"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="funnel"
           exportSelected={exportSections.isSelected('funnel')}
           onToggleExport={() => exportSections.toggleSection('funnel')}
         >
@@ -763,6 +768,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Аудитор × существенность"
           description="Состав портфеля каждого аудитора по уровню риска"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="auditorMateriality"
           exportSelected={exportSections.isSelected('auditorMateriality')}
           onToggleExport={() => exportSections.toggleSection('auditorMateriality')}
         >
@@ -790,6 +796,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Нагрузка аудиторов"
           description="Цветные progress-bars по количеству рекомендаций"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="auditors"
           exportSelected={exportSections.isSelected('auditors')}
           onToggleExport={() => exportSections.toggleSection('auditors')}
         >
@@ -826,6 +833,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Радар статусов"
           description="Профиль статусов выборки"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="statuses"
           exportSelected={exportSections.isSelected('statuses')}
           onToggleExport={() => exportSections.toggleSection('statuses')}
         >
@@ -850,6 +858,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Radial статусы"
           description="Круговая шкала объёмов"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="statuses"
           exportSelected={exportSections.isSelected('statuses')}
           onToggleExport={() => exportSections.toggleSection('statuses')}
         >
@@ -881,6 +890,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Scatter: объём vs высокий риск"
           description="Аудиторы: всего и высоких по существенности"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="auditorPerformance"
           exportSelected={exportSections.isSelected('auditorPerformance')}
           onToggleExport={() => exportSections.toggleSection('auditorPerformance')}
         >
@@ -914,7 +924,8 @@ export function RecommendationsAnalyticsDashboard({
         title="Treemap: аудитор × существенность"
         description="Площадь блока = число рекомендаций, цвет = уровень существенности"
         accentClassName="border-slate-200 dark:border-slate-700"
-        exportSelected={exportSections.isSelected('auditorMateriality')}
+        exportSectionId="auditorMateriality"
+          exportSelected={exportSections.isSelected('auditorMateriality')}
         onToggleExport={() => exportSections.toggleSection('auditorMateriality')}
       >
         {treemapData.length === 0 ? (
@@ -933,6 +944,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Объекты аудита"
           description="Где больше всего рекомендаций"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="objects"
           exportSelected={exportSections.isSelected('objects')}
           onToggleExport={() => exportSections.toggleSection('objects')}
         >
@@ -961,6 +973,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Менеджеры"
           description="Распределение по ответственным менеджерам"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="managers"
           exportSelected={exportSections.isSelected('managers')}
           onToggleExport={() => exportSections.toggleSection('managers')}
         >
@@ -991,6 +1004,7 @@ export function RecommendationsAnalyticsDashboard({
           title="По проверкам (serial)"
           description="Какие проверки дают больше рекомендаций"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="checkLinks"
           exportSelected={exportSections.isSelected('checkLinks')}
           onToggleExport={() => exportSections.toggleSection('checkLinks')}
         >
@@ -1021,6 +1035,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Исполнение по аудиторам"
           description="% закрытия и число нарушений срока"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="auditorPerformance"
           exportSelected={exportSections.isSelected('auditorPerformance')}
           onToggleExport={() => exportSections.toggleSection('auditorPerformance')}
         >
@@ -1072,6 +1087,7 @@ export function RecommendationsAnalyticsDashboard({
           title="FunnelChart (recharts)"
           description="Нативная воронка статусов из Recharts"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="funnel"
           exportSelected={exportSections.isSelected('funnel')}
           onToggleExport={() => exportSections.toggleSection('funnel')}
         >
@@ -1098,6 +1114,7 @@ export function RecommendationsAnalyticsDashboard({
           title="Sankey: существенность → статус"
           description="Потоки от уровня существенности к статусу рекомендации"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="materiality"
           exportSelected={exportSections.isSelected('materiality')}
           onToggleExport={() => exportSections.toggleSection('materiality')}
         >
@@ -1126,7 +1143,8 @@ export function RecommendationsAnalyticsDashboard({
         title={`Матрица: аудитор × ${periodLabel.slice(0, -2)}`}
         description="Интенсивность по срокам — кто сколько рекомендаций ведёт"
         accentClassName="border-slate-200 dark:border-slate-700"
-        exportSelected={exportSections.isSelected('auditorMatrix')}
+        exportSectionId="auditorMatrix"
+          exportSelected={exportSections.isSelected('auditorMatrix')}
         onToggleExport={() => exportSections.toggleSection('auditorMatrix')}
       >
         {auditorMatrix.rows.length === 0 || auditorMatrix.periods.length === 0 ? (
@@ -1184,7 +1202,8 @@ export function RecommendationsAnalyticsDashboard({
         title={`Тепловая матрица существенности × ${periodLabel.slice(0, -2)}`}
         description="Как уровни риска распределены во времени"
         accentClassName="border-slate-200 dark:border-slate-700"
-        exportSelected={exportSections.isSelected('materialityMatrix')}
+        exportSectionId="materialityMatrix"
+          exportSelected={exportSections.isSelected('materialityMatrix')}
         onToggleExport={() => exportSections.toggleSection('materialityMatrix')}
       >
         {materialityMatrix.rows.every((row) => row.total === 0) || materialityMatrix.periods.length === 0 ? (

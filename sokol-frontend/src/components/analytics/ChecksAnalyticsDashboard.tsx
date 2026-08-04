@@ -454,15 +454,9 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
               onSelectAll={exportSections.selectAll}
               onClearAll={exportSections.clearAll}
             />
-            <label className="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-300">
-              <input
-                type="checkbox"
-                checked={exportSections.isSelected('source')}
-                onChange={() => exportSections.toggleSection('source')}
-                className="h-3.5 w-3.5 accent-sber-dark"
-              />
-              Исходные данные в отчёт
-            </label>
+            <p className="text-xs text-gray-500 dark:text-slate-400">
+              В отчёт попадут отмеченные дашборды как готовые графики (по листу / странице на каждый).
+            </p>
             <div className="flex flex-col gap-2">
               <select
                 value={exportFormat}
@@ -493,7 +487,8 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
       <ChartCard
         title="Сводка KPI"
         description="Ключевые показатели текущей выборки"
-        exportSelected={exportSections.isSelected('summary')}
+        exportSectionId="summary"
+          exportSelected={exportSections.isSelected('summary')}
         onToggleExport={() => exportSections.toggleSection('summary')}
       >
         <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-5">
@@ -509,6 +504,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title={`Динамика по ${periodLabel}`}
           description="Старты проверок в периоде"
+          exportSectionId="periods"
           exportSelected={exportSections.isSelected('periods')}
           onToggleExport={() => exportSections.toggleSection('periods')}
         >
@@ -545,6 +541,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Накопительный итог"
           description="Сколько проверок накопилось к концу периода"
+          exportSectionId="cumulative"
           exportSelected={exportSections.isSelected('cumulative')}
           onToggleExport={() => exportSections.toggleSection('cumulative')}
         >
@@ -575,6 +572,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title={`Статусы по ${periodLabel}`}
           description="Состав статусов внутри периода"
+          exportSectionId="statusByPeriod"
           exportSelected={exportSections.isSelected('statusByPeriod')}
           onToggleExport={() => exportSections.toggleSection('statusByPeriod')}
         >
@@ -607,6 +605,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Тип × статус"
           description="Как статусы распределены по типам проверок"
+          exportSectionId="typeStatus"
           exportSelected={exportSections.isSelected('typeStatus')}
           onToggleExport={() => exportSections.toggleSection('typeStatus')}
         >
@@ -641,6 +640,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Статусы"
           description="Доли текущей выборки"
+          exportSectionId="statuses"
           exportSelected={exportSections.isSelected('statuses')}
           onToggleExport={() => exportSections.toggleSection('statuses')}
         >
@@ -678,6 +678,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Типы"
           description="Плановые / внеплановые / контрольные"
+          exportSectionId="types"
           exportSelected={exportSections.isSelected('types')}
           onToggleExport={() => exportSections.toggleSection('types')}
         >
@@ -710,6 +711,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Виды (radar)"
           description="Профиль направлений проверок"
+          exportSectionId="views"
           exportSelected={exportSections.isSelected('views')}
           onToggleExport={() => exportSections.toggleSection('views')}
         >
@@ -741,6 +743,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Нагрузка по аудиторам"
           description="Топ руководителей в выборке"
+          exportSectionId="auditors"
           exportSelected={exportSections.isSelected('auditors')}
           onToggleExport={() => exportSections.toggleSection('auditors')}
         >
@@ -771,6 +774,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Длительность проверок"
           description="По разнице даты старта и окончания"
+          exportSectionId="durations"
           exportSelected={exportSections.isSelected('durations')}
           onToggleExport={() => exportSections.toggleSection('durations')}
         >
@@ -794,6 +798,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Готовность документов"
           description="Есть номер/дата приказа, программы, АЗ, ДЗ"
+          exportSectionId="documents"
           exportSelected={exportSections.isSelected('documents')}
           onToggleExport={() => exportSections.toggleSection('documents')}
         >
@@ -819,6 +824,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Виды проверок"
           description="ИТ, бизнес, риски и др."
+          exportSectionId="views"
           exportSelected={exportSections.isSelected('views')}
           onToggleExport={() => exportSections.toggleSection('views')}
         >
@@ -849,6 +855,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
           title="Radial по статусам"
           description="Круговая шкала объёмов статусов"
           accentClassName="border-stone-200 dark:border-slate-700"
+          exportSectionId="statuses"
           exportSelected={exportSections.isSelected('statuses')}
           onToggleExport={() => exportSections.toggleSection('statuses')}
         >
@@ -881,6 +888,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
           title="Treemap аудиторов"
           description="Площадь = число проверок руководителя"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="auditors"
           exportSelected={exportSections.isSelected('auditors')}
           onToggleExport={() => exportSections.toggleSection('auditors')}
         >
@@ -910,6 +918,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
           title="Оценка эффективности"
           description={`Распределение: ${effectivenessAreaLabel}`}
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="effectiveness"
           exportSelected={exportSections.isSelected('effectiveness')}
           onToggleExport={() => exportSections.toggleSection('effectiveness')}
         >
@@ -949,6 +958,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
           title="Оценки по областям"
           description="Процесс / СВК / СУР / СВИК"
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="effectivenessByArea"
           exportSelected={exportSections.isSelected('effectivenessByArea')}
           onToggleExport={() => exportSections.toggleSection('effectivenessByArea')}
         >
@@ -983,6 +993,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
           title={`Оценки по ${periodLabel}`}
           description={`Динамика: ${effectivenessAreaLabel}`}
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="effectivenessByPeriod"
           exportSelected={exportSections.isSelected('effectivenessByPeriod')}
           onToggleExport={() => exportSections.toggleSection('effectivenessByPeriod')}
         >
@@ -1015,6 +1026,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
           title="Оценки по аудиторам"
           description={`Топ руководителей: ${effectivenessAreaLabel}`}
           accentClassName="border-slate-200 dark:border-slate-700"
+          exportSectionId="effectivenessByAuditor"
           exportSelected={exportSections.isSelected('effectivenessByAuditor')}
           onToggleExport={() => exportSections.toggleSection('effectivenessByAuditor')}
         >
@@ -1062,7 +1074,8 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         description="Кто сколько проверок стартовал в каждом периоде"
         className="overflow-hidden"
         accentClassName="border-sky-100 dark:border-slate-700"
-        exportSelected={exportSections.isSelected('auditorMatrix')}
+        exportSectionId="auditorMatrix"
+          exportSelected={exportSections.isSelected('auditorMatrix')}
         onToggleExport={() => exportSections.toggleSection('auditorMatrix')}
       >
         {auditorMatrix.rows.length === 0 || auditorMatrix.periods.length === 0 ? (

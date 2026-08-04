@@ -44,10 +44,10 @@ function AttachmentCard({
       type="button"
       onClick={onOpen}
       className={[
-        'flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white text-center transition hover:border-[#6699FF] hover:bg-[#6699FF]/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6699FF]/40 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-[#6699FF]/10',
+        'flex w-full items-center justify-center rounded-lg border border-[#b8bec8] bg-white text-center leading-relaxed transition hover:border-gray-400 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700/40',
         compact
-          ? 'min-h-[6.5rem] flex-col gap-1 px-2 py-2'
-          : 'min-h-[12rem] flex-col px-4 py-5',
+          ? 'min-h-[6.5rem] flex-col gap-2 px-2 py-4'
+          : 'min-h-[12rem] flex-col gap-2 px-4 py-5',
       ].join(' ')}
     >
       {!hideLabel && (
@@ -58,12 +58,12 @@ function AttachmentCard({
         </span>
       )}
       {fileCount > 0 && (
-        <span className="mt-0.5 text-xs text-gray-500 dark:text-slate-400">
+        <span className="text-xs text-gray-500 dark:text-slate-400">
           {fileCount} {filesWord(fileCount)}
         </span>
       )}
       {!compact && (
-        <span className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-[#6699FF]">
+        <span className="inline-flex items-center gap-2 text-sm font-medium text-[#6699FF]">
           <Paperclip size={16} />
           Управление вложениями
         </span>
