@@ -64,30 +64,30 @@ export type AuditorPeriodRow = {
 };
 
 export const MATERIALITY_COLORS: Record<MaterialityLevel, string> = {
-  низкий: '#6B9F7C',
-  средний: '#B89750',
-  высокий: '#B56E6E',
+  низкий: '#22C55E',
+  средний: '#EAB308',
+  высокий: '#EF4444',
 };
 
 export const STATUS_COLORS: Record<RecommendationStatus, string> = {
-  completed: '#6B9F7C',
-  unresolved: '#B56E6E',
-  on_control: '#7A8B9E',
-  in_progress: '#B89050',
+  completed: '#22C55E',
+  unresolved: '#EF4444',
+  on_control: '#64748B',
+  in_progress: '#F59E0B',
 };
 
 export const ADDITIONAL_STATUS_COLORS: Record<RecommendationAdditionalStatus, string> = {
-  on_time: '#5F9788',
-  deadline_violated: '#B56E7A',
-  on_control: '#7B7AA4',
+  on_time: '#10B981',
+  deadline_violated: '#F43F5E',
+  on_control: '#6366F1',
 };
 
 export const INDICATOR_COLORS: Record<RecommendationIndicator, string> = {
-  'не указан': '#9AA3B0',
-  'в процессе': '#B89750',
-  ожидает: '#9A96B4',
-  'не решено': '#B88888',
-  исполнено: '#6B9F8A',
+  'не указан': '#94A3B8',
+  'в процессе': '#FBBF24',
+  ожидает: '#A78BFA',
+  'не решено': '#F87171',
+  исполнено: '#34D399',
 };
 
 const STATUS_KEYS: RecommendationStatus[] = ['completed', 'unresolved', 'on_control', 'in_progress'];
@@ -411,11 +411,11 @@ export function buildDeadlineBuckets(recommendations: Recommendation[]): NamedCo
   const now = Date.now();
   const day = 24 * 60 * 60 * 1000;
   const buckets = [
-    { name: 'Просрочено', color: '#B56E6E', test: (ms: number) => ms < now },
-    { name: '≤ 7 дней', color: '#B8875E', test: (ms: number) => ms >= now && ms - now <= 7 * day },
-    { name: '8–30 дней', color: '#B89750', test: (ms: number) => ms - now > 7 * day && ms - now <= 30 * day },
-    { name: '31–90 дней', color: '#4F7FA8', test: (ms: number) => ms - now > 30 * day && ms - now <= 90 * day },
-    { name: '> 90 дней', color: '#6B9F7C', test: (ms: number) => ms - now > 90 * day },
+    { name: 'Просрочено', color: '#EF4444', test: (ms: number) => ms < now },
+    { name: '≤ 7 дней', color: '#F97316', test: (ms: number) => ms >= now && ms - now <= 7 * day },
+    { name: '8–30 дней', color: '#EAB308', test: (ms: number) => ms - now > 7 * day && ms - now <= 30 * day },
+    { name: '31–90 дней', color: '#3B82F6', test: (ms: number) => ms - now > 30 * day && ms - now <= 90 * day },
+    { name: '> 90 дней', color: '#22C55E', test: (ms: number) => ms - now > 90 * day },
   ];
 
   return buckets
@@ -436,14 +436,14 @@ export function buildDeadlineBuckets(recommendations: Recommendation[]): NamedCo
 export function buildFunnel(recommendations: Recommendation[]): NamedCount[] {
   const summary = summarizeRecommendations(recommendations);
   return [
-    { name: 'Всего', value: summary.total, color: '#4F7FA8' },
+    { name: 'Всего', value: summary.total, color: '#6366F1' },
     {
       name: 'На контроле / в работе',
       value: summary.byStatus.on_control + summary.byStatus.in_progress,
-      color: '#B89050',
+      color: '#F59E0B',
     },
-    { name: 'В процессе', value: summary.byStatus.in_progress, color: '#B8875E' },
-    { name: 'Исполнено', value: summary.byStatus.completed, color: '#6B9F7C' },
+    { name: 'В процессе', value: summary.byStatus.in_progress, color: '#FB923C' },
+    { name: 'Исполнено', value: summary.byStatus.completed, color: '#22C55E' },
   ].filter((item) => item.value > 0);
 }
 
@@ -518,13 +518,13 @@ export function buildMaterialityToStatusSankey(recommendations: Recommendation[]
 export function buildStatusFunnelNative(recommendations: Recommendation[]) {
   const summary = summarizeRecommendations(recommendations);
   return [
-    { name: 'Всего', value: summary.total, fill: '#4F7FA8' },
+    { name: 'Всего', value: summary.total, fill: '#6366F1' },
     {
       name: 'Активные',
       value: summary.byStatus.on_control + summary.byStatus.in_progress + summary.byStatus.unresolved,
-      fill: '#B89050',
+      fill: '#F59E0B',
     },
-    { name: 'В процессе', value: summary.byStatus.in_progress, fill: '#B8875E' },
-    { name: 'Исполнено', value: summary.byStatus.completed, fill: '#6B9F7C' },
+    { name: 'В процессе', value: summary.byStatus.in_progress, fill: '#FB923C' },
+    { name: 'Исполнено', value: summary.byStatus.completed, fill: '#22C55E' },
   ];
 }

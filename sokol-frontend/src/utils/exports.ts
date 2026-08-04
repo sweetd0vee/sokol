@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx-js-style';
+import ExcelJS from 'exceljs';
 import pdfMake from 'pdfmake/build/pdfmake';
 import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
@@ -6,6 +7,7 @@ import {
   AlignmentType,
   BorderStyle,
   Document,
+  ImageRun,
   Packer,
   Paragraph,
   ShadingType,
@@ -25,6 +27,10 @@ import {
   getRecommendationStatusLabel,
 } from '../constants/recommendations';
 import { downloadBlob } from './download';
+import {
+  indicatorIconBytesToDataUrl,
+  preloadIndicatorIcons,
+} from './exportIndicatorIcons';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
@@ -65,12 +71,7 @@ const MATERIALITY_DOT_COLORS: Record<string, string> = {
   Низкий: 'A7F7C2',
 };
 const MATERIALITY_DOT_CHAR = '●';
-const INDICATOR_FILLS: Record<string, string> = {
-  'В процессе': 'FEF9C3',
-  Ожидает: 'E5E7EB',
-  'Не решено': 'FECACA',
-  Исполнено: 'DCFCE7',
-};
+const INDICATOR_ICON_DISPLAY_PX = 14;
 
 const CHECK_COLUMN_KEYS = [
   'ID',
@@ -123,8 +124,8 @@ function isMaterialityHeader(header: string | undefined) {
   return header === 'Уровень существенности';
 }
 
-function getIndicatorFill(value: unknown) {
-  return INDICATOR_FILLS[toCellText(value)];
+function isIndicatorHeader(header: string | undefined) {
+  return header === 'Индикатор';
 }
 
 function getHighlightFill(header: string | undefined, value: unknown) {
@@ -133,9 +134,6 @@ function getHighlightFill(header: string | undefined, value: unknown) {
   }
   if (header === 'Дополнительный статус') {
     return getAdditionalStatusFill(value);
-  }
-  if (header === 'Индикатор') {
-    return getIndicatorFill(value);
   }
   return undefined;
 }
@@ -187,6 +185,18 @@ function applySheetTableStyle(ws: XLSX.WorkSheet, headers: string[], rows: Expor
         continue;
       }
 
+      if (!isHeader && isIndicatorHeader(header)) {
+        // Recommendation XLSX uses ExcelJS with embedded icon images instead.
+        cell.v = '';
+        cell.t = 's';
+        cell.s = {
+          ...(cell.s ?? {}),
+          alignment: { horizontal: 'center', vertical: 'center' },
+          border: getCellBorderStyle(),
+        };
+        continue;
+      }
+
       const valueFill = !isHeader ? getHighlightFill(header, cell.v) : undefined;
       cell.s = {
         ...(cell.s ?? {}),
@@ -210,7 +220,7 @@ function applySheetTableStyle(ws: XLSX.WorkSheet, headers: string[], rows: Expor
     }
   }
   ws['!cols'] = headers.map((header) => {
-    if (isMaterialityHeader(header)) {
+    if (isMaterialityHeader(header) || isIndicatorHeader(header)) {
       return { wch: 14 };
     }
     const maxLength = Math.max(
@@ -279,11 +289,41 @@ function createDocxMaterialityCell(label: string, width: number) {
   });
 }
 
+function createDocxIndicatorCell(icon: Uint8Array | undefined, width: number) {
+  return new TableCell({
+    children: [
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: icon
+          ? [
+              new ImageRun({
+                type: 'png',
+                data: icon,
+                transformation: {
+                  width: INDICATOR_ICON_DISPLAY_PX,
+                  height: INDICATOR_ICON_DISPLAY_PX,
+                },
+              }),
+            ]
+          : [],
+      }),
+    ],
+    width: { size: width, type: WidthType.PERCENTAGE },
+    margins: {
+      top: 80,
+      bottom: 80,
+      left: 80,
+      right: 80,
+    },
+  });
+}
+
 async function exportRowsDocx(
   rows: ExportRow[],
   headers: string[],
   title: string,
-  filename: string
+  filename: string,
+  indicatorIcons?: Map<string, Uint8Array>
 ) {
   const columnWidth = Math.floor(100 / Math.max(headers.length, 1));
   const tableRows = [
@@ -294,16 +334,23 @@ async function exportRowsDocx(
     ...rows.map(
       (row) =>
         new TableRow({
-          children: headers.map((header) =>
-            isMaterialityHeader(header)
-              ? createDocxMaterialityCell(toCellText(row[header]), columnWidth)
-              : createDocxCell(
-                  toCellText(row[header]),
-                  false,
-                  columnWidth,
-                  getHighlightFill(header, row[header])
-                )
-          ),
+          children: headers.map((header) => {
+            if (isMaterialityHeader(header)) {
+              return createDocxMaterialityCell(toCellText(row[header]), columnWidth);
+            }
+            if (isIndicatorHeader(header)) {
+              return createDocxIndicatorCell(
+                indicatorIcons?.get(toCellText(row[header])),
+                columnWidth
+              );
+            }
+            return createDocxCell(
+              toCellText(row[header]),
+              false,
+              columnWidth,
+              getHighlightFill(header, row[header])
+            );
+          }),
         })
     ),
   ];
@@ -345,7 +392,7 @@ function getPdfColumnWidths(headers: string[]): Array<number | '*'> {
     Название: '*',
     'Объект аудита': '*',
     'Срок исполнения': 48,
-    Индикатор: 42,
+    Индикатор: 28,
     'Уровень существенности': 28,
     Аудитор: 40,
     'Руководитель объекта аудита': 70,
@@ -369,8 +416,19 @@ function getPdfFontSize(columnCount: number) {
   return 9;
 }
 
-function exportRowsPdf(rows: ExportRow[], headers: string[], title: string, filename: string) {
+function exportRowsPdf(
+  rows: ExportRow[],
+  headers: string[],
+  title: string,
+  filename: string,
+  indicatorIcons?: Map<string, Uint8Array>
+) {
   const isWideTable = headers.length >= 8;
+  const pdfImages: Record<string, string> = {};
+  indicatorIcons?.forEach((bytes, label) => {
+    pdfImages[`indicator_${label}`] = indicatorIconBytesToDataUrl(bytes);
+  });
+
   const body = [
     headers.map((header) => ({
       text: header,
@@ -403,6 +461,20 @@ function exportRowsPdf(rows: ExportRow[], headers: string[], title: string, file
             ],
             margin: [0, 1, 0, 1],
           };
+        }
+        if (isIndicatorHeader(header)) {
+          const label = toCellText(row[header]);
+          const imageKey = `indicator_${label}`;
+          if (pdfImages[imageKey]) {
+            return {
+              image: imageKey,
+              width: INDICATOR_ICON_DISPLAY_PX,
+              height: INDICATOR_ICON_DISPLAY_PX,
+              alignment: 'center',
+              margin: [0, 1, 0, 1],
+            };
+          }
+          return { text: '', alignment: 'center' };
         }
         const fill = getHighlightFill(header, row[header]);
         return {
@@ -459,6 +531,7 @@ function exportRowsPdf(rows: ExportRow[], headers: string[], title: string, file
       font: 'Roboto',
       fontSize: getPdfFontSize(headers.length),
     },
+    images: pdfImages,
     styles: {
       title: {
         fontSize: isWideTable ? 12 : 16,
@@ -543,23 +616,153 @@ function exportChecksPdf(checks: Check[], filename: string) {
   exportRowsPdf(rows, getHeaders(rows, CHECK_COLUMN_KEYS), 'Проверки — Сокол', filename);
 }
 
-function exportRecommendationsTableXlsx(recommendations: Recommendation[], filename: string) {
+function excelBorder() {
+  const edge = { style: 'thin' as const, color: { argb: `FF${BORDER_GRAY}` } };
+  return { top: edge, bottom: edge, left: edge, right: edge };
+}
+
+async function exportRecommendationsTableXlsx(recommendations: Recommendation[], filename: string) {
   const rows = toRecommendationTableRows(recommendations);
-  const ws = XLSX.utils.json_to_sheet(rows);
-  applySheetTableStyle(ws, getHeaders(rows, RECOMMENDATION_TABLE_COLUMN_KEYS), rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Рекомендации');
-  XLSX.writeFile(wb, filename);
+  const headers = getHeaders(rows, RECOMMENDATION_TABLE_COLUMN_KEYS);
+  const indicatorIcons = await preloadIndicatorIcons(rows.map((row) => toCellText(row.Индикатор)));
+
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Рекомендации');
+  const headerRow = sheet.addRow(headers);
+  headerRow.height = 22;
+  headerRow.eachCell((cell) => {
+    cell.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: `FF${WHITE}` } };
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: `FF${HEADER_BLUE}` },
+    };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    cell.border = excelBorder();
+  });
+
+  const indicatorColIndex = headers.indexOf('Индикатор');
+  const iconIds = new Map<string, number>();
+  indicatorIcons.forEach((bytes, label) => {
+    iconIds.set(
+      label,
+      workbook.addImage({
+        base64: indicatorIconBytesToDataUrl(bytes).split(',')[1] ?? '',
+        extension: 'png',
+      })
+    );
+  });
+
+  rows.forEach((row, rowOffset) => {
+    const values = headers.map((header) => {
+      if (isIndicatorHeader(header)) {
+        return '';
+      }
+      if (isMaterialityHeader(header)) {
+        return MATERIALITY_DOT_CHAR;
+      }
+      return toCellText(row[header]);
+    });
+    const excelRow = sheet.addRow(values);
+    excelRow.height = 20;
+    excelRow.eachCell((cell, colNumber) => {
+      const header = headers[colNumber - 1];
+      const rawValue = row[header ?? ''];
+      const fill = getHighlightFill(header, rawValue);
+      const isMateriality = isMaterialityHeader(header);
+      const isIndicator = isIndicatorHeader(header);
+
+      cell.border = excelBorder();
+      cell.alignment = {
+        horizontal: fill || isMateriality || isIndicator ? 'center' : 'left',
+        vertical: 'middle',
+        wrapText: !isMateriality && !isIndicator,
+      };
+
+      if (isMateriality) {
+        cell.font = {
+          name: 'Segoe UI Symbol',
+          size: 16,
+          color: { argb: `FF${getMaterialityDotColor(rawValue) ?? '9CA3AF'}` },
+        };
+        return;
+      }
+
+      if (isIndicator) {
+        cell.font = { name: 'Times New Roman', size: 12, color: { argb: 'FF111827' } };
+        return;
+      }
+
+      cell.font = {
+        name: 'Times New Roman',
+        size: 12,
+        color: { argb: 'FF111827' },
+      };
+      if (fill) {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: `FF${fill}` },
+        };
+      }
+    });
+
+    if (indicatorColIndex >= 0) {
+      const label = toCellText(row.Индикатор);
+      const imageId = iconIds.get(label);
+      if (imageId !== undefined) {
+        sheet.addImage(imageId, {
+          tl: { col: indicatorColIndex + 0.35, row: rowOffset + 1.2 },
+          ext: { width: INDICATOR_ICON_DISPLAY_PX, height: INDICATOR_ICON_DISPLAY_PX },
+          editAs: 'oneCell',
+        });
+      }
+    }
+  });
+
+  headers.forEach((header, index) => {
+    if (isMaterialityHeader(header) || isIndicatorHeader(header)) {
+      sheet.getColumn(index + 1).width = 14;
+      return;
+    }
+    const maxLength = Math.max(
+      header.length,
+      ...rows.map((row) => toCellText(row[header]).length)
+    );
+    sheet.getColumn(index + 1).width = Math.min(Math.max(maxLength + 2, 12), 42);
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  downloadBlob(
+    new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    }),
+    filename
+  );
 }
 
 async function exportRecommendationsTableDocx(recommendations: Recommendation[], filename: string) {
   const rows = toRecommendationTableRows(recommendations);
-  await exportRowsDocx(rows, getHeaders(rows, RECOMMENDATION_TABLE_COLUMN_KEYS), 'Рекомендации — Сокол', filename);
+  const indicatorIcons = await preloadIndicatorIcons(rows.map((row) => toCellText(row.Индикатор)));
+  await exportRowsDocx(
+    rows,
+    getHeaders(rows, RECOMMENDATION_TABLE_COLUMN_KEYS),
+    'Рекомендации — Сокол',
+    filename,
+    indicatorIcons
+  );
 }
 
-function exportRecommendationsTablePdf(recommendations: Recommendation[], filename: string) {
+async function exportRecommendationsTablePdf(recommendations: Recommendation[], filename: string) {
   const rows = toRecommendationTableRows(recommendations);
-  exportRowsPdf(rows, getHeaders(rows, RECOMMENDATION_TABLE_COLUMN_KEYS), 'Рекомендации — Сокол', filename);
+  const indicatorIcons = await preloadIndicatorIcons(rows.map((row) => toCellText(row.Индикатор)));
+  exportRowsPdf(
+    rows,
+    getHeaders(rows, RECOMMENDATION_TABLE_COLUMN_KEYS),
+    'Рекомендации — Сокол',
+    filename,
+    indicatorIcons
+  );
 }
 
 export async function exportChecks(
@@ -589,13 +792,13 @@ export async function exportRecommendationsTable(
   const filename = `${filenameBase}.${format}`;
   switch (format) {
     case 'xlsx':
-      exportRecommendationsTableXlsx(recommendations, filename);
+      await exportRecommendationsTableXlsx(recommendations, filename);
       break;
     case 'docx':
       await exportRecommendationsTableDocx(recommendations, filename);
       break;
     case 'pdf':
-      exportRecommendationsTablePdf(recommendations, filename);
+      await exportRecommendationsTablePdf(recommendations, filename);
       break;
   }
 }

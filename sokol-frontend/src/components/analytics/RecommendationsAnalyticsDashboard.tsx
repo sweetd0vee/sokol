@@ -108,7 +108,7 @@ function TreemapContent(props: {
   name?: string;
   fill?: string;
 }) {
-  const { x = 0, y = 0, width = 0, height = 0, name = '', fill = '#4F7FA8' } = props;
+  const { x = 0, y = 0, width = 0, height = 0, name = '', fill = '#2563EB' } = props;
   if (width < 40 || height < 28) {
     return (
       <g>
@@ -273,7 +273,7 @@ export function RecommendationsAnalyticsDashboard({
   return (
     <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-start">
       <aside className="w-full shrink-0 space-y-3 lg:sticky lg:top-4 lg:w-72">
-        <section className="rounded-xl border border-slate-200 bg-gradient-to-br from-sky-50/80 via-white to-slate-50 p-3.5 text-left dark:border-slate-700 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800/80">
+        <section className="rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-sky-50 p-3.5 text-left dark:border-violet-900/40 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800/80">
           <div className="mb-3">
             <h3 className="text-base font-semibold text-sber-dark dark:text-sber-light">
               Метрики и фильтры
@@ -459,7 +459,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title={`Динамика сроков по ${periodLabel}`}
           description="Сколько рекомендаций приходится на каждый период срока"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-violet-200 dark:border-violet-900/40"
           exportSectionId="periods"
           exportSelected={exportSections.isSelected('periods')}
           onToggleExport={() => exportSections.toggleSection('periods')}
@@ -472,17 +472,17 @@ export function RecommendationsAnalyticsDashboard({
                 <AreaChart data={periodSeries} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
                   <defs>
                     <linearGradient id="recArea" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8682A4" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#8682A4" stopOpacity={0.04} />
+                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.45} />
+                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.05} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                   <Tooltip />
-                  <Area type="monotone" dataKey="total" name="Рекомендации" stroke="#5E5B88" fill="url(#recArea)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="total" name="Рекомендации" stroke="#7C3AED" fill="url(#recArea)" strokeWidth={2} />
                   {periodSeries.length > 4 ? (
-                    <Brush dataKey="label" height={22} stroke="#5E5B88" travellerWidth={8} />
+                    <Brush dataKey="label" height={22} stroke="#7C3AED" travellerWidth={8} />
                   ) : null}
                 </AreaChart>
               </ResponsiveContainer>
@@ -493,7 +493,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Накопление и исполнение"
           description="Всего vs исполнено нарастающим итогом"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-emerald-200 dark:border-emerald-900/40"
           exportSectionId="cumulative"
           exportSelected={exportSections.isSelected('cumulative')}
           onToggleExport={() => exportSections.toggleSection('cumulative')}
@@ -509,9 +509,9 @@ export function RecommendationsAnalyticsDashboard({
                   <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                   <Tooltip />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="total" name="За период" fill="#A29EBC" radius={[4, 4, 0, 0]} />
-                  <Line type="monotone" dataKey="cumulative" name="Накопительно" stroke="#5E5B88" strokeWidth={2} />
-                  <Line type="monotone" dataKey="cumulativeCompleted" name="Исполнено накопительно" stroke="#5F9788" strokeWidth={2} />
+                  <Bar dataKey="total" name="За период" fill="#A78BFA" radius={[4, 4, 0, 0]} />
+                  <Line type="monotone" dataKey="cumulative" name="Накопительно" stroke="#4F46E5" strokeWidth={2} />
+                  <Line type="monotone" dataKey="cumulativeCompleted" name="Исполнено накопительно" stroke="#10B981" strokeWidth={2} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -521,7 +521,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title={`Существенность по ${periodLabel}`}
           description="Низкий / средний / высокий в динамике"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-amber-200 dark:border-amber-900/40"
           exportSectionId="materialityByPeriod"
           exportSelected={exportSections.isSelected('materialityByPeriod')}
           onToggleExport={() => exportSections.toggleSection('materialityByPeriod')}
@@ -549,7 +549,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title={`Статусы по ${periodLabel}`}
           description="Цветной stacked по статусам исполнения"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-rose-200 dark:border-rose-900/40"
           exportSectionId="statusByPeriod"
           exportSelected={exportSections.isSelected('statusByPeriod')}
           onToggleExport={() => exportSections.toggleSection('statusByPeriod')}
@@ -585,7 +585,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Существенность"
           description="Цвета уровней риска"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-sky-200 dark:border-sky-900/40"
           exportSectionId="materiality"
           exportSelected={exportSections.isSelected('materiality')}
           onToggleExport={() => exportSections.toggleSection('materiality')}
@@ -612,7 +612,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Статусы"
           description="Исполнено / не решено / контроль"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-fuchsia-200 dark:border-fuchsia-900/40"
           exportSectionId="statuses"
           exportSelected={exportSections.isSelected('statuses')}
           onToggleExport={() => exportSections.toggleSection('statuses')}
@@ -639,7 +639,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Срок исполнения"
           description="В срок / нарушен / на контроле"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-indigo-200 dark:border-indigo-900/40"
           exportSectionId="additionalStatuses"
           exportSelected={exportSections.isSelected('additionalStatuses')}
           onToggleExport={() => exportSections.toggleSection('additionalStatuses')}
@@ -668,7 +668,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Индикаторы"
           description="Цветовые метки состояния"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-cyan-200 dark:border-cyan-900/40"
           exportSectionId="indicators"
           exportSelected={exportSections.isSelected('indicators')}
           onToggleExport={() => exportSections.toggleSection('indicators')}
@@ -697,7 +697,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Горизонт сроков"
           description="Просрочка и ближайшие дедлайны"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-orange-200 dark:border-orange-900/40"
           exportSectionId="deadlines"
           exportSelected={exportSections.isSelected('deadlines')}
           onToggleExport={() => exportSections.toggleSection('deadlines')}
@@ -726,7 +726,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Воронка исполнения"
           description="От общего объёма к закрытым"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-pink-200 dark:border-pink-900/40"
           exportSectionId="funnel"
           exportSelected={exportSections.isSelected('funnel')}
           onToggleExport={() => exportSections.toggleSection('funnel')}
@@ -767,7 +767,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Аудитор × существенность"
           description="Состав портфеля каждого аудитора по уровню риска"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-teal-200 dark:border-teal-900/40"
           exportSectionId="auditorMateriality"
           exportSelected={exportSections.isSelected('auditorMateriality')}
           onToggleExport={() => exportSections.toggleSection('auditorMateriality')}
@@ -795,7 +795,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Нагрузка аудиторов"
           description="Цветные progress-bars по количеству рекомендаций"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-lime-200 dark:border-lime-900/40"
           exportSectionId="auditors"
           exportSelected={exportSections.isSelected('auditors')}
           onToggleExport={() => exportSections.toggleSection('auditors')}
@@ -832,7 +832,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Радар статусов"
           description="Профиль статусов выборки"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-blue-200 dark:border-blue-900/40"
           exportSectionId="statuses"
           exportSelected={exportSections.isSelected('statuses')}
           onToggleExport={() => exportSections.toggleSection('statuses')}
@@ -846,7 +846,7 @@ export function RecommendationsAnalyticsDashboard({
                   <PolarGrid stroke="#E5E7EB" />
                   <PolarAngleAxis dataKey="name" tick={{ fontSize: 10 }} />
                   <PolarRadiusAxis tick={{ fontSize: 10 }} />
-                  <Radar name="Кол-во" dataKey="value" stroke="#5E5B88" fill="#A29EBC" fillOpacity={0.45} />
+                  <Radar name="Кол-во" dataKey="value" stroke="#7C3AED" fill="#C4B5FD" fillOpacity={0.55} />
                   <Tooltip />
                 </RadarChart>
               </ResponsiveContainer>
@@ -857,7 +857,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Radial статусы"
           description="Круговая шкала объёмов"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-green-200 dark:border-green-900/40"
           exportSectionId="statuses"
           exportSelected={exportSections.isSelected('statuses')}
           onToggleExport={() => exportSections.toggleSection('statuses')}
@@ -889,7 +889,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Scatter: объём vs высокий риск"
           description="Аудиторы: всего и высоких по существенности"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-purple-200 dark:border-purple-900/40"
           exportSectionId="auditorPerformance"
           exportSelected={exportSections.isSelected('auditorPerformance')}
           onToggleExport={() => exportSections.toggleSection('auditorPerformance')}
@@ -905,11 +905,11 @@ export function RecommendationsAnalyticsDashboard({
                   <YAxis type="number" dataKey="high" name="Высокий" tick={{ fontSize: 11 }} />
                   <ZAxis type="number" dataKey="violated" range={[60, 220]} name="Нарушения" />
                   <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                  <Scatter name="Аудиторы" data={scatterPoints} fill="#B56E6E">
+                  <Scatter name="Аудиторы" data={scatterPoints} fill="#EF4444">
                     {scatterPoints.map((point) => (
                       <Cell
                         key={point.auditor}
-                        fill={point.completionRate >= 70 ? '#6B9F7C' : point.completionRate >= 40 ? '#B89750' : '#B56E6E'}
+                        fill={point.completionRate >= 70 ? '#22C55E' : point.completionRate >= 40 ? '#EAB308' : '#EF4444'}
                       />
                     ))}
                   </Scatter>
@@ -923,7 +923,7 @@ export function RecommendationsAnalyticsDashboard({
       <ChartCard
         title="Treemap: аудитор × существенность"
         description="Площадь блока = число рекомендаций, цвет = уровень существенности"
-        accentClassName="border-slate-200 dark:border-slate-700"
+        accentClassName="border-yellow-200 dark:border-yellow-900/40"
         exportSectionId="auditorMateriality"
           exportSelected={exportSections.isSelected('auditorMateriality')}
         onToggleExport={() => exportSections.toggleSection('auditorMateriality')}
@@ -943,7 +943,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Объекты аудита"
           description="Где больше всего рекомендаций"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-red-200 dark:border-red-900/40"
           exportSectionId="objects"
           exportSelected={exportSections.isSelected('objects')}
           onToggleExport={() => exportSections.toggleSection('objects')}
@@ -972,7 +972,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Менеджеры"
           description="Распределение по ответственным менеджерам"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-violet-200 dark:border-violet-900/40"
           exportSectionId="managers"
           exportSelected={exportSections.isSelected('managers')}
           onToggleExport={() => exportSections.toggleSection('managers')}
@@ -1003,7 +1003,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="По проверкам (serial)"
           description="Какие проверки дают больше рекомендаций"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-emerald-200 dark:border-emerald-900/40"
           exportSectionId="checkLinks"
           exportSelected={exportSections.isSelected('checkLinks')}
           onToggleExport={() => exportSections.toggleSection('checkLinks')}
@@ -1016,15 +1016,15 @@ export function RecommendationsAnalyticsDashboard({
                 <AreaChart data={checkLinks} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
                   <defs>
                     <linearGradient id="checkLinkArea" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#5B91A0" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#5B91A0" stopOpacity={0.04} />
+                      <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#06B6D4" stopOpacity={0.05} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                   <Tooltip />
-                  <Area type="monotone" dataKey="value" name="Рекомендации" stroke="#4F7F8E" fill="url(#checkLinkArea)" />
+                  <Area type="monotone" dataKey="value" name="Рекомендации" stroke="#0891B2" fill="url(#checkLinkArea)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -1034,7 +1034,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Исполнение по аудиторам"
           description="% закрытия и число нарушений срока"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-amber-200 dark:border-amber-900/40"
           exportSectionId="auditorPerformance"
           exportSelected={exportSections.isSelected('auditorPerformance')}
           onToggleExport={() => exportSections.toggleSection('auditorPerformance')}
@@ -1051,8 +1051,8 @@ export function RecommendationsAnalyticsDashboard({
                   <YAxis yAxisId="right" orientation="right" allowDecimals={false} tick={{ fontSize: 11 }} />
                   <Tooltip />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar yAxisId="left" dataKey="completionRate" name="% исполнения" fill="#6B9F7C" radius={[4, 4, 0, 0]} />
-                  <Line yAxisId="right" type="monotone" dataKey="violated" name="Нарушения" stroke="#B56E6E" strokeWidth={2} />
+                  <Bar yAxisId="left" dataKey="completionRate" name="% исполнения" fill="#22C55E" radius={[4, 4, 0, 0]} />
+                  <Line yAxisId="right" type="monotone" dataKey="violated" name="Нарушения" stroke="#EF4444" strokeWidth={2} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -1064,18 +1064,17 @@ export function RecommendationsAnalyticsDashboard({
         {MATERIALITY_LEVEL_OPTIONS.map((option) => {
           const value = summary.byMateriality[option.value];
           const share = summary.total ? Math.round((value / summary.total) * 100) : 0;
-          const color = MATERIALITY_COLORS[option.value];
           return (
             <div
               key={option.value}
-              className="rounded-xl border border-slate-200 p-3.5 text-slate-800 shadow-sm dark:border-slate-700 dark:text-slate-100"
-              style={{ background: `linear-gradient(135deg, ${color}40, ${color}18)` }}
+              className="rounded-xl border p-3.5 text-white shadow-sm"
+              style={{ background: `linear-gradient(135deg, ${MATERIALITY_COLORS[option.value]}, ${MATERIALITY_COLORS[option.value]}CC)` }}
             >
-              <p className="text-sm font-medium opacity-80">{option.label} уровень</p>
+              <p className="text-sm font-medium opacity-90">{option.label} уровень</p>
               <p className="mt-1 text-3xl font-semibold">{value}</p>
-              <p className="mt-1 text-xs opacity-70">{share}% выборки</p>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/60 dark:bg-slate-900/30">
-                <div className="h-full rounded-full" style={{ width: `${Math.max(share, 4)}%`, backgroundColor: color }} />
+              <p className="mt-1 text-xs opacity-90">{share}% выборки</p>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/30">
+                <div className="h-full rounded-full bg-white" style={{ width: `${Math.max(share, 4)}%` }} />
               </div>
             </div>
           );
@@ -1086,7 +1085,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="FunnelChart (recharts)"
           description="Нативная воронка статусов из Recharts"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-rose-200 dark:border-rose-900/40"
           exportSectionId="funnel"
           exportSelected={exportSections.isSelected('funnel')}
           onToggleExport={() => exportSections.toggleSection('funnel')}
@@ -1113,7 +1112,7 @@ export function RecommendationsAnalyticsDashboard({
         <ChartCard
           title="Sankey: существенность → статус"
           description="Потоки от уровня существенности к статусу рекомендации"
-          accentClassName="border-slate-200 dark:border-slate-700"
+          accentClassName="border-sky-200 dark:border-sky-900/40"
           exportSectionId="materiality"
           exportSelected={exportSections.isSelected('materiality')}
           onToggleExport={() => exportSections.toggleSection('materiality')}
@@ -1142,7 +1141,7 @@ export function RecommendationsAnalyticsDashboard({
       <ChartCard
         title={`Матрица: аудитор × ${periodLabel.slice(0, -2)}`}
         description="Интенсивность по срокам — кто сколько рекомендаций ведёт"
-        accentClassName="border-slate-200 dark:border-slate-700"
+        accentClassName="border-fuchsia-200 dark:border-fuchsia-900/40"
         exportSectionId="auditorMatrix"
           exportSelected={exportSections.isSelected('auditorMatrix')}
         onToggleExport={() => exportSections.toggleSection('auditorMatrix')}
@@ -1153,7 +1152,7 @@ export function RecommendationsAnalyticsDashboard({
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse text-xs">
               <thead>
-                <tr className="bg-sber-dark text-left text-white">
+                <tr className="bg-indigo-700 text-left text-white">
                   <th className="px-2.5 py-1.5 font-medium">Аудитор</th>
                   {auditorMatrix.periods.map((period) => (
                     <th key={period.key} className="px-2.5 py-1.5 font-medium whitespace-nowrap">
@@ -1177,8 +1176,8 @@ export function RecommendationsAnalyticsDashboard({
                           style={
                             value > 0
                               ? {
-                                  backgroundColor: `rgba(79, 127, 168, ${0.12 + intensity * 0.4})`,
-                                  color: '#003366',
+                                  backgroundColor: `rgba(99, 102, 241, ${0.12 + intensity * 0.45})`,
+                                  color: '#312E81',
                                 }
                               : undefined
                           }
@@ -1187,7 +1186,7 @@ export function RecommendationsAnalyticsDashboard({
                         </td>
                       );
                     })}
-                    <td className="px-2.5 py-1.5 font-semibold tabular-nums text-sber-dark dark:text-sber-light">
+                    <td className="px-2.5 py-1.5 font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
                       {row.total}
                     </td>
                   </tr>
@@ -1201,7 +1200,7 @@ export function RecommendationsAnalyticsDashboard({
       <ChartCard
         title={`Тепловая матрица существенности × ${periodLabel.slice(0, -2)}`}
         description="Как уровни риска распределены во времени"
-        accentClassName="border-slate-200 dark:border-slate-700"
+        accentClassName="border-indigo-200 dark:border-indigo-900/40"
         exportSectionId="materialityMatrix"
           exportSelected={exportSections.isSelected('materialityMatrix')}
         onToggleExport={() => exportSections.toggleSection('materialityMatrix')}
@@ -1212,7 +1211,7 @@ export function RecommendationsAnalyticsDashboard({
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse text-xs">
               <thead>
-                <tr className="bg-sber-dark/90 text-left text-white">
+                <tr className="bg-rose-700 text-left text-white">
                   <th className="px-2.5 py-1.5 font-medium">Существенность</th>
                   {materialityMatrix.periods.map((period) => (
                     <th key={period.key} className="px-2.5 py-1.5 font-medium whitespace-nowrap">

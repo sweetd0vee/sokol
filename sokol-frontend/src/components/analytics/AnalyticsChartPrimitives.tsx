@@ -389,16 +389,16 @@ export function KpiCard({
   tone?: 'blue' | 'green' | 'red' | 'amber' | 'violet' | 'slate';
 }) {
   const tones = {
-    blue: 'border-sky-100 bg-sky-50/80 text-slate-800 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-100',
+    blue: 'border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-100',
     green:
-      'border-emerald-100 bg-emerald-50/70 text-slate-800 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-100',
-    red: 'border-rose-100 bg-rose-50/70 text-slate-800 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-100',
+      'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100',
+    red: 'border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-100',
     amber:
-      'border-amber-100 bg-amber-50/70 text-slate-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100',
+      'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100',
     violet:
-      'border-indigo-100 bg-indigo-50/70 text-slate-800 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-100',
+      'border-violet-200 bg-violet-50 text-violet-900 dark:border-violet-900/50 dark:bg-violet-950/40 dark:text-violet-100',
     slate:
-      'border-slate-200 bg-slate-50/80 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100',
+      'border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100',
   };
 
   return (
@@ -457,18 +457,17 @@ export function ExportSectionToolbar({
   );
 }
 
-/** Soft brand-aligned chart palette (muted, low saturation). */
 export const PALETTE = [
   '#003366',
-  '#4F7FA8',
-  '#7FA3C4',
-  '#6B9F7C',
-  '#B89750',
-  '#B56E6E',
-  '#8682A4',
-  '#5B91A0',
-  '#B8875E',
-  '#A07A8C',
-  '#5F9788',
-  '#7B719C',
+  '#2563EB',
+  '#6699FF',
+  '#22C55E',
+  '#EAB308',
+  '#EF4444',
+  '#A855F7',
+  '#06B6D4',
+  '#F97316',
+  '#EC4899',
+  '#14B8A6',
+  '#8B5CF6',
 ];

@@ -44,7 +44,7 @@ function AttachmentCard({
       type="button"
       onClick={onOpen}
       className={[
-        'flex w-full items-center justify-center rounded-lg border border-[#b8bec8] bg-white text-center leading-relaxed transition hover:border-gray-400 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700/40',
+        'flex w-full items-center justify-center rounded-lg border border-[#b8bec8] bg-gray-50 text-center leading-relaxed transition hover:border-gray-400 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/50 dark:border-slate-600 dark:bg-slate-700/40 dark:hover:bg-slate-700/60',
         compact
           ? 'min-h-[6.5rem] flex-col gap-2 px-2 py-4'
           : 'min-h-[12rem] flex-col gap-2 px-4 py-5',

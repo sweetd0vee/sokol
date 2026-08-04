@@ -57,7 +57,7 @@ function AttachmentCard({ label, fileCount, onOpen }: AttachmentCardProps) {
     <button
       type="button"
       onClick={onOpen}
-      className="flex min-h-[6.5rem] w-full flex-col items-center justify-center gap-2 rounded-lg border border-[#b8bec8] bg-white px-2 py-4 text-center leading-relaxed transition hover:border-gray-400 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700/40"
+      className="flex min-h-[6.5rem] w-full flex-col items-center justify-center gap-2 rounded-lg border border-[#b8bec8] bg-gray-50 px-2 py-4 text-center leading-relaxed transition hover:border-gray-400 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/50 dark:border-slate-600 dark:bg-slate-700/40 dark:hover:bg-slate-700/60"
     >
       <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">{label}</span>
       {fileCount > 0 && (
