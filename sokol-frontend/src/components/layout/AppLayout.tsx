@@ -21,7 +21,9 @@ export function AppLayout() {
     location.pathname === '/recommendations/new' ||
     /^\/recommendations\/[^/]+\/edit$/.test(location.pathname) ||
     location.pathname === '/checks/new' ||
-    /^\/checks\/[^/]+\/edit$/.test(location.pathname);
+    /^\/checks\/[^/]+\/edit$/.test(location.pathname) ||
+    location.pathname === '/observations/new' ||
+    /^\/observations\/[^/]+\/edit$/.test(location.pathname);
 
   useEffect(() => {
     const handleAvatarChanged = (event: Event) => {
