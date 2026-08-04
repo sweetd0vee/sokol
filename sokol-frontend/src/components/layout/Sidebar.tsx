@@ -16,8 +16,8 @@ const TABS = [
   { id: 'observations', path: '/observations', label: 'Наблюдения', icon: Eye },
   { id: 'analytics', path: '/analytics', label: 'Аналитика', icon: BarChart3 },
   { id: 'planning', path: '/planning', label: 'Планирование', icon: CalendarClock },
-  { id: 'kantsler', path: '/kantsler', label: 'Канцлер', icon: FileCheck },
   { id: 'tools', path: '/tools', label: 'Инструменты', icon: Wrench },
+  { id: 'kantsler', path: '/kantsler', label: 'Канцлер', icon: FileCheck },
   { id: 'settings', path: '/settings', label: 'Настройки', icon: Settings },
 ] as const;
 

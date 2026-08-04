@@ -1,12 +1,10 @@
 import type { Check, CheckStatus, CheckType, CheckView } from '../types/check';
 import { getCheckStatusLabel, getCheckTypeLabel, getCheckViewLabel } from '../constants/checks';
-import { parseDateValue, toEndOfDayMs, toStartOfDayMs } from './dates';
+import { parseDateValue } from './dates';
 
 export type PeriodGranularity = 'month' | 'quarter' | 'year';
 
 export type CheckAnalyticsFilters = {
-  dateFrom: Date | null;
-  dateTo: Date | null;
   auditors: string[];
   granularity: PeriodGranularity;
 };
@@ -68,19 +66,11 @@ function getPeriodBucket(dateMs: number, granularity: PeriodGranularity): Period
 }
 
 export function filterChecksForAnalytics(checks: Check[], filters: CheckAnalyticsFilters): Check[] {
-  const fromMs = filters.dateFrom ? toStartOfDayMs(filters.dateFrom) : null;
-  const toMs = filters.dateTo ? toEndOfDayMs(filters.dateTo) : null;
   const auditorSet = new Set(filters.auditors.filter(Boolean));
 
   return checks.filter((check) => {
     const startMs = parseDateValue(check.start_date);
     if (startMs === null) {
-      return false;
-    }
-    if (fromMs !== null && startMs < fromMs) {
-      return false;
-    }
-    if (toMs !== null && startMs > toMs) {
       return false;
     }
     if (auditorSet.size > 0 && !auditorSet.has(check.check_leader)) {

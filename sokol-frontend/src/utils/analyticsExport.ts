@@ -59,8 +59,6 @@ export type ChecksDashboardExportInput = {
   checks: Check[];
   filteredChecks: Check[];
   granularity: PeriodGranularity;
-  dateFrom: Date | null;
-  dateTo: Date | null;
   auditors: string[];
   selectedSections: string[];
 };
@@ -244,7 +242,7 @@ function matrixToRows(
 }
 
 function exportChecksDashboardXlsx(input: ChecksDashboardExportInput) {
-  const { filteredChecks, granularity, dateFrom, dateTo, auditors, checks, selectedSections } = input;
+  const { filteredChecks, granularity, auditors, checks, selectedSections } = input;
   const selected = new Set(selectedSections);
   if (selected.size === 0) {
     throw new Error('Выберите хотя бы один дашборд для экспорта');
@@ -267,8 +265,6 @@ function exportChecksDashboardXlsx(input: ChecksDashboardExportInput) {
     ['Раздел', 'Аналитика проверок'],
     ['Дата формирования', new Date().toLocaleString('ru-RU')],
     ['Группировка', granularityLabel(granularity)],
-    ['Дата старта с', formatFilterDate(dateFrom)],
-    ['Дата старта по', formatFilterDate(dateTo)],
     ['Аудиторы', auditors.length ? auditors.join(', ') : 'Все'],
     ['Записей в выборке', String(filteredChecks.length)],
     ['Всего в системе', String(checks.length)],
@@ -923,7 +919,7 @@ function buildPdfDoc(
 }
 
 function exportChecksDashboardPdf(input: ChecksDashboardExportInput) {
-  const { filteredChecks, checks, granularity, dateFrom, dateTo, auditors, selectedSections } = input;
+  const { filteredChecks, checks, granularity, auditors, selectedSections } = input;
   const selected = new Set(selectedSections);
   if (selected.size === 0) {
     throw new Error('Выберите хотя бы один дашборд для экспорта');
@@ -1080,8 +1076,6 @@ function exportChecksDashboardPdf(input: ChecksDashboardExportInput) {
     'Аналитика проверок — SOKOL',
     [
       ['Группировка', granularityLabel(granularity)],
-      ['Дата старта с', formatFilterDate(dateFrom)],
-      ['Дата старта по', formatFilterDate(dateTo)],
       ['Аудиторы', auditors.length ? auditors.join(', ') : 'Все'],
       ['Записей в выборке', String(filteredChecks.length)],
       ['Всего в системе', String(checks.length)],

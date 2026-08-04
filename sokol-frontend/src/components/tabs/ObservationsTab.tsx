@@ -36,7 +36,6 @@ type SortKey =
   | 'id'
   | 'serial_number'
   | 'name'
-  | 'chapter'
   | 'materiality_level'
   | 'deadline'
   | 'auditor'
@@ -53,8 +52,6 @@ const getSortValue = (observation: Observation, key: SortKey) => {
       return observation.serial_number;
     case 'name':
       return observation.name;
-    case 'chapter':
-      return observation.chapter;
     case 'materiality_level':
       return (
         {
@@ -101,7 +98,6 @@ export function ObservationsTab() {
   const [idFilter, setIdFilter] = useState('');
   const [keyFilter, setKeyFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
-  const [chapterFilter, setChapterFilter] = useState('');
   const [materialityLevel, setMaterialityLevel] = useState('');
   const [status, setStatus] = useState('');
   const [auditor, setAuditor] = useState('');
@@ -127,9 +123,6 @@ export function ObservationsTab() {
         return false;
       }
       if (nameFilter && !observation.name.toLowerCase().includes(nameFilter.trim().toLowerCase())) {
-        return false;
-      }
-      if (chapterFilter && !observation.chapter.toLowerCase().includes(chapterFilter.trim().toLowerCase())) {
         return false;
       }
       if (materialityLevel && observation.materiality_level !== materialityLevel) {
@@ -167,7 +160,6 @@ export function ObservationsTab() {
     idFilter,
     keyFilter,
     nameFilter,
-    chapterFilter,
     materialityLevel,
     status,
     auditor,
@@ -204,7 +196,6 @@ export function ObservationsTab() {
     idFilter,
     keyFilter,
     nameFilter,
-    chapterFilter,
     materialityLevel,
     status,
     auditor,
@@ -223,7 +214,6 @@ export function ObservationsTab() {
     setIdFilter('');
     setKeyFilter('');
     setNameFilter('');
-    setChapterFilter('');
     setMaterialityLevel('');
     setStatus('');
     setAuditor('');
@@ -293,12 +283,11 @@ export function ObservationsTab() {
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         <>
           <div className="overflow-x-auto">
-            <table className="w-full text-base table-fixed min-w-[1600px]">
+            <table className="w-full text-base table-fixed min-w-[1400px]">
               <colgroup>
                 <col className="w-16" />
                 <col className="w-28" />
                 <col />
-                <col className="w-40" />
                 <col className="w-36" />
                 <col className="w-32" />
                 <col className="w-40" />
@@ -327,15 +316,7 @@ export function ObservationsTab() {
                     <Input
                       value={nameFilter}
                       onChange={setNameFilter}
-                      placeholder="Название"
-                      inputClassName="py-1.5 text-sm"
-                    />
-                  </th>
-                  <th className="px-2 py-2 font-normal">
-                    <Input
-                      value={chapterFilter}
-                      onChange={setChapterFilter}
-                      placeholder="Раздел"
+                      placeholder="Содержание"
                       inputClassName="py-1.5 text-sm"
                     />
                   </th>
@@ -421,18 +402,8 @@ export function ObservationsTab() {
                       onClick={() => handleSort('name')}
                       className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
                     >
-                      Название
+                      Содержание
                       {renderSortIcon('name')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('chapter')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      Раздел
-                      {renderSortIcon('chapter')}
                     </button>
                   </th>
                   <th className="px-4 py-3 text-left font-medium">
@@ -485,9 +456,6 @@ export function ObservationsTab() {
                     <td className="px-4 py-3">{observation.serial_number}</td>
                     <td className="px-4 py-3 truncate" title={observation.name}>
                       {observation.name}
-                    </td>
-                    <td className="px-4 py-3 truncate" title={observation.chapter}>
-                      {observation.chapter}
                     </td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center gap-2">

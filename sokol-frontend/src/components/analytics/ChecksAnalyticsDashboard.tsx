@@ -26,7 +26,6 @@ import {
 } from 'recharts';
 import { Download, X } from 'lucide-react';
 import type { Check } from '../../types/check';
-import { DatePicker } from '../ui/DatePicker';
 import { Select } from '../ui/Select';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { Button } from '../ui/Button';
@@ -67,12 +66,12 @@ const GRANULARITY_OPTIONS: { value: PeriodGranularity; label: string }[] = [
   { value: 'year', label: 'Год' },
 ];
 
-const CHART_COLORS = ['#003366', '#2563EB', '#6699FF', '#22C55E', '#EAB308', '#EF4444', '#A855F7', '#06B6D4'];
+const CHART_COLORS = ['#003366', '#4F7FA8', '#7FA3C4', '#6B9F7C', '#B89750', '#B56E6E', '#8682A4', '#5B91A0'];
 
 const STATUS_STACK = [
-  { key: 'not_started', label: 'Запланировано', color: '#94A3B8' },
-  { key: 'in_progress', label: 'В процессе', color: '#F59E0B' },
-  { key: 'completed', label: 'Завершено', color: '#22C55E' },
+  { key: 'not_started', label: 'Запланировано', color: '#9AA3B0' },
+  { key: 'in_progress', label: 'В процессе', color: '#B89050' },
+  { key: 'completed', label: 'Завершено', color: '#6B9F7C' },
 ] as const;
 
 type ChecksAnalyticsDashboardProps = {
@@ -87,7 +86,7 @@ function TreemapContent(props: {
   name?: string;
   fill?: string;
 }) {
-  const { x = 0, y = 0, width = 0, height = 0, name = '', fill = '#2563EB' } = props;
+  const { x = 0, y = 0, width = 0, height = 0, name = '', fill = '#4F7FA8' } = props;
   if (width < 36 || height < 24) {
     return (
       <g>
@@ -107,8 +106,6 @@ function TreemapContent(props: {
 
 export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardProps) {
   const [granularity, setGranularity] = useState<PeriodGranularity>('quarter');
-  const [dateFrom, setDateFrom] = useState<Date | null>(null);
-  const [dateTo, setDateTo] = useState<Date | null>(null);
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [auditorToAdd, setAuditorToAdd] = useState('');
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('xlsx');
@@ -128,12 +125,10 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
   const filteredChecks = useMemo(
     () =>
       filterChecksForAnalytics(checks, {
-        dateFrom,
-        dateTo,
         auditors: selectedAuditors,
         granularity,
       }),
-    [checks, dateFrom, dateTo, selectedAuditors, granularity],
+    [checks, selectedAuditors, granularity],
   );
 
   const summary = useMemo(() => summarizeChecks(filteredChecks), [filteredChecks]);
@@ -192,8 +187,6 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
 
   const resetFilters = () => {
     setGranularity('quarter');
-    setDateFrom(null);
-    setDateTo(null);
     setSelectedAuditors([]);
     setAuditorToAdd('');
   };
@@ -213,8 +206,6 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
           checks,
           filteredChecks,
           granularity,
-          dateFrom,
-          dateTo,
           auditors: selectedAuditors,
           selectedSections: exportSections.selectedSections,
         },
@@ -251,22 +242,6 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
                 buttonClassName="min-w-0 w-full"
               />
             </div>
-            <DatePicker
-              label="Дата старта с"
-              selected={dateFrom}
-              onChange={setDateFrom}
-              maxDate={dateTo}
-              labelClassName="text-sm"
-              inputClassName="py-1.5 text-sm"
-            />
-            <DatePicker
-              label="Дата старта по"
-              selected={dateTo}
-              onChange={setDateTo}
-              minDate={dateFrom}
-              labelClassName="text-sm"
-              inputClassName="py-1.5 text-sm"
-            />
             <Select
               label="Добавить аудитора"
               value={auditorToAdd}
@@ -394,8 +369,8 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
                 <AreaChart data={periodSeries} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
                   <defs>
                     <linearGradient id="checksArea" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#2563EB" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#2563EB" stopOpacity={0.02} />
+                      <stop offset="5%" stopColor="#4F7FA8" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#4F7FA8" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -436,7 +411,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
                     type="monotone"
                     dataKey="cumulative"
                     name="Накопительно"
-                    stroke="#1D4ED8"
+                    stroke="#4A6F9A"
                     strokeWidth={2}
                     dot={{ r: 3, fill: '#003366' }}
                   />
@@ -600,8 +575,8 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
                     name="Проверки"
                     dataKey="value"
                     stroke="#003366"
-                    fill="#6699FF"
-                    fillOpacity={0.45}
+                    fill="#7FA3C4"
+                    fillOpacity={0.4}
                   />
                   <Tooltip />
                 </RadarChart>
@@ -658,7 +633,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                   <Tooltip />
-                  <Bar dataKey="value" name="Проверки" fill="#0EA5E9" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="value" name="Проверки" fill="#5B91A0" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -710,7 +685,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
                   <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
                   <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 10 }} />
                   <Tooltip />
-                  <Bar dataKey="value" name="Проверки" fill="#6699FF" radius={[0, 6, 6, 0]} />
+                  <Bar dataKey="value" name="Проверки" fill="#7FA3C4" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -722,7 +697,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Radial по статусам"
           description="Круговая шкала объёмов статусов"
-          accentClassName="border-amber-200 dark:border-amber-900/40"
+          accentClassName="border-stone-200 dark:border-slate-700"
           exportSelected={exportSections.isSelected('statuses')}
           onToggleExport={() => exportSections.toggleSection('statuses')}
         >
@@ -754,7 +729,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         <ChartCard
           title="Treemap аудиторов"
           description="Площадь = число проверок руководителя"
-          accentClassName="border-fuchsia-200 dark:border-fuchsia-900/40"
+          accentClassName="border-slate-200 dark:border-slate-700"
           exportSelected={exportSections.isSelected('auditors')}
           onToggleExport={() => exportSections.toggleSection('auditors')}
         >
@@ -783,7 +758,7 @@ export function ChecksAnalyticsDashboard({ checks }: ChecksAnalyticsDashboardPro
         title={`Матрица: аудитор × ${periodLabel.slice(0, -2)}`}
         description="Кто сколько проверок стартовал в каждом периоде"
         className="overflow-hidden"
-        accentClassName="border-indigo-200 dark:border-indigo-900/40"
+        accentClassName="border-sky-100 dark:border-slate-700"
         exportSelected={exportSections.isSelected('auditorMatrix')}
         onToggleExport={() => exportSections.toggleSection('auditorMatrix')}
       >
