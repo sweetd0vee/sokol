@@ -40,7 +40,7 @@ function toInputDate(value?: string) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-const FORM_SERVICE_INPUT_CLASS = 'border-2 border-gray-400 bg-green-100 text-sm py-1.5';
+const FORM_SERVICE_INPUT_CLASS = 'border-2 !border-[#003366] bg-green-100 text-sm py-1.5';
 
 function isNonEmpty(value: string | null | undefined) {
   return Boolean(value?.toString().trim());
@@ -328,7 +328,7 @@ export function CheckFormPage() {
             placeholder="Краткое название"
             rows={4}
             labelClassName={FORM_LABEL_CLASS}
-            inputClassName="text-sm py-1.5 min-h-[6.5rem] max-h-48 resize-none overflow-y-auto"
+            inputClassName="text-sm py-1.5 min-h-[6.5rem] max-h-48 resize-none overflow-y-auto !border-[#003366]"
           />
           <div className={FORM_ROW_3}>
             <Select
