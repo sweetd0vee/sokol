@@ -13,7 +13,7 @@ export const INDICATOR_ICONS: Partial<
   'в процессе': { Icon: Clock, className: 'text-yellow-500' },
   ожидает: { Icon: Hourglass, className: 'text-gray-500' },
   'не решено': { Icon: AlertTriangle, className: 'text-red-500' },
-  исполнено: { Icon: Check, className: 'text-green-500' },
+  исполнено: { Icon: Check, className: 'text-[rgb(37,235,103)]' },
 };
 
 type IndicatorSelectProps = {

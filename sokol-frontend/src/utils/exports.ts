@@ -58,11 +58,13 @@ const RECOMMENDATION_ADDITIONAL_STATUS_FILLS: Record<string, string> = {
   'Срок нарушен': 'FECACA',
   'На контроле': 'E5E7EB',
 };
-const MATERIALITY_FILLS: Record<string, string> = {
-  Высокий: 'FECACA',
-  Средний: 'FEF08A',
-  Низкий: 'BBF7D0',
+/** Dot colors matching the recommendations table UI. */
+const MATERIALITY_DOT_COLORS: Record<string, string> = {
+  Высокий: 'FF4347',
+  Средний: 'FBEB8D',
+  Низкий: 'A7F7C2',
 };
+const MATERIALITY_DOT_CHAR = '●';
 const INDICATOR_FILLS: Record<string, string> = {
   'В процессе': 'FEF9C3',
   Ожидает: 'E5E7EB',
@@ -113,8 +115,12 @@ function getAdditionalStatusFill(value: unknown) {
   return RECOMMENDATION_ADDITIONAL_STATUS_FILLS[toCellText(value)];
 }
 
-function getMaterialityFill(value: unknown) {
-  return MATERIALITY_FILLS[toCellText(value)];
+function getMaterialityDotColor(value: unknown) {
+  return MATERIALITY_DOT_COLORS[toCellText(value)];
+}
+
+function isMaterialityHeader(header: string | undefined) {
+  return header === 'Уровень существенности';
 }
 
 function getIndicatorFill(value: unknown) {
@@ -128,13 +134,19 @@ function getHighlightFill(header: string | undefined, value: unknown) {
   if (header === 'Дополнительный статус') {
     return getAdditionalStatusFill(value);
   }
-  if (header === 'Уровень существенности') {
-    return getMaterialityFill(value);
-  }
   if (header === 'Индикатор') {
     return getIndicatorFill(value);
   }
   return undefined;
+}
+
+function getCellBorderStyle() {
+  return {
+    top: { style: 'thin' as const, color: { rgb: BORDER_GRAY } },
+    bottom: { style: 'thin' as const, color: { rgb: BORDER_GRAY } },
+    left: { style: 'thin' as const, color: { rgb: BORDER_GRAY } },
+    right: { style: 'thin' as const, color: { rgb: BORDER_GRAY } },
+  };
 }
 
 function applySheetTableStyle(ws: XLSX.WorkSheet, headers: string[], rows: ExportRow[]) {
@@ -152,6 +164,29 @@ function applySheetTableStyle(ws: XLSX.WorkSheet, headers: string[], rows: Expor
       }
       const isHeader = row === range.s.r;
       const header = headers[col - range.s.c];
+      const materialityColor =
+        !isHeader && isMaterialityHeader(header) ? getMaterialityDotColor(cell.v) : undefined;
+
+      if (materialityColor) {
+        cell.v = MATERIALITY_DOT_CHAR;
+        cell.t = 's';
+        cell.w = MATERIALITY_DOT_CHAR;
+        cell.s = {
+          ...(cell.s ?? {}),
+          font: {
+            name: 'Segoe UI Symbol',
+            sz: 16,
+            color: { rgb: materialityColor },
+          },
+          alignment: {
+            horizontal: 'center',
+            vertical: 'center',
+          },
+          border: getCellBorderStyle(),
+        };
+        continue;
+      }
+
       const valueFill = !isHeader ? getHighlightFill(header, cell.v) : undefined;
       cell.s = {
         ...(cell.s ?? {}),
@@ -170,16 +205,14 @@ function applySheetTableStyle(ws: XLSX.WorkSheet, headers: string[], rows: Expor
           vertical: 'center',
           wrapText: true,
         },
-        border: {
-          top: { style: 'thin', color: { rgb: BORDER_GRAY } },
-          bottom: { style: 'thin', color: { rgb: BORDER_GRAY } },
-          left: { style: 'thin', color: { rgb: BORDER_GRAY } },
-          right: { style: 'thin', color: { rgb: BORDER_GRAY } },
-        },
+        border: getCellBorderStyle(),
       };
     }
   }
   ws['!cols'] = headers.map((header) => {
+    if (isMaterialityHeader(header)) {
+      return { wch: 14 };
+    }
     const maxLength = Math.max(
       header.length,
       ...rows.map((row) => toCellText(row[header]).length)
@@ -220,6 +253,32 @@ function createDocxCell(text: string, isHeader: boolean, width: number, fillColo
   });
 }
 
+function createDocxMaterialityCell(label: string, width: number) {
+  const color = getMaterialityDotColor(label) ?? '9CA3AF';
+  return new TableCell({
+    children: [
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [
+          new TextRun({
+            text: MATERIALITY_DOT_CHAR,
+            color,
+            size: 28,
+            font: 'Segoe UI Symbol',
+          }),
+        ],
+      }),
+    ],
+    width: { size: width, type: WidthType.PERCENTAGE },
+    margins: {
+      top: 120,
+      bottom: 120,
+      left: 120,
+      right: 120,
+    },
+  });
+}
+
 async function exportRowsDocx(
   rows: ExportRow[],
   headers: string[],
@@ -236,12 +295,14 @@ async function exportRowsDocx(
       (row) =>
         new TableRow({
           children: headers.map((header) =>
-            createDocxCell(
-              toCellText(row[header]),
-              false,
-              columnWidth,
-              getHighlightFill(header, row[header])
-            )
+            isMaterialityHeader(header)
+              ? createDocxMaterialityCell(toCellText(row[header]), columnWidth)
+              : createDocxCell(
+                  toCellText(row[header]),
+                  false,
+                  columnWidth,
+                  getHighlightFill(header, row[header])
+                )
           ),
         })
     ),
@@ -285,7 +346,7 @@ function getPdfColumnWidths(headers: string[]): Array<number | '*'> {
     'Объект аудита': '*',
     'Срок исполнения': 48,
     Индикатор: 42,
-    'Уровень существенности': 54,
+    'Уровень существенности': 28,
     Аудитор: 40,
     'Руководитель объекта аудита': 70,
     Статус: 40,
@@ -318,6 +379,31 @@ function exportRowsPdf(rows: ExportRow[], headers: string[], title: string, file
     })),
     ...rows.map((row) =>
       headers.map((header) => {
+        if (isMaterialityHeader(header)) {
+          const color = getMaterialityDotColor(row[header]) ?? '9CA3AF';
+          const radius = 5;
+          const diameter = radius * 2;
+          return {
+            columns: [
+              { width: '*', text: '' },
+              {
+                width: diameter,
+                canvas: [
+                  {
+                    type: 'ellipse',
+                    x: radius,
+                    y: radius,
+                    r1: radius,
+                    r2: radius,
+                    color: `#${color}`,
+                  },
+                ],
+              },
+              { width: '*', text: '' },
+            ],
+            margin: [0, 1, 0, 1],
+          };
+        }
         const fill = getHighlightFill(header, row[header]);
         return {
           text: toCellText(row[header]),

@@ -572,7 +572,7 @@ export function RecommendationsTab() {
                   <td className="px-4 py-3 pr-6">{formatRuDate(recommendation.deadline)}</td>
                   <td className="px-2 py-3 text-center">
                     <span
-                      className={`inline-block h-3.5 w-3.5 rounded-full ${getMaterialityDotClassName(recommendation.materiality_level)}`}
+                      className={`inline-block h-[18px] w-[18px] rounded-full ${getMaterialityDotClassName(recommendation.materiality_level)}`}
                       title={getMaterialityLevelLabel(recommendation.materiality_level)}
                       aria-label={getMaterialityLevelLabel(recommendation.materiality_level)}
                     />

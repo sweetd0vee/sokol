@@ -145,7 +145,7 @@ export const INDICATOR_OPTIONS: {
   { value: 'в процессе', label: 'В процессе', dotClassName: 'bg-[#FBEB8D]' },
   { value: 'ожидает', label: 'Ожидает', dotClassName: 'bg-gray-200' },
   { value: 'не решено', label: 'Не решено', dotClassName: 'bg-[#FF4347]' },
-  { value: 'исполнено', label: 'Исполнено', dotClassName: 'bg-[#A9D18E]' },
+  { value: 'исполнено', label: 'Исполнено', dotClassName: 'bg-[rgb(37,235,103)]' },
 ];
 
 export function getIndicatorLabel(value: RecommendationIndicator | '' | null | undefined) {
@@ -186,7 +186,7 @@ export const MATERIALITY_LEVEL_OPTIONS: {
   label: string;
   dotClassName: string;
 }[] = [
-  { value: 'низкий', label: 'Низкий', dotClassName: 'bg-[#A9D18E]' },
+  { value: 'низкий', label: 'Низкий', dotClassName: 'bg-[rgb(167,247,194)]' },
   { value: 'средний', label: 'Средний', dotClassName: 'bg-[#FBEB8D]' },
   { value: 'высокий', label: 'Высокий', dotClassName: 'bg-[#FF4347]' },
 ];
