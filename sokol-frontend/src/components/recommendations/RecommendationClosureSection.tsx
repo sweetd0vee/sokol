@@ -2,13 +2,22 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { DatePicker } from '../ui/DatePicker';
 import { Textarea } from '../ui/Textarea';
+import { FileAttachmentsPanel } from '../attachments/FileAttachmentsPanel';
 import {
   createClosureDateCommentRow,
   isClosureRowIncomplete,
+  RECOMMENDATION_CONTROL_REMOVAL_ATTACHMENT_SLOTS,
   type ClosureDateCommentRow,
   type RecommendationClosureForm,
 } from '../../constants/recommendationClosure';
-import { FORM_ACTION_BUTTON_CLASS, FORM_FIELD_CLASS, FORM_FIELD_WIDE_CLASS, FORM_INPUT_CLASS, FORM_ROW_3, FORM_SECTION_INNER_STACK_CLASS } from '../../constants/formLayout';
+import {
+  FORM_ACTION_BUTTON_CLASS,
+  FORM_FIELD_CLASS,
+  FORM_FIELD_WIDE_CLASS,
+  FORM_INPUT_CLASS,
+  FORM_ROW_3,
+  FORM_SECTION_INNER_STACK_CLASS,
+} from '../../constants/formLayout';
 import { toIsoDate } from '../../utils/dates';
 
 type RecommendationClosureSectionProps = {
@@ -17,6 +26,7 @@ type RecommendationClosureSectionProps = {
   embedded?: boolean;
   hideClosureInformation?: boolean;
   hideActualCompletionDate?: boolean;
+  attachmentResetKey?: number;
   errorFields?: {
     extensions?: boolean;
     removals?: boolean;
@@ -128,11 +138,11 @@ function DateCommentRows({
                 <button
                   type="button"
                   onClick={() => removeRow(row.id)}
-                  className="inline-flex items-center justify-center rounded-lg p-1.5 text-gray-500 transition hover:bg-red-50 hover:text-red-600"
+                  className={ADD_BUTTON_CLASS}
                   aria-label="Удалить строку"
-                  title="Удалить"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={16} />
+                  Удалить
                 </button>
               )}
             </div>
@@ -162,6 +172,7 @@ export function RecommendationClosureSection({
   embedded = false,
   hideClosureInformation = false,
   hideActualCompletionDate = false,
+  attachmentResetKey = 0,
   errorFields = {},
   inputClassName = FORM_INPUT_CLASS,
   labelClassName = 'text-sm leading-relaxed',
@@ -185,6 +196,15 @@ export function RecommendationClosureSection({
 
   const patch = (partial: Partial<RecommendationClosureForm>) => {
     onChange({ ...value, ...partial });
+  };
+
+  const removal = value.removals[0] ?? createClosureDateCommentRow();
+  const removalIncomplete = Boolean(errorFields.removals) && isClosureRowIncomplete(removal);
+  const removalInvalidClass = 'border-[#e59a9a] focus:border-[#d9534f] focus:ring-[#f3c5c5]';
+  const updateRemoval = (partial: Partial<Pick<ClosureDateCommentRow, 'date' | 'comment'>>) => {
+    const next = { ...removal, ...partial };
+    const rest = value.removals.slice(1);
+    patch({ removals: [next, ...rest] });
   };
 
   const content = (
@@ -216,6 +236,52 @@ export function RecommendationClosureSection({
       )}
 
       <CollapsibleFormBlock
+        title="Снять с контроля"
+        titleClassName={blockTitleClassName}
+        open={removeOpen}
+        onToggle={() => setRemoveOpen((current) => !current)}
+        className={stackClassName}
+      >
+        <div className={`${FORM_ROW_3} items-start`}>
+          <div className={`${FORM_FIELD_CLASS} space-y-5`}>
+            <DatePicker
+              selected={toDate(removal.date)}
+              onChange={(date) => updateRemoval({ date: toIsoDate(date) ?? '' })}
+              placeholder="Выберите дату снятия с контроля"
+              labelClassName={labelClassName}
+              inputClassName={[inputClassName, removalIncomplete ? removalInvalidClass : '']
+                .filter(Boolean)
+                .join(' ')}
+            />
+            <FileAttachmentsPanel
+              key={attachmentResetKey}
+              embedded
+              compact
+              hideSlotLabel
+              slots={[...RECOMMENDATION_CONTROL_REMOVAL_ATTACHMENT_SLOTS]}
+              columnsClassName="grid-cols-1"
+            />
+          </div>
+          <div className={`${FORM_FIELD_WIDE_CLASS} flex flex-col self-stretch`}>
+            <Textarea
+              value={removal.comment}
+              onChange={(comment) => updateRemoval({ comment })}
+              placeholder="Комментарий"
+              rows={1}
+              labelClassName={labelClassName}
+              className="flex h-full min-h-0 w-full flex-1 flex-col"
+              inputClassName={[
+                `${FORM_INPUT_CLASS} box-border h-full min-h-0 flex-1 resize-none overflow-y-auto`,
+                removalIncomplete ? removalInvalidClass : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            />
+          </div>
+        </div>
+      </CollapsibleFormBlock>
+
+      <CollapsibleFormBlock
         title="Перенос срока"
         titleClassName={blockTitleClassName}
         open={extensionOpen}
@@ -234,33 +300,6 @@ export function RecommendationClosureSection({
           <button
             type="button"
             onClick={() => patch({ extensions: [...value.extensions, createClosureDateCommentRow()] })}
-            className={ADD_BUTTON_CLASS}
-          >
-            <Plus size={16} />
-            Добавить
-          </button>
-        </div>
-      </CollapsibleFormBlock>
-
-      <CollapsibleFormBlock
-        title="Снять с контроля"
-        titleClassName={blockTitleClassName}
-        open={removeOpen}
-        onToggle={() => setRemoveOpen((current) => !current)}
-        className={stackClassName}
-      >
-        <div className={FORM_SECTION_INNER_STACK_CLASS}>
-          <DateCommentRows
-            rows={value.removals}
-            onChange={(removals) => patch({ removals })}
-            datePlaceholder="Выберите дату снятия с контроля"
-            showErrors={Boolean(errorFields.removals)}
-            inputClassName={inputClassName}
-            labelClassName={labelClassName}
-          />
-          <button
-            type="button"
-            onClick={() => patch({ removals: [...value.removals, createClosureDateCommentRow()] })}
             className={ADD_BUTTON_CLASS}
           >
             <Plus size={16} />

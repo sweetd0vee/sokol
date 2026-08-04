@@ -2,6 +2,10 @@ export const RECOMMENDATION_ATTACHMENT_SLOTS = [
   { id: 'recommendation_files', label: 'Вложения' },
 ] as const;
 
+export const RECOMMENDATION_CONTROL_REMOVAL_ATTACHMENT_SLOTS = [
+  { id: 'control_removal_files', label: 'Вложения' },
+] as const;
+
 export type ClosureDateCommentRow = {
   id: string;
   date: string;

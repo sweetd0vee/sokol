@@ -630,25 +630,6 @@ export function RecommendationFormPage() {
         <div className={formSectionClass(isControlZoneFilled)}>
           <div className={FORM_SECTION_TITLE_CLASS}>Контрольная зона</div>
           <div className={FORM_SECTION_INNER_STACK_CLASS}>
-            <RecommendationClosureSection
-              embedded
-              hideClosureInformation
-              hideActualCompletionDate
-              value={closure}
-              onChange={setClosure}
-              inputClassName={FORM_INPUT_CLASS}
-              labelClassName={FORM_LABEL_CLASS}
-              blockTitleClassName={FORM_SECTION_TITLE_CLASS}
-              stackClassName={FORM_SECTION_INNER_STACK_CLASS}
-              errorFields={
-                showValidationErrors
-                  ? {
-                      extensions: requiredFieldErrors.extensions,
-                      removals: requiredFieldErrors.removals,
-                    }
-                  : {}
-              }
-            />
             <CollapsibleFormBlock
               title="Срок исполнения"
               titleClassName={FORM_SECTION_TITLE_CLASS}
@@ -708,6 +689,26 @@ export function RecommendationFormPage() {
                 </div>
               </div>
             </CollapsibleFormBlock>
+            <RecommendationClosureSection
+              embedded
+              hideClosureInformation
+              hideActualCompletionDate
+              attachmentResetKey={formResetKey}
+              value={closure}
+              onChange={setClosure}
+              inputClassName={FORM_INPUT_CLASS}
+              labelClassName={FORM_LABEL_CLASS}
+              blockTitleClassName={FORM_SECTION_TITLE_CLASS}
+              stackClassName={FORM_SECTION_INNER_STACK_CLASS}
+              errorFields={
+                showValidationErrors
+                  ? {
+                      extensions: requiredFieldErrors.extensions,
+                      removals: requiredFieldErrors.removals,
+                    }
+                  : {}
+              }
+            />
           </div>
         </div>
 
