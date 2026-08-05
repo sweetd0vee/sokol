@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Одностраничное приложение внутреннего аудита: CRUD проверок/рекомендаций, справочники, клиентский экспорт таблиц, клиентские дашборды аналитики, вызов backend DOCX-tools (включая аудиторское мнение через Ollama), заготовки наблюдений/планирования/канцлера и профиль.
+Одностраничное приложение внутреннего аудита: CRUD проверок/рекомендаций, справочники, клиентский экспорт таблиц, клиентские дашборды аналитики, демо-таблица наблюдений, вызов backend DOCX-tools (включая аудиторское мнение через Ollama), заготовки формы наблюдений/планирования/канцлера и профиль.
 
 ## Структура `src/`
 
@@ -16,8 +16,8 @@ src/
 │   ├── layout/              # AppLayout, AuthLayout, Sidebar
 │   ├── checks/              # CheckFormPage, attachments, recommendations block
 │   ├── recommendations/     # Form, closure, selects
-│   ├── observations/        # ObservationFormPage (заготовка)
-│   ├── analytics/           # Checks/Recommendations dashboards, chart primitives
+│   ├── observations/        # ObservationFormPage (форма-заготовка)
+│   ├── analytics/           # Checks/Recommendations/Monitoring/DVA dashboards, chart primitives
 │   ├── attachments/         # FileAttachmentsPanel
 │   ├── tools/               # DocxToolPanel, AuditOpinionPanel
 │   ├── settings/            # table card, actions, helpers
@@ -25,8 +25,9 @@ src/
 │   ├── tabs/                # Checks, Recommendations, Observations, Analytics, Planning, Tools, Settings, Kantsler
 │   └── ui/                  # Button, Input, Select, Modal, DatePicker, …
 ├── contexts/                # Auth, SokolData
+├── data/                    # локальные демо-наборы (наблюдения)
 ├── hooks/                   # useAuth, reference options, current user name
-├── types/                   # Check, Recommendation
+├── types/                   # Check, Recommendation, Observation
 ├── constants/               # enums/labels, form layout, storage keys
 ├── utils/                   # dates, exports, analytics*, checkKey, attachments, navigation
 └── config/env.ts            # API_BASE_URL
@@ -56,7 +57,7 @@ flowchart TB
 | `/` | redirect → `/checks` | AuthGuard |
 | `/checks`, `/checks/new`, `/checks/:id/edit` | list / form | protected |
 | `/recommendations`, `.../new`, `.../:id/edit` | list / form | protected |
-| `/observations`, `.../new`, `.../:id/edit` | list / form (заготовка, без API) | protected |
+| `/observations`, `.../new`, `.../:id/edit` | демо-список / заглушка формы (без API) | protected |
 | `/analytics` | `AnalyticsTab` | protected |
 | `/planning` | stub | protected |
 | `/tools` | `ToolsTab` | protected |
@@ -145,6 +146,8 @@ flowchart TB
   Outlet --> AnalyticsTab
   AnalyticsTab --> ChecksAnalyticsDashboard
   AnalyticsTab --> RecommendationsAnalyticsDashboard
+  AnalyticsTab --> MonitoringAnalyticsDashboard
+  AnalyticsTab --> DvaAnalyticsDashboard
   Outlet --> PlanningTab
   Outlet --> ToolsTab
   ToolsTab --> DocxToolPanel
@@ -187,11 +190,19 @@ flowchart TB
 
 ### Аналитика
 
-- `AnalyticsTab` — вкладки «Проверки» / «Рекомендации».
+- `AnalyticsTab` — вкладки «Проверки» / «Рекомендации» / «Мониторинг» / «ДВА».
 - Данные из `SokolDataContext` (уже загруженные checks/recommendations); отдельного analytics API **нет**.
 - Агрегации: `utils/checkAnalytics.ts`, `utils/recommendationAnalytics.ts`, период — `utils/analyticsPeriod.ts`.
-- Дашборды: `ChecksAnalyticsDashboard`, `RecommendationsAnalyticsDashboard` (Recharts).
+- Дашборды: `ChecksAnalyticsDashboard`, `RecommendationsAnalyticsDashboard`, `MonitoringAnalyticsDashboard`, `DvaAnalyticsDashboard` (Recharts + grid layout).
+- Карточки можно переставлять; layout хранится в `localStorage` по ключам `sokol.analytics.layout.*`.
 - Экспорт: `utils/analyticsExport.ts`, `utils/analyticsVisualExport.ts` (XLSX / PDF / визуальные отчёты).
+- Подробное описание карточек и бизнес-смысла: [ANALYTICS.md](ANALYTICS.md).
+
+### Наблюдения
+
+- `ObservationsTab` сейчас показывает демо-набор наблюдений из аудиторского заключения и связывает строки с существующими рекомендациями через ссылки на карточки рекомендаций.
+- Демо-данные лежат в `src/data/demoObservations.ts`.
+- `ObservationFormPage` остается заглушкой до появления backend CRUD/API.
 
 ### Экспорт таблиц (клиент)
 
@@ -303,7 +314,7 @@ sequenceDiagram
 2. Вложения не персистятся.
 3. Аналитика считается **на клиенте** по уже загруженным данным — нет серверных агрегатов и отдельного analytics API.
 4. Auth stub — нет защиты API.
-5. «Наблюдения» — UI-заготовка без backend; «Планирование» и «Канцлер» — заглушки.
+5. «Наблюдения» — демо-таблица без backend CRUD/API; форма, «Планирование» и «Канцлер» — заглушки.
 6. Нет frontend unit/e2e test script в `package.json`.
 
 ## Связь с backend docs

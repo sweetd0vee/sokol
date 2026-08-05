@@ -59,12 +59,14 @@
 
 ### US-09 Аналитика
 
-Как аналитик, я хочу видеть сводки по проверкам и рекомендациям.
+Как аналитик или руководитель ДВА, я хочу видеть сводки по проверкам, рекомендациям, мониторингу и портфелю ДВА.
 
-- Вкладки «Проверки» / «Рекомендации» (`AnalyticsTab`).
+- Вкладки «Проверки» / «Рекомендации» / «Мониторинг» / «ДВА» (`AnalyticsTab`).
 - Данные из уже загруженного `SokolDataContext` (checks + recommendations); **отдельного analytics API нет**.
 - Фильтры периода и срезы на клиенте (`checkAnalytics` / `recommendationAnalytics`).
+- Дашборды переставляются в grid layout; пользователь может выбрать секции для экспорта.
 - Экспорт дашбордов: таблицы и визуальные отчёты (`analyticsExport` / `analyticsVisualExport`).
+- Бизнес-смысл карточек и полный перечень дашбордов: [ANALYTICS.md](ANALYTICS.md).
 
 ### US-10 Инструменты
 
@@ -85,7 +87,9 @@
 
 ### US-13 Наблюдения
 
-- UI списка и формы (`/observations`) — **заготовка**; backend/API пока отсутствуют, данные не персистятся.
+- UI списка (`/observations`) показывает демо-наблюдения из АЗ: номер наблюдения, проверку, раздел АЗ, название, существенность, срок, аудитора, статус и связанные рекомендации.
+- Связанные рекомендации открываются ссылками на карточку рекомендации.
+- Форма наблюдения остается заглушкой; backend/API пока отсутствуют, данные не персистятся.
 
 ### US-14 Планирование
 
@@ -142,10 +146,10 @@ sequenceDiagram
   participant U as Пользователь
   participant AT as AnalyticsTab
   participant SD as SokolDataContext
-  participant Dash as Checks/Recs Dashboard
+  participant Dash as Analytics Dashboards
   U->>AT: открыть аналитику
   AT->>SD: checks + recommendations
-  AT->>Dash: агрегации + Recharts
+  AT->>Dash: Проверки / Рекомендации / Мониторинг / ДВА
   U->>Dash: экспорт XLSX/PDF
   Note over Dash: без analytics API
 ```
