@@ -187,6 +187,7 @@ export function ChartCard({
   onToggleExport?: () => void;
   onResetCardLayout?: () => void;
 }) {
+  const exportCardRef = useRef<HTMLElement>(null);
   const captureRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -201,7 +202,7 @@ export function ChartCard({
       id: exportSectionId,
       title,
       description,
-      getNode: () => captureRef.current,
+      getNode: () => exportCardRef.current ?? captureRef.current,
     });
   }, [exportSectionId, title, description]);
 
@@ -352,6 +353,7 @@ export function ChartCard({
   if (!isFullscreen) {
     return (
       <section
+        ref={exportCardRef}
         className={`flex h-full flex-col rounded-xl border bg-white p-2.5 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
       >
         <div className="mb-1.5 flex items-start justify-between gap-2">

@@ -27,6 +27,12 @@ def _parse_date(value) -> date | None:
     return date.fromisoformat(str(value))
 
 
+def _optional_str(value) -> str | None:
+    if value is None or value == "":
+        return None
+    return str(value).strip()
+
+
 def _read_rows(path: Path, sheet_name: str) -> list[dict]:
     workbook = load_workbook(path, read_only=True, data_only=True)
     sheet = workbook[sheet_name]
@@ -80,7 +86,19 @@ async def import_seed_data() -> None:
                 check_leader=str(row["check_leader"]).strip(),
                 status=CheckStatus(str(row["status"]).strip()),
                 created_at=_parse_date(row.get("created_at")) or date.today(),
-                description=(str(row["description"]).strip() if row.get("description") else None),
+                description=_optional_str(row.get("description")),
+                order_document_number=_optional_str(row.get("order_document_number")),
+                order_document_date=_parse_date(row.get("order_document_date")),
+                program_document_number=_optional_str(row.get("program_document_number")),
+                program_document_date=_parse_date(row.get("program_document_date")),
+                az_document_number=_optional_str(row.get("az_document_number")),
+                az_document_date=_parse_date(row.get("az_document_date")),
+                dz_document_number=_optional_str(row.get("dz_document_number")),
+                dz_document_date=_parse_date(row.get("dz_document_date")),
+                process_effectiveness=_optional_str(row.get("process_effectiveness")),
+                svk_effectiveness=_optional_str(row.get("svk_effectiveness")),
+                sur_effectiveness=_optional_str(row.get("sur_effectiveness")),
+                svik_effectiveness=_optional_str(row.get("svik_effectiveness")),
             )
             session.add(check)
             await session.flush()
@@ -122,6 +140,8 @@ async def import_seed_data() -> None:
                 status=RecommendationStatus(str(row["status"]).strip()),
                 additional_status=RecommendationAdditionalStatus(str(row["additional_status"]).strip()),
                 created_at=_parse_date(row.get("created_at")) or date.today(),
+                actual_completion_date=_parse_date(row.get("actual_completion_date")),
+                closure_information=_optional_str(row.get("closure_information")),
             )
             session.add(recommendation)
             inserted_recommendations += 1
