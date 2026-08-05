@@ -515,13 +515,12 @@ export function ObservationsTab() {
                     <td className="px-4 py-3 truncate" title={observation.name}>
                       {observation.name}
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-2">
-                        <span
-                          className={`h-2.5 w-2.5 shrink-0 rounded-full ${getMaterialityDotClassName(observation.materiality_level)}`}
-                        />
-                        {getMaterialityLevelLabel(observation.materiality_level)}
-                      </span>
+                    <td className="px-2 py-3 text-center">
+                      <span
+                        className={`inline-block h-[18px] w-[18px] rounded-full ${getMaterialityDotClassName(observation.materiality_level)}`}
+                        title={getMaterialityLevelLabel(observation.materiality_level)}
+                        aria-label={getMaterialityLevelLabel(observation.materiality_level)}
+                      />
                     </td>
                     <td className="px-4 py-3">{formatRuDate(observation.deadline)}</td>
                     <td className="px-4 py-3">{observation.auditor}</td>
