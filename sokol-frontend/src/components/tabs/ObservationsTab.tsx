@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowDown,
@@ -27,6 +27,9 @@ import { formatRuDate, parseDateValue, toEndOfDayMs, toStartOfDayMs } from '../.
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
 import { useAuditorOptions } from '../../hooks/useReferenceOptions';
 import { ConfirmDialog } from '../ui/Modal';
+import { useSokolData } from '../../contexts/sokolData';
+import { DEMO_OBSERVATION_SEEDS } from '../../data/demoObservations';
+import type { Recommendation } from '../../types/recommendation';
 import {
   LIST_ACTION_BUTTON_CLASS,
   LIST_ACTION_GROUP_CLASS,
@@ -34,24 +37,47 @@ import {
 
 type SortKey =
   | 'id'
-  | 'serial_number'
+  | 'number'
+  | 'check_serial_number'
   | 'name'
+  | 'chapter_title'
   | 'materiality_level'
   | 'deadline'
   | 'auditor'
-  | 'status';
+  | 'status'
+  | 'recommendation_count';
 
-/** Пока нет API — список пустой; структура таблицы как у проверок/рекомендаций. */
-const OBSERVATIONS: Observation[] = [];
+const RELATED_RECOMMENDATIONS_PER_OBSERVATION = 2;
+
+const buildDemoObservations = (recommendations: Recommendation[]): Observation[] => {
+  const fallbackCheckSerial = recommendations[0]?.serial_number ?? 'ПРВ-2025-001';
+
+  return DEMO_OBSERVATION_SEEDS.map((seed, index) => {
+    const relatedRecommendations = recommendations
+      .filter((_, recommendationIndex) => recommendationIndex % DEMO_OBSERVATION_SEEDS.length === index)
+      .slice(0, RELATED_RECOMMENDATIONS_PER_OBSERVATION);
+
+    return {
+      ...seed,
+      check_serial_number: relatedRecommendations[0]?.serial_number ?? fallbackCheckSerial,
+      auditor: relatedRecommendations[0]?.auditor ?? 'Иванов А.А.',
+      recommendation_ids: relatedRecommendations.map((recommendation) => recommendation.id),
+    };
+  });
+};
 
 const getSortValue = (observation: Observation, key: SortKey) => {
   switch (key) {
     case 'id':
       return observation.id;
-    case 'serial_number':
-      return observation.serial_number;
+    case 'number':
+      return observation.number;
+    case 'check_serial_number':
+      return observation.check_serial_number;
     case 'name':
       return observation.name;
+    case 'chapter_title':
+      return observation.chapter_title;
     case 'materiality_level':
       return (
         {
@@ -72,6 +98,8 @@ const getSortValue = (observation: Observation, key: SortKey) => {
           closed: 2,
         }[observation.status] ?? 999
       );
+    case 'recommendation_count':
+      return observation.recommendation_ids.length;
     default:
       return '';
   }
@@ -96,7 +124,9 @@ const compareValues = (a: string | number | null, b: string | number | null) => 
 export function ObservationsTab() {
   const myName = useCurrentUserName();
   const [idFilter, setIdFilter] = useState('');
-  const [keyFilter, setKeyFilter] = useState('');
+  const [numberFilter, setNumberFilter] = useState('');
+  const [checkFilter, setCheckFilter] = useState('');
+  const [chapterFilter, setChapterFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
   const [materialityLevel, setMaterialityLevel] = useState('');
   const [status, setStatus] = useState('');
@@ -113,13 +143,29 @@ export function ObservationsTab() {
   });
   const normalizedMyName = useMemo(() => myName.trim().toLowerCase(), [myName]);
   const { options: auditorOptions } = useAuditorOptions(auditor);
+  const { recommendations } = useSokolData();
+  const observations = useMemo(() => buildDemoObservations(recommendations), [recommendations]);
+  const recommendationById = useMemo(() => {
+    return new Map(recommendations.map((recommendation) => [recommendation.id, recommendation]));
+  }, [recommendations]);
 
   const filteredObservations = useMemo(() => {
-    return OBSERVATIONS.filter((observation) => {
+    return observations.filter((observation) => {
       if (idFilter && !observation.id.toLowerCase().includes(idFilter.trim().toLowerCase())) {
         return false;
       }
-      if (keyFilter && !observation.serial_number.toLowerCase().includes(keyFilter.trim().toLowerCase())) {
+      if (numberFilter && !observation.number.toLowerCase().includes(numberFilter.trim().toLowerCase())) {
+        return false;
+      }
+      if (checkFilter && !observation.check_serial_number.toLowerCase().includes(checkFilter.trim().toLowerCase())) {
+        return false;
+      }
+      if (
+        chapterFilter
+        && !`${observation.chapter} ${observation.chapter_title}`
+          .toLowerCase()
+          .includes(chapterFilter.trim().toLowerCase())
+      ) {
         return false;
       }
       if (nameFilter && !observation.name.toLowerCase().includes(nameFilter.trim().toLowerCase())) {
@@ -157,8 +203,11 @@ export function ObservationsTab() {
       return true;
     });
   }, [
+    observations,
     idFilter,
-    keyFilter,
+    numberFilter,
+    checkFilter,
+    chapterFilter,
     nameFilter,
     materialityLevel,
     status,
@@ -194,7 +243,9 @@ export function ObservationsTab() {
     setCurrentPage(1);
   }, [
     idFilter,
-    keyFilter,
+    numberFilter,
+    checkFilter,
+    chapterFilter,
     nameFilter,
     materialityLevel,
     status,
@@ -212,7 +263,9 @@ export function ObservationsTab() {
 
   const handleResetFilters = () => {
     setIdFilter('');
-    setKeyFilter('');
+    setNumberFilter('');
+    setCheckFilter('');
+    setChapterFilter('');
     setNameFilter('');
     setMaterialityLevel('');
     setStatus('');
@@ -252,6 +305,45 @@ export function ObservationsTab() {
     );
   };
 
+  const renderSortableHeader = (key: SortKey, label: ReactNode, className = '') => (
+    <th className={`px-4 py-3 text-left font-medium ${className}`}>
+      <button
+        type="button"
+        onClick={() => handleSort(key)}
+        className="inline-flex items-center gap-1 text-left text-white/90 transition hover:text-white"
+      >
+        <span className="leading-tight">{label}</span>
+        {renderSortIcon(key)}
+      </button>
+    </th>
+  );
+
+  const renderRelatedRecommendations = (observation: Observation) => {
+    const relatedRecommendations = observation.recommendation_ids
+      .map((id) => recommendationById.get(id))
+      .filter((recommendation): recommendation is Recommendation => Boolean(recommendation));
+
+    if (relatedRecommendations.length === 0) {
+      return <span className="text-gray-400">Пока нет связей</span>;
+    }
+
+    return (
+      <div className="flex flex-col gap-1">
+        {relatedRecommendations.map((recommendation) => (
+          <Link
+            key={recommendation.id}
+            to={`/recommendations/${recommendation.id}/edit`}
+            state={{ recommendation }}
+            className="truncate text-[#003366] underline-offset-2 transition hover:text-[#3B82F6] hover:underline dark:text-sber-light"
+            title={recommendation.name}
+          >
+            {recommendation.serial_number}.{recommendation.sequence_number} · {recommendation.name}
+          </Link>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -283,15 +375,18 @@ export function ObservationsTab() {
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         <>
           <div className="overflow-x-auto">
-            <table className="w-full text-base table-fixed min-w-[1400px]">
+            <table className="w-full text-base table-fixed min-w-[1900px]">
               <colgroup>
                 <col className="w-16" />
-                <col className="w-28" />
+                <col className="w-32" />
+                <col className="w-32" />
+                <col className="w-64" />
                 <col />
                 <col className="w-36" />
                 <col className="w-32" />
                 <col className="w-40" />
                 <col className="w-36" />
+                <col className="w-80" />
                 <col className="w-[334px]" />
               </colgroup>
               <thead>
@@ -306,9 +401,25 @@ export function ObservationsTab() {
                   </th>
                   <th className="px-2 py-2 font-normal">
                     <Input
-                      value={keyFilter}
-                      onChange={setKeyFilter}
-                      placeholder="Номер"
+                      value={numberFilter}
+                      onChange={setNumberFilter}
+                      placeholder="№ наблюдения"
+                      inputClassName="py-1.5 text-sm"
+                    />
+                  </th>
+                  <th className="px-2 py-2 font-normal">
+                    <Input
+                      value={checkFilter}
+                      onChange={setCheckFilter}
+                      placeholder="Проверка"
+                      inputClassName="py-1.5 text-sm"
+                    />
+                  </th>
+                  <th className="px-2 py-2 font-normal">
+                    <Input
+                      value={chapterFilter}
+                      onChange={setChapterFilter}
+                      placeholder="Раздел АЗ"
                       inputClassName="py-1.5 text-sm"
                     />
                   </th>
@@ -316,7 +427,7 @@ export function ObservationsTab() {
                     <Input
                       value={nameFilter}
                       onChange={setNameFilter}
-                      placeholder="Содержание"
+                      placeholder="Название наблюдения"
                       inputClassName="py-1.5 text-sm"
                     />
                   </th>
@@ -363,6 +474,7 @@ export function ObservationsTab() {
                       inputClassName="py-1.5 text-sm"
                     />
                   </th>
+                  <th className="px-2 py-2 font-normal" />
                   <th className="px-0 py-2 font-normal">
                     <div className={LIST_ACTION_GROUP_CLASS}>
                       <button
@@ -376,76 +488,16 @@ export function ObservationsTab() {
                   </th>
                 </tr>
                 <tr className="bg-[#003366] text-white">
-                  <th className="px-4 py-3 text-left font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('id')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      ID
-                      {renderSortIcon('id')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('serial_number')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      Номер
-                      {renderSortIcon('serial_number')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('name')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      Содержание
-                      {renderSortIcon('name')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('materiality_level')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      Существенность
-                      {renderSortIcon('materiality_level')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('deadline')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      Срок
-                      {renderSortIcon('deadline')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('auditor')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      Аудитор
-                      {renderSortIcon('auditor')}
-                    </button>
-                  </th>
-                  <th className="px-2 py-3 text-left font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('status')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      Статус
-                      {renderSortIcon('status')}
-                    </button>
-                  </th>
+                  {renderSortableHeader('id', 'ID')}
+                  {renderSortableHeader('number', '№ наблюдения')}
+                  {renderSortableHeader('check_serial_number', 'Проверка')}
+                  {renderSortableHeader('chapter_title', 'Раздел АЗ')}
+                  {renderSortableHeader('name', 'Название наблюдения')}
+                  {renderSortableHeader('materiality_level', 'Уровень')}
+                  {renderSortableHeader('deadline', 'Срок исполнения')}
+                  {renderSortableHeader('auditor', 'Аудитор')}
+                  {renderSortableHeader('status', 'Статус', 'px-2')}
+                  {renderSortableHeader('recommendation_count', 'Связанные рекомендации')}
                   <th className="px-0 py-3 text-center font-medium">Действия</th>
                 </tr>
               </thead>
@@ -453,7 +505,13 @@ export function ObservationsTab() {
                 {pagedObservations.map((observation) => (
                   <tr key={observation.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/70">
                     <td className="px-4 py-3">{observation.id}</td>
-                    <td className="px-4 py-3">{observation.serial_number}</td>
+                    <td className="px-4 py-3 font-medium">{observation.number}</td>
+                    <td className="px-4 py-3">{observation.check_serial_number}</td>
+                    <td className="px-4 py-3 truncate" title={observation.chapter_title}>
+                      <span className="font-medium">Раздел {observation.chapter}</span>
+                      {' · '}
+                      {observation.chapter_title}
+                    </td>
                     <td className="px-4 py-3 truncate" title={observation.name}>
                       {observation.name}
                     </td>
@@ -474,6 +532,7 @@ export function ObservationsTab() {
                         {getObservationStatusLabel(observation.status)}
                       </span>
                     </td>
+                    <td className="px-4 py-3">{renderRelatedRecommendations(observation)}</td>
                     <td className="px-0 py-3">
                       <div className={LIST_ACTION_GROUP_CLASS}>
                         <Link
@@ -566,7 +625,7 @@ export function ObservationsTab() {
       {deleteCandidate && (
         <ConfirmDialog
           title="Удаление наблюдения"
-          message={`Вы действительно хотите удалить наблюдение «${deleteCandidate.serial_number}»?`}
+          message={`Вы действительно хотите удалить наблюдение «${deleteCandidate.number}»?`}
           onConfirm={handleConfirmDelete}
           onCancel={handleCancelDelete}
         />
