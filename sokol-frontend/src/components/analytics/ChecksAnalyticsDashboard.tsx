@@ -243,7 +243,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'dynamics',
-        defaultLayout: { x: 0, y: 2, w: 8, h: 4, minW: 5, minH: 3 },
+        defaultLayout: { x: 0, y: 2, w: 6, h: 4, minW: 5, minH: 3 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Динамика и накопительный итог"
@@ -277,7 +277,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'views',
-        defaultLayout: { x: 8, y: 2, w: 4, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 0, y: 6, w: 4, h: 4, minW: 4, minH: 3 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Структура по видам"
@@ -309,7 +309,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'types',
-        defaultLayout: { x: 0, y: 6, w: 4, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 4, y: 6, w: 4, h: 4, minW: 4, minH: 3 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Структура по типам проверок"
@@ -341,7 +341,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'statusByPeriod',
-        defaultLayout: { x: 4, y: 6, w: 8, h: 4, minW: 5, minH: 3 },
+        defaultLayout: { x: 6, y: 2, w: 6, h: 4, minW: 5, minH: 3 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Статусы по сроку"
@@ -376,7 +376,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'documents',
-        defaultLayout: { x: 0, y: 10, w: 6, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 8, y: 6, w: 4, h: 4, minW: 4, minH: 3 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Готовность документов"
@@ -408,7 +408,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'auditorTreemap',
-        defaultLayout: { x: 6, y: 10, w: 6, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 0, y: 10, w: 12, h: 4, minW: 6, minH: 3 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Tree Map аудиторов"

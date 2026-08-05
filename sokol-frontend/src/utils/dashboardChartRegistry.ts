@@ -18,6 +18,10 @@ type ChartRegistration = {
 
 const chartRegistry = new Map<string, ChartRegistration>();
 
+function hasPngPayload(dataUrl: string) {
+  return dataUrl.startsWith('data:image/png;base64,') && Boolean(dataUrl.split(',')[1]);
+}
+
 export function registerDashboardChart(registration: ChartRegistration) {
   chartRegistry.set(registration.id, registration);
   return () => {
@@ -51,6 +55,10 @@ export async function captureDashboardCharts(sectionIds: string[]): Promise<Dash
           pixelRatio: 2,
           backgroundColor: '#ffffff',
         });
+        if (!hasPngPayload(dataUrl)) {
+          console.error(`Skipped chart "${id}" because capture did not produce a PNG image`);
+          continue;
+        }
         const rect = node.getBoundingClientRect();
         captures.push({
           id,

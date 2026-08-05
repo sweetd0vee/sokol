@@ -221,7 +221,7 @@ async function buildVisualXlsx(options: {
     sheet.getRow(2).height = 18;
 
     const imageId = workbook.addImage({
-      base64: dataUrlToBase64(chart.dataUrl),
+      base64: chart.dataUrl,
       extension: 'png',
     });
 
