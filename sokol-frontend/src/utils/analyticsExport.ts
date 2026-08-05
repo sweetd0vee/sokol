@@ -45,13 +45,18 @@ import {
   summarizeRecommendations,
 } from './recommendationAnalytics';
 import { formatRuDate } from './dates';
-import { exportVisualAnalyticsReport } from './analyticsVisualExport';
+import {
+  exportVisualAnalyticsReport,
+  type VisualAnalyticsKind,
+  type VisualExportMetaRow,
+} from './analyticsVisualExport';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
 export const ANALYTICS_EXPORT_FORMATS = [
   { value: 'xlsx', label: 'XLSX' },
   { value: 'pdf', label: 'PDF' },
+  { value: 'docx', label: 'DOCX' },
 ] as const;
 
 export type AnalyticsExportFormat = (typeof ANALYTICS_EXPORT_FORMATS)[number]['value'];
@@ -61,6 +66,8 @@ export type ChecksDashboardExportInput = {
   filteredChecks: Check[];
   granularity: PeriodGranularity;
   auditors: string[];
+  departments?: string[];
+  selectedPeriodLabels?: string[];
   selectedSections: string[];
 };
 
@@ -71,8 +78,17 @@ export type RecommendationsDashboardExportInput = {
   dateFrom: Date | null;
   dateTo: Date | null;
   auditors: string[];
+  departments?: string[];
   materialityLevels: MaterialityLevel[];
   selectedSections: string[];
+};
+
+export type GenericAnalyticsDashboardExportInput = {
+  kind: VisualAnalyticsKind;
+  documentTitle: string;
+  filenamePrefix: string;
+  selectedSections: string[];
+  meta: VisualExportMetaRow[];
 };
 
 type SheetRow = Record<string, string | number>;
@@ -91,8 +107,8 @@ function formatFilterDate(date: Date | null) {
 }
 
 function granularityLabel(value: PeriodGranularity) {
-  if (value === 'month') return 'По месяцам';
-  if (value === 'quarter') return 'По кварталам';
+  if (value === 'month') {return 'По месяцам';}
+  if (value === 'quarter') {return 'По кварталам';}
   return 'По годам';
 }
 
@@ -147,7 +163,7 @@ function createSheetFromRows(rows: SheetRow[], headerFill = HEADER_BLUE) {
     for (let col = range.s.c; col <= range.e.c; col += 1) {
       const address = XLSX.utils.encode_cell({ r: row, c: col });
       const cell = ws[address] as XLSX.CellObject | undefined;
-      if (!cell) continue;
+      if (!cell) {continue;}
       if (row === range.s.r) {
         styleHeaderCell(cell, headerFill);
       } else {
@@ -1077,7 +1093,9 @@ function exportChecksDashboardPdf(input: ChecksDashboardExportInput) {
     'Аналитика проверок — SOKOL',
     [
       ['Группировка', granularityLabel(granularity)],
+      ...(input.selectedPeriodLabels?.map((label) => ['Срок', label] as [string, string]) ?? []),
       ['Аудиторы', auditors.length ? auditors.join(', ') : 'Все'],
+      ['Департаменты', input.departments?.length ? input.departments.join(', ') : 'Все'],
       ['Записей в выборке', String(filteredChecks.length)],
       ['Всего в системе', String(checks.length)],
       ['Разделов в отчёте', String(selected.size)],
@@ -1096,6 +1114,7 @@ function exportRecommendationsDashboardPdf(input: RecommendationsDashboardExport
     dateFrom,
     dateTo,
     auditors,
+    departments = [],
     materialityLevels,
     selectedSections,
   } = input;
@@ -1336,6 +1355,7 @@ function exportRecommendationsDashboardPdf(input: RecommendationsDashboardExport
       ['Срок с', formatFilterDate(dateFrom)],
       ['Срок по', formatFilterDate(dateTo)],
       ['Аудиторы', auditors.length ? auditors.join(', ') : 'Все'],
+      ['Департаменты', departments.length ? departments.join(', ') : 'Все'],
       [
         'Существенность',
         materialityLevels.length
@@ -1352,6 +1372,11 @@ function exportRecommendationsDashboardPdf(input: RecommendationsDashboardExport
   pdfMake.createPdf(doc).download(`analytics-recommendations-${stamp()}.pdf`);
 }
 
+// Legacy tabular exporters are kept as a fallback reference while the UI uses visual reports.
+void exportChecksDashboardXlsx;
+void exportRecommendationsDashboardXlsx;
+void exportChecksDashboardPdf;
+void exportRecommendationsDashboardPdf;
 
 export async function exportChecksDashboard(
   input: ChecksDashboardExportInput,
@@ -1366,12 +1391,28 @@ export async function exportChecksDashboard(
     selectedSections,
     meta: [
       ['Группировка', granularityLabel(granularity)],
+      ...(input.selectedPeriodLabels?.map((label) => ['Срок', label] as [string, string]) ?? []),
       ['Аудиторы', auditors.length ? auditors.join(', ') : 'Все'],
+      ['Департаменты', input.departments?.length ? input.departments.join(', ') : 'Все'],
       ['Записей в выборке', String(filteredChecks.length)],
       ['Всего в системе', String(checks.length)],
       ['Дашбордов в отчёте', String(selectedSections.filter((id) => id !== 'source').length)],
       ['Сформировано', new Date().toLocaleString('ru-RU')],
     ],
+  });
+}
+
+export async function exportGenericAnalyticsDashboard(
+  input: GenericAnalyticsDashboardExportInput,
+  format: AnalyticsExportFormat,
+) {
+  await exportVisualAnalyticsReport({
+    format,
+    kind: input.kind,
+    documentTitle: input.documentTitle,
+    filenamePrefix: input.filenamePrefix,
+    selectedSections: input.selectedSections,
+    meta: [...input.meta, ['Сформировано', new Date().toLocaleString('ru-RU')]],
   });
 }
 

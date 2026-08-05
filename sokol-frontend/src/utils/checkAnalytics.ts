@@ -1,8 +1,10 @@
 import type { Check, CheckStatus, CheckType, CheckView } from '../types/check';
+import type { Recommendation } from '../types/recommendation';
 import { getCheckStatusLabel, getCheckTypeLabel, getCheckViewLabel } from '../constants/checks';
 import { parseDateValue } from './dates';
 import {
   getPeriodBucket,
+  isDateInAnySelectedPeriods,
   isDateInSelectedPeriods,
   type PeriodBucket,
   type PeriodGranularity,
@@ -16,6 +18,11 @@ export type CheckAnalyticsFilters = {
   auditors: string[];
   granularity: PeriodGranularity;
   selectedPeriods: string[];
+  selectedYears?: string[];
+  selectedQuarters?: string[];
+  selectedMonths?: string[];
+  departments?: string[];
+  recommendations?: Recommendation[];
   effectivenessArea: EffectivenessArea;
   selectedEffectivenessRatings: string[];
 };
@@ -73,17 +80,52 @@ const STATUS_KEYS: CheckStatus[] = ['not_started', 'in_progress', 'completed'];
 export function filterChecksForAnalytics(checks: Check[], filters: CheckAnalyticsFilters): Check[] {
   const auditorSet = new Set(filters.auditors.filter(Boolean));
   const ratingSet = new Set(filters.selectedEffectivenessRatings.filter(Boolean));
+  const departmentSet = new Set((filters.departments ?? []).filter(Boolean));
+  const recommendationsByCheck = new Map<string, Recommendation[]>();
+
+  if (departmentSet.size > 0 || auditorSet.size > 0) {
+    (filters.recommendations ?? []).forEach((recommendation) => {
+      const serial = recommendation.serial_number.trim();
+      if (!serial) {return;}
+      const bucket = recommendationsByCheck.get(serial) ?? [];
+      bucket.push(recommendation);
+      recommendationsByCheck.set(serial, bucket);
+    });
+  }
 
   return checks.filter((check) => {
     const startMs = parseDateValue(check.start_date);
     if (startMs === null) {
       return false;
     }
-    if (auditorSet.size > 0 && !auditorSet.has(check.check_leader)) {
+    if (auditorSet.size > 0) {
+      const linked = recommendationsByCheck.get(check.serial_number) ?? [];
+      const matchesAuditor =
+        auditorSet.has(check.check_leader)
+        || linked.some((item) => auditorSet.has(item.auditor) || auditorSet.has(item.manager));
+      if (!matchesAuditor) {
+        return false;
+      }
+    }
+    const hasMultiPeriodFilter =
+      (filters.selectedYears?.length ?? 0) > 0
+      || (filters.selectedQuarters?.length ?? 0) > 0
+      || (filters.selectedMonths?.length ?? 0) > 0;
+    const matchesPeriod = hasMultiPeriodFilter
+      ? isDateInAnySelectedPeriods(startMs, {
+          years: filters.selectedYears ?? [],
+          quarters: filters.selectedQuarters ?? [],
+          months: filters.selectedMonths ?? [],
+        })
+      : isDateInSelectedPeriods(startMs, filters.granularity, filters.selectedPeriods);
+    if (!matchesPeriod) {
       return false;
     }
-    if (!isDateInSelectedPeriods(startMs, filters.granularity, filters.selectedPeriods)) {
-      return false;
+    if (departmentSet.size > 0) {
+      const linked = recommendationsByCheck.get(check.serial_number) ?? [];
+      if (!linked.some((item) => departmentSet.has(item.audit_object))) {
+        return false;
+      }
     }
     if (ratingSet.size > 0) {
       const values = getCheckEffectivenessValues(check, filters.effectivenessArea);
@@ -211,6 +253,26 @@ export function buildAuditorPeriodMatrix(
 export function collectCheckLeaders(checks: Check[]): string[] {
   return [...new Set(checks.map((check) => check.check_leader).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, 'ru'));
+}
+
+export function collectAnalyticsAuditors(checks: Check[], recommendations: Recommendation[]): string[] {
+  return [
+    ...new Set(
+      [
+        ...checks.map((check) => check.check_leader),
+        ...recommendations.map((item) => item.auditor),
+        ...recommendations.map((item) => item.manager),
+      ]
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  ].sort((a, b) => a.localeCompare(b, 'ru'));
+}
+
+export function collectAuditObjects(recommendations: Recommendation[]): string[] {
+  return [
+    ...new Set(recommendations.map((item) => item.audit_object.trim()).filter(Boolean)),
+  ].sort((a, b) => a.localeCompare(b, 'ru'));
 }
 
 export type CumulativePoint = PeriodBucket & {

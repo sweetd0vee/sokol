@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { toJpeg, toPng, toSvg } from 'html-to-image';
-import { Expand, FileDown, Image, Minimize2, MoreVertical, X } from 'lucide-react';
+import { Clipboard, Expand, FileDown, GripHorizontal, Image, Minimize2, MoreVertical, RotateCcw, X } from 'lucide-react';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
@@ -56,6 +56,8 @@ function ChartToolbar({
   onToggleDownload,
   menuRef,
   onDownload,
+  onCopyPng,
+  onResetCardLayout,
 }: {
   exportSelected?: boolean;
   onToggleExport?: () => void;
@@ -66,6 +68,8 @@ function ChartToolbar({
   onToggleDownload: () => void;
   menuRef: React.RefObject<HTMLDivElement | null>;
   onDownload: (format: 'png' | 'jpeg' | 'svg' | 'pdf') => void;
+  onCopyPng: () => void;
+  onResetCardLayout?: () => void;
 }) {
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
@@ -148,6 +152,26 @@ function ChartToolbar({
               <FileDown className="h-3.5 w-3.5 text-rose-600" />
               PDF
             </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={onCopyPng}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              <Clipboard className="h-3.5 w-3.5 text-emerald-600" />
+              PNG в буфер
+            </button>
+            {onResetCardLayout ? (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={onResetCardLayout}
+                className="flex w-full items-center gap-2 border-t border-gray-100 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700"
+              >
+                <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
+                Сбросить размер
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -164,6 +188,7 @@ export function ChartCard({
   exportSectionId,
   exportSelected,
   onToggleExport,
+  onResetCardLayout,
 }: {
   title: string;
   description: string;
@@ -173,6 +198,7 @@ export function ChartCard({
   exportSectionId?: string;
   exportSelected?: boolean;
   onToggleExport?: () => void;
+  onResetCardLayout?: () => void;
 }) {
   const captureRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -279,6 +305,31 @@ export function ChartCard({
     }
   };
 
+  const handleCopyPng = async () => {
+    const node = captureRef.current;
+    if (!node || isBusy) {
+      return;
+    }
+    if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
+      window.alert('Буфер обмена для изображений недоступен в этом браузере');
+      return;
+    }
+    setIsBusy(true);
+    setIsDownloadOpen(false);
+    try {
+      const dataUrl = await captureNode(node, 'png');
+      const blob = await (await fetch(dataUrl)).blob();
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+    } catch (error) {
+      console.error('Chart copy failed', error);
+      window.alert(
+        `Не удалось скопировать график: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`,
+      );
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
   const toolbar = (
     <ChartToolbar
       exportSelected={exportSelected}
@@ -292,6 +343,10 @@ export function ChartCard({
       onDownload={(format) => {
         void handleDownload(format);
       }}
+      onCopyPng={() => {
+        void handleCopyPng();
+      }}
+      onResetCardLayout={onResetCardLayout}
     />
   );
 
@@ -300,8 +355,8 @@ export function ChartCard({
       ref={captureRef}
       className={
         isFullscreen
-          ? 'h-[min(75vh,720px)] overflow-auto rounded-lg bg-white p-2 [&>*]:!h-full [&_.h-40]:!h-full [&_.h-48]:!h-full [&_.h-52]:!h-full [&_.h-56]:!h-full [&_.h-64]:!h-full [&_.h-72]:!h-full'
-          : 'rounded-lg bg-white'
+          ? 'h-[min(75vh,720px)] overflow-auto rounded-lg bg-white p-2 [&>*]:!h-full [&_.h-40]:!h-full [&_.h-48]:!h-full [&_.h-52]:!h-full [&_.h-56]:!h-full [&_.h-64]:!h-full [&_.h-72]:!h-full [&_.max-h-40]:!max-h-full'
+          : 'rounded-lg bg-white [&_.h-40]:!h-52 [&_.max-h-40]:!max-h-52'
       }
     >
       {children}
@@ -311,11 +366,14 @@ export function ChartCard({
   if (!isFullscreen) {
     return (
       <section
-        className={`rounded-xl border bg-white p-3.5 dark:bg-slate-800 ${accentClassName} ${className}`}
+        className={`rounded-xl border bg-white p-4 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
       >
-        <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="mb-3.5 flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-0.5">
-            <h3 className="text-sm font-semibold text-sber-dark dark:text-sber-light">{title}</h3>
+            <div className="analytics-card-drag-handle inline-flex cursor-move items-center gap-1.5 rounded-md pr-1 text-sber-dark dark:text-sber-light">
+              <GripHorizontal className="h-4 w-4 text-gray-400" />
+              <h3 className="text-base font-semibold leading-snug">{title}</h3>
+            </div>
             <p className="text-xs text-gray-500 dark:text-slate-400">{description}</p>
           </div>
           {toolbar}
@@ -328,7 +386,7 @@ export function ChartCard({
   return (
     <>
       <section
-        className={`rounded-xl border bg-white p-3.5 opacity-70 dark:bg-slate-800 ${accentClassName} ${className}`}
+        className={`rounded-xl border bg-white p-4 opacity-70 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-0.5">
@@ -457,17 +515,3 @@ export function ExportSectionToolbar({
   );
 }
 
-export const PALETTE = [
-  '#003366',
-  '#2563EB',
-  '#6699FF',
-  '#22C55E',
-  '#EAB308',
-  '#EF4444',
-  '#A855F7',
-  '#06B6D4',
-  '#F97316',
-  '#EC4899',
-  '#14B8A6',
-  '#8B5CF6',
-];

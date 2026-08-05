@@ -14,8 +14,10 @@ type MultiCheckboxSelectProps = {
   placeholder?: string;
   hint?: string;
   className?: string;
+  inputClassName?: string;
   labelClassName?: string;
   emptyMessage?: string;
+  defaultOpen?: boolean;
 };
 
 export function MultiCheckboxSelect({
@@ -26,10 +28,12 @@ export function MultiCheckboxSelect({
   placeholder = 'Все периоды',
   hint,
   className = '',
+  inputClassName = '',
   labelClassName = '',
   emptyMessage = 'Нет доступных периодов',
+  defaultOpen = false,
 }: MultiCheckboxSelectProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
   const selectedSet = useMemo(() => new Set(value), [value]);
@@ -39,7 +43,8 @@ export function MultiCheckboxSelect({
       return;
     }
     const handlePointerDown = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
+      const target = event.target as HTMLElement;
+      if (!rootRef.current?.contains(target) && !target.closest('[data-multi-checkbox-select]')) {
         setOpen(false);
       }
     };
@@ -88,7 +93,7 @@ export function MultiCheckboxSelect({
   };
 
   return (
-    <div className={className} ref={rootRef}>
+    <div className={className} ref={rootRef} data-multi-checkbox-select>
       {label ? (
         <label
           className={[
@@ -107,7 +112,12 @@ export function MultiCheckboxSelect({
         aria-expanded={open}
         aria-controls={listId}
         onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-left text-sm text-gray-900 outline-none transition hover:border-sber-dark/40 focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+        className={[
+          'flex w-full items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-left text-gray-900 outline-none transition hover:border-gray-400 focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100',
+          inputClassName,
+        ]
+          .filter(Boolean)
+          .join(' ')}
       >
         <span className={`truncate ${value.length === 0 ? 'text-gray-500 dark:text-slate-400' : ''}`}>
           {summary}

@@ -2,11 +2,26 @@
  * Bulk analytics export as chart images laid out on PDF/XLSX sheets.
  */
 import ExcelJS from 'exceljs';
+import {
+  AlignmentType,
+  Document,
+  HeadingLevel,
+  ImageRun,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  WidthType,
+} from 'docx';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import {
   CHECK_EXPORT_SECTIONS,
+  DVA_EXPORT_SECTIONS,
+  MONITORING_EXPORT_SECTIONS,
   RECOMMENDATION_EXPORT_SECTIONS,
 } from '../constants/analyticsExportSections';
 import {
@@ -24,8 +39,17 @@ function stamp() {
   return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
 }
 
-function sheetNameForSection(kind: 'checks' | 'recommendations', sectionId: string, fallbackTitle: string) {
-  const catalog = kind === 'checks' ? CHECK_EXPORT_SECTIONS : RECOMMENDATION_EXPORT_SECTIONS;
+export type VisualAnalyticsKind = 'checks' | 'recommendations' | 'monitoring' | 'dva';
+
+function sheetNameForSection(kind: VisualAnalyticsKind, sectionId: string, fallbackTitle: string) {
+  const catalog =
+    kind === 'checks'
+      ? CHECK_EXPORT_SECTIONS
+      : kind === 'recommendations'
+        ? RECOMMENDATION_EXPORT_SECTIONS
+        : kind === 'monitoring'
+          ? MONITORING_EXPORT_SECTIONS
+          : DVA_EXPORT_SECTIONS;
   const found = catalog.find((section) => section.id === sectionId);
   const raw = found?.sheetName ?? fallbackTitle;
   return raw.replace(/[\\/?*[\]:]/g, ' ').trim().slice(0, 31) || 'Дашборд';
@@ -33,6 +57,15 @@ function sheetNameForSection(kind: 'checks' | 'recommendations', sectionId: stri
 
 function dataUrlToBase64(dataUrl: string): string {
   return dataUrl.split(',')[1] ?? '';
+}
+
+function dataUrlToUint8Array(dataUrl: string): Uint8Array {
+  const binary = window.atob(dataUrlToBase64(dataUrl));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
 }
 
 function fitImageSize(
@@ -137,7 +170,7 @@ async function buildVisualXlsx(options: {
   documentTitle: string;
   meta: VisualExportMetaRow[];
   charts: DashboardChartCapture[];
-  kind: 'checks' | 'recommendations';
+  kind: VisualAnalyticsKind;
   filenamePrefix: string;
 }) {
   const { documentTitle, meta, charts, kind, filenamePrefix } = options;
@@ -213,9 +246,100 @@ async function buildVisualXlsx(options: {
   URL.revokeObjectURL(url);
 }
 
+async function buildVisualDocx(options: {
+  documentTitle: string;
+  meta: VisualExportMetaRow[];
+  charts: DashboardChartCapture[];
+  filenamePrefix: string;
+}) {
+  const { documentTitle, meta, charts, filenamePrefix } = options;
+  const metaTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: meta.map(
+      ([label, value]) =>
+        new TableRow({
+          children: [
+            new TableCell({
+              width: { size: 32, type: WidthType.PERCENTAGE },
+              children: [
+                new Paragraph({
+                  children: [new TextRun({ text: label, bold: true, color: '003366' })],
+                }),
+              ],
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun(value)] })],
+            }),
+          ],
+        }),
+    ),
+  });
+
+  const chartChildren = charts.flatMap((chart, index) => {
+    const fitted = fitImageSize(chart.width * 2, chart.height * 2, 880, 500);
+    return [
+      new Paragraph({
+        text: chart.title,
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: index === 0 ? 320 : 560, after: 80 },
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: chart.description, color: '64748B', size: 20 })],
+        spacing: { after: 180 },
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [
+          new ImageRun({
+            data: dataUrlToUint8Array(chart.dataUrl),
+            transformation: fitted,
+            type: 'png',
+          }),
+        ],
+      }),
+    ];
+  });
+
+  const doc = new Document({
+    creator: 'SOKOL',
+    title: documentTitle,
+    sections: [
+      {
+        properties: {},
+        children: [
+          new Paragraph({
+            text: documentTitle,
+            heading: HeadingLevel.TITLE,
+            spacing: { after: 160 },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: 'Отчёт по выбранным дашбордам. Графики, подписи и легенды соответствуют экранной версии.',
+                color: '64748B',
+              }),
+            ],
+            spacing: { after: 240 },
+          }),
+          metaTable,
+          ...chartChildren,
+        ],
+      },
+    ],
+  });
+
+  const blob = await Packer.toBlob(doc);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${filenamePrefix}-${stamp()}.docx`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function exportVisualAnalyticsReport(options: {
-  format: 'xlsx' | 'pdf';
-  kind: 'checks' | 'recommendations';
+  format: 'xlsx' | 'pdf' | 'docx';
+  kind: VisualAnalyticsKind;
   documentTitle: string;
   filenamePrefix: string;
   meta: VisualExportMetaRow[];
@@ -230,6 +354,16 @@ export async function exportVisualAnalyticsReport(options: {
 
   if (options.format === 'pdf') {
     await buildVisualPdf({
+      documentTitle: options.documentTitle,
+      meta: options.meta,
+      charts,
+      filenamePrefix: options.filenamePrefix,
+    });
+    return;
+  }
+
+  if (options.format === 'docx') {
+    await buildVisualDocx({
       documentTitle: options.documentTitle,
       meta: options.meta,
       charts,

@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Area,
   AreaChart,
   Bar,
   BarChart,
-  Brush,
   CartesianGrid,
   Cell,
   ComposedChart,
@@ -15,90 +14,70 @@ import {
   Line,
   Pie,
   PieChart,
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
-  RadialBar,
-  RadialBarChart,
   ResponsiveContainer,
-  Sankey,
-  Scatter,
-  ScatterChart,
   Tooltip,
   Treemap,
   XAxis,
   YAxis,
-  ZAxis,
 } from 'recharts';
-import { Download, X } from 'lucide-react';
-import type { MaterialityLevel, Recommendation } from '../../types/recommendation';
-import { MATERIALITY_LEVEL_OPTIONS } from '../../constants/recommendations';
-import { Select } from '../ui/Select';
-import { SegmentedControl } from '../ui/SegmentedControl';
+import type {
+  MaterialityLevel,
+  Recommendation,
+  RecommendationAdditionalStatus,
+  RecommendationStatus,
+} from '../../types/recommendation';
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
-import { Button } from '../ui/Button';
-import { LIST_ACTION_BUTTON_CLASS } from '../../constants/formLayout';
-import { ChartCard, EmptyChart, ExportSectionToolbar, KpiCard, PALETTE } from './AnalyticsChartPrimitives';
-import {
-  ANALYTICS_EXPORT_FORMATS,
-  exportRecommendationsDashboard,
-  type AnalyticsExportFormat,
-} from '../../utils/analyticsExport';
+import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
+import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
+import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { PALETTE } from './analyticsPalette';
+import { exportRecommendationsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import {
   RECOMMENDATION_EXPORT_SECTIONS,
   type RecommendationExportSectionId,
 } from '../../constants/analyticsExportSections';
+import {
+  MATERIALITY_LEVEL_OPTIONS,
+  RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS,
+  RECOMMENDATION_STATUS_OPTIONS,
+} from '../../constants/recommendations';
 import { useExportSections } from '../../hooks/useExportSections';
-import { collectPeriodOptions, periodGranularityHint } from '../../utils/analyticsPeriod';
+import { collectCalendarPeriodOptions } from '../../utils/analyticsPeriod';
 import { parseDateValue } from '../../utils/dates';
 import {
-  ADDITIONAL_STATUS_COLORS,
+  MATERIALITY_COLORS,
+  STATUS_COLORS,
   buildAdditionalStatusDistribution,
-  buildAuditorDistribution,
-  buildAuditorMaterialityRows,
-  buildAuditorPeriodMatrix,
   buildAuditObjectDistribution,
+  buildAuditorDistribution,
   buildCheckLinkDistribution,
   buildCumulativeSeries,
   buildDeadlineBuckets,
   buildFunnel,
   buildIndicatorDistribution,
-  buildManagerDistribution,
   buildMaterialityDistribution,
-  buildMaterialityPeriodMatrix,
-  buildMaterialityToStatusSankey,
   buildPeriodSeries,
-  buildRadialStatus,
-  buildScatterPoints,
   buildStatusDistribution,
-  buildStatusFunnelNative,
-  buildTreemapData,
+  collectAuditObjects,
   collectRecommendationAuditors,
   filterRecommendationsForAnalytics,
-  MATERIALITY_COLORS,
-  STATUS_COLORS,
   summarizeRecommendations,
   type PeriodGranularity,
 } from '../../utils/recommendationAnalytics';
 
-const GRANULARITY_OPTIONS: { value: PeriodGranularity; label: string }[] = [
-  { value: 'month', label: 'Месяц' },
-  { value: 'quarter', label: 'Квартал' },
-  { value: 'year', label: 'Год' },
-];
-
-const STATUS_STACK = [
-  { key: 'completed', label: 'Исполнено', color: STATUS_COLORS.completed },
-  { key: 'in_progress', label: 'В процессе', color: STATUS_COLORS.in_progress },
-  { key: 'on_control', label: 'На контроле', color: STATUS_COLORS.on_control },
-  { key: 'unresolved', label: 'Не решено', color: STATUS_COLORS.unresolved },
-] as const;
-
 type RecommendationsAnalyticsDashboardProps = {
   recommendations: Recommendation[];
 };
+
+function toOptions(values: string[]) {
+  return values.map((value) => ({ value, label: value }));
+}
+
+function periodKeys(anchorDates: Array<number | null>, granularity: PeriodGranularity, labels: string[]) {
+  return collectCalendarPeriodOptions(anchorDates, granularity)
+    .filter((item) => labels.includes(item.label))
+    .map((item) => item.key);
+}
 
 function TreemapContent(props: {
   x?: number;
@@ -106,63 +85,59 @@ function TreemapContent(props: {
   width?: number;
   height?: number;
   name?: string;
+  value?: number;
   fill?: string;
 }) {
-  const { x = 0, y = 0, width = 0, height = 0, name = '', fill = '#2563EB' } = props;
-  if (width < 40 || height < 28) {
-    return (
-      <g>
-        <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" strokeWidth={2} />
-      </g>
-    );
+  const { x = 0, y = 0, width = 0, height = 0, name = '', value = 0, fill = '#7C3AED' } = props;
+  if (width < 42 || height < 32) {
+    return <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" strokeWidth={2} />;
   }
   return (
     <g>
-      <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" strokeWidth={2} rx={6} />
-      <text x={x + 8} y={y + 18} fill="#fff" fontSize={11} fontWeight={600}>
-        {name.length > 22 ? `${name.slice(0, 20)}…` : name}
+      <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" strokeWidth={2} rx={8} />
+      <text x={x + 8} y={y + 18} fill="#fff" fontSize={11} fontWeight={700}>
+        {name.length > 20 ? `${name.slice(0, 18)}...` : name}
+      </text>
+      <text x={x + 8} y={y + 34} fill="#fff" fontSize={12}>
+        {value}
       </text>
     </g>
   );
 }
 
-export function RecommendationsAnalyticsDashboard({
-  recommendations,
-}: RecommendationsAnalyticsDashboardProps) {
-  const [granularity, setGranularity] = useState<PeriodGranularity>('quarter');
-  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
+export function RecommendationsAnalyticsDashboard({ recommendations }: RecommendationsAnalyticsDashboardProps) {
+  const [selectedYears, setSelectedYears] = useState<string[]>([]);
+  const [selectedQuarters, setSelectedQuarters] = useState<string[]>([]);
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
-  const [selectedMateriality, setSelectedMateriality] = useState<MaterialityLevel[]>([]);
-  const [auditorToAdd, setAuditorToAdd] = useState('');
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [selectedMateriality, setSelectedMateriality] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedAdditionalStatuses, setSelectedAdditionalStatuses] = useState<string[]>([]);
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('xlsx');
   const [isExporting, setIsExporting] = useState(false);
 
   const exportSections = useExportSections(
-    RECOMMENDATION_EXPORT_SECTIONS.map((s) => s.id) as RecommendationExportSectionId[],
+    RECOMMENDATION_EXPORT_SECTIONS.map((section) => section.id) as RecommendationExportSectionId[],
   );
 
-  const auditorOptions = useMemo(() => {
-    return collectRecommendationAuditors(recommendations)
-      .filter((name) => !selectedAuditors.includes(name))
-      .map((name) => ({ value: name, label: name }));
-  }, [recommendations, selectedAuditors]);
-
-  const periodOptions = useMemo(
-    () =>
-      collectPeriodOptions(
-        recommendations.map((item) => parseDateValue(item.deadline)),
-        granularity,
-      ).map((period) => ({ value: period.key, label: period.label })),
-    [recommendations, granularity],
+  const anchorDates = useMemo(
+    () => [
+      ...recommendations.map((item) => parseDateValue(item.deadline)),
+      new Date(2025, 0, 1).getTime(),
+      new Date(2026, 11, 1).getTime(),
+    ],
+    [recommendations],
   );
+  const yearOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'year').map((item) => item.label)), [anchorDates]);
+  const quarterOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'quarter').map((item) => item.label)), [anchorDates]);
+  const monthOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'month').map((item) => item.label)), [anchorDates]);
+  const auditorOptions = useMemo(() => toOptions(collectRecommendationAuditors(recommendations)), [recommendations]);
+  const departmentOptions = useMemo(() => toOptions(collectAuditObjects(recommendations)), [recommendations]);
 
-  useEffect(() => {
-    const valid = new Set(periodOptions.map((option) => option.value));
-    setSelectedPeriods((prev) => {
-      const next = prev.filter((key) => valid.has(key));
-      return next.length === prev.length ? prev : next;
-    });
-  }, [periodOptions]);
+  const selectedYearKeys = useMemo(() => periodKeys(anchorDates, 'year', selectedYears), [anchorDates, selectedYears]);
+  const selectedQuarterKeys = useMemo(() => periodKeys(anchorDates, 'quarter', selectedQuarters), [anchorDates, selectedQuarters]);
+  const selectedMonthKeys = useMemo(() => periodKeys(anchorDates, 'month', selectedMonths), [anchorDates, selectedMonths]);
 
   const filtered = useMemo(
     () =>
@@ -170,77 +145,57 @@ export function RecommendationsAnalyticsDashboard({
         dateFrom: null,
         dateTo: null,
         auditors: selectedAuditors,
-        materialityLevels: selectedMateriality,
-        granularity,
-        selectedPeriods,
+        departments: selectedDepartments,
+        statuses: selectedStatuses as RecommendationStatus[],
+        additionalStatuses: selectedAdditionalStatuses as RecommendationAdditionalStatus[],
+        materialityLevels: selectedMateriality as MaterialityLevel[],
+        granularity: 'month',
+        selectedPeriods: [],
+        selectedYears: selectedYearKeys,
+        selectedQuarters: selectedQuarterKeys,
+        selectedMonths: selectedMonthKeys,
       }),
-    [recommendations, selectedAuditors, selectedMateriality, granularity, selectedPeriods],
+    [
+      recommendations,
+      selectedAdditionalStatuses,
+      selectedAuditors,
+      selectedDepartments,
+      selectedMateriality,
+      selectedMonthKeys,
+      selectedQuarterKeys,
+      selectedStatuses,
+      selectedYearKeys,
+    ],
   );
 
+  const granularity: PeriodGranularity =
+    selectedMonths.length > 0 ? 'month' : selectedQuarters.length > 0 ? 'quarter' : 'year';
   const summary = useMemo(() => summarizeRecommendations(filtered), [filtered]);
   const periodSeries = useMemo(() => buildPeriodSeries(filtered, granularity), [filtered, granularity]);
-  const cumulativeSeries = useMemo(
-    () => buildCumulativeSeries(filtered, granularity),
-    [filtered, granularity],
-  );
+  const cumulativeSeries = useMemo(() => buildCumulativeSeries(filtered, granularity), [filtered, granularity]);
   const statusDistribution = useMemo(() => buildStatusDistribution(filtered), [filtered]);
   const materialityDistribution = useMemo(() => buildMaterialityDistribution(filtered), [filtered]);
-  const additionalStatusDistribution = useMemo(
-    () => buildAdditionalStatusDistribution(filtered),
-    [filtered],
-  );
+  const additionalStatusDistribution = useMemo(() => buildAdditionalStatusDistribution(filtered), [filtered]);
   const indicatorDistribution = useMemo(() => buildIndicatorDistribution(filtered), [filtered]);
-  const auditorDistribution = useMemo(() => buildAuditorDistribution(filtered), [filtered]);
-  const managerDistribution = useMemo(() => buildManagerDistribution(filtered), [filtered]);
-  const auditObjectDistribution = useMemo(() => buildAuditObjectDistribution(filtered), [filtered]);
-  const auditorMateriality = useMemo(() => buildAuditorMaterialityRows(filtered), [filtered]);
-  const auditorMatrix = useMemo(
-    () => buildAuditorPeriodMatrix(filtered, granularity),
-    [filtered, granularity],
-  );
-  const materialityMatrix = useMemo(
-    () => buildMaterialityPeriodMatrix(filtered, granularity),
-    [filtered, granularity],
-  );
   const deadlineBuckets = useMemo(() => buildDeadlineBuckets(filtered), [filtered]);
   const funnel = useMemo(() => buildFunnel(filtered), [filtered]);
-  const scatterPoints = useMemo(() => buildScatterPoints(filtered), [filtered]);
-  const treemapData = useMemo(() => buildTreemapData(filtered), [filtered]);
-  const radialStatus = useMemo(() => buildRadialStatus(filtered), [filtered]);
+  const auditorDistribution = useMemo(() => buildAuditorDistribution(filtered), [filtered]);
+  const objectDistribution = useMemo(() => buildAuditObjectDistribution(filtered), [filtered]);
   const checkLinks = useMemo(() => buildCheckLinkDistribution(filtered), [filtered]);
-  const sankeyData = useMemo(() => buildMaterialityToStatusSankey(filtered), [filtered]);
-  const nativeFunnel = useMemo(() => buildStatusFunnelNative(filtered), [filtered]);
-  const maxAuditor = auditorDistribution[0]?.value ?? 1;
-
-  const periodLabel =
-    granularity === 'month' ? 'месяцам' : granularity === 'quarter' ? 'кварталам' : 'годам';
-
-  const toggleMateriality = (level: MaterialityLevel) => {
-    setSelectedMateriality((prev) =>
-      prev.includes(level) ? prev.filter((item) => item !== level) : [...prev, level],
-    );
-  };
-
-  const addAuditor = (value: string) => {
-    if (!value || selectedAuditors.includes(value)) {
-      return;
-    }
-    setSelectedAuditors((prev) => [...prev, value]);
-    setAuditorToAdd('');
-  };
 
   const resetFilters = () => {
-    setGranularity('quarter');
-    setSelectedPeriods([]);
+    setSelectedYears([]);
+    setSelectedQuarters([]);
+    setSelectedMonths([]);
     setSelectedAuditors([]);
+    setSelectedDepartments([]);
     setSelectedMateriality([]);
-    setAuditorToAdd('');
+    setSelectedStatuses([]);
+    setSelectedAdditionalStatuses([]);
   };
 
   const handleExport = async () => {
-    if (filtered.length === 0 || isExporting) {
-      return;
-    }
+    if (filtered.length === 0 || isExporting) {return;}
     if (exportSections.selectedSections.length === 0) {
       window.alert('Выберите хотя бы один дашборд для экспорта');
       return;
@@ -255,1015 +210,206 @@ export function RecommendationsAnalyticsDashboard({
           dateFrom: null,
           dateTo: null,
           auditors: selectedAuditors,
-          materialityLevels: selectedMateriality,
+          departments: selectedDepartments,
+          materialityLevels: selectedMateriality as MaterialityLevel[],
           selectedSections: exportSections.selectedSections,
         },
         exportFormat,
       );
     } catch (error) {
       console.error('Analytics export failed', error);
-      window.alert(
-        `Не удалось экспортировать отчёт: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`,
-      );
+      window.alert(`Не удалось экспортировать отчёт: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`);
     } finally {
       setIsExporting(false);
     }
   };
 
+  const cards = useMemo<AnalyticsGridCard[]>(
+    () => [
+      {
+        id: 'summary',
+        defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
+        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
+          <ChartCard title="Сводка KPI" description="Контроль исполнения рекомендаций" exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')} onResetCardLayout={resetCardLayout}>
+            <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-6">
+              <KpiCard label="Всего" value={summary.total} hint={`из ${recommendations.length}`} tone="violet" />
+              <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
+              <KpiCard label="Не решено" value={summary.byStatus.unresolved} tone="red" />
+              <KpiCard label="Высокая сущ." value={summary.byMateriality.высокий} tone="amber" />
+              <KpiCard label="Исполнение" value={summary.completionRate} suffix="%" tone="blue" />
+              <KpiCard label="Нарушение срока" value={summary.violationRate} suffix="%" tone="red" />
+            </div>
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'periods',
+        defaultLayout: { x: 0, y: 2, w: 6, h: 4, minW: 4, minH: 3 },
+        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
+          <ChartCard title="Динамика сроков" description="Рекомендации по срокам исполнения" exportSectionId="periods" exportSelected={exportSections.isSelected('periods')} onToggleExport={() => exportSections.toggleSection('periods')} onResetCardLayout={resetCardLayout}>
+            {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
+              <div className="h-40"><ResponsiveContainer width="100%" height="100%"><AreaChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Area type="monotone" dataKey="total" name="Рекомендации" stroke="#7C3AED" fill="#DDD6FE" strokeWidth={2}><LabelList dataKey="total" position="top" fontSize={10} /></Area></AreaChart></ResponsiveContainer></div>
+            )}
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'cumulative',
+        defaultLayout: { x: 6, y: 2, w: 6, h: 4, minW: 4, minH: 3 },
+        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
+          <ChartCard title="Накопление и исполнение" description="Всего и исполнено нарастающим итогом" exportSectionId="cumulative" exportSelected={exportSections.isSelected('cumulative')} onToggleExport={() => exportSections.toggleSection('cumulative')} onResetCardLayout={resetCardLayout}>
+            {cumulativeSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
+              <div className="h-40"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={cumulativeSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /><Bar dataKey="total" name="За срок" fill="#A78BFA" radius={[4, 4, 0, 0]} /><Line type="monotone" dataKey="cumulative" name="Накопительно" stroke="#4F46E5" strokeWidth={2.5} /><Line type="monotone" dataKey="cumulativeCompleted" name="Исполнено" stroke="#10B981" strokeWidth={2.5} /></ComposedChart></ResponsiveContainer></div>
+            )}
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'statusByPeriod',
+        defaultLayout: { x: 0, y: 6, w: 8, h: 4, minW: 5, minH: 3 },
+        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
+          <ChartCard title="Статусы по периодам" description="Доли статусов внутри срока" exportSectionId="statusByPeriod" exportSelected={exportSections.isSelected('statusByPeriod')} onToggleExport={() => exportSections.toggleSection('statusByPeriod')} onResetCardLayout={resetCardLayout}>
+            {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
+              <div className="h-40"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]}><LabelList dataKey={status.value} position="center" fontSize={10} fill="#fff" /></Bar>)}</BarChart></ResponsiveContainer></div>
+            )}
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'materialityByPeriod',
+        defaultLayout: { x: 8, y: 6, w: 4, h: 4, minW: 4, minH: 3 },
+        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
+          <ChartCard title="Существенность по периодам" description="Низкий, средний и высокий уровни" exportSectionId="materialityByPeriod" exportSelected={exportSections.isSelected('materialityByPeriod')} onToggleExport={() => exportSections.toggleSection('materialityByPeriod')} onResetCardLayout={resetCardLayout}>
+            {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
+              <div className="h-40"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /><Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий} /><Bar dataKey="medium" name="Средний" stackId="mat" fill={MATERIALITY_COLORS.средний} /><Bar dataKey="high" name="Высокий" stackId="mat" fill={MATERIALITY_COLORS.высокий} /></BarChart></ResponsiveContainer></div>
+            )}
+          </ChartCard>
+        ),
+      },
+      ...[
+        ['materiality', 'Существенность', materialityDistribution],
+        ['statuses', 'Статусы', statusDistribution],
+        ['additionalStatuses', 'Срок исполнения', additionalStatusDistribution],
+        ['indicators', 'Индикаторы', indicatorDistribution],
+      ].map(([id, title, data], index) => ({
+        id: id as string,
+        defaultLayout: { x: (index % 2) * 6, y: 10 + Math.floor(index / 2) * 4, w: 6, h: 4, minW: 4, minH: 3 },
+        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
+          <ChartCard title={title as string} description="Распределение выбранной выборки" exportSectionId={id as string} exportSelected={exportSections.isSelected(id as RecommendationExportSectionId)} onToggleExport={() => exportSections.toggleSection(id as RecommendationExportSectionId)} onResetCardLayout={resetCardLayout}>
+            {(data as Array<{ name: string; value: number; color?: string }>).length === 0 ? <EmptyChart message="Нет данных" /> : (
+              <div className="h-40"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={data as Array<{ name: string; value: number; color?: string }>} dataKey="value" nameKey="name" cx="50%" cy="46%" innerRadius={46} outerRadius={78} label>{(data as Array<{ name: string; value: number; color?: string }>).map((entry, colorIndex) => <Cell key={entry.name} fill={entry.color ?? PALETTE[colorIndex % PALETTE.length]} />)}</Pie><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /></PieChart></ResponsiveContainer></div>
+            )}
+          </ChartCard>
+        ),
+      })),
+      {
+        id: 'deadlines',
+        defaultLayout: { x: 0, y: 18, w: 4, h: 4, minW: 4, minH: 3 },
+        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
+          <ChartCard title="Горизонт сроков" description="Ближайшие и дальние сроки исполнения" exportSectionId="deadlines" exportSelected={exportSections.isSelected('deadlines')} onToggleExport={() => exportSections.toggleSection('deadlines')} onResetCardLayout={resetCardLayout}>
+            <div className="h-40"><ResponsiveContainer width="100%" height="100%"><BarChart data={deadlineBuckets} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill="#F97316" radius={[4, 4, 0, 0]}><LabelList dataKey="value" position="top" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'funnel',
+        defaultLayout: { x: 4, y: 18, w: 4, h: 4, minW: 4, minH: 3 },
+        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
+          <ChartCard title="Воронка исполнения" description="Переход от общего портфеля к исполнению" exportSectionId="funnel" exportSelected={exportSections.isSelected('funnel')} onToggleExport={() => exportSections.toggleSection('funnel')} onResetCardLayout={resetCardLayout}>
+            <div className="h-40"><ResponsiveContainer width="100%" height="100%"><FunnelChart><Tooltip /><Funnel dataKey="value" data={funnel} isAnimationActive fill="#4F46E5"><LabelList position="right" dataKey="name" fill="#334155" fontSize={11} /></Funnel></FunnelChart></ResponsiveContainer></div>
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'objects',
+        defaultLayout: { x: 8, y: 18, w: 4, h: 4, minW: 4, minH: 3 },
+        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
+          <ChartCard title="Объекты аудита" description="Департаменты по количеству рекомендаций" exportSectionId="objects" exportSelected={exportSections.isSelected('objects')} onToggleExport={() => exportSections.toggleSection('objects')} onResetCardLayout={resetCardLayout}>
+            {objectDistribution.length === 0 ? <EmptyChart message="Нет данных" /> : (
+              <div className="h-40"><ResponsiveContainer width="100%" height="100%"><Treemap data={objectDistribution.map((item, index) => ({ ...item, fill: PALETTE[index % PALETTE.length] }))} dataKey="value" nameKey="name" content={<TreemapContent />} /></ResponsiveContainer></div>
+            )}
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'auditors',
+        defaultLayout: { x: 0, y: 22, w: 6, h: 4, minW: 4, minH: 3 },
+        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
+          <ChartCard title="Нагрузка аудиторов" description="Топ аудиторов по рекомендациям" exportSectionId="auditors" exportSelected={exportSections.isSelected('auditors')} onToggleExport={() => exportSections.toggleSection('auditors')} onResetCardLayout={resetCardLayout}>
+            <div className="h-40"><ResponsiveContainer width="100%" height="100%"><BarChart data={auditorDistribution.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill="#1D4ED8" radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'checkLinks',
+        defaultLayout: { x: 6, y: 22, w: 6, h: 4, minW: 4, minH: 3 },
+        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
+          <ChartCard title="По проверкам" description="Количество рекомендаций на ключ проверки" exportSectionId="checkLinks" exportSelected={exportSections.isSelected('checkLinks')} onToggleExport={() => exportSections.toggleSection('checkLinks')} onResetCardLayout={resetCardLayout}>
+            <div className="h-40"><ResponsiveContainer width="100%" height="100%"><BarChart data={checkLinks.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill="#0369A1" radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
+          </ChartCard>
+        ),
+      },
+    ],
+    [
+      additionalStatusDistribution,
+      auditorDistribution,
+      checkLinks,
+      cumulativeSeries,
+      deadlineBuckets,
+      exportSections,
+      funnel,
+      indicatorDistribution,
+      materialityDistribution,
+      objectDistribution,
+      periodSeries,
+      recommendations.length,
+      statusDistribution,
+      summary,
+    ],
+  );
+
   return (
     <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-start">
-      <aside className="w-full shrink-0 space-y-3 lg:sticky lg:top-4 lg:w-72">
-        <section className="rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-sky-50 p-3.5 text-left dark:border-violet-900/40 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800/80">
-          <div className="mb-3">
-            <h3 className="text-base font-semibold text-sber-dark dark:text-sber-light">
-              Метрики и фильтры
-            </h3>
-          </div>
-
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <p className="text-sm font-medium text-gray-700 dark:text-slate-300">Период срока</p>
-              <SegmentedControl
-                value={granularity}
-                options={GRANULARITY_OPTIONS}
-                onChange={(next) => {
-                  setGranularity(next);
-                  setSelectedPeriods([]);
-                }}
-                className="w-full flex-col items-stretch"
-                buttonClassName="min-w-0 w-full"
-              />
-              <MultiCheckboxSelect
-                label="Выбор периода"
-                options={periodOptions}
-                value={selectedPeriods}
-                onChange={setSelectedPeriods}
-                placeholder="Все периоды"
-                hint={periodGranularityHint(granularity)}
-                labelClassName="text-sm"
-              />
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-700 dark:text-slate-300">Существенность</p>
-              <div className="flex flex-col gap-1.5">
-                {MATERIALITY_LEVEL_OPTIONS.map((option) => {
-                  const active =
-                    selectedMateriality.length === 0 || selectedMateriality.includes(option.value);
-                  const selected = selectedMateriality.includes(option.value);
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => toggleMateriality(option.value)}
-                      className={`inline-flex w-full items-center gap-2 rounded-lg border px-3 py-1.5 text-left text-sm transition ${
-                        selected
-                          ? 'border-transparent text-white shadow-sm'
-                          : active
-                            ? 'border-gray-300 bg-white text-gray-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200'
-                            : 'border-gray-200 bg-gray-100 text-gray-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500'
-                      }`}
-                      style={
-                        selected
-                          ? { backgroundColor: MATERIALITY_COLORS[option.value] }
-                          : undefined
-                      }
-                    >
-                      <span
-                        className={`h-2.5 w-2.5 rounded-full ${option.dotClassName}`}
-                        style={selected ? { backgroundColor: '#fff' } : undefined}
-                      />
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-gray-500 dark:text-slate-400">
-                {selectedMateriality.length === 0
-                  ? 'Все уровни существенности'
-                  : `Выбрано: ${selectedMateriality.map((level) => MATERIALITY_LEVEL_OPTIONS.find((item) => item.value === level)?.label).join(', ')}`}
-              </p>
-            </div>
-
-            <Select
-              label="Добавить аудитора"
-              value={auditorToAdd}
-              onChange={addAuditor}
-              options={auditorOptions}
-              placeholder="Выберите из списка"
-              className="w-full"
-              labelClassName="text-sm"
-              inputClassName="py-1.5 text-sm"
-            />
-            <Button
-              variant="ghost"
-              className="h-[38px] w-full px-3 text-sm"
-              disabled={selectedAuditors.length === 0}
-              onClick={() => setSelectedAuditors([])}
-            >
-              Очистить аудиторов
-            </Button>
-            {selectedAuditors.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {selectedAuditors.map((auditor, index) => (
-                  <span
-                    key={auditor}
-                    className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs text-white"
-                    style={{ backgroundColor: PALETTE[index % PALETTE.length] }}
-                  >
-                    {auditor}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSelectedAuditors((prev) => prev.filter((item) => item !== auditor))
-                      }
-                      className="rounded p-0.5 hover:bg-white/20"
-                      aria-label={`Убрать ${auditor}`}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-gray-500 dark:text-slate-400">
-                Аудиторы не выбраны — показаны все.
-              </p>
-            )}
-            <button
-              type="button"
-              onClick={resetFilters}
-              className={`${LIST_ACTION_BUTTON_CLASS} w-full border border-gray-300 bg-white text-gray-700 hover:border-sber-dark/40 hover:text-sber-dark dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200`}
-            >
-              Сбросить фильтры
-            </button>
-          </div>
-        </section>
-
-        <section className="rounded-xl border border-gray-200 bg-white p-3.5 text-left dark:border-slate-700 dark:bg-slate-800">
-          <h3 className="mb-2 text-sm font-semibold text-sber-dark dark:text-sber-light">Экспорт</h3>
-          <div className="space-y-2">
-            <ExportSectionToolbar
-              selectedCount={exportSections.selectedCount}
-              totalCount={exportSections.totalCount}
-              onSelectAll={exportSections.selectAll}
-              onClearAll={exportSections.clearAll}
-            />
-            <p className="text-xs text-gray-500 dark:text-slate-400">
-              В отчёт попадут отмеченные дашборды как готовые графики (по листу / странице на каждый).
-            </p>
-            <div className="flex flex-col gap-2">
-              <select
-                value={exportFormat}
-                onChange={(event) => setExportFormat(event.target.value as AnalyticsExportFormat)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
-              >
-                {ANALYTICS_EXPORT_FORMATS.map((format) => (
-                  <option key={format.value} value={format.value}>
-                    {format.label}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={handleExport}
-                disabled={isExporting || filtered.length === 0}
-                className={`${LIST_ACTION_BUTTON_CLASS} w-full gap-1.5 bg-[#90EE90] text-gray-800 hover:bg-[#7fdc7f] disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-900`}
-              >
-                <Download className="h-4 w-4" />
-                {isExporting ? 'Экспорт...' : 'Экспорт'}
-              </button>
-            </div>
-          </div>
-        </section>
-      </aside>
-
-      <div className="min-w-0 flex-1 space-y-4 text-left">
-      <ChartCard
-        title="Сводка KPI"
-        description="Ключевые показатели текущей выборки"
-        exportSectionId="summary"
-          exportSelected={exportSections.isSelected('summary')}
-        onToggleExport={() => exportSections.toggleSection('summary')}
+      <AnalyticsFilterSidebar
+        yearOptions={yearOptions}
+        quarterOptions={quarterOptions}
+        monthOptions={monthOptions}
+        selectedYears={selectedYears}
+        selectedQuarters={selectedQuarters}
+        selectedMonths={selectedMonths}
+        onYearsChange={setSelectedYears}
+        onQuartersChange={setSelectedQuarters}
+        onMonthsChange={setSelectedMonths}
+        auditorOptions={auditorOptions}
+        selectedAuditors={selectedAuditors}
+        onAuditorsChange={setSelectedAuditors}
+        departmentOptions={departmentOptions}
+        selectedDepartments={selectedDepartments}
+        onDepartmentsChange={setSelectedDepartments}
+        onResetFilters={resetFilters}
+        exportFormat={exportFormat}
+        onExportFormatChange={setExportFormat}
+        isExporting={isExporting}
+        canExport={filtered.length > 0}
+        onExport={handleExport}
+        exportSelectedCount={exportSections.selectedCount}
+        exportTotalCount={exportSections.totalCount}
+        onSelectAllExport={exportSections.selectAll}
+        onClearExport={exportSections.clearAll}
       >
-        <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <KpiCard label="Всего" value={summary.total} hint={`из ${recommendations.length}`} tone="violet" />
-          <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
-          <KpiCard label="Не решено" value={summary.byStatus.unresolved} tone="red" />
-          <KpiCard label="Высокая сущ." value={summary.byMateriality.высокий} tone="amber" />
-          <KpiCard label="Исполнение" value={summary.completionRate} suffix="%" tone="blue" />
-          <KpiCard label="Нарушение срока" value={summary.violationRate} suffix="%" tone="red" />
+        <div className="rounded-xl border border-[#B8BEC8] bg-white p-3 shadow-sm dark:border-slate-600 dark:bg-slate-800">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-sber-dark dark:text-sber-light">Срезы</p>
+          <div className="space-y-2.5">
+            <MultiCheckboxSelect options={MATERIALITY_LEVEL_OPTIONS.map((item) => ({ value: item.value, label: item.label }))} value={selectedMateriality} onChange={setSelectedMateriality} placeholder="Все уровни существенности" />
+            <MultiCheckboxSelect options={RECOMMENDATION_STATUS_OPTIONS.map((item) => ({ value: item.value, label: item.label }))} value={selectedStatuses} onChange={setSelectedStatuses} placeholder="Все статусы" />
+            <MultiCheckboxSelect options={RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.map((item) => ({ value: item.value, label: item.label }))} value={selectedAdditionalStatuses} onChange={setSelectedAdditionalStatuses} placeholder="Все доп. статусы" />
+          </div>
         </div>
-      </ChartCard>
+      </AnalyticsFilterSidebar>
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <ChartCard
-          title={`Динамика сроков по ${periodLabel}`}
-          description="Сколько рекомендаций приходится на каждый период срока"
-          accentClassName="border-violet-200 dark:border-violet-900/40"
-          exportSectionId="periods"
-          exportSelected={exportSections.isSelected('periods')}
-          onToggleExport={() => exportSections.toggleSection('periods')}
-        >
-          {periodSeries.length === 0 ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={periodSeries} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="recArea" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.45} />
-                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.05} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="total" name="Рекомендации" stroke="#7C3AED" fill="url(#recArea)" strokeWidth={2} />
-                  {periodSeries.length > 4 ? (
-                    <Brush dataKey="label" height={22} stroke="#7C3AED" travellerWidth={8} />
-                  ) : null}
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Накопление и исполнение"
-          description="Всего vs исполнено нарастающим итогом"
-          accentClassName="border-emerald-200 dark:border-emerald-900/40"
-          exportSectionId="cumulative"
-          exportSelected={exportSections.isSelected('cumulative')}
-          onToggleExport={() => exportSections.toggleSection('cumulative')}
-        >
-          {cumulativeSeries.length === 0 ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={cumulativeSeries} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="total" name="За период" fill="#A78BFA" radius={[4, 4, 0, 0]} />
-                  <Line type="monotone" dataKey="cumulative" name="Накопительно" stroke="#4F46E5" strokeWidth={2} />
-                  <Line type="monotone" dataKey="cumulativeCompleted" name="Исполнено накопительно" stroke="#10B981" strokeWidth={2} />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title={`Существенность по ${periodLabel}`}
-          description="Низкий / средний / высокий в динамике"
-          accentClassName="border-amber-200 dark:border-amber-900/40"
-          exportSectionId="materialityByPeriod"
-          exportSelected={exportSections.isSelected('materialityByPeriod')}
-          onToggleExport={() => exportSections.toggleSection('materialityByPeriod')}
-        >
-          {periodSeries.length === 0 ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={periodSeries} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий} />
-                  <Bar dataKey="medium" name="Средний" stackId="mat" fill={MATERIALITY_COLORS.средний} />
-                  <Bar dataKey="high" name="Высокий" stackId="mat" fill={MATERIALITY_COLORS.высокий} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title={`Статусы по ${periodLabel}`}
-          description="Цветной stacked по статусам исполнения"
-          accentClassName="border-rose-200 dark:border-rose-900/40"
-          exportSectionId="statusByPeriod"
-          exportSelected={exportSections.isSelected('statusByPeriod')}
-          onToggleExport={() => exportSections.toggleSection('statusByPeriod')}
-        >
-          {periodSeries.length === 0 ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={periodSeries} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  {STATUS_STACK.map((status) => (
-                    <Bar
-                      key={status.key}
-                      dataKey={status.key}
-                      name={status.label}
-                      stackId="status"
-                      fill={status.color}
-                    />
-                  ))}
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-3">
-        <ChartCard
-          title="Существенность"
-          description="Цвета уровней риска"
-          accentClassName="border-sky-200 dark:border-sky-900/40"
-          exportSectionId="materiality"
-          exportSelected={exportSections.isSelected('materiality')}
-          onToggleExport={() => exportSections.toggleSection('materiality')}
-        >
-          {materialityDistribution.length === 0 ? (
-            <EmptyChart message="Нет данных" heightClass="h-48" />
-          ) : (
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={materialityDistribution} dataKey="value" nameKey="name" cx="50%" cy="45%" innerRadius={40} outerRadius={68} paddingAngle={3}>
-                    {materialityDistribution.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Статусы"
-          description="Исполнено / не решено / контроль"
-          accentClassName="border-fuchsia-200 dark:border-fuchsia-900/40"
-          exportSectionId="statuses"
-          exportSelected={exportSections.isSelected('statuses')}
-          onToggleExport={() => exportSections.toggleSection('statuses')}
-        >
-          {statusDistribution.length === 0 ? (
-            <EmptyChart message="Нет данных" heightClass="h-48" />
-          ) : (
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={statusDistribution} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={68}>
-                    {statusDistribution.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Срок исполнения"
-          description="В срок / нарушен / на контроле"
-          accentClassName="border-indigo-200 dark:border-indigo-900/40"
-          exportSectionId="additionalStatuses"
-          exportSelected={exportSections.isSelected('additionalStatuses')}
-          onToggleExport={() => exportSections.toggleSection('additionalStatuses')}
-        >
-          {additionalStatusDistribution.length === 0 ? (
-            <EmptyChart message="Нет данных" heightClass="h-48" />
-          ) : (
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={additionalStatusDistribution} dataKey="value" nameKey="name" cx="50%" cy="45%" innerRadius={36} outerRadius={68} paddingAngle={2}>
-                    {additionalStatusDistribution.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color ?? ADDITIONAL_STATUS_COLORS.on_control} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <ChartCard
-          title="Индикаторы"
-          description="Цветовые метки состояния"
-          accentClassName="border-cyan-200 dark:border-cyan-900/40"
-          exportSectionId="indicators"
-          exportSelected={exportSections.isSelected('indicators')}
-          onToggleExport={() => exportSections.toggleSection('indicators')}
-        >
-          {indicatorDistribution.length === 0 ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={indicatorDistribution} layout="vertical" margin={{ top: 6, right: 10, left: 4, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 10 }} />
-                  <Tooltip />
-                  <Bar dataKey="value" name="Кол-во" radius={[0, 6, 6, 0]}>
-                    {indicatorDistribution.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color ?? '#94A3B8'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Горизонт сроков"
-          description="Просрочка и ближайшие дедлайны"
-          accentClassName="border-orange-200 dark:border-orange-900/40"
-          exportSectionId="deadlines"
-          exportSelected={exportSections.isSelected('deadlines')}
-          onToggleExport={() => exportSections.toggleSection('deadlines')}
-        >
-          {deadlineBuckets.length === 0 ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={deadlineBuckets} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Bar dataKey="value" name="Рекомендации" radius={[6, 6, 0, 0]}>
-                    {deadlineBuckets.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color ?? '#64748B'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Воронка исполнения"
-          description="От общего объёма к закрытым"
-          accentClassName="border-pink-200 dark:border-pink-900/40"
-          exportSectionId="funnel"
-          exportSelected={exportSections.isSelected('funnel')}
-          onToggleExport={() => exportSections.toggleSection('funnel')}
-        >
-          {funnel.length === 0 ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="space-y-2.5">
-              {funnel.map((step, index) => {
-                const max = funnel[0]?.value || 1;
-                return (
-                  <div key={step.name} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-700 dark:text-slate-200">{step.name}</span>
-                      <span className="font-semibold tabular-nums" style={{ color: step.color }}>
-                        {step.value}
-                      </span>
-                    </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-gray-100 dark:bg-slate-700">
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{
-                          width: `${Math.max((step.value / max) * 100, 8)}%`,
-                          backgroundColor: step.color,
-                          opacity: 1 - index * 0.08,
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </ChartCard>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        <ChartCard
-          title="Аудитор × существенность"
-          description="Состав портфеля каждого аудитора по уровню риска"
-          accentClassName="border-teal-200 dark:border-teal-900/40"
-          exportSectionId="auditorMateriality"
-          exportSelected={exportSections.isSelected('auditorMateriality')}
-          onToggleExport={() => exportSections.toggleSection('auditorMateriality')}
-        >
-          {auditorMateriality.length === 0 ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={auditorMateriality.slice(0, 10)} margin={{ top: 6, right: 6, left: -8, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="auditor" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={55} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="низкий" name="Низкий" stackId="am" fill={MATERIALITY_COLORS.низкий} />
-                  <Bar dataKey="средний" name="Средний" stackId="am" fill={MATERIALITY_COLORS.средний} />
-                  <Bar dataKey="высокий" name="Высокий" stackId="am" fill={MATERIALITY_COLORS.высокий} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Нагрузка аудиторов"
-          description="Цветные progress-bars по количеству рекомендаций"
-          accentClassName="border-lime-200 dark:border-lime-900/40"
-          exportSectionId="auditors"
-          exportSelected={exportSections.isSelected('auditors')}
-          onToggleExport={() => exportSections.toggleSection('auditors')}
-        >
-          {auditorDistribution.length === 0 ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="max-h-64 space-y-2.5 overflow-auto pr-1">
-              {auditorDistribution.slice(0, 12).map((item, index) => (
-                <div key={item.name} className="space-y-1">
-                  <div className="flex items-center justify-between gap-2 text-xs">
-                    <span className="truncate text-gray-700 dark:text-slate-200">{item.name}</span>
-                    <span className="tabular-nums font-medium" style={{ color: PALETTE[index % PALETTE.length] }}>
-                      {item.value}
-                    </span>
-                  </div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-gray-100 dark:bg-slate-700">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${Math.max((item.value / maxAuditor) * 100, 4)}%`,
-                        backgroundColor: PALETTE[index % PALETTE.length],
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </ChartCard>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <ChartCard
-          title="Радар статусов"
-          description="Профиль статусов выборки"
-          accentClassName="border-blue-200 dark:border-blue-900/40"
-          exportSectionId="statuses"
-          exportSelected={exportSections.isSelected('statuses')}
-          onToggleExport={() => exportSections.toggleSection('statuses')}
-        >
-          {statusDistribution.length === 0 ? (
-            <EmptyChart message="Нет данных" heightClass="h-52" />
-          ) : (
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={statusDistribution}>
-                  <PolarGrid stroke="#E5E7EB" />
-                  <PolarAngleAxis dataKey="name" tick={{ fontSize: 10 }} />
-                  <PolarRadiusAxis tick={{ fontSize: 10 }} />
-                  <Radar name="Кол-во" dataKey="value" stroke="#7C3AED" fill="#C4B5FD" fillOpacity={0.55} />
-                  <Tooltip />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Radial статусы"
-          description="Круговая шкала объёмов"
-          accentClassName="border-green-200 dark:border-green-900/40"
-          exportSectionId="statuses"
-          exportSelected={exportSections.isSelected('statuses')}
-          onToggleExport={() => exportSections.toggleSection('statuses')}
-        >
-          {radialStatus.length === 0 ? (
-            <EmptyChart message="Нет данных" heightClass="h-52" />
-          ) : (
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadialBarChart
-                  innerRadius="20%"
-                  outerRadius="90%"
-                  data={radialStatus.map((item, index) => ({
-                    ...item,
-                    fill: item.color ?? PALETTE[index % PALETTE.length],
-                  }))}
-                  startAngle={90}
-                  endAngle={-270}
-                >
-                  <RadialBar background dataKey="value" cornerRadius={6} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Tooltip />
-                </RadialBarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Scatter: объём vs высокий риск"
-          description="Аудиторы: всего и высоких по существенности"
-          accentClassName="border-purple-200 dark:border-purple-900/40"
-          exportSectionId="auditorPerformance"
-          exportSelected={exportSections.isSelected('auditorPerformance')}
-          onToggleExport={() => exportSections.toggleSection('auditorPerformance')}
-        >
-          {scatterPoints.length === 0 ? (
-            <EmptyChart message="Нет данных" heightClass="h-52" />
-          ) : (
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis type="number" dataKey="total" name="Всего" tick={{ fontSize: 11 }} />
-                  <YAxis type="number" dataKey="high" name="Высокий" tick={{ fontSize: 11 }} />
-                  <ZAxis type="number" dataKey="violated" range={[60, 220]} name="Нарушения" />
-                  <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                  <Scatter name="Аудиторы" data={scatterPoints} fill="#EF4444">
-                    {scatterPoints.map((point) => (
-                      <Cell
-                        key={point.auditor}
-                        fill={point.completionRate >= 70 ? '#22C55E' : point.completionRate >= 40 ? '#EAB308' : '#EF4444'}
-                      />
-                    ))}
-                  </Scatter>
-                </ScatterChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-      </div>
-
-      <ChartCard
-        title="Treemap: аудитор × существенность"
-        description="Площадь блока = число рекомендаций, цвет = уровень существенности"
-        accentClassName="border-yellow-200 dark:border-yellow-900/40"
-        exportSectionId="auditorMateriality"
-          exportSelected={exportSections.isSelected('auditorMateriality')}
-        onToggleExport={() => exportSections.toggleSection('auditorMateriality')}
-      >
-        {treemapData.length === 0 ? (
-          <EmptyChart message="Нет данных" heightClass="h-64" />
-        ) : (
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <Treemap data={treemapData} dataKey="size" stroke="#fff" content={<TreemapContent />} />
-            </ResponsiveContainer>
-          </div>
-        )}
-      </ChartCard>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        <ChartCard
-          title="Объекты аудита"
-          description="Где больше всего рекомендаций"
-          accentClassName="border-red-200 dark:border-red-900/40"
-          exportSectionId="objects"
-          exportSelected={exportSections.isSelected('objects')}
-          onToggleExport={() => exportSections.toggleSection('objects')}
-        >
-          {auditObjectDistribution.length === 0 ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={auditObjectDistribution.slice(0, 8)} layout="vertical" margin={{ top: 6, right: 10, left: 4, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 10 }} />
-                  <Tooltip />
-                  <Bar dataKey="value" name="Рекомендации" radius={[0, 6, 6, 0]}>
-                    {auditObjectDistribution.slice(0, 8).map((entry, index) => (
-                      <Cell key={entry.name} fill={PALETTE[index % PALETTE.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Менеджеры"
-          description="Распределение по ответственным менеджерам"
-          accentClassName="border-violet-200 dark:border-violet-900/40"
-          exportSectionId="managers"
-          exportSelected={exportSections.isSelected('managers')}
-          onToggleExport={() => exportSections.toggleSection('managers')}
-        >
-          {managerDistribution.length === 0 ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={managerDistribution.slice(0, 8)} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" height={50} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Bar dataKey="value" name="Рекомендации" radius={[6, 6, 0, 0]}>
-                    {managerDistribution.slice(0, 8).map((entry, index) => (
-                      <Cell key={entry.name} fill={PALETTE[(index + 3) % PALETTE.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        <ChartCard
-          title="По проверкам (serial)"
-          description="Какие проверки дают больше рекомендаций"
-          accentClassName="border-emerald-200 dark:border-emerald-900/40"
-          exportSectionId="checkLinks"
-          exportSelected={exportSections.isSelected('checkLinks')}
-          onToggleExport={() => exportSections.toggleSection('checkLinks')}
-        >
-          {checkLinks.length === 0 ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={checkLinks} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="checkLinkArea" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#06B6D4" stopOpacity={0.05} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="value" name="Рекомендации" stroke="#0891B2" fill="url(#checkLinkArea)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Исполнение по аудиторам"
-          description="% закрытия и число нарушений срока"
-          accentClassName="border-amber-200 dark:border-amber-900/40"
-          exportSectionId="auditorPerformance"
-          exportSelected={exportSections.isSelected('auditorPerformance')}
-          onToggleExport={() => exportSections.toggleSection('auditorPerformance')}
-        >
-          {scatterPoints.length === 0 ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={scatterPoints.slice(0, 10)} margin={{ top: 6, right: 6, left: -12, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="auditor" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={55} />
-                  <YAxis yAxisId="left" allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <YAxis yAxisId="right" orientation="right" allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar yAxisId="left" dataKey="completionRate" name="% исполнения" fill="#22C55E" radius={[4, 4, 0, 0]} />
-                  <Line yAxisId="right" type="monotone" dataKey="violated" name="Нарушения" stroke="#EF4444" strokeWidth={2} />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-      </div>
-
-      <div className="grid gap-2.5 sm:grid-cols-3">
-        {MATERIALITY_LEVEL_OPTIONS.map((option) => {
-          const value = summary.byMateriality[option.value];
-          const share = summary.total ? Math.round((value / summary.total) * 100) : 0;
-          return (
-            <div
-              key={option.value}
-              className="rounded-xl border p-3.5 text-white shadow-sm"
-              style={{ background: `linear-gradient(135deg, ${MATERIALITY_COLORS[option.value]}, ${MATERIALITY_COLORS[option.value]}CC)` }}
-            >
-              <p className="text-sm font-medium opacity-90">{option.label} уровень</p>
-              <p className="mt-1 text-3xl font-semibold">{value}</p>
-              <p className="mt-1 text-xs opacity-90">{share}% выборки</p>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/30">
-                <div className="h-full rounded-full bg-white" style={{ width: `${Math.max(share, 4)}%` }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        <ChartCard
-          title="FunnelChart (recharts)"
-          description="Нативная воронка статусов из Recharts"
-          accentClassName="border-rose-200 dark:border-rose-900/40"
-          exportSectionId="funnel"
-          exportSelected={exportSections.isSelected('funnel')}
-          onToggleExport={() => exportSections.toggleSection('funnel')}
-        >
-          {nativeFunnel.every((item) => item.value === 0) ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <FunnelChart>
-                  <Tooltip />
-                  <Funnel dataKey="value" data={nativeFunnel} isAnimationActive>
-                    <LabelList position="right" fill="#334155" stroke="none" dataKey="name" fontSize={12} />
-                    {nativeFunnel.map((entry) => (
-                      <Cell key={entry.name} fill={entry.fill} />
-                    ))}
-                  </Funnel>
-                </FunnelChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Sankey: существенность → статус"
-          description="Потоки от уровня существенности к статусу рекомендации"
-          accentClassName="border-sky-200 dark:border-sky-900/40"
-          exportSectionId="materiality"
-          exportSelected={exportSections.isSelected('materiality')}
-          onToggleExport={() => exportSections.toggleSection('materiality')}
-        >
-          {sankeyData.links.length === 0 ? (
-            <EmptyChart message="Нет данных" />
-          ) : (
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <Sankey
-                  data={sankeyData}
-                  nodePadding={24}
-                  nodeWidth={12}
-                  linkCurvature={0.5}
-                  margin={{ top: 8, right: 160, bottom: 8, left: 16 }}
-                  link={{ stroke: '#94A3B8' }}
-                >
-                  <Tooltip />
-                </Sankey>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
-      </div>
-
-      <ChartCard
-        title={`Матрица: аудитор × ${periodLabel.slice(0, -2)}`}
-        description="Интенсивность по срокам — кто сколько рекомендаций ведёт"
-        accentClassName="border-fuchsia-200 dark:border-fuchsia-900/40"
-        exportSectionId="auditorMatrix"
-          exportSelected={exportSections.isSelected('auditorMatrix')}
-        onToggleExport={() => exportSections.toggleSection('auditorMatrix')}
-      >
-        {auditorMatrix.rows.length === 0 || auditorMatrix.periods.length === 0 ? (
-          <EmptyChart message="Нет данных" heightClass="h-40" />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse text-xs">
-              <thead>
-                <tr className="bg-indigo-700 text-left text-white">
-                  <th className="px-2.5 py-1.5 font-medium">Аудитор</th>
-                  {auditorMatrix.periods.map((period) => (
-                    <th key={period.key} className="px-2.5 py-1.5 font-medium whitespace-nowrap">
-                      {period.label}
-                    </th>
-                  ))}
-                  <th className="px-2.5 py-1.5 font-medium">Итого</th>
-                </tr>
-              </thead>
-              <tbody>
-                {auditorMatrix.rows.map((row) => (
-                  <tr key={row.auditor} className="border-b border-gray-100 dark:border-slate-700">
-                    <td className="px-2.5 py-1.5 font-medium text-gray-800 dark:text-slate-100">{row.auditor}</td>
-                    {auditorMatrix.periods.map((period) => {
-                      const value = row.byPeriod[period.key] ?? 0;
-                      const intensity = Math.min(value / Math.max(row.total, 1), 1);
-                      return (
-                        <td
-                          key={period.key}
-                          className="px-2.5 py-1.5 tabular-nums"
-                          style={
-                            value > 0
-                              ? {
-                                  backgroundColor: `rgba(99, 102, 241, ${0.12 + intensity * 0.45})`,
-                                  color: '#312E81',
-                                }
-                              : undefined
-                          }
-                        >
-                          {value || '—'}
-                        </td>
-                      );
-                    })}
-                    <td className="px-2.5 py-1.5 font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
-                      {row.total}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </ChartCard>
-
-      <ChartCard
-        title={`Тепловая матрица существенности × ${periodLabel.slice(0, -2)}`}
-        description="Как уровни риска распределены во времени"
-        accentClassName="border-indigo-200 dark:border-indigo-900/40"
-        exportSectionId="materialityMatrix"
-          exportSelected={exportSections.isSelected('materialityMatrix')}
-        onToggleExport={() => exportSections.toggleSection('materialityMatrix')}
-      >
-        {materialityMatrix.rows.every((row) => row.total === 0) || materialityMatrix.periods.length === 0 ? (
-          <EmptyChart message="Нет данных" heightClass="h-40" />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse text-xs">
-              <thead>
-                <tr className="bg-rose-700 text-left text-white">
-                  <th className="px-2.5 py-1.5 font-medium">Существенность</th>
-                  {materialityMatrix.periods.map((period) => (
-                    <th key={period.key} className="px-2.5 py-1.5 font-medium whitespace-nowrap">
-                      {period.label}
-                    </th>
-                  ))}
-                  <th className="px-2.5 py-1.5 font-medium">Итого</th>
-                </tr>
-              </thead>
-              <tbody>
-                {materialityMatrix.rows.map((row) => (
-                  <tr key={row.level} className="border-b border-gray-100 dark:border-slate-700">
-                    <td className="px-2.5 py-1.5">
-                      <span className="inline-flex items-center gap-2 font-medium text-gray-800 dark:text-slate-100">
-                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: row.color }} />
-                        {row.label}
-                      </span>
-                    </td>
-                    {materialityMatrix.periods.map((period) => {
-                      const value = row.byPeriod[period.key] ?? 0;
-                      return (
-                        <td
-                          key={period.key}
-                          className="px-2.5 py-1.5 tabular-nums font-medium"
-                          style={
-                            value > 0
-                              ? { backgroundColor: `${row.color}33`, color: '#111827' }
-                              : { color: '#9CA3AF' }
-                          }
-                        >
-                          {value || '—'}
-                        </td>
-                      );
-                    })}
-                    <td className="px-2.5 py-1.5 font-semibold tabular-nums" style={{ color: row.color }}>
-                      {row.total}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </ChartCard>
-
-      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="На контроле" value={summary.byStatus.on_control} tone="slate" />
-        <KpiCard label="В процессе" value={summary.byStatus.in_progress} tone="amber" />
-        <KpiCard label="С продлениями" value={summary.withExtensions} tone="violet" />
-        <KpiCard label="С датой закрытия" value={summary.withCompletionDate} tone="green" />
-      </div>
-      </div>
+      <main className="min-w-0 flex-1">
+        <AnalyticsDashboardGrid storageKey="sokol.analytics.layout.recommendations" cards={cards} />
+      </main>
     </div>
   );
 }

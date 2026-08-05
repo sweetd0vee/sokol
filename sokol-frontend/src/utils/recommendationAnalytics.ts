@@ -14,6 +14,7 @@ import {
 import { parseDateValue, toEndOfDayMs, toStartOfDayMs } from './dates';
 import {
   getPeriodBucket,
+  isDateInAnySelectedPeriods,
   isDateInSelectedPeriods,
   type PeriodBucket,
   type PeriodGranularity,
@@ -25,9 +26,15 @@ export type RecommendationAnalyticsFilters = {
   dateFrom: Date | null;
   dateTo: Date | null;
   auditors: string[];
+  departments?: string[];
+  statuses?: RecommendationStatus[];
+  additionalStatuses?: RecommendationAdditionalStatus[];
   materialityLevels: MaterialityLevel[];
   granularity: PeriodGranularity;
   selectedPeriods: string[];
+  selectedYears?: string[];
+  selectedQuarters?: string[];
+  selectedMonths?: string[];
 };
 
 export type NamedCount = {
@@ -100,6 +107,9 @@ export function filterRecommendationsForAnalytics(
   const fromMs = filters.dateFrom ? toStartOfDayMs(filters.dateFrom) : null;
   const toMs = filters.dateTo ? toEndOfDayMs(filters.dateTo) : null;
   const auditorSet = new Set(filters.auditors.filter(Boolean));
+  const departmentSet = new Set((filters.departments ?? []).filter(Boolean));
+  const statusSet = new Set(filters.statuses ?? []);
+  const additionalStatusSet = new Set(filters.additionalStatuses ?? []);
   const materialitySet = new Set(filters.materialityLevels);
 
   return recommendations.filter((item) => {
@@ -116,10 +126,30 @@ export function filterRecommendationsForAnalytics(
     if (auditorSet.size > 0 && !auditorSet.has(item.auditor)) {
       return false;
     }
+    if (departmentSet.size > 0 && !departmentSet.has(item.audit_object)) {
+      return false;
+    }
+    if (statusSet.size > 0 && !statusSet.has(item.status)) {
+      return false;
+    }
+    if (additionalStatusSet.size > 0 && !additionalStatusSet.has(item.additional_status)) {
+      return false;
+    }
     if (materialitySet.size > 0 && !materialitySet.has(item.materiality_level)) {
       return false;
     }
-    if (!isDateInSelectedPeriods(deadlineMs, filters.granularity, filters.selectedPeriods)) {
+    const hasMultiPeriodFilter =
+      (filters.selectedYears?.length ?? 0) > 0
+      || (filters.selectedQuarters?.length ?? 0) > 0
+      || (filters.selectedMonths?.length ?? 0) > 0;
+    const matchesPeriod = hasMultiPeriodFilter
+      ? isDateInAnySelectedPeriods(deadlineMs, {
+          years: filters.selectedYears ?? [],
+          quarters: filters.selectedQuarters ?? [],
+          months: filters.selectedMonths ?? [],
+        })
+      : isDateInSelectedPeriods(deadlineMs, filters.granularity, filters.selectedPeriods);
+    if (!matchesPeriod) {
       return false;
     }
     return true;
@@ -252,6 +282,12 @@ export function buildMaterialityDistribution(recommendations: Recommendation[]):
       color: MATERIALITY_COLORS[level],
     }))
     .filter((item) => item.value > 0);
+}
+
+export function collectAuditObjects(recommendations: Recommendation[]): string[] {
+  return [
+    ...new Set(recommendations.map((item) => item.audit_object.trim()).filter(Boolean)),
+  ].sort((a, b) => a.localeCompare(b, 'ru'));
 }
 
 export function buildAdditionalStatusDistribution(recommendations: Recommendation[]): NamedCount[] {

@@ -60,6 +60,39 @@ export function collectPeriodOptions(
   return [...map.values()].sort((a, b) => a.sortKey - b.sortKey);
 }
 
+export function collectCalendarPeriodOptions(
+  dateMsList: Array<number | null>,
+  granularity: PeriodGranularity,
+): PeriodBucket[] {
+  const validDates = dateMsList.filter((value): value is number => value !== null);
+  if (validDates.length === 0) {
+    const currentYear = new Date().getFullYear();
+    return granularity === 'year'
+      ? [getPeriodBucket(new Date(currentYear, 0, 1).getTime(), 'year')]
+      : collectPeriodOptions([new Date(currentYear, 0, 1).getTime()], granularity);
+  }
+
+  const minYear = new Date(Math.min(...validDates)).getFullYear();
+  const maxYear = new Date(Math.max(...validDates)).getFullYear();
+  const result: PeriodBucket[] = [];
+
+  for (let year = minYear; year <= maxYear; year += 1) {
+    if (granularity === 'year') {
+      result.push(getPeriodBucket(new Date(year, 0, 1).getTime(), 'year'));
+    } else if (granularity === 'quarter') {
+      [0, 3, 6, 9].forEach((month) => {
+        result.push(getPeriodBucket(new Date(year, month, 1).getTime(), 'quarter'));
+      });
+    } else {
+      for (let month = 0; month < 12; month += 1) {
+        result.push(getPeriodBucket(new Date(year, month, 1).getTime(), 'month'));
+      }
+    }
+  }
+
+  return result;
+}
+
 export function isDateInSelectedPeriods(
   dateMs: number,
   granularity: PeriodGranularity,
@@ -69,6 +102,27 @@ export function isDateInSelectedPeriods(
     return true;
   }
   return selectedPeriodKeys.includes(getPeriodBucket(dateMs, granularity).key);
+}
+
+export function isDateInAnySelectedPeriods(
+  dateMs: number,
+  selections: {
+    years: string[];
+    quarters: string[];
+    months: string[];
+  },
+): boolean {
+  const hasSelection =
+    selections.years.length > 0 || selections.quarters.length > 0 || selections.months.length > 0;
+  if (!hasSelection) {
+    return true;
+  }
+
+  return (
+    isDateInSelectedPeriods(dateMs, 'year', selections.years)
+    || isDateInSelectedPeriods(dateMs, 'quarter', selections.quarters)
+    || isDateInSelectedPeriods(dateMs, 'month', selections.months)
+  );
 }
 
 export function periodGranularityHint(granularity: PeriodGranularity) {

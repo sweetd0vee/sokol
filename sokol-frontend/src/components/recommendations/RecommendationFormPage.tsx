@@ -20,7 +20,7 @@ import { fetchRecommendation } from '../../api/recommendations';
 import { useSokolData } from '../../contexts/sokolData';
 import { toNameOptions, useAuditorOptions } from '../../hooks/useReferenceOptions';
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
-import { isNonEmpty, toInputDate, toIsoDate } from '../../utils/dates';
+import { toInputDate, toIsoDate } from '../../utils/dates';
 import {
   type CheckFormLocationState,
   type RecommendationFormLocationState,
