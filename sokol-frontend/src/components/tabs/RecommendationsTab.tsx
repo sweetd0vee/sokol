@@ -36,7 +36,7 @@ import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
 import { ConfirmDialog } from '../ui/Modal';
 import { useSokolData } from '../../contexts/sokolData';
 import { recommendationMatchesCurrentUser } from '../../utils/personMatch';
-import { INDICATOR_ICONS } from '../recommendations/IndicatorSelect';
+import { INDICATOR_ICONS } from '../recommendations/indicatorIcons';
 import {
   LIST_ACTION_BUTTON_CLASS,
   LIST_ACTION_GROUP_CLASS,

@@ -18,7 +18,7 @@ from app.services.reports.audit_opinion.ollama_client import (
     list_models as list_ollama_models,
 )
 from app.services.reports.memorandum import docx_generator as memorandum_generator
-from app.services.reports.memorandum.parser import parse_az_for_memorandum, parse_recommendations_from_az
+from app.services.reports.memorandum.parser import parse_az_for_memorandum
 from app.services.reports.section_ii import docx_generator
 
 
@@ -124,7 +124,7 @@ def _deadline_to_iso(value: str) -> str:
 
 
 def _parse_recommendations_from_docx(input_path: str) -> tuple[list[ParsedRecommendationItem], str | None]:
-    source, error = parse_recommendations_from_az(input_path)
+    source, error = parse_az_for_memorandum(input_path)
     if error:
         return [], error
     if source is None:

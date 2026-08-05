@@ -83,7 +83,7 @@
 
 MinIO и MailHog в инфраструктуре (profile extras), но приложение их не вызывает — путаница для новых разработчиков.
 
-**Рекомендация:** убрать из default compose или пометить `profiles: [experimental]` и дописать интеграцию.
+**Рекомендация:** держать вне default compose через `profiles: ["extras"]` и дописать интеграцию перед включением в основной стек.
 
 #### M5. Нет integration/API tests
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowDown,
@@ -234,32 +234,11 @@ export function ObservationsTab() {
   }, [filteredObservations, sortConfig]);
 
   const totalPages = Math.max(1, Math.ceil(sortedObservations.length / pageSize));
+  const effectiveCurrentPage = Math.min(currentPage, totalPages);
   const pagedObservations = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
+    const startIndex = (effectiveCurrentPage - 1) * pageSize;
     return sortedObservations.slice(startIndex, startIndex + pageSize);
-  }, [sortedObservations, currentPage, pageSize]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    idFilter,
-    numberFilter,
-    checkFilter,
-    chapterFilter,
-    nameFilter,
-    materialityLevel,
-    status,
-    auditor,
-    deadlineFrom,
-    deadlineTo,
-    pageSize,
-    showOnlyMe,
-    normalizedMyName,
-  ]);
-
-  useEffect(() => {
-    setCurrentPage((prev) => Math.min(prev, totalPages));
-  }, [totalPages]);
+  }, [sortedObservations, effectiveCurrentPage, pageSize]);
 
   const handleResetFilters = () => {
     setIdFilter('');
@@ -272,6 +251,7 @@ export function ObservationsTab() {
     setAuditor('');
     setDeadlineFrom(null);
     setDeadlineTo(null);
+    setCurrentPage(1);
   };
 
   const handleConfirmDelete = () => {
@@ -353,7 +333,10 @@ export function ObservationsTab() {
         <div className="mx-auto flex w-[334px] shrink-0 items-center justify-center gap-3.5 sm:mx-0 sm:pr-px">
           <button
             type="button"
-            onClick={() => setShowOnlyMe((v) => !v)}
+            onClick={() => {
+              setShowOnlyMe((v) => !v);
+              setCurrentPage(1);
+            }}
             className={`${LIST_ACTION_BUTTON_CLASS} transition-colors ${
               showOnlyMe
                 ? 'bg-[#6699FF] text-white border-2 border-[#6699FF]'
@@ -394,7 +377,10 @@ export function ObservationsTab() {
                   <th className="px-2 py-2 font-normal">
                     <Input
                       value={idFilter}
-                      onChange={setIdFilter}
+                      onChange={(value) => {
+                        setIdFilter(value);
+                        setCurrentPage(1);
+                      }}
                       placeholder="ID"
                       inputClassName="py-1.5 text-sm"
                     />
@@ -402,7 +388,10 @@ export function ObservationsTab() {
                   <th className="px-2 py-2 font-normal">
                     <Input
                       value={numberFilter}
-                      onChange={setNumberFilter}
+                      onChange={(value) => {
+                        setNumberFilter(value);
+                        setCurrentPage(1);
+                      }}
                       placeholder="№ наблюдения"
                       inputClassName="py-1.5 text-sm"
                     />
@@ -410,7 +399,10 @@ export function ObservationsTab() {
                   <th className="px-2 py-2 font-normal">
                     <Input
                       value={checkFilter}
-                      onChange={setCheckFilter}
+                      onChange={(value) => {
+                        setCheckFilter(value);
+                        setCurrentPage(1);
+                      }}
                       placeholder="Проверка"
                       inputClassName="py-1.5 text-sm"
                     />
@@ -418,7 +410,10 @@ export function ObservationsTab() {
                   <th className="px-2 py-2 font-normal">
                     <Input
                       value={chapterFilter}
-                      onChange={setChapterFilter}
+                      onChange={(value) => {
+                        setChapterFilter(value);
+                        setCurrentPage(1);
+                      }}
                       placeholder="Раздел АЗ"
                       inputClassName="py-1.5 text-sm"
                     />
@@ -426,7 +421,10 @@ export function ObservationsTab() {
                   <th className="px-2 py-2 font-normal">
                     <Input
                       value={nameFilter}
-                      onChange={setNameFilter}
+                      onChange={(value) => {
+                        setNameFilter(value);
+                        setCurrentPage(1);
+                      }}
                       placeholder="Название наблюдения"
                       inputClassName="py-1.5 text-sm"
                     />
@@ -434,7 +432,10 @@ export function ObservationsTab() {
                   <th className="px-2 py-2 font-normal">
                     <Select
                       value={materialityLevel}
-                      onChange={setMaterialityLevel}
+                      onChange={(value) => {
+                        setMaterialityLevel(value);
+                        setCurrentPage(1);
+                      }}
                       options={MATERIALITY_LEVEL_OPTIONS}
                       placeholder="Все"
                       inputClassName="py-1.5 text-sm"
@@ -444,13 +445,19 @@ export function ObservationsTab() {
                     <div className="flex flex-col gap-1.5">
                       <DatePicker
                         selected={deadlineFrom}
-                        onChange={setDeadlineFrom}
+                        onChange={(value) => {
+                          setDeadlineFrom(value);
+                          setCurrentPage(1);
+                        }}
                         placeholder="с"
                         inputClassName="py-1.5 text-sm"
                       />
                       <DatePicker
                         selected={deadlineTo}
-                        onChange={setDeadlineTo}
+                        onChange={(value) => {
+                          setDeadlineTo(value);
+                          setCurrentPage(1);
+                        }}
                         placeholder="по"
                         inputClassName="py-1.5 text-sm"
                       />
@@ -459,7 +466,10 @@ export function ObservationsTab() {
                   <th className="px-2 py-2 font-normal">
                     <Select
                       value={auditor}
-                      onChange={setAuditor}
+                      onChange={(value) => {
+                        setAuditor(value);
+                        setCurrentPage(1);
+                      }}
                       options={auditorOptions}
                       placeholder="Все"
                       inputClassName="py-1.5 text-sm"
@@ -468,7 +478,10 @@ export function ObservationsTab() {
                   <th className="px-2 py-2 font-normal">
                     <Select
                       value={status}
-                      onChange={setStatus}
+                      onChange={(value) => {
+                        setStatus(value);
+                        setCurrentPage(1);
+                      }}
                       options={OBSERVATION_STATUS_OPTIONS}
                       placeholder="Все"
                       inputClassName="py-1.5 text-sm"
@@ -574,14 +587,17 @@ export function ObservationsTab() {
             <div className="flex flex-wrap items-center gap-3">
               <span className="whitespace-nowrap text-sm text-gray-600 dark:text-slate-300">
                 {sortedObservations.length > 0
-                  ? `Показано ${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, sortedObservations.length)} из ${sortedObservations.length}`
+                  ? `Показано ${(effectiveCurrentPage - 1) * pageSize + 1}–${Math.min(effectiveCurrentPage * pageSize, sortedObservations.length)} из ${sortedObservations.length}`
                   : 'Показано 0 из 0'}
               </span>
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
                 <span>Строк на странице:</span>
                 <select
                   value={pageSize}
-                  onChange={(event) => setPageSize(Number(event.target.value))}
+                  onChange={(event) => {
+                    setPageSize(Number(event.target.value));
+                    setCurrentPage(1);
+                  }}
                   className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sber-light dark:focus:ring-sber-light/25"
                 >
                   {[10, 15, 20].map((size) => (
@@ -594,8 +610,8 @@ export function ObservationsTab() {
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(Math.max(1, effectiveCurrentPage - 1))}
+                  disabled={effectiveCurrentPage === 1}
                   aria-label="Предыдущая страница"
                   title="Предыдущая страница"
                   className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-sber-dark transition hover:bg-sber-dark/10 disabled:cursor-not-allowed disabled:opacity-40"
@@ -603,12 +619,12 @@ export function ObservationsTab() {
                   <ChevronLeft size={20} />
                 </button>
                 <span className="text-sm text-gray-700 dark:text-slate-300">
-                  Страница {currentPage} из {totalPages}
+                  Страница {effectiveCurrentPage} из {totalPages}
                 </span>
                 <button
                   type="button"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(Math.min(totalPages, effectiveCurrentPage + 1))}
+                  disabled={effectiveCurrentPage === totalPages}
                   aria-label="Следующая страница"
                   title="Следующая страница"
                   className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-sber-dark transition hover:bg-sber-dark/10 disabled:cursor-not-allowed disabled:opacity-40"

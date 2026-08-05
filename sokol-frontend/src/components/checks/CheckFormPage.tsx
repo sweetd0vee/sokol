@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
@@ -46,28 +46,65 @@ export function CheckFormPage() {
     updateCheck,
   } = useSokolData();
   const existingFromList = checks.find((item) => item.id === id);
-  const existing = (location.state as CheckFormLocationState | null)?.check ?? existingFromList;
+  const locationState = location.state as CheckFormLocationState | null;
+  const existing = locationState?.check ?? existingFromList;
+  const restoredDraft = locationState?.restoredDraft;
   const isEditMode = Boolean(id);
   const existingStartDate = toInputDate(existing?.start_date);
-  const restoredDraftRef = useRef<CheckFormDraft | null>(null);
-  const [checkName, setCheckName] = useState(existing?.check_name ?? '');
-  const [checkType, setCheckType] = useState(existing?.check_type ?? '');
-  const [checkView, setCheckView] = useState(existing?.check_view ?? '');
-  const [checkLeader, setCheckLeader] = useState(existing?.check_leader ?? '');
-  const [startDate, setStartDate] = useState<Date | null>(existingStartDate);
-  const [endDate, setEndDate] = useState<Date | null>(toInputDate(existing?.end_date));
-  const [orderDocumentNumber, setOrderDocumentNumber] = useState(existing?.order_document_number ?? '');
-  const [orderDocumentDate, setOrderDocumentDate] = useState<Date | null>(toInputDate(existing?.order_document_date));
-  const [programDocumentNumber, setProgramDocumentNumber] = useState(existing?.program_document_number ?? '');
-  const [programDocumentDate, setProgramDocumentDate] = useState<Date | null>(toInputDate(existing?.program_document_date));
-  const [azDocumentNumber, setAzDocumentNumber] = useState(existing?.az_document_number ?? '');
-  const [azDocumentDate, setAzDocumentDate] = useState<Date | null>(toInputDate(existing?.az_document_date));
-  const [dzDocumentNumber, setDzDocumentNumber] = useState(existing?.dz_document_number ?? '');
-  const [dzDocumentDate, setDzDocumentDate] = useState<Date | null>(toInputDate(existing?.dz_document_date));
-  const [processEffectiveness, setProcessEffectiveness] = useState(existing?.process_effectiveness ?? '');
-  const [svkEffectiveness, setSvkEffectiveness] = useState(existing?.svk_effectiveness ?? '');
-  const [surEffectiveness, setSurEffectiveness] = useState(existing?.sur_effectiveness ?? '');
-  const [svikEffectiveness, setSvikEffectiveness] = useState(existing?.svik_effectiveness ?? '');
+  const [checkName, setCheckName] = useState(restoredDraft?.checkName ?? existing?.check_name ?? '');
+  const [checkType, setCheckType] = useState(restoredDraft?.checkType ?? existing?.check_type ?? '');
+  const [checkView, setCheckView] = useState(restoredDraft?.checkView ?? existing?.check_view ?? '');
+  const [checkLeader, setCheckLeader] = useState(restoredDraft?.checkLeader ?? existing?.check_leader ?? '');
+  const [startDate, setStartDate] = useState<Date | null>(
+    restoredDraft ? (restoredDraft.startDate ? toInputDate(restoredDraft.startDate) : null) : existingStartDate,
+  );
+  const [endDate, setEndDate] = useState<Date | null>(
+    restoredDraft ? (restoredDraft.endDate ? toInputDate(restoredDraft.endDate) : null) : toInputDate(existing?.end_date),
+  );
+  const [orderDocumentNumber, setOrderDocumentNumber] = useState(
+    restoredDraft?.orderDocumentNumber ?? existing?.order_document_number ?? '',
+  );
+  const [orderDocumentDate, setOrderDocumentDate] = useState<Date | null>(
+    restoredDraft
+      ? (restoredDraft.orderDocumentDate ? toInputDate(restoredDraft.orderDocumentDate) : null)
+      : toInputDate(existing?.order_document_date),
+  );
+  const [programDocumentNumber, setProgramDocumentNumber] = useState(
+    restoredDraft?.programDocumentNumber ?? existing?.program_document_number ?? '',
+  );
+  const [programDocumentDate, setProgramDocumentDate] = useState<Date | null>(
+    restoredDraft
+      ? (restoredDraft.programDocumentDate ? toInputDate(restoredDraft.programDocumentDate) : null)
+      : toInputDate(existing?.program_document_date),
+  );
+  const [azDocumentNumber, setAzDocumentNumber] = useState(
+    restoredDraft?.azDocumentNumber ?? existing?.az_document_number ?? '',
+  );
+  const [azDocumentDate, setAzDocumentDate] = useState<Date | null>(
+    restoredDraft
+      ? (restoredDraft.azDocumentDate ? toInputDate(restoredDraft.azDocumentDate) : null)
+      : toInputDate(existing?.az_document_date),
+  );
+  const [dzDocumentNumber, setDzDocumentNumber] = useState(
+    restoredDraft?.dzDocumentNumber ?? existing?.dz_document_number ?? '',
+  );
+  const [dzDocumentDate, setDzDocumentDate] = useState<Date | null>(
+    restoredDraft
+      ? (restoredDraft.dzDocumentDate ? toInputDate(restoredDraft.dzDocumentDate) : null)
+      : toInputDate(existing?.dz_document_date),
+  );
+  const [processEffectiveness, setProcessEffectiveness] = useState(
+    restoredDraft?.processEffectiveness ?? existing?.process_effectiveness ?? '',
+  );
+  const [svkEffectiveness, setSvkEffectiveness] = useState(
+    restoredDraft?.svkEffectiveness ?? existing?.svk_effectiveness ?? '',
+  );
+  const [surEffectiveness, setSurEffectiveness] = useState(
+    restoredDraft?.surEffectiveness ?? existing?.sur_effectiveness ?? '',
+  );
+  const [svikEffectiveness, setSvikEffectiveness] = useState(
+    restoredDraft?.svikEffectiveness ?? existing?.svik_effectiveness ?? '',
+  );
   const { options: leaderOptions } = useAuditorOptions(checkLeader);
   const { options: effectivenessOptions } = useEffectivenessRatingOptions(
     processEffectiveness,
@@ -127,37 +164,6 @@ export function CheckFormPage() {
       existing: buildCheckKeySeeds(seedChecks),
     });
   })();
-
-  useEffect(() => {
-    const restoredDraft = (location.state as CheckFormLocationState | null)?.restoredDraft;
-    if (!restoredDraft || restoredDraftRef.current === restoredDraft) {
-      return;
-    }
-    restoredDraftRef.current = restoredDraft;
-
-    setCheckName(restoredDraft.checkName);
-    setCheckType(restoredDraft.checkType);
-    setCheckView(restoredDraft.checkView);
-    setCheckLeader(restoredDraft.checkLeader);
-    setStartDate(restoredDraft.startDate ? toInputDate(restoredDraft.startDate) : null);
-    setEndDate(restoredDraft.endDate ? toInputDate(restoredDraft.endDate) : null);
-    setOrderDocumentNumber(restoredDraft.orderDocumentNumber);
-    setOrderDocumentDate(
-      restoredDraft.orderDocumentDate ? toInputDate(restoredDraft.orderDocumentDate) : null,
-    );
-    setProgramDocumentNumber(restoredDraft.programDocumentNumber);
-    setProgramDocumentDate(
-      restoredDraft.programDocumentDate ? toInputDate(restoredDraft.programDocumentDate) : null,
-    );
-    setAzDocumentNumber(restoredDraft.azDocumentNumber);
-    setAzDocumentDate(restoredDraft.azDocumentDate ? toInputDate(restoredDraft.azDocumentDate) : null);
-    setDzDocumentNumber(restoredDraft.dzDocumentNumber);
-    setDzDocumentDate(restoredDraft.dzDocumentDate ? toInputDate(restoredDraft.dzDocumentDate) : null);
-    setProcessEffectiveness(restoredDraft.processEffectiveness);
-    setSvkEffectiveness(restoredDraft.svkEffectiveness);
-    setSurEffectiveness(restoredDraft.surEffectiveness);
-    setSvikEffectiveness(restoredDraft.svikEffectiveness);
-  }, [location.state]);
 
   const buildCheckFormDraft = useCallback((): CheckFormDraft => ({
     existingCheck: existing,

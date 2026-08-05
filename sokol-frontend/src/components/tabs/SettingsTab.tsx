@@ -18,6 +18,7 @@ import {
 import { Input } from '../ui/Input';
 import { Modal, ModalActions } from '../ui/Modal';
 import { PageHeader } from '../ui/PageHeader';
+import { SegmentedControl } from '../ui/SegmentedControl';
 import { ActionButtons } from '../settings/ActionButtons';
 import { SettingsTableCard, type TableRow } from '../settings/SettingsTableCard';
 import {
@@ -154,8 +155,8 @@ export function SettingsTab() {
       return;
     }
     try {
-      await createAuditor({ full_name: trimmedName });
-      await queryClient.invalidateQueries({ queryKey: ['settings', 'auditors'] });
+      const createdAuditor = await createAuditor({ full_name: trimmedName });
+      queryClient.setQueryData<Auditor[]>(['settings', 'auditors'], (current = []) => [...current, createdAuditor]);
       setNewAuditorName('');
       setIsAddAuditorOpen(false);
     } catch {
@@ -263,8 +264,8 @@ export function SettingsTab() {
       return;
     }
     try {
-      await createAuditType({ code: trimmedCode, name: trimmedName });
-      await queryClient.invalidateQueries({ queryKey: ['settings', 'audit-types'] });
+      const createdAuditType = await createAuditType({ code: trimmedCode, name: trimmedName });
+      queryClient.setQueryData<AuditType[]>(['settings', 'audit-types'], (current = []) => [...current, createdAuditType]);
       setNewAuditTypeCode('');
       setNewAuditTypeName('');
       setIsAddAuditTypeOpen(false);
@@ -286,8 +287,11 @@ export function SettingsTab() {
       return;
     }
     try {
-      await createEffectivenessRating({ label: trimmedLabel });
-      await queryClient.invalidateQueries({ queryKey: ['settings', 'effectiveness-ratings'] });
+      const createdRating = await createEffectivenessRating({ label: trimmedLabel });
+      queryClient.setQueryData<EffectivenessRating[]>(['settings', 'effectiveness-ratings'], (current = []) => [
+        ...current,
+        createdRating,
+      ]);
       setNewRatingLabel('');
       setIsAddRatingOpen(false);
     } catch {
@@ -343,29 +347,17 @@ export function SettingsTab() {
   });
 
   return (
-    <div className="space-y-8">
-      <PageHeader title="Списки" />
-      <div className="flex flex-wrap justify-start gap-2">
-          {SETTINGS_LIST_OPTIONS.map((option) => {
-            const isActive = activeList === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setActiveList(option.value)}
-                className={`inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-medium transition ${
-                  isActive
-                    ? 'bg-sber-dark text-white'
-                    : 'text-sber-dark hover:bg-sber-muted hover:text-white'
-                }`}
-              >
-                {option.label}
-              </button>
-            );
-          })}
+    <div className="w-full space-y-4 text-left">
+      <div className="space-y-3">
+        <PageHeader title="Списки" />
+        <SegmentedControl
+          value={activeList}
+          options={SETTINGS_LIST_OPTIONS}
+          onChange={setActiveList}
+        />
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {activeList === 'auditors' && (
           <SettingsTableCard
             title="Аудиторы"

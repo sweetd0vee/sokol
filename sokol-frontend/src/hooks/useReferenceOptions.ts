@@ -33,16 +33,17 @@ export function useEffectivenessRatingOptions(...extraValues: string[]) {
     queryKey: ['settings', 'effectiveness-ratings'],
     queryFn: fetchEffectivenessRatings,
   });
+  const extraValuesKey = extraValues.join('\u0000');
 
   const options = useMemo(() => {
     const labels = (data ?? []).map((rating) => rating.label);
-    extraValues.forEach((value) => {
+    extraValuesKey.split('\u0000').forEach((value) => {
       if (value?.trim()) {
         labels.push(value.trim());
       }
     });
     return toNameOptions(labels);
-  }, [data, ...extraValues]);
+  }, [data, extraValuesKey]);
 
   return { options, isLoading };
 }

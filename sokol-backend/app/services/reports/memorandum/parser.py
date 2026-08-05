@@ -13,10 +13,8 @@ from app.services.reports.section_ii.docx_blocks import load_document_xml
 from app.services.reports.section_ii.patterns import W_NS
 
 __all__ = [
-    "MemorandumSource",
     "document_has_section_ii",
     "parse_az_for_memorandum",
-    "parse_recommendations_from_az",
 ]
 
 
@@ -53,8 +51,3 @@ def parse_az_for_memorandum(file_path: str) -> Tuple[Optional[MemorandumSource],
             "В документе не найден Раздел II. Загрузите АЗ с заполненным Разделом II.",
         )
     return parse_section_ii_for_memorandum(file_path)
-
-
-def parse_recommendations_from_az(file_path: str) -> Tuple[Optional[MemorandumSource], Optional[str]]:
-    """Извлечь рекомендации из таблицы Раздела II аудиторского заключения (АЗ)."""
-    return parse_az_for_memorandum(file_path)

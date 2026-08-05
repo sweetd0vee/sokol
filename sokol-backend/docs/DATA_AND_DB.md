@@ -5,7 +5,7 @@
 - PostgreSQL 16 (Docker: host **5433** → container 5432).
 - SQLAlchemy 2.0 async + `asyncpg`.
 - Миграции: **нет Alembic**. Схема создаётся через `Base.metadata.create_all` в `app/db/init_db.py`.
-- Эволюция полей — ad-hoc скрипты `app/db/migrate_*.py` (statuses, closure, indicators, materiality, fields).
+- Эволюция полей — ad-hoc скрипты `app/db/migrate_*.py` (statuses, closure, closure lists, indicators, materiality, fields, check effectiveness).
 
 ## Session
 
@@ -129,6 +129,7 @@ SQLAlchemy для recommendation enum’ов использует `values_callab
 | `seed_auditors.py` | аудиторы |
 | `seed_audit_types.py` | типы аудита |
 | `seed_effectiveness_ratings.py` | оценки эффективности |
+| `seed_demo_data.py` | синтетические проверки и рекомендации для демо-среды |
 | `import_seed_data.py` | загрузка из Excel |
 | `scripts/generate_seed_excel.py` | генерация seed Excel (`openpyxl`) |
 
@@ -139,8 +140,10 @@ SQLAlchemy для recommendation enum’ов использует `values_callab
 - `migrate_recommendation_fields.py`
 - `migrate_recommendation_statuses.py`
 - `migrate_recommendation_closure.py`
+- `migrate_recommendation_closure_lists.py`
 - `migrate_recommendation_indicators.py`
 - `migrate_materiality_required.py`
+- `migrate_check_effectiveness.py`
 
 Это **не** версионируемый migration framework: запускаются вручную при обновлении уже существующей БД.
 

@@ -11,7 +11,7 @@
 - [x] Analytics API не нужен — фронт считает на клиенте.
 - [ ] Унифицировать порт API в коде (опционально, если onboarding путает).
 - [ ] Единый `Settings` (CORS, max upload) вместо разрозненного `os.getenv`.
-- [ ] MinIO/MailHog — `profiles: [experimental]` или удалить из default compose.
+- [x] MinIO/MailHog — вынесены из default compose в `profiles: ["extras"]`.
 
 ## Фаза 1 — миграции и CI
 

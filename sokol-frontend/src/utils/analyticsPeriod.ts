@@ -124,13 +124,3 @@ export function isDateInAnySelectedPeriods(
     || isDateInSelectedPeriods(dateMs, 'month', selections.months)
   );
 }
-
-export function periodGranularityHint(granularity: PeriodGranularity) {
-  if (granularity === 'month') {
-    return 'Отметьте месяцы (по 1-му числу)';
-  }
-  if (granularity === 'quarter') {
-    return 'Отметьте кварталы (по 1-му числу)';
-  }
-  return 'Отметьте годы (по 1 января)';
-}

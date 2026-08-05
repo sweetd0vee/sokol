@@ -27,14 +27,6 @@ export type CheckAnalyticsFilters = {
   selectedEffectivenessRatings: string[];
 };
 
-export const EFFECTIVENESS_AREA_OPTIONS: { value: EffectivenessArea; label: string }[] = [
-  { value: 'any', label: 'Все области' },
-  { value: 'process', label: 'Процесс' },
-  { value: 'svk', label: 'СВК' },
-  { value: 'sur', label: 'СУР' },
-  { value: 'svik', label: 'СВИК' },
-];
-
 export const EFFECTIVENESS_UNSET_LABEL = 'не указано';
 
 export function getCheckEffectivenessValue(check: Check, area: Exclude<EffectivenessArea, 'any'>): string {
@@ -387,163 +379,10 @@ export function buildTypeStatusBreakdown(checks: Check[]): TypeStatusRow[] {
   });
 }
 
-export type RadarPoint = {
-  metric: string;
-  value: number;
-  fullMark: number;
-};
-
-export function buildViewRadar(checks: Check[]): RadarPoint[] {
-  const distribution = buildViewDistribution(checks);
-  const fullMark = Math.max(...distribution.map((item) => item.value), 1);
-  return distribution.map((item) => ({
-    metric: item.name,
-    value: item.value,
-    fullMark,
-  }));
-}
-
 export function buildCompletionShare(checks: Check[]) {
   if (checks.length === 0) {
     return 0;
   }
   const completed = checks.filter((check) => check.status === 'completed').length;
   return Math.round((completed / checks.length) * 100);
-}
-
-export function collectEffectivenessRatingOptions(
-  checks: Check[],
-  area: EffectivenessArea = 'any',
-): string[] {
-  const set = new Set<string>();
-  checks.forEach((check) => {
-    getCheckEffectivenessValues(check, area).forEach((value) => set.add(value));
-  });
-  return [...set].sort((a, b) => {
-    if (a === EFFECTIVENESS_UNSET_LABEL) {
-      return 1;
-    }
-    if (b === EFFECTIVENESS_UNSET_LABEL) {
-      return -1;
-    }
-    return a.localeCompare(b, 'ru');
-  });
-}
-
-export function buildEffectivenessDistribution(
-  checks: Check[],
-  area: EffectivenessArea = 'any',
-): NamedCount[] {
-  const map = new Map<string, number>();
-  checks.forEach((check) => {
-    if (area === 'any') {
-      // Count each check once by primary filled rating, preferring process → svk → sur → svik.
-      const values = (['process', 'svk', 'sur', 'svik'] as const)
-        .map((key) => getCheckEffectivenessValue(check, key))
-        .filter((value) => value !== EFFECTIVENESS_UNSET_LABEL);
-      const label = values[0] ?? EFFECTIVENESS_UNSET_LABEL;
-      map.set(label, (map.get(label) ?? 0) + 1);
-      return;
-    }
-    const label = getCheckEffectivenessValue(check, area);
-    map.set(label, (map.get(label) ?? 0) + 1);
-  });
-  return [...map.entries()]
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value);
-}
-
-export type EffectivenessAreaRow = {
-  area: string;
-  total: number;
-  byRating: Record<string, number>;
-};
-
-export function buildEffectivenessByArea(checks: Check[]): {
-  ratings: string[];
-  rows: EffectivenessAreaRow[];
-} {
-  const ratingSet = new Set<string>();
-  const rows = (['process', 'svk', 'sur', 'svik'] as const).map((area) => {
-    const byRating: Record<string, number> = {};
-    checks.forEach((check) => {
-      const label = getCheckEffectivenessValue(check, area);
-      ratingSet.add(label);
-      byRating[label] = (byRating[label] ?? 0) + 1;
-    });
-    return {
-      area: EFFECTIVENESS_AREA_OPTIONS.find((item) => item.value === area)?.label ?? area,
-      total: checks.length,
-      byRating,
-    };
-  });
-  const ratings = [...ratingSet].sort((a, b) => {
-    if (a === EFFECTIVENESS_UNSET_LABEL) {
-      return 1;
-    }
-    if (b === EFFECTIVENESS_UNSET_LABEL) {
-      return -1;
-    }
-    return a.localeCompare(b, 'ru');
-  });
-  return { ratings, rows };
-}
-
-export function buildEffectivenessPeriodSeries(
-  checks: Check[],
-  granularity: PeriodGranularity,
-  area: EffectivenessArea = 'any',
-): Array<PeriodBucket & { total: number; byRating: Record<string, number> }> {
-  const map = new Map<string, PeriodBucket & { total: number; byRating: Record<string, number> }>();
-
-  checks.forEach((check) => {
-    const startMs = parseDateValue(check.start_date);
-    if (startMs === null) {
-      return;
-    }
-    const bucket = getPeriodBucket(startMs, granularity);
-    const current = map.get(bucket.key) ?? {
-      ...bucket,
-      total: 0,
-      byRating: {},
-    };
-    current.total += 1;
-    const labels =
-      area === 'any'
-        ? [
-            (['process', 'svk', 'sur', 'svik'] as const)
-              .map((key) => getCheckEffectivenessValue(check, key))
-              .find((value) => value !== EFFECTIVENESS_UNSET_LABEL) ?? EFFECTIVENESS_UNSET_LABEL,
-          ]
-        : [getCheckEffectivenessValue(check, area)];
-    labels.forEach((label) => {
-      current.byRating[label] = (current.byRating[label] ?? 0) + 1;
-    });
-    map.set(bucket.key, current);
-  });
-
-  return [...map.values()].sort((a, b) => a.sortKey - b.sortKey);
-}
-
-export function buildEffectivenessAuditorRows(
-  checks: Check[],
-  area: EffectivenessArea = 'any',
-): Array<{ auditor: string; total: number; byRating: Record<string, number> }> {
-  const map = new Map<string, { auditor: string; total: number; byRating: Record<string, number> }>();
-
-  checks.forEach((check) => {
-    const auditor = check.check_leader.trim() || 'Без руководителя';
-    const current = map.get(auditor) ?? { auditor, total: 0, byRating: {} };
-    current.total += 1;
-    const label =
-      area === 'any'
-        ? (['process', 'svk', 'sur', 'svik'] as const)
-            .map((key) => getCheckEffectivenessValue(check, key))
-            .find((value) => value !== EFFECTIVENESS_UNSET_LABEL) ?? EFFECTIVENESS_UNSET_LABEL
-        : getCheckEffectivenessValue(check, area);
-    current.byRating[label] = (current.byRating[label] ?? 0) + 1;
-    map.set(auditor, current);
-  });
-
-  return [...map.values()].sort((a, b) => b.total - a.total);
 }

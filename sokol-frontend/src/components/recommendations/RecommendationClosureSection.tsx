@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { DatePicker } from '../ui/DatePicker';
 import { Textarea } from '../ui/Textarea';
@@ -174,18 +174,8 @@ export function RecommendationClosureSection({
 }: RecommendationClosureSectionProps) {
   const [extensionOpen, setExtensionOpen] = useState(true);
   const [removeOpen, setRemoveOpen] = useState(true);
-
-  useEffect(() => {
-    if (errorFields.extensions) {
-      setExtensionOpen(true);
-    }
-  }, [errorFields.extensions]);
-
-  useEffect(() => {
-    if (errorFields.removals) {
-      setRemoveOpen(true);
-    }
-  }, [errorFields.removals]);
+  const effectiveExtensionOpen = extensionOpen || Boolean(errorFields.extensions);
+  const effectiveRemoveOpen = removeOpen || Boolean(errorFields.removals);
 
   const patch = (partial: Partial<RecommendationClosureForm>) => {
     onChange({ ...value, ...partial });
@@ -228,7 +218,7 @@ export function RecommendationClosureSection({
       <CollapsibleFormBlock
         title="Снять с контроля"
         titleClassName={blockTitleClassName}
-        open={removeOpen}
+        open={effectiveRemoveOpen}
         onToggle={() => setRemoveOpen((current) => !current)}
         className={stackClassName}
       >
@@ -273,7 +263,7 @@ export function RecommendationClosureSection({
       <CollapsibleFormBlock
         title="Перенос срока"
         titleClassName={blockTitleClassName}
-        open={extensionOpen}
+        open={effectiveExtensionOpen}
         onToggle={() => setExtensionOpen((current) => !current)}
         className={stackClassName}
       >

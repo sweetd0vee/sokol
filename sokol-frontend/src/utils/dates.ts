@@ -40,7 +40,3 @@ export function toInputDate(value?: string | null): Date | null {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
-
-export function isNonEmpty(value: string | null | undefined) {
-  return Boolean(value?.toString().trim());
-}

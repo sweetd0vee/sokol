@@ -67,7 +67,7 @@ Seed: модули `seed_*.py`, `import_seed_data.py`, `scripts/generate_seed_ex
 
 Полный стек: корневой `docker-compose.yml` (API на **8800**, UI, Postgres, Ollama) — см. [DOCKER.md](../../DOCKER.md).
 
-Каталог `docker/`: Compose (API, Postgres, опционально MinIO/MailHog).  
+Каталог `docker/`: Compose (API, Postgres; MinIO/MailHog опционально через profile `extras`).  
 API Dockerfile: Python 3.12-slim, CMD uvicorn на **8800** внутри контейнера.
 
 Для локальной разработки чаще удобнее venv + `run_dev.ps1` (**8802**) + Postgres из compose.

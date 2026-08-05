@@ -178,6 +178,7 @@ export function RecommendationFormPage() {
       setCheckLeader(prefillingLeader);
     }
   }, [
+    linkedCheck,
     linkedCheck?.id,
     linkedCheck?.check_leader,
     navigationState.checkLeader,

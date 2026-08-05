@@ -1,7 +1,11 @@
 import type { ReactNode } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { getErrorMessage } from '../../api/errors';
+import { Input } from '../ui/Input';
 import { EmptyState, ErrorState, LoadingState } from '../ui/StateMessage';
+
+const SETTINGS_ADD_BUTTON_CLASS =
+  'inline-flex w-[140px] items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] dark:text-slate-900';
 
 export type TableRow = {
   key: string;
@@ -32,74 +36,78 @@ export function SettingsTableCard({
   searchPlaceholder = 'Поиск',
 }: SettingsTableCardProps) {
   const showSearch = Boolean(onSearchChange);
+  const actionColumnIndex = columns.length - 1;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center border-b border-gray-200 px-4 py-3 text-base font-semibold text-gray-900 dark:border-slate-700 dark:text-slate-100">
-        <div className="flex items-center justify-start">
-          {showSearch && (
-            <div className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-2.5 py-1 text-sm text-gray-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
-              <Search size={16} className="text-gray-400 dark:text-slate-400" />
-              <input
-                type="text"
-                value={searchValue ?? ''}
-                onChange={(event) => onSearchChange?.(event.target.value)}
-                placeholder={searchPlaceholder}
-                aria-label={searchPlaceholder}
-                className="w-36 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none dark:text-slate-100 dark:placeholder:text-slate-400"
+    <div className="w-full max-w-4xl overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+      <div className="overflow-x-auto">
+        <table className="w-full table-fixed text-base min-w-[640px]">
+          <colgroup>
+            {columns.map((column, index) => (
+              <col
+                key={column}
+                className={index === actionColumnIndex ? 'w-[300px]' : column === '№' ? 'w-16' : undefined}
               />
-            </div>
-          )}
-        </div>
-        <div className="text-center">{title}</div>
-        <div className="flex items-center justify-end">
-          {onAdd && (
-            <button
-              type="button"
-              onClick={onAdd}
-              aria-label={`Добавить: ${title}`}
-              title="Добавить"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-sber-dark text-sber-dark transition hover:border-sber-muted hover:bg-sber-muted hover:text-white dark:border-sber-light dark:text-sber-light"
-            >
-              <Plus size={16} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {rows.length > 0 ? (
-        <div className="h-[724px] overflow-y-scroll">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 z-10 bg-sber-dark text-white">
-              <tr>
-                {columns.map((column) => (
-                  <th key={column} className="px-4 py-3 text-left font-medium">
-                    {column}
-                  </th>
+            ))}
+          </colgroup>
+          <thead>
+            <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-700/60">
+              <th colSpan={columns.length} className="px-2 py-2 font-normal">
+                {showSearch && (
+                  <Input
+                    value={searchValue ?? ''}
+                    onChange={(value) => onSearchChange?.(value)}
+                    placeholder={searchPlaceholder}
+                    inputClassName="py-1.5 text-sm"
+                  />
+                )}
+              </th>
+            </tr>
+            <tr className="bg-[#003366] text-white">
+              {columns.map((column, index) => (
+                <th
+                  key={column}
+                  className={index === actionColumnIndex ? 'px-0 py-3 text-center font-medium' : 'px-4 py-3 text-left font-medium'}
+                >
+                  {column}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+            {rows.map((row) => (
+              <tr key={row.key} className="hover:bg-gray-50 dark:hover:bg-slate-800/70">
+                {row.cells.map((cell, index) => (
+                  <td key={`${row.key}-${index}`} className={index === actionColumnIndex ? 'px-0 py-3' : 'px-4 py-3'}>
+                    {cell}
+                  </td>
                 ))}
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-              {rows.map((row) => (
-                <tr key={row.key} className="hover:bg-gray-50 dark:hover:bg-slate-800/70">
-                  {row.cells.map((cell, index) => (
-                    <td key={`${row.key}-${index}`} className="px-4 py-3">
-                      {cell}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : isLoading ? (
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {rows.length === 0 && isLoading ? (
         <LoadingState className="py-10" />
-      ) : error ? (
+      ) : rows.length === 0 && error ? (
         <div className="p-4">
           <ErrorState description={getErrorMessage(error, 'Убедитесь, что бэкенд запущен.')} />
         </div>
-      ) : (
+      ) : rows.length === 0 ? (
         <EmptyState className="rounded-none border-0" />
+      ) : null}
+      {onAdd && (
+        <div className="flex justify-start border-t border-gray-200 p-4 dark:border-slate-700">
+          <button
+            type="button"
+            onClick={onAdd}
+            aria-label={`Добавить: ${title}`}
+            className={SETTINGS_ADD_BUTTON_CLASS}
+          >
+            <Plus size={14} />
+            Добавить
+          </button>
+        </div>
       )}
     </div>
   );

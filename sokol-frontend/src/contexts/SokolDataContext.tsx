@@ -28,8 +28,11 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
     queryFn: () => fetchRecommendations({ limit: 1000 }),
   });
 
-  const checks = checksQuery.data?.items ?? [];
-  const recommendations = recommendationsQuery.data?.items ?? [];
+  const checks = useMemo(() => checksQuery.data?.items ?? [], [checksQuery.data?.items]);
+  const recommendations = useMemo(
+    () => recommendationsQuery.data?.items ?? [],
+    [recommendationsQuery.data?.items],
+  );
 
   const invalidateAll = useCallback(async () => {
     await Promise.all([

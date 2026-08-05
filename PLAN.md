@@ -42,7 +42,7 @@
 |---|--------|-----------------|---------------------|
 | 0.1 | Зафиксировать два режима портов (Docker **8800**, local **8802**) | docs | ✅ Сделано в README, DOCKER.md, `*/docs` |
 | 0.2 | Пометить `sokol-instruments/` как legacy | docs | README с явной отсылкой к основному стеку |
-| 0.3 | Убрать или изолировать MinIO/MailHog в compose (`profiles: [experimental]`) | infra | Нет «мёртвых» сервисов в default `docker compose up` |
+| 0.3 | Убрать или изолировать MinIO/MailHog в compose (`profiles: ["extras"]`) | infra | ✅ В backend compose MinIO/MailHog вынесены из default `docker compose up` |
 | 0.4 | Свести env в единый `Settings` (CORS, max upload) | backend | Все `os.getenv` для app-конфига — через pydantic-settings |
 | 0.5 | (Опционально) Унифицировать порт API в коде | backend + frontend | Один порт local/Docker, если onboarding всё ещё путает |
 
