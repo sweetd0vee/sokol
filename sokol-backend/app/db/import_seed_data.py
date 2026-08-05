@@ -1,16 +1,17 @@
 import asyncio
+import argparse
 from datetime import date, datetime
 from pathlib import Path
 
 from openpyxl import load_workbook
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.db.init_db import init_db
 from app.db.session import AsyncSessionLocal
 from app.models.checks import Check, CheckStatus
 from app.models.recommendations import Recommendation, RecommendationAdditionalStatus, RecommendationStatus
 
-# DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db python -m app.db.import_seed_data
+# DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db python -m app.db.import_seed_data --replace
 
 from app.utils.paths import get_repo_data_dir
 
@@ -49,7 +50,7 @@ def _read_rows(path: Path, sheet_name: str) -> list[dict]:
     return result
 
 
-async def import_seed_data() -> None:
+async def import_seed_data(*, replace: bool = False) -> None:
     checks_path = DATA_DIR / "checks.xlsx"
     recommendations_path = DATA_DIR / "recommendations.xlsx"
     if not checks_path.is_file():
@@ -63,6 +64,10 @@ async def import_seed_data() -> None:
     await init_db()
 
     async with AsyncSessionLocal() as session:
+        if replace:
+            await session.execute(text("TRUNCATE TABLE recommendations, checks RESTART IDENTITY CASCADE"))
+            await session.commit()
+
         existing_checks = await session.execute(select(Check.serial_number))
         existing_serials = {row[0] for row in existing_checks.all()}
 
@@ -76,30 +81,40 @@ async def import_seed_data() -> None:
                 serial_to_id[serial] = check.id
                 continue
 
-            check = Check(
-                serial_number=serial,
-                check_name=str(row["check_name"]).strip(),
-                check_type=str(row["check_type"]).strip(),
-                check_view=str(row["check_view"]).strip(),
-                start_date=_parse_date(row["start_date"]),
-                end_date=_parse_date(row.get("end_date")),
-                check_leader=str(row["check_leader"]).strip(),
-                status=CheckStatus(str(row["status"]).strip()),
-                created_at=_parse_date(row.get("created_at")) or date.today(),
-                description=_optional_str(row.get("description")),
-                order_document_number=_optional_str(row.get("order_document_number")),
-                order_document_date=_parse_date(row.get("order_document_date")),
-                program_document_number=_optional_str(row.get("program_document_number")),
-                program_document_date=_parse_date(row.get("program_document_date")),
-                az_document_number=_optional_str(row.get("az_document_number")),
-                az_document_date=_parse_date(row.get("az_document_date")),
-                dz_document_number=_optional_str(row.get("dz_document_number")),
-                dz_document_date=_parse_date(row.get("dz_document_date")),
-                process_effectiveness=_optional_str(row.get("process_effectiveness")),
-                svk_effectiveness=_optional_str(row.get("svk_effectiveness")),
-                sur_effectiveness=_optional_str(row.get("sur_effectiveness")),
-                svik_effectiveness=_optional_str(row.get("svik_effectiveness")),
+            check_kwargs = {
+                "serial_number": serial,
+                "check_name": str(row["check_name"]).strip(),
+                "check_type": str(row["check_type"]).strip(),
+                "check_view": str(row["check_view"]).strip(),
+                "start_date": _parse_date(row["start_date"]),
+                "end_date": _parse_date(row.get("end_date")),
+                "check_leader": str(row["check_leader"]).strip(),
+                "status": CheckStatus(str(row["status"]).strip()),
+                "created_at": _parse_date(row.get("created_at")) or date.today(),
+                "description": _optional_str(row.get("description")),
+            }
+            optional_check_fields = {
+                "order_document_number": _optional_str(row.get("order_document_number")),
+                "order_document_date": _parse_date(row.get("order_document_date")),
+                "program_document_number": _optional_str(row.get("program_document_number")),
+                "program_document_date": _parse_date(row.get("program_document_date")),
+                "az_document_number": _optional_str(row.get("az_document_number")),
+                "az_document_date": _parse_date(row.get("az_document_date")),
+                "dz_document_number": _optional_str(row.get("dz_document_number")),
+                "dz_document_date": _parse_date(row.get("dz_document_date")),
+                "process_effectiveness": _optional_str(row.get("process_effectiveness")),
+                "svk_effectiveness": _optional_str(row.get("svk_effectiveness")),
+                "sur_effectiveness": _optional_str(row.get("sur_effectiveness")),
+                "svik_effectiveness": _optional_str(row.get("svik_effectiveness")),
+            }
+            check_kwargs.update(
+                {
+                    field: value
+                    for field, value in optional_check_fields.items()
+                    if hasattr(Check, field)
+                }
             )
+            check = Check(**check_kwargs)
             session.add(check)
             await session.flush()
             serial_to_id[serial] = check.id
@@ -125,24 +140,34 @@ async def import_seed_data() -> None:
                 check_id = check.id
                 serial_to_id[serial] = check_id
 
-            recommendation = Recommendation(
-                check_id=check_id,
-                serial_number=serial,
-                sequence_number=int(row.get("sequence_number") or 1),
-                name=str(row["name"]).strip(),
-                description=str(row.get("description") or row["name"]).strip(),
-                indicator=str(row.get("indicator") or "не указан").strip(),
-                materiality_level=str(row.get("materiality_level") or "средний").strip(),
-                audit_object=str(row["audit_object"]).strip(),
-                deadline=_parse_date(row.get("deadline")),
-                auditor=str(row["auditor"]).strip(),
-                manager=str(row["manager"]).strip(),
-                status=RecommendationStatus(str(row["status"]).strip()),
-                additional_status=RecommendationAdditionalStatus(str(row["additional_status"]).strip()),
-                created_at=_parse_date(row.get("created_at")) or date.today(),
-                actual_completion_date=_parse_date(row.get("actual_completion_date")),
-                closure_information=_optional_str(row.get("closure_information")),
+            recommendation_kwargs = {
+                "check_id": check_id,
+                "serial_number": serial,
+                "sequence_number": int(row.get("sequence_number") or 1),
+                "name": str(row["name"]).strip(),
+                "description": str(row.get("description") or row["name"]).strip(),
+                "indicator": str(row.get("indicator") or "не указан").strip(),
+                "materiality_level": str(row.get("materiality_level") or "средний").strip(),
+                "audit_object": str(row["audit_object"]).strip(),
+                "deadline": _parse_date(row.get("deadline")),
+                "auditor": str(row["auditor"]).strip(),
+                "manager": str(row["manager"]).strip(),
+                "status": RecommendationStatus(str(row["status"]).strip()),
+                "additional_status": RecommendationAdditionalStatus(str(row["additional_status"]).strip()),
+                "created_at": _parse_date(row.get("created_at")) or date.today(),
+            }
+            optional_recommendation_fields = {
+                "actual_completion_date": _parse_date(row.get("actual_completion_date")),
+                "closure_information": _optional_str(row.get("closure_information")),
+            }
+            recommendation_kwargs.update(
+                {
+                    field: value
+                    for field, value in optional_recommendation_fields.items()
+                    if hasattr(Recommendation, field)
+                }
             )
+            recommendation = Recommendation(**recommendation_kwargs)
             session.add(recommendation)
             inserted_recommendations += 1
 
@@ -151,8 +176,19 @@ async def import_seed_data() -> None:
         print(f"Inserted recommendations: {inserted_recommendations}")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Import seed XLSX files into SOKOL database.")
+    parser.add_argument(
+        "--replace",
+        action="store_true",
+        help="Очистить recommendations и checks перед импортом XLSX.",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
-    asyncio.run(import_seed_data())
+    args = parse_args()
+    asyncio.run(import_seed_data(replace=args.replace))
 
 
 if __name__ == "__main__":
