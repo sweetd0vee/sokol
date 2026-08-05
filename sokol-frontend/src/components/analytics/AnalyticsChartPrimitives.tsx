@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { toJpeg, toPng, toSvg } from 'html-to-image';
-import { Clipboard, Expand, FileDown, GripHorizontal, Image, Minimize2, MoreVertical, RotateCcw, X } from 'lucide-react';
+import { Clipboard, Expand, FileDown, Image, Minimize2, MoreVertical, X } from 'lucide-react';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
@@ -57,7 +57,6 @@ function ChartToolbar({
   menuRef,
   onDownload,
   onCopyPng,
-  onResetCardLayout,
 }: {
   exportSelected?: boolean;
   onToggleExport?: () => void;
@@ -69,7 +68,6 @@ function ChartToolbar({
   menuRef: React.RefObject<HTMLDivElement | null>;
   onDownload: (format: 'png' | 'jpeg' | 'svg' | 'pdf') => void;
   onCopyPng: () => void;
-  onResetCardLayout?: () => void;
 }) {
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
@@ -161,17 +159,6 @@ function ChartToolbar({
               <Clipboard className="h-3.5 w-3.5 text-emerald-600" />
               PNG в буфер
             </button>
-            {onResetCardLayout ? (
-              <button
-                type="button"
-                role="menuitem"
-                onClick={onResetCardLayout}
-                className="flex w-full items-center gap-2 border-t border-gray-100 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700"
-              >
-                <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
-                Сбросить размер
-              </button>
-            ) : null}
           </div>
         ) : null}
       </div>
@@ -188,7 +175,7 @@ export function ChartCard({
   exportSectionId,
   exportSelected,
   onToggleExport,
-  onResetCardLayout,
+  onResetCardLayout: _onResetCardLayout,
 }: {
   title: string;
   description: string;
@@ -346,7 +333,6 @@ export function ChartCard({
       onCopyPng={() => {
         void handleCopyPng();
       }}
-      onResetCardLayout={onResetCardLayout}
     />
   );
 
@@ -356,7 +342,7 @@ export function ChartCard({
       className={
         isFullscreen
           ? 'h-[min(75vh,720px)] overflow-auto rounded-lg bg-white p-2 [&>*]:!h-full [&_.h-40]:!h-full [&_.h-48]:!h-full [&_.h-52]:!h-full [&_.h-56]:!h-full [&_.h-64]:!h-full [&_.h-72]:!h-full [&_.max-h-40]:!max-h-full'
-          : 'rounded-lg bg-white [&_.h-40]:!h-52 [&_.max-h-40]:!max-h-52'
+          : 'rounded-lg bg-white [&_.h-40]:!h-48 [&_.max-h-40]:!max-h-48 lg:min-h-0 lg:flex-1 lg:[&>*]:!h-full lg:[&_.h-40]:!h-full lg:[&_.h-48]:!h-full lg:[&_.max-h-40]:!max-h-full'
       }
     >
       {children}
@@ -366,12 +352,11 @@ export function ChartCard({
   if (!isFullscreen) {
     return (
       <section
-        className={`rounded-xl border bg-white p-4 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
+        className={`flex h-full flex-col rounded-xl border bg-white p-4 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
       >
         <div className="mb-3.5 flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-0.5">
-            <div className="analytics-card-drag-handle inline-flex cursor-move items-center gap-1.5 rounded-md pr-1 text-sber-dark dark:text-sber-light">
-              <GripHorizontal className="h-4 w-4 text-gray-400" />
+            <div className="inline-flex items-center rounded-md pr-1 text-sber-dark dark:text-sber-light">
               <h3 className="text-base font-semibold leading-snug">{title}</h3>
             </div>
             <p className="text-xs text-gray-500 dark:text-slate-400">{description}</p>
@@ -471,7 +456,7 @@ export function KpiCard({
   );
 }
 
-export function EmptyChart({ message, heightClass = 'h-52' }: { message: string; heightClass?: string }) {
+export function EmptyChart({ message, heightClass = 'h-48' }: { message: string; heightClass?: string }) {
   return (
     <div
       className={`flex ${heightClass} items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-500 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-400`}

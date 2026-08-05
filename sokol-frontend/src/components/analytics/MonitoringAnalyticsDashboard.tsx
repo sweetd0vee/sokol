@@ -268,10 +268,10 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
         onSelectAllExport={exportSections.selectAll}
         onClearExport={exportSections.clearAll}
       >
-        <div className="rounded-xl border border-[#B8BEC8] bg-white p-3 shadow-sm dark:border-slate-600 dark:bg-slate-800">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-sber-dark dark:text-sber-light">Контроль</p>
+        <div>
+          <p className="mb-2 text-sm font-medium leading-relaxed text-gray-900 dark:text-slate-100">Контроль</p>
           <div className="space-y-2.5">
-            <MultiCheckboxSelect options={MATERIALITY_LEVEL_OPTIONS.map((item) => ({ value: item.value, label: item.label }))} value={selectedMateriality} onChange={setSelectedMateriality} placeholder="Все уровни существенности" />
+            <MultiCheckboxSelect options={MATERIALITY_LEVEL_OPTIONS} value={selectedMateriality} onChange={setSelectedMateriality} placeholder="Все уровни существенности" />
             <MultiCheckboxSelect options={RECOMMENDATION_STATUS_OPTIONS.map((item) => ({ value: item.value, label: item.label }))} value={selectedStatuses} onChange={setSelectedStatuses} placeholder="Все статусы контроля" />
             <MultiCheckboxSelect options={RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.map((item) => ({ value: item.value, label: item.label }))} value={selectedAdditionalStatuses} onChange={setSelectedAdditionalStatuses} placeholder="Все доп. статусы" />
           </div>

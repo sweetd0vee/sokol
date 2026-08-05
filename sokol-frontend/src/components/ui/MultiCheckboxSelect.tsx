@@ -4,6 +4,7 @@ import { Check, ChevronDown } from 'lucide-react';
 export type MultiCheckboxOption = {
   value: string;
   label: string;
+  dotClassName?: string;
 };
 
 type MultiCheckboxSelectProps = {
@@ -113,7 +114,7 @@ export function MultiCheckboxSelect({
         aria-controls={listId}
         onClick={() => setOpen((prev) => !prev)}
         className={[
-          'flex w-full items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-left text-gray-900 outline-none transition hover:border-gray-400 focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100',
+          'flex w-full items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-left text-sm text-gray-900 outline-none transition hover:border-gray-400 focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100',
           inputClassName,
         ]
           .filter(Boolean)
@@ -177,6 +178,11 @@ export function MultiCheckboxSelect({
                       >
                         {checked ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
                       </span>
+                      {option.dotClassName ? (
+                        <span
+                          className={`h-3 w-3 shrink-0 rounded-full border border-gray-200 ${option.dotClassName}`}
+                        />
+                      ) : null}
                       <span className="truncate">{option.label}</span>
                     </button>
                   </li>
