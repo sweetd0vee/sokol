@@ -313,7 +313,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
               <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={typeDistribution} dataKey="value" nameKey="name" cx="50%" cy="46%" innerRadius={58} outerRadius={94} label>
+                    <Pie data={typeDistribution} dataKey="value" nameKey="name" cx="50%" cy="46%" innerRadius={42} outerRadius={68} label>
                       {typeDistribution.map((entry, index) => (
                         <Cell key={entry.name} fill={PALETTE[index % PALETTE.length]} />
                       ))}

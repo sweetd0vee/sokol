@@ -297,7 +297,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
           <ChartCard title={title as string} description="Распределение выбранной выборки" exportSectionId={id as string} exportSelected={exportSections.isSelected(id as RecommendationExportSectionId)} onToggleExport={() => exportSections.toggleSection(id as RecommendationExportSectionId)} onResetCardLayout={resetCardLayout}>
             {(data as Array<{ name: string; value: number; color?: string }>).length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-40"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={data as Array<{ name: string; value: number; color?: string }>} dataKey="value" nameKey="name" cx="50%" cy="46%" innerRadius={46} outerRadius={78} label>{(data as Array<{ name: string; value: number; color?: string }>).map((entry, colorIndex) => <Cell key={entry.name} fill={entry.color ?? PALETTE[colorIndex % PALETTE.length]} />)}</Pie><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /></PieChart></ResponsiveContainer></div>
+              <div className="h-40"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={data as Array<{ name: string; value: number; color?: string }>} dataKey="value" nameKey="name" cx="50%" cy="46%" innerRadius={34} outerRadius={58} label>{(data as Array<{ name: string; value: number; color?: string }>).map((entry, colorIndex) => <Cell key={entry.name} fill={entry.color ?? PALETTE[colorIndex % PALETTE.length]} />)}</Pie><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /></PieChart></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),

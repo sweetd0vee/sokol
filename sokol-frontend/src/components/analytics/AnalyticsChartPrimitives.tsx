@@ -72,12 +72,12 @@ function ChartToolbar({
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
       {onToggleExport ? (
-        <label className="inline-flex min-w-[7.5rem] cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-200">
+        <label className="inline-flex min-w-[6rem] cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] font-medium text-gray-700 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-200">
           <input
             type="checkbox"
             checked={Boolean(exportSelected)}
             onChange={onToggleExport}
-            className="h-4 w-4 accent-sber-dark"
+            className="h-3.5 w-3.5 accent-sber-dark"
           />
           В отчёт
         </label>
@@ -86,11 +86,11 @@ function ChartToolbar({
       <button
         type="button"
         onClick={onToggleFullscreen}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark dark:border-slate-600 dark:text-slate-300 dark:hover:border-sber-light/70 dark:hover:text-sber-light"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark dark:border-slate-600 dark:text-slate-300 dark:hover:border-sber-light/70 dark:hover:text-sber-light"
         title={isFullscreen ? 'Свернуть' : 'На весь экран'}
         aria-label={isFullscreen ? 'Свернуть' : 'На весь экран'}
       >
-        {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
+        {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Expand className="h-3.5 w-3.5" />}
       </button>
 
       <div className="relative" ref={menuRef}>
@@ -98,13 +98,13 @@ function ChartToolbar({
           type="button"
           onClick={onToggleDownload}
           disabled={isBusy}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-sber-light/70 dark:hover:text-sber-light"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-sber-light/70 dark:hover:text-sber-light"
           title={isBusy ? 'Сохранение…' : 'Ещё'}
           aria-label="Ещё"
           aria-haspopup="menu"
           aria-expanded={isDownloadOpen}
         >
-          <MoreVertical className="h-4 w-4" />
+          <MoreVertical className="h-3.5 w-3.5" />
         </button>
         {isDownloadOpen ? (
           <div
@@ -342,7 +342,7 @@ export function ChartCard({
       className={
         isFullscreen
           ? 'h-[min(75vh,720px)] overflow-auto rounded-lg bg-white p-2 [&>*]:!h-full [&_.h-40]:!h-full [&_.h-48]:!h-full [&_.h-52]:!h-full [&_.h-56]:!h-full [&_.h-64]:!h-full [&_.h-72]:!h-full [&_.max-h-40]:!max-h-full'
-          : 'rounded-lg bg-white [&_.h-40]:!h-48 [&_.max-h-40]:!max-h-48 lg:min-h-0 lg:flex-1 lg:[&>*]:!h-full lg:[&_.h-40]:!h-full lg:[&_.h-48]:!h-full lg:[&_.max-h-40]:!max-h-full'
+          : 'rounded-lg bg-white [&_.h-40]:!h-36 [&_.max-h-40]:!max-h-36 lg:min-h-0 lg:flex-1 lg:[&>*]:!h-full lg:[&_.h-40]:!h-full lg:[&_.h-36]:!h-full lg:[&_.max-h-40]:!max-h-full'
       }
     >
       {children}
@@ -352,14 +352,14 @@ export function ChartCard({
   if (!isFullscreen) {
     return (
       <section
-        className={`flex h-full flex-col rounded-xl border bg-white p-4 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
+        className={`flex h-full flex-col rounded-xl border bg-white p-2.5 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
       >
-        <div className="mb-3.5 flex items-start justify-between gap-3">
+        <div className="mb-1.5 flex items-start justify-between gap-2">
           <div className="min-w-0 space-y-0.5">
             <div className="inline-flex items-center rounded-md pr-1 text-sber-dark dark:text-sber-light">
-              <h3 className="text-base font-semibold leading-snug">{title}</h3>
+              <h3 className="text-sm font-semibold leading-snug">{title}</h3>
             </div>
-            <p className="text-xs text-gray-500 dark:text-slate-400">{description}</p>
+            <p className="text-[11px] text-gray-500 dark:text-slate-400">{description}</p>
           </div>
           {toolbar}
         </div>
@@ -456,7 +456,7 @@ export function KpiCard({
   );
 }
 
-export function EmptyChart({ message, heightClass = 'h-48' }: { message: string; heightClass?: string }) {
+export function EmptyChart({ message, heightClass = 'h-36' }: { message: string; heightClass?: string }) {
   return (
     <div
       className={`flex ${heightClass} items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-500 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-400`}

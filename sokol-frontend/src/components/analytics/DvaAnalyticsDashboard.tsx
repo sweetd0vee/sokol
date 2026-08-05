@@ -271,7 +271,7 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
         render: ({ resetCardLayout }) => (
           <ChartCard title="Риск-профиль рекомендаций" description="Существенность портфеля" exportSectionId="riskProfile" exportSelected={exportSections.isSelected('riskProfile')} onToggleExport={() => exportSections.toggleSection('riskProfile')} onResetCardLayout={resetCardLayout}>
             {riskProfile.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-40"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={riskProfile} dataKey="value" nameKey="name" cx="50%" cy="46%" innerRadius={42} outerRadius={72} label>{riskProfile.map((entry) => <Cell key={entry.name} fill={entry.color ?? MATERIALITY_COLORS.средний} />)}</Pie><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /></PieChart></ResponsiveContainer></div>
+              <div className="h-40"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={riskProfile} dataKey="value" nameKey="name" cx="50%" cy="46%" innerRadius={32} outerRadius={56} label>{riskProfile.map((entry) => <Cell key={entry.name} fill={entry.color ?? MATERIALITY_COLORS.средний} />)}</Pie><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /></PieChart></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),

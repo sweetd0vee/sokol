@@ -62,15 +62,15 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
   }, []);
 
   return (
-    <div>
+    <div className="w-full" style={{ zoom: 0.88 }}>
       <div className="hidden lg:block" ref={containerRef}>
         <BaseGridLayout
           className="layout"
           layout={layout}
           cols={12}
           width={containerWidth}
-          rowHeight={64}
-          margin={[8, 8]}
+          rowHeight={36}
+          margin={[4, 4]}
           containerPadding={[0, 0]}
           isDraggable={false}
           isResizable={false}
