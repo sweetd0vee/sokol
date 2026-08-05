@@ -8,7 +8,11 @@ import {
   FORM_SAVE_BUTTON_CLASS,
 } from '../../constants/formLayout';
 
+export type AnalyticsPeriodSlice = 'year' | 'quarter' | 'month';
+
 export type AnalyticsFilterSidebarProps = {
+  periodSlice: AnalyticsPeriodSlice;
+  onPeriodSliceChange: (next: AnalyticsPeriodSlice) => void;
   yearOptions: MultiCheckboxOption[];
   quarterOptions: MultiCheckboxOption[];
   monthOptions: MultiCheckboxOption[];
@@ -25,6 +29,7 @@ export type AnalyticsFilterSidebarProps = {
   selectedDepartments?: string[];
   onDepartmentsChange?: (next: string[]) => void;
   children?: ReactNode;
+  selectionSummary?: ReactNode;
   onResetFilters: () => void;
   exportFormat: AnalyticsExportFormat;
   onExportFormatChange: (format: AnalyticsExportFormat) => void;
@@ -51,7 +56,15 @@ function SidebarSection({ title, children }: { title: string; children: ReactNod
 const FILTER_SELECT_CLASS = FORM_EQUAL_CONTROL_CLASS;
 const FILTER_LABEL_CLASS = FORM_LABEL_CLASS;
 
+const PERIOD_SLICE_OPTIONS: { value: AnalyticsPeriodSlice; label: string }[] = [
+  { value: 'year', label: 'Год' },
+  { value: 'month', label: 'Месяц' },
+  { value: 'quarter', label: 'Квартал' },
+];
+
 export function AnalyticsFilterSidebar({
+  periodSlice,
+  onPeriodSliceChange,
   yearOptions,
   quarterOptions,
   monthOptions,
@@ -68,6 +81,7 @@ export function AnalyticsFilterSidebar({
   selectedDepartments = [],
   onDepartmentsChange,
   children,
+  selectionSummary,
   onResetFilters,
   exportFormat,
   onExportFormatChange,
@@ -76,7 +90,7 @@ export function AnalyticsFilterSidebar({
   onExport,
 }: AnalyticsFilterSidebarProps) {
   return (
-    <aside className="w-full shrink-0 space-y-3 lg:sticky lg:top-4 lg:w-80">
+    <aside className="w-full shrink-0 space-y-5 lg:sticky lg:top-4 lg:w-80">
       <section className="overflow-hidden rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed dark:bg-slate-700">
         <div className="mb-3 flex items-center gap-2">
           <div>
@@ -86,36 +100,67 @@ export function AnalyticsFilterSidebar({
 
         <div className="space-y-6">
           <SidebarSection title="Срок">
-            <MultiCheckboxSelect
-              label="Год"
-              options={yearOptions}
-              value={selectedYears}
-              onChange={onYearsChange}
-              placeholder="Все годы"
-              emptyMessage="Нет годов"
-              inputClassName={FILTER_SELECT_CLASS}
-              labelClassName={FILTER_LABEL_CLASS}
-            />
-            <MultiCheckboxSelect
-              label="Квартал"
-              options={quarterOptions}
-              value={selectedQuarters}
-              onChange={onQuartersChange}
-              placeholder="Все кварталы"
-              emptyMessage="Нет кварталов"
-              inputClassName={FILTER_SELECT_CLASS}
-              labelClassName={FILTER_LABEL_CLASS}
-            />
-            <MultiCheckboxSelect
-              label="Месяц"
-              options={monthOptions}
-              value={selectedMonths}
-              onChange={onMonthsChange}
-              placeholder="Все месяцы"
-              emptyMessage="Нет месяцев"
-              inputClassName={FILTER_SELECT_CLASS}
-              labelClassName={FILTER_LABEL_CLASS}
-            />
+            <div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {PERIOD_SLICE_OPTIONS.map((option) => {
+                  const isActive = option.value === periodSlice;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => onPeriodSliceChange(option.value)}
+                      className={`rounded-lg border px-2 py-2 text-xs font-medium transition ${
+                        isActive
+                          ? 'border-sber-dark bg-sber-dark text-white shadow-sm dark:border-sber-light dark:bg-sber-light dark:text-slate-900'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-sber-dark/50 hover:text-sber-dark dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-sber-light/70 dark:hover:text-sber-light'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {periodSlice === 'year' ? (
+              <MultiCheckboxSelect
+                label="Даты"
+                options={yearOptions}
+                value={selectedYears}
+                onChange={onYearsChange}
+                placeholder="Все годы"
+                emptyMessage="Нет годов"
+                inputClassName={FILTER_SELECT_CLASS}
+                labelClassName={FILTER_LABEL_CLASS}
+              />
+            ) : null}
+
+            {periodSlice === 'quarter' ? (
+              <MultiCheckboxSelect
+                label="Даты"
+                options={quarterOptions}
+                value={selectedQuarters}
+                onChange={onQuartersChange}
+                placeholder="Все кварталы"
+                emptyMessage="Нет кварталов"
+                inputClassName={FILTER_SELECT_CLASS}
+                labelClassName={FILTER_LABEL_CLASS}
+              />
+            ) : null}
+
+            {periodSlice === 'month' ? (
+              <MultiCheckboxSelect
+                label="Даты"
+                options={monthOptions}
+                value={selectedMonths}
+                onChange={onMonthsChange}
+                placeholder="Все месяцы"
+                emptyMessage="Нет месяцев"
+                inputClassName={FILTER_SELECT_CLASS}
+                labelClassName={FILTER_LABEL_CLASS}
+              />
+            ) : null}
           </SidebarSection>
 
           {onAuditorsChange ? (
@@ -158,7 +203,9 @@ export function AnalyticsFilterSidebar({
         </div>
       </section>
 
-      <section className="px-3.5 text-left leading-relaxed">
+      {selectionSummary}
+
+      <section className="rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed dark:bg-slate-700">
         <div className="flex items-center gap-2">
           <button
             type="button"

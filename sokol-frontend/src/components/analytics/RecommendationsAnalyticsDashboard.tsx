@@ -28,7 +28,8 @@ import type {
 } from '../../types/recommendation';
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
-import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
+import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFilterSidebar';
+import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { PALETTE } from './analyticsPalette';
 import { exportRecommendationsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
@@ -106,6 +107,7 @@ function TreemapContent(props: {
 }
 
 export function RecommendationsAnalyticsDashboard({ recommendations }: RecommendationsAnalyticsDashboardProps) {
+  const [periodSlice, setPeriodSlice] = useState<AnalyticsPeriodSlice>('year');
   const [selectedYears, setSelectedYears] = useState<string[]>([]);
   const [selectedQuarters, setSelectedQuarters] = useState<string[]>([]);
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
@@ -168,8 +170,10 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
     ],
   );
 
-  const granularity: PeriodGranularity =
-    selectedMonths.length > 0 ? 'month' : selectedQuarters.length > 0 ? 'quarter' : 'year';
+  const granularity: PeriodGranularity = periodSlice;
+  const periodSliceLabel = periodSlice === 'month' ? 'Месяц' : periodSlice === 'quarter' ? 'Квартал' : 'Год';
+  const activePeriodValues =
+    periodSlice === 'month' ? selectedMonths : periodSlice === 'quarter' ? selectedQuarters : selectedYears;
   const summary = useMemo(() => summarizeRecommendations(filtered), [filtered]);
   const periodSeries = useMemo(() => buildPeriodSeries(filtered, granularity), [filtered, granularity]);
   const cumulativeSeries = useMemo(() => buildCumulativeSeries(filtered, granularity), [filtered, granularity]);
@@ -184,6 +188,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
   const checkLinks = useMemo(() => buildCheckLinkDistribution(filtered), [filtered]);
 
   const resetFilters = () => {
+    setPeriodSlice('year');
     setSelectedYears([]);
     setSelectedQuarters([]);
     setSelectedMonths([]);
@@ -192,6 +197,13 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
     setSelectedMateriality([]);
     setSelectedStatuses([]);
     setSelectedAdditionalStatuses([]);
+  };
+
+  const handlePeriodSliceChange = (next: AnalyticsPeriodSlice) => {
+    setPeriodSlice(next);
+    setSelectedYears([]);
+    setSelectedQuarters([]);
+    setSelectedMonths([]);
   };
 
   const handleExport = async () => {
@@ -371,6 +383,8 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
   return (
     <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-start">
       <AnalyticsFilterSidebar
+        periodSlice={periodSlice}
+        onPeriodSliceChange={handlePeriodSliceChange}
         yearOptions={yearOptions}
         quarterOptions={quarterOptions}
         monthOptions={monthOptions}
@@ -396,6 +410,39 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
         exportTotalCount={exportSections.totalCount}
         onSelectAllExport={exportSections.selectAll}
         onClearExport={exportSections.clearAll}
+        selectionSummary={(
+          <AnalyticsSelectionSummary
+            metrics={[
+            { label: 'Рекомендаций', value: filtered.length, hint: `из ${recommendations.length}` },
+            ]}
+            items={[
+              { label: periodSliceLabel, values: activePeriodValues, emptyLabel: 'Все значения' },
+              { label: 'Аудиторы', values: selectedAuditors, emptyLabel: 'Все аудиторы' },
+              { label: 'Департаменты', values: selectedDepartments, emptyLabel: 'Все департаменты' },
+              {
+                label: 'Существенность',
+                values: selectedMateriality.map(
+                  (value) => MATERIALITY_LEVEL_OPTIONS.find((option) => option.value === value)?.label ?? value,
+                ),
+                emptyLabel: 'Все уровни',
+              },
+              {
+                label: 'Статусы',
+                values: selectedStatuses.map(
+                  (value) => RECOMMENDATION_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value,
+                ),
+                emptyLabel: 'Все статусы',
+              },
+              {
+                label: 'Доп. статусы',
+                values: selectedAdditionalStatuses.map(
+                  (value) => RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value,
+                ),
+                emptyLabel: 'Все доп. статусы',
+              },
+            ]}
+          />
+        )}
       >
         <div>
           <p className="mb-2 text-sm font-medium leading-relaxed text-gray-900 dark:text-slate-100">Срезы</p>

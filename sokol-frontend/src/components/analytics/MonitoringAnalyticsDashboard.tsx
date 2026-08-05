@@ -16,7 +16,8 @@ import {
 import type { MaterialityLevel, Recommendation, RecommendationAdditionalStatus, RecommendationStatus } from '../../types/recommendation';
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
-import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
+import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFilterSidebar';
+import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { PALETTE } from './analyticsPalette';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
@@ -67,6 +68,7 @@ function TreemapContent(props: { x?: number; y?: number; width?: number; height?
 }
 
 export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnalyticsDashboardProps) {
+  const [periodSlice, setPeriodSlice] = useState<AnalyticsPeriodSlice>('year');
   const [selectedYears, setSelectedYears] = useState<string[]>([]);
   const [selectedQuarters, setSelectedQuarters] = useState<string[]>([]);
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
@@ -113,7 +115,10 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
     [recommendations, selectedAdditionalStatuses, selectedAuditors, selectedDepartments, selectedMateriality, selectedMonthKeys, selectedQuarterKeys, selectedStatuses, selectedYearKeys],
   );
 
-  const granularity: PeriodGranularity = selectedMonths.length > 0 ? 'month' : selectedQuarters.length > 0 ? 'quarter' : 'year';
+  const granularity: PeriodGranularity = periodSlice;
+  const periodSliceLabel = periodSlice === 'month' ? 'Месяц' : periodSlice === 'quarter' ? 'Квартал' : 'Год';
+  const activePeriodValues =
+    periodSlice === 'month' ? selectedMonths : periodSlice === 'quarter' ? selectedQuarters : selectedYears;
   const summary = useMemo(() => summarizeRecommendations(filtered), [filtered]);
   const periodSeries = useMemo(() => buildPeriodSeries(filtered, granularity), [filtered, granularity]);
   const deadlineBuckets = useMemo(() => buildDeadlineBuckets(filtered), [filtered]);
@@ -128,6 +133,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
   );
 
   const resetFilters = () => {
+    setPeriodSlice('year');
     setSelectedYears([]);
     setSelectedQuarters([]);
     setSelectedMonths([]);
@@ -136,6 +142,13 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
     setSelectedMateriality([]);
     setSelectedStatuses([]);
     setSelectedAdditionalStatuses([]);
+  };
+
+  const handlePeriodSliceChange = (next: AnalyticsPeriodSlice) => {
+    setPeriodSlice(next);
+    setSelectedYears([]);
+    setSelectedQuarters([]);
+    setSelectedMonths([]);
   };
 
   const handleExport = async () => {
@@ -242,6 +255,8 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
   return (
     <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-start">
       <AnalyticsFilterSidebar
+        periodSlice={periodSlice}
+        onPeriodSliceChange={handlePeriodSliceChange}
         yearOptions={yearOptions}
         quarterOptions={quarterOptions}
         monthOptions={monthOptions}
@@ -267,6 +282,39 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
         exportTotalCount={exportSections.totalCount}
         onSelectAllExport={exportSections.selectAll}
         onClearExport={exportSections.clearAll}
+        selectionSummary={(
+          <AnalyticsSelectionSummary
+            metrics={[
+            { label: 'Рекомендаций', value: filtered.length, hint: `из ${recommendations.length}` },
+            ]}
+            items={[
+              { label: periodSliceLabel, values: activePeriodValues, emptyLabel: 'Все значения' },
+              { label: 'Аудиторы', values: selectedAuditors, emptyLabel: 'Все аудиторы' },
+              { label: 'Департаменты', values: selectedDepartments, emptyLabel: 'Все департаменты' },
+              {
+                label: 'Существенность',
+                values: selectedMateriality.map(
+                  (value) => MATERIALITY_LEVEL_OPTIONS.find((option) => option.value === value)?.label ?? value,
+                ),
+                emptyLabel: 'Все уровни',
+              },
+              {
+                label: 'Статусы контроля',
+                values: selectedStatuses.map(
+                  (value) => RECOMMENDATION_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value,
+                ),
+                emptyLabel: 'Все статусы',
+              },
+              {
+                label: 'Доп. статусы',
+                values: selectedAdditionalStatuses.map(
+                  (value) => RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value,
+                ),
+                emptyLabel: 'Все доп. статусы',
+              },
+            ]}
+          />
+        )}
       >
         <div>
           <p className="mb-2 text-sm font-medium leading-relaxed text-gray-900 dark:text-slate-100">Контроль</p>

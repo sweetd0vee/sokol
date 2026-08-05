@@ -19,7 +19,8 @@ import {
 import type { Check } from '../../types/check';
 import type { Recommendation } from '../../types/recommendation';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
-import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
+import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFilterSidebar';
+import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { PALETTE } from './analyticsPalette';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
@@ -75,6 +76,7 @@ function TreemapContent(props: { x?: number; y?: number; width?: number; height?
 }
 
 export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsDashboardProps) {
+  const [periodSlice, setPeriodSlice] = useState<AnalyticsPeriodSlice>('year');
   const [selectedYears, setSelectedYears] = useState<string[]>([]);
   const [selectedQuarters, setSelectedQuarters] = useState<string[]>([]);
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
@@ -135,7 +137,10 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
     [recommendations, selectedAuditors, selectedDepartments, selectedMonthKeys, selectedQuarterKeys, selectedYearKeys],
   );
 
-  const granularity: PeriodGranularity = selectedMonths.length > 0 ? 'month' : selectedQuarters.length > 0 ? 'quarter' : 'year';
+  const granularity: PeriodGranularity = periodSlice;
+  const periodSliceLabel = periodSlice === 'month' ? 'Месяц' : periodSlice === 'quarter' ? 'Квартал' : 'Год';
+  const activePeriodValues =
+    periodSlice === 'month' ? selectedMonths : periodSlice === 'quarter' ? selectedQuarters : selectedYears;
   const checkSummary = useMemo(() => summarizeChecks(filteredChecks), [filteredChecks]);
   const recSummary = useMemo(() => summarizeRecommendations(filteredRecommendations), [filteredRecommendations]);
   const checkPeriods = useMemo(() => buildCheckPeriodSeries(filteredChecks, granularity), [filteredChecks, granularity]);
@@ -178,11 +183,19 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
   }, [anchorDates, auditorLoad, filteredChecks, granularity]);
 
   const resetFilters = () => {
+    setPeriodSlice('year');
     setSelectedYears([]);
     setSelectedQuarters([]);
     setSelectedMonths([]);
     setSelectedAuditors([]);
     setSelectedDepartments([]);
+  };
+
+  const handlePeriodSliceChange = (next: AnalyticsPeriodSlice) => {
+    setPeriodSlice(next);
+    setSelectedYears([]);
+    setSelectedQuarters([]);
+    setSelectedMonths([]);
   };
 
   const handleExport = async () => {
@@ -321,6 +334,8 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
   return (
     <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-start">
       <AnalyticsFilterSidebar
+        periodSlice={periodSlice}
+        onPeriodSliceChange={handlePeriodSliceChange}
         yearOptions={yearOptions}
         quarterOptions={quarterOptions}
         monthOptions={monthOptions}
@@ -346,6 +361,19 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
         exportTotalCount={exportSections.totalCount}
         onSelectAllExport={exportSections.selectAll}
         onClearExport={exportSections.clearAll}
+        selectionSummary={(
+          <AnalyticsSelectionSummary
+            metrics={[
+            { label: 'Проверок', value: filteredChecks.length, hint: `из ${checks.length}` },
+            { label: 'Рекомендаций', value: filteredRecommendations.length, hint: `из ${recommendations.length}` },
+            ]}
+            items={[
+              { label: periodSliceLabel, values: activePeriodValues, emptyLabel: 'Все значения' },
+              { label: 'Аудиторы', values: selectedAuditors, emptyLabel: 'Все аудиторы' },
+              { label: 'Департаменты', values: selectedDepartments, emptyLabel: 'Все департаменты' },
+            ]}
+          />
+        )}
       />
       <main className="min-w-0 flex-1">
         <AnalyticsDashboardGrid storageKey="sokol.analytics.layout.dva" cards={cards} />

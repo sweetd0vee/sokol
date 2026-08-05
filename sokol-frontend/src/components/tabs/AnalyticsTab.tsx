@@ -22,7 +22,7 @@ export function AnalyticsTab() {
   const { checks, recommendations, isLoading, isError, error } = useSokolData();
 
   return (
-    <div className="w-full space-y-4 text-left">
+    <div className="w-full space-y-5 text-left">
       <div className="space-y-3">
         <PageHeader title="Аналитика" />
         <SegmentedControl

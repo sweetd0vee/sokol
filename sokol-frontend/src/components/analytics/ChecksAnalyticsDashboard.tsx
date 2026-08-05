@@ -19,7 +19,8 @@ import {
 import type { Check } from '../../types/check';
 import type { Recommendation } from '../../types/recommendation';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
-import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
+import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFilterSidebar';
+import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { PALETTE } from './analyticsPalette';
 import { exportChecksDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
@@ -84,6 +85,7 @@ function TreemapContent(props: {
 }
 
 export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnalyticsDashboardProps) {
+  const [periodSlice, setPeriodSlice] = useState<AnalyticsPeriodSlice>('year');
   const [selectedYears, setSelectedYears] = useState<string[]>([]);
   const [selectedQuarters, setSelectedQuarters] = useState<string[]>([]);
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
@@ -151,8 +153,10 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
     ],
   );
 
-  const granularity: PeriodGranularity =
-    selectedMonths.length > 0 ? 'month' : selectedQuarters.length > 0 ? 'quarter' : 'year';
+  const granularity: PeriodGranularity = periodSlice;
+  const periodSliceLabel = periodSlice === 'month' ? 'Месяц' : periodSlice === 'quarter' ? 'Квартал' : 'Год';
+  const activePeriodValues =
+    periodSlice === 'month' ? selectedMonths : periodSlice === 'quarter' ? selectedQuarters : selectedYears;
   const summary = useMemo(() => summarizeChecks(filteredChecks), [filteredChecks]);
   const completionShare = useMemo(() => buildCompletionShare(filteredChecks), [filteredChecks]);
   const periodSeries = useMemo(() => buildPeriodSeries(filteredChecks, granularity), [filteredChecks, granularity]);
@@ -171,11 +175,19 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
   const auditorDistribution = useMemo(() => buildAuditorDistribution(filteredChecks), [filteredChecks]);
 
   const resetFilters = () => {
+    setPeriodSlice('year');
     setSelectedYears([]);
     setSelectedQuarters([]);
     setSelectedMonths([]);
     setSelectedAuditors([]);
     setSelectedDepartments([]);
+  };
+
+  const handlePeriodSliceChange = (next: AnalyticsPeriodSlice) => {
+    setPeriodSlice(next);
+    setSelectedYears([]);
+    setSelectedQuarters([]);
+    setSelectedMonths([]);
   };
 
   const handleExport = async () => {
@@ -446,6 +458,8 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
   return (
     <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-start">
       <AnalyticsFilterSidebar
+        periodSlice={periodSlice}
+        onPeriodSliceChange={handlePeriodSliceChange}
         yearOptions={yearOptions}
         quarterOptions={quarterOptions}
         monthOptions={monthOptions}
@@ -471,6 +485,18 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
         exportTotalCount={exportSections.totalCount}
         onSelectAllExport={exportSections.selectAll}
         onClearExport={exportSections.clearAll}
+        selectionSummary={(
+          <AnalyticsSelectionSummary
+            metrics={[
+            { label: 'Проверок', value: filteredChecks.length, hint: `из ${checks.length}` },
+            ]}
+            items={[
+            { label: periodSliceLabel, values: activePeriodValues, emptyLabel: 'Все значения' },
+              { label: 'Аудиторы', values: selectedAuditors, emptyLabel: 'Все аудиторы' },
+              { label: 'Департаменты', values: selectedDepartments, emptyLabel: 'Все департаменты' },
+            ]}
+          />
+        )}
       />
 
       <main className="min-w-0 flex-1">
