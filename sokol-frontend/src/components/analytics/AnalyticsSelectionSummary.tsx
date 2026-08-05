@@ -30,7 +30,7 @@ export function AnalyticsSelectionSummary({
 }: AnalyticsSelectionSummaryProps) {
   return (
     <section className="rounded-lg bg-gray-100 p-3.5 text-left dark:bg-slate-700">
-      <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-sber-light">Фильтры</h3>
+      <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-sber-light">Выбрано</h3>
 
       <div className="mb-3 space-y-1.5">
         {metrics.map((metric) => (
@@ -57,7 +57,7 @@ export function AnalyticsSelectionSummary({
                   {item.values.map((value) => (
                     <span
                       key={value}
-                      className="max-w-full truncate rounded-full bg-sber-dark/10 px-2 py-1 text-xs font-medium text-gray-900 dark:bg-sber-light/15 dark:text-slate-100"
+                      className="max-w-full truncate rounded-full bg-[rgb(197,216,255)] px-2 py-1 text-xs font-medium text-gray-900 dark:bg-[rgb(197,216,255)] dark:text-gray-900"
                       title={value}
                     >
                       {value}

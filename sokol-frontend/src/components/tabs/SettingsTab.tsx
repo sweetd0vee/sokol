@@ -304,7 +304,6 @@ export function SettingsTab() {
     return {
       key,
       cells: [
-        index + 1,
         auditor.full_name,
         <ActionButtons
           key={`${key}-actions`}
@@ -361,7 +360,7 @@ export function SettingsTab() {
         {activeList === 'auditors' && (
           <SettingsTableCard
             title="Аудиторы"
-            columns={['№', 'ФИО', 'Действия']}
+            columns={['ФИО', 'Действия']}
             rows={auditorRows}
             isLoading={auditorsLoading}
             error={auditorsError}

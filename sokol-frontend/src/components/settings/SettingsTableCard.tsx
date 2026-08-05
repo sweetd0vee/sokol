@@ -39,7 +39,7 @@ export function SettingsTableCard({
   const actionColumnIndex = columns.length - 1;
 
   return (
-    <div className="w-full max-w-4xl overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+    <div className="w-full max-w-7xl overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800">
       <div className="overflow-x-auto">
         <table className="w-full table-fixed text-base min-w-[640px]">
           <colgroup>

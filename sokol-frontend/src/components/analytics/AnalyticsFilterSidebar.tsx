@@ -129,7 +129,7 @@ export function AnalyticsFilterSidebar({
                 options={yearOptions}
                 value={selectedYears}
                 onChange={onYearsChange}
-                placeholder="Все годы"
+                placeholder="Поиск"
                 emptyMessage="Нет годов"
                 inputClassName={FILTER_SELECT_CLASS}
                 labelClassName={FILTER_LABEL_CLASS}
@@ -142,7 +142,7 @@ export function AnalyticsFilterSidebar({
                 options={quarterOptions}
                 value={selectedQuarters}
                 onChange={onQuartersChange}
-                placeholder="Все кварталы"
+                placeholder="Поиск"
                 emptyMessage="Нет кварталов"
                 inputClassName={FILTER_SELECT_CLASS}
                 labelClassName={FILTER_LABEL_CLASS}
@@ -155,7 +155,7 @@ export function AnalyticsFilterSidebar({
                 options={monthOptions}
                 value={selectedMonths}
                 onChange={onMonthsChange}
-                placeholder="Все месяцы"
+                placeholder="Поиск"
                 emptyMessage="Нет месяцев"
                 inputClassName={FILTER_SELECT_CLASS}
                 labelClassName={FILTER_LABEL_CLASS}
@@ -169,7 +169,7 @@ export function AnalyticsFilterSidebar({
                 options={auditorOptions}
                 value={selectedAuditors}
                 onChange={onAuditorsChange}
-                placeholder="Все аудиторы"
+                placeholder="Поиск"
                 emptyMessage="Нет аудиторов"
                 inputClassName={FILTER_SELECT_CLASS}
                 labelClassName={FILTER_LABEL_CLASS}
@@ -183,7 +183,7 @@ export function AnalyticsFilterSidebar({
                 options={departmentOptions}
                 value={selectedDepartments}
                 onChange={onDepartmentsChange}
-                placeholder="Все департаменты"
+                placeholder="Поиск"
                 emptyMessage="Нет объектов аудита"
                 inputClassName={FILTER_SELECT_CLASS}
                 labelClassName={FILTER_LABEL_CLASS}
