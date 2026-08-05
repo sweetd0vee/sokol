@@ -44,7 +44,7 @@ function AttachmentCard({
       type="button"
       onClick={onOpen}
       className={[
-        'flex w-full items-center justify-center rounded-lg border border-[#b8bec8] bg-gray-50 text-center leading-relaxed transition hover:border-gray-400 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/50 dark:border-slate-600 dark:bg-slate-700/40 dark:hover:bg-slate-700/60',
+        'flex w-full items-center justify-center rounded-lg bg-gray-100 text-center leading-relaxed transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/50 dark:bg-slate-700 dark:hover:bg-slate-600',
         compact
           ? 'min-h-[6.5rem] flex-col gap-2 px-2 py-4'
           : 'min-h-[12rem] flex-col gap-2 px-4 py-5',
@@ -122,11 +122,11 @@ function AttachmentFilesModal({
         </div>
 
         {slotFiles.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-sm text-gray-500 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-400">
+          <p className="rounded-lg bg-gray-100 px-4 py-6 text-sm text-gray-500 dark:bg-slate-700 dark:text-slate-400">
             Файлы не прикреплены.
           </p>
         ) : (
-          <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white dark:divide-slate-700 dark:border-slate-600 dark:bg-slate-800">
+          <ul className="divide-y divide-gray-200 rounded-lg bg-gray-100 dark:divide-slate-700 dark:bg-slate-700">
             {slotFiles.map((item) => (
               <li key={item.id} className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0 flex-1">

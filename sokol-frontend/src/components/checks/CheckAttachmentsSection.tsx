@@ -57,7 +57,7 @@ function AttachmentCard({ label, fileCount, onOpen }: AttachmentCardProps) {
     <button
       type="button"
       onClick={onOpen}
-      className="flex min-h-[6.5rem] w-full flex-col items-center justify-center gap-2 rounded-lg border border-[#b8bec8] bg-gray-50 px-2 py-4 text-center leading-relaxed transition hover:border-gray-400 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/50 dark:border-slate-600 dark:bg-slate-700/40 dark:hover:bg-slate-700/60"
+      className="flex min-h-[6.5rem] w-full flex-col items-center justify-center gap-2 rounded-lg bg-gray-100 px-2 py-4 text-center leading-relaxed transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/50 dark:bg-slate-700 dark:hover:bg-slate-600"
     >
       <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">{label}</span>
       {fileCount > 0 && (
@@ -132,11 +132,11 @@ function AttachmentFilesModal({
               </div>
 
               {groupFiles.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-sm text-gray-500 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-400">
+                <p className="rounded-lg bg-gray-100 px-4 py-6 text-sm text-gray-500 dark:bg-slate-700 dark:text-slate-400">
                   Файлы не прикреплены. Можно загрузить несколько файлов любого формата.
                 </p>
               ) : (
-                <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white dark:divide-slate-700 dark:border-slate-600 dark:bg-slate-800">
+                <ul className="divide-y divide-gray-200 rounded-lg bg-gray-100 dark:divide-slate-700 dark:bg-slate-700">
                   {groupFiles.map((item) => (
                     <li
                       key={item.id}
