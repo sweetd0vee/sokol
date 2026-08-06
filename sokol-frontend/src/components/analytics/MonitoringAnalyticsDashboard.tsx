@@ -306,7 +306,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
                 emptyLabel: 'Все статусы',
               },
               {
-                label: 'Доп. статусы',
+                label: 'Дополнительные статусы',
                 values: selectedAdditionalStatuses.map(
                   (value) => RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value,
                 ),
