@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { toJpeg, toPng, toSvg } from 'html-to-image';
 import { Clipboard, Expand, FileDown, Image, Minimize2, MoreVertical, X } from 'lucide-react';
 import pdfMake from 'pdfmake/build/pdfmake';
@@ -342,7 +343,7 @@ export function ChartCard({
       ref={captureRef}
       className={
         isFullscreen
-          ? 'h-[min(75vh,720px)] overflow-auto rounded-lg bg-white p-2 [&>*]:!h-full [&_.h-40]:!h-full [&_.h-48]:!h-full [&_.h-52]:!h-full [&_.h-56]:!h-full [&_.h-64]:!h-full [&_.h-72]:!h-full [&_.max-h-40]:!max-h-full'
+          ? 'h-full min-h-0 overflow-auto rounded-lg bg-white p-2 [&>*]:!h-full [&_.h-40]:!h-full [&_.h-48]:!h-full [&_.h-52]:!h-full [&_.h-56]:!h-full [&_.h-64]:!h-full [&_.h-72]:!h-full [&_.max-h-40]:!max-h-full'
           : 'rounded-lg bg-white [&_.h-40]:!h-36 [&_.max-h-40]:!max-h-36 lg:min-h-0 lg:flex-1 lg:[&>*]:!h-full lg:[&_.h-40]:!h-full lg:[&_.h-36]:!h-full lg:[&_.max-h-40]:!max-h-full'
       }
     >
@@ -370,32 +371,17 @@ export function ChartCard({
     );
   }
 
-  return (
-    <>
-      <section
-        className={`rounded-xl border bg-white p-4 opacity-70 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
-      >
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div className="min-w-0 space-y-0.5">
-            <h3 className="text-sm font-semibold text-sber-dark dark:text-sber-light">{title}</h3>
-            <p className="text-xs text-gray-500 dark:text-slate-400">{description}</p>
-          </div>
-        </div>
-        <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-gray-200 text-xs text-gray-400 dark:border-slate-600">
-          Открыто на весь экран
-        </div>
-      </section>
-
+  const fullscreenLayer = (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-[1px]"
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-[1px]"
         onClick={() => setIsFullscreen(false)}
         role="presentation"
       >
         <div
-          className={`flex max-h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl dark:bg-slate-800 ${accentClassName}`}
+          className={`flex h-[88vh] w-[92vw] max-w-7xl flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl dark:bg-slate-900 ${accentClassName}`}
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex items-start justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-slate-700">
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 bg-white px-5 py-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="min-w-0 space-y-0.5">
               <h3 className="text-base font-semibold text-sber-dark dark:text-sber-light">{title}</h3>
               <p className="text-sm text-gray-500 dark:text-slate-400">{description}</p>
@@ -413,9 +399,28 @@ export function ChartCard({
               </button>
             </div>
           </div>
-          <div className="p-4">{chartBody}</div>
+          <div className="min-h-0 flex-1 bg-white p-4 dark:bg-slate-900">{chartBody}</div>
         </div>
       </div>
+  );
+
+  return (
+    <>
+      <section
+        className={`rounded-xl border bg-white p-4 opacity-70 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
+      >
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-0.5">
+            <h3 className="text-sm font-semibold text-sber-dark dark:text-sber-light">{title}</h3>
+            <p className="text-xs text-gray-500 dark:text-slate-400">{description}</p>
+          </div>
+        </div>
+        <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-gray-200 text-xs text-gray-400 dark:border-slate-600">
+          Открыто на весь экран
+        </div>
+      </section>
+
+      {createPortal(fullscreenLayer, document.body)}
     </>
   );
 }
