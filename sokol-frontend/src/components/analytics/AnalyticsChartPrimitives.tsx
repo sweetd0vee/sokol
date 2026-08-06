@@ -177,6 +177,7 @@ export function ChartCard({
   exportSelected,
   onToggleExport,
   onResetCardLayout: _onResetCardLayout,
+  dense = false,
 }: {
   title: string;
   description: string;
@@ -187,6 +188,7 @@ export function ChartCard({
   exportSelected?: boolean;
   onToggleExport?: () => void;
   onResetCardLayout?: () => void;
+  dense?: boolean;
 }) {
   const exportCardRef = useRef<HTMLElement>(null);
   const captureRef = useRef<HTMLDivElement>(null);
@@ -344,7 +346,7 @@ export function ChartCard({
       className={
         isFullscreen
           ? 'h-full min-h-0 overflow-auto rounded-lg bg-white p-2 [&>*]:!h-full [&_.h-40]:!h-full [&_.h-48]:!h-full [&_.h-52]:!h-full [&_.h-56]:!h-full [&_.h-64]:!h-full [&_.h-72]:!h-full [&_.max-h-40]:!max-h-full'
-          : 'rounded-lg bg-white [&_.h-40]:!h-36 [&_.max-h-40]:!max-h-36 lg:min-h-0 lg:flex-1 lg:[&>*]:!h-full lg:[&_.h-40]:!h-full lg:[&_.h-36]:!h-full lg:[&_.max-h-40]:!max-h-full'
+          : 'rounded-lg bg-white [&_.h-40]:!h-24 [&_.max-h-40]:!max-h-24 lg:min-h-0 lg:flex-1 lg:[&>*]:!h-full lg:[&_.h-40]:!h-full lg:[&_.h-24]:!h-full lg:[&_.max-h-40]:!max-h-full'
       }
     >
       {children}
@@ -352,17 +354,36 @@ export function ChartCard({
   );
 
   if (!isFullscreen) {
+    if (dense) {
+      return (
+        <section
+          ref={exportCardRef}
+          className={`flex w-full flex-col rounded-lg border bg-white px-2 py-1.5 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
+        >
+          <div className="mb-1.5 flex shrink-0 items-center justify-between gap-2">
+            <h3 className="shrink-0 text-xs font-semibold leading-snug text-sber-dark dark:text-sber-light">{title}</h3>
+            {toolbar}
+          </div>
+          <div ref={captureRef} className="min-w-0">
+            {children}
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section
         ref={exportCardRef}
-        className={`flex h-full flex-col rounded-xl border bg-white p-2.5 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
+        className={`flex h-full flex-col rounded-lg border bg-white p-1.5 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
       >
-        <div className="mb-1.5 flex items-start justify-between gap-2">
-          <div className="min-w-0 space-y-0.5">
+        <div className="mb-0.5 flex items-start justify-between gap-1.5">
+          <div className="min-w-0 space-y-0">
             <div className="inline-flex items-center rounded-md pr-1 text-sber-dark dark:text-sber-light">
-              <h3 className="text-sm font-semibold leading-snug">{title}</h3>
+              <h3 className="text-xs font-semibold leading-snug">{title}</h3>
             </div>
-            <p className="text-[11px] text-gray-500 dark:text-slate-400">{description}</p>
+            {description ? (
+              <p className="text-[10px] leading-snug text-gray-500 dark:text-slate-400">{description}</p>
+            ) : null}
           </div>
           {toolbar}
         </div>
@@ -452,18 +473,20 @@ export function KpiCard({
   };
 
   return (
-    <div className={`rounded-xl border px-3.5 py-2.5 ${tones[tone]}`}>
-      <p className="text-xs opacity-80">{label}</p>
-      <p className="mt-0.5 text-xl font-semibold">
+    <div className={`flex min-h-[5rem] items-center justify-between gap-2 rounded-lg border px-3 py-3.5 ${tones[tone]}`}>
+      <div className="min-w-0">
+        <p className="truncate text-sm leading-none opacity-80">{label}</p>
+        {hint ? <p className="mt-0.5 truncate text-xs leading-none opacity-60">{hint}</p> : null}
+      </div>
+      <p className="shrink-0 text-xl font-semibold leading-none">
         {value}
-        {suffix ? <span className="ml-0.5 text-sm font-medium">{suffix}</span> : null}
+        {suffix ? <span className="ml-0.5 text-base font-medium">{suffix}</span> : null}
       </p>
-      {hint ? <p className="mt-0.5 text-[11px] opacity-70">{hint}</p> : null}
     </div>
   );
 }
 
-export function EmptyChart({ message, heightClass = 'h-36' }: { message: string; heightClass?: string }) {
+export function EmptyChart({ message, heightClass = 'h-24' }: { message: string; heightClass?: string }) {
   return (
     <div
       className={`flex ${heightClass} items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-500 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-400`}

@@ -225,13 +225,14 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Сводка KPI"
-            description="Ключевые показатели текущей выборки"
+            description=""
+            dense
             exportSectionId="summary"
             exportSelected={exportSections.isSelected('summary')}
             onToggleExport={() => exportSections.toggleSection('summary')}
             onResetCardLayout={resetCardLayout}
           >
-            <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-5">
+            <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
               <KpiCard label="Всего" value={summary.total} hint={`из ${checks.length}`} tone="violet" />
               <KpiCard label="Запланировано" value={summary.not_started} tone="slate" />
               <KpiCard label="В процессе" value={summary.in_progress} tone="amber" />
@@ -243,7 +244,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'dynamics',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 4, minW: 5, minH: 3 },
+        defaultLayout: { x: 0, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Динамика и накопительный итог"
@@ -277,7 +278,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'views',
-        defaultLayout: { x: 0, y: 6, w: 4, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 8, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Структура по видам"
@@ -309,7 +310,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'types',
-        defaultLayout: { x: 4, y: 6, w: 4, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 0, y: 4, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Структура по типам проверок"
@@ -341,7 +342,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'statusByPeriod',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 4, minW: 5, minH: 3 },
+        defaultLayout: { x: 4, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Статусы по сроку"
@@ -376,7 +377,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'documents',
-        defaultLayout: { x: 8, y: 6, w: 4, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 4, y: 4, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Готовность документов"
@@ -408,7 +409,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'auditorTreemap',
-        defaultLayout: { x: 0, y: 10, w: 12, h: 4, minW: 6, minH: 3 },
+        defaultLayout: { x: 8, y: 4, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Tree Map аудиторов"

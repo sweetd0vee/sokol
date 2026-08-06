@@ -235,8 +235,8 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
         id: 'summary',
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
         render: ({ resetCardLayout }) => (
-          <ChartCard title="Сводка KPI" description="Портфель Департамента внутреннего аудита" exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')} onResetCardLayout={resetCardLayout}>
-            <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-6">
+          <ChartCard title="Сводка KPI" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')} onResetCardLayout={resetCardLayout}>
+            <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-6">
               <KpiCard label="Проверки" value={checkSummary.total} tone="blue" />
               <KpiCard label="Рекомендации" value={recSummary.total} tone="violet" />
               <KpiCard label="Аудиторы" value={auditorLoad.length} tone="slate" />
@@ -249,7 +249,7 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
       },
       {
         id: 'portfolio',
-        defaultLayout: { x: 0, y: 2, w: 8, h: 4, minW: 5, minH: 3 },
+        defaultLayout: { x: 0, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Портфель проверок и рекомендаций" description="Общий объём работ по срокам" exportSectionId="portfolio" exportSelected={exportSections.isSelected('portfolio')} onToggleExport={() => exportSections.toggleSection('portfolio')} onResetCardLayout={resetCardLayout}>
             {portfolioSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
@@ -260,7 +260,7 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
       },
       {
         id: 'auditorLoad',
-        defaultLayout: { x: 8, y: 2, w: 4, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 4, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Нагрузка аудиторов" description="Проверки + рекомендации" exportSectionId="auditorLoad" exportSelected={exportSections.isSelected('auditorLoad')} onToggleExport={() => exportSections.toggleSection('auditorLoad')} onResetCardLayout={resetCardLayout}>
             <div className="h-40"><ResponsiveContainer width="100%" height="100%"><BarChart data={auditorLoad.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="value" name="Единицы нагрузки" fill="#1E40AF" radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
@@ -269,7 +269,7 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
       },
       {
         id: 'departmentMap',
-        defaultLayout: { x: 0, y: 6, w: 4, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 8, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Карта департаментов" description="Объекты аудита по объёму рекомендаций" exportSectionId="departmentMap" exportSelected={exportSections.isSelected('departmentMap')} onToggleExport={() => exportSections.toggleSection('departmentMap')} onResetCardLayout={resetCardLayout}>
             {departmentMap.length === 0 ? <EmptyChart message="Нет данных" /> : (
@@ -280,7 +280,7 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
       },
       {
         id: 'riskProfile',
-        defaultLayout: { x: 4, y: 6, w: 4, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 0, y: 4, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Риск-профиль рекомендаций" description="Существенность портфеля" exportSectionId="riskProfile" exportSelected={exportSections.isSelected('riskProfile')} onToggleExport={() => exportSections.toggleSection('riskProfile')} onResetCardLayout={resetCardLayout}>
             {riskProfile.length === 0 ? <EmptyChart message="Нет данных" /> : (
@@ -291,7 +291,7 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
       },
       {
         id: 'auditorMatrix',
-        defaultLayout: { x: 8, y: 6, w: 4, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 4, y: 4, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Матрица аудитор × срок" description="Тепловая таблица нагрузки" exportSectionId="auditorMatrix" exportSelected={exportSections.isSelected('auditorMatrix')} onToggleExport={() => exportSections.toggleSection('auditorMatrix')} onResetCardLayout={resetCardLayout}>
             {matrix.length === 0 ? <EmptyChart message="Нет данных" /> : (
@@ -320,7 +320,7 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
       },
       {
         id: 'documentsClosure',
-        defaultLayout: { x: 0, y: 10, w: 12, h: 4, minW: 8, minH: 3 },
+        defaultLayout: { x: 8, y: 4, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Документы и закрытие" description="Готовность документов проверок и закрытие рекомендаций" exportSectionId="documentsClosure" exportSelected={exportSections.isSelected('documentsClosure')} onToggleExport={() => exportSections.toggleSection('documentsClosure')} onResetCardLayout={resetCardLayout}>
             <div className="h-40"><ResponsiveContainer width="100%" height="100%"><BarChart data={[...documentReadiness, { name: 'Закрытие рек.', filled: recSummary.withCompletionDate, empty: Math.max(recSummary.total - recSummary.withCompletionDate, 0) }]} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /><Bar dataKey="filled" name="Готово" stackId="docs" fill="#22C55E"><LabelList dataKey="filled" position="center" fontSize={10} fill="#fff" /></Bar><Bar dataKey="empty" name="Не готово" stackId="docs" fill="#CBD5E1"><LabelList dataKey="empty" position="center" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>

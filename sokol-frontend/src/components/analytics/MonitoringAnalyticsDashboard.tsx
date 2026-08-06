@@ -188,8 +188,8 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
         id: 'summary',
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
         render: ({ resetCardLayout }) => (
-          <ChartCard title="Сводка KPI" description="Контроль сроков и исполнения" exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')} onResetCardLayout={resetCardLayout}>
-            <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-5">
+          <ChartCard title="Сводка KPI" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')} onResetCardLayout={resetCardLayout}>
+            <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
               <KpiCard label="На контроле" value={summary.byStatus.on_control} tone="slate" />
               <KpiCard label="Срок нарушен" value={summary.byAdditional.deadline_violated} tone="red" />
               <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
@@ -201,7 +201,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
       },
       {
         id: 'deadlineDynamics',
-        defaultLayout: { x: 0, y: 2, w: 8, h: 4, minW: 5, minH: 3 },
+        defaultLayout: { x: 0, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Динамика сроков исполнения" description="Статусы рекомендаций по срокам" exportSectionId="deadlineDynamics" exportSelected={exportSections.isSelected('deadlineDynamics')} onToggleExport={() => exportSections.toggleSection('deadlineDynamics')} onResetCardLayout={resetCardLayout}>
             {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
@@ -212,7 +212,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
       },
       {
         id: 'violationsByDepartment',
-        defaultLayout: { x: 8, y: 2, w: 4, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 4, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Просрочка по департаментам" description="Объекты аудита с нарушенными сроками" exportSectionId="violationsByDepartment" exportSelected={exportSections.isSelected('violationsByDepartment')} onToggleExport={() => exportSections.toggleSection('violationsByDepartment')} onResetCardLayout={resetCardLayout}>
             <div className="h-40"><ResponsiveContainer width="100%" height="100%"><BarChart data={objects.slice(0, 8)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill={ADDITIONAL_STATUS_COLORS.deadline_violated} radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
@@ -221,7 +221,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
       },
       {
         id: 'deadlineBuckets',
-        defaultLayout: { x: 0, y: 6, w: 4, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 8, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Горизонт сроков" description="Ближайшие сроки и долгий хвост" exportSectionId="deadlineBuckets" exportSelected={exportSections.isSelected('deadlineBuckets')} onToggleExport={() => exportSections.toggleSection('deadlineBuckets')} onResetCardLayout={resetCardLayout}>
             <div className="h-40"><ResponsiveContainer width="100%" height="100%"><BarChart data={deadlineBuckets} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill="#F97316" radius={[4, 4, 0, 0]}><LabelList dataKey="value" position="top" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
@@ -230,7 +230,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
       },
       {
         id: 'funnel',
-        defaultLayout: { x: 4, y: 6, w: 4, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 0, y: 4, w: 4, h: 2, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Воронка исполнения" description="От общего портфеля к закрытию" exportSectionId="funnel" exportSelected={exportSections.isSelected('funnel')} onToggleExport={() => exportSections.toggleSection('funnel')} onResetCardLayout={resetCardLayout}>
             <div className="h-40"><ResponsiveContainer width="100%" height="100%"><FunnelChart><Tooltip /><Funnel dataKey="value" data={funnel} fill="#4F46E5"><LabelList position="right" dataKey="name" fill="#334155" fontSize={11} /></Funnel></FunnelChart></ResponsiveContainer></div>
@@ -239,7 +239,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
       },
       {
         id: 'problemTreemap',
-        defaultLayout: { x: 8, y: 6, w: 4, h: 4, minW: 4, minH: 3 },
+        defaultLayout: { x: 4, y: 4, w: 8, h: 2, minW: 4, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Tree Map проблемных объектов" description="Просроченные и высокосущественные рекомендации" exportSectionId="problemTreemap" exportSelected={exportSections.isSelected('problemTreemap')} onToggleExport={() => exportSections.toggleSection('problemTreemap')} onResetCardLayout={resetCardLayout}>
             {problemObjects.length === 0 ? <EmptyChart message="Нет проблемных объектов" /> : (

@@ -34,18 +34,23 @@ type AnalyticsDashboardGridProps = {
   cards: AnalyticsGridCard[];
 };
 
-function buildStaticLayout(cards: AnalyticsGridCard[]): DashboardLayoutItem[] {
-  return cards.map((card) => ({
-    i: card.id,
-    ...card.defaultLayout,
-    static: true,
-  }));
-}
-
 export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1200);
-  const layout = useMemo(() => buildStaticLayout(cards), [cards]);
+  const summaryCards = useMemo(() => cards.filter((card) => card.id === 'summary'), [cards]);
+  const gridCards = useMemo(() => cards.filter((card) => card.id !== 'summary'), [cards]);
+  const layout = useMemo(() => {
+    if (gridCards.length === 0) {
+      return [];
+    }
+    const minY = Math.min(...gridCards.map((card) => card.defaultLayout.y));
+    return gridCards.map((card) => ({
+      i: card.id,
+      ...card.defaultLayout,
+      y: card.defaultLayout.y - minY,
+      static: true,
+    }));
+  }, [gridCards]);
 
   useEffect(() => {
     const node = containerRef.current;
@@ -61,31 +66,38 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
     return () => observer.disconnect();
   }, []);
 
+  const renderCard = (card: AnalyticsGridCard) => card.render({ resetCardLayout: () => undefined });
+
   return (
-    <div className="w-full">
+    <div className="flex w-full flex-col gap-2.5">
+      {summaryCards.map((card) => (
+        <div key={card.id} className="w-full">
+          {renderCard(card)}
+        </div>
+      ))}
       <div className="hidden lg:block" ref={containerRef}>
         <BaseGridLayout
           className="layout"
           layout={layout}
           cols={12}
           width={containerWidth}
-          rowHeight={32}
-          margin={[4, 4]}
+          rowHeight={36}
+          margin={[2, 2]}
           containerPadding={[0, 0]}
           isDraggable={false}
           isResizable={false}
           compactType="vertical"
         >
-          {cards.map((card) => (
+          {gridCards.map((card) => (
             <div key={card.id} className="min-h-0 [&>section]:h-full">
-              {card.render({ resetCardLayout: () => undefined })}
+              {renderCard(card)}
             </div>
           ))}
         </BaseGridLayout>
       </div>
-      <div className="space-y-3 lg:hidden">
-        {cards.map((card) => (
-          <div key={card.id}>{card.render({ resetCardLayout: () => undefined })}</div>
+      <div className="space-y-2.5 lg:hidden">
+        {gridCards.map((card) => (
+          <div key={card.id}>{renderCard(card)}</div>
         ))}
       </div>
     </div>
