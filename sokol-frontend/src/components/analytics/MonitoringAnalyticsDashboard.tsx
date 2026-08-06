@@ -201,49 +201,49 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
       },
       {
         id: 'deadlineDynamics',
-        defaultLayout: { x: 0, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Динамика сроков исполнения" description="Статусы рекомендаций по срокам" exportSectionId="deadlineDynamics" exportSelected={exportSections.isSelected('deadlineDynamics')} onToggleExport={() => exportSections.toggleSection('deadlineDynamics')} onResetCardLayout={resetCardLayout}>
             {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-40"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]}><LabelList dataKey={status.value} position="center" fontSize={10} fill="#fff" /></Bar>)}</BarChart></ResponsiveContainer></div>
+              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]}><LabelList dataKey={status.value} position="center" fontSize={10} fill="#fff" /></Bar>)}</BarChart></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),
       },
       {
         id: 'violationsByDepartment',
-        defaultLayout: { x: 4, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
+        defaultLayout: { x: 4, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Просрочка по департаментам" description="Объекты аудита с нарушенными сроками" exportSectionId="violationsByDepartment" exportSelected={exportSections.isSelected('violationsByDepartment')} onToggleExport={() => exportSections.toggleSection('violationsByDepartment')} onResetCardLayout={resetCardLayout}>
-            <div className="h-40"><ResponsiveContainer width="100%" height="100%"><BarChart data={objects.slice(0, 8)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill={ADDITIONAL_STATUS_COLORS.deadline_violated} radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
+            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={objects.slice(0, 8)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill={ADDITIONAL_STATUS_COLORS.deadline_violated} radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
           </ChartCard>
         ),
       },
       {
         id: 'deadlineBuckets',
-        defaultLayout: { x: 8, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
+        defaultLayout: { x: 8, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Горизонт сроков" description="Ближайшие сроки и долгий хвост" exportSectionId="deadlineBuckets" exportSelected={exportSections.isSelected('deadlineBuckets')} onToggleExport={() => exportSections.toggleSection('deadlineBuckets')} onResetCardLayout={resetCardLayout}>
-            <div className="h-40"><ResponsiveContainer width="100%" height="100%"><BarChart data={deadlineBuckets} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill="#F97316" radius={[4, 4, 0, 0]}><LabelList dataKey="value" position="top" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
+            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={deadlineBuckets} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill="#F97316" radius={[4, 4, 0, 0]}><LabelList dataKey="value" position="top" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
           </ChartCard>
         ),
       },
       {
         id: 'funnel',
-        defaultLayout: { x: 0, y: 4, w: 4, h: 2, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Воронка исполнения" description="От общего портфеля к закрытию" exportSectionId="funnel" exportSelected={exportSections.isSelected('funnel')} onToggleExport={() => exportSections.toggleSection('funnel')} onResetCardLayout={resetCardLayout}>
-            <div className="h-40"><ResponsiveContainer width="100%" height="100%"><FunnelChart><Tooltip /><Funnel dataKey="value" data={funnel} fill="#4F46E5"><LabelList position="right" dataKey="name" fill="#334155" fontSize={11} /></Funnel></FunnelChart></ResponsiveContainer></div>
+            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><FunnelChart><Tooltip /><Funnel dataKey="value" data={funnel} fill="#4F46E5"><LabelList position="right" dataKey="name" fill="#334155" fontSize={11} /></Funnel></FunnelChart></ResponsiveContainer></div>
           </ChartCard>
         ),
       },
       {
         id: 'problemTreemap',
-        defaultLayout: { x: 4, y: 4, w: 8, h: 2, minW: 4, minH: 2 },
+        defaultLayout: { x: 4, y: 5, w: 8, h: 3, minW: 4, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Tree Map проблемных объектов" description="Просроченные и высокосущественные рекомендации" exportSectionId="problemTreemap" exportSelected={exportSections.isSelected('problemTreemap')} onToggleExport={() => exportSections.toggleSection('problemTreemap')} onResetCardLayout={resetCardLayout}>
             {problemObjects.length === 0 ? <EmptyChart message="Нет проблемных объектов" /> : (
-              <div className="h-40"><ResponsiveContainer width="100%" height="100%"><Treemap data={problemObjects.map((item, index) => ({ ...item, fill: PALETTE[(index + 5) % PALETTE.length] }))} dataKey="value" nameKey="name" content={<TreemapContent />} /></ResponsiveContainer></div>
+              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><Treemap data={problemObjects.map((item, index) => ({ ...item, fill: PALETTE[(index + 5) % PALETTE.length] }))} dataKey="value" nameKey="name" content={<TreemapContent />} /></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),
@@ -253,7 +253,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
   );
 
   return (
-    <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-start">
+    <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-stretch">
       <AnalyticsFilterSidebar
         periodSlice={periodSlice}
         onPeriodSliceChange={handlePeriodSliceChange}
@@ -326,7 +326,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
         </div>
       </AnalyticsFilterSidebar>
 
-      <main className="min-w-0 flex-1">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col">
         <AnalyticsDashboardGrid storageKey="sokol.analytics.layout.monitoring" cards={cards} />
       </main>
     </div>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { toJpeg, toPng, toSvg } from 'html-to-image';
-import { Clipboard, Expand, FileDown, Image, Minimize2, MoreVertical, X } from 'lucide-react';
+import { Clipboard, Expand, FileDown, Image, Minimize2, MoreHorizontal, X } from 'lucide-react';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
@@ -73,14 +73,17 @@ function ChartToolbar({
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
       {onToggleExport ? (
-        <label className="inline-flex min-w-[6rem] cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] font-medium text-gray-700 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-200">
+        <label
+          className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-300 dark:hover:border-sber-light/70 dark:hover:text-sber-light"
+          title="В отчёт"
+          aria-label="В отчёт"
+        >
           <input
             type="checkbox"
             checked={Boolean(exportSelected)}
             onChange={onToggleExport}
             className="h-3.5 w-3.5 accent-sber-dark"
           />
-          В отчёт
         </label>
       ) : null}
 
@@ -105,7 +108,7 @@ function ChartToolbar({
           aria-haspopup="menu"
           aria-expanded={isDownloadOpen}
         >
-          <MoreVertical className="h-3.5 w-3.5" />
+          <MoreHorizontal className="h-3.5 w-3.5" />
         </button>
         {isDownloadOpen ? (
           <div
@@ -345,8 +348,8 @@ export function ChartCard({
       ref={captureRef}
       className={
         isFullscreen
-          ? 'h-full min-h-0 overflow-auto rounded-lg bg-white p-2 [&>*]:!h-full [&_.h-40]:!h-full [&_.h-48]:!h-full [&_.h-52]:!h-full [&_.h-56]:!h-full [&_.h-64]:!h-full [&_.h-72]:!h-full [&_.max-h-40]:!max-h-full'
-          : 'rounded-lg bg-white [&_.h-40]:!h-24 [&_.max-h-40]:!max-h-24 lg:min-h-0 lg:flex-1 lg:[&>*]:!h-full lg:[&_.h-40]:!h-full lg:[&_.h-24]:!h-full lg:[&_.max-h-40]:!max-h-full'
+          ? 'h-full min-h-0 overflow-auto rounded-lg bg-white p-2 [&>*]:!h-full [&_.recharts-responsive-container]:!h-full'
+          : 'min-h-[13rem] rounded-lg bg-white lg:min-h-0 lg:flex-1 lg:[&>*]:!h-full lg:[&_.recharts-responsive-container]:!h-full'
       }
     >
       {children}

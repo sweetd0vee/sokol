@@ -34,9 +34,14 @@ type AnalyticsDashboardGridProps = {
   cards: AnalyticsGridCard[];
 };
 
+const GRID_MARGIN_Y = 2;
+const MIN_ROW_HEIGHT = 48;
+
 export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const gridAreaRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1200);
+  const [rowHeight, setRowHeight] = useState(MIN_ROW_HEIGHT);
   const summaryCards = useMemo(() => cards.filter((card) => card.id === 'summary'), [cards]);
   const gridCards = useMemo(() => cards.filter((card) => card.id !== 'summary'), [cards]);
   const layout = useMemo(() => {
@@ -52,48 +57,67 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
     }));
   }, [gridCards]);
 
+  const rowSpan = useMemo(() => {
+    if (layout.length === 0) {
+      return 1;
+    }
+    return Math.max(...layout.map((item) => item.y + item.h), 1);
+  }, [layout]);
+
   useEffect(() => {
-    const node = containerRef.current;
-    if (!node) {
+    const widthNode = containerRef.current;
+    const heightNode = gridAreaRef.current;
+    if (!widthNode || !heightNode) {
       return undefined;
     }
-    const updateWidth = () => {
-      setContainerWidth(Math.max(Math.floor(node.getBoundingClientRect().width), 320));
+
+    const update = () => {
+      setContainerWidth(Math.max(Math.floor(widthNode.getBoundingClientRect().width), 320));
+      const available = Math.floor(heightNode.getBoundingClientRect().height);
+      if (available < 80) {
+        return;
+      }
+      const next = Math.floor((available - GRID_MARGIN_Y * Math.max(rowSpan - 1, 0)) / rowSpan);
+      setRowHeight(Math.max(MIN_ROW_HEIGHT, next));
     };
-    updateWidth();
-    const observer = new ResizeObserver(updateWidth);
-    observer.observe(node);
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(widthNode);
+    observer.observe(heightNode);
     return () => observer.disconnect();
-  }, []);
+  }, [rowSpan]);
 
   const renderCard = (card: AnalyticsGridCard) => card.render({ resetCardLayout: () => undefined });
 
   return (
-    <div className="flex w-full flex-col gap-2.5">
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-2.5">
       {summaryCards.map((card) => (
-        <div key={card.id} className="w-full">
+        <div key={card.id} className="w-full shrink-0">
           {renderCard(card)}
         </div>
       ))}
-      <div className="hidden lg:block" ref={containerRef}>
-        <BaseGridLayout
-          className="layout"
-          layout={layout}
-          cols={12}
-          width={containerWidth}
-          rowHeight={36}
-          margin={[2, 2]}
-          containerPadding={[0, 0]}
-          isDraggable={false}
-          isResizable={false}
-          compactType="vertical"
-        >
-          {gridCards.map((card) => (
-            <div key={card.id} className="min-h-0 [&>section]:h-full">
-              {renderCard(card)}
-            </div>
-          ))}
-        </BaseGridLayout>
+      <div className="hidden min-h-0 flex-1 lg:block" ref={gridAreaRef}>
+        <div ref={containerRef} className="h-full w-full">
+          <BaseGridLayout
+            className="layout h-full"
+            layout={layout}
+            cols={12}
+            width={containerWidth}
+            rowHeight={rowHeight}
+            margin={[GRID_MARGIN_Y, GRID_MARGIN_Y]}
+            containerPadding={[0, 0]}
+            isDraggable={false}
+            isResizable={false}
+            compactType="vertical"
+          >
+            {gridCards.map((card) => (
+              <div key={card.id} className="min-h-0 [&>section]:h-full">
+                {renderCard(card)}
+              </div>
+            ))}
+          </BaseGridLayout>
+        </div>
       </div>
       <div className="space-y-2.5 lg:hidden">
         {gridCards.map((card) => (

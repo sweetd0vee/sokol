@@ -244,7 +244,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'dynamics',
-        defaultLayout: { x: 0, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Динамика и накопительный итог"
@@ -257,7 +257,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
             {flowSeries.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <div className="h-40">
+              <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={flowSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -278,7 +278,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'views',
-        defaultLayout: { x: 8, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
+        defaultLayout: { x: 8, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Структура по видам"
@@ -291,7 +291,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
             {viewDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <div className="h-40">
+              <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={viewDistribution} layout="vertical" margin={{ top: 8, right: 24, left: 16, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -310,7 +310,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'types',
-        defaultLayout: { x: 0, y: 4, w: 4, h: 2, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 5, w: 3, h: 3, minW: 2, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Структура по типам проверок"
@@ -323,7 +323,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
             {typeDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <div className="h-40">
+              <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={typeDistribution} dataKey="value" nameKey="name" cx="50%" cy="46%" innerRadius={42} outerRadius={68} label>
@@ -342,7 +342,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'statusByPeriod',
-        defaultLayout: { x: 4, y: 2, w: 4, h: 2, minW: 3, minH: 2 },
+        defaultLayout: { x: 4, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Статусы по сроку"
@@ -355,7 +355,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
             {periodSeries.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <div className="h-40">
+              <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -377,7 +377,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'documents',
-        defaultLayout: { x: 4, y: 4, w: 4, h: 2, minW: 3, minH: 2 },
+        defaultLayout: { x: 3, y: 5, w: 3, h: 3, minW: 2, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Готовность документов"
@@ -387,7 +387,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
             onToggleExport={() => exportSections.toggleSection('documents')}
             onResetCardLayout={resetCardLayout}
           >
-            <div className="h-40">
+            <div className="h-full min-h-[13rem]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={documentReadiness} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -409,7 +409,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'auditorTreemap',
-        defaultLayout: { x: 8, y: 4, w: 4, h: 2, minW: 3, minH: 2 },
+        defaultLayout: { x: 6, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Tree Map аудиторов"
@@ -422,7 +422,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
             {auditorDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <div className="h-40">
+              <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
                   <Treemap
                     data={auditorDistribution.map((item, index) => ({
@@ -457,7 +457,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
   );
 
   return (
-    <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-start">
+    <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-stretch">
       <AnalyticsFilterSidebar
         periodSlice={periodSlice}
         onPeriodSliceChange={handlePeriodSliceChange}
@@ -500,7 +500,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
         )}
       />
 
-      <main className="min-w-0 flex-1">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col">
         <AnalyticsDashboardGrid storageKey="sokol.analytics.layout.checks" cards={cards} />
       </main>
     </div>
