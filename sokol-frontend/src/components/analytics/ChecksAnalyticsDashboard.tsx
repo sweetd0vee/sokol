@@ -208,8 +208,8 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
         defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
-            title="Динамика и накопительный итог"
-            description="Проверки по периоду и накопление портфеля"
+            title="Количество проверок"
+            description="Динамика и накопительный итог"
             exportSectionId="dynamics"
             exportSelected={exportSections.isSelected('dynamics')}
             onToggleExport={() => exportSections.toggleSection('dynamics')}
@@ -220,7 +220,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
             ) : (
               <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={flowSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}>
+                  <ComposedChart data={flowSeries} margin={{ top: 22, right: 12, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                     <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
@@ -229,7 +229,9 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
                     <Bar dataKey="total" name="За период" fill={CHECKS_PALETTE[11]} radius={[4, 4, 0, 0]}>
                       <LabelList dataKey="total" position="top" fontSize={10} />
                     </Bar>
-                    <Line type="monotone" dataKey="cumulative" name="Накопительно" stroke={CHECKS_PALETTE[0]} strokeWidth={2.5} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="cumulative" name="Всего" stroke={CHECKS_PALETTE[0]} strokeWidth={2.5} dot={{ r: 3 }}>
+                      <LabelList dataKey="cumulative" position="top" fontSize={10} fill={CHECKS_PALETTE[0]} offset={8} />
+                    </Line>
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>

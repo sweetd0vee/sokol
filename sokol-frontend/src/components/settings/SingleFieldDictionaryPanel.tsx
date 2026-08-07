@@ -1,6 +1,7 @@
 import { Input } from '../ui/Input';
 import { Modal, ModalActions } from '../ui/Modal';
-import { SettingsTableCard } from './SettingsTableCard';
+import { ActionButtons } from './ActionButtons';
+import { SettingsTableCard, type TableRow } from './SettingsTableCard';
 import { useSingleFieldDictionary } from './useSingleFieldDictionary';
 
 type EntityId = string | number;
@@ -52,12 +53,24 @@ export function SingleFieldDictionaryPanel<T>({
     searchText,
   });
 
+  const rows: TableRow[] = dict.items.map((item) => ({
+    key: item.key,
+    cells: [
+      item.value,
+      <ActionButtons
+        key={`${item.key}-actions`}
+        onEdit={() => dict.beginEdit(item)}
+        onDelete={() => onRequestDelete(item.key, item.id)}
+      />,
+    ],
+  }));
+
   return (
     <>
       <SettingsTableCard
         title={title}
         columns={[columnLabel, 'Действия']}
-        rows={dict.buildRows(onRequestDelete)}
+        rows={rows}
         isLoading={dict.isLoading}
         error={dict.error}
         onAdd={dict.openAdd}

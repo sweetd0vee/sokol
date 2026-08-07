@@ -113,7 +113,24 @@ AUDIT_OBJECTS = [
 ]
 
 CHECK_TYPES = [("planned", 58), ("unscheduled", 24), ("thematic", 18)]
-CHECK_VIEWS = [("бизнес", 34), ("ИТ", 24), ("риски", 19), ("корпоуправление", 13), ("иные", 10)]
+# Веса согласованы со справочником check_kinds (сумма = 100).
+CHECK_VIEWS = [
+    ("Корпо", 10),
+    ("Розница", 10),
+    ("Стратегия и финансы", 8),
+    ("Риски", 12),
+    ("ИТ", 12),
+    ("Безопасность", 8),
+    ("Комплаенс", 8),
+    ("Процессинг, трансформация", 6),
+    ("Маркетинг", 5),
+    ("Управление делами", 4),
+    ("АХД", 4),
+    ("Кадры", 5),
+    ("Мотивация", 3),
+    ("Юристы", 3),
+    ("Холдинг", 2),
+]
 CHECK_STATUSES = [("completed", 48), ("in_progress", 34), ("not_started", 18)]
 REC_STATUSES = [("in_progress", 34), ("on_control", 27), ("completed", 25), ("unresolved", 14)]
 MATERIALITY_LEVELS = [("средний", 47), ("высокий", 31), ("низкий", 22)]
@@ -243,7 +260,7 @@ def _recommendations_per_check(check: dict, index: int) -> int:
     base = {"completed": 1, "in_progress": 2, "not_started": 1}[check["status"]]
     if check["check_type"] == "unscheduled":
         base += random.choice([1, 2, 3])
-    if check["check_view"] in {"ИТ", "риски"}:
+    if check["check_view"] in {"ИТ", "Риски"}:
         base += random.choice([0, 1, 2])
     if index % 11 == 0:
         base += random.randint(3, 6)

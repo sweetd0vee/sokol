@@ -1,7 +1,5 @@
 import { useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ActionButtons } from './ActionButtons';
-import type { TableRow } from './SettingsTableCard';
 import { filterBySearch } from './settingsHelpers';
 
 type EntityId = string | number;
@@ -20,6 +18,12 @@ type UseSingleFieldDictionaryOptions<T> = {
   getValue: (item: T) => string;
   fieldKey: string;
   searchText?: (item: T) => string;
+};
+
+export type SingleFieldDictionaryItem = {
+  key: string;
+  id?: EntityId;
+  value: string;
 };
 
 export function useSingleFieldDictionary<T>({
@@ -48,28 +52,17 @@ export function useSingleFieldDictionary<T>({
 
   const filtered = filterBySearch(data ?? [], search, searchText ?? getValue);
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: [...queryKey] });
+  const items: SingleFieldDictionaryItem[] = filtered.map((item, index) => {
+    const value = getValue(item);
+    const id = getId(item);
+    return {
+      key: String(id ?? value ?? index),
+      id,
+      value,
+    };
+  });
 
-  const buildRows = (onRequestDelete: (key: string, id?: EntityId) => void): TableRow[] =>
-    filtered.map((item, index) => {
-      const value = getValue(item);
-      const id = getId(item);
-      const key = String(id ?? value ?? index);
-      return {
-        key,
-        cells: [
-          value,
-          <ActionButtons
-            key={`${key}-actions`}
-            onEdit={() => {
-              setEditedValue(value);
-              setEditCandidate({ key, id, value });
-            }}
-            onDelete={() => onRequestDelete(key, id)}
-          />,
-        ],
-      };
-    });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: [...queryKey] });
 
   const handleConfirmAdd = async (event?: FormEvent) => {
     event?.preventDefault();
@@ -118,12 +111,16 @@ export function useSingleFieldDictionary<T>({
     setEditCandidate,
     editedValue,
     setEditedValue,
-    buildRows,
+    items,
     handleConfirmAdd,
     handleConfirmEdit,
     openAdd: () => {
       setNewValue('');
       setIsAddOpen(true);
+    },
+    beginEdit: (item: SingleFieldDictionaryItem) => {
+      setEditedValue(item.value);
+      setEditCandidate({ key: item.key, id: item.id, value: item.value });
     },
   };
 }

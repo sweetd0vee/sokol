@@ -5,10 +5,11 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+from app.db.seed_check_kinds import CHECK_KINDS
 from app.utils.check_key import assign_serial_numbers
 
 CHECK_TYPES = ("planned", "unscheduled", "thematic")
-CHECK_VIEWS = ("ИТ", "бизнес", "риски", "корпоуправление", "иные")
+CHECK_VIEWS = tuple(CHECK_KINDS)
 CHECK_STATUSES = ("not_started", "in_progress", "completed")
 
 REC_STATUSES = ("completed", "unresolved", "on_control", "in_progress")

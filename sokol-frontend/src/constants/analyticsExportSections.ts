@@ -2,7 +2,7 @@
 
 export const CHECK_EXPORT_SECTIONS = [
   { id: 'summary', label: 'Сводка KPI', sheetName: 'Сводка', headerFill: '312E81' },
-  { id: 'dynamics', label: 'Динамика и накопительный итог', sheetName: 'Динамика', headerFill: '1D4ED8' },
+  { id: 'dynamics', label: 'Количество проверок', sheetName: 'Количество проверок', headerFill: '1D4ED8' },
   { id: 'views', label: 'Виды проверок', sheetName: 'Виды проверок', headerFill: '7C3AED' },
   { id: 'types', label: 'Типы проверок', sheetName: 'Типы проверок', headerFill: '0E7490' },
 ] as const;
