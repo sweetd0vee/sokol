@@ -3,13 +3,10 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   ComposedChart,
   LabelList,
   Legend,
   Line,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   Treemap,
@@ -22,6 +19,7 @@ import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashb
 import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { FocusableDonutChart } from './FocusableDonutChart';
 import { PALETTE } from './analyticsPalette';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { DVA_EXPORT_SECTIONS, type DvaExportSectionId } from '../../constants/analyticsExportSections';
@@ -40,7 +38,6 @@ import {
   type PeriodGranularity,
 } from '../../utils/checkAnalytics';
 import {
-  MATERIALITY_COLORS,
   buildAuditObjectDistribution,
   buildMaterialityDistribution,
   buildPeriodSeries as buildRecommendationPeriodSeries,
@@ -283,8 +280,10 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
         defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Риск-профиль рекомендаций" description="Существенность портфеля" exportSectionId="riskProfile" exportSelected={exportSections.isSelected('riskProfile')} onToggleExport={() => exportSections.toggleSection('riskProfile')} onResetCardLayout={resetCardLayout}>
-            {riskProfile.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={riskProfile} dataKey="value" nameKey="name" cx="50%" cy="46%" innerRadius={32} outerRadius={56} label>{riskProfile.map((entry) => <Cell key={entry.name} fill={entry.color ?? MATERIALITY_COLORS.средний} />)}</Pie><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /></PieChart></ResponsiveContainer></div>
+            {riskProfile.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <FocusableDonutChart data={riskProfile} />
             )}
           </ChartCard>
         ),

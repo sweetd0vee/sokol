@@ -5,15 +5,12 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   ComposedChart,
   Funnel,
   FunnelChart,
   LabelList,
   Legend,
   Line,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   Treemap,
@@ -31,6 +28,7 @@ import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashb
 import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { FocusableDonutChart } from './FocusableDonutChart';
 import { PALETTE } from './analyticsPalette';
 import { exportRecommendationsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import {
@@ -308,8 +306,10 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
         defaultLayout: { x: ((index + 1) % 3) * 4, y: 5 + Math.floor((index + 1) / 3) * 3, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
           <ChartCard title={title as string} description="Распределение выбранной выборки" exportSectionId={id as string} exportSelected={exportSections.isSelected(id as RecommendationExportSectionId)} onToggleExport={() => exportSections.toggleSection(id as RecommendationExportSectionId)} onResetCardLayout={resetCardLayout}>
-            {(data as Array<{ name: string; value: number; color?: string }>).length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={data as Array<{ name: string; value: number; color?: string }>} dataKey="value" nameKey="name" cx="50%" cy="46%" innerRadius={34} outerRadius={58} label>{(data as Array<{ name: string; value: number; color?: string }>).map((entry, colorIndex) => <Cell key={entry.name} fill={entry.color ?? PALETTE[colorIndex % PALETTE.length]} />)}</Pie><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /></PieChart></ResponsiveContainer></div>
+            {(data as Array<{ name: string; value: number; color?: string }>).length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <FocusableDonutChart data={data as Array<{ name: string; value: number; color?: string }>} />
             )}
           </ChartCard>
         ),

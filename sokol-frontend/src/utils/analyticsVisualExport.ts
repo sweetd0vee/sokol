@@ -221,17 +221,20 @@ async function buildVisualXlsx(options: {
     sheet.getRow(2).height = 18;
 
     const imageId = workbook.addImage({
-      base64: chart.dataUrl,
+      // ExcelJS strips a data-URL prefix at the first comma; keep a full data URL.
+      base64: chart.dataUrl.startsWith('data:')
+        ? chart.dataUrl
+        : `data:image/png;base64,${chart.dataUrl}`,
       extension: 'png',
     });
 
-    const fitted = fitImageSize(chart.width, chart.height, 920, 480);
-    // ExcelJS uses approximate pixel positioning; place under the title block.
+    const fitted = fitImageSize(chart.width * 2, chart.height * 2, 960, 520);
     sheet.addImage(imageId, {
-      tl: { col: 0.2, row: 3.2 },
+      tl: { col: 0.15, row: 2.8 },
       ext: { width: fitted.width, height: fitted.height },
       editAs: 'oneCell',
     });
+    sheet.getRow(20).height = Math.max(Math.round(fitted.height * 0.75), 120);
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
@@ -337,8 +340,288 @@ async function buildVisualDocx(options: {
   URL.revokeObjectURL(url);
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+async function buildVisualHtml(options: {
+  documentTitle: string;
+  meta: VisualExportMetaRow[];
+  charts: DashboardChartCapture[];
+  filenamePrefix: string;
+}) {
+  const { documentTitle, meta, charts, filenamePrefix } = options;
+  const metaRows = meta
+    .map(
+      ([label, value]) => `
+        <tr>
+          <th>${escapeHtml(label)}</th>
+          <td>${escapeHtml(value)}</td>
+        </tr>`,
+    )
+    .join('');
+
+  const chartSections = charts
+    .map((chart, index) => {
+      const chartBody = chart.svgMarkup
+        ? `<div class="chart-svg" data-chart-index="${index}">${chart.svgMarkup}</div>`
+        : `<img class="chart-img" src="${chart.dataUrl}" alt="${escapeHtml(chart.title)}" />`;
+      return `
+      <section class="card" id="chart-${escapeHtml(chart.id)}">
+        <header>
+          <h2>${escapeHtml(chart.title)}</h2>
+          <p>${escapeHtml(chart.description)}</p>
+        </header>
+        <div class="chart-frame">
+          ${chartBody}
+        </div>
+      </section>`;
+    })
+    .join('\n');
+
+  const html = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(documentTitle)}</title>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #64748b;
+      --brand: #003366;
+      --line: #e2e8f0;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --accent: #6699ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(102,153,255,0.16), transparent 32%),
+        linear-gradient(180deg, #eef4ff 0%, var(--bg) 40%, #ffffff 100%);
+      line-height: 1.5;
+    }
+    .page {
+      width: min(1120px, calc(100% - 32px));
+      margin: 24px auto 48px;
+    }
+    .hero, .card, .meta {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+    }
+    .hero {
+      padding: 28px 28px 22px;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      margin: 0 0 8px;
+      color: var(--brand);
+      font-size: 1.8rem;
+    }
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+    }
+    .meta {
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      width: 28%;
+      color: var(--brand);
+      background: #f1f5f9;
+      font-weight: 650;
+    }
+    tr:last-child th, tr:last-child td { border-bottom: 0; }
+    .toc {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 20px;
+    }
+    .toc a {
+      text-decoration: none;
+      color: var(--brand);
+      background: #e8f0ff;
+      border: 1px solid #c5d8ff;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      transition: 0.15s ease;
+    }
+    .toc a:hover {
+      background: #d7e6ff;
+    }
+    .card {
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card header h2 {
+      margin: 0 0 6px;
+      color: var(--brand);
+      font-size: 1.25rem;
+    }
+    .card header p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .chart-frame {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      padding: 12px;
+      overflow: auto;
+    }
+    .chart-svg svg, .chart-img {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 560px;
+    }
+    .chart-svg svg {
+      cursor: crosshair;
+    }
+    .chart-svg svg .recharts-layer path,
+    .chart-svg svg .recharts-layer rect,
+    .chart-svg svg .recharts-sector,
+    .chart-svg svg .recharts-rectangle {
+      transition: opacity 0.15s ease, filter 0.15s ease;
+    }
+    .chart-svg.is-hovering svg .recharts-layer path,
+    .chart-svg.is-hovering svg .recharts-layer rect,
+    .chart-svg.is-hovering svg .recharts-sector,
+    .chart-svg.is-hovering svg .recharts-rectangle {
+      opacity: 0.35;
+    }
+    .chart-svg.is-hovering svg .recharts-layer path:hover,
+    .chart-svg.is-hovering svg .recharts-layer rect:hover,
+    .chart-svg.is-hovering svg .recharts-sector:hover,
+    .chart-svg.is-hovering svg .recharts-rectangle:hover,
+    .chart-svg svg [data-active="true"] {
+      opacity: 1 !important;
+      filter: brightness(1.05);
+    }
+    .tooltip {
+      position: fixed;
+      z-index: 20;
+      pointer-events: none;
+      display: none;
+      min-width: 120px;
+      max-width: 280px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.92);
+      color: #fff;
+      font-size: 12px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+    }
+    .footnote {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    @media print {
+      body { background: #fff; }
+      .page { width: 100%; margin: 0; }
+      .hero, .card, .meta { box-shadow: none; }
+      .toc { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <h1>${escapeHtml(documentTitle)}</h1>
+      <p>Интерактивный HTML-отчёт по выбранным дашбордам. Наведите курсор на элементы графика, чтобы подсветить серию.</p>
+    </section>
+    <section class="meta">
+      <table>
+        <tbody>${metaRows}</tbody>
+      </table>
+    </section>
+    <nav class="toc">
+      ${charts
+        .map((chart) => `<a href="#chart-${escapeHtml(chart.id)}">${escapeHtml(chart.title)}</a>`)
+        .join('')}
+    </nav>
+    ${chartSections}
+    <p class="footnote">SOKOL · сформировано ${escapeHtml(new Date().toLocaleString('ru-RU'))}. SVG-графики масштабируются и поддерживают подсветку серий; при отсутствии SVG встроен PNG.</p>
+  </div>
+  <div class="tooltip" id="chart-tooltip"></div>
+  <script>
+    (function () {
+      var tooltip = document.getElementById('chart-tooltip');
+      document.querySelectorAll('.chart-svg').forEach(function (frame) {
+        frame.addEventListener('pointerover', function (event) {
+          var target = event.target;
+          if (!target || !target.closest) return;
+          var hit = target.closest('path, rect, circle, polygon, polyline, .recharts-sector, .recharts-rectangle');
+          if (!hit || !frame.contains(hit)) return;
+          frame.classList.add('is-hovering');
+          frame.querySelectorAll('[data-active="true"]').forEach(function (node) {
+            node.removeAttribute('data-active');
+          });
+          hit.setAttribute('data-active', 'true');
+          var label =
+            hit.getAttribute('name') ||
+            hit.getAttribute('aria-label') ||
+            hit.getAttribute('data-name') ||
+            (hit.textContent || '').trim() ||
+            'Значение графика';
+          tooltip.textContent = label;
+          tooltip.style.display = 'block';
+        });
+        frame.addEventListener('pointermove', function (event) {
+          if (tooltip.style.display === 'none') return;
+          tooltip.style.left = event.clientX + 14 + 'px';
+          tooltip.style.top = event.clientY + 14 + 'px';
+        });
+        frame.addEventListener('pointerleave', function () {
+          frame.classList.remove('is-hovering');
+          frame.querySelectorAll('[data-active="true"]').forEach(function (node) {
+            node.removeAttribute('data-active');
+          });
+          tooltip.style.display = 'none';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${filenamePrefix}-${stamp()}.html`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function exportVisualAnalyticsReport(options: {
-  format: 'xlsx' | 'pdf' | 'docx';
+  format: 'xlsx' | 'pdf' | 'docx' | 'html';
   kind: VisualAnalyticsKind;
   documentTitle: string;
   filenamePrefix: string;
@@ -364,6 +647,16 @@ export async function exportVisualAnalyticsReport(options: {
 
   if (options.format === 'docx') {
     await buildVisualDocx({
+      documentTitle: options.documentTitle,
+      meta: options.meta,
+      charts,
+      filenamePrefix: options.filenamePrefix,
+    });
+    return;
+  }
+
+  if (options.format === 'html') {
+    await buildVisualHtml({
       documentTitle: options.documentTitle,
       meta: options.meta,
       charts,

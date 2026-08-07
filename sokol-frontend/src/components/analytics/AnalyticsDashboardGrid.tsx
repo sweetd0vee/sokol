@@ -42,6 +42,9 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
   const gridAreaRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1200);
   const [rowHeight, setRowHeight] = useState(MIN_ROW_HEIGHT);
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)').matches : true,
+  );
   const summaryCards = useMemo(() => cards.filter((card) => card.id === 'summary'), [cards]);
   const gridCards = useMemo(() => cards.filter((card) => card.id !== 'summary'), [cards]);
   const layout = useMemo(() => {
@@ -65,6 +68,17 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
   }, [layout]);
 
   useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)');
+    const onChange = () => setIsDesktop(media.matches);
+    onChange();
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!isDesktop) {
+      return undefined;
+    }
     const widthNode = containerRef.current;
     const heightNode = gridAreaRef.current;
     if (!widthNode || !heightNode) {
@@ -86,7 +100,7 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
     observer.observe(widthNode);
     observer.observe(heightNode);
     return () => observer.disconnect();
-  }, [rowSpan]);
+  }, [isDesktop, rowSpan]);
 
   const renderCard = (card: AnalyticsGridCard) => card.render({ resetCardLayout: () => undefined });
 
@@ -97,33 +111,36 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
           {renderCard(card)}
         </div>
       ))}
-      <div className="hidden min-h-0 flex-1 lg:block" ref={gridAreaRef}>
-        <div ref={containerRef} className="h-full w-full">
-          <BaseGridLayout
-            className="layout h-full"
-            layout={layout}
-            cols={12}
-            width={containerWidth}
-            rowHeight={rowHeight}
-            margin={[GRID_MARGIN_Y, GRID_MARGIN_Y]}
-            containerPadding={[0, 0]}
-            isDraggable={false}
-            isResizable={false}
-            compactType="vertical"
-          >
-            {gridCards.map((card) => (
-              <div key={card.id} className="min-h-0 [&>section]:h-full">
-                {renderCard(card)}
-              </div>
-            ))}
-          </BaseGridLayout>
+      {isDesktop ? (
+        <div className="min-h-0 flex-1" ref={gridAreaRef}>
+          <div ref={containerRef} className="h-full w-full">
+            <BaseGridLayout
+              className="layout h-full"
+              layout={layout}
+              cols={12}
+              width={containerWidth}
+              rowHeight={rowHeight}
+              margin={[GRID_MARGIN_Y, GRID_MARGIN_Y]}
+              containerPadding={[0, 0]}
+              isDraggable={false}
+              isResizable={false}
+              compactType="vertical"
+            >
+              {gridCards.map((card) => (
+                <div key={card.id} className="min-h-0 [&>section]:h-full">
+                  {renderCard(card)}
+                </div>
+              ))}
+            </BaseGridLayout>
+          </div>
         </div>
-      </div>
-      <div className="space-y-2.5 lg:hidden">
-        {gridCards.map((card) => (
-          <div key={card.id}>{renderCard(card)}</div>
-        ))}
-      </div>
+      ) : (
+        <div className="space-y-2.5">
+          {gridCards.map((card) => (
+            <div key={card.id}>{renderCard(card)}</div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

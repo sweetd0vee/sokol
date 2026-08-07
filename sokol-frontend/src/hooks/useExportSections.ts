@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 export function useExportSections<T extends string>(allIds: readonly T[]) {
-  const [selectedSections, setSelectedSections] = useState<T[]>(() => []);
+  const [selectedSections, setSelectedSections] = useState<T[]>(() => [...allIds]);
 
   const isSelected = useCallback(
     (id: T) => selectedSections.includes(id),

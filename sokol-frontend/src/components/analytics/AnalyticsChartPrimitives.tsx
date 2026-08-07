@@ -71,7 +71,7 @@ function ChartToolbar({
   onCopyPng: () => void;
 }) {
   return (
-    <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+    <div data-chart-toolbar className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
       {onToggleExport ? (
         <label
           className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-300 dark:hover:border-sber-light/70 dark:hover:text-sber-light"
@@ -208,7 +208,7 @@ export function ChartCard({
       id: exportSectionId,
       title,
       description,
-      getNode: () => exportCardRef.current ?? captureRef.current,
+      getNode: () => captureRef.current ?? exportCardRef.current,
     });
   }, [exportSectionId, title, description]);
 

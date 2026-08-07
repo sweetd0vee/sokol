@@ -57,6 +57,7 @@ export const ANALYTICS_EXPORT_FORMATS = [
   { value: 'xlsx', label: 'XLSX' },
   { value: 'pdf', label: 'PDF' },
   { value: 'docx', label: 'DOCX' },
+  { value: 'html', label: 'HTML' },
 ] as const;
 
 export type AnalyticsExportFormat = (typeof ANALYTICS_EXPORT_FORMATS)[number]['value'];
