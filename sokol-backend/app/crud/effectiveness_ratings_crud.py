@@ -2,9 +2,16 @@ from collections.abc import Sequence
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.crud.dictionary_crud import (
+    count_dictionary_items,
+    create_dictionary_item,
+    delete_dictionary_item,
+    get_dictionary_item,
+    list_dictionary_items,
+    update_dictionary_item,
+)
 from app.models.effectiveness_ratings import EffectivenessRating
 from app.schemas.effectiveness_ratings import (
     EffectivenessRatingCreate,
@@ -12,30 +19,18 @@ from app.schemas.effectiveness_ratings import (
 )
 
 
-def _apply_filters(query, search: Optional[str] = None):
-    if search:
-        search_term = f"%{search.strip()}%"
-        query = query.where(EffectivenessRating.label.ilike(search_term))
-    return query
-
-
 async def create_effectiveness_rating(
     session: AsyncSession, rating_in: EffectivenessRatingCreate
 ) -> EffectivenessRating:
-    rating = EffectivenessRating(**rating_in.model_dump())
-    session.add(rating)
-    await session.commit()
-    await session.refresh(rating)
-    return rating
+    return await create_dictionary_item(
+        session, EffectivenessRating, rating_in.model_dump()
+    )
 
 
 async def get_effectiveness_rating(
     session: AsyncSession, rating_id: UUID
 ) -> Optional[EffectivenessRating]:
-    result = await session.execute(
-        select(EffectivenessRating).where(EffectivenessRating.id == rating_id)
-    )
-    return result.scalar_one_or_none()
+    return await get_dictionary_item(session, EffectivenessRating, rating_id)
 
 
 async def list_effectiveness_ratings(
@@ -44,23 +39,26 @@ async def list_effectiveness_ratings(
     limit: int = 50,
     search: Optional[str] = None,
 ) -> Sequence[EffectivenessRating]:
-    query = select(EffectivenessRating).order_by(
-        EffectivenessRating.label.asc(),
-        EffectivenessRating.id.asc(),
+    return await list_dictionary_items(
+        session,
+        EffectivenessRating,
+        order_by=(EffectivenessRating.label.asc(), EffectivenessRating.id.asc()),
+        skip=skip,
+        limit=limit,
+        search=search,
+        search_columns=(EffectivenessRating.label,),
     )
-    query = _apply_filters(query, search=search)
-    query = query.offset(skip).limit(limit)
-    result = await session.execute(query)
-    return result.scalars().all()
 
 
 async def count_effectiveness_ratings(
     session: AsyncSession, search: Optional[str] = None
 ) -> int:
-    query = select(func.count()).select_from(EffectivenessRating)
-    query = _apply_filters(query, search=search)
-    result = await session.execute(query)
-    return int(result.scalar_one())
+    return await count_dictionary_items(
+        session,
+        EffectivenessRating,
+        search=search,
+        search_columns=(EffectivenessRating.label,),
+    )
 
 
 async def update_effectiveness_rating(
@@ -68,17 +66,12 @@ async def update_effectiveness_rating(
     rating: EffectivenessRating,
     rating_in: EffectivenessRatingUpdate,
 ) -> EffectivenessRating:
-    update_data = rating_in.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(rating, field, value)
-    session.add(rating)
-    await session.commit()
-    await session.refresh(rating)
-    return rating
+    return await update_dictionary_item(
+        session, rating, rating_in.model_dump(exclude_unset=True)
+    )
 
 
 async def delete_effectiveness_rating(
     session: AsyncSession, rating: EffectivenessRating
 ) -> None:
-    await session.delete(rating)
-    await session.commit()
+    await delete_dictionary_item(session, rating)

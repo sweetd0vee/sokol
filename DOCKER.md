@@ -78,3 +78,13 @@ docker compose up --build -d api ollama ui
 
 - Backend-only: `sokol-backend/docker/app/docker-compose.yml`
 - Frontend-only (сеть `sokol` уже есть): `sokol-frontend/docker/docker-compose.yml`
+
+## Банковский контур / MinIO / миграции
+
+Пошаговые **будущие** инструкции (пока без реализации в коде):
+
+- развёртывание во внутренней сети банка, TLS, air-gap, backup;
+- внедрение MinIO для вложений;
+- Alembic и загрузка реальных проверок —
+
+см. разделы playbook A–D в [PLAN.md](PLAN.md).

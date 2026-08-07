@@ -43,11 +43,12 @@
 
 ### US-06 / US-07 Справочники
 
-Как администратор, я хочу CRUD аудиторов, типов аудита, оценок эффективности.
+Как администратор, я хочу CRUD аудиторов, видов аудита, видов проверок, оценок эффективности.
 
-- UI: `SettingsTab` + модалки.
-- API: `/api/v1/settings/auditors|audit_types|effectiveness_ratings`.
+- UI: `SettingsTab` + `SingleFieldDictionaryPanel` (label-справочники) + модалки для видов аудита.
+- API: `/api/v1/settings/auditors|audit_types|check_kinds|effectiveness_ratings`.
 - UUID `id` с backend; удаление с подтверждением **реализовано** через API.
+- **Ограничение:** справочник «Виды проверок» пока только в Настройках; форма проверки может ещё использовать локальные константы — wire запланирован в [PLAN.md](../../PLAN.md).
 
 ### US-08 Рекомендации
 

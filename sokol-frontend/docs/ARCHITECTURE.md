@@ -109,7 +109,8 @@ flowchart LR
 | `api/client.ts` | Axios, `baseURL = API_BASE_URL`, `toApiError` |
 | `api/checks.ts` | CRUD `/checks` |
 | `api/recommendations.ts` | CRUD + `parse-recommendations` |
-| `api/settings.ts` | auditors / audit_types / effectiveness_ratings |
+| `api/settings.ts` | `makeSettingsCrud` → auditors / audit_types / check_kinds / effectiveness_ratings |
+| `settings/SingleFieldDictionaryPanel` | label-справочники в Settings (аудиторы, виды проверок, оценки) |
 | `api/tools.ts` | section-ii, section-ii-links, memorandum (timeout 120s); audit-opinion + prompt/models (timeout 600s) |
 | `api/mappers.ts` | API ↔ frontend types (id string, нормализация статусов) |
 | `api/errors.ts` | `ApiError`, FastAPI 422, blob errors |

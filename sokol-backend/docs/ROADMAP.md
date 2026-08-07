@@ -1,9 +1,10 @@
 # Roadmap — backend
 
-**Актуально:** август 2026  
-**Единый план:** [PLAN.md](../../PLAN.md) — приоритеты, фазы, спринты, матрица prod-readiness.
+**Актуально:** 7 августа 2026  
+**Go-live:** **1 сентября 2026** — жёсткий календарь и scope freeze в [PLAN.md → Go-live](../../PLAN.md#go-live-01092026--жёсткий-план).  
+**Единый план:** [PLAN.md](../../PLAN.md) — фазы, playbooks MinIO / Alembic / bank deploy / реальные данные.
 
-Ниже — backlog, специфичный для API и DOCX. Порядок согласован с общим планом.
+Ниже — backlog API/DOCX. До 01.09 приоритет только задачам из go-live календаря.
 
 ## Фаза 0 — гигиена
 
@@ -37,11 +38,17 @@
 
 ## Фаза 4 — продукт
 
-- [ ] Attachments: MinIO + metadata в БД.
+- [ ] Attachments: MinIO + metadata в БД — **детальный план:** [PLAN.md playbook A](../../PLAN.md#playbook-a--внедрение-minio-файловое-хранилище).
 - [ ] Server-side pagination/filter (используется фронтом).
-- [ ] FK или validation справочников vs доменные строки.
+- [ ] FK или validation справочников vs доменные строки; wire `check_kinds` → домен проверки.
 - [ ] CRUD **наблюдений** (для frontend UI).
+- [ ] Import dry-run + отчёт ошибок для реальных данных — [playbook D](../../PLAN.md#playbook-d--подготовка-данных-реальных-проверок).
 - [ ] (Опционально) analytics API при росте объёма данных.
+
+## Bank / ops (документация → реализация)
+
+- [ ] UAT/prod по [playbook C](../../PLAN.md#playbook-c--развёртывание-во-внутренней-сети-банка) (TLS, DNS, backup, air-gap).
+- [ ] Alembic baseline — [playbook B](../../PLAN.md#playbook-b--подготовка-миграций-данных-alembic--данные).
 
 ## Метрики (сводка)
 

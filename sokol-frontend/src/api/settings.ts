@@ -27,106 +27,78 @@ type ListResponse<T> = {
   total: number;
 };
 
-export async function fetchAuditors(): Promise<Auditor[]> {
-  const { data } = await api.get<ListResponse<Auditor>>('/api/v1/settings/auditors', {
-    params: { limit: 200 },
-  });
-  return data.items;
+type SettingsCrud<T, TCreate> = {
+  fetchAll: () => Promise<T[]>;
+  create: (payload: TCreate) => Promise<T>;
+  update: (id: string | number, payload: Partial<T>) => Promise<T>;
+  remove: (id: string | number) => Promise<void>;
+};
+
+function makeSettingsCrud<T, TCreate>(
+  path: string,
+  options?: {
+    encodeId?: boolean;
+    toUpdateBody?: (payload: Partial<T>) => unknown;
+  },
+): SettingsCrud<T, TCreate> {
+  const encodeId = options?.encodeId ?? true;
+  const resolveId = (id: string | number) =>
+    encodeId ? encodeURIComponent(String(id)) : String(id);
+
+  return {
+    async fetchAll() {
+      const { data } = await api.get<ListResponse<T>>(path, {
+        params: { limit: 200 },
+      });
+      return data.items;
+    },
+    async create(payload) {
+      const { data } = await api.post<T>(path, payload);
+      return data;
+    },
+    async update(id, payload) {
+      const body = options?.toUpdateBody ? options.toUpdateBody(payload) : payload;
+      const { data } = await api.patch<T>(`${path}/${resolveId(id)}`, body);
+      return data;
+    },
+    async remove(id) {
+      await api.delete(`${path}/${resolveId(id)}`);
+    },
+  };
 }
 
-export async function createAuditor(payload: Pick<Auditor, 'full_name'>): Promise<Auditor> {
-  const { data } = await api.post<Auditor>('/api/v1/settings/auditors', payload);
-  return data;
-}
+const auditorsCrud = makeSettingsCrud<Auditor, Pick<Auditor, 'full_name'>>(
+  '/api/v1/settings/auditors',
+  { encodeId: false },
+);
+const auditTypesCrud = makeSettingsCrud<AuditType, Pick<AuditType, 'code' | 'name'>>(
+  '/api/v1/settings/audit_types',
+);
+const checkKindsCrud = makeSettingsCrud<CheckKind, Pick<CheckKind, 'label'>>(
+  '/api/v1/settings/check_kinds',
+  { toUpdateBody: (payload) => ({ label: payload.label }) },
+);
+const ratingsCrud = makeSettingsCrud<EffectivenessRating, Pick<EffectivenessRating, 'label'>>(
+  '/api/v1/settings/effectiveness_ratings',
+  { toUpdateBody: (payload) => ({ label: payload.label }) },
+);
 
-export async function updateAuditor(id: string | number, payload: Pick<Auditor, 'full_name'>): Promise<Auditor> {
-  const { data } = await api.patch<Auditor>(`/api/v1/settings/auditors/${id}`, payload);
-  return data;
-}
+export const fetchAuditors = auditorsCrud.fetchAll;
+export const createAuditor = auditorsCrud.create;
+export const updateAuditor = auditorsCrud.update;
+export const deleteAuditor = auditorsCrud.remove;
 
-export async function deleteAuditor(id: string | number): Promise<void> {
-  await api.delete(`/api/v1/settings/auditors/${id}`);
-}
+export const fetchAuditTypes = auditTypesCrud.fetchAll;
+export const createAuditType = auditTypesCrud.create;
+export const updateAuditType = auditTypesCrud.update;
+export const deleteAuditType = auditTypesCrud.remove;
 
-export async function fetchAuditTypes(): Promise<AuditType[]> {
-  const { data } = await api.get<ListResponse<AuditType>>('/api/v1/settings/audit_types', {
-    params: { limit: 200 },
-  });
-  return data.items;
-}
+export const fetchCheckKinds = checkKindsCrud.fetchAll;
+export const createCheckKind = checkKindsCrud.create;
+export const updateCheckKind = checkKindsCrud.update;
+export const deleteCheckKind = checkKindsCrud.remove;
 
-export async function createAuditType(payload: Pick<AuditType, 'code' | 'name'>): Promise<AuditType> {
-  const { data } = await api.post<AuditType>('/api/v1/settings/audit_types', payload);
-  return data;
-}
-
-export async function updateAuditType(id: string | number, payload: Partial<AuditType>): Promise<AuditType> {
-  const encodedId = encodeURIComponent(String(id));
-  const { data } = await api.patch<AuditType>(`/api/v1/settings/audit_types/${encodedId}`, payload);
-  return data;
-}
-
-export async function deleteAuditType(id: string | number): Promise<void> {
-  const encodedId = encodeURIComponent(String(id));
-  await api.delete(`/api/v1/settings/audit_types/${encodedId}`);
-}
-
-export async function fetchCheckKinds(): Promise<CheckKind[]> {
-  const { data } = await api.get<ListResponse<CheckKind>>('/api/v1/settings/check_kinds', {
-    params: { limit: 200 },
-  });
-  return data.items;
-}
-
-export async function createCheckKind(payload: Pick<CheckKind, 'label'>): Promise<CheckKind> {
-  const { data } = await api.post<CheckKind>('/api/v1/settings/check_kinds', payload);
-  return data;
-}
-
-export async function updateCheckKind(
-  id: string | number,
-  payload: Partial<CheckKind>
-): Promise<CheckKind> {
-  const encodedId = encodeURIComponent(String(id));
-  const { data } = await api.patch<CheckKind>(`/api/v1/settings/check_kinds/${encodedId}`, {
-    label: payload.label,
-  });
-  return data;
-}
-
-export async function deleteCheckKind(id: string | number): Promise<void> {
-  const encodedId = encodeURIComponent(String(id));
-  await api.delete(`/api/v1/settings/check_kinds/${encodedId}`);
-}
-
-export async function fetchEffectivenessRatings(): Promise<EffectivenessRating[]> {
-  const { data } = await api.get<ListResponse<EffectivenessRating>>(
-    '/api/v1/settings/effectiveness_ratings',
-    { params: { limit: 200 } },
-  );
-  return data.items;
-}
-
-export async function createEffectivenessRating(
-  payload: Pick<EffectivenessRating, 'label'>
-): Promise<EffectivenessRating> {
-  const { data } = await api.post<EffectivenessRating>('/api/v1/settings/effectiveness_ratings', payload);
-  return data;
-}
-
-export async function updateEffectivenessRating(
-  id: string | number,
-  payload: Partial<EffectivenessRating>
-): Promise<EffectivenessRating> {
-  const encodedId = encodeURIComponent(String(id));
-  const { data } = await api.patch<EffectivenessRating>(
-    `/api/v1/settings/effectiveness_ratings/${encodedId}`,
-    { label: payload.label }
-  );
-  return data;
-}
-
-export async function deleteEffectivenessRating(id: string | number): Promise<void> {
-  const encodedId = encodeURIComponent(String(id));
-  await api.delete(`/api/v1/settings/effectiveness_ratings/${encodedId}`);
-}
+export const fetchEffectivenessRatings = ratingsCrud.fetchAll;
+export const createEffectivenessRating = ratingsCrud.create;
+export const updateEffectivenessRating = ratingsCrud.update;
+export const deleteEffectivenessRating = ratingsCrud.remove;
