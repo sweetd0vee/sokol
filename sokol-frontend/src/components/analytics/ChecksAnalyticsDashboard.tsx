@@ -492,9 +492,32 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
             { label: 'Проверок', value: filteredChecks.length, hint: `из ${checks.length}` },
             ]}
             items={[
-            { label: periodSliceLabel, values: activePeriodValues, emptyLabel: 'Все значения' },
-              { label: 'Аудиторы', values: selectedAuditors, emptyLabel: 'Все аудиторы' },
-              { label: 'Департаменты', values: selectedDepartments, emptyLabel: 'Все департаменты' },
+              {
+                label: periodSliceLabel,
+                chips: activePeriodValues.map((value) => ({ value, label: value })),
+                emptyLabel: 'Все значения',
+                onRemove: (value) => {
+                  if (periodSlice === 'month') {
+                    setSelectedMonths((prev) => prev.filter((item) => item !== value));
+                  } else if (periodSlice === 'quarter') {
+                    setSelectedQuarters((prev) => prev.filter((item) => item !== value));
+                  } else {
+                    setSelectedYears((prev) => prev.filter((item) => item !== value));
+                  }
+                },
+              },
+              {
+                label: 'Аудиторы',
+                chips: selectedAuditors.map((value) => ({ value, label: value })),
+                emptyLabel: 'Все аудиторы',
+                onRemove: (value) => setSelectedAuditors((prev) => prev.filter((item) => item !== value)),
+              },
+              {
+                label: 'Департаменты',
+                chips: selectedDepartments.map((value) => ({ value, label: value })),
+                emptyLabel: 'Все департаменты',
+                onRemove: (value) => setSelectedDepartments((prev) => prev.filter((item) => item !== value)),
+              },
             ]}
           />
         )}

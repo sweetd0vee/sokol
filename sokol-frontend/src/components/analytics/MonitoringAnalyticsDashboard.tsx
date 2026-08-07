@@ -288,29 +288,59 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
             { label: 'Рекомендаций', value: filtered.length, hint: `из ${recommendations.length}` },
             ]}
             items={[
-              { label: periodSliceLabel, values: activePeriodValues, emptyLabel: 'Все значения' },
-              { label: 'Аудиторы', values: selectedAuditors, emptyLabel: 'Все аудиторы' },
-              { label: 'Департаменты', values: selectedDepartments, emptyLabel: 'Все департаменты' },
+              {
+                label: periodSliceLabel,
+                chips: activePeriodValues.map((value) => ({ value, label: value })),
+                emptyLabel: 'Все значения',
+                onRemove: (value) => {
+                  if (periodSlice === 'month') {
+                    setSelectedMonths((prev) => prev.filter((item) => item !== value));
+                  } else if (periodSlice === 'quarter') {
+                    setSelectedQuarters((prev) => prev.filter((item) => item !== value));
+                  } else {
+                    setSelectedYears((prev) => prev.filter((item) => item !== value));
+                  }
+                },
+              },
+              {
+                label: 'Аудиторы',
+                chips: selectedAuditors.map((value) => ({ value, label: value })),
+                emptyLabel: 'Все аудиторы',
+                onRemove: (value) => setSelectedAuditors((prev) => prev.filter((item) => item !== value)),
+              },
+              {
+                label: 'Департаменты',
+                chips: selectedDepartments.map((value) => ({ value, label: value })),
+                emptyLabel: 'Все департаменты',
+                onRemove: (value) => setSelectedDepartments((prev) => prev.filter((item) => item !== value)),
+              },
               {
                 label: 'Существенность',
-                values: selectedMateriality.map(
-                  (value) => MATERIALITY_LEVEL_OPTIONS.find((option) => option.value === value)?.label ?? value,
-                ),
+                chips: selectedMateriality.map((value) => ({
+                  value,
+                  label: MATERIALITY_LEVEL_OPTIONS.find((option) => option.value === value)?.label ?? value,
+                })),
                 emptyLabel: 'Все уровни',
+                onRemove: (value) => setSelectedMateriality((prev) => prev.filter((item) => item !== value)),
               },
               {
                 label: 'Статусы контроля',
-                values: selectedStatuses.map(
-                  (value) => RECOMMENDATION_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value,
-                ),
+                chips: selectedStatuses.map((value) => ({
+                  value,
+                  label: RECOMMENDATION_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value,
+                })),
                 emptyLabel: 'Все статусы',
+                onRemove: (value) => setSelectedStatuses((prev) => prev.filter((item) => item !== value)),
               },
               {
                 label: 'Дополнительные статусы',
-                values: selectedAdditionalStatuses.map(
-                  (value) => RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value,
-                ),
+                chips: selectedAdditionalStatuses.map((value) => ({
+                  value,
+                  label:
+                    RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value,
+                })),
                 emptyLabel: 'Все доп. статусы',
+                onRemove: (value) => setSelectedAdditionalStatuses((prev) => prev.filter((item) => item !== value)),
               },
             ]}
           />

@@ -7,7 +7,7 @@ import { getErrorMessage } from '../../api/errors';
 import { normalizeRecommendationDeadline } from '../../utils/recommendationDeadline';
 import { ACCEPTED_DOCX, isDocxFile } from '../../utils/docx';
 import { useSokolData } from '../../contexts/sokolData';
-import { FORM_FIELD_CLASS, FORM_ROW_3, FORM_SECTION_CLASS, FORM_SECTION_TITLE_CLASS } from '../../constants/formLayout';
+import { FORM_SECTION_CLASS, FORM_SECTION_TITLE_CLASS } from '../../constants/formLayout';
 
 type CheckRecommendationsBlockProps = {
   checkKey: string;
@@ -17,7 +17,7 @@ type CheckRecommendationsBlockProps = {
 };
 
 const actionButtonClass =
-  'inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-50';
 const blueActionButtonClass =
   `${actionButtonClass} border-2 border-[#6699FF] text-[#6699FF] hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white`;
 
@@ -159,14 +159,6 @@ export function CheckRecommendationsBlock({
 
   return (
     <div className={FORM_SECTION_CLASS}>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept={ACCEPTED_DOCX}
-        onChange={(event) => handleImportFileChange(event.target.files?.[0] ?? null)}
-        className="sr-only"
-      />
-
       <div className={FORM_SECTION_TITLE_CLASS}>Добавить рекомендации</div>
 
       {!checkKey && (
@@ -181,12 +173,12 @@ export function CheckRecommendationsBlock({
         </p>
       )}
 
-      <div className={FORM_ROW_3}>
+      <div className="flex flex-wrap gap-x-[2.75rem] gap-y-3">
         <button
           type="button"
           onClick={onAddManually}
           disabled={!canAdd}
-          className={`${blueActionButtonClass} ${FORM_FIELD_CLASS}`}
+          className={blueActionButtonClass}
         >
           <Plus size={16} />
           Добавить вручную
@@ -195,7 +187,7 @@ export function CheckRecommendationsBlock({
           type="button"
           onClick={handleLoadFromAz}
           disabled={!canAdd || isParsing}
-          className={`${blueActionButtonClass} ${FORM_FIELD_CLASS}`}
+          className={blueActionButtonClass}
         >
           <FileUp size={16} />
           Загрузить из АЗ
@@ -221,12 +213,12 @@ export function CheckRecommendationsBlock({
               <p className="text-sm leading-relaxed text-gray-600">
                 В документе найдено {parsedPreview.length} рекомендаций.
               </p>
-              <div className={FORM_ROW_3}>
+              <div className="flex flex-wrap gap-x-[2.75rem] gap-y-3">
                 <button
                   type="button"
                   onClick={() => void handleAddParsed()}
                   disabled={!canAdd}
-                  className={`${blueActionButtonClass} ${FORM_FIELD_CLASS}`}
+                  className={blueActionButtonClass}
                 >
                   <Plus size={16} />
                   Добавить в проверку
@@ -251,6 +243,14 @@ export function CheckRecommendationsBlock({
           'Рекомендации пока не добавлены'
         )}
       </p>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_DOCX}
+        hidden
+        onChange={(event) => handleImportFileChange(event.target.files?.[0] ?? null)}
+      />
     </div>
   );
 }

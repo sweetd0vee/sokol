@@ -42,6 +42,7 @@ export function MultiCheckboxSelect({
 
   useEffect(() => {
     if (!open) {
+      setSearchQuery('');
       return;
     }
     const handlePointerDown = (event: MouseEvent) => {
@@ -87,6 +88,11 @@ export function MultiCheckboxSelect({
     onChange([]);
   };
 
+  const triggerLabel =
+    options.length === 0
+      ? placeholder
+      : `Выбрано: ${value.length} из ${options.length}`;
+
   return (
     <div className={className} ref={rootRef} data-multi-checkbox-select>
       {label ? (
@@ -114,7 +120,13 @@ export function MultiCheckboxSelect({
           .filter(Boolean)
           .join(' ')}
       >
-        <span className="truncate text-gray-500 dark:text-slate-400">{placeholder}</span>
+        <span
+          className={`truncate ${
+            value.length === 0 ? 'text-gray-500 dark:text-slate-400' : 'text-gray-900 dark:text-slate-100'
+          }`}
+        >
+          {triggerLabel}
+        </span>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-gray-500 transition ${open ? 'rotate-180' : ''}`}
         />

@@ -58,8 +58,8 @@ const FILTER_LABEL_CLASS = FORM_LABEL_CLASS;
 
 const PERIOD_SLICE_OPTIONS: { value: AnalyticsPeriodSlice; label: string }[] = [
   { value: 'year', label: 'Год' },
-  { value: 'month', label: 'Месяц' },
   { value: 'quarter', label: 'Квартал' },
+  { value: 'month', label: 'Месяц' },
 ];
 
 export function AnalyticsFilterSidebar({
