@@ -11,6 +11,11 @@ export type AuditType = {
   name: string;
 };
 
+export type CheckKind = {
+  id?: string;
+  label: string;
+};
+
 export type EffectivenessRating = {
   id?: string;
   code?: string;
@@ -64,6 +69,34 @@ export async function updateAuditType(id: string | number, payload: Partial<Audi
 export async function deleteAuditType(id: string | number): Promise<void> {
   const encodedId = encodeURIComponent(String(id));
   await api.delete(`/api/v1/settings/audit_types/${encodedId}`);
+}
+
+export async function fetchCheckKinds(): Promise<CheckKind[]> {
+  const { data } = await api.get<ListResponse<CheckKind>>('/api/v1/settings/check_kinds', {
+    params: { limit: 200 },
+  });
+  return data.items;
+}
+
+export async function createCheckKind(payload: Pick<CheckKind, 'label'>): Promise<CheckKind> {
+  const { data } = await api.post<CheckKind>('/api/v1/settings/check_kinds', payload);
+  return data;
+}
+
+export async function updateCheckKind(
+  id: string | number,
+  payload: Partial<CheckKind>
+): Promise<CheckKind> {
+  const encodedId = encodeURIComponent(String(id));
+  const { data } = await api.patch<CheckKind>(`/api/v1/settings/check_kinds/${encodedId}`, {
+    label: payload.label,
+  });
+  return data;
+}
+
+export async function deleteCheckKind(id: string | number): Promise<void> {
+  const encodedId = encodeURIComponent(String(id));
+  await api.delete(`/api/v1/settings/check_kinds/${encodedId}`);
 }
 
 export async function fetchEffectivenessRatings(): Promise<EffectivenessRating[]> {

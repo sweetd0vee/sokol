@@ -10,6 +10,7 @@ export type DonutDatum = {
 
 type FocusableDonutChartProps = {
   data: DonutDatum[];
+  palette?: readonly string[];
 };
 
 type LabelProps = {
@@ -55,8 +56,9 @@ function DonutValueLabel({
   );
 }
 
-export function FocusableDonutChart({ data }: FocusableDonutChartProps) {
+export function FocusableDonutChart({ data, palette = PALETTE }: FocusableDonutChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const colors = palette.length > 0 ? palette : PALETTE;
 
   return (
     <div className="h-full min-h-[13rem]">
@@ -86,7 +88,7 @@ export function FocusableDonutChart({ data }: FocusableDonutChartProps) {
               return (
                 <Cell
                   key={entry.name}
-                  fill={entry.color ?? PALETTE[index % PALETTE.length]}
+                  fill={entry.color ?? colors[index % colors.length]}
                   fillOpacity={isDimmed ? 0.32 : 1}
                   stroke={isActive ? '#0f172a' : '#ffffff'}
                   strokeWidth={isActive ? 2.5 : 2}

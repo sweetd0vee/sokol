@@ -19,17 +19,15 @@ import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFi
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
-import { FocusableTreemapChart } from './FocusableTreemapChart';
+import { CHECKS_PALETTE } from './analyticsPalette';
 import { exportChecksDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
 import { collectCalendarPeriodOptions } from '../../utils/analyticsPeriod';
 import { parseDateValue } from '../../utils/dates';
 import {
-  buildAuditorDistribution,
   buildCompletionShare,
   buildCumulativeSeries,
-  buildDocumentReadiness,
   buildPeriodSeries,
   buildTypeDistribution,
   buildViewDistribution,
@@ -44,12 +42,6 @@ type ChecksAnalyticsDashboardProps = {
   checks: Check[];
   recommendations: Recommendation[];
 };
-
-const STATUS_STACK = [
-  { key: 'not_started', label: 'Запланировано', color: '#94A3B8' },
-  { key: 'in_progress', label: 'В процессе', color: '#F59E0B' },
-  { key: 'completed', label: 'Завершено', color: '#22C55E' },
-] as const;
 
 function toOptions(values: string[]) {
   return values.map((value) => ({ value, label: value }));
@@ -142,8 +134,6 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
   );
   const viewDistribution = useMemo(() => buildViewDistribution(filteredChecks), [filteredChecks]);
   const typeDistribution = useMemo(() => buildTypeDistribution(filteredChecks), [filteredChecks]);
-  const documentReadiness = useMemo(() => buildDocumentReadiness(filteredChecks), [filteredChecks]);
-  const auditorDistribution = useMemo(() => buildAuditorDistribution(filteredChecks), [filteredChecks]);
 
   const resetFilters = () => {
     setPeriodSlice('year');
@@ -215,11 +205,11 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'dynamics',
-        defaultLayout: { x: 0, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Динамика и накопительный итог"
-            description="Проверки по сроку и накопление портфеля"
+            description="Проверки по периоду и накопление портфеля"
             exportSectionId="dynamics"
             exportSelected={exportSections.isSelected('dynamics')}
             onToggleExport={() => exportSections.toggleSection('dynamics')}
@@ -236,10 +226,10 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
                     <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                     <Tooltip />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Bar dataKey="total" name="За срок" fill="#6699FF" radius={[4, 4, 0, 0]}>
+                    <Bar dataKey="total" name="За период" fill={CHECKS_PALETTE[11]} radius={[4, 4, 0, 0]}>
                       <LabelList dataKey="total" position="top" fontSize={10} />
                     </Bar>
-                    <Line type="monotone" dataKey="cumulative" name="Накопительно" stroke="#003366" strokeWidth={2.5} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="cumulative" name="Накопительно" stroke={CHECKS_PALETTE[0]} strokeWidth={2.5} dot={{ r: 3 }} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -249,11 +239,11 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'views',
-        defaultLayout: { x: 8, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
-            title="Структура по видам"
-            description="Сколько проверок каждого вида в выбранном сроке"
+            title="Виды проверок"
+            description="Количество проверок в выбранном периоде"
             exportSectionId="views"
             exportSelected={exportSections.isSelected('views')}
             onToggleExport={() => exportSections.toggleSection('views')}
@@ -269,7 +259,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
                     <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
                     <YAxis dataKey="name" type="category" width={92} tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Bar dataKey="value" name="Проверки" fill="#2563EB" radius={[0, 6, 6, 0]}>
+                    <Bar dataKey="value" name="Проверки" fill={CHECKS_PALETTE[8]} radius={[0, 6, 6, 0]}>
                       <LabelList dataKey="value" position="right" fontSize={11} />
                     </Bar>
                   </BarChart>
@@ -281,11 +271,11 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'types',
-        defaultLayout: { x: 0, y: 5, w: 3, h: 3, minW: 2, minH: 2 },
+        defaultLayout: { x: 0, y: 5, w: 12, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
-            title="Структура по типам проверок"
-            description="Плановые, внеплановые и тематические проверки"
+            title="Типы проверок"
+            description="Плановые, внеплановые и контрольные проверки"
             exportSectionId="types"
             exportSelected={exportSections.isSelected('types')}
             onToggleExport={() => exportSections.toggleSection('types')}
@@ -294,107 +284,17 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
             {typeDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableDonutChart data={typeDistribution} />
-            )}
-          </ChartCard>
-        ),
-      },
-      {
-        id: 'statusByPeriod',
-        defaultLayout: { x: 4, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }) => (
-          <ChartCard
-            title="Статусы по сроку"
-            description="Количество и пропорции статусов по месяцам, кварталам или годам"
-            exportSectionId="statusByPeriod"
-            exportSelected={exportSections.isSelected('statusByPeriod')}
-            onToggleExport={() => exportSections.toggleSection('statusByPeriod')}
-            onResetCardLayout={resetCardLayout}
-          >
-            {periodSeries.length === 0 ? (
-              <EmptyChart message="Нет данных" />
-            ) : (
-              <div className="h-full min-h-[13rem]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    {STATUS_STACK.map((status) => (
-                      <Bar key={status.key} dataKey={status.key} name={status.label} stackId="status" fill={status.color}>
-                        <LabelList dataKey={status.key} position="center" fontSize={10} fill="#fff" />
-                      </Bar>
-                    ))}
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </ChartCard>
-        ),
-      },
-      {
-        id: 'documents',
-        defaultLayout: { x: 3, y: 5, w: 3, h: 3, minW: 2, minH: 2 },
-        render: ({ resetCardLayout }) => (
-          <ChartCard
-            title="Готовность документов"
-            description="Заполненность реквизитов приказа, программы, АЗ и ДЗ"
-            exportSectionId="documents"
-            exportSelected={exportSections.isSelected('documents')}
-            onToggleExport={() => exportSections.toggleSection('documents')}
-            onResetCardLayout={resetCardLayout}
-          >
-            <div className="h-full min-h-[13rem]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={documentReadiness} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="filled" name="Заполнено" stackId="docs" fill="#22C55E">
-                    <LabelList dataKey="filled" position="center" fontSize={10} fill="#fff" />
-                  </Bar>
-                  <Bar dataKey="empty" name="Не заполнено" stackId="docs" fill="#CBD5E1">
-                    <LabelList dataKey="empty" position="center" fontSize={10} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </ChartCard>
-        ),
-      },
-      {
-        id: 'auditorTreemap',
-        defaultLayout: { x: 6, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }) => (
-          <ChartCard
-            title="Tree Map аудиторов"
-            description="Площадь блока показывает нагрузку аудитора"
-            exportSectionId="auditorTreemap"
-            exportSelected={exportSections.isSelected('auditorTreemap')}
-            onToggleExport={() => exportSections.toggleSection('auditorTreemap')}
-            onResetCardLayout={resetCardLayout}
-          >
-            {auditorDistribution.length === 0 ? (
-              <EmptyChart message="Нет данных" />
-            ) : (
-              <FocusableTreemapChart data={auditorDistribution} />
+              <FocusableDonutChart data={typeDistribution} palette={CHECKS_PALETTE} />
             )}
           </ChartCard>
         ),
       },
     ],
     [
-      auditorDistribution,
       checks.length,
       completionShare,
-      documentReadiness,
       exportSections,
       flowSeries,
-      periodSeries,
       summary,
       typeDistribution,
       viewDistribution,

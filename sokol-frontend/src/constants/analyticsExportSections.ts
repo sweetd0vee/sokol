@@ -3,11 +3,8 @@
 export const CHECK_EXPORT_SECTIONS = [
   { id: 'summary', label: 'Сводка KPI', sheetName: 'Сводка', headerFill: '312E81' },
   { id: 'dynamics', label: 'Динамика и накопительный итог', sheetName: 'Динамика', headerFill: '1D4ED8' },
-  { id: 'views', label: 'Структура по видам', sheetName: 'Виды', headerFill: '7C3AED' },
-  { id: 'types', label: 'Структура по типам', sheetName: 'Типы', headerFill: '0E7490' },
-  { id: 'statusByPeriod', label: 'Статусы по сроку', sheetName: 'Статусы по сроку', headerFill: 'B45309' },
-  { id: 'documents', label: 'Готовность документов', sheetName: 'Документы', headerFill: 'BE123C' },
-  { id: 'auditorTreemap', label: 'Tree Map аудиторов', sheetName: 'Аудиторы TreeMap', headerFill: '1E40AF' },
+  { id: 'views', label: 'Виды проверок', sheetName: 'Виды проверок', headerFill: '7C3AED' },
+  { id: 'types', label: 'Типы проверок', sheetName: 'Типы проверок', headerFill: '0E7490' },
 ] as const;
 
 export const RECOMMENDATION_EXPORT_SECTIONS = [
@@ -44,6 +41,7 @@ export const DVA_EXPORT_SECTIONS = [
   { id: 'riskProfile', label: 'Риск-профиль', sheetName: 'Риск профиль', headerFill: 'BE123C' },
   { id: 'auditorMatrix', label: 'Матрица аудитор×срок', sheetName: 'Матрица аудитор-срок', headerFill: '4338CA' },
   { id: 'documentsClosure', label: 'Документы и закрытие', sheetName: 'Документы закрытие', headerFill: '065F46' },
+  { id: 'auditorTreemap', label: 'Tree Map аудиторов', sheetName: 'Аудиторы TreeMap', headerFill: '1E40AF' },
 ] as const;
 
 export type CheckExportSectionId = (typeof CHECK_EXPORT_SECTIONS)[number]['id'];

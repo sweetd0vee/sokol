@@ -102,6 +102,7 @@ flowchart TB
 | `/recommendations` | `recommendations.py` | рекомендации |
 | `/settings/auditors` | `auditors.py` | справочник |
 | `/settings/audit_types` | `audit_types.py` | справочник |
+| `/settings/check_kinds` | `check_kinds.py` | справочник |
 | `/settings/effectiveness_ratings` | `effectiveness_ratings.py` | справочник |
 | `/tools` | `instruments_reports.py` | DOCX |
 
@@ -149,6 +150,10 @@ erDiagram
     string code
     string name
   }
+  CheckKind {
+    uuid id PK
+    string label
+  }
   EffectivenessRating {
     uuid id PK
     string label
@@ -161,6 +166,7 @@ erDiagram
 | `Recommendation` | `recommendations` | int |
 | `Auditor` | `auditors` | UUID |
 | `AuditType` | `audit_types` | UUID |
+| `CheckKind` | `check_kinds` | UUID |
 | `EffectivenessRating` | `effectiveness_ratings` | UUID |
 
 Enum’ы: `CheckStatus`, `RecommendationStatus`, `RecommendationAdditionalStatus` — см. [DATA_AND_DB.md](DATA_AND_DB.md).

@@ -20,6 +20,7 @@ import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFi
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
+import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { PALETTE } from './analyticsPalette';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { DVA_EXPORT_SECTIONS, type DvaExportSectionId } from '../../constants/analyticsExportSections';
@@ -323,6 +324,26 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
         render: ({ resetCardLayout }) => (
           <ChartCard title="Документы и закрытие" description="Готовность документов проверок и закрытие рекомендаций" exportSectionId="documentsClosure" exportSelected={exportSections.isSelected('documentsClosure')} onToggleExport={() => exportSections.toggleSection('documentsClosure')} onResetCardLayout={resetCardLayout}>
             <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={[...documentReadiness, { name: 'Закрытие рек.', filled: recSummary.withCompletionDate, empty: Math.max(recSummary.total - recSummary.withCompletionDate, 0) }]} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /><Bar dataKey="filled" name="Готово" stackId="docs" fill="#22C55E"><LabelList dataKey="filled" position="center" fontSize={10} fill="#fff" /></Bar><Bar dataKey="empty" name="Не готово" stackId="docs" fill="#CBD5E1"><LabelList dataKey="empty" position="center" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'auditorTreemap',
+        defaultLayout: { x: 0, y: 8, w: 12, h: 3, minW: 4, minH: 2 },
+        render: ({ resetCardLayout }) => (
+          <ChartCard
+            title="Tree Map аудиторов"
+            description="Площадь блока показывает нагрузку аудитора (проверки + рекомендации)"
+            exportSectionId="auditorTreemap"
+            exportSelected={exportSections.isSelected('auditorTreemap')}
+            onToggleExport={() => exportSections.toggleSection('auditorTreemap')}
+            onResetCardLayout={resetCardLayout}
+          >
+            {auditorLoad.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <FocusableTreemapChart data={auditorLoad} />
+            )}
           </ChartCard>
         ),
       },

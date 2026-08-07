@@ -1,6 +1,7 @@
 from app.models.audit_types import AuditType
 from app.models.auditors import Auditor
 from app.models.base import Base
+from app.models.check_kinds import CheckKind
 from app.models.checks import Check, CheckStatus
 from app.models.effectiveness_ratings import EffectivenessRating
 from app.models.recommendations import (
@@ -14,6 +15,7 @@ __all__ = [
     "Auditor",
     "Base",
     "Check",
+    "CheckKind",
     "CheckStatus",
     "EffectivenessRating",
     "Recommendation",

@@ -1,6 +1,11 @@
 import type { Check, CheckStatus, CheckType, CheckView } from '../types/check';
 import type { Recommendation } from '../types/recommendation';
-import { getCheckStatusLabel, getCheckTypeLabel, getCheckViewLabel } from '../constants/checks';
+import {
+  getCheckStatusLabel,
+  getCheckTypeLabel,
+  getCheckTypePluralLabel,
+  getCheckViewLabel,
+} from '../constants/checks';
 import { parseDateValue } from './dates';
 import {
   getPeriodBucket,
@@ -186,7 +191,7 @@ export function buildTypeDistribution(checks: Check[]): NamedCount[] {
     map.set(check.check_type, (map.get(check.check_type) ?? 0) + 1);
   });
   return [...map.entries()]
-    .map(([type, value]) => ({ name: getCheckTypeLabel(type), value }))
+    .map(([type, value]) => ({ name: getCheckTypePluralLabel(type), value }))
     .sort((a, b) => b.value - a.value);
 }
 

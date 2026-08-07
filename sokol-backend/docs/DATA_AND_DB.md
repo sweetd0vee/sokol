@@ -81,6 +81,11 @@ erDiagram
     string name
   }
 
+  check_kinds {
+    uuid id PK
+    string label
+  }
+
   effectiveness_ratings {
     uuid id PK
     string label
@@ -128,6 +133,7 @@ SQLAlchemy для recommendation enum’ов использует `values_callab
 |--------|------------|
 | `seed_auditors.py` | аудиторы |
 | `seed_audit_types.py` | типы аудита |
+| `seed_check_kinds.py` | виды проверок |
 | `seed_effectiveness_ratings.py` | оценки эффективности |
 | `seed_demo_data.py` | синтетические проверки и рекомендации для демо-среды |
 | `import_seed_data.py` | загрузка из Excel |

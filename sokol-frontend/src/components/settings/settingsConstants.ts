@@ -1,6 +1,7 @@
 export const SETTINGS_LIST_OPTIONS = [
   { value: 'auditors' as const, label: 'Аудиторы' },
   { value: 'auditTypes' as const, label: 'Виды аудита' },
+  { value: 'checkKinds' as const, label: 'Виды проверок' },
   { value: 'ratings' as const, label: 'Оценки эффективности' },
 ];
 

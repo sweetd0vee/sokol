@@ -1,18 +1,22 @@
 import { useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Auditor, AuditType, EffectivenessRating } from '../../api/settings';
+import type { Auditor, AuditType, CheckKind, EffectivenessRating } from '../../api/settings';
 import {
   createAuditor,
   deleteAuditor,
   createAuditType,
   deleteAuditType,
+  createCheckKind,
+  deleteCheckKind,
   createEffectivenessRating,
   deleteEffectivenessRating,
   fetchAuditors,
   fetchAuditTypes,
+  fetchCheckKinds,
   fetchEffectivenessRatings,
   updateAuditType,
   updateAuditor,
+  updateCheckKind,
   updateEffectivenessRating,
 } from '../../api/settings';
 import { Input } from '../ui/Input';
@@ -32,6 +36,8 @@ const getAuditorKey = (auditor: Auditor, index: number) =>
   String(auditor.id ?? auditor.full_name ?? index);
 const getAuditTypeKey = (type: AuditType, index: number) =>
   String(type.id ?? type.code ?? type.name ?? index);
+const getCheckKindKey = (kind: CheckKind, index: number) =>
+  String(kind.id ?? kind.label ?? index);
 const getRatingKey = (rating: EffectivenessRating, index: number) =>
   String(rating.id ?? rating.code ?? rating.label ?? index);
 
@@ -40,6 +46,7 @@ export function SettingsTab() {
   const [activeList, setActiveList] = useState<SettingsListKey>('auditors');
   const [auditorSearch, setAuditorSearch] = useState('');
   const [auditTypeSearch, setAuditTypeSearch] = useState('');
+  const [checkKindSearch, setCheckKindSearch] = useState('');
   const [ratingSearch, setRatingSearch] = useState('');
   const [deleteCandidate, setDeleteCandidate] = useState<DeleteCandidate | null>(null);
   const [isAddAuditorOpen, setIsAddAuditorOpen] = useState(false);
@@ -61,6 +68,14 @@ export function SettingsTab() {
   } | null>(null);
   const [editedAuditTypeCode, setEditedAuditTypeCode] = useState('');
   const [editedAuditTypeName, setEditedAuditTypeName] = useState('');
+  const [isAddCheckKindOpen, setIsAddCheckKindOpen] = useState(false);
+  const [newCheckKindLabel, setNewCheckKindLabel] = useState('');
+  const [editCheckKindCandidate, setEditCheckKindCandidate] = useState<{
+    key: string;
+    id?: string | number;
+    label: string;
+  } | null>(null);
+  const [editedCheckKindLabel, setEditedCheckKindLabel] = useState('');
   const [isAddRatingOpen, setIsAddRatingOpen] = useState(false);
   const [newRatingLabel, setNewRatingLabel] = useState('');
   const [editRatingCandidate, setEditRatingCandidate] = useState<{
@@ -86,6 +101,14 @@ export function SettingsTab() {
     queryFn: fetchAuditTypes,
   });
   const {
+    data: checkKinds,
+    isLoading: checkKindsLoading,
+    error: checkKindsError,
+  } = useQuery({
+    queryKey: ['settings', 'check-kinds'],
+    queryFn: fetchCheckKinds,
+  });
+  const {
     data: effectivenessRatings,
     isLoading: ratingsLoading,
     error: ratingsError,
@@ -96,6 +119,11 @@ export function SettingsTab() {
 
   const filteredAuditors = filterBySearch(auditors ?? [], auditorSearch, (auditor) => auditor.full_name ?? '');
   const filteredAuditTypes = filterBySearch(auditTypes ?? [], auditTypeSearch, (type) => `${type.code} ${type.name}`);
+  const filteredCheckKinds = filterBySearch(
+    checkKinds ?? [],
+    checkKindSearch,
+    (kind) => kind.label,
+  );
   const filteredRatings = filterBySearch(
     effectivenessRatings ?? [],
     ratingSearch,
@@ -116,6 +144,11 @@ export function SettingsTab() {
     if (entity === 'auditTypes') {
       await deleteAuditType(identifier);
       await queryClient.invalidateQueries({ queryKey: ['settings', 'audit-types'] });
+      return;
+    }
+    if (entity === 'checkKinds') {
+      await deleteCheckKind(identifier);
+      await queryClient.invalidateQueries({ queryKey: ['settings', 'check-kinds'] });
       return;
     }
     if (entity === 'ratings') {
@@ -220,6 +253,34 @@ export function SettingsTab() {
       // keep modal open; user can retry
     }
   };
+  const handleRequestEditCheckKind = (key: string, label: string, id?: string | number) => {
+    setEditedCheckKindLabel(label);
+    setEditCheckKindCandidate({ key, label, id });
+  };
+  const handleCancelEditCheckKind = () => {
+    setEditCheckKindCandidate(null);
+  };
+  const handleConfirmEditCheckKind = async (event?: FormEvent) => {
+    event?.preventDefault();
+    if (!editCheckKindCandidate) {
+      return;
+    }
+    const trimmedLabel = editedCheckKindLabel.trim();
+    if (!trimmedLabel) {
+      return;
+    }
+    const identifier = editCheckKindCandidate.id;
+    if (!identifier) {
+      return;
+    }
+    try {
+      await updateCheckKind(identifier, { label: trimmedLabel });
+      await queryClient.invalidateQueries({ queryKey: ['settings', 'check-kinds'] });
+      setEditCheckKindCandidate(null);
+    } catch {
+      // keep modal open; user can retry
+    }
+  };
   const handleRequestEditRating = (key: string, label: string, id?: string | number) => {
     setEditedRatingLabel(label);
     setEditRatingCandidate({ key, label, id });
@@ -269,6 +330,31 @@ export function SettingsTab() {
       setNewAuditTypeCode('');
       setNewAuditTypeName('');
       setIsAddAuditTypeOpen(false);
+    } catch {
+      // keep modal open; user can retry
+    }
+  };
+  const handleRequestAddCheckKind = () => {
+    setNewCheckKindLabel('');
+    setIsAddCheckKindOpen(true);
+  };
+  const handleCancelAddCheckKind = () => {
+    setIsAddCheckKindOpen(false);
+  };
+  const handleConfirmAddCheckKind = async (event?: FormEvent) => {
+    event?.preventDefault();
+    const trimmedLabel = newCheckKindLabel.trim();
+    if (!trimmedLabel) {
+      return;
+    }
+    try {
+      const createdCheckKind = await createCheckKind({ label: trimmedLabel });
+      queryClient.setQueryData<CheckKind[]>(['settings', 'check-kinds'], (current = []) => [
+        ...current,
+        createdCheckKind,
+      ]);
+      setNewCheckKindLabel('');
+      setIsAddCheckKindOpen(false);
     } catch {
       // keep modal open; user can retry
     }
@@ -329,6 +415,21 @@ export function SettingsTab() {
       ],
     };
   });
+  const checkKindRows: TableRow[] = filteredCheckKinds.map((kind, index) => {
+    const key = getCheckKindKey(kind, index);
+    const identifier = kind.id;
+    return {
+      key,
+      cells: [
+        kind.label,
+        <ActionButtons
+          key={`${key}-actions`}
+          onEdit={() => handleRequestEditCheckKind(key, kind.label, identifier)}
+          onDelete={() => handleRequestDelete('checkKinds', key, identifier)}
+        />,
+      ],
+    };
+  });
   const ratingRows: TableRow[] = filteredRatings.map((rating, index) => {
     const key = getRatingKey(rating, index);
     const identifier = rating.id;
@@ -348,7 +449,7 @@ export function SettingsTab() {
   return (
     <div className="w-full space-y-4 text-left">
       <div className="space-y-3">
-        <PageHeader title="Списки" />
+        <PageHeader title="Справочники" />
         <SegmentedControl
           value={activeList}
           options={SETTINGS_LIST_OPTIONS}
@@ -380,6 +481,19 @@ export function SettingsTab() {
             onAdd={handleRequestAddAuditType}
             searchValue={auditTypeSearch}
             onSearchChange={setAuditTypeSearch}
+            searchPlaceholder="Поиск"
+          />
+        )}
+        {activeList === 'checkKinds' && (
+          <SettingsTableCard
+            title="Виды проверок"
+            columns={['Вид', 'Действия']}
+            rows={checkKindRows}
+            isLoading={checkKindsLoading}
+            error={checkKindsError}
+            onAdd={handleRequestAddCheckKind}
+            searchValue={checkKindSearch}
+            onSearchChange={setCheckKindSearch}
             searchPlaceholder="Поиск"
           />
         )}
@@ -449,6 +563,23 @@ export function SettingsTab() {
         </Modal>
       )}
 
+      {editCheckKindCandidate && (
+        <Modal title="Редактирование вида проверки">
+          <form onSubmit={handleConfirmEditCheckKind} className="mt-4 space-y-4">
+            <Input
+              label="Вид"
+              value={editedCheckKindLabel}
+              onChange={setEditedCheckKindLabel}
+              placeholder="Введите вид проверки"
+            />
+            <ModalActions
+              submitDisabled={!editedCheckKindLabel.trim()}
+              onCancel={handleCancelEditCheckKind}
+            />
+          </form>
+        </Modal>
+      )}
+
       {editRatingCandidate && (
         <Modal title="Редактирование оценки">
           <form onSubmit={handleConfirmEditRating} className="mt-4 space-y-4">
@@ -485,6 +616,20 @@ export function SettingsTab() {
               submitDisabled={!newAuditTypeCode.trim() || !newAuditTypeName.trim()}
               onCancel={handleCancelAddAuditType}
             />
+          </form>
+        </Modal>
+      )}
+
+      {isAddCheckKindOpen && (
+        <Modal title="Новый вид проверки">
+          <form onSubmit={handleConfirmAddCheckKind} className="mt-4 space-y-4">
+            <Input
+              label="Вид"
+              value={newCheckKindLabel}
+              onChange={setNewCheckKindLabel}
+              placeholder="Введите вид проверки"
+            />
+            <ModalActions submitDisabled={!newCheckKindLabel.trim()} onCancel={handleCancelAddCheckKind} />
           </form>
         </Modal>
       )}

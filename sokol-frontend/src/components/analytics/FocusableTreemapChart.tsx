@@ -10,6 +10,7 @@ export type TreemapDatum = {
 
 type FocusableTreemapChartProps = {
   data: TreemapDatum[];
+  palette?: readonly string[];
 };
 
 type TreemapNodeProps = {
@@ -94,11 +95,12 @@ function TreemapContent({
   );
 }
 
-export function FocusableTreemapChart({ data }: FocusableTreemapChartProps) {
+export function FocusableTreemapChart({ data, palette = PALETTE }: FocusableTreemapChartProps) {
   const [activeName, setActiveName] = useState<string | null>(null);
+  const colors = palette.length > 0 ? palette : PALETTE;
   const chartData = data.map((item, index) => ({
     ...item,
-    fill: item.fill ?? PALETTE[index % PALETTE.length],
+    fill: item.fill ?? colors[index % colors.length],
   }));
 
   return (

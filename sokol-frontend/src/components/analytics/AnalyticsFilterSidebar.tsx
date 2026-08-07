@@ -99,7 +99,7 @@ export function AnalyticsFilterSidebar({
         </div>
 
         <div className="space-y-6">
-          <SidebarSection title="Срок">
+          <SidebarSection title="Период">
             <div>
               <div className="grid grid-cols-3 gap-1.5">
                 {PERIOD_SLICE_OPTIONS.map((option) => {

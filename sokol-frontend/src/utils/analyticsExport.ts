@@ -329,19 +329,6 @@ function exportChecksDashboardXlsx(input: ChecksDashboardExportInput) {
       '312E81',
     );
   }
-  if (selected.has('statusByPeriod')) {
-    appendNamedSheet(
-      wb,
-      'Статусы по периодам',
-      periodSeries.map((item) => ({
-        Период: item.label,
-        Запланировано: item.not_started,
-        'В процессе': item.in_progress,
-        Завершено: item.completed,
-      })),
-      'B45309',
-    );
-  }
   if (selected.has('statuses')) {
     appendNamedSheet(
       wb,
@@ -353,7 +340,7 @@ function exportChecksDashboardXlsx(input: ChecksDashboardExportInput) {
   if (selected.has('types')) {
     appendNamedSheet(
       wb,
-      'Типы',
+      'Типы проверок',
       types.map((item) => ({ Показатель: item.name, Значение: item.value })),
       '0E7490',
     );
@@ -361,7 +348,7 @@ function exportChecksDashboardXlsx(input: ChecksDashboardExportInput) {
   if (selected.has('views')) {
     appendNamedSheet(
       wb,
-      'Виды',
+      'Виды проверок',
       views.map((item) => ({ Показатель: item.name, Значение: item.value })),
       '7C3AED',
     );
@@ -967,7 +954,7 @@ function exportChecksDashboardPdf(input: ChecksDashboardExportInput) {
       ]),
     );
   }
-  if (selected.has('periods') || selected.has('statusByPeriod')) {
+  if (selected.has('periods') || selected.has('dynamics')) {
     sections.push(
       pdfSectionTitle('Динамика по периодам'),
       pdfSimpleTable(
@@ -1094,7 +1081,7 @@ function exportChecksDashboardPdf(input: ChecksDashboardExportInput) {
     'Проверки — SOKOL',
     [
       ['Группировка', granularityLabel(granularity)],
-      ...(input.selectedPeriodLabels?.map((label) => ['Срок', label] as [string, string]) ?? []),
+      ...(input.selectedPeriodLabels?.map((label) => ['Период', label] as [string, string]) ?? []),
       ['Аудиторы', auditors.length ? auditors.join(', ') : 'Все'],
       ['Департаменты', input.departments?.length ? input.departments.join(', ') : 'Все'],
       ['Записей в выборке', String(filteredChecks.length)],
@@ -1392,7 +1379,7 @@ export async function exportChecksDashboard(
     selectedSections,
     meta: [
       ['Группировка', granularityLabel(granularity)],
-      ...(input.selectedPeriodLabels?.map((label) => ['Срок', label] as [string, string]) ?? []),
+      ...(input.selectedPeriodLabels?.map((label) => ['Период', label] as [string, string]) ?? []),
       ['Аудиторы', auditors.length ? auditors.join(', ') : 'Все'],
       ['Департаменты', input.departments?.length ? input.departments.join(', ') : 'Все'],
       ['Записей в выборке', String(filteredChecks.length)],

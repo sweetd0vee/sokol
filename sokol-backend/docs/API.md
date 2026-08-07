@@ -77,6 +77,10 @@ CRUD по UUID. Тело: `{ "full_name": "..." }`.
 
 CRUD по UUID. Тело: `{ "code": "...", "name": "..." }`.
 
+### Check kinds — `/api/v1/settings/check_kinds`
+
+CRUD по UUID. Тело: `{ "label": "..." }`. Справочник «Виды проверок».
+
 ### Effectiveness ratings — `/api/v1/settings/effectiveness_ratings`
 
 CRUD по UUID. Тело: `{ "label": "..." }`.
