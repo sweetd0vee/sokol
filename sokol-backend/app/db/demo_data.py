@@ -6,11 +6,14 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 from app.db.seed_check_kinds import CHECK_KINDS
+from app.db.seed_effectiveness_ratings import EFFECTIVENESS_RATINGS
 from app.utils.check_key import assign_serial_numbers
 
 CHECK_TYPES = ("planned", "unscheduled", "thematic")
 CHECK_VIEWS = tuple(CHECK_KINDS)
 CHECK_STATUSES = ("not_started", "in_progress", "completed")
+# Пустая строка тоже отображается как «не оценивалось» в матрице аналитики.
+EFFECTIVENESS_DEMO_VALUES = (*EFFECTIVENESS_RATINGS, "")
 
 REC_STATUSES = ("completed", "unresolved", "on_control", "in_progress")
 REC_ADDITIONAL_STATUSES = ("on_time", "deadline_violated", "on_control")
@@ -188,6 +191,13 @@ def build_check_rows(count: int = 100) -> list[dict]:
         topic = CHECK_TOPICS[index % len(CHECK_TOPICS)]
         end_date = _add_days(start, 30) if status == "completed" else None
         n = index + 1
+        # Разные комбинации оценок по четырём областям, чтобы матрица была наглядной.
+        process = EFFECTIVENESS_DEMO_VALUES[index % len(EFFECTIVENESS_DEMO_VALUES)]
+        svk = EFFECTIVENESS_DEMO_VALUES[(index + 1) % len(EFFECTIVENESS_DEMO_VALUES)]
+        sur = EFFECTIVENESS_DEMO_VALUES[(index + 2) % len(EFFECTIVENESS_DEMO_VALUES)]
+        svik = EFFECTIVENESS_DEMO_VALUES[(index + 3) % len(EFFECTIVENESS_DEMO_VALUES)]
+        if status == "not_started":
+            process = svk = sur = svik = ""
         rows.append(
             {
                 "check_name": _build_check_name(check_type, topic, n),
@@ -207,6 +217,10 @@ def build_check_rows(count: int = 100) -> list[dict]:
                 "az_document_date": end_date if status == "completed" else None,
                 "dz_document_number": f"ДЗ-{n:04d}" if status == "completed" and index % 2 == 0 else None,
                 "dz_document_date": _add_days(end_date, 5) if status == "completed" and index % 2 == 0 and end_date else None,
+                "process_effectiveness": process or None,
+                "svk_effectiveness": svk or None,
+                "sur_effectiveness": sur or None,
+                "svik_effectiveness": svik or None,
             }
         )
     return assign_serial_numbers(rows)

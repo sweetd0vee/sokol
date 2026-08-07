@@ -418,6 +418,10 @@ function extractHtmlMarkup(node: HTMLElement): string | undefined {
     if (pickPrimarySvg(node)) {
       return undefined;
     }
+    const exportRoot = node.querySelector('[data-export-html]');
+    if (exportRoot instanceof HTMLElement) {
+      return `<div class="chart-html">${exportRoot.outerHTML}</div>`;
+    }
     const table = node.querySelector('table');
     if (table instanceof HTMLTableElement) {
       return `<div class="chart-html">${table.outerHTML}</div>`;

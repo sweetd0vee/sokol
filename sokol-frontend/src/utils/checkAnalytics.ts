@@ -252,6 +252,80 @@ export function buildCheckDepartmentDistribution(
     .sort((a, b) => b.value - a.value);
 }
 
+export const EFFECTIVENESS_MATRIX_COLUMNS = [
+  { key: 'process', label: 'Процесс', field: 'process_effectiveness' },
+  { key: 'svk', label: 'СВК', field: 'svk_effectiveness' },
+  { key: 'sur', label: 'СУР', field: 'sur_effectiveness' },
+  { key: 'svik', label: 'СВИК', field: 'svik_effectiveness' },
+] as const;
+
+export type EffectivenessTone = 'effective' | 'sufficient' | 'insufficient' | 'ineffective' | 'unset';
+
+export const EFFECTIVENESS_LEGEND: Array<{ tone: EffectivenessTone; label: string; color: string }> = [
+  { tone: 'effective', label: 'Эффективно', color: '#22C55E' },
+  { tone: 'sufficient', label: 'Достаточно эффективно', color: '#EAB308' },
+  { tone: 'insufficient', label: 'Недостаточно эффективно', color: '#EF4444' },
+  { tone: 'ineffective', label: 'Неэффективно', color: '#111827' },
+  { tone: 'unset', label: 'Не оценивалось', color: '#94A3B8' },
+];
+
+export type EffectivenessMatrixRow = {
+  id: string;
+  key: string;
+  name: string;
+  ratings: Record<(typeof EFFECTIVENESS_MATRIX_COLUMNS)[number]['key'], string>;
+  tones: Record<(typeof EFFECTIVENESS_MATRIX_COLUMNS)[number]['key'], EffectivenessTone>;
+};
+
+export function resolveEffectivenessTone(value: string | null | undefined): EffectivenessTone {
+  const raw = (value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!raw || raw === 'не указано' || raw === 'не оценивалось') {
+    return 'unset';
+  }
+  if (raw === 'эффективно') {
+    return 'effective';
+  }
+  if (raw === 'достаточно эффективно') {
+    return 'sufficient';
+  }
+  if (raw === 'недостаточно эффективно') {
+    return 'insufficient';
+  }
+  if (raw === 'неэффективно' || raw === 'не эффективно') {
+    return 'ineffective';
+  }
+  return 'unset';
+}
+
+export function getEffectivenessToneColor(tone: EffectivenessTone): string {
+  return EFFECTIVENESS_LEGEND.find((item) => item.tone === tone)?.color ?? '#94A3B8';
+}
+
+export function buildEffectivenessMatrix(checks: Check[]): EffectivenessMatrixRow[] {
+  return [...checks]
+    .sort((a, b) => a.serial_number.localeCompare(b.serial_number, 'ru'))
+    .map((check) => {
+      const ratings = {
+        process: check.process_effectiveness?.trim() || '',
+        svk: check.svk_effectiveness?.trim() || '',
+        sur: check.sur_effectiveness?.trim() || '',
+        svik: check.svik_effectiveness?.trim() || '',
+      } as const;
+      return {
+        id: check.id,
+        key: check.serial_number,
+        name: check.check_name,
+        ratings: { ...ratings },
+        tones: {
+          process: resolveEffectivenessTone(ratings.process),
+          svk: resolveEffectivenessTone(ratings.svk),
+          sur: resolveEffectivenessTone(ratings.sur),
+          svik: resolveEffectivenessTone(ratings.svik),
+        },
+      };
+    });
+}
+
 export function buildAuditorPeriodMatrix(
   checks: Check[],
   granularity: PeriodGranularity,

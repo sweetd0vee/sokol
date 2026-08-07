@@ -134,7 +134,15 @@ CHECK_VIEWS = [
 CHECK_STATUSES = [("completed", 48), ("in_progress", 34), ("not_started", 18)]
 REC_STATUSES = [("in_progress", 34), ("on_control", 27), ("completed", 25), ("unresolved", 14)]
 MATERIALITY_LEVELS = [("средний", 47), ("высокий", 31), ("низкий", 22)]
-EFFECTIVENESS_RATINGS = ["Высокая", "Средняя", "Низкая", "Не оценивалась"]
+# Согласовано со справочником effectiveness_ratings и матрицей аналитики.
+EFFECTIVENESS_RATINGS = [
+    ("эффективно", 26),
+    ("достаточно эффективно", 22),
+    ("недостаточно эффективно", 16),
+    ("неэффективно", 12),
+    ("не оценивалось", 12),
+    ("", 12),
+]
 
 STATUS_TO_INDICATOR = {
     "completed": "исполнено",
@@ -236,6 +244,13 @@ def build_checks(count: int) -> list[dict]:
         check_view = _weighted_choice(CHECK_VIEWS)
         topic = random.choice(TOPICS)
         leader = _weighted_choice(AUDITORS)
+        # У незавершённых проверок чаще нет оценок; у завершённых — почти всегда заполнены.
+        if status == "not_started":
+            rating_pool = [("", 70), ("эффективно", 10), ("достаточно эффективно", 10), ("недостаточно эффективно", 5), ("неэффективно", 5)]
+        elif status == "in_progress":
+            rating_pool = [("", 35), ("эффективно", 20), ("достаточно эффективно", 20), ("недостаточно эффективно", 15), ("неэффективно", 10)]
+        else:
+            rating_pool = EFFECTIVENESS_RATINGS
         row = {
             "check_name": _check_name(check_type, topic, index),
             "check_type": check_type,
@@ -246,10 +261,10 @@ def build_checks(count: int) -> list[dict]:
             "status": status,
             "created_at": created,
             "description": f"Демо-проверка по направлению: {topic}.",
-            "process_effectiveness": random.choice(EFFECTIVENESS_RATINGS),
-            "svk_effectiveness": random.choice(EFFECTIVENESS_RATINGS),
-            "sur_effectiveness": random.choice(EFFECTIVENESS_RATINGS),
-            "svik_effectiveness": random.choice(EFFECTIVENESS_RATINGS),
+            "process_effectiveness": _weighted_choice(rating_pool) or None,
+            "svk_effectiveness": _weighted_choice(rating_pool) or None,
+            "sur_effectiveness": _weighted_choice(rating_pool) or None,
+            "svik_effectiveness": _weighted_choice(rating_pool) or None,
         }
         row.update(_document_fields(index, status, created, start, end))
         rows.append(row)

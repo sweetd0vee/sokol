@@ -6,6 +6,7 @@ export const CHECK_EXPORT_SECTIONS = [
   { id: 'views', label: 'Виды проверок', sheetName: 'Виды проверок', headerFill: '7C3AED' },
   { id: 'types', label: 'Типы проверок', sheetName: 'Типы проверок', headerFill: '0E7490' },
   { id: 'departmentMap', label: 'Карта департаментов', sheetName: 'Карта департаментов', headerFill: '0E7490' },
+  { id: 'effectivenessMatrix', label: 'Оценка эффективности', sheetName: 'Оценка эффективности', headerFill: '065F46' },
 ] as const;
 
 export const RECOMMENDATION_EXPORT_SECTIONS = [

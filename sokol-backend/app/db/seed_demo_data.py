@@ -55,6 +55,10 @@ async def seed_demo_data(count: int = DEMO_COUNT, *, replace: bool = True) -> tu
                 az_document_date=row.get("az_document_date"),
                 dz_document_number=row.get("dz_document_number"),
                 dz_document_date=row.get("dz_document_date"),
+                process_effectiveness=row.get("process_effectiveness"),
+                svk_effectiveness=row.get("svk_effectiveness"),
+                sur_effectiveness=row.get("sur_effectiveness"),
+                svik_effectiveness=row.get("svik_effectiveness"),
             )
             session.add(check)
             serial_to_id[row["serial_number"]] = index

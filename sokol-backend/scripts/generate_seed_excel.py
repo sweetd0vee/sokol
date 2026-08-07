@@ -49,6 +49,10 @@ def main() -> None:
         "az_document_date",
         "dz_document_number",
         "dz_document_date",
+        "process_effectiveness",
+        "svk_effectiveness",
+        "sur_effectiveness",
+        "svik_effectiveness",
     ]
     _write_sheet(checks_book, "checks", check_headers, checks)
     checks_path = DATA_DIR / "checks.xlsx"

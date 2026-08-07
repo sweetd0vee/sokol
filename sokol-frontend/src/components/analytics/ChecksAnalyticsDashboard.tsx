@@ -20,6 +20,7 @@ import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
+import { EffectivenessMatrixChart } from './EffectivenessMatrixChart';
 import { CHECKS_PALETTE } from './analyticsPalette';
 import { exportChecksDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
@@ -30,6 +31,7 @@ import {
   buildCheckDepartmentDistribution,
   buildCompletionShare,
   buildCumulativeSeries,
+  buildEffectivenessMatrix,
   buildPeriodSeries,
   buildTypeDistribution,
   buildViewDistribution,
@@ -139,6 +141,10 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
   const departmentMap = useMemo(
     () => buildCheckDepartmentDistribution(filteredChecks, recommendations),
     [filteredChecks, recommendations],
+  );
+  const effectivenessMatrix = useMemo(
+    () => buildEffectivenessMatrix(filteredChecks),
+    [filteredChecks],
   );
 
   const resetFilters = () => {
@@ -317,11 +323,32 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
           </ChartCard>
         ),
       },
+      {
+        id: 'effectivenessMatrix',
+        defaultLayout: { x: 0, y: 9, w: 12, h: 4, minW: 6, minH: 3 },
+        render: ({ resetCardLayout }) => (
+          <ChartCard
+            title="Оценка эффективности"
+            description="Матрица оценок по проверкам за период"
+            exportSectionId="effectivenessMatrix"
+            exportSelected={exportSections.isSelected('effectivenessMatrix')}
+            onToggleExport={() => exportSections.toggleSection('effectivenessMatrix')}
+            onResetCardLayout={resetCardLayout}
+          >
+            {effectivenessMatrix.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <EffectivenessMatrixChart rows={effectivenessMatrix} />
+            )}
+          </ChartCard>
+        ),
+      },
     ],
     [
       checks.length,
       completionShare,
       departmentMap,
+      effectivenessMatrix,
       exportSections,
       flowSeries,
       summary,
