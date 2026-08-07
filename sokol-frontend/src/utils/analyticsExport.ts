@@ -280,7 +280,7 @@ function exportChecksDashboardXlsx(input: ChecksDashboardExportInput) {
 
   const wb = XLSX.utils.book_new();
   const meta: Array<[string, string]> = [
-    ['Раздел', 'Аналитика проверок'],
+    ['Раздел', 'Проверки'],
     ['Дата формирования', new Date().toLocaleString('ru-RU')],
     ['Группировка', granularityLabel(granularity)],
     ['Аудиторы', auditors.length ? auditors.join(', ') : 'Все'],
@@ -1091,7 +1091,7 @@ function exportChecksDashboardPdf(input: ChecksDashboardExportInput) {
   }
 
   const doc = buildPdfDoc(
-    'Аналитика проверок — SOKOL',
+    'Проверки — SOKOL',
     [
       ['Группировка', granularityLabel(granularity)],
       ...(input.selectedPeriodLabels?.map((label) => ['Срок', label] as [string, string]) ?? []),
@@ -1387,7 +1387,7 @@ export async function exportChecksDashboard(
   await exportVisualAnalyticsReport({
     format,
     kind: 'checks',
-    documentTitle: 'Аналитика проверок',
+    documentTitle: 'Проверки',
     filenamePrefix: 'analytics-checks',
     selectedSections,
     meta: [
