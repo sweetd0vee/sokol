@@ -168,7 +168,7 @@ export function SettingsTab() {
   return (
     <div className="w-full space-y-4 text-left">
       <div className="space-y-3">
-        <PageHeader title="Списки" />
+        <PageHeader title="Справочники" />
         <SegmentedControl
           value={activeList}
           options={SETTINGS_LIST_OPTIONS}

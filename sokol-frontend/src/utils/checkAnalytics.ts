@@ -216,6 +216,42 @@ export function buildAuditorDistribution(checks: Check[]): NamedCount[] {
     .sort((a, b) => b.value - a.value);
 }
 
+/** Count checks by linked recommendation audit objects (departments). */
+export function buildCheckDepartmentDistribution(
+  checks: Check[],
+  recommendations: Recommendation[],
+): NamedCount[] {
+  const recommendationsByCheck = new Map<string, Recommendation[]>();
+  recommendations.forEach((recommendation) => {
+    const serial = recommendation.serial_number.trim();
+    if (!serial) {
+      return;
+    }
+    const bucket = recommendationsByCheck.get(serial) ?? [];
+    bucket.push(recommendation);
+    recommendationsByCheck.set(serial, bucket);
+  });
+
+  const map = new Map<string, number>();
+  checks.forEach((check) => {
+    const linked = recommendationsByCheck.get(check.serial_number) ?? [];
+    const departments = new Set(
+      linked.map((item) => item.audit_object.trim()).filter(Boolean),
+    );
+    if (departments.size === 0) {
+      map.set('Без департамента', (map.get('Без департамента') ?? 0) + 1);
+      return;
+    }
+    departments.forEach((department) => {
+      map.set(department, (map.get(department) ?? 0) + 1);
+    });
+  });
+
+  return [...map.entries()]
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
+}
+
 export function buildAuditorPeriodMatrix(
   checks: Check[],
   granularity: PeriodGranularity,

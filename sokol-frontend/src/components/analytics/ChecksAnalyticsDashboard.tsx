@@ -19,6 +19,7 @@ import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFi
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
+import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { CHECKS_PALETTE } from './analyticsPalette';
 import { exportChecksDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
@@ -26,6 +27,7 @@ import { useExportSections } from '../../hooks/useExportSections';
 import { collectCalendarPeriodOptions } from '../../utils/analyticsPeriod';
 import { parseDateValue } from '../../utils/dates';
 import {
+  buildCheckDepartmentDistribution,
   buildCompletionShare,
   buildCumulativeSeries,
   buildPeriodSeries,
@@ -134,6 +136,10 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
   );
   const viewDistribution = useMemo(() => buildViewDistribution(filteredChecks), [filteredChecks]);
   const typeDistribution = useMemo(() => buildTypeDistribution(filteredChecks), [filteredChecks]);
+  const departmentMap = useMemo(
+    () => buildCheckDepartmentDistribution(filteredChecks, recommendations),
+    [filteredChecks, recommendations],
+  );
 
   const resetFilters = () => {
     setPeriodSlice('year');
@@ -273,7 +279,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'types',
-        defaultLayout: { x: 0, y: 5, w: 12, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 5, w: 5, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Типы проверок"
@@ -291,10 +297,31 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
           </ChartCard>
         ),
       },
+      {
+        id: 'departmentMap',
+        defaultLayout: { x: 5, y: 5, w: 7, h: 3, minW: 3, minH: 2 },
+        render: ({ resetCardLayout }) => (
+          <ChartCard
+            title="Карта департаментов"
+            description="Количество проверок за период по департаментам"
+            exportSectionId="departmentMap"
+            exportSelected={exportSections.isSelected('departmentMap')}
+            onToggleExport={() => exportSections.toggleSection('departmentMap')}
+            onResetCardLayout={resetCardLayout}
+          >
+            {departmentMap.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <FocusableTreemapChart data={departmentMap} palette={CHECKS_PALETTE} />
+            )}
+          </ChartCard>
+        ),
+      },
     ],
     [
       checks.length,
       completionShare,
+      departmentMap,
       exportSections,
       flowSeries,
       summary,
