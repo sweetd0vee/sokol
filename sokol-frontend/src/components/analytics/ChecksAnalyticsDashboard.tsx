@@ -211,7 +211,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'dynamics',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 6, h: 4, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Количество проверок"
@@ -247,7 +247,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'views',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 6, y: 2, w: 6, h: 4, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Виды проверок"
@@ -279,7 +279,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'types',
-        defaultLayout: { x: 0, y: 5, w: 5, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 6, w: 5, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Типы проверок"
@@ -299,7 +299,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'departmentMap',
-        defaultLayout: { x: 5, y: 5, w: 7, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 5, y: 6, w: 7, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Карта департаментов"
