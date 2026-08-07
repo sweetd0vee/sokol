@@ -419,8 +419,8 @@ async function buildVisualHtml(options: {
       line-height: 1.5;
     }
     .page {
-      width: min(1080px, calc(100% - 40px));
-      margin: 28px auto 56px;
+      width: min(880px, calc(100% - 32px));
+      margin: 24px auto 48px;
     }
     .hero {
       background: var(--card);
@@ -494,48 +494,80 @@ async function buildVisualHtml(options: {
       background: var(--card);
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 18px 20px 16px;
-      margin-bottom: 14px;
+      padding: 14px 16px 12px;
+      margin-bottom: 12px;
     }
     .card header h2 {
-      margin: 0 0 4px;
+      margin: 0 0 2px;
       color: var(--brand);
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       font-weight: 700;
     }
     .card header p {
-      margin: 0 0 14px;
+      margin: 0 0 10px;
       color: var(--muted);
-      font-size: 0.9rem;
+      font-size: 0.84rem;
     }
     .chart-frame {
       border: 1px solid var(--line);
       border-radius: 10px;
       background: #fafbfc;
-      padding: 14px;
-      overflow: auto;
+      padding: 10px 12px;
+      overflow: hidden;
+    }
+    .chart-svg, .chart-img {
+      display: block;
+      margin: 0 auto;
+    }
+    .chart-svg {
+      width: min(100%, 640px);
     }
     .chart-svg svg, .chart-img {
       display: block;
       width: 100%;
+      max-width: 640px;
       height: auto;
-      max-height: 560px;
+      max-height: 300px;
+      margin: 0 auto;
       object-fit: contain;
       background: #fff;
       border-radius: 6px;
     }
     .chart-svg svg {
       cursor: crosshair;
-      overflow: visible;
+      overflow: hidden;
+    }
+    .chart-svg svg text {
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     }
     .chart-legend {
       margin-top: 8px;
       display: flex;
       justify-content: center;
     }
-    .chart-legend .recharts-legend-wrapper {
-      position: static !important;
-      width: auto !important;
+    .chart-legend-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px 16px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .chart-legend-list li {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.2;
+    }
+    .chart-legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      background: var(--accent);
     }
     .chart-html {
       overflow: auto;
@@ -553,6 +585,40 @@ async function buildVisualHtml(options: {
       background: transparent;
       width: auto;
       font-weight: inherit;
+    }
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
+    }
+    .kpi-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 72px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+    .kpi-meta { min-width: 0; }
+    .kpi-label {
+      font-size: 0.86rem;
+      line-height: 1.2;
+      opacity: 0.82;
+    }
+    .kpi-hint {
+      margin-top: 3px;
+      font-size: 0.75rem;
+      line-height: 1.2;
+      opacity: 0.6;
+    }
+    .kpi-value {
+      flex-shrink: 0;
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
     }
     .chart-svg svg .recharts-layer path,
     .chart-svg svg .recharts-layer rect,
@@ -741,7 +807,10 @@ export async function exportVisualAnalyticsReport(options: {
   meta: VisualExportMetaRow[];
   selectedSections: string[];
 }) {
-  const charts = await captureDashboardCharts(options.selectedSections);
+  const charts = await captureDashboardCharts(options.selectedSections, {
+    // HTML uses SVG/HTML markup; skipping PNG avoids html-to-image failures (oklch/lab CSS).
+    skipPng: options.format === 'html',
+  });
   if (charts.length === 0) {
     throw new Error(
       'Не удалось снять выбранные дашборды. Отметьте карточки с графиками (не только «Исходные данные») и убедитесь, что они видны на экране.',

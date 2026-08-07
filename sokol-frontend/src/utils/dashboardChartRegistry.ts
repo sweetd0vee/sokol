@@ -35,11 +35,13 @@ function isCaptureableNode(node: HTMLElement | null): node is HTMLElement {
     return false;
   }
   const style = window.getComputedStyle(node);
-  if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+  if (style.display === 'none' || style.visibility === 'hidden') {
     return false;
   }
   const rect = node.getBoundingClientRect();
-  return rect.width >= 8 && rect.height >= 8;
+  const width = Math.max(rect.width, node.offsetWidth || 0);
+  const height = Math.max(rect.height, node.offsetHeight || 0);
+  return width >= 4 && height >= 4;
 }
 
 function resolveVisibleRegistration(id: string): { entry: ChartRegistration; node: HTMLElement } | null {
@@ -47,19 +49,20 @@ function resolveVisibleRegistration(id: string): { entry: ChartRegistration; nod
   if (!entries || entries.size === 0) {
     return null;
   }
+  let fallback: { entry: ChartRegistration; node: HTMLElement } | null = null;
   for (const entry of entries) {
     const node = entry.getNode();
+    if (!node?.isConnected) {
+      continue;
+    }
+    if (!fallback) {
+      fallback = { entry, node };
+    }
     if (isCaptureableNode(node)) {
       return { entry, node };
     }
   }
-  for (const entry of entries) {
-    const node = entry.getNode();
-    if (node?.isConnected) {
-      return { entry, node };
-    }
-  }
-  return null;
+  return fallback;
 }
 
 function withClearedAncestorTransforms<T>(node: HTMLElement, run: () => Promise<T>): Promise<T> {
@@ -87,6 +90,15 @@ function withClearedAncestorTransforms<T>(node: HTMLElement, run: () => Promise<
   });
 }
 
+function svgPaintArea(svg: SVGSVGElement): number {
+  const rect = svg.getBoundingClientRect();
+  const attrW = Number(svg.getAttribute('width'));
+  const attrH = Number(svg.getAttribute('height'));
+  const width = Math.max(rect.width, svg.clientWidth || 0, Number.isFinite(attrW) ? attrW : 0, 0);
+  const height = Math.max(rect.height, svg.clientHeight || 0, Number.isFinite(attrH) ? attrH : 0, 0);
+  return width * height;
+}
+
 /** Prefer the largest painted Recharts surface (avoid tiny legend/icon SVGs). */
 function pickPrimarySvg(node: HTMLElement): SVGSVGElement | null {
   const candidates = [
@@ -103,9 +115,8 @@ function pickPrimarySvg(node: HTMLElement): SVGSVGElement | null {
       continue;
     }
     seen.add(candidate);
-    const rect = candidate.getBoundingClientRect();
-    const area = rect.width * rect.height;
-    if (area < 40) {
+    const area = svgPaintArea(candidate);
+    if (area < 16) {
       continue;
     }
     const hasPaint =
@@ -129,15 +140,15 @@ export function isUsefulSvgMarkup(svgMarkup: string | undefined): svgMarkup is s
     return false;
   }
   // Legend HTML may be appended after the <svg>; validate only the SVG portion.
-  const legendStart = svgMarkup.indexOf('<div');
-  const svgOnly = legendStart >= 0 ? svgMarkup.slice(0, legendStart) : svgMarkup;
-  if (!/<svg\b/i.test(svgOnly) || !/viewBox\s*=/.test(svgOnly)) {
+  const legendMarker = svgMarkup.indexOf('<div class="chart-legend"');
+  const svgOnly = legendMarker >= 0 ? svgMarkup.slice(0, legendMarker) : svgMarkup;
+  if (!/<svg\b/i.test(svgOnly)) {
     return false;
   }
-  // Grid lines alone are not enough; need at least one painted series mark or label.
-  const seriesMarks = (svgOnly.match(/<(path|rect|circle|polygon|polyline|ellipse)\b/gi) ?? []).length;
-  const hasText = /<text\b/i.test(svgOnly);
-  return seriesMarks >= 1 || (hasText && svgOnly.length > 300);
+  // Accept any real chart surface; viewBox is added during extraction when missing.
+  const seriesMarks = (svgOnly.match(/<(path|rect|circle|polygon|polyline|ellipse|line|text)\b/gi) ?? [])
+    .length;
+  return seriesMarks >= 1 || svgOnly.length > 250;
 }
 
 function directChildTexts(group: Element): string[] {
@@ -202,27 +213,90 @@ function rewriteFragmentIds(markup: string, uid: string): string {
   return next;
 }
 
+function escapeAttr(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function escapeText(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function resolveLegendSwatchColor(item: Element): string {
+  const graphic = item.querySelector('path, rect, circle, line, polygon, polyline');
+  if (graphic) {
+    const fill = graphic.getAttribute('fill');
+    if (fill && fill !== 'none' && !fill.startsWith('url(')) {
+      return fill;
+    }
+    const stroke = graphic.getAttribute('stroke');
+    if (stroke && stroke !== 'none') {
+      return stroke;
+    }
+  }
+  const icon = item.querySelector('.recharts-legend-icon, span');
+  if (icon instanceof HTMLElement) {
+    const background = window.getComputedStyle(icon).backgroundColor;
+    if (background && background !== 'rgba(0, 0, 0, 0)' && background !== 'transparent') {
+      return background;
+    }
+    const color = window.getComputedStyle(icon).color;
+    if (color) {
+      return color;
+    }
+  }
+  if (item instanceof HTMLElement) {
+    return window.getComputedStyle(item).color || '#4f7fa8';
+  }
+  return '#4f7fa8';
+}
+
+/** Rebuild a clean legend — cloned Recharts legend DOM breaks without their CSS. */
 function extractLegendHtml(node: HTMLElement): string | undefined {
-  const legend = node.querySelector('.recharts-legend-wrapper');
-  if (!(legend instanceof HTMLElement)) {
+  const items = [...node.querySelectorAll('.recharts-legend-item')];
+  if (items.length === 0) {
     return undefined;
   }
-  const rect = legend.getBoundingClientRect();
-  if (rect.width < 8 || rect.height < 4) {
+
+  const entries = items
+    .map((item) => {
+      const text = (item.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!text) {
+        return null;
+      }
+      return { text, color: resolveLegendSwatchColor(item) };
+    })
+    .filter((entry): entry is { text: string; color: string } => Boolean(entry));
+
+  if (entries.length === 0) {
     return undefined;
   }
-  const clone = legend.cloneNode(true) as HTMLElement;
-  clone.querySelectorAll('[style]').forEach((element) => {
-    // Keep inline styles from Recharts legend swatches.
-    if (!(element instanceof HTMLElement)) {
-      return;
-    }
-    const computed = window.getComputedStyle(element);
-    if (!element.style.color && computed.color) {
-      element.style.color = computed.color;
-    }
-  });
-  return clone.outerHTML;
+
+  return `<ul class="chart-legend-list">${entries
+    .map(
+      (entry) =>
+        `<li><span class="chart-legend-swatch" style="background:${escapeAttr(entry.color)}"></span><span>${escapeText(entry.text)}</span></li>`,
+    )
+    .join('')}</ul>`;
+}
+
+function resolveSvgViewBox(svg: SVGSVGElement, fallbackWidth: number, fallbackHeight: number): string {
+  const native = svg.getAttribute('viewBox')?.trim();
+  if (native) {
+    return native;
+  }
+  const attrWidth = Number(svg.getAttribute('width'));
+  const attrHeight = Number(svg.getAttribute('height'));
+  if (Number.isFinite(attrWidth) && Number.isFinite(attrHeight) && attrWidth > 0 && attrHeight > 0) {
+    return `0 0 ${attrWidth} ${attrHeight}`;
+  }
+  return `0 0 ${fallbackWidth} ${fallbackHeight}`;
 }
 
 function extractSvgMarkup(node: HTMLElement): string | undefined {
@@ -238,11 +312,19 @@ function extractSvgMarkup(node: HTMLElement): string | undefined {
     const height = Math.max(Math.round(rect.height), 1);
     const uid = `svg${Math.random().toString(36).slice(2, 9)}`;
 
+    // Keep Recharts' own coordinate system — overwriting viewBox with CSS pixels warps labels.
     clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('viewBox', resolveSvgViewBox(svg, width, height));
     clone.setAttribute('width', String(width));
     clone.setAttribute('height', String(height));
-    clone.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    clone.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     clone.removeAttribute('style');
+
+    // Drop transient tooltip layers if they were somehow painted into the surface.
+    clone.querySelectorAll('.recharts-tooltip-wrapper, .recharts-default-tooltip').forEach((element) => {
+      element.remove();
+    });
+
     annotateInteractiveLabels(clone);
 
     clone.querySelectorAll('[id]').forEach((element) => {
@@ -271,6 +353,65 @@ function extractSvgMarkup(node: HTMLElement): string | undefined {
   }
 }
 
+/** Rebuild KPI chips with inline styles — Tailwind classes are absent in exported HTML. */
+function extractKpiStripMarkup(node: HTMLElement): string | undefined {
+  const grid =
+    [...node.querySelectorAll('div')].find((candidate) => {
+      if (!(candidate instanceof HTMLElement)) {
+        return false;
+      }
+      const kids = [...candidate.children].filter((child) => child instanceof HTMLElement);
+      return kids.length >= 2 && kids.every((child) => child.querySelector('p'));
+    }) ?? null;
+
+  if (!(grid instanceof HTMLElement)) {
+    return undefined;
+  }
+
+  const cards = [...grid.children].filter((child): child is HTMLElement => child instanceof HTMLElement);
+  const items = cards
+    .map((card) => {
+      const texts = [...card.querySelectorAll('p')]
+        .map((paragraph) => (paragraph.textContent || '').replace(/\s+/g, ' ').trim())
+        .filter(Boolean);
+      if (texts.length < 2) {
+        return null;
+      }
+      const label = texts[0];
+      const value = texts[texts.length - 1];
+      const hint = texts.length > 2 ? texts.slice(1, -1).join(' ') : '';
+      const computed = window.getComputedStyle(card);
+      return {
+        label,
+        hint,
+        value,
+        background: computed.backgroundColor || '#f8fafc',
+        border: computed.borderColor || '#d7dee7',
+        color: computed.color || '#1a2332',
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+  if (items.length < 2) {
+    return undefined;
+  }
+
+  const cardsHtml = items
+    .map(
+      (item) => `
+      <div class="kpi-card" style="background:${escapeAttr(item.background)};border-color:${escapeAttr(item.border)};color:${escapeAttr(item.color)}">
+        <div class="kpi-meta">
+          <div class="kpi-label">${escapeText(item.label)}</div>
+          ${item.hint ? `<div class="kpi-hint">${escapeText(item.hint)}</div>` : ''}
+        </div>
+        <div class="kpi-value">${escapeText(item.value)}</div>
+      </div>`,
+    )
+    .join('');
+
+  return `<div class="kpi-strip">${cardsHtml}</div>`;
+}
+
 function extractHtmlMarkup(node: HTMLElement): string | undefined {
   try {
     // Heatmaps / KPI blocks without Recharts — keep real HTML instead of a flat PNG.
@@ -281,13 +422,12 @@ function extractHtmlMarkup(node: HTMLElement): string | undefined {
     if (table instanceof HTMLTableElement) {
       return `<div class="chart-html">${table.outerHTML}</div>`;
     }
-    const clone = node.cloneNode(true) as HTMLElement;
-    clone.querySelectorAll('[data-chart-toolbar]').forEach((toolbar) => toolbar.remove());
-    const text = (clone.textContent || '').replace(/\s+/g, ' ').trim();
-    if (text.length < 8) {
-      return undefined;
+    const kpiMarkup = extractKpiStripMarkup(node);
+    if (kpiMarkup) {
+      return kpiMarkup;
     }
-    return `<div class="chart-html">${clone.innerHTML}</div>`;
+    // Avoid dumping raw Tailwind markup (classes are missing in the standalone HTML file).
+    return undefined;
   } catch (error) {
     console.warn('HTML extraction failed', error);
     return undefined;
@@ -295,8 +435,8 @@ function extractHtmlMarkup(node: HTMLElement): string | undefined {
 }
 
 async function waitForChartPaint(node: HTMLElement) {
-  for (let attempt = 0; attempt < 12; attempt += 1) {
-    if (pickPrimarySvg(node) || node.querySelector('table')) {
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    if (pickPrimarySvg(node) || node.querySelector('table') || node.querySelector('p')) {
       return;
     }
     await delay(50);
@@ -356,7 +496,10 @@ async function captureNodeAsPng(node: HTMLElement, width: number, height: number
   }
 }
 
-async function captureNode(node: HTMLElement): Promise<{
+async function captureNode(
+  node: HTMLElement,
+  options?: { skipPng?: boolean },
+): Promise<{
   dataUrl: string;
   svgMarkup?: string;
   htmlMarkup?: string;
@@ -365,16 +508,19 @@ async function captureNode(node: HTMLElement): Promise<{
 }> {
   await waitForChartPaint(node);
   const rect = node.getBoundingClientRect();
-  const width = Math.max(Math.round(rect.width), 1);
-  const height = Math.max(Math.round(rect.height), 1);
+  const width = Math.max(Math.round(rect.width), node.offsetWidth || 0, 1);
+  const height = Math.max(Math.round(rect.height), node.offsetHeight || 0, 1);
   // Never let SVG/HTML enrichment fail the whole card — PNG is the safety net.
   const svgMarkup = extractSvgMarkup(node);
   const htmlMarkup = isUsefulSvgMarkup(svgMarkup) ? undefined : extractHtmlMarkup(node);
   let dataUrl = '';
-  try {
-    dataUrl = await captureNodeAsPng(node, width, height);
-  } catch (error) {
-    console.warn('PNG capture failed', error);
+  const hasVector = isUsefulSvgMarkup(svgMarkup) || Boolean(htmlMarkup);
+  if (!options?.skipPng || !hasVector) {
+    try {
+      dataUrl = await captureNodeAsPng(node, width, height);
+    } catch (error) {
+      console.warn('PNG capture failed', error);
+    }
   }
   return { dataUrl, svgMarkup, htmlMarkup, width, height };
 }
@@ -396,7 +542,10 @@ export function registerDashboardChart(registration: ChartRegistration) {
   };
 }
 
-export async function captureDashboardCharts(sectionIds: string[]): Promise<DashboardChartCapture[]> {
+export async function captureDashboardCharts(
+  sectionIds: string[],
+  options?: { skipPng?: boolean },
+): Promise<DashboardChartCapture[]> {
   const uniqueIds = [...new Set(sectionIds.filter((id) => id && id !== 'source'))];
   const captures: DashboardChartCapture[] = [];
   document.body.classList.add('analytics-export-mode');
@@ -405,7 +554,9 @@ export async function captureDashboardCharts(sectionIds: string[]): Promise<Dash
     for (const id of uniqueIds) {
       const resolved = resolveVisibleRegistration(id);
       if (!resolved) {
-        console.error(`Skipped chart "${id}" because no visible registered node was found`);
+        console.error(
+          `Skipped chart "${id}" because no visible registered node was found. Registered: ${[...chartRegistry.keys()].join(', ') || '(none)'}`,
+        );
         continue;
       }
       const { entry, node } = resolved;
@@ -415,8 +566,8 @@ export async function captureDashboardCharts(sectionIds: string[]): Promise<Dash
         } catch {
           node.scrollIntoView({ block: 'center', inline: 'nearest' });
         }
-        await delay(160);
-        const captured = await captureNode(node);
+        await delay(180);
+        const captured = await captureNode(node, { skipPng: options?.skipPng });
         const hasSvg = isUsefulSvgMarkup(captured.svgMarkup);
         const hasHtml = Boolean(captured.htmlMarkup);
         const hasPng = hasPngPayload(captured.dataUrl);
@@ -432,8 +583,8 @@ export async function captureDashboardCharts(sectionIds: string[]): Promise<Dash
           dataUrl: hasPng ? captured.dataUrl : 'data:image/png;base64,',
           svgMarkup: hasSvg ? captured.svgMarkup : undefined,
           htmlMarkup: hasHtml ? captured.htmlMarkup : undefined,
-          width: captured.width,
-          height: captured.height,
+          width: Math.max(captured.width, 320),
+          height: Math.max(captured.height, 180),
         });
       } catch (error) {
         console.error(`Failed to capture chart "${id}"`, error);

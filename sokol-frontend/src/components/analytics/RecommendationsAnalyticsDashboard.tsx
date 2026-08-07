@@ -245,7 +245,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
               <KpiCard label="Всего" value={summary.total} hint={`из ${recommendations.length}`} tone="violet" />
               <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
               <KpiCard label="Не решено" value={summary.byStatus.unresolved} tone="red" />
-              <KpiCard label="Высокая сущ." value={summary.byMateriality.высокий} tone="amber" />
+              <KpiCard label="Высокая существенность" value={summary.byMateriality.высокий} tone="amber" />
               <KpiCard label="Исполнение" value={summary.completionRate} suffix="%" tone="blue" />
               <KpiCard label="Нарушение срока" value={summary.violationRate} suffix="%" tone="red" />
             </div>
