@@ -105,7 +105,7 @@ function pickPrimarySvg(node: HTMLElement): SVGSVGElement | null {
     seen.add(candidate);
     const rect = candidate.getBoundingClientRect();
     const area = rect.width * rect.height;
-    if (area < 120) {
+    if (area < 40) {
       continue;
     }
     const hasPaint =
@@ -125,50 +125,71 @@ function pickPrimarySvg(node: HTMLElement): SVGSVGElement | null {
 }
 
 export function isUsefulSvgMarkup(svgMarkup: string | undefined): svgMarkup is string {
-  if (!svgMarkup || !/viewBox\s*=/.test(svgMarkup)) {
+  if (!svgMarkup) {
+    return false;
+  }
+  // Legend HTML may be appended after the <svg>; validate only the SVG portion.
+  const legendStart = svgMarkup.indexOf('<div');
+  const svgOnly = legendStart >= 0 ? svgMarkup.slice(0, legendStart) : svgMarkup;
+  if (!/<svg\b/i.test(svgOnly) || !/viewBox\s*=/.test(svgOnly)) {
     return false;
   }
   // Grid lines alone are not enough; need at least one painted series mark or label.
-  const seriesMarks = (
-    svgMarkup.match(/<(path|rect|circle|polygon|polyline|ellipse)\b/gi) ?? []
-  ).length;
-  const hasText = /<text\b/i.test(svgMarkup);
-  return seriesMarks >= 1 || (hasText && svgMarkup.length > 400);
+  const seriesMarks = (svgOnly.match(/<(path|rect|circle|polygon|polyline|ellipse)\b/gi) ?? []).length;
+  const hasText = /<text\b/i.test(svgOnly);
+  return seriesMarks >= 1 || (hasText && svgOnly.length > 300);
+}
+
+function directChildTexts(group: Element): string[] {
+  return [...group.children]
+    .filter((child) => {
+      const tag = child.tagName.toLowerCase();
+      return tag === 'text' || tag === 'title';
+    })
+    .map((child) => (child.textContent || '').trim())
+    .filter(Boolean);
 }
 
 function annotateInteractiveLabels(clone: SVGSVGElement) {
-  const marks = clone.querySelectorAll(
-    'path, rect, circle, polygon, polyline, ellipse, .recharts-sector, .recharts-rectangle',
-  );
-  marks.forEach((element) => {
-    if (
-      element.closest(
-        '.recharts-cartesian-grid, .recharts-brush, .recharts-reference-line, .recharts-reference-area',
-      )
-    ) {
-      return;
-    }
-    const existing =
-      element.getAttribute('data-label') ||
-      element.getAttribute('name') ||
-      element.getAttribute('aria-label') ||
-      element.getAttribute('title');
-    if (existing?.trim()) {
-      element.setAttribute('data-label', existing.trim());
-      return;
-    }
+  try {
+    const marks = clone.querySelectorAll(
+      'path, rect, circle, polygon, polyline, ellipse, .recharts-sector, .recharts-rectangle',
+    );
+    marks.forEach((element) => {
+      try {
+        if (
+          typeof element.closest === 'function' &&
+          element.closest(
+            '.recharts-cartesian-grid, .recharts-brush, .recharts-reference-line, .recharts-reference-area',
+          )
+        ) {
+          return;
+        }
+        const existing =
+          element.getAttribute('data-label') ||
+          element.getAttribute('name') ||
+          element.getAttribute('aria-label') ||
+          element.getAttribute('title');
+        if (existing?.trim()) {
+          element.setAttribute('data-label', existing.trim());
+          return;
+        }
 
-    const group = element.parentElement;
-    if (!group) {
-      return;
-    }
-    const texts = [...group.querySelectorAll(':scope > text, :scope > title')]
-      .map((node) => (node.textContent || '').trim())
-      .filter(Boolean);
-    if (texts.length > 0) {
-      element.setAttribute('data-label', texts.join(' · '));
-    }
-  });
+        const group = element.parentElement;
+        if (!group) {
+          return;
+        }
+        const texts = directChildTexts(group);
+        if (texts.length > 0) {
+          element.setAttribute('data-label', texts.join(' · '));
+        }
+      } catch {
+        // Ignore a single mark annotation failure.
+      }
+    });
+  } catch (error) {
+    console.warn('SVG label annotation failed', error);
+  }
 }
 
 function rewriteFragmentIds(markup: string, uid: string): string {
@@ -205,58 +226,72 @@ function extractLegendHtml(node: HTMLElement): string | undefined {
 }
 
 function extractSvgMarkup(node: HTMLElement): string | undefined {
-  const svg = pickPrimarySvg(node);
-  if (!svg) {
+  try {
+    const svg = pickPrimarySvg(node);
+    if (!svg) {
+      return undefined;
+    }
+
+    const clone = svg.cloneNode(true) as SVGSVGElement;
+    const rect = svg.getBoundingClientRect();
+    const width = Math.max(Math.round(rect.width), 1);
+    const height = Math.max(Math.round(rect.height), 1);
+    const uid = `svg${Math.random().toString(36).slice(2, 9)}`;
+
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('width', String(width));
+    clone.setAttribute('height', String(height));
+    clone.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    clone.removeAttribute('style');
+    annotateInteractiveLabels(clone);
+
+    clone.querySelectorAll('[id]').forEach((element) => {
+      const id = element.getAttribute('id');
+      if (!id) {
+        return;
+      }
+      element.setAttribute('id', `${uid}-${id}`);
+    });
+
+    let markup = new XMLSerializer().serializeToString(clone);
+    markup = rewriteFragmentIds(markup, uid);
+
+    try {
+      const legendHtml = extractLegendHtml(node);
+      if (legendHtml) {
+        return `${markup}<div class="chart-legend">${legendHtml}</div>`;
+      }
+    } catch (legendError) {
+      console.warn('Legend extraction failed', legendError);
+    }
+    return markup;
+  } catch (error) {
+    console.warn('SVG extraction failed', error);
     return undefined;
   }
-
-  const clone = svg.cloneNode(true) as SVGSVGElement;
-  const rect = svg.getBoundingClientRect();
-  const width = Math.max(Math.round(rect.width), 1);
-  const height = Math.max(Math.round(rect.height), 1);
-  const uid = `svg${Math.random().toString(36).slice(2, 9)}`;
-
-  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  clone.setAttribute('width', String(width));
-  clone.setAttribute('height', String(height));
-  clone.setAttribute('viewBox', `0 0 ${width} ${height}`);
-  clone.removeAttribute('style');
-  annotateInteractiveLabels(clone);
-
-  clone.querySelectorAll('[id]').forEach((element) => {
-    const id = element.getAttribute('id');
-    if (!id) {
-      return;
-    }
-    element.setAttribute('id', `${uid}-${id}`);
-  });
-
-  let markup = new XMLSerializer().serializeToString(clone);
-  markup = rewriteFragmentIds(markup, uid);
-
-  const legendHtml = extractLegendHtml(node);
-  if (legendHtml) {
-    return `${markup}<div class="chart-legend">${legendHtml}</div>`;
-  }
-  return markup;
 }
 
 function extractHtmlMarkup(node: HTMLElement): string | undefined {
-  // Heatmaps / KPI blocks without Recharts — keep real HTML instead of a flat PNG.
-  if (pickPrimarySvg(node)) {
+  try {
+    // Heatmaps / KPI blocks without Recharts — keep real HTML instead of a flat PNG.
+    if (pickPrimarySvg(node)) {
+      return undefined;
+    }
+    const table = node.querySelector('table');
+    if (table instanceof HTMLTableElement) {
+      return `<div class="chart-html">${table.outerHTML}</div>`;
+    }
+    const clone = node.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('[data-chart-toolbar]').forEach((toolbar) => toolbar.remove());
+    const text = (clone.textContent || '').replace(/\s+/g, ' ').trim();
+    if (text.length < 8) {
+      return undefined;
+    }
+    return `<div class="chart-html">${clone.innerHTML}</div>`;
+  } catch (error) {
+    console.warn('HTML extraction failed', error);
     return undefined;
   }
-  const table = node.querySelector('table');
-  if (table instanceof HTMLTableElement) {
-    return `<div class="chart-html">${table.outerHTML}</div>`;
-  }
-  const clone = node.cloneNode(true) as HTMLElement;
-  clone.querySelectorAll('[data-chart-toolbar]').forEach((toolbar) => toolbar.remove());
-  const text = (clone.textContent || '').replace(/\s+/g, ' ').trim();
-  if (text.length < 8) {
-    return undefined;
-  }
-  return `<div class="chart-html">${clone.innerHTML}</div>`;
 }
 
 async function waitForChartPaint(node: HTMLElement) {
@@ -332,9 +367,15 @@ async function captureNode(node: HTMLElement): Promise<{
   const rect = node.getBoundingClientRect();
   const width = Math.max(Math.round(rect.width), 1);
   const height = Math.max(Math.round(rect.height), 1);
+  // Never let SVG/HTML enrichment fail the whole card — PNG is the safety net.
   const svgMarkup = extractSvgMarkup(node);
   const htmlMarkup = isUsefulSvgMarkup(svgMarkup) ? undefined : extractHtmlMarkup(node);
-  const dataUrl = await captureNodeAsPng(node, width, height);
+  let dataUrl = '';
+  try {
+    dataUrl = await captureNodeAsPng(node, width, height);
+  } catch (error) {
+    console.warn('PNG capture failed', error);
+  }
   return { dataUrl, svgMarkup, htmlMarkup, width, height };
 }
 
@@ -369,10 +410,17 @@ export async function captureDashboardCharts(sectionIds: string[]): Promise<Dash
       }
       const { entry, node } = resolved;
       try {
-        node.scrollIntoView({ block: 'nearest', behavior: 'instant' as ScrollBehavior });
-        await delay(100);
+        try {
+          node.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' as ScrollBehavior });
+        } catch {
+          node.scrollIntoView({ block: 'center', inline: 'nearest' });
+        }
+        await delay(160);
         const captured = await captureNode(node);
-        if (!hasPngPayload(captured.dataUrl) && !captured.svgMarkup && !captured.htmlMarkup) {
+        const hasSvg = isUsefulSvgMarkup(captured.svgMarkup);
+        const hasHtml = Boolean(captured.htmlMarkup);
+        const hasPng = hasPngPayload(captured.dataUrl);
+        if (!hasPng && !hasSvg && !hasHtml) {
           console.error(`Skipped chart "${id}" because capture produced no usable payload`);
           continue;
         }
@@ -380,9 +428,10 @@ export async function captureDashboardCharts(sectionIds: string[]): Promise<Dash
           id,
           title: entry.title,
           description: entry.description,
-          dataUrl: captured.dataUrl,
-          svgMarkup: captured.svgMarkup,
-          htmlMarkup: captured.htmlMarkup,
+          // Keep a placeholder data URL so PDF/XLSX/DOCX paths can still skip safely.
+          dataUrl: hasPng ? captured.dataUrl : 'data:image/png;base64,',
+          svgMarkup: hasSvg ? captured.svgMarkup : undefined,
+          htmlMarkup: hasHtml ? captured.htmlMarkup : undefined,
           width: captured.width,
           height: captured.height,
         });

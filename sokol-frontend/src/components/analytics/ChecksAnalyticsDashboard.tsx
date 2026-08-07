@@ -9,7 +9,6 @@ import {
   Line,
   ResponsiveContainer,
   Tooltip,
-  Treemap,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -20,7 +19,7 @@ import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFi
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
-import { PALETTE } from './analyticsPalette';
+import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { exportChecksDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
@@ -54,32 +53,6 @@ const STATUS_STACK = [
 
 function toOptions(values: string[]) {
   return values.map((value) => ({ value, label: value }));
-}
-
-function TreemapContent(props: {
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  name?: string;
-  value?: number;
-  fill?: string;
-}) {
-  const { x = 0, y = 0, width = 0, height = 0, name = '', value = 0, fill = '#2563EB' } = props;
-  if (width < 42 || height < 32) {
-    return <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" strokeWidth={2} />;
-  }
-  return (
-    <g>
-      <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" strokeWidth={2} rx={8} />
-      <text x={x + 8} y={y + 18} fill="#fff" fontSize={11} fontWeight={700}>
-        {name.length > 20 ? `${name.slice(0, 18)}...` : name}
-      </text>
-      <text x={x + 8} y={y + 34} fill="#fff" fontSize={12}>
-        {value}
-      </text>
-    </g>
-  );
 }
 
 export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnalyticsDashboardProps) {
@@ -408,21 +381,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
             {auditorDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <div className="h-full min-h-[13rem]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <Treemap
-                    data={auditorDistribution.map((item, index) => ({
-                      ...item,
-                      fill: PALETTE[index % PALETTE.length],
-                    }))}
-                    dataKey="value"
-                    nameKey="name"
-                    content={<TreemapContent />}
-                  >
-                    <Tooltip />
-                  </Treemap>
-                </ResponsiveContainer>
-              </div>
+              <FocusableTreemapChart data={auditorDistribution} />
             )}
           </ChartCard>
         ),

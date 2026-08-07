@@ -694,7 +694,9 @@ async function buildVisualHtml(options: {
             var group = hit.closest('g');
             if (group) {
               var texts = [];
-              group.querySelectorAll(':scope > text').forEach(function (node) {
+              Array.prototype.forEach.call(group.children || [], function (node) {
+                var tag = (node.tagName || '').toLowerCase();
+                if (tag !== 'text' && tag !== 'title') return;
                 var value = (node.textContent || '').trim();
                 if (value) texts.push(value);
               });
@@ -746,21 +748,31 @@ export async function exportVisualAnalyticsReport(options: {
     );
   }
 
+  const chartsWithPng = charts.filter(
+    (chart) => chart.dataUrl.startsWith('data:image/png;base64,') && Boolean(chart.dataUrl.split(',')[1]),
+  );
+
   if (options.format === 'pdf') {
+    if (chartsWithPng.length === 0) {
+      throw new Error('Не удалось снять изображения дашбордов для PDF. Обновите страницу и попробуйте снова.');
+    }
     await buildVisualPdf({
       documentTitle: options.documentTitle,
       meta: options.meta,
-      charts,
+      charts: chartsWithPng,
       filenamePrefix: options.filenamePrefix,
     });
     return;
   }
 
   if (options.format === 'docx') {
+    if (chartsWithPng.length === 0) {
+      throw new Error('Не удалось снять изображения дашбордов для Word. Обновите страницу и попробуйте снова.');
+    }
     await buildVisualDocx({
       documentTitle: options.documentTitle,
       meta: options.meta,
-      charts,
+      charts: chartsWithPng,
       filenamePrefix: options.filenamePrefix,
     });
     return;
@@ -776,10 +788,13 @@ export async function exportVisualAnalyticsReport(options: {
     return;
   }
 
+  if (chartsWithPng.length === 0) {
+    throw new Error('Не удалось снять изображения дашбордов для Excel. Обновите страницу и попробуйте снова.');
+  }
   await buildVisualXlsx({
     documentTitle: options.documentTitle,
     meta: options.meta,
-    charts,
+    charts: chartsWithPng,
     kind: options.kind,
     filenamePrefix: options.filenamePrefix,
   });
