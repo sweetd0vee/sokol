@@ -10,6 +10,8 @@
 | UI | http://localhost:5180 |
 | API / Swagger | http://localhost:8800/docs |
 | Postgres | localhost:5433 |
+| MinIO API | http://localhost:9000 |
+| MinIO Console | http://localhost:9001 |
 | Ollama (локально на хосте) | http://localhost:11434 |
 
 > В Docker API на **8800**. Локальный `run_dev.ps1` без Docker слушает **8802** — см. корневой [README.md](README.md).
@@ -73,7 +75,10 @@ docker compose up --build -d api ui
 | Том | Путь на хосте (Windows) |
 |-----|-------------------------|
 | Postgres | `%USERPROFILE%\docker-share\postgres-data-sokol` |
+| MinIO | `%USERPROFILE%\docker-share\minio-data-sokol` |
 | Ollama models | локальный каталог Ollama на хосте (не Docker volume) |
+
+Подробнее о файловом хранилище: [sokol-backend/docs/STORAGE.md](sokol-backend/docs/STORAGE.md).
 
 ## Частые проблемы
 

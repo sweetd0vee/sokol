@@ -1,15 +1,11 @@
-import { useMemo, useRef, useState } from 'react';
-import { FileUp, Paperclip, Trash2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { FileUp, Paperclip } from 'lucide-react';
+import type { AttachmentEntityType } from '../../api/attachments';
+import { useEntityAttachments } from '../../hooks/useEntityAttachments';
+import { filesWord } from '../../utils/fileAttachments';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import {
-  type AttachedFileItem,
-  countFilesForSlot,
-  createAttachmentId,
-  filesWord,
-  formatFileSize,
-  getFileExtension,
-} from '../../utils/fileAttachments';
+import { AttachmentFileList, AttachmentsUnavailableNotice } from './AttachmentFileList';
 
 type AttachmentSlotConfig = {
   id: string;
@@ -19,6 +15,9 @@ type AttachmentSlotConfig = {
 type FileAttachmentsPanelProps = {
   title?: string;
   slots: AttachmentSlotConfig[];
+  entityType: AttachmentEntityType;
+  entityId?: number | string | null;
+  unavailableMessage?: string;
   columnsClassName?: string;
   embedded?: boolean;
   compact?: boolean;
@@ -52,7 +51,11 @@ function AttachmentCard({
     >
       {!hideLabel && (
         <span
-          className={compact ? 'text-sm font-semibold text-gray-800 dark:text-slate-200' : 'text-lg font-semibold text-gray-800 dark:text-slate-200'}
+          className={
+            compact
+              ? 'text-sm font-semibold text-gray-800 dark:text-slate-200'
+              : 'text-lg font-semibold text-gray-800 dark:text-slate-200'
+          }
         >
           {label}
         </span>
@@ -73,28 +76,35 @@ function AttachmentCard({
 function AttachmentFilesModal({
   title,
   slotId,
-  files,
+  items,
+  canPersist,
+  unavailableMessage,
   onAddFiles,
   onRemoveFile,
   onClose,
 }: {
   title: string;
   slotId: string;
-  files: Record<string, AttachedFileItem[]>;
+  items: ReturnType<typeof useEntityAttachments>['filesBySlot'][string];
+  canPersist: boolean;
+  unavailableMessage: string;
   onAddFiles: (slotId: string, newFiles: File[]) => void;
-  onRemoveFile: (slotId: string, id: string) => void;
+  onRemoveFile: (slotId: string, clientId: string) => void;
   onClose: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const slotFiles = files[slotId] ?? [];
+  const slotFiles = items ?? [];
 
   return (
     <Modal title={title} wide onClose={onClose}>
       <div className="mt-4 space-y-3">
+        {!canPersist && <AttachmentsUnavailableNotice message={unavailableMessage} />}
+
         <div className="flex flex-wrap items-center justify-start gap-3">
           <Button
             type="button"
             variant="secondary"
+            disabled={!canPersist}
             onClick={() => {
               if (inputRef.current) {
                 inputRef.current.value = '';
@@ -111,6 +121,7 @@ function AttachmentFilesModal({
             ref={inputRef}
             type="file"
             multiple
+            disabled={!canPersist}
             className="sr-only"
             onChange={(event) => {
               const picked = Array.from(event.target.files ?? []);
@@ -121,32 +132,15 @@ function AttachmentFilesModal({
           />
         </div>
 
-        {slotFiles.length === 0 ? (
-          <p className="rounded-lg bg-gray-100 px-4 py-6 text-sm text-gray-500 dark:bg-slate-700 dark:text-slate-400">
-            Файлы не прикреплены.
-          </p>
-        ) : (
-          <ul className="divide-y divide-gray-200 rounded-lg bg-gray-100 dark:divide-slate-700 dark:bg-slate-700">
-            {slotFiles.map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900 dark:text-slate-100">{item.file.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400">
-                    {getFileExtension(item.file.name)} · {formatFileSize(item.file.size)}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onRemoveFile(slotId, item.id)}
-                  className="rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/30"
-                  aria-label={`Удалить ${item.file.name}`}
-                >
-                  <Trash2 size={18} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+        <AttachmentFileList
+          items={slotFiles}
+          onRemove={(clientId) => onRemoveFile(slotId, clientId)}
+          emptyMessage={
+            canPersist
+              ? 'Файлы не прикреплены.'
+              : 'После сохранения карточки здесь можно будет прикрепить файлы.'
+          }
+        />
       </div>
 
       <div className="mt-6 flex justify-end">
@@ -161,50 +155,33 @@ function AttachmentFilesModal({
 export function FileAttachmentsPanel({
   title,
   slots,
+  entityType,
+  entityId = null,
+  unavailableMessage = 'Сохраните карточку, чтобы прикрепить файлы.',
   columnsClassName = 'grid-cols-1 md:grid-cols-2 xl:grid-cols-4',
   embedded = false,
   compact = false,
   hideSlotLabel = false,
   className = '',
 }: FileAttachmentsPanelProps) {
-  const emptyFiles = useMemo(
-    () => Object.fromEntries(slots.map((slot) => [slot.id, [] as AttachedFileItem[]])),
-    [slots],
-  );
-  const [files, setFiles] = useState<Record<string, AttachedFileItem[]>>(emptyFiles);
+  const { filesBySlot, addFiles, removeFile, countForSlot, canPersist } = useEntityAttachments({
+    entityType,
+    entityId,
+  });
   const [openSlotId, setOpenSlotId] = useState<string | null>(null);
 
   const openSlot = slots.find((slot) => slot.id === openSlotId);
 
-  const addFiles = (slotId: string, newFiles: File[]) => {
-    setFiles((current) => ({
-      ...current,
-      [slotId]: [
-        ...(current[slotId] ?? []),
-        ...newFiles.map((file) => ({
-          id: createAttachmentId(),
-          file,
-        })),
-      ],
-    }));
-  };
-
-  const removeFile = (slotId: string, id: string) => {
-    setFiles((current) => ({
-      ...current,
-      [slotId]: (current[slotId] ?? []).filter((item) => item.id !== id),
-    }));
-  };
-
   const content = (
     <>
       {title && <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{title}</div>}
+      {!canPersist && !embedded && <AttachmentsUnavailableNotice message={unavailableMessage} />}
       <div className={`grid gap-4 ${columnsClassName}`}>
         {slots.map((slot) => (
           <AttachmentCard
             key={slot.id}
             label={slot.label}
-            fileCount={countFilesForSlot(files, slot.id)}
+            fileCount={countForSlot(slot.id)}
             onOpen={() => setOpenSlotId(slot.id)}
             compact={compact}
             hideLabel={hideSlotLabel}
@@ -216,7 +193,9 @@ export function FileAttachmentsPanel({
         <AttachmentFilesModal
           title={openSlot.label}
           slotId={openSlot.id}
-          files={files}
+          items={filesBySlot[openSlot.id]}
+          canPersist={canPersist}
+          unavailableMessage={unavailableMessage}
           onAddFiles={addFiles}
           onRemoveFile={removeFile}
           onClose={() => setOpenSlotId(null)}

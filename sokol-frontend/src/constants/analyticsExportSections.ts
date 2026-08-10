@@ -11,14 +11,12 @@ export const CHECK_EXPORT_SECTIONS = [
 
 export const RECOMMENDATION_EXPORT_SECTIONS = [
   { id: 'summary', label: 'Сводка KPI', sheetName: 'Сводка', headerFill: '312E81' },
-  { id: 'cumulative', label: 'Накопление и исполнение', sheetName: 'Накопительно', headerFill: '4F46E5' },
+  { id: 'cumulative', label: 'Количество рекомендаций', sheetName: 'Количество рекомендаций', headerFill: '4F46E5' },
   { id: 'materialityByPeriod', label: 'Существенность по периодам', sheetName: 'Сущ по периодам', headerFill: 'BE123C' },
   { id: 'statusByPeriod', label: 'Статусы по периодам', sheetName: 'Статусы по периодам', headerFill: 'CA8A04' },
   { id: 'materiality', label: 'Существенность', sheetName: 'Существенность', headerFill: '16A34A' },
   { id: 'additionalStatuses', label: 'Срок исполнения', sheetName: 'Срок исполнения', headerFill: 'DB2777' },
   { id: 'indicators', label: 'Индикаторы', sheetName: 'Индикаторы', headerFill: '0891B2' },
-  { id: 'deadlines', label: 'Горизонт сроков', sheetName: 'Горизонт сроков', headerFill: 'EA580C' },
-  { id: 'funnel', label: 'Воронка исполнения', sheetName: 'Воронка', headerFill: '4F46E5' },
   { id: 'auditors', label: 'Нагрузка аудиторов', sheetName: 'Аудиторы', headerFill: '1D4ED8' },
   { id: 'objects', label: 'Объекты аудита', sheetName: 'Объекты аудита', headerFill: '0E7490' },
   { id: 'checkLinks', label: 'По проверкам', sheetName: 'По проверкам', headerFill: '0369A1' },

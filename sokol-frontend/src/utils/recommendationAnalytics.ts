@@ -71,9 +71,9 @@ export type AuditorPeriodRow = {
 };
 
 export const MATERIALITY_COLORS: Record<MaterialityLevel, string> = {
-  низкий: '#22C55E',
-  средний: '#EAB308',
-  высокий: '#EF4444',
+  низкий: '#A7F7C2',
+  средний: '#FBEB8D',
+  высокий: '#FF4347',
 };
 
 export const STATUS_COLORS: Record<RecommendationStatus, string> = {

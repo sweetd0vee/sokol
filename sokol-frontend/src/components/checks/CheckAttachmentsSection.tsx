@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { FileUp, Paperclip, Trash2 } from 'lucide-react';
+import { FileUp, Paperclip } from 'lucide-react';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
 import { Modal } from '../ui/Modal';
@@ -9,13 +9,10 @@ import {
   ATTACHMENT_SLOT_LABELS,
   type AttachmentFileGroup,
   type AttachmentSlot,
-  type CheckAttachmentItem,
-  countSlotFiles,
-  createAttachmentId,
   filesWord,
-  formatFileSize,
-  getFileExtension,
 } from '../../utils/checkAttachments';
+import { useEntityAttachments } from '../../hooks/useEntityAttachments';
+import { AttachmentFileList, AttachmentsUnavailableNotice } from '../attachments/AttachmentFileList';
 import {
   FORM_INPUT_CLASS,
   FORM_LABEL_CLASS,
@@ -23,14 +20,6 @@ import {
   FORM_SECTION_CLASS,
   FORM_SECTION_TITLE_CLASS,
 } from '../../constants/formLayout';
-
-const EMPTY_FILES: Record<AttachmentFileGroup, CheckAttachmentItem[]> = {
-  order: [],
-  program: [],
-  az: [],
-  dz: [],
-  dz_appendix: [],
-};
 
 type DocumentFields = {
   documentNumber: string;
@@ -40,6 +29,7 @@ type DocumentFields = {
 };
 
 type CheckAttachmentsSectionProps = {
+  checkId?: string | null;
   order: DocumentFields;
   program: DocumentFields;
   az: DocumentFields;
@@ -76,16 +66,18 @@ function AttachmentCard({ label, fileCount, onOpen }: AttachmentCardProps) {
 type AttachmentFilesModalProps = {
   slot: AttachmentSlot;
   groups: AttachmentFileGroup[];
-  files: Record<AttachmentFileGroup, CheckAttachmentItem[]>;
+  filesBySlot: ReturnType<typeof useEntityAttachments>['filesBySlot'];
+  canPersist: boolean;
   onAddFiles: (group: AttachmentFileGroup, newFiles: File[]) => void;
-  onRemoveFile: (group: AttachmentFileGroup, id: string) => void;
+  onRemoveFile: (group: AttachmentFileGroup, clientId: string) => void;
   onClose: () => void;
 };
 
 function AttachmentFilesModal({
   slot,
   groups,
-  files,
+  filesBySlot,
+  canPersist,
   onAddFiles,
   onRemoveFile,
   onClose,
@@ -103,13 +95,24 @@ function AttachmentFilesModal({
   return (
     <Modal title={ATTACHMENT_SLOT_LABELS[slot]} wide onClose={onClose}>
       <div className="mt-4 space-y-6">
+        {!canPersist && (
+          <AttachmentsUnavailableNotice message="Сохраните проверку, чтобы прикрепить файлы." />
+        )}
+
         {groups.map((group) => {
-          const groupFiles = files[group];
+          const groupFiles = filesBySlot[group] ?? [];
           return (
             <div key={group} className="space-y-3">
               <div className="flex flex-wrap items-center justify-start gap-3">
-                <h4 className="text-base font-semibold text-gray-900 dark:text-slate-100">{ATTACHMENT_GROUP_LABELS[group]}</h4>
-                <Button type="button" variant="secondary" onClick={() => handlePickFiles(group)}>
+                <h4 className="text-base font-semibold text-gray-900 dark:text-slate-100">
+                  {ATTACHMENT_GROUP_LABELS[group]}
+                </h4>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={!canPersist}
+                  onClick={() => handlePickFiles(group)}
+                >
                   <span className="inline-flex items-center gap-2">
                     <FileUp size={16} />
                     Добавить файлы
@@ -121,6 +124,7 @@ function AttachmentFilesModal({
                   }}
                   type="file"
                   multiple
+                  disabled={!canPersist}
                   className="sr-only"
                   onChange={(event) => {
                     const picked = Array.from(event.target.files ?? []);
@@ -131,35 +135,15 @@ function AttachmentFilesModal({
                 />
               </div>
 
-              {groupFiles.length === 0 ? (
-                <p className="rounded-lg bg-gray-100 px-4 py-6 text-sm text-gray-500 dark:bg-slate-700 dark:text-slate-400">
-                  Файлы не прикреплены. Можно загрузить несколько файлов любого формата.
-                </p>
-              ) : (
-                <ul className="divide-y divide-gray-200 rounded-lg bg-gray-100 dark:divide-slate-700 dark:bg-slate-700">
-                  {groupFiles.map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-center justify-between gap-3 px-4 py-3"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-gray-900 dark:text-slate-100">{item.file.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-slate-400">
-                          {getFileExtension(item.file.name)} · {formatFileSize(item.file.size)}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => onRemoveFile(group, item.id)}
-                        className="rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/30"
-                        aria-label={`Удалить ${item.file.name}`}
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <AttachmentFileList
+                items={groupFiles}
+                onRemove={(clientId) => onRemoveFile(group, clientId)}
+                emptyMessage={
+                  canPersist
+                    ? 'Файлы не прикреплены. Можно загрузить несколько файлов.'
+                    : 'После сохранения проверки здесь можно будет прикрепить файлы.'
+                }
+              />
             </div>
           );
         })}
@@ -205,12 +189,16 @@ function DocumentMetaFields({
 }
 
 export function CheckAttachmentsSection({
+  checkId = null,
   order,
   program,
   az,
   dz,
 }: CheckAttachmentsSectionProps) {
-  const [files, setFiles] = useState(EMPTY_FILES);
+  const { filesBySlot, addFiles, removeFile, countForSlot, canPersist } = useEntityAttachments({
+    entityType: 'check',
+    entityId: checkId,
+  });
   const [openSlot, setOpenSlot] = useState<AttachmentSlot | null>(null);
 
   const modalGroups = useMemo((): AttachmentFileGroup[] => {
@@ -223,35 +211,28 @@ export function CheckAttachmentsSection({
     return [];
   }, [openSlot]);
 
-  const addFiles = (group: AttachmentFileGroup, newFiles: File[]) => {
-    setFiles((current) => ({
-      ...current,
-      [group]: [
-        ...current[group],
-        ...newFiles.map((file) => ({
-          id: createAttachmentId(),
-          file,
-        })),
-      ],
-    }));
-  };
-
-  const removeFile = (group: AttachmentFileGroup, id: string) => {
-    setFiles((current) => ({
-      ...current,
-      [group]: current[group].filter((item) => item.id !== id),
-    }));
+  const slotCounts = {
+    order: countForSlot('order'),
+    program: countForSlot('program'),
+    az: countForSlot('az'),
+    dz: countForSlot('dz') + countForSlot('dz_appendix'),
   };
 
   return (
     <div className={FORM_SECTION_CLASS}>
       <div className={FORM_SECTION_TITLE_CLASS}>Вложения</div>
 
+      {!canPersist && (
+        <div className="mb-4">
+          <AttachmentsUnavailableNotice message="Сохраните проверку, чтобы прикрепить файлы." />
+        </div>
+      )}
+
       <div className={FORM_ROW_4}>
         <div className="flex min-w-0 flex-col gap-6">
           <AttachmentCard
             label="Приказ"
-            fileCount={countSlotFiles(files, 'order')}
+            fileCount={slotCounts.order}
             onOpen={() => setOpenSlot('order')}
           />
           <DocumentMetaFields {...order} />
@@ -259,25 +240,17 @@ export function CheckAttachmentsSection({
         <div className="flex min-w-0 flex-col gap-6">
           <AttachmentCard
             label="Программа"
-            fileCount={countSlotFiles(files, 'program')}
+            fileCount={slotCounts.program}
             onOpen={() => setOpenSlot('program')}
           />
           <DocumentMetaFields {...program} />
         </div>
         <div className="flex min-w-0 flex-col gap-6">
-          <AttachmentCard
-            label="АЗ"
-            fileCount={countSlotFiles(files, 'az')}
-            onOpen={() => setOpenSlot('az')}
-          />
+          <AttachmentCard label="АЗ" fileCount={slotCounts.az} onOpen={() => setOpenSlot('az')} />
           <DocumentMetaFields {...az} />
         </div>
         <div className="flex min-w-0 flex-col gap-6">
-          <AttachmentCard
-            label="ДЗ"
-            fileCount={countSlotFiles(files, 'dz')}
-            onOpen={() => setOpenSlot('dz')}
-          />
+          <AttachmentCard label="ДЗ" fileCount={slotCounts.dz} onOpen={() => setOpenSlot('dz')} />
           <DocumentMetaFields {...dz} />
         </div>
       </div>
@@ -286,9 +259,14 @@ export function CheckAttachmentsSection({
         <AttachmentFilesModal
           slot={openSlot}
           groups={modalGroups}
-          files={files}
-          onAddFiles={addFiles}
-          onRemoveFile={removeFile}
+          filesBySlot={filesBySlot}
+          canPersist={canPersist}
+          onAddFiles={(group, newFiles) => {
+            void addFiles(group, newFiles);
+          }}
+          onRemoveFile={(group, clientId) => {
+            void removeFile(group, clientId);
+          }}
           onClose={() => setOpenSlot(null)}
         />
       )}

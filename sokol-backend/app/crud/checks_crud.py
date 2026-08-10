@@ -1,12 +1,18 @@
 from datetime import date
 from typing import Optional, Sequence
 
+import logging
+
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.crud.attachments_crud import list_attachments_by_serial
 from app.models.checks import Check, CheckStatus
 from app.schemas.checks import CheckCreate, CheckUpdate
+from app.services.storage.minio_storage import get_storage
 from app.utils.check_key import CheckKeySeed, generate_check_serial_number
+
+logger = logging.getLogger(__name__)
 
 
 def _apply_filters(
@@ -54,6 +60,14 @@ async def create_check(session: AsyncSession, check_in: CheckCreate) -> Check:
     session.add(check)
     await session.commit()
     await session.refresh(check)
+
+    storage = get_storage()
+    if storage is not None:
+        try:
+            await storage.ensure_check_bucket(check.serial_number)
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to create MinIO bucket for check %s", check.serial_number)
+
     return check
 
 
@@ -107,5 +121,18 @@ async def update_check(
 
 
 async def delete_check(session: AsyncSession, check: Check) -> None:
+    serial_number = check.serial_number
+
+    attachment_rows = await list_attachments_by_serial(session, serial_number)
+    for attachment in attachment_rows:
+        await session.delete(attachment)
+
     await session.delete(check)
     await session.commit()
+
+    storage = get_storage()
+    if storage is not None:
+        try:
+            await storage.delete_check_bucket(serial_number)
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to delete MinIO bucket for check %s", serial_number)

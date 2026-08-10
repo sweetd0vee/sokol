@@ -4,8 +4,6 @@ import {
   BarChart,
   CartesianGrid,
   ComposedChart,
-  Funnel,
-  FunnelChart,
   LabelList,
   Legend,
   Line,
@@ -29,10 +27,10 @@ import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import {
   RECOMMENDATIONS_ADDITIONAL_STATUS_COLORS,
+  RECOMMENDATIONS_CUMULATIVE_LINE_COLOR,
   RECOMMENDATIONS_INDICATOR_COLORS,
   RECOMMENDATIONS_MATERIALITY_COLORS,
   RECOMMENDATIONS_PALETTE,
-  RECOMMENDATIONS_STATUS_COLORS,
 } from './analyticsPalette';
 import { exportRecommendationsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import {
@@ -56,12 +54,12 @@ import {
   buildAuditorDistribution,
   buildCheckLinkDistribution,
   buildCumulativeSeries,
-  buildDeadlineBuckets,
-  buildFunnel,
   buildIndicatorDistribution,
   collectAuditObjects,
   collectRecommendationAuditors,
   filterRecommendationsForAnalytics,
+  MATERIALITY_COLORS,
+  STATUS_COLORS,
   summarizeRecommendations,
   type PeriodGranularity,
 } from '../../utils/recommendationAnalytics';
@@ -216,8 +214,6 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
       }),
     [filtered],
   );
-  const deadlineBuckets = useMemo(() => buildDeadlineBuckets(filtered), [filtered]);
-  const funnel = useMemo(() => buildFunnel(filtered), [filtered]);
   const auditorDistribution = useMemo(() => buildAuditorDistribution(filtered), [filtered]);
   const objectDistribution = useMemo(() => buildAuditObjectDistribution(filtered), [filtered]);
   const checkLinks = useMemo(() => buildCheckLinkDistribution(filtered), [filtered]);
@@ -277,14 +273,22 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
         id: 'summary',
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
-          <ChartCard title="Сводка KPI" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')} onResetCardLayout={resetCardLayout}>
-            <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-6">
+          <ChartCard
+            title="Сводка KPI"
+            description=""
+            dense
+            exportSectionId="summary"
+            exportSelected={exportSections.isSelected('summary')}
+            onToggleExport={() => exportSections.toggleSection('summary')}
+            onResetCardLayout={resetCardLayout}
+          >
+            <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-6">
               <KpiCard label="Всего" value={summary.total} hint={`из ${recommendations.length}`} tone="violet" />
-              <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="lilac" />
-              <KpiCard label="Не решено" value={summary.byStatus.unresolved} tone="purple" />
-              <KpiCard label="Высокая существенность" value={summary.byMateriality.высокий} tone="indigo" />
-              <KpiCard label="Исполнение" value={summary.completionRate} suffix="%" tone="fuchsia" />
-              <KpiCard label="Нарушение срока" value={summary.violationRate} suffix="%" tone="violet" />
+              <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
+              <KpiCard label="Не решено" value={summary.byStatus.unresolved} tone="slate" />
+              <KpiCard label="Высокая существенность" value={summary.byMateriality.высокий} tone="amber" />
+              <KpiCard label="Исполнение" value={summary.completionRate} suffix="%" tone="blue" />
+              <KpiCard label="Нарушение срока" value={summary.violationRate} suffix="%" tone="red" />
             </div>
           </ChartCard>
         ),
@@ -293,9 +297,47 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
         id: 'cumulative',
         defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
-          <ChartCard title="Накопление и исполнение" description="Всего и исполнено нарастающим итогом" exportSectionId="cumulative" exportSelected={exportSections.isSelected('cumulative')} onToggleExport={() => exportSections.toggleSection('cumulative')} onResetCardLayout={resetCardLayout}>
-            {cumulativeSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={cumulativeSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /><Bar dataKey="total" name="За срок" fill={RECOMMENDATIONS_PALETTE[5]} radius={[4, 4, 0, 0]} /><Line type="monotone" dataKey="cumulative" name="Накопительно" stroke={RECOMMENDATIONS_PALETTE[0]} strokeWidth={2.5} /><Line type="monotone" dataKey="cumulativeCompleted" name="Исполнено" stroke={RECOMMENDATIONS_PALETTE[2]} strokeWidth={2.5} /></ComposedChart></ResponsiveContainer></div>
+          <ChartCard
+            title="Количество рекомендаций"
+            description="Динамика и накопительный итог"
+            exportSectionId="cumulative"
+            exportSelected={exportSections.isSelected('cumulative')}
+            onToggleExport={() => exportSections.toggleSection('cumulative')}
+            onResetCardLayout={resetCardLayout}
+          >
+            {cumulativeSeries.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <div className="h-full min-h-[13rem]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={cumulativeSeries} margin={{ top: 22, right: 12, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                    <Tooltip />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Bar dataKey="total" name="За период" fill={RECOMMENDATIONS_PALETTE[5]} radius={[4, 4, 0, 0]}>
+                      <LabelList dataKey="total" position="top" fontSize={10} />
+                    </Bar>
+                    <Line
+                      type="monotone"
+                      dataKey="cumulative"
+                      name="Всего"
+                      stroke={RECOMMENDATIONS_CUMULATIVE_LINE_COLOR}
+                      strokeWidth={2.5}
+                      dot={{ r: 3, fill: RECOMMENDATIONS_CUMULATIVE_LINE_COLOR }}
+                    >
+                      <LabelList
+                        dataKey="cumulative"
+                        position="top"
+                        fontSize={10}
+                        fill={RECOMMENDATIONS_CUMULATIVE_LINE_COLOR}
+                        offset={8}
+                      />
+                    </Line>
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </ChartCard>
         ),
@@ -304,9 +346,16 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
         id: 'statusByPeriod',
         defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
-          <ChartCard title="Статусы по периодам" description="Доли статусов внутри срока" exportSectionId="statusByPeriod" exportSelected={exportSections.isSelected('statusByPeriod')} onToggleExport={() => exportSections.toggleSection('statusByPeriod')} onResetCardLayout={resetCardLayout}>
+          <ChartCard
+            title="Статусы по периодам"
+            description="Распределение статусов внутри периода"
+            exportSectionId="statusByPeriod"
+            exportSelected={exportSections.isSelected('statusByPeriod')}
+            onToggleExport={() => exportSections.toggleSection('statusByPeriod')}
+            onResetCardLayout={resetCardLayout}
+          >
             {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={RECOMMENDATIONS_STATUS_COLORS[status.value]}><LabelList dataKey={status.value} position="center" fontSize={10} fill="#fff" /></Bar>)}</BarChart></ResponsiveContainer></div>
+              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]} />)}</BarChart></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),
@@ -315,54 +364,44 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
         id: 'materialityByPeriod',
         defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
-          <ChartCard title="Существенность по периодам" description="Низкий, средний и высокий уровни" exportSectionId="materialityByPeriod" exportSelected={exportSections.isSelected('materialityByPeriod')} onToggleExport={() => exportSections.toggleSection('materialityByPeriod')} onResetCardLayout={resetCardLayout}>
+          <ChartCard
+            title="Существенность по периодам"
+            description="Распределение уровней существенности внутри периода"
+            exportSectionId="materialityByPeriod"
+            exportSelected={exportSections.isSelected('materialityByPeriod')}
+            onToggleExport={() => exportSections.toggleSection('materialityByPeriod')}
+            onResetCardLayout={resetCardLayout}
+          >
             {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /><Bar dataKey="low" name="Низкий" stackId="mat" fill={RECOMMENDATIONS_MATERIALITY_COLORS.низкий} /><Bar dataKey="medium" name="Средний" stackId="mat" fill={RECOMMENDATIONS_MATERIALITY_COLORS.средний} /><Bar dataKey="high" name="Высокий" stackId="mat" fill={RECOMMENDATIONS_MATERIALITY_COLORS.высокий} /></BarChart></ResponsiveContainer></div>
+              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /><Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий} /><Bar dataKey="medium" name="Средний" stackId="mat" fill={MATERIALITY_COLORS.средний} /><Bar dataKey="high" name="Высокий" stackId="mat" fill={MATERIALITY_COLORS.высокий} /></BarChart></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),
       },
       ...[
-        ['materiality', 'Существенность', materialityDistribution],
-        ['additionalStatuses', 'Срок исполнения', additionalStatusDistribution],
-        ['indicators', 'Индикаторы', indicatorDistribution],
-      ].map(([id, title, data], index) => ({
+        ['materiality', 'Существенность', 'Распределение уровней существенности за период', materialityDistribution],
+        ['additionalStatuses', 'Срок исполнения', 'Распределение выбранной выборки', additionalStatusDistribution],
+        ['indicators', 'Индикаторы', 'Распределение выбранной выборки', indicatorDistribution],
+      ].map(([id, title, description, data], index) => ({
         id: id as string,
         defaultLayout: { x: ((index + 1) % 3) * 4, y: 5 + Math.floor((index + 1) / 3) * 3, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
-          <ChartCard title={title as string} description="Распределение выбранной выборки" exportSectionId={id as string} exportSelected={exportSections.isSelected(id as RecommendationExportSectionId)} onToggleExport={() => exportSections.toggleSection(id as RecommendationExportSectionId)} onResetCardLayout={resetCardLayout}>
+          <ChartCard title={title as string} description={description as string} exportSectionId={id as string} exportSelected={exportSections.isSelected(id as RecommendationExportSectionId)} onToggleExport={() => exportSections.toggleSection(id as RecommendationExportSectionId)} onResetCardLayout={resetCardLayout}>
             {(data as Array<{ name: string; value: number; color?: string }>).length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableDonutChart data={data as Array<{ name: string; value: number; color?: string }>} palette={RECOMMENDATIONS_PALETTE} />
+              <FocusableDonutChart
+                data={data as Array<{ name: string; value: number; color?: string }>}
+                palette={RECOMMENDATIONS_PALETTE}
+                showPercentInLabel={id === 'materiality'}
+              />
             )}
           </ChartCard>
         ),
       })),
       {
-        id: 'deadlines',
-        defaultLayout: { x: 4, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
-          <ChartCard title="Горизонт сроков" description="Ближайшие и дальние сроки исполнения" exportSectionId="deadlines" exportSelected={exportSections.isSelected('deadlines')} onToggleExport={() => exportSections.toggleSection('deadlines')} onResetCardLayout={resetCardLayout}>
-            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={deadlineBuckets} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill={RECOMMENDATIONS_PALETTE[8]} radius={[4, 4, 0, 0]}><LabelList dataKey="value" position="top" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
-          </ChartCard>
-        ),
-      },
-      {
-        id: 'funnel',
-        defaultLayout: { x: 8, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
-          <ChartCard title="Воронка исполнения" description="Переход от общего портфеля к исполнению" exportSectionId="funnel" exportSelected={exportSections.isSelected('funnel')} onToggleExport={() => exportSections.toggleSection('funnel')} onResetCardLayout={resetCardLayout}>
-            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><FunnelChart><Tooltip /><Funnel dataKey="value" data={funnel.map((item, index) => {
-              const fill = RECOMMENDATIONS_PALETTE[index % RECOMMENDATIONS_PALETTE.length];
-              return { ...item, color: fill, fill };
-            })} isAnimationActive fill={RECOMMENDATIONS_PALETTE[2]}><LabelList position="right" dataKey="name" fill="#334155" fontSize={11} /></Funnel></FunnelChart></ResponsiveContainer></div>
-          </ChartCard>
-        ),
-      },
-      {
         id: 'objects',
-        defaultLayout: { x: 0, y: 11, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 4, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
           <ChartCard title="Объекты аудита" description="Департаменты по количеству рекомендаций" exportSectionId="objects" exportSelected={exportSections.isSelected('objects')} onToggleExport={() => exportSections.toggleSection('objects')} onResetCardLayout={resetCardLayout}>
             {objectDistribution.length === 0 ? <EmptyChart message="Нет данных" /> : (
@@ -373,7 +412,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
       },
       {
         id: 'auditors',
-        defaultLayout: { x: 4, y: 11, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 8, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
           <ChartCard title="Нагрузка аудиторов" description="Топ аудиторов по рекомендациям" exportSectionId="auditors" exportSelected={exportSections.isSelected('auditors')} onToggleExport={() => exportSections.toggleSection('auditors')} onResetCardLayout={resetCardLayout}>
             <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={auditorDistribution.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill={RECOMMENDATIONS_PALETTE[10]} radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
@@ -382,7 +421,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
       },
       {
         id: 'checkLinks',
-        defaultLayout: { x: 8, y: 11, w: 4, h: 3, minW: 4, minH: 2 },
+        defaultLayout: { x: 0, y: 11, w: 4, h: 3, minW: 4, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
           <ChartCard title="По проверкам" description="Количество рекомендаций на ключ проверки" exportSectionId="checkLinks" exportSelected={exportSections.isSelected('checkLinks')} onToggleExport={() => exportSections.toggleSection('checkLinks')} onResetCardLayout={resetCardLayout}>
             <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={checkLinks.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill={RECOMMENDATIONS_PALETTE[6]} radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
@@ -395,9 +434,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
       auditorDistribution,
       checkLinks,
       cumulativeSeries,
-      deadlineBuckets,
       exportSections,
-      funnel,
       indicatorDistribution,
       materialityDistribution,
       objectDistribution,

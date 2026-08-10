@@ -11,6 +11,7 @@ export type DonutDatum = {
 type FocusableDonutChartProps = {
   data: DonutDatum[];
   palette?: readonly string[];
+  showPercentInLabel?: boolean;
 };
 
 type LabelProps = {
@@ -21,6 +22,7 @@ type LabelProps = {
   outerRadius?: number;
   value?: number;
   percent?: number;
+  showPercent?: boolean;
 };
 
 function DonutValueLabel({
@@ -31,6 +33,7 @@ function DonutValueLabel({
   outerRadius = 0,
   value = 0,
   percent = 0,
+  showPercent = false,
 }: LabelProps) {
   if (percent < 0.06 || value <= 0) {
     return null;
@@ -39,6 +42,8 @@ function DonutValueLabel({
   const radius = innerRadius + (outerRadius - innerRadius) * 0.52;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  const percentLabel = `${Math.round(percent * 100)}%`;
+  const label = showPercent ? `${value} (${percentLabel})` : String(value);
 
   return (
     <text
@@ -47,16 +52,20 @@ function DonutValueLabel({
       fill="#ffffff"
       textAnchor="middle"
       dominantBaseline="central"
-      fontSize={13}
+      fontSize={showPercent ? 11 : 13}
       fontWeight={700}
       style={{ pointerEvents: 'none', textShadow: '0 1px 2px rgba(15, 23, 42, 0.35)' }}
     >
-      {value}
+      {label}
     </text>
   );
 }
 
-export function FocusableDonutChart({ data, palette = PALETTE }: FocusableDonutChartProps) {
+export function FocusableDonutChart({
+  data,
+  palette = PALETTE,
+  showPercentInLabel = false,
+}: FocusableDonutChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const colors = palette.length > 0 ? palette : PALETTE;
 
@@ -76,7 +85,7 @@ export function FocusableDonutChart({ data, palette = PALETTE }: FocusableDonutC
             cornerRadius={4}
             stroke="#ffffff"
             strokeWidth={2}
-            label={DonutValueLabel}
+            label={(props) => <DonutValueLabel {...props} showPercent={showPercentInLabel} />}
             labelLine={false}
             isAnimationActive={false}
             onMouseEnter={(_, index) => setActiveIndex(index)}
@@ -103,7 +112,14 @@ export function FocusableDonutChart({ data, palette = PALETTE }: FocusableDonutC
             })}
           </Pie>
           <Tooltip
-            formatter={(value, name) => [value, name]}
+            formatter={(value, name, item) => {
+              const numericValue = typeof value === 'number' ? value : Number(value);
+              const payload = item?.payload as DonutDatum | undefined;
+              const total = data.reduce((sum, entry) => sum + entry.value, 0);
+              const percent = total > 0 ? Math.round((numericValue / total) * 100) : 0;
+              const displayValue = showPercentInLabel ? `${numericValue} (${percent}%)` : numericValue;
+              return [displayValue, payload?.name ?? name];
+            }}
             contentStyle={{
               borderRadius: 10,
               border: '1px solid #e2e8f0',

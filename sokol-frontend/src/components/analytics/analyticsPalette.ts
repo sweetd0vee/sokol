@@ -61,18 +61,18 @@ export const RECOMMENDATIONS_PALETTE = [
   '#E9D5FF', // light orchid
 ];
 
-/** Semantic violet tones for recommendation statuses (tab-local). */
+/** Semantic tones for recommendation statuses — aligned with status badges in Recommendations tab. */
 export const RECOMMENDATIONS_STATUS_COLORS = {
-  completed: '#7C3AED',
-  unresolved: '#4C1D95',
-  on_control: '#A78BFA',
-  in_progress: '#C4B5FD',
+  completed: '#22C55E',
+  unresolved: '#EF4444',
+  on_control: '#64748B',
+  in_progress: '#F59E0B',
 } as const;
 
 export const RECOMMENDATIONS_MATERIALITY_COLORS = {
-  низкий: '#DDD6FE',
-  средний: '#A78BFA',
-  высокий: '#6D28D9',
+  низкий: '#A7F7C2',
+  средний: '#FBEB8D',
+  высокий: '#FF4347',
 } as const;
 
 export const RECOMMENDATIONS_ADDITIONAL_STATUS_COLORS = {
@@ -88,3 +88,9 @@ export const RECOMMENDATIONS_INDICATOR_COLORS = {
   'не решено': '#7C3AED',
   исполнено: '#5B21B6',
 } as const;
+
+/** «Исполнено» status mint — matches getRecommendationStatusFieldStyle('completed'). */
+export const RECOMMENDATIONS_COMPLETED_MINT = '#DCFCE7';
+
+/** Cumulative «Всего» line — same hue family, dark enough to read on white. */
+export const RECOMMENDATIONS_CUMULATIVE_LINE_COLOR = '#6BBF8E';

@@ -35,8 +35,6 @@ import {
   buildAuditObjectDistribution,
   buildCheckLinkDistribution,
   buildCumulativeSeries as buildRecCumulativeSeries,
-  buildDeadlineBuckets,
-  buildFunnel,
   buildIndicatorDistribution,
   buildManagerDistribution,
   buildMaterialityDistribution,
@@ -462,8 +460,6 @@ function exportRecommendationsDashboardXlsx(input: RecommendationsDashboardExpor
   const auditorMat = buildAuditorMaterialityRows(filteredRecommendations);
   const auditorMatrix = buildRecAuditorPeriodMatrix(filteredRecommendations, granularity);
   const materialityMatrix = buildMaterialityPeriodMatrix(filteredRecommendations, granularity);
-  const deadlines = buildDeadlineBuckets(filteredRecommendations);
-  const funnel = buildFunnel(filteredRecommendations);
   const checks = buildCheckLinkDistribution(filteredRecommendations);
 
   const wb = XLSX.utils.book_new();
@@ -526,12 +522,11 @@ function exportRecommendationsDashboardXlsx(input: RecommendationsDashboardExpor
   if (selected.has('cumulative')) {
     appendNamedSheet(
       wb,
-      'Накопительно',
+      'Количество рекомендаций',
       cumulative.map((item) => ({
         Период: item.label,
         'За период': item.total,
-        Накопительно: item.cumulative,
-        'Исполнено накопительно': item.cumulativeCompleted,
+        Всего: item.cumulative,
       })),
       '4F46E5',
     );
@@ -593,22 +588,6 @@ function exportRecommendationsDashboardXlsx(input: RecommendationsDashboardExpor
       'Индикаторы',
       indicators.map((item) => ({ Индикатор: item.name, Количество: item.value })),
       '0891B2',
-    );
-  }
-  if (selected.has('deadlines')) {
-    appendNamedSheet(
-      wb,
-      'Горизонт сроков',
-      deadlines.map((item) => ({ Горизонт: item.name, Количество: item.value })),
-      'EA580C',
-    );
-  }
-  if (selected.has('funnel')) {
-    appendNamedSheet(
-      wb,
-      'Воронка',
-      funnel.map((item) => ({ Этап: item.name, Количество: item.value })),
-      '4F46E5',
     );
   }
   if (selected.has('auditors')) {
@@ -1120,8 +1099,6 @@ function exportRecommendationsDashboardPdf(input: RecommendationsDashboardExport
   const indicators = buildIndicatorDistribution(filteredRecommendations);
   const auditorsDist = buildRecAuditorDistribution(filteredRecommendations);
   const auditorMat = buildAuditorMaterialityRows(filteredRecommendations);
-  const deadlines = buildDeadlineBuckets(filteredRecommendations);
-  const funnel = buildFunnel(filteredRecommendations);
   const objects = buildAuditObjectDistribution(filteredRecommendations);
   const managers = buildManagerDistribution(filteredRecommendations);
   const checks = buildCheckLinkDistribution(filteredRecommendations);
@@ -1205,26 +1182,6 @@ function exportRecommendationsDashboardPdf(input: RecommendationsDashboardExport
         ['Индикатор', 'Количество'],
         indicators.map((item) => [item.name, item.value]),
         '0891B2',
-      ),
-    );
-  }
-  if (selected.has('deadlines')) {
-    sections.push(
-      pdfSectionTitle('Горизонт сроков'),
-      pdfSimpleTable(
-        ['Горизонт', 'Количество'],
-        deadlines.map((item) => [item.name, item.value]),
-        'EA580C',
-      ),
-    );
-  }
-  if (selected.has('funnel')) {
-    sections.push(
-      pdfSectionTitle('Воронка исполнения'),
-      pdfSimpleTable(
-        ['Этап', 'Количество'],
-        funnel.map((item) => [item.name, item.value]),
-        '4F46E5',
       ),
     );
   }

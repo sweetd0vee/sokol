@@ -44,18 +44,23 @@ services:
       SOKOL_OLLAMA_URL: ${SOKOL_OLLAMA_URL:-http://host.docker.internal:11434}
       SOKOL_OLLAMA_MODEL: ${SOKOL_OLLAMA_MODEL:-qwen3.5:35b}
       SOKOL_OLLAMA_TIMEOUT_S: ${SOKOL_OLLAMA_TIMEOUT_S:-600}
+      SOKOL_MINIO_ENDPOINT: ${SOKOL_MINIO_ENDPOINT:-minio:9000}
+      SOKOL_MINIO_ACCESS_KEY: ${SOKOL_MINIO_ACCESS_KEY:-sokol}
+      SOKOL_MINIO_SECRET_KEY: ${SOKOL_MINIO_SECRET_KEY:-change-me}
+      SOKOL_MINIO_SECURE: ${SOKOL_MINIO_SECURE:-0}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
+      minio:
+        condition: service_started
     ports:
       - "8800:8800"
     networks:
       - sokol
 
   minio:
-    profiles: ["extras"]
     image: minio/minio:latest
     container_name: minio
     hostname: minio
@@ -64,10 +69,10 @@ services:
       - 9000:9000
       - 9001:9001
     environment:
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-sokol}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me}
     volumes:
-      - ~/docker-share/minio:/data
+      - ~/docker-share/minio-data-sokol:/data
     networks:
       - sokol
     restart: unless-stopped

@@ -1,3 +1,4 @@
+from app.models.attachments import Attachment
 from app.models.audit_types import AuditType
 from app.models.auditors import Auditor
 from app.models.base import Base
@@ -11,6 +12,7 @@ from app.models.recommendations import (
 )
 
 __all__ = [
+    "Attachment",
     "AuditType",
     "Auditor",
     "Base",
