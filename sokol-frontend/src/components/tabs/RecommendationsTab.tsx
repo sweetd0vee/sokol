@@ -517,7 +517,7 @@ export function RecommendationsTab() {
                   </div>
                 </th>
               </tr>
-              <tr className="bg-[#003366] text-white">
+              <tr className="bg-[#0066CC] text-white">
                 {renderSortableHeader('id', 'ID')}
                 {renderSortableHeader('serial_number', 'Ключ')}
                 {renderSortableHeader('name', 'Название')}

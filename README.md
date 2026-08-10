@@ -19,12 +19,13 @@
 
 Подробно: [DOCKER.md](DOCKER.md)
 
+Ollama **не** входит в Docker-стек — запускайте её локально на хосте (`ollama serve`, `ollama pull qwen3.5:35b`). API в контейнере ходит на `http://host.docker.internal:11434`.
+
 ```powershell
 # из корня sokol/
 copy .env.example .env
 copy sokol-backend\docker\app\.env.example sokol-backend\docker\app\.env
 docker compose up --build -d
-docker exec -it ollama ollama pull qwen3.5:35b
 ```
 
 UI: http://localhost:5180 · API: http://localhost:8800/docs
@@ -32,7 +33,7 @@ UI: http://localhost:5180 · API: http://localhost:8800/docs
 Если БД `postgres` уже запущена:
 
 ```powershell
-docker compose up --build -d api ollama ui
+docker compose up --build -d api ui
 ```
 
 ---
@@ -83,7 +84,7 @@ npm run dev
 
 ```
 sokol/
-├── docker-compose.yml      # коробочный стек (db + api + ollama + ui)
+├── docker-compose.yml      # коробочный стек (db + api + ui; Ollama — локально на хосте)
 ├── PLAN.md                 # единый план развития и реализации
 ├── DOCKER.md
 ├── README.md

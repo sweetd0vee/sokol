@@ -659,10 +659,10 @@ flowchart TB
 
 Если хост без интернета:
 
-1. На сборочной машине (внешняя/DMZ): `docker compose build` + `docker save` образов `sokol-be`, `sokol-ui`, `postgres:16`, `minio/minio`, `ollama/ollama`.
+1. На сборочной машине (внешняя/DMZ): `docker compose build` + `docker save` образов `sokol-be`, `sokol-ui`, `postgres:16`, `minio/minio`.
 2. Перенос через согласованный канал (USB/SFTP jump).
 3. `docker load` + `docker compose up` из внутреннего registry/файлов.
-4. Модель Ollama: `ollama pull` на сборочной → копировать том `~/.ollama` / `docker-share/ollama` целиком.
+4. Модель Ollama: `ollama pull` на сборочной → копировать локальный каталог моделей Ollama на хост целевой машины (не Docker volume).
 
 ### C.4 Конфигурация окружений
 
@@ -671,7 +671,7 @@ flowchart TB
 | `DATABASE_URL` | localhost:5433 | internal DNS Postgres |
 | `SOKOL_CORS_ORIGINS` | `http://localhost:5180` | точный origin UI |
 | `VITE_API_URL` | proxy / empty | absolute internal API URL на этапе build UI **или** same-origin nginx |
-| `SOKOL_OLLAMA_URL` | `http://localhost:11434` | `http://ollama:11434` в docker net |
+| `SOKOL_OLLAMA_URL` | `http://localhost:11434` | `http://host.docker.internal:11434` (локальная Ollama на хосте; не в Docker) |
 | MinIO_* | extras profile | обязательны после Playbook A |
 | Auth | stub | OIDC client id/secret |
 
@@ -682,7 +682,7 @@ flowchart TB
 
 ### C.5 Порядок первого выката (UAT)
 
-1. Согласовать VM, диски (`postgres-data`, `minio-data`, `ollama`), firewall, DNS, TLS.
+1. Согласовать VM, диски (`postgres-data`, `minio-data`), firewall, DNS, TLS; Ollama — отдельно на хосте.
 2. Развернуть Postgres → Alembic upgrade → seed справочников.
 3. Поднять API + UI за proxy; health: `/api/v1/status`.
 4. Прогнать smoke: login (stub/OIDC) → список проверок → создать черновик → tools section-ii на тестовом АЗ.
