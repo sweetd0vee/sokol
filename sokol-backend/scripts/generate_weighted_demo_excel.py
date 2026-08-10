@@ -38,6 +38,7 @@ T = TypeVar("T")
 CHECK_HEADERS = [
     "serial_number",
     "check_name",
+    "short_name",
     "check_type",
     "check_view",
     "start_date",
@@ -75,6 +76,15 @@ RECOMMENDATION_HEADERS = [
     "additional_status",
     "created_at",
     "actual_completion_date",
+    "extension_1_reason",
+    "extension_1_date",
+    "extension_1_comment",
+    "extension_2_reason",
+    "extension_2_comment",
+    "remove_from_control_reason",
+    "remove_from_control_date",
+    "remove_from_control_comment",
+    "closure_verification_status",
     "closure_information",
 ]
 

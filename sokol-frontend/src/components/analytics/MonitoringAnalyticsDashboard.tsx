@@ -3,7 +3,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  LabelList,
   Legend,
   ResponsiveContainer,
   Tooltip,
@@ -13,7 +12,7 @@ import {
 import type { MaterialityLevel, Recommendation, RecommendationAdditionalStatus, RecommendationStatus } from '../../types/recommendation';
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
-import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFilterSidebar';
+import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
@@ -21,7 +20,7 @@ import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../
 import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
 import { MATERIALITY_LEVEL_OPTIONS, RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS, RECOMMENDATION_STATUS_OPTIONS } from '../../constants/recommendations';
 import { useExportSections } from '../../hooks/useExportSections';
-import { collectCalendarPeriodOptions, periodKeysFromLabels } from '../../utils/analyticsPeriod';
+import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { parseDateValue } from '../../utils/dates';
 import {
   STATUS_COLORS,
@@ -39,15 +38,7 @@ type MonitoringAnalyticsDashboardProps = {
   recommendations: Recommendation[];
 };
 
-function toOptions(values: string[]) {
-  return values.map((value) => ({ value, label: value }));
-}
-
 export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnalyticsDashboardProps) {
-  const [periodSlice, setPeriodSlice] = useState<AnalyticsPeriodSlice>('year');
-  const [selectedYears, setSelectedYears] = useState<string[]>([]);
-  const [selectedQuarters, setSelectedQuarters] = useState<string[]>([]);
-  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedMateriality, setSelectedMateriality] = useState<string[]>([]);
@@ -63,14 +54,35 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
     () => [...recommendations.map((item) => parseDateValue(item.deadline)), new Date(2025, 0, 1).getTime(), new Date(2026, 11, 1).getTime()],
     [recommendations],
   );
-  const yearOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'year').map((item) => item.label)), [anchorDates]);
-  const quarterOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'quarter').map((item) => item.label)), [anchorDates]);
-  const monthOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'month').map((item) => item.label)), [anchorDates]);
-  const selectedYearKeys = useMemo(() => periodKeysFromLabels(anchorDates, 'year', selectedYears), [anchorDates, selectedYears]);
-  const selectedQuarterKeys = useMemo(() => periodKeysFromLabels(anchorDates, 'quarter', selectedQuarters), [anchorDates, selectedQuarters]);
-  const selectedMonthKeys = useMemo(() => periodKeysFromLabels(anchorDates, 'month', selectedMonths), [anchorDates, selectedMonths]);
-  const auditorOptions = useMemo(() => toOptions(collectRecommendationAuditors(recommendations)), [recommendations]);
-  const departmentOptions = useMemo(() => toOptions(collectAuditObjects(recommendations)), [recommendations]);
+  const {
+    periodSlice,
+    selectedYears,
+    selectedQuarters,
+    selectedMonths,
+    setSelectedYears,
+    setSelectedQuarters,
+    setSelectedMonths,
+    yearOptions,
+    quarterOptions,
+    monthOptions,
+    selectedYearKeys,
+    selectedQuarterKeys,
+    selectedMonthKeys,
+    periodSliceLabel,
+    activePeriodValues,
+    handlePeriodSliceChange,
+    resetPeriodSelections,
+    removeActivePeriodValue,
+  } = useAnalyticsPeriodFilters(anchorDates);
+
+  const auditorOptions = useMemo(
+    () => toAnalyticsSelectOptions(collectRecommendationAuditors(recommendations)),
+    [recommendations],
+  );
+  const departmentOptions = useMemo(
+    () => toAnalyticsSelectOptions(collectAuditObjects(recommendations)),
+    [recommendations],
+  );
 
   const filtered = useMemo(
     () =>
@@ -92,31 +104,18 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
   );
 
   const granularity: PeriodGranularity = periodSlice;
-  const periodSliceLabel = periodSlice === 'month' ? 'Месяц' : periodSlice === 'quarter' ? 'Квартал' : 'Год';
-  const activePeriodValues =
-    periodSlice === 'month' ? selectedMonths : periodSlice === 'quarter' ? selectedQuarters : selectedYears;
   const summary = useMemo(() => summarizeRecommendations(filtered), [filtered]);
   const periodSeries = useMemo(() => buildPeriodSeries(filtered, granularity), [filtered, granularity]);
   const statusDistribution = useMemo(() => buildStatusDistribution(filtered), [filtered]);
   const additionalStatusDistribution = useMemo(() => buildAdditionalStatusDistribution(filtered), [filtered]);
 
   const resetFilters = () => {
-    setPeriodSlice('year');
-    setSelectedYears([]);
-    setSelectedQuarters([]);
-    setSelectedMonths([]);
+    resetPeriodSelections();
     setSelectedAuditors([]);
     setSelectedDepartments([]);
     setSelectedMateriality([]);
     setSelectedStatuses([]);
     setSelectedAdditionalStatuses([]);
-  };
-
-  const handlePeriodSliceChange = (next: AnalyticsPeriodSlice) => {
-    setPeriodSlice(next);
-    setSelectedYears([]);
-    setSelectedQuarters([]);
-    setSelectedMonths([]);
   };
 
   const handleExport = async () => {
@@ -155,8 +154,8 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
       {
         id: 'summary',
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
-        render: ({ resetCardLayout }) => (
-          <ChartCard title="Сводка KPI" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')} onResetCardLayout={resetCardLayout}>
+        render: () => (
+          <ChartCard title="Сводка KPI" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')}>
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
               <KpiCard label="На контроле" value={summary.byStatus.on_control} tone="slate" />
               <KpiCard label="Срок нарушен" value={summary.byAdditional.deadline_violated} tone="red" />
@@ -170,10 +169,10 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
       {
         id: 'deadlineDynamics',
         defaultLayout: { x: 0, y: 2, w: 12, h: 3, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }) => (
-          <ChartCard title="Динамика сроков исполнения" description="Статусы рекомендаций по срокам" exportSectionId="deadlineDynamics" exportSelected={exportSections.isSelected('deadlineDynamics')} onToggleExport={() => exportSections.toggleSection('deadlineDynamics')} onResetCardLayout={resetCardLayout}>
+        render: () => (
+          <ChartCard title="Динамика сроков исполнения" description="Статусы рекомендаций по срокам" exportSectionId="deadlineDynamics" exportSelected={exportSections.isSelected('deadlineDynamics')} onToggleExport={() => exportSections.toggleSection('deadlineDynamics')}>
             {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 13 }} /><YAxis allowDecimals={false} tick={{ fontSize: 13 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 13 }} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]}><LabelList dataKey={status.value} position="center" fontSize={12} fill="#fff" /></Bar>)}</BarChart></ResponsiveContainer></div>
+              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 13 }} /><YAxis allowDecimals={false} tick={{ fontSize: 13 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 13 }} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]} />)}</BarChart></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),
@@ -181,14 +180,13 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
       {
         id: 'statuses',
         defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }) => (
+        render: () => (
           <ChartCard
             title="Статусы"
             description="Распределение статусов за период"
             exportSectionId="statuses"
             exportSelected={exportSections.isSelected('statuses')}
             onToggleExport={() => exportSections.toggleSection('statuses')}
-            onResetCardLayout={resetCardLayout}
           >
             {statusDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -201,14 +199,13 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
       {
         id: 'additionalStatuses',
         defaultLayout: { x: 4, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }) => (
+        render: () => (
           <ChartCard
             title="Срок исполнения"
             description="Распределение дополнительных статусов за период"
             exportSectionId="additionalStatuses"
             exportSelected={exportSections.isSelected('additionalStatuses')}
             onToggleExport={() => exportSections.toggleSection('additionalStatuses')}
-            onResetCardLayout={resetCardLayout}
           >
             {additionalStatusDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -262,15 +259,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
                 label: periodSliceLabel,
                 chips: activePeriodValues.map((value) => ({ value, label: value })),
                 emptyLabel: 'Все значения',
-                onRemove: (value) => {
-                  if (periodSlice === 'month') {
-                    setSelectedMonths((prev) => prev.filter((item) => item !== value));
-                  } else if (periodSlice === 'quarter') {
-                    setSelectedQuarters((prev) => prev.filter((item) => item !== value));
-                  } else {
-                    setSelectedYears((prev) => prev.filter((item) => item !== value));
-                  }
-                },
+                onRemove: removeActivePeriodValue,
               },
               {
                 label: 'Аудиторы',
@@ -327,7 +316,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
       </AnalyticsFilterSidebar>
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <AnalyticsDashboardGrid storageKey="sokol.analytics.layout.monitoring" cards={cards} />
+        <AnalyticsDashboardGrid cards={cards} />
       </main>
     </div>
   );

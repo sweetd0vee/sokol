@@ -26,11 +26,10 @@ type DashboardLayoutItem = {
 export type AnalyticsGridCard = {
   id: string;
   defaultLayout: Omit<DashboardLayoutItem, 'i'>;
-  render: (helpers: { resetCardLayout: () => void }) => ReactNode;
+  render: () => ReactNode;
 };
 
 type AnalyticsDashboardGridProps = {
-  storageKey: string;
   cards: AnalyticsGridCard[];
 };
 
@@ -102,13 +101,11 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
     return () => observer.disconnect();
   }, [isDesktop, rowSpan]);
 
-  const renderCard = (card: AnalyticsGridCard) => card.render({ resetCardLayout: () => undefined });
-
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col gap-2.5">
       {summaryCards.map((card) => (
         <div key={card.id} className="w-full shrink-0">
-          {renderCard(card)}
+          {card.render()}
         </div>
       ))}
       {isDesktop ? (
@@ -128,7 +125,7 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
             >
               {gridCards.map((card) => (
                 <div key={card.id} className="min-h-0 [&>section]:h-full">
-                  {renderCard(card)}
+                  {card.render()}
                 </div>
               ))}
             </BaseGridLayout>
@@ -137,7 +134,7 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
       ) : (
         <div className="space-y-2.5">
           {gridCards.map((card) => (
-            <div key={card.id}>{renderCard(card)}</div>
+            <div key={card.id}>{card.render()}</div>
           ))}
         </div>
       )}

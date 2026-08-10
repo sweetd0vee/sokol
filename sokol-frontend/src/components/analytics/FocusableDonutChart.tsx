@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { PALETTE } from './analyticsPalette';
+import { contrastLabelColor } from './chartContrast';
 
 export type DonutDatum = {
   name: string;
@@ -29,45 +30,6 @@ type LabelProps = {
   payload?: DonutDatum;
 };
 
-function parseColor(color?: string): [number, number, number] | null {
-  if (!color) {
-    return null;
-  }
-  const normalized = color.trim();
-  if (normalized.startsWith('#')) {
-    const hex = normalized.slice(1);
-    if (hex.length === 3) {
-      return [
-        Number.parseInt(hex[0] + hex[0], 16),
-        Number.parseInt(hex[1] + hex[1], 16),
-        Number.parseInt(hex[2] + hex[2], 16),
-      ];
-    }
-    if (hex.length === 6) {
-      return [
-        Number.parseInt(hex.slice(0, 2), 16),
-        Number.parseInt(hex.slice(2, 4), 16),
-        Number.parseInt(hex.slice(4, 6), 16),
-      ];
-    }
-  }
-  const rgbMatch = normalized.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
-  if (rgbMatch) {
-    return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])];
-  }
-  return null;
-}
-
-function isLightFill(color?: string) {
-  const rgb = parseColor(color);
-  if (!rgb) {
-    return true;
-  }
-  const [r, g, b] = rgb;
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.62;
-}
-
 function DonutValueLabel({
   cx = 0,
   cy = 0,
@@ -88,8 +50,7 @@ function DonutValueLabel({
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   const segmentFill = payload?.color ?? fill;
-  const lightBackground = isLightFill(segmentFill);
-  const textColor = lightBackground ? '#1e293b' : '#ffffff';
+  const textColor = contrastLabelColor(segmentFill);
   const percentLabel = `${Math.round(percent * 100)}%`;
 
   return (

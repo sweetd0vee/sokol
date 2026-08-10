@@ -16,7 +16,7 @@ export const RECOMMENDATION_EXPORT_SECTIONS = [
   { id: 'statusByPeriod', label: 'Статусы по периодам', sheetName: 'Статусы по периодам', headerFill: 'CA8A04' },
   { id: 'materiality', label: 'Существенность', sheetName: 'Существенность', headerFill: '16A34A' },
   { id: 'indicators', label: 'Индикаторы', sheetName: 'Индикаторы', headerFill: '0891B2' },
-  { id: 'objects', label: 'Объекты аудита', sheetName: 'Объекты аудита', headerFill: '0E7490' },
+  { id: 'objects', label: 'Карта департаментов', sheetName: 'Карта департаментов', headerFill: '0E7490' },
   { id: 'checkLinks', label: 'По проверкам', sheetName: 'По проверкам', headerFill: '0369A1' },
 ] as const;
 
@@ -41,7 +41,3 @@ export type CheckExportSectionId = (typeof CHECK_EXPORT_SECTIONS)[number]['id'];
 export type RecommendationExportSectionId = (typeof RECOMMENDATION_EXPORT_SECTIONS)[number]['id'];
 export type MonitoringExportSectionId = (typeof MONITORING_EXPORT_SECTIONS)[number]['id'];
 export type DvaExportSectionId = (typeof DVA_EXPORT_SECTIONS)[number]['id'];
-
-export function defaultSelectedIds<T extends string>(sections: readonly { id: T }[]): T[] {
-  return sections.map((section) => section.id);
-}

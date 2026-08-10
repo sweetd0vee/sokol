@@ -14,7 +14,7 @@ import {
 import type { Check } from '../../types/check';
 import type { Recommendation } from '../../types/recommendation';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
-import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFilterSidebar';
+import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
@@ -24,7 +24,7 @@ import { CHECKS_PALETTE } from './analyticsPalette';
 import { exportChecksDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
-import { collectCalendarPeriodOptions, periodKeysFromLabels } from '../../utils/analyticsPeriod';
+import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { parseDateValue } from '../../utils/dates';
 import {
   buildCheckDepartmentDistribution,
@@ -46,15 +46,7 @@ type ChecksAnalyticsDashboardProps = {
   recommendations: Recommendation[];
 };
 
-function toOptions(values: string[]) {
-  return values.map((value) => ({ value, label: value }));
-}
-
 export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnalyticsDashboardProps) {
-  const [periodSlice, setPeriodSlice] = useState<AnalyticsPeriodSlice>('year');
-  const [selectedYears, setSelectedYears] = useState<string[]>([]);
-  const [selectedQuarters, setSelectedQuarters] = useState<string[]>([]);
-  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('xlsx');
@@ -72,26 +64,34 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
     ],
     [checks],
   );
-  const yearOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'year').map((item) => item.label)), [anchorDates]);
-  const quarterOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'quarter').map((item) => item.label)), [anchorDates]);
-  const monthOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'month').map((item) => item.label)), [anchorDates]);
+  const {
+    periodSlice,
+    selectedYears,
+    selectedQuarters,
+    selectedMonths,
+    setSelectedYears,
+    setSelectedQuarters,
+    setSelectedMonths,
+    yearOptions,
+    quarterOptions,
+    monthOptions,
+    selectedYearKeys,
+    selectedQuarterKeys,
+    selectedMonthKeys,
+    periodSliceLabel,
+    activePeriodValues,
+    handlePeriodSliceChange,
+    resetPeriodSelections,
+    removeActivePeriodValue,
+  } = useAnalyticsPeriodFilters(anchorDates);
+
   const auditorOptions = useMemo(
-    () => toOptions(collectAnalyticsAuditors(checks, recommendations)),
+    () => toAnalyticsSelectOptions(collectAnalyticsAuditors(checks, recommendations)),
     [checks, recommendations],
   );
-  const departmentOptions = useMemo(() => toOptions(collectAuditObjects(recommendations)), [recommendations]);
-
-  const selectedYearKeys = useMemo(
-    () => periodKeysFromLabels(anchorDates, 'year', selectedYears),
-    [anchorDates, selectedYears],
-  );
-  const selectedQuarterKeys = useMemo(
-    () => periodKeysFromLabels(anchorDates, 'quarter', selectedQuarters),
-    [anchorDates, selectedQuarters],
-  );
-  const selectedMonthKeys = useMemo(
-    () => periodKeysFromLabels(anchorDates, 'month', selectedMonths),
-    [anchorDates, selectedMonths],
+  const departmentOptions = useMemo(
+    () => toAnalyticsSelectOptions(collectAuditObjects(recommendations)),
+    [recommendations],
   );
 
   const filteredChecks = useMemo(
@@ -120,9 +120,6 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
   );
 
   const granularity: PeriodGranularity = periodSlice;
-  const periodSliceLabel = periodSlice === 'month' ? 'Месяц' : periodSlice === 'quarter' ? 'Квартал' : 'Год';
-  const activePeriodValues =
-    periodSlice === 'month' ? selectedMonths : periodSlice === 'quarter' ? selectedQuarters : selectedYears;
   const summary = useMemo(() => summarizeChecks(filteredChecks), [filteredChecks]);
   const completionShare = useMemo(() => buildCompletionShare(filteredChecks), [filteredChecks]);
   const periodSeries = useMemo(() => buildPeriodSeries(filteredChecks, granularity), [filteredChecks, granularity]);
@@ -147,19 +144,9 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
   );
 
   const resetFilters = () => {
-    setPeriodSlice('year');
-    setSelectedYears([]);
-    setSelectedQuarters([]);
-    setSelectedMonths([]);
+    resetPeriodSelections();
     setSelectedAuditors([]);
     setSelectedDepartments([]);
-  };
-
-  const handlePeriodSliceChange = (next: AnalyticsPeriodSlice) => {
-    setPeriodSlice(next);
-    setSelectedYears([]);
-    setSelectedQuarters([]);
-    setSelectedMonths([]);
   };
 
   const handleExport = async () => {
@@ -194,7 +181,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       {
         id: 'summary',
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
-        render: ({ resetCardLayout }) => (
+        render: () => (
           <ChartCard
             title="Сводка KPI"
             description=""
@@ -202,7 +189,6 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
             exportSectionId="summary"
             exportSelected={exportSections.isSelected('summary')}
             onToggleExport={() => exportSections.toggleSection('summary')}
-            onResetCardLayout={resetCardLayout}
           >
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
               <KpiCard label="Всего" value={summary.total} hint={`из ${checks.length}`} tone="violet" />
@@ -217,14 +203,13 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       {
         id: 'dynamics',
         defaultLayout: { x: 0, y: 2, w: 6, h: 4, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }) => (
+        render: () => (
           <ChartCard
             title="Количество проверок"
             description="Динамика и накопительный итог"
             exportSectionId="dynamics"
             exportSelected={exportSections.isSelected('dynamics')}
             onToggleExport={() => exportSections.toggleSection('dynamics')}
-            onResetCardLayout={resetCardLayout}
           >
             {flowSeries.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -249,14 +234,13 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       {
         id: 'views',
         defaultLayout: { x: 6, y: 2, w: 6, h: 4, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }) => (
+        render: () => (
           <ChartCard
             title="Виды проверок"
             description="Количество проверок за период"
             exportSectionId="views"
             exportSelected={exportSections.isSelected('views')}
             onToggleExport={() => exportSections.toggleSection('views')}
-            onResetCardLayout={resetCardLayout}
           >
             {viewDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -279,14 +263,13 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       {
         id: 'types',
         defaultLayout: { x: 0, y: 6, w: 5, h: 3, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }) => (
+        render: () => (
           <ChartCard
             title="Типы проверок"
             description="Распределение плановых, внеплановых и контрольных процедур за период"
             exportSectionId="types"
             exportSelected={exportSections.isSelected('types')}
             onToggleExport={() => exportSections.toggleSection('types')}
-            onResetCardLayout={resetCardLayout}
           >
             {typeDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -299,14 +282,13 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       {
         id: 'departmentMap',
         defaultLayout: { x: 5, y: 6, w: 7, h: 3, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }) => (
+        render: () => (
           <ChartCard
             title="Карта департаментов"
             description="Количество проверок за период по департаментам"
             exportSectionId="departmentMap"
             exportSelected={exportSections.isSelected('departmentMap')}
             onToggleExport={() => exportSections.toggleSection('departmentMap')}
-            onResetCardLayout={resetCardLayout}
           >
             {departmentMap.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -318,15 +300,14 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
       {
         id: 'effectivenessMatrix',
-        defaultLayout: { x: 0, y: 9, w: 12, h: 4, minW: 6, minH: 3 },
-        render: ({ resetCardLayout }) => (
+        defaultLayout: { x: 0, y: 9, w: 12, h: 6, minW: 6, minH: 4 },
+        render: () => (
           <ChartCard
             title="Оценка эффективности"
             description="Матрица оценок по проверкам за период"
             exportSectionId="effectivenessMatrix"
             exportSelected={exportSections.isSelected('effectivenessMatrix')}
             onToggleExport={() => exportSections.toggleSection('effectivenessMatrix')}
-            onResetCardLayout={resetCardLayout}
           >
             {effectivenessMatrix.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -390,15 +371,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
                 label: periodSliceLabel,
                 chips: activePeriodValues.map((value) => ({ value, label: value })),
                 emptyLabel: 'Все значения',
-                onRemove: (value) => {
-                  if (periodSlice === 'month') {
-                    setSelectedMonths((prev) => prev.filter((item) => item !== value));
-                  } else if (periodSlice === 'quarter') {
-                    setSelectedQuarters((prev) => prev.filter((item) => item !== value));
-                  } else {
-                    setSelectedYears((prev) => prev.filter((item) => item !== value));
-                  }
-                },
+                onRemove: removeActivePeriodValue,
               },
               {
                 label: 'Аудиторы',
@@ -418,7 +391,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       />
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <AnalyticsDashboardGrid storageKey="sokol.analytics.layout.checks" cards={cards} />
+        <AnalyticsDashboardGrid cards={cards} />
       </main>
     </div>
   );

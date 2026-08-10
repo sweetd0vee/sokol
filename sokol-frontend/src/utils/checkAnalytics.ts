@@ -302,6 +302,41 @@ export function getEffectivenessToneColor(tone: EffectivenessTone): string {
   return EFFECTIVENESS_LEGEND.find((item) => item.tone === tone)?.color ?? '#94A3B8';
 }
 
+export type EffectivenessColumnKey = (typeof EFFECTIVENESS_MATRIX_COLUMNS)[number]['key'];
+
+export type EffectivenessColumnShare = {
+  tone: EffectivenessTone;
+  label: string;
+  color: string;
+  count: number;
+  percent: number;
+};
+
+export function buildEffectivenessColumnShares(
+  rows: EffectivenessMatrixRow[],
+  columnKey: EffectivenessColumnKey,
+): EffectivenessColumnShare[] {
+  const counts = Object.fromEntries(
+    EFFECTIVENESS_LEGEND.map((item) => [item.tone, 0]),
+  ) as Record<EffectivenessTone, number>;
+
+  rows.forEach((row) => {
+    counts[row.tones[columnKey]] += 1;
+  });
+
+  const total = rows.length;
+  return EFFECTIVENESS_LEGEND.map((item) => {
+    const count = counts[item.tone];
+    return {
+      tone: item.tone,
+      label: item.label,
+      color: item.color,
+      count,
+      percent: total === 0 ? 0 : Math.round((count / total) * 100),
+    };
+  }).filter((item) => item.count > 0);
+}
+
 export function buildEffectivenessMatrix(checks: Check[]): EffectivenessMatrixRow[] {
   return [...checks]
     .sort((a, b) => a.serial_number.localeCompare(b.serial_number, 'ru'))
@@ -357,11 +392,6 @@ export function buildAuditorPeriodMatrix(
   const periods = [...periodMap.values()].sort((a, b) => a.sortKey - b.sortKey);
   const rows = [...rowMap.values()].sort((a, b) => b.total - a.total);
   return { periods, rows };
-}
-
-export function collectCheckLeaders(checks: Check[]): string[] {
-  return [...new Set(checks.map((check) => check.check_leader).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b, 'ru'));
 }
 
 export function collectAnalyticsAuditors(checks: Check[], recommendations: Recommendation[]): string[] {

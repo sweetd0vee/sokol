@@ -50,9 +50,14 @@ def _read_rows(path: Path, sheet_name: str) -> list[dict]:
     return result
 
 
-async def import_seed_data(*, replace: bool = False) -> None:
-    checks_path = DATA_DIR / "checks.xlsx"
-    recommendations_path = DATA_DIR / "recommendations.xlsx"
+async def import_seed_data(
+    *,
+    replace: bool = False,
+    checks_path: Path | None = None,
+    recommendations_path: Path | None = None,
+) -> None:
+    checks_path = checks_path or (DATA_DIR / "checks.xlsx")
+    recommendations_path = recommendations_path or (DATA_DIR / "recommendations.xlsx")
     if not checks_path.is_file():
         raise FileNotFoundError(f"Не найден файл {checks_path}")
     if not recommendations_path.is_file():
@@ -159,6 +164,15 @@ async def import_seed_data(*, replace: bool = False) -> None:
             }
             optional_recommendation_fields = {
                 "actual_completion_date": _parse_date(row.get("actual_completion_date")),
+                "extension_1_reason": _optional_str(row.get("extension_1_reason")),
+                "extension_1_date": _parse_date(row.get("extension_1_date")),
+                "extension_1_comment": _optional_str(row.get("extension_1_comment")),
+                "extension_2_reason": _optional_str(row.get("extension_2_reason")),
+                "extension_2_comment": _optional_str(row.get("extension_2_comment")),
+                "remove_from_control_reason": _optional_str(row.get("remove_from_control_reason")),
+                "remove_from_control_date": _parse_date(row.get("remove_from_control_date")),
+                "remove_from_control_comment": _optional_str(row.get("remove_from_control_comment")),
+                "closure_verification_status": _optional_str(row.get("closure_verification_status")),
                 "closure_information": _optional_str(row.get("closure_information")),
             }
             recommendation_kwargs.update(
@@ -184,12 +198,30 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Очистить recommendations и checks перед импортом XLSX.",
     )
+    parser.add_argument(
+        "--checks",
+        type=Path,
+        default=None,
+        help="Путь к XLSX проверок (лист checks). По умолчанию data/checks.xlsx.",
+    )
+    parser.add_argument(
+        "--recommendations",
+        type=Path,
+        default=None,
+        help="Путь к XLSX рекомендаций (лист recommendations). По умолчанию data/recommendations.xlsx.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    asyncio.run(import_seed_data(replace=args.replace))
+    asyncio.run(
+        import_seed_data(
+            replace=args.replace,
+            checks_path=args.checks,
+            recommendations_path=args.recommendations,
+        )
+    )
 
 
 if __name__ == "__main__":

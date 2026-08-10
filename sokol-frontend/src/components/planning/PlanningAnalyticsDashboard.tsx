@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import type { Check } from '../../types/check';
 import type { Recommendation } from '../../types/recommendation';
-import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from '../analytics/AnalyticsFilterSidebar';
+import { AnalyticsFilterSidebar } from '../analytics/AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from '../analytics/AnalyticsSelectionSummary';
 import type { AnalyticsExportFormat } from '../../utils/analyticsExport';
-import { collectCalendarPeriodOptions, periodKeysFromLabels } from '../../utils/analyticsPeriod';
+import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { parseDateValue } from '../../utils/dates';
 import {
   collectAuditObjects,
@@ -16,18 +16,10 @@ type PlanningAnalyticsDashboardProps = {
   recommendations: Recommendation[];
 };
 
-function toOptions(values: string[]) {
-  return values.map((value) => ({ value, label: value }));
-}
-
 export function PlanningAnalyticsDashboard({
   checks,
   recommendations,
 }: PlanningAnalyticsDashboardProps) {
-  const [periodSlice, setPeriodSlice] = useState<AnalyticsPeriodSlice>('year');
-  const [selectedYears, setSelectedYears] = useState<string[]>([]);
-  const [selectedQuarters, setSelectedQuarters] = useState<string[]>([]);
-  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('xlsx');
 
@@ -40,47 +32,30 @@ export function PlanningAnalyticsDashboard({
     [checks],
   );
 
-  const yearPeriodOptions = useMemo(
-    () => collectCalendarPeriodOptions(anchorDates, 'year'),
-    [anchorDates],
-  );
-  const quarterPeriodOptions = useMemo(
-    () => collectCalendarPeriodOptions(anchorDates, 'quarter'),
-    [anchorDates],
-  );
-  const monthPeriodOptions = useMemo(
-    () => collectCalendarPeriodOptions(anchorDates, 'month'),
-    [anchorDates],
-  );
+  const {
+    periodSlice,
+    selectedYears,
+    selectedQuarters,
+    selectedMonths,
+    setSelectedYears,
+    setSelectedQuarters,
+    setSelectedMonths,
+    yearOptions,
+    quarterOptions,
+    monthOptions,
+    selectedYearKeys,
+    selectedQuarterKeys,
+    selectedMonthKeys,
+    periodSliceLabel,
+    activePeriodValues,
+    handlePeriodSliceChange,
+    resetPeriodSelections,
+    removeActivePeriodValue,
+  } = useAnalyticsPeriodFilters(anchorDates);
 
-  const yearOptions = useMemo(
-    () => toOptions(yearPeriodOptions.map((item) => item.label)),
-    [yearPeriodOptions],
-  );
-  const quarterOptions = useMemo(
-    () => toOptions(quarterPeriodOptions.map((item) => item.label)),
-    [quarterPeriodOptions],
-  );
-  const monthOptions = useMemo(
-    () => toOptions(monthPeriodOptions.map((item) => item.label)),
-    [monthPeriodOptions],
-  );
   const departmentOptions = useMemo(
-    () => toOptions(collectAuditObjects(recommendations)),
+    () => toAnalyticsSelectOptions(collectAuditObjects(recommendations)),
     [recommendations],
-  );
-
-  const selectedYearKeys = useMemo(
-    () => periodKeysFromLabels(anchorDates, 'year', selectedYears),
-    [anchorDates, selectedYears],
-  );
-  const selectedQuarterKeys = useMemo(
-    () => periodKeysFromLabels(anchorDates, 'quarter', selectedQuarters),
-    [anchorDates, selectedQuarters],
-  );
-  const selectedMonthKeys = useMemo(
-    () => periodKeysFromLabels(anchorDates, 'month', selectedMonths),
-    [anchorDates, selectedMonths],
   );
 
   const filteredChecks = useMemo(
@@ -107,28 +82,9 @@ export function PlanningAnalyticsDashboard({
     ],
   );
 
-  const periodSliceLabel =
-    periodSlice === 'month' ? 'Месяц' : periodSlice === 'quarter' ? 'Квартал' : 'Год';
-  const activePeriodValues =
-    periodSlice === 'month'
-      ? selectedMonths
-      : periodSlice === 'quarter'
-        ? selectedQuarters
-        : selectedYears;
-
   const resetFilters = () => {
-    setPeriodSlice('year');
-    setSelectedYears([]);
-    setSelectedQuarters([]);
-    setSelectedMonths([]);
+    resetPeriodSelections();
     setSelectedDepartments([]);
-  };
-
-  const handlePeriodSliceChange = (next: AnalyticsPeriodSlice) => {
-    setPeriodSlice(next);
-    setSelectedYears([]);
-    setSelectedQuarters([]);
-    setSelectedMonths([]);
   };
 
   return (
@@ -168,22 +124,13 @@ export function PlanningAnalyticsDashboard({
                 label: periodSliceLabel,
                 chips: activePeriodValues.map((value) => ({ value, label: value })),
                 emptyLabel: 'Все значения',
-                onRemove: (value) => {
-                  if (periodSlice === 'month') {
-                    setSelectedMonths((prev) => prev.filter((item) => item !== value));
-                  } else if (periodSlice === 'quarter') {
-                    setSelectedQuarters((prev) => prev.filter((item) => item !== value));
-                  } else {
-                    setSelectedYears((prev) => prev.filter((item) => item !== value));
-                  }
-                },
+                onRemove: removeActivePeriodValue,
               },
               {
                 label: 'Департаменты',
                 chips: selectedDepartments.map((value) => ({ value, label: value })),
                 emptyLabel: 'Все департаменты',
-                onRemove: (value) =>
-                  setSelectedDepartments((prev) => prev.filter((item) => item !== value)),
+                onRemove: (value) => setSelectedDepartments((prev) => prev.filter((item) => item !== value)),
               },
             ]}
           />
@@ -191,10 +138,13 @@ export function PlanningAnalyticsDashboard({
       />
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 dark:border-slate-600 dark:bg-slate-800/60">
-          <p className="max-w-md text-center text-sm text-gray-500 dark:text-slate-400">
-            Здесь появятся дашборды планирования: охваты департаментов, аналитика по
-            департаментам, департаменты с наибольшим числом красных рекомендаций и другие.
+        <div className="flex h-full min-h-[24rem] flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white px-6 text-center dark:border-slate-700 dark:bg-slate-800/60">
+          <p className="text-base font-semibold text-sber-dark dark:text-sber-light">
+            Дашборды планирования
+          </p>
+          <p className="mt-2 max-w-md text-sm text-gray-500 dark:text-slate-400">
+            Карточка «Метрики» готова. Здесь появятся охваты департаментов, аналитика по подразделениям
+            и рейтинги по красным рекомендациям.
           </p>
         </div>
       </main>

@@ -9,11 +9,6 @@ import { registerDashboardChart } from '../../utils/dashboardChartRegistry';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
-export type AnalyticsExportSection = {
-  id: string;
-  label: string;
-};
-
 function slugifyFilename(value: string) {
   return (
     value
@@ -167,7 +162,6 @@ export function ChartCard({
   exportSectionId,
   exportSelected,
   onToggleExport,
-  onResetCardLayout: _onResetCardLayout,
   dense = false,
 }: {
   title: string;
@@ -178,7 +172,6 @@ export function ChartCard({
   exportSectionId?: string;
   exportSelected?: boolean;
   onToggleExport?: () => void;
-  onResetCardLayout?: () => void;
   dense?: boolean;
 }) {
   const exportCardRef = useRef<HTMLElement>(null);
@@ -500,40 +493,6 @@ export function EmptyChart({ message, heightClass = 'h-24' }: { message: string;
       className={`flex ${heightClass} items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-500 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-400`}
     >
       {message}
-    </div>
-  );
-}
-
-export function ExportSectionToolbar({
-  selectedCount,
-  totalCount,
-  onSelectAll,
-  onClearAll,
-}: {
-  selectedCount: number;
-  totalCount: number;
-  onSelectAll: () => void;
-  onClearAll: () => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-slate-300">
-      <span>
-        В отчёт: {selectedCount} / {totalCount}
-      </span>
-      <button
-        type="button"
-        onClick={onSelectAll}
-        className="rounded border border-gray-300 px-2 py-0.5 hover:border-sber-dark/40 hover:text-sber-dark dark:border-slate-600 dark:hover:border-sber-light/70 dark:hover:text-sber-light"
-      >
-        Все
-      </button>
-      <button
-        type="button"
-        onClick={onClearAll}
-        className="rounded border border-gray-300 px-2 py-0.5 hover:border-sber-dark/40 hover:text-sber-dark dark:border-slate-600 dark:hover:border-sber-light/70 dark:hover:text-sber-light"
-      >
-        Ничего
-      </button>
     </div>
   );
 }

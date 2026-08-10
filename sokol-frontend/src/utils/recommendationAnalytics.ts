@@ -71,9 +71,9 @@ export type AuditorPeriodRow = {
 };
 
 export const MATERIALITY_COLORS: Record<MaterialityLevel, string> = {
-  низкий: '#A7F7C2',
-  средний: '#FBEB8D',
-  высокий: '#FF4347',
+  низкий: '#22C55E',
+  средний: '#F59E0B',
+  высокий: '#EF4444',
 };
 
 export const STATUS_COLORS: Record<RecommendationStatus, string> = {
@@ -441,59 +441,6 @@ export function buildMaterialityPeriodMatrix(
       total: Object.values(counts[level]).reduce((sum, value) => sum + value, 0),
     })),
   };
-}
-
-export function buildDeadlineBuckets(recommendations: Recommendation[]): NamedCount[] {
-  const now = Date.now();
-  const day = 24 * 60 * 60 * 1000;
-  const buckets = [
-    { name: 'Просрочено', color: '#EF4444', test: (ms: number) => ms < now },
-    { name: '≤ 7 дней', color: '#F97316', test: (ms: number) => ms >= now && ms - now <= 7 * day },
-    { name: '8–30 дней', color: '#EAB308', test: (ms: number) => ms - now > 7 * day && ms - now <= 30 * day },
-    { name: '31–90 дней', color: '#3B82F6', test: (ms: number) => ms - now > 30 * day && ms - now <= 90 * day },
-    { name: '> 90 дней', color: '#22C55E', test: (ms: number) => ms - now > 90 * day },
-  ];
-
-  return buckets
-    .map((bucket) => ({
-      name: bucket.name,
-      color: bucket.color,
-      value: recommendations.reduce((sum, item) => {
-        const ms = parseDateValue(item.deadline);
-        if (ms === null) {
-          return sum;
-        }
-        return bucket.test(ms) ? sum + 1 : sum;
-      }, 0),
-    }))
-    .filter((item) => item.value > 0);
-}
-
-export function buildFunnel(recommendations: Recommendation[]): NamedCount[] {
-  const summary = summarizeRecommendations(recommendations);
-  return [
-    { name: 'Всего', value: summary.total, color: '#6366F1' },
-    {
-      name: 'На контроле / в работе',
-      value: summary.byStatus.on_control + summary.byStatus.in_progress,
-      color: '#F59E0B',
-    },
-    { name: 'В процессе', value: summary.byStatus.in_progress, color: '#FB923C' },
-    { name: 'Исполнено', value: summary.byStatus.completed, color: '#22C55E' },
-  ].filter((item) => item.value > 0);
-}
-
-export function buildTreemapData(recommendations: Recommendation[]) {
-  const byAuditor = buildAuditorMaterialityRows(recommendations).slice(0, 12);
-  return byAuditor.flatMap((row) =>
-    MATERIALITY_KEYS
-      .filter((level) => row[level] > 0)
-      .map((level) => ({
-        name: `${row.auditor} · ${getMaterialityLevelLabel(level)}`,
-        size: row[level],
-        fill: MATERIALITY_COLORS[level],
-      })),
-  );
 }
 
 export function collectRecommendationAuditors(recommendations: Recommendation[]): string[] {

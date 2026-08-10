@@ -611,8 +611,8 @@ function exportRecommendationsDashboardXlsx(input: RecommendationsDashboardExpor
   if (selected.has('objects')) {
     appendNamedSheet(
       wb,
-      'Объекты аудита',
-      objects.map((item) => ({ 'Объект аудита': item.name, Количество: item.value })),
+      'Карта департаментов',
+      objects.map((item) => ({ Департамент: item.name, Количество: item.value })),
       '0E7490',
     );
   }
@@ -1164,7 +1164,7 @@ function exportRecommendationsDashboardPdf(input: RecommendationsDashboardExport
   }
   if (selected.has('objects')) {
     sections.push(
-      pdfSectionTitle('Объекты аудита'),
+      pdfSectionTitle('Карта департаментов'),
       pdfSimpleTable(
         ['Объект аудита', 'Количество'],
         objects.map((item) => [item.name, item.value]),

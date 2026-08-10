@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ResponsiveContainer, Tooltip, Treemap } from 'recharts';
 import { PALETTE } from './analyticsPalette';
+import { contrastLabelColor } from './chartContrast';
 
 export type TreemapDatum = {
   name: string;
@@ -42,7 +43,9 @@ function TreemapContent({
 
   const isDimmed = activeName !== null && activeName !== name;
   const isActive = activeName === name;
-  const rounded = width >= 42 && height >= 32;
+  const showLabel = width >= 42 && height >= 32;
+  const textColor = contrastLabelColor(fill, false);
+  const labelOpacity = isDimmed ? 0.55 : 1;
 
   return (
     <g
@@ -58,7 +61,7 @@ function TreemapContent({
         fillOpacity={isDimmed ? 0.32 : 1}
         stroke={isActive ? '#0f172a' : '#ffffff'}
         strokeWidth={isActive ? 2.5 : 2}
-        rx={rounded ? 8 : 0}
+        rx={showLabel ? 8 : 0}
         style={{
           filter: isDimmed
             ? 'brightness(0.72) saturate(0.85)'
@@ -68,6 +71,29 @@ function TreemapContent({
           transition: 'fill-opacity 160ms ease, filter 160ms ease, stroke-width 160ms ease',
         }}
       />
+      {showLabel ? (
+        <>
+          <text
+            x={x + 8}
+            y={y + 18}
+            fill={textColor}
+            fontSize={13}
+            fontWeight={700}
+            style={{ pointerEvents: 'none', opacity: labelOpacity }}
+          >
+            {name.length > 20 ? `${name.slice(0, 18)}...` : name}
+          </text>
+          <text
+            x={x + 8}
+            y={y + 34}
+            fill={textColor}
+            fontSize={14}
+            style={{ pointerEvents: 'none', opacity: labelOpacity }}
+          >
+            {value}
+          </text>
+        </>
+      ) : null}
     </g>
   );
 }
