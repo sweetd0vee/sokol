@@ -27,6 +27,7 @@ import { toInputDate, toIsoDate } from '../../utils/dates';
 type RecommendationClosureSectionProps = {
   value: RecommendationClosureForm;
   onChange: (value: RecommendationClosureForm) => void;
+  recommendationId?: number | string | null;
   embedded?: boolean;
   hideClosureInformation?: boolean;
   hideActualCompletionDate?: boolean;
@@ -163,6 +164,7 @@ function DateCommentRows({
 export function RecommendationClosureSection({
   value,
   onChange,
+  recommendationId = null,
   embedded = false,
   hideClosureInformation = false,
   hideActualCompletionDate = false,
@@ -237,6 +239,9 @@ export function RecommendationClosureSection({
               embedded
               compact
               hideSlotLabel
+              entityType="recommendation"
+              entityId={recommendationId}
+              unavailableMessage="Сохраните рекомендацию, чтобы прикрепить файлы."
               slots={[...RECOMMENDATION_CONTROL_REMOVAL_ATTACHMENT_SLOTS]}
               columnsClassName="grid-cols-1"
             />

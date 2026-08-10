@@ -214,6 +214,8 @@ export function RecommendationFormPage() {
   const { options: leaderOptions } = useAuditorOptions(checkLeader);
   const { options: managerOptions } = useAuditorOptions(manager);
   const { options: auditObjectOptions } = useAuditObjectOptions(auditObject);
+  const recommendationId = isEditMode ? (source?.id ?? id ?? null) : null;
+
   const requiredFieldErrors = useMemo(() => {
     const descriptionMissing = !description.trim();
     const errors = {
@@ -642,6 +644,9 @@ export function RecommendationFormPage() {
                     embedded
                     compact
                     hideSlotLabel
+                    entityType="recommendation"
+                    entityId={recommendationId}
+                    unavailableMessage="Сохраните рекомендацию, чтобы прикрепить файлы."
                     slots={[...RECOMMENDATION_ATTACHMENT_SLOTS]}
                     columnsClassName="grid-cols-1"
                   />
@@ -671,6 +676,7 @@ export function RecommendationFormPage() {
               embedded
               hideClosureInformation
               hideActualCompletionDate
+              recommendationId={recommendationId}
               value={closure}
               onChange={setClosure}
               errorFields={

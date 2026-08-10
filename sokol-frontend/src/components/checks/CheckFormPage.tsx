@@ -375,6 +375,7 @@ export function CheckFormPage() {
         </div>
 
         <CheckAttachmentsSection
+          checkId={existing?.id ?? null}
           order={{
             documentNumber: orderDocumentNumber,
             onDocumentNumberChange: setOrderDocumentNumber,

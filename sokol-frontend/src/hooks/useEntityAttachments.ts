@@ -21,7 +21,7 @@ function storedToItem(stored: StoredAttachment): PersistedAttachmentListItem & {
   };
 }
 
-function groupBySlot(items: PersistedAttachmentListItem[]): Record<string, PersistedAttachmentListItem[]> {
+function groupBySlot(items: Array<PersistedAttachmentListItem & { slot: string }>): Record<string, PersistedAttachmentListItem[]> {
   return items.reduce<Record<string, PersistedAttachmentListItem[]>>((acc, item) => {
     const slotItems = acc[item.slot] ?? [];
     slotItems.push(item);
