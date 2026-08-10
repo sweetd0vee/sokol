@@ -26,9 +26,7 @@ import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import {
-  RECOMMENDATIONS_ADDITIONAL_STATUS_COLORS,
   RECOMMENDATIONS_CUMULATIVE_LINE_COLOR,
-  RECOMMENDATIONS_INDICATOR_COLORS,
   RECOMMENDATIONS_MATERIALITY_COLORS,
   RECOMMENDATIONS_PALETTE,
 } from './analyticsPalette';
@@ -49,15 +47,14 @@ import { parseDateValue } from '../../utils/dates';
 import {
   buildMaterialityDistribution,
   buildPeriodSeries,
-  buildAdditionalStatusDistribution,
   buildAuditObjectDistribution,
-  buildAuditorDistribution,
   buildCheckLinkDistribution,
   buildCumulativeSeries,
   buildIndicatorDistribution,
   collectAuditObjects,
   collectRecommendationAuditors,
   filterRecommendationsForAnalytics,
+  INDICATOR_COLORS,
   MATERIALITY_COLORS,
   STATUS_COLORS,
   summarizeRecommendations,
@@ -186,35 +183,21 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
       }),
     [filtered],
   );
-  const additionalStatusDistribution = useMemo(
-    () =>
-      buildAdditionalStatusDistribution(filtered).map((item) => {
-        const status = RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.find((option) => option.label === item.name)?.value;
-        return {
-          ...item,
-          color: status
-            ? RECOMMENDATIONS_ADDITIONAL_STATUS_COLORS[status]
-            : RECOMMENDATIONS_PALETTE[1],
-        };
-      }),
-    [filtered],
-  );
   const indicatorDistribution = useMemo(
     () =>
       buildIndicatorDistribution(filtered).map((item) => {
-        const indicator = (Object.keys(RECOMMENDATIONS_INDICATOR_COLORS) as Array<
-          keyof typeof RECOMMENDATIONS_INDICATOR_COLORS
+        const indicator = (Object.keys(INDICATOR_COLORS) as Array<
+          keyof typeof INDICATOR_COLORS
         >).find((key) => getIndicatorLabel(key) === item.name);
         return {
           ...item,
           color: indicator
-            ? RECOMMENDATIONS_INDICATOR_COLORS[indicator]
+            ? INDICATOR_COLORS[indicator]
             : RECOMMENDATIONS_PALETTE[2],
         };
       }),
     [filtered],
   );
-  const auditorDistribution = useMemo(() => buildAuditorDistribution(filtered), [filtered]);
   const objectDistribution = useMemo(() => buildAuditObjectDistribution(filtered), [filtered]);
   const checkLinks = useMemo(() => buildCheckLinkDistribution(filtered), [filtered]);
 
@@ -380,11 +363,10 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
       },
       ...[
         ['materiality', 'Существенность', 'Распределение уровней существенности за период', materialityDistribution],
-        ['additionalStatuses', 'Срок исполнения', 'Распределение выбранной выборки', additionalStatusDistribution],
         ['indicators', 'Индикаторы', 'Распределение выбранной выборки', indicatorDistribution],
       ].map(([id, title, description, data], index) => ({
         id: id as string,
-        defaultLayout: { x: ((index + 1) % 3) * 4, y: 5 + Math.floor((index + 1) / 3) * 3, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 4 + index * 4, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
           <ChartCard title={title as string} description={description as string} exportSectionId={id as string} exportSelected={exportSections.isSelected(id as RecommendationExportSectionId)} onToggleExport={() => exportSections.toggleSection(id as RecommendationExportSectionId)} onResetCardLayout={resetCardLayout}>
             {(data as Array<{ name: string; value: number; color?: string }>).length === 0 ? (
@@ -411,17 +393,8 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
         ),
       },
       {
-        id: 'auditors',
-        defaultLayout: { x: 8, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
-          <ChartCard title="Нагрузка аудиторов" description="Топ аудиторов по рекомендациям" exportSectionId="auditors" exportSelected={exportSections.isSelected('auditors')} onToggleExport={() => exportSections.toggleSection('auditors')} onResetCardLayout={resetCardLayout}>
-            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={auditorDistribution.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill={RECOMMENDATIONS_PALETTE[10]} radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
-          </ChartCard>
-        ),
-      },
-      {
         id: 'checkLinks',
-        defaultLayout: { x: 0, y: 11, w: 4, h: 3, minW: 4, minH: 2 },
+        defaultLayout: { x: 8, y: 8, w: 4, h: 3, minW: 4, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
           <ChartCard title="По проверкам" description="Количество рекомендаций на ключ проверки" exportSectionId="checkLinks" exportSelected={exportSections.isSelected('checkLinks')} onToggleExport={() => exportSections.toggleSection('checkLinks')} onResetCardLayout={resetCardLayout}>
             <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={checkLinks.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill={RECOMMENDATIONS_PALETTE[6]} radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
@@ -430,8 +403,6 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
       },
     ],
     [
-      additionalStatusDistribution,
-      auditorDistribution,
       checkLinks,
       cumulativeSeries,
       exportSections,

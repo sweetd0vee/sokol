@@ -29,7 +29,6 @@ import {
 } from './checkAnalytics';
 import {
   buildAdditionalStatusDistribution,
-  buildAuditorDistribution as buildRecAuditorDistribution,
   buildAuditorMaterialityRows,
   buildAuditorPeriodMatrix as buildRecAuditorPeriodMatrix,
   buildAuditObjectDistribution,
@@ -450,11 +449,8 @@ function exportRecommendationsDashboardXlsx(input: RecommendationsDashboardExpor
   const summary = summarizeRecommendations(filteredRecommendations);
   const periodSeries = buildRecPeriodSeries(filteredRecommendations, granularity);
   const cumulative = buildRecCumulativeSeries(filteredRecommendations, granularity);
-  const statuses = buildRecStatusDistribution(filteredRecommendations);
   const materiality = buildMaterialityDistribution(filteredRecommendations);
-  const additional = buildAdditionalStatusDistribution(filteredRecommendations);
   const indicators = buildIndicatorDistribution(filteredRecommendations);
-  const auditorsDist = buildRecAuditorDistribution(filteredRecommendations);
   const managers = buildManagerDistribution(filteredRecommendations);
   const objects = buildAuditObjectDistribution(filteredRecommendations);
   const auditorMat = buildAuditorMaterialityRows(filteredRecommendations);
@@ -566,36 +562,12 @@ function exportRecommendationsDashboardXlsx(input: RecommendationsDashboardExpor
       '16A34A',
     );
   }
-  if (selected.has('statuses')) {
-    appendNamedSheet(
-      wb,
-      'Статусы',
-      statuses.map((item) => ({ Статус: item.name, Количество: item.value })),
-      'CA8A04',
-    );
-  }
-  if (selected.has('additionalStatuses')) {
-    appendNamedSheet(
-      wb,
-      'Срок исполнения',
-      additional.map((item) => ({ Статус: item.name, Количество: item.value })),
-      'DB2777',
-    );
-  }
   if (selected.has('indicators')) {
     appendNamedSheet(
       wb,
       'Индикаторы',
       indicators.map((item) => ({ Индикатор: item.name, Количество: item.value })),
       '0891B2',
-    );
-  }
-  if (selected.has('auditors')) {
-    appendNamedSheet(
-      wb,
-      'Аудиторы',
-      auditorsDist.map((item) => ({ Аудитор: item.name, Количество: item.value })),
-      '1D4ED8',
     );
   }
   if (selected.has('auditorMateriality')) {
@@ -1094,10 +1066,7 @@ function exportRecommendationsDashboardPdf(input: RecommendationsDashboardExport
   const summary = summarizeRecommendations(filteredRecommendations);
   const periodSeries = buildRecPeriodSeries(filteredRecommendations, granularity);
   const materiality = buildMaterialityDistribution(filteredRecommendations);
-  const statuses = buildRecStatusDistribution(filteredRecommendations);
-  const additional = buildAdditionalStatusDistribution(filteredRecommendations);
   const indicators = buildIndicatorDistribution(filteredRecommendations);
-  const auditorsDist = buildRecAuditorDistribution(filteredRecommendations);
   const auditorMat = buildAuditorMaterialityRows(filteredRecommendations);
   const objects = buildAuditObjectDistribution(filteredRecommendations);
   const managers = buildManagerDistribution(filteredRecommendations);
@@ -1155,26 +1124,6 @@ function exportRecommendationsDashboardPdf(input: RecommendationsDashboardExport
       ),
     );
   }
-  if (selected.has('statuses')) {
-    sections.push(
-      pdfSectionTitle('Статусы'),
-      pdfSimpleTable(
-        ['Статус', 'Количество'],
-        statuses.map((item) => [item.name, item.value]),
-        'CA8A04',
-      ),
-    );
-  }
-  if (selected.has('additionalStatuses')) {
-    sections.push(
-      pdfSectionTitle('Срок исполнения'),
-      pdfSimpleTable(
-        ['Статус', 'Количество'],
-        additional.map((item) => [item.name, item.value]),
-        'DB2777',
-      ),
-    );
-  }
   if (selected.has('indicators')) {
     sections.push(
       pdfSectionTitle('Индикаторы'),
@@ -1182,16 +1131,6 @@ function exportRecommendationsDashboardPdf(input: RecommendationsDashboardExport
         ['Индикатор', 'Количество'],
         indicators.map((item) => [item.name, item.value]),
         '0891B2',
-      ),
-    );
-  }
-  if (selected.has('auditors')) {
-    sections.push(
-      pdfSectionTitle('Аудиторы'),
-      pdfSimpleTable(
-        ['Аудитор', 'Количество'],
-        auditorsDist.map((item) => [item.name, item.value]),
-        '1D4ED8',
       ),
     );
   }

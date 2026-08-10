@@ -84,17 +84,17 @@ export const STATUS_COLORS: Record<RecommendationStatus, string> = {
 };
 
 export const ADDITIONAL_STATUS_COLORS: Record<RecommendationAdditionalStatus, string> = {
-  on_time: '#10B981',
-  deadline_violated: '#F43F5E',
-  on_control: '#6366F1',
+  on_time: '#DCFCE7',
+  deadline_violated: '#FEE2E2',
+  on_control: '#E5E7EB',
 };
 
 export const INDICATOR_COLORS: Record<RecommendationIndicator, string> = {
-  'не указан': '#94A3B8',
-  'в процессе': '#FBBF24',
-  ожидает: '#A78BFA',
-  'не решено': '#F87171',
-  исполнено: '#34D399',
+  'не указан': '#D1D5DB',
+  'в процессе': '#FBEB8D',
+  ожидает: '#E5E7EB',
+  'не решено': '#FF4347',
+  исполнено: '#25EB67',
 };
 
 const STATUS_KEYS: RecommendationStatus[] = ['completed', 'unresolved', 'on_control', 'in_progress'];

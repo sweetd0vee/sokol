@@ -76,17 +76,17 @@ export const RECOMMENDATIONS_MATERIALITY_COLORS = {
 } as const;
 
 export const RECOMMENDATIONS_ADDITIONAL_STATUS_COLORS = {
-  on_time: '#C4B5FD',
-  deadline_violated: '#5B21B6',
-  on_control: '#8B5CF6',
+  on_time: '#DCFCE7',
+  deadline_violated: '#FEE2E2',
+  on_control: '#E5E7EB',
 } as const;
 
 export const RECOMMENDATIONS_INDICATOR_COLORS = {
-  'не указан': '#E9D5FF',
-  'в процессе': '#C4B5FD',
-  ожидает: '#A78BFA',
-  'не решено': '#7C3AED',
-  исполнено: '#5B21B6',
+  'не указан': '#D1D5DB',
+  'в процессе': '#FBEB8D',
+  ожидает: '#E5E7EB',
+  'не решено': '#FF4347',
+  исполнено: '#25EB67',
 } as const;
 
 /** «Исполнено» status mint — matches getRecommendationStatusFieldStyle('completed'). */

@@ -23,7 +23,48 @@ type LabelProps = {
   value?: number;
   percent?: number;
   showPercent?: boolean;
+  fill?: string;
+  payload?: DonutDatum;
 };
+
+function parseColor(color?: string): [number, number, number] | null {
+  if (!color) {
+    return null;
+  }
+  const normalized = color.trim();
+  if (normalized.startsWith('#')) {
+    const hex = normalized.slice(1);
+    if (hex.length === 3) {
+      return [
+        Number.parseInt(hex[0] + hex[0], 16),
+        Number.parseInt(hex[1] + hex[1], 16),
+        Number.parseInt(hex[2] + hex[2], 16),
+      ];
+    }
+    if (hex.length === 6) {
+      return [
+        Number.parseInt(hex.slice(0, 2), 16),
+        Number.parseInt(hex.slice(2, 4), 16),
+        Number.parseInt(hex.slice(4, 6), 16),
+      ];
+    }
+  }
+  const rgbMatch = normalized.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+  if (rgbMatch) {
+    return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])];
+  }
+  return null;
+}
+
+function isLightFill(color?: string) {
+  const rgb = parseColor(color);
+  if (!rgb) {
+    return true;
+  }
+  const [r, g, b] = rgb;
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.62;
+}
 
 function DonutValueLabel({
   cx = 0,
@@ -34,6 +75,8 @@ function DonutValueLabel({
   value = 0,
   percent = 0,
   showPercent = false,
+  fill,
+  payload,
 }: LabelProps) {
   if (percent < 0.06 || value <= 0) {
     return null;
@@ -42,22 +85,43 @@ function DonutValueLabel({
   const radius = innerRadius + (outerRadius - innerRadius) * 0.52;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  const segmentFill = payload?.color ?? fill;
+  const lightBackground = isLightFill(segmentFill);
+  const textColor = showPercent ? '#1e293b' : lightBackground ? '#1e293b' : '#ffffff';
   const percentLabel = `${Math.round(percent * 100)}%`;
-  const label = showPercent ? `${value} (${percentLabel})` : String(value);
 
   return (
-    <text
-      x={x}
-      y={y}
-      fill="#ffffff"
-      textAnchor="middle"
-      dominantBaseline="central"
-      fontSize={showPercent ? 11 : 13}
-      fontWeight={700}
-      style={{ pointerEvents: 'none', textShadow: '0 1px 2px rgba(15, 23, 42, 0.35)' }}
-    >
-      {label}
-    </text>
+    <g style={{ pointerEvents: 'none' }}>
+      {showPercent ? (
+        <text
+          x={x}
+          y={y}
+          fill={textColor}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontWeight={700}
+        >
+          <tspan x={x} dy="-0.35em" fontSize={12}>
+            {value}
+          </tspan>
+          <tspan x={x} dy="1.25em" fontSize={10} fontWeight={600}>
+            {percentLabel}
+          </tspan>
+        </text>
+      ) : (
+        <text
+          x={x}
+          y={y}
+          fill={textColor}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={13}
+          fontWeight={700}
+        >
+          {value}
+        </text>
+      )}
+    </g>
   );
 }
 

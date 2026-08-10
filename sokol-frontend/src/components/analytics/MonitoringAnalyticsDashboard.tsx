@@ -3,13 +3,10 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Funnel,
-  FunnelChart,
   LabelList,
   Legend,
   ResponsiveContainer,
   Tooltip,
-  Treemap,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -20,7 +17,6 @@ import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFi
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
-import { PALETTE } from './analyticsPalette';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
 import { MATERIALITY_LEVEL_OPTIONS, RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS, RECOMMENDATION_STATUS_OPTIONS } from '../../constants/recommendations';
@@ -28,14 +24,10 @@ import { useExportSections } from '../../hooks/useExportSections';
 import { collectCalendarPeriodOptions } from '../../utils/analyticsPeriod';
 import { parseDateValue } from '../../utils/dates';
 import {
-  ADDITIONAL_STATUS_COLORS,
   STATUS_COLORS,
-  buildAuditObjectDistribution,
-  buildDeadlineBuckets,
-  buildFunnel,
+  buildAdditionalStatusDistribution,
   buildPeriodSeries,
   buildStatusDistribution,
-  buildTreemapData,
   collectAuditObjects,
   collectRecommendationAuditors,
   filterRecommendationsForAnalytics,
@@ -55,18 +47,6 @@ function periodKeys(anchorDates: Array<number | null>, granularity: PeriodGranul
   return collectCalendarPeriodOptions(anchorDates, granularity)
     .filter((item) => labels.includes(item.label))
     .map((item) => item.key);
-}
-
-function TreemapContent(props: { x?: number; y?: number; width?: number; height?: number; name?: string; value?: number; fill?: string }) {
-  const { x = 0, y = 0, width = 0, height = 0, name = '', value = 0, fill = '#EF4444' } = props;
-  if (width < 42 || height < 32) {return <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" strokeWidth={2} />;}
-  return (
-    <g>
-      <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" strokeWidth={2} rx={8} />
-      <text x={x + 8} y={y + 18} fill="#fff" fontSize={11} fontWeight={700}>{name.length > 20 ? `${name.slice(0, 18)}...` : name}</text>
-      <text x={x + 8} y={y + 34} fill="#fff" fontSize={12}>{value}</text>
-    </g>
-  );
 }
 
 export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnalyticsDashboardProps) {
@@ -124,16 +104,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
   const summary = useMemo(() => summarizeRecommendations(filtered), [filtered]);
   const periodSeries = useMemo(() => buildPeriodSeries(filtered, granularity), [filtered, granularity]);
   const statusDistribution = useMemo(() => buildStatusDistribution(filtered), [filtered]);
-  const deadlineBuckets = useMemo(() => buildDeadlineBuckets(filtered), [filtered]);
-  const funnel = useMemo(() => buildFunnel(filtered), [filtered]);
-  const objects = useMemo(() => buildAuditObjectDistribution(filtered), [filtered]);
-  const problemObjects = useMemo(
-    () =>
-      buildTreemapData(
-        filtered.filter((item) => item.additional_status === 'deadline_violated' || item.materiality_level === 'высокий'),
-      ),
-    [filtered],
-  );
+  const additionalStatusDistribution = useMemo(() => buildAdditionalStatusDistribution(filtered), [filtered]);
 
   const resetFilters = () => {
     setPeriodSlice('year');
@@ -204,7 +175,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
       },
       {
         id: 'deadlineDynamics',
-        defaultLayout: { x: 0, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 12, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Динамика сроков исполнения" description="Статусы рекомендаций по срокам" exportSectionId="deadlineDynamics" exportSelected={exportSections.isSelected('deadlineDynamics')} onToggleExport={() => exportSections.toggleSection('deadlineDynamics')} onResetCardLayout={resetCardLayout}>
             {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
@@ -214,28 +185,17 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
         ),
       },
       {
-        id: 'violationsByDepartment',
-        defaultLayout: { x: 4, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }) => (
-          <ChartCard title="Просрочка по департаментам" description="Объекты аудита с нарушенными сроками" exportSectionId="violationsByDepartment" exportSelected={exportSections.isSelected('violationsByDepartment')} onToggleExport={() => exportSections.toggleSection('violationsByDepartment')} onResetCardLayout={resetCardLayout}>
-            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={objects.slice(0, 8)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill={ADDITIONAL_STATUS_COLORS.deadline_violated} radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
-          </ChartCard>
-        ),
-      },
-      {
-        id: 'deadlineBuckets',
-        defaultLayout: { x: 8, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }) => (
-          <ChartCard title="Горизонт сроков" description="Ближайшие сроки и долгий хвост" exportSectionId="deadlineBuckets" exportSelected={exportSections.isSelected('deadlineBuckets')} onToggleExport={() => exportSections.toggleSection('deadlineBuckets')} onResetCardLayout={resetCardLayout}>
-            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={deadlineBuckets} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill="#F97316" radius={[4, 4, 0, 0]}><LabelList dataKey="value" position="top" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
-          </ChartCard>
-        ),
-      },
-      {
         id: 'statuses',
         defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
-          <ChartCard title="Статусы" description="Распределение выбранной выборки" exportSectionId="statuses" exportSelected={exportSections.isSelected('statuses')} onToggleExport={() => exportSections.toggleSection('statuses')} onResetCardLayout={resetCardLayout}>
+          <ChartCard
+            title="Статусы"
+            description="Распределение статусов за период"
+            exportSectionId="statuses"
+            exportSelected={exportSections.isSelected('statuses')}
+            onToggleExport={() => exportSections.toggleSection('statuses')}
+            onResetCardLayout={resetCardLayout}
+          >
             {statusDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
@@ -245,27 +205,27 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
         ),
       },
       {
-        id: 'funnel',
+        id: 'additionalStatuses',
         defaultLayout: { x: 4, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
-          <ChartCard title="Воронка исполнения" description="От общего портфеля к закрытию" exportSectionId="funnel" exportSelected={exportSections.isSelected('funnel')} onToggleExport={() => exportSections.toggleSection('funnel')} onResetCardLayout={resetCardLayout}>
-            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><FunnelChart><Tooltip /><Funnel dataKey="value" data={funnel} fill="#4F46E5"><LabelList position="right" dataKey="name" fill="#334155" fontSize={11} /></Funnel></FunnelChart></ResponsiveContainer></div>
-          </ChartCard>
-        ),
-      },
-      {
-        id: 'problemTreemap',
-        defaultLayout: { x: 8, y: 5, w: 4, h: 3, minW: 4, minH: 2 },
-        render: ({ resetCardLayout }) => (
-          <ChartCard title="Tree Map проблемных объектов" description="Просроченные и высокосущественные рекомендации" exportSectionId="problemTreemap" exportSelected={exportSections.isSelected('problemTreemap')} onToggleExport={() => exportSections.toggleSection('problemTreemap')} onResetCardLayout={resetCardLayout}>
-            {problemObjects.length === 0 ? <EmptyChart message="Нет проблемных объектов" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><Treemap data={problemObjects.map((item, index) => ({ ...item, fill: PALETTE[(index + 5) % PALETTE.length] }))} dataKey="value" nameKey="name" content={<TreemapContent />} /></ResponsiveContainer></div>
+          <ChartCard
+            title="Срок исполнения"
+            description="Распределение дополнительных статусов за период"
+            exportSectionId="additionalStatuses"
+            exportSelected={exportSections.isSelected('additionalStatuses')}
+            onToggleExport={() => exportSections.toggleSection('additionalStatuses')}
+            onResetCardLayout={resetCardLayout}
+          >
+            {additionalStatusDistribution.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <FocusableDonutChart data={additionalStatusDistribution} />
             )}
           </ChartCard>
         ),
       },
     ],
-    [deadlineBuckets, exportSections, funnel, objects, periodSeries, problemObjects, statusDistribution, summary],
+    [additionalStatusDistribution, exportSections, periodSeries, statusDistribution, summary],
   );
 
   return (
