@@ -19,13 +19,12 @@ import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashb
 import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
-import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { PALETTE } from './analyticsPalette';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { DVA_EXPORT_SECTIONS, type DvaExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
-import { collectCalendarPeriodOptions, getPeriodBucket } from '../../utils/analyticsPeriod';
+import { collectCalendarPeriodOptions, getPeriodBucket, periodKeysFromLabels } from '../../utils/analyticsPeriod';
 import { parseDateValue } from '../../utils/dates';
 import {
   buildAuditorDistribution as buildCheckAuditorDistribution,
@@ -40,7 +39,6 @@ import {
 } from '../../utils/checkAnalytics';
 import {
   buildAuditObjectDistribution,
-  buildMaterialityDistribution,
   buildPeriodSeries as buildRecommendationPeriodSeries,
   filterRecommendationsForAnalytics,
   summarizeRecommendations,
@@ -53,12 +51,6 @@ type DvaAnalyticsDashboardProps = {
 
 function toOptions(values: string[]) {
   return values.map((value) => ({ value, label: value }));
-}
-
-function periodKeys(anchorDates: Array<number | null>, granularity: PeriodGranularity, labels: string[]) {
-  return collectCalendarPeriodOptions(anchorDates, granularity)
-    .filter((item) => labels.includes(item.label))
-    .map((item) => item.key);
 }
 
 function TreemapContent(props: { x?: number; y?: number; width?: number; height?: number; name?: string; value?: number; fill?: string }) {
@@ -96,9 +88,9 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
   const yearOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'year').map((item) => item.label)), [anchorDates]);
   const quarterOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'quarter').map((item) => item.label)), [anchorDates]);
   const monthOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'month').map((item) => item.label)), [anchorDates]);
-  const selectedYearKeys = useMemo(() => periodKeys(anchorDates, 'year', selectedYears), [anchorDates, selectedYears]);
-  const selectedQuarterKeys = useMemo(() => periodKeys(anchorDates, 'quarter', selectedQuarters), [anchorDates, selectedQuarters]);
-  const selectedMonthKeys = useMemo(() => periodKeys(anchorDates, 'month', selectedMonths), [anchorDates, selectedMonths]);
+  const selectedYearKeys = useMemo(() => periodKeysFromLabels(anchorDates, 'year', selectedYears), [anchorDates, selectedYears]);
+  const selectedQuarterKeys = useMemo(() => periodKeysFromLabels(anchorDates, 'quarter', selectedQuarters), [anchorDates, selectedQuarters]);
+  const selectedMonthKeys = useMemo(() => periodKeysFromLabels(anchorDates, 'month', selectedMonths), [anchorDates, selectedMonths]);
   const auditorOptions = useMemo(() => toOptions(collectAnalyticsAuditors(checks, recommendations)), [checks, recommendations]);
   const departmentOptions = useMemo(() => toOptions(collectAuditObjects(recommendations)), [recommendations]);
 
@@ -163,7 +155,6 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
     return [...map.entries()].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [filteredChecks, filteredRecommendations]);
   const departmentMap = useMemo(() => buildAuditObjectDistribution(filteredRecommendations), [filteredRecommendations]);
-  const riskProfile = useMemo(() => buildMaterialityDistribution(filteredRecommendations), [filteredRecommendations]);
   const documentReadiness = useMemo(() => buildDocumentReadiness(filteredChecks), [filteredChecks]);
   const matrix = useMemo(() => {
     const periodLabels = collectCalendarPeriodOptions(anchorDates, granularity).slice(0, 8);
@@ -277,21 +268,8 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
         ),
       },
       {
-        id: 'riskProfile',
-        defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
-        render: ({ resetCardLayout }) => (
-          <ChartCard title="Риск-профиль рекомендаций" description="Существенность портфеля" exportSectionId="riskProfile" exportSelected={exportSections.isSelected('riskProfile')} onToggleExport={() => exportSections.toggleSection('riskProfile')} onResetCardLayout={resetCardLayout}>
-            {riskProfile.length === 0 ? (
-              <EmptyChart message="Нет данных" />
-            ) : (
-              <FocusableDonutChart data={riskProfile} />
-            )}
-          </ChartCard>
-        ),
-      },
-      {
         id: 'auditorMatrix',
-        defaultLayout: { x: 4, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Матрица аудитор × срок" description="Тепловая таблица нагрузки" exportSectionId="auditorMatrix" exportSelected={exportSections.isSelected('auditorMatrix')} onToggleExport={() => exportSections.toggleSection('auditorMatrix')} onResetCardLayout={resetCardLayout}>
             {matrix.length === 0 ? <EmptyChart message="Нет данных" /> : (
@@ -320,7 +298,7 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
       },
       {
         id: 'documentsClosure',
-        defaultLayout: { x: 8, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 6, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Документы и закрытие" description="Готовность документов проверок и закрытие рекомендаций" exportSectionId="documentsClosure" exportSelected={exportSections.isSelected('documentsClosure')} onToggleExport={() => exportSections.toggleSection('documentsClosure')} onResetCardLayout={resetCardLayout}>
             <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={[...documentReadiness, { name: 'Закрытие рек.', filled: recSummary.withCompletionDate, empty: Math.max(recSummary.total - recSummary.withCompletionDate, 0) }]} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /><Bar dataKey="filled" name="Готово" stackId="docs" fill="#22C55E"><LabelList dataKey="filled" position="center" fontSize={10} fill="#fff" /></Bar><Bar dataKey="empty" name="Не готово" stackId="docs" fill="#CBD5E1"><LabelList dataKey="empty" position="center" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
@@ -348,7 +326,7 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
         ),
       },
     ],
-    [auditorLoad, checkSummary.total, departmentMap, documentReadiness, exportSections, matrix, portfolioSeries, recSummary, riskProfile, filteredChecks],
+    [auditorLoad, checkSummary.total, departmentMap, documentReadiness, exportSections, matrix, portfolioSeries, recSummary, filteredChecks],
   );
 
   return (

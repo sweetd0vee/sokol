@@ -25,7 +25,7 @@ import { CHECKS_PALETTE } from './analyticsPalette';
 import { exportChecksDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
-import { collectCalendarPeriodOptions } from '../../utils/analyticsPeriod';
+import { collectCalendarPeriodOptions, periodKeysFromLabels } from '../../utils/analyticsPeriod';
 import { parseDateValue } from '../../utils/dates';
 import {
   buildCheckDepartmentDistribution,
@@ -83,15 +83,15 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
   const departmentOptions = useMemo(() => toOptions(collectAuditObjects(recommendations)), [recommendations]);
 
   const selectedYearKeys = useMemo(
-    () => collectCalendarPeriodOptions(anchorDates, 'year').filter((item) => selectedYears.includes(item.label)).map((item) => item.key),
+    () => periodKeysFromLabels(anchorDates, 'year', selectedYears),
     [anchorDates, selectedYears],
   );
   const selectedQuarterKeys = useMemo(
-    () => collectCalendarPeriodOptions(anchorDates, 'quarter').filter((item) => selectedQuarters.includes(item.label)).map((item) => item.key),
+    () => periodKeysFromLabels(anchorDates, 'quarter', selectedQuarters),
     [anchorDates, selectedQuarters],
   );
   const selectedMonthKeys = useMemo(
-    () => collectCalendarPeriodOptions(anchorDates, 'month').filter((item) => selectedMonths.includes(item.label)).map((item) => item.key),
+    () => periodKeysFromLabels(anchorDates, 'month', selectedMonths),
     [anchorDates, selectedMonths],
   );
 

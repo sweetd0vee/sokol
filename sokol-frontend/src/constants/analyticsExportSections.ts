@@ -32,7 +32,6 @@ export const DVA_EXPORT_SECTIONS = [
   { id: 'portfolio', label: 'Портфель', sheetName: 'Портфель', headerFill: '1D4ED8' },
   { id: 'auditorLoad', label: 'Нагрузка аудиторов', sheetName: 'Нагрузка аудиторов', headerFill: '1E40AF' },
   { id: 'departmentMap', label: 'Карта департаментов', sheetName: 'Карта департаментов', headerFill: '0E7490' },
-  { id: 'riskProfile', label: 'Риск-профиль', sheetName: 'Риск профиль', headerFill: 'BE123C' },
   { id: 'auditorMatrix', label: 'Матрица аудитор×срок', sheetName: 'Матрица аудитор-срок', headerFill: '4338CA' },
   { id: 'documentsClosure', label: 'Документы и закрытие', sheetName: 'Документы закрытие', headerFill: '065F46' },
   { id: 'auditorTreemap', label: 'Tree Map аудиторов', sheetName: 'Аудиторы TreeMap', headerFill: '1E40AF' },

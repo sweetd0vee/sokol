@@ -42,7 +42,7 @@ import {
   getIndicatorLabel,
 } from '../../constants/recommendations';
 import { useExportSections } from '../../hooks/useExportSections';
-import { collectCalendarPeriodOptions } from '../../utils/analyticsPeriod';
+import { collectCalendarPeriodOptions, periodKeysFromLabels } from '../../utils/analyticsPeriod';
 import { parseDateValue } from '../../utils/dates';
 import {
   buildMaterialityDistribution,
@@ -67,12 +67,6 @@ type RecommendationsAnalyticsDashboardProps = {
 
 function toOptions(values: string[]) {
   return values.map((value) => ({ value, label: value }));
-}
-
-function periodKeys(anchorDates: Array<number | null>, granularity: PeriodGranularity, labels: string[]) {
-  return collectCalendarPeriodOptions(anchorDates, granularity)
-    .filter((item) => labels.includes(item.label))
-    .map((item) => item.key);
 }
 
 function TreemapContent(props: {
@@ -132,9 +126,9 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
   const auditorOptions = useMemo(() => toOptions(collectRecommendationAuditors(recommendations)), [recommendations]);
   const departmentOptions = useMemo(() => toOptions(collectAuditObjects(recommendations)), [recommendations]);
 
-  const selectedYearKeys = useMemo(() => periodKeys(anchorDates, 'year', selectedYears), [anchorDates, selectedYears]);
-  const selectedQuarterKeys = useMemo(() => periodKeys(anchorDates, 'quarter', selectedQuarters), [anchorDates, selectedQuarters]);
-  const selectedMonthKeys = useMemo(() => periodKeys(anchorDates, 'month', selectedMonths), [anchorDates, selectedMonths]);
+  const selectedYearKeys = useMemo(() => periodKeysFromLabels(anchorDates, 'year', selectedYears), [anchorDates, selectedYears]);
+  const selectedQuarterKeys = useMemo(() => periodKeysFromLabels(anchorDates, 'quarter', selectedQuarters), [anchorDates, selectedQuarters]);
+  const selectedMonthKeys = useMemo(() => periodKeysFromLabels(anchorDates, 'month', selectedMonths), [anchorDates, selectedMonths]);
 
   const filtered = useMemo(
     () =>

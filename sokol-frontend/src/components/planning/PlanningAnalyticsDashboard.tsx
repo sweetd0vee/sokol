@@ -4,7 +4,7 @@ import type { Recommendation } from '../../types/recommendation';
 import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from '../analytics/AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from '../analytics/AnalyticsSelectionSummary';
 import type { AnalyticsExportFormat } from '../../utils/analyticsExport';
-import { collectCalendarPeriodOptions } from '../../utils/analyticsPeriod';
+import { collectCalendarPeriodOptions, periodKeysFromLabels } from '../../utils/analyticsPeriod';
 import { parseDateValue } from '../../utils/dates';
 import {
   collectAuditObjects,
@@ -71,19 +71,16 @@ export function PlanningAnalyticsDashboard({
   );
 
   const selectedYearKeys = useMemo(
-    () => yearPeriodOptions.filter((item) => selectedYears.includes(item.label)).map((item) => item.key),
-    [yearPeriodOptions, selectedYears],
+    () => periodKeysFromLabels(anchorDates, 'year', selectedYears),
+    [anchorDates, selectedYears],
   );
   const selectedQuarterKeys = useMemo(
-    () =>
-      quarterPeriodOptions
-        .filter((item) => selectedQuarters.includes(item.label))
-        .map((item) => item.key),
-    [quarterPeriodOptions, selectedQuarters],
+    () => periodKeysFromLabels(anchorDates, 'quarter', selectedQuarters),
+    [anchorDates, selectedQuarters],
   );
   const selectedMonthKeys = useMemo(
-    () => monthPeriodOptions.filter((item) => selectedMonths.includes(item.label)).map((item) => item.key),
-    [monthPeriodOptions, selectedMonths],
+    () => periodKeysFromLabels(anchorDates, 'month', selectedMonths),
+    [anchorDates, selectedMonths],
   );
 
   const filteredChecks = useMemo(

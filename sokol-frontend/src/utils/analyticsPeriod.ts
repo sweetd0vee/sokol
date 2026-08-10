@@ -112,15 +112,37 @@ export function isDateInAnySelectedPeriods(
     months: string[];
   },
 ): boolean {
-  const hasSelection =
-    selections.years.length > 0 || selections.quarters.length > 0 || selections.months.length > 0;
-  if (!hasSelection) {
+  const matches: boolean[] = [];
+
+  // Empty slice means "not used", not "match all" — otherwise selecting only years
+  // would always pass via empty quarters/months (OR with true).
+  if (selections.years.length > 0) {
+    matches.push(isDateInSelectedPeriods(dateMs, 'year', selections.years));
+  }
+  if (selections.quarters.length > 0) {
+    matches.push(isDateInSelectedPeriods(dateMs, 'quarter', selections.quarters));
+  }
+  if (selections.months.length > 0) {
+    matches.push(isDateInSelectedPeriods(dateMs, 'month', selections.months));
+  }
+
+  if (matches.length === 0) {
     return true;
   }
 
-  return (
-    isDateInSelectedPeriods(dateMs, 'year', selections.years)
-    || isDateInSelectedPeriods(dateMs, 'quarter', selections.quarters)
-    || isDateInSelectedPeriods(dateMs, 'month', selections.months)
-  );
+  return matches.some(Boolean);
+}
+
+/** Map UI labels (e.g. «01.01.2025») to period keys used by filters. */
+export function periodKeysFromLabels(
+  dateMsList: Array<number | null>,
+  granularity: PeriodGranularity,
+  labels: string[],
+): string[] {
+  if (labels.length === 0) {
+    return [];
+  }
+  return collectCalendarPeriodOptions(dateMsList, granularity)
+    .filter((item) => labels.includes(item.label))
+    .map((item) => item.key);
 }

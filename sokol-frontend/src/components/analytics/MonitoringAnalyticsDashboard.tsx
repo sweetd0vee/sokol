@@ -21,7 +21,7 @@ import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../
 import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
 import { MATERIALITY_LEVEL_OPTIONS, RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS, RECOMMENDATION_STATUS_OPTIONS } from '../../constants/recommendations';
 import { useExportSections } from '../../hooks/useExportSections';
-import { collectCalendarPeriodOptions } from '../../utils/analyticsPeriod';
+import { collectCalendarPeriodOptions, periodKeysFromLabels } from '../../utils/analyticsPeriod';
 import { parseDateValue } from '../../utils/dates';
 import {
   STATUS_COLORS,
@@ -41,12 +41,6 @@ type MonitoringAnalyticsDashboardProps = {
 
 function toOptions(values: string[]) {
   return values.map((value) => ({ value, label: value }));
-}
-
-function periodKeys(anchorDates: Array<number | null>, granularity: PeriodGranularity, labels: string[]) {
-  return collectCalendarPeriodOptions(anchorDates, granularity)
-    .filter((item) => labels.includes(item.label))
-    .map((item) => item.key);
 }
 
 export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnalyticsDashboardProps) {
@@ -72,9 +66,9 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
   const yearOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'year').map((item) => item.label)), [anchorDates]);
   const quarterOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'quarter').map((item) => item.label)), [anchorDates]);
   const monthOptions = useMemo(() => toOptions(collectCalendarPeriodOptions(anchorDates, 'month').map((item) => item.label)), [anchorDates]);
-  const selectedYearKeys = useMemo(() => periodKeys(anchorDates, 'year', selectedYears), [anchorDates, selectedYears]);
-  const selectedQuarterKeys = useMemo(() => periodKeys(anchorDates, 'quarter', selectedQuarters), [anchorDates, selectedQuarters]);
-  const selectedMonthKeys = useMemo(() => periodKeys(anchorDates, 'month', selectedMonths), [anchorDates, selectedMonths]);
+  const selectedYearKeys = useMemo(() => periodKeysFromLabels(anchorDates, 'year', selectedYears), [anchorDates, selectedYears]);
+  const selectedQuarterKeys = useMemo(() => periodKeysFromLabels(anchorDates, 'quarter', selectedQuarters), [anchorDates, selectedQuarters]);
+  const selectedMonthKeys = useMemo(() => periodKeysFromLabels(anchorDates, 'month', selectedMonths), [anchorDates, selectedMonths]);
   const auditorOptions = useMemo(() => toOptions(collectRecommendationAuditors(recommendations)), [recommendations]);
   const departmentOptions = useMemo(() => toOptions(collectAuditObjects(recommendations)), [recommendations]);
 
