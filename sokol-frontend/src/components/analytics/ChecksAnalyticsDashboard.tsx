@@ -4,7 +4,6 @@ import {
   BarChart,
   CartesianGrid,
   ComposedChart,
-  LabelList,
   Legend,
   Line,
   ResponsiveContainer,
@@ -234,16 +233,12 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={flowSeries} margin={{ top: 22, right: 12, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                    <XAxis dataKey="label" tick={{ fontSize: 13 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 13 }} />
                     <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Bar dataKey="total" name="За период" fill={CHECKS_PALETTE[11]} radius={[4, 4, 0, 0]}>
-                      <LabelList dataKey="total" position="top" fontSize={10} />
-                    </Bar>
-                    <Line type="monotone" dataKey="cumulative" name="Всего" stroke={CHECKS_PALETTE[0]} strokeWidth={2.5} dot={{ r: 3 }}>
-                      <LabelList dataKey="cumulative" position="top" fontSize={10} fill={CHECKS_PALETTE[0]} offset={8} />
-                    </Line>
+                    <Legend wrapperStyle={{ fontSize: 13 }} />
+                    <Bar dataKey="total" name="За период" fill={CHECKS_PALETTE[11]} radius={[4, 4, 0, 0]} />
+                    <Line type="monotone" dataKey="cumulative" name="Всего" stroke={CHECKS_PALETTE[0]} strokeWidth={2.5} dot={{ r: 3 }} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -257,7 +252,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Виды проверок"
-            description="Количество проверок в выбранном периоде"
+            description="Количество проверок за период"
             exportSectionId="views"
             exportSelected={exportSections.isSelected('views')}
             onToggleExport={() => exportSections.toggleSection('views')}
@@ -270,12 +265,10 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={viewDistribution} layout="vertical" margin={{ top: 8, right: 24, left: 16, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                    <YAxis dataKey="name" type="category" width={92} tick={{ fontSize: 11 }} />
+                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 13 }} />
+                    <YAxis dataKey="name" type="category" width={92} tick={{ fontSize: 13 }} />
                     <Tooltip />
-                    <Bar dataKey="value" name="Проверки" fill={CHECKS_PALETTE[8]} radius={[0, 6, 6, 0]}>
-                      <LabelList dataKey="value" position="right" fontSize={11} />
-                    </Bar>
+                    <Bar dataKey="value" name="Проверки" fill={CHECKS_PALETTE[8]} radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -289,7 +282,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
         render: ({ resetCardLayout }) => (
           <ChartCard
             title="Типы проверок"
-            description="Плановые, внеплановые и контрольные проверки"
+            description="Распределение плановых, внеплановых и контрольных процедур за период"
             exportSectionId="types"
             exportSelected={exportSections.isSelected('types')}
             onToggleExport={() => exportSections.toggleSection('types')}
@@ -298,7 +291,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
             {typeDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableDonutChart data={typeDistribution} palette={CHECKS_PALETTE} />
+              <FocusableDonutChart data={typeDistribution} palette={CHECKS_PALETTE} showPercentInLabel />
             )}
           </ChartCard>
         ),

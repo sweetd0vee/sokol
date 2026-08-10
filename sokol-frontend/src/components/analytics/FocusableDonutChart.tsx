@@ -12,6 +12,8 @@ type FocusableDonutChartProps = {
   data: DonutDatum[];
   palette?: readonly string[];
   showPercentInLabel?: boolean;
+  /** When false, values appear only in the hover tooltip. */
+  showValueLabels?: boolean;
 };
 
 type LabelProps = {
@@ -87,40 +89,22 @@ function DonutValueLabel({
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   const segmentFill = payload?.color ?? fill;
   const lightBackground = isLightFill(segmentFill);
-  const textColor = showPercent ? '#1e293b' : lightBackground ? '#1e293b' : '#ffffff';
+  const textColor = lightBackground ? '#1e293b' : '#ffffff';
   const percentLabel = `${Math.round(percent * 100)}%`;
 
   return (
     <g style={{ pointerEvents: 'none' }}>
-      {showPercent ? (
-        <text
-          x={x}
-          y={y}
-          fill={textColor}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontWeight={700}
-        >
-          <tspan x={x} dy="-0.35em" fontSize={12}>
-            {value}
-          </tspan>
-          <tspan x={x} dy="1.25em" fontSize={10} fontWeight={600}>
-            {percentLabel}
-          </tspan>
-        </text>
-      ) : (
-        <text
-          x={x}
-          y={y}
-          fill={textColor}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize={13}
-          fontWeight={700}
-        >
-          {value}
-        </text>
-      )}
+      <text
+        x={x}
+        y={y}
+        fill={textColor}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={showPercent ? 14 : 15}
+        fontWeight={700}
+      >
+        {showPercent ? percentLabel : value}
+      </text>
     </g>
   );
 }
@@ -129,6 +113,7 @@ export function FocusableDonutChart({
   data,
   palette = PALETTE,
   showPercentInLabel = false,
+  showValueLabels = true,
 }: FocusableDonutChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const colors = palette.length > 0 ? palette : PALETTE;
@@ -149,7 +134,11 @@ export function FocusableDonutChart({
             cornerRadius={4}
             stroke="#ffffff"
             strokeWidth={2}
-            label={(props) => <DonutValueLabel {...props} showPercent={showPercentInLabel} />}
+            label={
+              showValueLabels
+                ? (props) => <DonutValueLabel {...props} showPercent={showPercentInLabel} />
+                : false
+            }
             labelLine={false}
             isAnimationActive={false}
             onMouseEnter={(_, index) => setActiveIndex(index)}
@@ -188,7 +177,7 @@ export function FocusableDonutChart({
               borderRadius: 10,
               border: '1px solid #e2e8f0',
               boxShadow: '0 8px 20px rgba(15, 23, 42, 0.08)',
-              fontSize: 12,
+              fontSize: 13,
             }}
           />
           <Legend
@@ -196,7 +185,7 @@ export function FocusableDonutChart({
             align="center"
             iconType="circle"
             iconSize={8}
-            wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
+            wrapperStyle={{ fontSize: 13, paddingTop: 4 }}
           />
         </PieChart>
       </ResponsiveContainer>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { toJpeg, toPng, toSvg } from 'html-to-image';
+import { toPng, toSvg } from 'html-to-image';
 import { Clipboard, Expand, FileDown, Image, Minimize2, MoreHorizontal, X } from 'lucide-react';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
@@ -32,15 +32,12 @@ function downloadDataUrl(dataUrl: string, filename: string) {
   link.click();
 }
 
-async function captureNode(node: HTMLElement, format: 'png' | 'jpeg' | 'svg') {
+async function captureNode(node: HTMLElement, format: 'png' | 'svg') {
   const options = {
     cacheBust: true,
     pixelRatio: 2,
     backgroundColor: '#ffffff',
   };
-  if (format === 'jpeg') {
-    return toJpeg(node, { ...options, quality: 0.95 });
-  }
   if (format === 'svg') {
     return toSvg(node, options);
   }
@@ -67,7 +64,7 @@ function ChartToolbar({
   isDownloadOpen: boolean;
   onToggleDownload: () => void;
   menuRef: React.RefObject<HTMLDivElement | null>;
-  onDownload: (format: 'png' | 'jpeg' | 'svg' | 'pdf') => void;
+  onDownload: (format: 'png' | 'svg' | 'pdf') => void;
   onCopyPng: () => void;
 }) {
   return (
@@ -126,15 +123,6 @@ function ChartToolbar({
             >
               <Image className="h-3.5 w-3.5 text-sky-600" />
               PNG
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => onDownload('jpeg')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-700"
-            >
-              <Image className="h-3.5 w-3.5 text-amber-600" />
-              JPG
             </button>
             <button
               type="button"
@@ -256,7 +244,7 @@ export function ChartCard({
     return () => window.removeEventListener('mousedown', handlePointer);
   }, [isDownloadOpen]);
 
-  const handleDownload = async (format: 'png' | 'jpeg' | 'svg' | 'pdf') => {
+  const handleDownload = async (format: 'png' | 'svg' | 'pdf') => {
     const node = captureRef.current;
     if (!node || isBusy) {
       return;
@@ -297,8 +285,7 @@ export function ChartCard({
       }
 
       const dataUrl = await captureNode(node, format);
-      const extension = format === 'jpeg' ? 'jpg' : format;
-      downloadDataUrl(dataUrl, `${baseName}.${extension}`);
+      downloadDataUrl(dataUrl, `${baseName}.${format}`);
     } catch (error) {
       console.error('Chart download failed', error);
       window.alert(

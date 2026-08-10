@@ -42,7 +42,7 @@ function TreemapContent({
 
   const isDimmed = activeName !== null && activeName !== name;
   const isActive = activeName === name;
-  const showLabel = width >= 42 && height >= 32;
+  const rounded = width >= 42 && height >= 32;
 
   return (
     <g
@@ -58,7 +58,7 @@ function TreemapContent({
         fillOpacity={isDimmed ? 0.32 : 1}
         stroke={isActive ? '#0f172a' : '#ffffff'}
         strokeWidth={isActive ? 2.5 : 2}
-        rx={showLabel ? 8 : 0}
+        rx={rounded ? 8 : 0}
         style={{
           filter: isDimmed
             ? 'brightness(0.72) saturate(0.85)'
@@ -68,29 +68,6 @@ function TreemapContent({
           transition: 'fill-opacity 160ms ease, filter 160ms ease, stroke-width 160ms ease',
         }}
       />
-      {showLabel ? (
-        <>
-          <text
-            x={x + 8}
-            y={y + 18}
-            fill="#fff"
-            fontSize={11}
-            fontWeight={700}
-            style={{ pointerEvents: 'none', opacity: isDimmed ? 0.55 : 1 }}
-          >
-            {name.length > 20 ? `${name.slice(0, 18)}...` : name}
-          </text>
-          <text
-            x={x + 8}
-            y={y + 34}
-            fill="#fff"
-            fontSize={12}
-            style={{ pointerEvents: 'none', opacity: isDimmed ? 0.55 : 1 }}
-          >
-            {value}
-          </text>
-        </>
-      ) : null}
     </g>
   );
 }
@@ -122,7 +99,7 @@ export function FocusableTreemapChart({ data, palette = PALETTE }: FocusableTree
               borderRadius: 10,
               border: '1px solid #e2e8f0',
               boxShadow: '0 8px 20px rgba(15, 23, 42, 0.08)',
-              fontSize: 12,
+              fontSize: 13,
             }}
           />
         </Treemap>

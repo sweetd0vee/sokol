@@ -17,7 +17,7 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
   return (
     <div data-export-html className="flex h-full min-h-[13rem] flex-col gap-2">
       <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-gray-100 dark:border-slate-700">
-        <table className="w-full table-fixed border-collapse text-xs">
+        <table className="w-full table-fixed border-collapse text-sm">
           <colgroup>
             <col className="w-[16%]" />
             <col className="w-[40%]" />
@@ -72,11 +72,16 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
                   return (
                     <td
                       key={column.key}
-                      className="border border-white/40 py-2.5 dark:border-slate-800/60"
-                      style={{ backgroundColor: color }}
+                      className="px-1 py-2 text-center"
                       title={`${column.label}: ${rating}`}
                       aria-label={`${column.label}: ${rating}`}
-                    />
+                    >
+                      <span
+                        className="inline-block h-3.5 w-3.5 rounded-sm border border-black/10"
+                        style={{ backgroundColor: color }}
+                        aria-hidden
+                      />
+                    </td>
                   );
                 })}
               </tr>
@@ -86,18 +91,18 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
       </div>
 
       {hoveredRow ? (
-        <p className="shrink-0 truncate text-[11px] text-gray-600 dark:text-slate-300" title={hoveredRow.name}>
+        <p className="shrink-0 truncate text-xs text-gray-600 dark:text-slate-300" title={hoveredRow.name}>
           <span className="font-semibold text-sber-dark dark:text-sber-light">{hoveredRow.key}</span>
           {': '}
           {hoveredRow.name}
         </p>
       ) : (
-        <p className="shrink-0 text-[11px] text-gray-400 dark:text-slate-500">
+        <p className="shrink-0 text-xs text-gray-400 dark:text-slate-500">
           Наведите на ключ проверки, чтобы увидеть название
         </p>
       )}
 
-      <ul className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-gray-600 dark:text-slate-300">
+      <ul className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-gray-600 dark:text-slate-300">
         {EFFECTIVENESS_LEGEND.map((item) => (
           <li key={item.tone} className="inline-flex items-center gap-1.5">
             <span

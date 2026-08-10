@@ -74,24 +74,24 @@ function TreemapContent(props: {
   y?: number;
   width?: number;
   height?: number;
-  name?: string;
-  value?: number;
   fill?: string;
 }) {
-  const { x = 0, y = 0, width = 0, height = 0, name = '', value = 0, fill = '#7C3AED' } = props;
-  if (width < 42 || height < 32) {
-    return <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" strokeWidth={2} />;
+  const { x = 0, y = 0, width = 0, height = 0, fill = '#7C3AED' } = props;
+  if (width <= 0 || height <= 0) {
+    return null;
   }
+  const rounded = width >= 42 && height >= 32;
   return (
-    <g>
-      <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" strokeWidth={2} rx={8} />
-      <text x={x + 8} y={y + 18} fill="#fff" fontSize={11} fontWeight={700}>
-        {name.length > 20 ? `${name.slice(0, 18)}...` : name}
-      </text>
-      <text x={x + 8} y={y + 34} fill="#fff" fontSize={12}>
-        {value}
-      </text>
-    </g>
+    <rect
+      x={x}
+      y={y}
+      width={width}
+      height={height}
+      fill={fill}
+      stroke="#fff"
+      strokeWidth={2}
+      rx={rounded ? 8 : 0}
+    />
   );
 }
 
@@ -289,12 +289,12 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={cumulativeSeries} margin={{ top: 22, right: 12, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                    <XAxis dataKey="label" tick={{ fontSize: 13 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 13 }} />
                     <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Legend wrapperStyle={{ fontSize: 13 }} />
                     <Bar dataKey="total" name="За период" fill={RECOMMENDATIONS_PALETTE[5]} radius={[4, 4, 0, 0]}>
-                      <LabelList dataKey="total" position="top" fontSize={10} />
+                      <LabelList dataKey="total" position="top" fontSize={12} />
                     </Bar>
                     <Line
                       type="monotone"
@@ -307,7 +307,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
                       <LabelList
                         dataKey="cumulative"
                         position="top"
-                        fontSize={10}
+                        fontSize={12}
                         fill={RECOMMENDATIONS_CUMULATIVE_LINE_COLOR}
                         offset={8}
                       />
@@ -332,14 +332,14 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
             onResetCardLayout={resetCardLayout}
           >
             {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]} />)}</BarChart></ResponsiveContainer></div>
+              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 13 }} /><YAxis allowDecimals={false} tick={{ fontSize: 13 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 13 }} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]} />)}</BarChart></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),
       },
       {
         id: 'materialityByPeriod',
-        defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
           <ChartCard
             title="Существенность по периодам"
@@ -350,38 +350,62 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
             onResetCardLayout={resetCardLayout}
           >
             {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} /><Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий} /><Bar dataKey="medium" name="Средний" stackId="mat" fill={MATERIALITY_COLORS.средний} /><Bar dataKey="high" name="Высокий" stackId="mat" fill={MATERIALITY_COLORS.высокий} /></BarChart></ResponsiveContainer></div>
+              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 13 }} /><YAxis allowDecimals={false} tick={{ fontSize: 13 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 13 }} /><Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий} /><Bar dataKey="medium" name="Средний" stackId="mat" fill={MATERIALITY_COLORS.средний} /><Bar dataKey="high" name="Высокий" stackId="mat" fill={MATERIALITY_COLORS.высокий} /></BarChart></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),
       },
-      ...[
-        ['materiality', 'Существенность', 'Распределение уровней существенности за период', materialityDistribution],
-        ['indicators', 'Индикаторы', 'Распределение выбранной выборки', indicatorDistribution],
-      ].map(([id, title, description, data], index) => ({
-        id: id as string,
-        defaultLayout: { x: 4 + index * 4, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
+      {
+        id: 'materiality',
+        defaultLayout: { x: 6, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
-          <ChartCard title={title as string} description={description as string} exportSectionId={id as string} exportSelected={exportSections.isSelected(id as RecommendationExportSectionId)} onToggleExport={() => exportSections.toggleSection(id as RecommendationExportSectionId)} onResetCardLayout={resetCardLayout}>
-            {(data as Array<{ name: string; value: number; color?: string }>).length === 0 ? (
+          <ChartCard
+            title="Существенность"
+            description="Распределение уровней существенности за период"
+            exportSectionId="materiality"
+            exportSelected={exportSections.isSelected('materiality')}
+            onToggleExport={() => exportSections.toggleSection('materiality')}
+            onResetCardLayout={resetCardLayout}
+          >
+            {materialityDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
               <FocusableDonutChart
-                data={data as Array<{ name: string; value: number; color?: string }>}
+                data={materialityDistribution}
                 palette={RECOMMENDATIONS_PALETTE}
-                showPercentInLabel={id === 'materiality'}
+                showPercentInLabel
               />
             )}
           </ChartCard>
         ),
-      })),
+      },
+      {
+        id: 'indicators',
+        defaultLayout: { x: 0, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+        render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
+          <ChartCard
+            title="Индикаторы"
+            description="Распределение выбранной выборки"
+            exportSectionId="indicators"
+            exportSelected={exportSections.isSelected('indicators')}
+            onToggleExport={() => exportSections.toggleSection('indicators')}
+            onResetCardLayout={resetCardLayout}
+          >
+            {indicatorDistribution.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <FocusableDonutChart data={indicatorDistribution} palette={RECOMMENDATIONS_PALETTE} showPercentInLabel />
+            )}
+          </ChartCard>
+        ),
+      },
       {
         id: 'objects',
         defaultLayout: { x: 4, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
           <ChartCard title="Объекты аудита" description="Департаменты по количеству рекомендаций" exportSectionId="objects" exportSelected={exportSections.isSelected('objects')} onToggleExport={() => exportSections.toggleSection('objects')} onResetCardLayout={resetCardLayout}>
             {objectDistribution.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><Treemap data={objectDistribution.map((item, index) => ({ ...item, fill: RECOMMENDATIONS_PALETTE[index % RECOMMENDATIONS_PALETTE.length] }))} dataKey="value" nameKey="name" content={<TreemapContent />} /></ResponsiveContainer></div>
+              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><Treemap data={objectDistribution.map((item, index) => ({ ...item, fill: RECOMMENDATIONS_PALETTE[index % RECOMMENDATIONS_PALETTE.length] }))} dataKey="value" nameKey="name" content={<TreemapContent />}><Tooltip /></Treemap></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),
@@ -391,7 +415,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
         defaultLayout: { x: 8, y: 8, w: 4, h: 3, minW: 4, minH: 2 },
         render: ({ resetCardLayout }: { resetCardLayout: () => void }) => (
           <ChartCard title="По проверкам" description="Количество рекомендаций на ключ проверки" exportSectionId="checkLinks" exportSelected={exportSections.isSelected('checkLinks')} onToggleExport={() => exportSections.toggleSection('checkLinks')} onResetCardLayout={resetCardLayout}>
-            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={checkLinks.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill={RECOMMENDATIONS_PALETTE[6]} radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={10} /></Bar></BarChart></ResponsiveContainer></div>
+            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={checkLinks.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 13 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill={RECOMMENDATIONS_PALETTE[6]} radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={12} /></Bar></BarChart></ResponsiveContainer></div>
           </ChartCard>
         ),
       },
