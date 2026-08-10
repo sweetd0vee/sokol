@@ -21,6 +21,7 @@ import {
 } from '../../utils/checkFormNavigation';
 import {
   FORM_FIELD_CLASS,
+  FORM_FIELD_SPAN_2_CLASS,
   FORM_INPUT_CLASS,
   FORM_LABEL_CLASS,
   FORM_OUTLINE_BUTTON_CLASS,
@@ -52,6 +53,7 @@ export function CheckFormPage() {
   const isEditMode = Boolean(id);
   const existingStartDate = toInputDate(existing?.start_date);
   const [checkName, setCheckName] = useState(restoredDraft?.checkName ?? existing?.check_name ?? '');
+  const [shortName, setShortName] = useState(restoredDraft?.shortName ?? existing?.short_name ?? '');
   const [checkType, setCheckType] = useState(restoredDraft?.checkType ?? existing?.check_type ?? '');
   const [checkView, setCheckView] = useState(restoredDraft?.checkView ?? existing?.check_view ?? '');
   const [checkLeader, setCheckLeader] = useState(restoredDraft?.checkLeader ?? existing?.check_leader ?? '');
@@ -168,6 +170,7 @@ export function CheckFormPage() {
   const buildCheckFormDraft = useCallback((): CheckFormDraft => ({
     existingCheck: existing,
     checkName,
+    shortName,
     checkType,
     checkView,
     checkLeader,
@@ -188,6 +191,7 @@ export function CheckFormPage() {
   }), [
     existing,
     checkName,
+    shortName,
     checkType,
     checkView,
     checkLeader,
@@ -232,6 +236,7 @@ export function CheckFormPage() {
       id: existing?.id ?? '0',
       serial_number: checkKey,
       check_name: checkName.trim(),
+      short_name: shortName.trim() || undefined,
       check_type: checkType as CheckType,
       check_view: checkView as Check['check_view'],
       start_date: toIsoDate(startDate) ?? '',
@@ -282,11 +287,23 @@ export function CheckFormPage() {
             label="Название"
             value={checkName}
             onChange={setCheckName}
-            placeholder="Краткое название"
+            placeholder="Название проверки"
             rows={4}
             labelClassName={FORM_LABEL_CLASS}
             inputClassName={FORM_TEXTAREA_CLASS}
           />
+          <div className={FORM_ROW_3}>
+            <Textarea
+              label="Краткое название"
+              value={shortName}
+              onChange={setShortName}
+              placeholder="Краткое название"
+              rows={4}
+              className={FORM_FIELD_SPAN_2_CLASS}
+              labelClassName={FORM_LABEL_CLASS}
+              inputClassName={FORM_TEXTAREA_CLASS}
+            />
+          </div>
           <div className={FORM_ROW_3}>
             <Select
               label="Тип"

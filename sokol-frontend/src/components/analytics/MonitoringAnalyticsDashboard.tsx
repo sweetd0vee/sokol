@@ -19,6 +19,7 @@ import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashb
 import { AnalyticsFilterSidebar, type AnalyticsPeriodSlice } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { FocusableDonutChart } from './FocusableDonutChart';
 import { PALETTE } from './analyticsPalette';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
@@ -33,6 +34,7 @@ import {
   buildDeadlineBuckets,
   buildFunnel,
   buildPeriodSeries,
+  buildStatusDistribution,
   buildTreemapData,
   collectAuditObjects,
   collectRecommendationAuditors,
@@ -121,6 +123,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
     periodSlice === 'month' ? selectedMonths : periodSlice === 'quarter' ? selectedQuarters : selectedYears;
   const summary = useMemo(() => summarizeRecommendations(filtered), [filtered]);
   const periodSeries = useMemo(() => buildPeriodSeries(filtered, granularity), [filtered, granularity]);
+  const statusDistribution = useMemo(() => buildStatusDistribution(filtered), [filtered]);
   const deadlineBuckets = useMemo(() => buildDeadlineBuckets(filtered), [filtered]);
   const funnel = useMemo(() => buildFunnel(filtered), [filtered]);
   const objects = useMemo(() => buildAuditObjectDistribution(filtered), [filtered]);
@@ -229,8 +232,21 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
         ),
       },
       {
-        id: 'funnel',
+        id: 'statuses',
         defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
+        render: ({ resetCardLayout }) => (
+          <ChartCard title="Статусы" description="Распределение выбранной выборки" exportSectionId="statuses" exportSelected={exportSections.isSelected('statuses')} onToggleExport={() => exportSections.toggleSection('statuses')} onResetCardLayout={resetCardLayout}>
+            {statusDistribution.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <FocusableDonutChart data={statusDistribution} />
+            )}
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'funnel',
+        defaultLayout: { x: 4, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Воронка исполнения" description="От общего портфеля к закрытию" exportSectionId="funnel" exportSelected={exportSections.isSelected('funnel')} onToggleExport={() => exportSections.toggleSection('funnel')} onResetCardLayout={resetCardLayout}>
             <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><FunnelChart><Tooltip /><Funnel dataKey="value" data={funnel} fill="#4F46E5"><LabelList position="right" dataKey="name" fill="#334155" fontSize={11} /></Funnel></FunnelChart></ResponsiveContainer></div>
@@ -239,7 +255,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
       },
       {
         id: 'problemTreemap',
-        defaultLayout: { x: 4, y: 5, w: 8, h: 3, minW: 4, minH: 2 },
+        defaultLayout: { x: 8, y: 5, w: 4, h: 3, minW: 4, minH: 2 },
         render: ({ resetCardLayout }) => (
           <ChartCard title="Tree Map проблемных объектов" description="Просроченные и высокосущественные рекомендации" exportSectionId="problemTreemap" exportSelected={exportSections.isSelected('problemTreemap')} onToggleExport={() => exportSections.toggleSection('problemTreemap')} onResetCardLayout={resetCardLayout}>
             {problemObjects.length === 0 ? <EmptyChart message="Нет проблемных объектов" /> : (
@@ -249,7 +265,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
         ),
       },
     ],
-    [deadlineBuckets, exportSections, funnel, objects, periodSeries, problemObjects, summary],
+    [deadlineBuckets, exportSections, funnel, objects, periodSeries, problemObjects, statusDistribution, summary],
   );
 
   return (

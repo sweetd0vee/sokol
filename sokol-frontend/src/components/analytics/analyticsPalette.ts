@@ -37,3 +37,54 @@ export const CHECKS_PALETTE = [
   '#0C4A6E', // ink cyan
   '#A5B4FC', // periwinkle
 ];
+
+/**
+ * Violet / lilac scale for the Recommendations analytics tab.
+ * Ordered to alternate dark ↔ light ↔ mid so neighbouring segments stay distinct.
+ */
+export const RECOMMENDATIONS_PALETTE = [
+  '#4C1D95', // deep violet
+  '#C4B5FD', // soft lilac
+  '#7C3AED', // vivid violet
+  '#EDE9FE', // pale lilac
+  '#5B21B6', // purple
+  '#A78BFA', // light violet
+  '#6D28D9', // mid violet
+  '#DDD6FE', // lavender
+  '#8B5CF6', // bright violet
+  '#F5F3FF', // mist lilac
+  '#4338CA', // indigo-violet
+  '#D8B4FE', // orchid
+  '#2E1065', // ink purple
+  '#B794F4', // soft purple
+  '#6366F1', // indigo
+  '#E9D5FF', // light orchid
+];
+
+/** Semantic violet tones for recommendation statuses (tab-local). */
+export const RECOMMENDATIONS_STATUS_COLORS = {
+  completed: '#7C3AED',
+  unresolved: '#4C1D95',
+  on_control: '#A78BFA',
+  in_progress: '#C4B5FD',
+} as const;
+
+export const RECOMMENDATIONS_MATERIALITY_COLORS = {
+  низкий: '#DDD6FE',
+  средний: '#A78BFA',
+  высокий: '#6D28D9',
+} as const;
+
+export const RECOMMENDATIONS_ADDITIONAL_STATUS_COLORS = {
+  on_time: '#C4B5FD',
+  deadline_violated: '#5B21B6',
+  on_control: '#8B5CF6',
+} as const;
+
+export const RECOMMENDATIONS_INDICATOR_COLORS = {
+  'не указан': '#E9D5FF',
+  'в процессе': '#C4B5FD',
+  ожидает: '#A78BFA',
+  'не решено': '#7C3AED',
+  исполнено: '#5B21B6',
+} as const;

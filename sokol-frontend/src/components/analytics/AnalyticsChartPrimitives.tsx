@@ -470,7 +470,7 @@ export function KpiCard({
   value: number;
   hint?: string;
   suffix?: string;
-  tone?: 'blue' | 'green' | 'red' | 'amber' | 'violet' | 'slate';
+  tone?: 'blue' | 'green' | 'red' | 'amber' | 'violet' | 'slate' | 'lilac' | 'indigo' | 'fuchsia' | 'purple';
 }) {
   const tones = {
     blue: 'border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-100',
@@ -481,6 +481,14 @@ export function KpiCard({
       'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100',
     violet:
       'border-violet-200 bg-violet-50 text-violet-900 dark:border-violet-900/50 dark:bg-violet-950/40 dark:text-violet-100',
+    lilac:
+      'border-purple-200 bg-purple-50 text-purple-900 dark:border-purple-900/50 dark:bg-purple-950/40 dark:text-purple-100',
+    indigo:
+      'border-indigo-200 bg-indigo-50 text-indigo-900 dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-indigo-100',
+    fuchsia:
+      'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-900 dark:border-fuchsia-900/50 dark:bg-fuchsia-950/40 dark:text-fuchsia-100',
+    purple:
+      'border-violet-300 bg-violet-100 text-violet-950 dark:border-violet-800/60 dark:bg-violet-900/50 dark:text-violet-50',
     slate:
       'border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100',
   };

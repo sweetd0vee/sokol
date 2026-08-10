@@ -18,6 +18,7 @@ import {
   buildCumulativeSeries,
   buildDocumentReadiness,
   buildDurationDistribution,
+  buildEffectivenessMatrix,
   buildPeriodSeries,
   buildStatusDistribution,
   buildTypeDistribution,
@@ -1371,12 +1372,16 @@ export async function exportChecksDashboard(
   format: AnalyticsExportFormat,
 ) {
   const { checks, filteredChecks, granularity, auditors, selectedSections } = input;
+  const effectivenessMatrix = selectedSections.includes('effectivenessMatrix')
+    ? buildEffectivenessMatrix(filteredChecks)
+    : undefined;
   await exportVisualAnalyticsReport({
     format,
     kind: 'checks',
     documentTitle: 'Проверки',
     filenamePrefix: 'analytics-checks',
     selectedSections,
+    effectivenessMatrix,
     meta: [
       ['Группировка', granularityLabel(granularity)],
       ...(input.selectedPeriodLabels?.map((label) => ['Период', label] as [string, string]) ?? []),

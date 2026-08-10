@@ -9,6 +9,7 @@ from app.models.checks import CheckStatus
 class CheckBase(BaseModel):
     serial_number: Optional[str] = Field(None, min_length=1, max_length=32)
     check_name: str = Field(..., min_length=1, max_length=255)
+    short_name: Optional[str] = Field(None, max_length=255)
     check_type: str = Field(..., min_length=1, max_length=32)
     check_view: str = Field(..., min_length=1, max_length=64)
     start_date: date
@@ -38,6 +39,7 @@ class CheckCreate(CheckBase):
 class CheckUpdate(BaseModel):
     serial_number: Optional[str] = Field(None, min_length=1, max_length=32)
     check_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    short_name: Optional[str] = Field(None, max_length=255)
     check_type: Optional[str] = Field(None, min_length=1, max_length=32)
     check_view: Optional[str] = Field(None, min_length=1, max_length=64)
     start_date: Optional[date] = None

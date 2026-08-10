@@ -4,6 +4,7 @@ import type { Recommendation } from '../types/recommendation';
 export type CheckFormDraft = {
   existingCheck?: Check;
   checkName: string;
+  shortName: string;
   checkType: string;
   checkView: string;
   checkLeader: string;

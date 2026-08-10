@@ -94,6 +94,7 @@ async def import_seed_data(*, replace: bool = False) -> None:
                 "description": _optional_str(row.get("description")),
             }
             optional_check_fields = {
+                "short_name": _optional_str(row.get("short_name")),
                 "order_document_number": _optional_str(row.get("order_document_number")),
                 "order_document_date": _parse_date(row.get("order_document_date")),
                 "program_document_number": _optional_str(row.get("program_document_number")),

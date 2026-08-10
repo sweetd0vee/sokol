@@ -19,6 +19,7 @@ class Check(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     serial_number: Mapped[str] = mapped_column(String(32), unique=True, nullable=False, index=True)
     check_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    short_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     check_type: Mapped[str] = mapped_column(String(32), nullable=False)
     check_view: Mapped[str] = mapped_column(String(64), nullable=False)
     start_date: Mapped[date] = mapped_column(Date, nullable=False)

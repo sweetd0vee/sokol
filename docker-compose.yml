@@ -1,4 +1,5 @@
-# Коробочный стек SOKOL: Postgres + API + Ollama + Frontend
+# Коробочный стек SOKOL: Postgres + API + Frontend
+# Ollama — локально на хосте (http://host.docker.internal:11434)
 # Запуск из корня репозитория: см. README / DOCKER.md
 name: sokol
 
@@ -25,8 +26,8 @@ services:
 
   api:
     build:
-      context: ./sokol-backend
-      dockerfile: docker/app/Dockerfile
+      context: .
+      dockerfile: sokol-backend/docker/app/Dockerfile
     image: sber/sokol-be:master
     container_name: backend
     hostname: backend
@@ -37,28 +38,20 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/sokol_db}
       SOKOL_CORS_ORIGINS: ${SOKOL_CORS_ORIGINS:-http://localhost:5180}
       SOKOL_MAX_UPLOAD_MB: ${SOKOL_MAX_UPLOAD_MB:-100}
-      SOKOL_OLLAMA_URL: ${SOKOL_OLLAMA_URL:-http://ollama:11434}
+      SOKOL_DATA_DIR: /app/data
+      SOKOL_LOAD_DEMO_DATA: ${SOKOL_LOAD_DEMO_DATA:-1}
+      SOKOL_SEED_REPLACE: ${SOKOL_SEED_REPLACE:-0}
+      # Локальная Ollama на хосте (не в Docker)
+      SOKOL_OLLAMA_URL: ${SOKOL_OLLAMA_URL:-http://host.docker.internal:11434}
       SOKOL_OLLAMA_MODEL: ${SOKOL_OLLAMA_MODEL:-qwen3.5:35b}
       SOKOL_OLLAMA_TIMEOUT_S: ${SOKOL_OLLAMA_TIMEOUT_S:-600}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
-      ollama:
-        condition: service_started
     ports:
       - "8800:8800"
-    networks:
-      - sokol
-
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    hostname: ollama
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - ~/docker-share/ollama:/root/.ollama
     networks:
       - sokol
 

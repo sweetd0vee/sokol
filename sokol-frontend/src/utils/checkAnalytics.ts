@@ -272,6 +272,7 @@ export const EFFECTIVENESS_LEGEND: Array<{ tone: EffectivenessTone; label: strin
 export type EffectivenessMatrixRow = {
   id: string;
   key: string;
+  shortName: string;
   name: string;
   ratings: Record<(typeof EFFECTIVENESS_MATRIX_COLUMNS)[number]['key'], string>;
   tones: Record<(typeof EFFECTIVENESS_MATRIX_COLUMNS)[number]['key'], EffectivenessTone>;
@@ -314,6 +315,7 @@ export function buildEffectivenessMatrix(checks: Check[]): EffectivenessMatrixRo
       return {
         id: check.id,
         key: check.serial_number,
+        shortName: check.short_name?.trim() || '',
         name: check.check_name,
         ratings: { ...ratings },
         tones: {

@@ -51,6 +51,13 @@
       max-width: calc((100% - 8.25rem) / 4);
     }
 
+    /* Two standard field boxes + one gutter between them */
+    .form-row-3 > .form-field-span-2 {
+      flex: 0 0 calc(2 * ((100% - 8.25rem) / 4) + 2.75rem);
+      width: calc(2 * ((100% - 8.25rem) / 4) + 2.75rem);
+      max-width: calc(2 * ((100% - 8.25rem) / 4) + 2.75rem);
+    }
+
     /* Text fields that should use the leftover width of a 3-column row */
     .form-row-3 > .form-field-wide {
       flex: 1 1 auto;

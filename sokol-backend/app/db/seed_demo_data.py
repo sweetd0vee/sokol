@@ -39,6 +39,7 @@ async def seed_demo_data(count: int = DEMO_COUNT, *, replace: bool = True) -> tu
                 id=index,
                 serial_number=row["serial_number"],
                 check_name=row["check_name"],
+                short_name=row.get("short_name"),
                 check_type=row["check_type"],
                 check_view=row["check_view"],
                 start_date=row["start_date"],

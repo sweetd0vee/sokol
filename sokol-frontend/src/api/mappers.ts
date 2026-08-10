@@ -11,6 +11,7 @@ export type ApiCheck = {
   id: number;
   serial_number: string;
   check_name: string;
+  short_name?: string | null;
   check_type: string;
   check_view: string;
   start_date: string;
@@ -72,6 +73,7 @@ export function mapCheckFromApi(api: ApiCheck): Check {
     id: String(api.id),
     serial_number: api.serial_number,
     check_name: api.check_name,
+    short_name: api.short_name ?? undefined,
     check_type: api.check_type as CheckType,
     check_view: api.check_view as CheckView,
     start_date: api.start_date,
@@ -99,6 +101,7 @@ export function mapCheckToCreate(check: Check): Omit<ApiCheck, 'id'> {
   return {
     serial_number: check.serial_number,
     check_name: check.check_name,
+    short_name: check.short_name ?? null,
     check_type: check.check_type,
     check_view: check.check_view,
     start_date: check.start_date,

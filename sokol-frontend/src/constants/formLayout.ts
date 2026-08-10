@@ -45,6 +45,9 @@ export const FORM_FIELD_CLASS = 'min-w-0 w-full';
 /** Wider text field in a 3-column row — fills leftover space to the right. */
 export const FORM_FIELD_WIDE_CLASS = 'form-field-wide min-w-0';
 
+/** Spans two standard field boxes in a 3/4-column form row. */
+export const FORM_FIELD_SPAN_2_CLASS = 'form-field-span-2 min-w-0';
+
 /** Shared list action sizes: Мои/Создать and table action buttons. */
 export const LIST_ACTION_BUTTON_CLASS =
   'inline-flex w-[160px] items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium';

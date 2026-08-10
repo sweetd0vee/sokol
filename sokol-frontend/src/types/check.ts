@@ -25,6 +25,7 @@ export interface Check {
   id: string;
   serial_number: string;
   check_name: string;
+  short_name?: string;
   check_type: CheckType;
   check_view: CheckView;
   start_date: string;

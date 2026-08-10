@@ -29,6 +29,11 @@ import {
   isUsefulSvgMarkup,
   type DashboardChartCapture,
 } from './dashboardChartRegistry';
+import {
+  EFFECTIVENESS_MATRIX_COLUMNS,
+  getEffectivenessToneColor,
+  type EffectivenessMatrixRow,
+} from './checkAnalytics';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
@@ -167,14 +172,109 @@ async function buildVisualPdf(options: {
   pdfMake.createPdf(doc).download(`${filenamePrefix}-${stamp()}.pdf`);
 }
 
+function hexToArgb(hex: string): string {
+  const normalized = hex.replace('#', '').trim();
+  if (normalized.length === 6) {
+    return `FF${normalized.toUpperCase()}`;
+  }
+  if (normalized.length === 8) {
+    return normalized.toUpperCase();
+  }
+  return 'FF94A3B8';
+}
+
+function writeEffectivenessMatrixSheet(
+  workbook: ExcelJS.Workbook,
+  sheetName: string,
+  chart: DashboardChartCapture,
+  rows: EffectivenessMatrixRow[],
+) {
+  const sheet = workbook.addWorksheet(sheetName, {
+    properties: { tabColor: { argb: 'FF065F46' } },
+    views: [{ showGridLines: false }],
+  });
+
+  const headers = ['Ключ', 'Краткое название', ...EFFECTIVENESS_MATRIX_COLUMNS.map((column) => column.label)];
+  sheet.columns = [
+    { width: 16 },
+    { width: 42 },
+    ...EFFECTIVENESS_MATRIX_COLUMNS.map(() => ({ width: 14 })),
+  ];
+
+  sheet.mergeCells(1, 1, 1, headers.length);
+  sheet.getCell(1, 1).value = chart.title;
+  sheet.getCell(1, 1).font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF003366' } };
+  sheet.getRow(1).height = 24;
+
+  sheet.mergeCells(2, 1, 2, headers.length);
+  sheet.getCell(2, 1).value = chart.description || 'Матрица оценок по проверкам за период (все строки выборки)';
+  sheet.getCell(2, 1).font = { name: 'Calibri', size: 10, color: { argb: 'FF64748B' } };
+  sheet.getRow(2).height = 18;
+
+  const headerRow = sheet.getRow(4);
+  headers.forEach((header, index) => {
+    const cell = headerRow.getCell(index + 1);
+    cell.value = header;
+    cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF065F46' } };
+    cell.alignment = { horizontal: index < 2 ? 'left' : 'center', vertical: 'middle', wrapText: true };
+    cell.border = {
+      top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+    };
+  });
+  headerRow.height = 22;
+
+  rows.forEach((row, rowIndex) => {
+    const excelRow = sheet.getRow(5 + rowIndex);
+    const keyCell = excelRow.getCell(1);
+    keyCell.value = row.key;
+    keyCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF111827' } };
+    keyCell.alignment = { horizontal: 'left', vertical: 'middle' };
+
+    const shortNameCell = excelRow.getCell(2);
+    shortNameCell.value = row.shortName || '—';
+    shortNameCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF111827' } };
+    shortNameCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+
+    EFFECTIVENESS_MATRIX_COLUMNS.forEach((column, columnIndex) => {
+      const cell = excelRow.getCell(columnIndex + 3);
+      const color = getEffectivenessToneColor(row.tones[column.key]);
+      cell.value = null;
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: hexToArgb(color) } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+        bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+        left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+        right: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+      };
+    });
+
+    [1, 2].forEach((columnIndex) => {
+      const cell = excelRow.getCell(columnIndex);
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        right: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+      };
+    });
+    excelRow.height = 18;
+  });
+}
+
 async function buildVisualXlsx(options: {
   documentTitle: string;
   meta: VisualExportMetaRow[];
   charts: DashboardChartCapture[];
   kind: VisualAnalyticsKind;
   filenamePrefix: string;
+  effectivenessMatrix?: EffectivenessMatrixRow[];
 }) {
-  const { documentTitle, meta, charts, kind, filenamePrefix } = options;
+  const { documentTitle, meta, charts, kind, filenamePrefix, effectivenessMatrix } = options;
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'SOKOL';
   workbook.created = new Date();
@@ -187,7 +287,8 @@ async function buildVisualXlsx(options: {
   cover.mergeCells('A1:B1');
   cover.getCell('A1').value = documentTitle;
   cover.getCell('A1').font = { name: 'Calibri', size: 18, bold: true, color: { argb: 'FF003366' } };
-  cover.getCell('A2').value = 'Выбранные дашборды экспортированы как изображения графиков';
+  cover.getCell('A2').value =
+    'Выбранные дашборды экспортированы как изображения; матрица эффективности — полной таблицей';
   cover.getCell('A2').font = { name: 'Calibri', size: 11, color: { argb: 'FF64748B' } };
   cover.mergeCells('A2:B2');
 
@@ -200,12 +301,52 @@ async function buildVisualXlsx(options: {
   });
 
   const usedNames = new Set<string>(['Обложка']);
+  let writtenSheets = 0;
+  let wroteEffectivenessMatrix = false;
+
+  const writeMatrixIfNeeded = (chart?: DashboardChartCapture) => {
+    if (!effectivenessMatrix?.length || wroteEffectivenessMatrix) {
+      return;
+    }
+    let sheetName = sheetNameForSection(kind, 'effectivenessMatrix', chart?.title || 'Оценка эффективности');
+    if (usedNames.has(sheetName)) {
+      sheetName = `${sheetName.slice(0, 28)}_matrix`;
+    }
+    usedNames.add(sheetName);
+    writeEffectivenessMatrixSheet(
+      workbook,
+      sheetName,
+      chart ?? {
+        id: 'effectivenessMatrix',
+        title: 'Оценка эффективности',
+        description: 'Матрица оценок по проверкам за период (все строки выборки)',
+        dataUrl: '',
+        width: 960,
+        height: 540,
+      },
+      effectivenessMatrix,
+    );
+    wroteEffectivenessMatrix = true;
+    writtenSheets += 1;
+  };
+
   for (const [index, chart] of charts.entries()) {
+    if (chart.id === 'effectivenessMatrix') {
+      writeMatrixIfNeeded(chart);
+      continue;
+    }
+
     let sheetName = sheetNameForSection(kind, chart.id, chart.title);
     if (usedNames.has(sheetName)) {
       sheetName = `${sheetName.slice(0, 28)}_${index + 1}`;
     }
     usedNames.add(sheetName);
+
+    const hasPng =
+      chart.dataUrl.startsWith('data:image/png;base64,') && Boolean(chart.dataUrl.split(',')[1]);
+    if (!hasPng) {
+      continue;
+    }
 
     const sheet = workbook.addWorksheet(sheetName, {
       properties: { tabColor: { argb: 'FF4F7FA8' } },
@@ -236,6 +377,13 @@ async function buildVisualXlsx(options: {
       editAs: 'oneCell',
     });
     sheet.getRow(20).height = Math.max(Math.round(fitted.height * 0.75), 120);
+    writtenSheets += 1;
+  }
+
+  writeMatrixIfNeeded();
+
+  if (writtenSheets === 0) {
+    throw new Error('Не удалось сформировать листы дашбордов для Excel. Обновите страницу и попробуйте снова.');
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
@@ -806,12 +954,17 @@ export async function exportVisualAnalyticsReport(options: {
   filenamePrefix: string;
   meta: VisualExportMetaRow[];
   selectedSections: string[];
+  effectivenessMatrix?: EffectivenessMatrixRow[];
 }) {
   const charts = await captureDashboardCharts(options.selectedSections, {
     // HTML uses SVG/HTML markup; skipping PNG avoids html-to-image failures (oklch/lab CSS).
     skipPng: options.format === 'html',
   });
-  if (charts.length === 0) {
+  const canExportMatrixOnly =
+    options.format === 'xlsx'
+    && Boolean(options.effectivenessMatrix?.length)
+    && options.selectedSections.includes('effectivenessMatrix');
+  if (charts.length === 0 && !canExportMatrixOnly) {
     throw new Error(
       'Не удалось снять выбранные дашборды. Отметьте карточки с графиками (не только «Исходные данные») и убедитесь, что они видны на экране.',
     );
@@ -857,14 +1010,17 @@ export async function exportVisualAnalyticsReport(options: {
     return;
   }
 
-  if (chartsWithPng.length === 0) {
+  const hasMatrixTable = Boolean(options.effectivenessMatrix?.length)
+    && options.selectedSections.includes('effectivenessMatrix');
+  if (chartsWithPng.length === 0 && !hasMatrixTable) {
     throw new Error('Не удалось снять изображения дашбордов для Excel. Обновите страницу и попробуйте снова.');
   }
   await buildVisualXlsx({
     documentTitle: options.documentTitle,
     meta: options.meta,
-    charts: chartsWithPng,
+    charts,
     kind: options.kind,
     filenamePrefix: options.filenamePrefix,
+    effectivenessMatrix: options.effectivenessMatrix,
   });
 }

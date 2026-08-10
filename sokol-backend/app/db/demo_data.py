@@ -159,6 +159,22 @@ def _build_check_name(check_type: str, topic: str, n: int) -> str:
         return name[: 255 - len(suffix)].rstrip() + suffix
     return name + suffix
 
+
+CHECK_SHORT_NAME_BY_TYPE = {
+    "planned": "Плановая проверка {topic}",
+    "unscheduled": "Внеплановая проверка {topic}",
+    "thematic": "Тематическая проверка {topic}",
+}
+
+
+def _build_check_short_name(check_type: str, topic: str, n: int) -> str:
+    name = CHECK_SHORT_NAME_BY_TYPE[check_type].format(topic=topic)
+    suffix = f" №{n}"
+    if len(name) + len(suffix) > 255:
+        return name[: 255 - len(suffix)].rstrip() + suffix
+    return name + suffix
+
+
 REC_NAME_TEMPLATES = [
     "Внедрить контроль по направлению: {topic}",
     "Актуализировать регламент: {topic}",
@@ -201,6 +217,7 @@ def build_check_rows(count: int = 100) -> list[dict]:
         rows.append(
             {
                 "check_name": _build_check_name(check_type, topic, n),
+                "short_name": _build_check_short_name(check_type, topic, n),
                 "check_type": check_type,
                 "check_view": check_view,
                 "start_date": start,
