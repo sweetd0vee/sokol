@@ -1,6 +1,6 @@
 # SOKOL Frontend — документация
 
-Каталог описывает **актуальное** состояние UI (август 2026). **План развития:** [PLAN.md](../../PLAN.md).
+Каталог описывает **актуальное** состояние UI (**11 августа 2026**). **План развития:** [PLAN.md](../../PLAN.md).
 
 ## Что читать
 
@@ -24,10 +24,11 @@ Backend: [sokol-backend/docs](../../sokol-backend/docs/README.md), в т.ч. [AL
 
 SPA «Сокол» (React 19 + Vite 7):
 
-- CRUD проверок и рекомендаций, справочники, профиль (stub auth).
+- **Auth:** JWT login (`POST /api/v1/auth/login`), Bearer interceptor, роли `admin`/`auditor` (`AdminGuard` для Settings/DELETE).
+- CRUD проверок и рекомендаций, справочники, профиль.
 - **Аналитика:** backend API — `GET /api/v1/analytics/{checks|recommendations|monitoring|dva}`.
 - **Планирование:** `GET /api/v1/analytics/planning` (`PlanningAnalyticsDashboard`); экспорт пока отключён.
-- **Вложения:** через backend attachments API + MinIO (не только память браузера).
+- **Вложения:** через backend attachments API + MinIO.
 - DOCX-инструменты: Раздел II, ДЗ, аудиторское мнение (Ollama).
 - Наблюдения — демо-таблица без backend CRUD; канцлер — заглушка.
 
@@ -39,7 +40,7 @@ SPA «Сокол» (React 19 + Vite 7):
 |-------|------------|
 | React 19 / React Router 7 | UI, маршруты |
 | TanStack Query 5 | серверный кэш |
-| Axios | HTTP |
+| Axios | HTTP (+ Bearer) |
 | Tailwind 3 | стили (`sber` palette) |
 | Recharts | графики аналитики |
 | react-grid-layout | статическая сетка дашбордов |

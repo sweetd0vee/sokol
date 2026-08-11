@@ -6,18 +6,11 @@ from datetime import date
 from pathlib import Path
 from urllib.parse import quote
 
-from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
 
 from app.core.config import settings
-from app.services.reports.audit_opinion import DEFAULT_AUDIT_OPINION_PROMPT
-from app.services.reports.audit_opinion import process_document as process_audit_opinion
-from app.services.reports.audit_opinion.ollama_client import (
-    OllamaError,
-    default_model as ollama_default_model,
-    list_models as list_ollama_models,
-)
 from app.services.reports.memorandum import docx_generator as memorandum_generator
 from app.services.reports.memorandum.parser import parse_az_for_memorandum
 from app.services.reports.section_ii import docx_generator
@@ -80,10 +73,6 @@ def _build_memorandum_output_path(input_path: Path) -> Path:
     return input_path.with_suffix("").with_name(f"{input_path.stem}_dz{DOCX_EXT}")
 
 
-def _build_audit_opinion_output_path(input_path: Path) -> Path:
-    return input_path.with_suffix("").with_name(f"{input_path.stem}_section_i{DOCX_EXT}")
-
-
 def _generate_memorandum_file(input_path: str, output_path: str) -> tuple[str | None, str | None]:
     source, parse_error = parse_az_for_memorandum(input_path)
     if parse_error:
@@ -92,16 +81,6 @@ def _generate_memorandum_file(input_path: str, output_path: str) -> tuple[str | 
     if error:
         return None, error
     return result_path, None
-
-
-class AuditOpinionPromptResponse(BaseModel):
-    prompt: str
-    observations_placeholder: str = "{OBSERVATIONS}"
-
-
-class AuditOpinionModelsResponse(BaseModel):
-    models: list[str]
-    default_model: str
 
 
 class ParsedRecommendationItem(BaseModel):
@@ -248,58 +227,6 @@ async def generate_memorandum(
     if not result_path or not output_path.is_file():
         background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
         raise HTTPException(status_code=500, detail="Файл докладной записки не создан.")
-
-    result_bytes = await _read_result_docx(background_tasks, input_path, output_path)
-    return Response(
-        content=result_bytes,
-        media_type=DOCX_MIME,
-        headers={"Content-Disposition": _attachment_header(download_name)},
-    )
-
-
-@router.get("/audit-opinion/default-prompt", response_model=AuditOpinionPromptResponse)
-async def get_audit_opinion_default_prompt():
-    return AuditOpinionPromptResponse(prompt=DEFAULT_AUDIT_OPINION_PROMPT)
-
-
-@router.get("/audit-opinion/models", response_model=AuditOpinionModelsResponse)
-async def get_audit_opinion_models():
-    try:
-        models = await asyncio.to_thread(list_ollama_models)
-    except OllamaError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    return AuditOpinionModelsResponse(models=models, default_model=ollama_default_model())
-
-
-@router.post("/audit-opinion")
-async def generate_audit_opinion(
-    background_tasks: BackgroundTasks,
-    file: UploadFile = File(...),
-    prompt: str = Form(""),
-    model: str = Form(""),
-):
-    _validate_docx_upload(file)
-    original_name = (file.filename or "").strip()
-    original_stem = Path(original_name).stem if original_name else ""
-    download_name = f"{original_stem}_section_i{DOCX_EXT}" if original_stem else "section_i.docx"
-    content = await _read_upload(file)
-    input_path = _write_temp_docx(content)
-    output_path = _build_audit_opinion_output_path(input_path)
-
-    result_path, _observations, error = await asyncio.to_thread(
-        process_audit_opinion,
-        str(input_path),
-        str(output_path),
-        prompt,
-        model,
-    )
-    if error:
-        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
-        status = 502 if "Ollama" in error else 400
-        raise HTTPException(status_code=status, detail=error)
-    if not result_path or not output_path.is_file():
-        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
-        raise HTTPException(status_code=500, detail="Файл с аудиторским мнением не создан.")
 
     result_bytes = await _read_result_docx(background_tasks, input_path, output_path)
     return Response(

@@ -5,9 +5,6 @@ class Settings(BaseSettings):
     app_name: str = "SOKOL API"
     api_v1_prefix: str = "/api/v1"
     database_url: str = ""
-    sokol_ollama_url: str = "http://localhost:11434"
-    sokol_ollama_model: str = "qwen3.5:35b"
-    sokol_ollama_timeout_s: float = 600
     sokol_max_upload_mb: int = 100
     sokol_cors_origins: str = ""
 
@@ -17,6 +14,11 @@ class Settings(BaseSettings):
     # JSON array: [{"username":"...","password":"...","role":"admin|auditor","display_name":"..."}]
     # Empty → built-in local defaults (Админ А.А. / admin, Аудитор А.А. / auditor).
     sokol_auth_users: str = ""
+
+    # Ollama (audit-opinion / раздел I)
+    sokol_ollama_url: str = "http://localhost:11434"
+    sokol_ollama_model: str = "qwen3.5:35b"
+    sokol_ollama_timeout_s: int = 600
 
     # MinIO / S3-compatible object storage
     sokol_minio_endpoint: str = ""

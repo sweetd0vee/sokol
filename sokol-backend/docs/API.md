@@ -54,11 +54,17 @@ Auth: **internal JWT** (Bearer). Публичны только `GET /` и `GET /
 
 ## Analytics — `/api/v1/analytics`
 
+Все агрегаты считаются на сервере по всей БД (без лимита list API). Ответы в camelCase.
+
 | Method | Path | Описание |
 |--------|------|----------|
-| `GET` | `/analytics/checks` | серверная агрегация вкладки «Проверки» (без лимита list API) |
+| `GET` | `/analytics/checks` | вкладка «Проверки» |
+| `GET` | `/analytics/recommendations` | вкладка «Рекомендации» |
+| `GET` | `/analytics/monitoring` | вкладка «Мониторинг» (срез исполнения сроков) |
+| `GET` | `/analytics/dva` | вкладка «ДВА» |
+| `GET` | `/analytics/planning` | раздел «Планирование» |
 
-**Query:**
+**Общие query:**
 
 | Параметр | Тип | Notes |
 |----------|-----|--------|
@@ -66,11 +72,9 @@ Auth: **internal JWT** (Bearer). Публичны только `GET /` и `GET /
 | `years`, `quarters`, `months` | list[str] | ключи периодов (`2025`, `2025-Q1`, `2025-08`); OR между измерениями |
 | `auditors`, `departments` | list[str] | фильтры ФИО / объект аудита |
 
-**Ответ (camelCase):** `universeTotal`, `filteredTotal`, KPI summary, `completionShare`, `periodSeries`, `viewDistribution`, `typeDistribution`, `departmentMap`, `effectivenessMatrix`, `filterOptions` (`auditors`, `departments`, `anchorDates`).
+**Дополнительно для recommendations/monitoring:** `statuses`, `additionalStatuses`, `materialityLevels`.
 
-Остальные вкладки аналитики (рекомендации / мониторинг / ДВА) пока считаются на клиенте.
-
-Подробнее: [ANALYTICS.md](../../sokol-frontend/docs/ANALYTICS.md).
+Подробнее: [ANALYTICS.md](../../sokol-frontend/docs/ANALYTICS.md), [PLANNING.md](../../sokol-frontend/docs/PLANNING.md).
 
 ---
 
@@ -181,10 +185,12 @@ MIME: OOXML DOCX или `application/octet-stream`.
 
 ## Чего нет в API
 
-- Auth / RBAC.
-- Analytics для вкладок «Рекомендации» / «Мониторинг» / «ДВА» (только `GET /analytics/checks`).
+- OIDC / Keycloak (есть internal JWT + RBAC).
+- Alembic HTTP; schema — `create_all` + CLI `migrate_*.py`.
 - WebSocket, batch-import Excel через HTTP API (import — CLI `app.db.import_seed_data`).
 - CRUD наблюдений.
+- Drill-down / сохранённые серверные отчёты аналитики.
+- Смена пароля / управление пользователями через API (пользователи из env).
 
 ---
 

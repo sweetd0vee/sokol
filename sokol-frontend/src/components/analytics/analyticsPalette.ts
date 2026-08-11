@@ -66,7 +66,3 @@ export const RECOMMENDATIONS_CUMULATIVE_LINE_COLOR = '#6BBF8E';
 
 /** «За период» bars on the cumulative recommendations chart — soft lilac. */
 export const RECOMMENDATIONS_PERIOD_BAR_COLOR = '#C4B5FD';
-
-export {
-  MATERIALITY_COLORS as RECOMMENDATIONS_MATERIALITY_COLORS,
-} from '../../utils/recommendationAnalytics';

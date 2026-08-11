@@ -2,15 +2,8 @@ import type {
   MaterialityLevel,
   Recommendation,
   RecommendationAdditionalStatus,
-  RecommendationIndicator,
   RecommendationStatus,
 } from '../types/recommendation';
-import {
-  getIndicatorLabel,
-  getMaterialityLevelLabel,
-  getRecommendationAdditionalStatusLabel,
-  getRecommendationStatusLabel,
-} from '../constants/recommendations';
 import { parseDateValue, toEndOfDayMs, toStartOfDayMs } from './dates';
 import {
   getPeriodBucket,
@@ -37,12 +30,6 @@ export type RecommendationAnalyticsFilters = {
   selectedMonths?: string[];
 };
 
-export type NamedCount = {
-  name: string;
-  value: number;
-  color?: string;
-};
-
 export type PeriodCount = PeriodBucket & {
   total: number;
   completed: number;
@@ -52,22 +39,6 @@ export type PeriodCount = PeriodBucket & {
   low: number;
   medium: number;
   high: number;
-};
-
-export type AuditorMaterialityRow = {
-  auditor: string;
-  total: number;
-  низкий: number;
-  средний: number;
-  высокий: number;
-  completed: number;
-  violated: number;
-};
-
-export type AuditorPeriodRow = {
-  auditor: string;
-  total: number;
-  byPeriod: Record<string, number>;
 };
 
 export const MATERIALITY_COLORS: Record<MaterialityLevel, string> = {
@@ -82,23 +53,6 @@ export const STATUS_COLORS: Record<RecommendationStatus, string> = {
   on_control: '#64748B',
   in_progress: '#F59E0B',
 };
-
-export const ADDITIONAL_STATUS_COLORS: Record<RecommendationAdditionalStatus, string> = {
-  on_time: STATUS_COLORS.completed,
-  deadline_violated: STATUS_COLORS.unresolved,
-  on_control: STATUS_COLORS.on_control,
-};
-
-export const INDICATOR_COLORS: Record<RecommendationIndicator, string> = {
-  'не указан': '#D1D5DB',
-  'в процессе': STATUS_COLORS.in_progress,
-  ожидает: STATUS_COLORS.on_control,
-  'не решено': STATUS_COLORS.unresolved,
-  исполнено: STATUS_COLORS.completed,
-};
-
-const STATUS_KEYS: RecommendationStatus[] = ['completed', 'unresolved', 'on_control', 'in_progress'];
-const MATERIALITY_KEYS: MaterialityLevel[] = ['низкий', 'средний', 'высокий'];
 
 export function filterRecommendationsForAnalytics(
   recommendations: Recommendation[],
@@ -156,56 +110,6 @@ export function filterRecommendationsForAnalytics(
   });
 }
 
-export function summarizeRecommendations(recommendations: Recommendation[]) {
-  const byStatus: Record<RecommendationStatus, number> = {
-    completed: 0,
-    unresolved: 0,
-    on_control: 0,
-    in_progress: 0,
-  };
-  const byMateriality: Record<MaterialityLevel, number> = {
-    низкий: 0,
-    средний: 0,
-    высокий: 0,
-  };
-  const byAdditional: Record<RecommendationAdditionalStatus, number> = {
-    on_time: 0,
-    deadline_violated: 0,
-    on_control: 0,
-  };
-
-  recommendations.forEach((item) => {
-    byStatus[item.status] += 1;
-    byMateriality[item.materiality_level] += 1;
-    byAdditional[item.additional_status] += 1;
-  });
-
-  const withExtensions = recommendations.filter(
-    (item) =>
-      (item.deadline_extensions?.some((row) => row.date || row.comment) ?? false)
-      || Boolean(item.extension_1_date || item.extension_1_comment || item.extension_2_comment),
-  ).length;
-
-  const withCompletionDate = recommendations.filter((item) => Boolean(item.actual_completion_date)).length;
-  const completionRate = recommendations.length
-    ? Math.round((byStatus.completed / recommendations.length) * 100)
-    : 0;
-  const violationRate = recommendations.length
-    ? Math.round((byAdditional.deadline_violated / recommendations.length) * 100)
-    : 0;
-
-  return {
-    total: recommendations.length,
-    byStatus,
-    byMateriality,
-    byAdditional,
-    withExtensions,
-    withCompletionDate,
-    completionRate,
-    violationRate,
-  };
-}
-
 export function buildPeriodSeries(
   recommendations: Recommendation[],
   granularity: PeriodGranularity,
@@ -260,203 +164,4 @@ export function buildCumulativeSeries(
       cumulativeCompleted: completedRunning,
     };
   });
-}
-
-export function buildStatusDistribution(recommendations: Recommendation[]): NamedCount[] {
-  const summary = summarizeRecommendations(recommendations);
-  return STATUS_KEYS
-    .map((status) => ({
-      name: getRecommendationStatusLabel(status),
-      value: summary.byStatus[status],
-      color: STATUS_COLORS[status],
-    }))
-    .filter((item) => item.value > 0);
-}
-
-export function buildMaterialityDistribution(recommendations: Recommendation[]): NamedCount[] {
-  const summary = summarizeRecommendations(recommendations);
-  return MATERIALITY_KEYS
-    .map((level) => ({
-      name: getMaterialityLevelLabel(level),
-      value: summary.byMateriality[level],
-      color: MATERIALITY_COLORS[level],
-    }))
-    .filter((item) => item.value > 0);
-}
-
-export function collectAuditObjects(recommendations: Recommendation[]): string[] {
-  return [
-    ...new Set(recommendations.map((item) => item.audit_object.trim()).filter(Boolean)),
-  ].sort((a, b) => a.localeCompare(b, 'ru'));
-}
-
-export function buildAdditionalStatusDistribution(recommendations: Recommendation[]): NamedCount[] {
-  const summary = summarizeRecommendations(recommendations);
-  return (Object.keys(summary.byAdditional) as RecommendationAdditionalStatus[])
-    .map((status) => ({
-      name: getRecommendationAdditionalStatusLabel(status),
-      value: summary.byAdditional[status],
-      color: ADDITIONAL_STATUS_COLORS[status],
-    }))
-    .filter((item) => item.value > 0);
-}
-
-export function buildIndicatorDistribution(recommendations: Recommendation[]): NamedCount[] {
-  const map = new Map<RecommendationIndicator, number>();
-  recommendations.forEach((item) => {
-    map.set(item.indicator, (map.get(item.indicator) ?? 0) + 1);
-  });
-  return [...map.entries()]
-    .map(([indicator, value]) => ({
-      name: getIndicatorLabel(indicator),
-      value,
-      color: INDICATOR_COLORS[indicator],
-    }))
-    .sort((a, b) => b.value - a.value);
-}
-
-export function buildAuditorDistribution(recommendations: Recommendation[]): NamedCount[] {
-  const map = new Map<string, number>();
-  recommendations.forEach((item) => {
-    const name = item.auditor.trim() || 'Без аудитора';
-    map.set(name, (map.get(name) ?? 0) + 1);
-  });
-  return [...map.entries()]
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value);
-}
-
-export function buildManagerDistribution(recommendations: Recommendation[]): NamedCount[] {
-  const map = new Map<string, number>();
-  recommendations.forEach((item) => {
-    const name = item.manager.trim() || 'Без менеджера';
-    map.set(name, (map.get(name) ?? 0) + 1);
-  });
-  return [...map.entries()]
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value);
-}
-
-export function buildAuditObjectDistribution(recommendations: Recommendation[]): NamedCount[] {
-  const map = new Map<string, number>();
-  recommendations.forEach((item) => {
-    const name = item.audit_object.trim() || 'Без объекта';
-    map.set(name, (map.get(name) ?? 0) + 1);
-  });
-  return [...map.entries()]
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value);
-}
-
-export function buildAuditorMaterialityRows(recommendations: Recommendation[]): AuditorMaterialityRow[] {
-  const map = new Map<string, AuditorMaterialityRow>();
-
-  recommendations.forEach((item) => {
-    const auditor = item.auditor.trim() || 'Без аудитора';
-    const row = map.get(auditor) ?? {
-      auditor,
-      total: 0,
-      низкий: 0,
-      средний: 0,
-      высокий: 0,
-      completed: 0,
-      violated: 0,
-    };
-    row.total += 1;
-    row[item.materiality_level] += 1;
-    if (item.status === 'completed') {
-      row.completed += 1;
-    }
-    if (item.additional_status === 'deadline_violated') {
-      row.violated += 1;
-    }
-    map.set(auditor, row);
-  });
-
-  return [...map.values()].sort((a, b) => b.total - a.total);
-}
-
-export function buildAuditorPeriodMatrix(
-  recommendations: Recommendation[],
-  granularity: PeriodGranularity,
-): { periods: PeriodBucket[]; rows: AuditorPeriodRow[] } {
-  const periodMap = new Map<string, PeriodBucket>();
-  const rowMap = new Map<string, AuditorPeriodRow>();
-
-  recommendations.forEach((item) => {
-    const deadlineMs = parseDateValue(item.deadline);
-    if (deadlineMs === null) {
-      return;
-    }
-    const period = getPeriodBucket(deadlineMs, granularity);
-    periodMap.set(period.key, period);
-
-    const auditor = item.auditor.trim() || 'Без аудитора';
-    const row = rowMap.get(auditor) ?? {
-      auditor,
-      total: 0,
-      byPeriod: {},
-    };
-    row.total += 1;
-    row.byPeriod[period.key] = (row.byPeriod[period.key] ?? 0) + 1;
-    rowMap.set(auditor, row);
-  });
-
-  return {
-    periods: [...periodMap.values()].sort((a, b) => a.sortKey - b.sortKey),
-    rows: [...rowMap.values()].sort((a, b) => b.total - a.total),
-  };
-}
-
-export function buildMaterialityPeriodMatrix(
-  recommendations: Recommendation[],
-  granularity: PeriodGranularity,
-) {
-  const periodMap = new Map<string, PeriodBucket>();
-  const counts: Record<MaterialityLevel, Record<string, number>> = {
-    низкий: {},
-    средний: {},
-    высокий: {},
-  };
-
-  recommendations.forEach((item) => {
-    const deadlineMs = parseDateValue(item.deadline);
-    if (deadlineMs === null) {
-      return;
-    }
-    const period = getPeriodBucket(deadlineMs, granularity);
-    periodMap.set(period.key, period);
-    counts[item.materiality_level][period.key] =
-      (counts[item.materiality_level][period.key] ?? 0) + 1;
-  });
-
-  const periods = [...periodMap.values()].sort((a, b) => a.sortKey - b.sortKey);
-  return {
-    periods,
-    rows: MATERIALITY_KEYS.map((level) => ({
-      level,
-      label: getMaterialityLevelLabel(level),
-      color: MATERIALITY_COLORS[level],
-      byPeriod: counts[level],
-      total: Object.values(counts[level]).reduce((sum, value) => sum + value, 0),
-    })),
-  };
-}
-
-export function collectRecommendationAuditors(recommendations: Recommendation[]): string[] {
-  return [...new Set(recommendations.map((item) => item.auditor).filter(Boolean))].sort((a, b) =>
-    a.localeCompare(b, 'ru'),
-  );
-}
-
-export function buildCheckLinkDistribution(recommendations: Recommendation[]): NamedCount[] {
-  const map = new Map<string, number>();
-  recommendations.forEach((item) => {
-    const key = item.serial_number.trim() || 'Без проверки';
-    map.set(key, (map.get(key) ?? 0) + 1);
-  });
-  return [...map.entries()]
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 12);
 }

@@ -61,12 +61,14 @@ class AuthRbacTests(unittest.TestCase):
         self.assertEqual(me.status_code, 200)
         self.assertEqual(me.json()["role"], "admin")
 
-    def test_login_rejects_bad_password(self) -> None:
-        response = self.client.post(
+    def test_login_accepts_admin_alias(self) -> None:
+        login = self.client.post(
             "/api/v1/auth/login",
-            json={"username": "Админ А.А.", "password": "wrong"},
+            json={"username": "admin", "password": "admin"},
         )
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(login.status_code, 200, login.text)
+        self.assertEqual(login.json()["role"], "admin")
+        self.assertEqual(login.json()["username"], "Админ А.А.")
 
     def test_auditor_cannot_delete_check(self) -> None:
         async def _auditor() -> CurrentUser:

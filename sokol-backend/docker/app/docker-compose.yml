@@ -41,15 +41,10 @@ services:
       SOKOL_DATA_DIR: /app/data
       SOKOL_LOAD_DEMO_DATA: ${SOKOL_LOAD_DEMO_DATA:-1}
       SOKOL_SEED_REPLACE: ${SOKOL_SEED_REPLACE:-0}
-      SOKOL_OLLAMA_URL: ${SOKOL_OLLAMA_URL:-http://host.docker.internal:11434}
-      SOKOL_OLLAMA_MODEL: ${SOKOL_OLLAMA_MODEL:-qwen3.5:35b}
-      SOKOL_OLLAMA_TIMEOUT_S: ${SOKOL_OLLAMA_TIMEOUT_S:-600}
       SOKOL_MINIO_ENDPOINT: ${SOKOL_MINIO_ENDPOINT:-minio:9000}
       SOKOL_MINIO_ACCESS_KEY: ${SOKOL_MINIO_ACCESS_KEY:-sokol}
       SOKOL_MINIO_SECRET_KEY: ${SOKOL_MINIO_SECRET_KEY:-change-me}
       SOKOL_MINIO_SECURE: ${SOKOL_MINIO_SECURE:-0}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy

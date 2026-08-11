@@ -27,7 +27,7 @@
 - Форма: тип, вид, даты, руководитель, документы (приказ/программа/АЗ/ДЗ — номера и даты).
 - Автогенерация `serial_number`.
 - Статус может выводиться из дат относительно «сегодня».
-- Блок вложений — локальные `File`, **без upload на API**.
+- Блок вложений — `/api/v1/attachments` + MinIO (при недоступном storage — предупреждение в UI).
 - Блок рекомендаций проверки + переход к созданию рекомендации с возвратом черновика через `location.state`.
 - Импорт рекомендаций из АЗ: `POST /tools/parse-recommendations` → preview → create.
 - Стили секций/полей — общие токены `constants/formLayout.ts`.
@@ -59,9 +59,8 @@
 Как аналитик или руководитель ДВА, я хочу видеть сводки по проверкам, рекомендациям, мониторингу и портфелю ДВА.
 
 - Вкладки «Проверки» / «Рекомендации» / «Мониторинг» / «ДВА» (`AnalyticsTab`).
-- **Проверки:** серверный `GET /api/v1/analytics/checks` (агрегация по всей БД).
-- **Остальные вкладки:** данные из `SokolDataContext` (checks ≤ 500, recommendations ≤ 1000).
-- Фильтры периода на клиенте; сетка карточек статическая.
+- Данные: серверные `GET /api/v1/analytics/{checks|recommendations|monitoring|dva}` (агрегация по всей БД).
+- Фильтры периода уходят в query; сетка карточек статическая.
 - Выбор секций и экспорт: XLSX / PDF / DOCX / HTML (`analyticsExport` / `analyticsVisualExport`).
 - Бизнес-смысл карточек: [ANALYTICS.md](ANALYTICS.md).
 
@@ -76,7 +75,13 @@
 ### US-11 Профиль
 
 - ФИО → формат «Фамилия И.О.», аватар в localStorage.
-- «Смена пароля» — только UI (нет API auth).
+- «Смена пароля» — только UI (нет API смены пароля; пользователи из env backend).
+
+### US-11a Вход
+
+- Login: `POST /api/v1/auth/login` → JWT в localStorage; Axios Bearer.
+- Роли: `auditor` / `admin`; Settings mutate и DELETE — только admin.
+- Dev defaults: `admin`/`admin`, `auditor`/`auditor` (или ФИО из `SOKOL_AUTH_USERS`).
 
 ### US-12 Канцлер
 
@@ -90,7 +95,7 @@
 
 ### US-14 Планирование
 
-- Рабочие клиентские дашборды охвата (`PlanningTab` / `PlanningAnalyticsDashboard`).
+- Дашборды охвата через `GET /api/v1/analytics/planning` (`PlanningTab` / `PlanningAnalyticsDashboard`).
 - Фильтры: год / квартал / месяц, департаменты.
 - Экспорт пока отключён в UI.
 - Подробности: [PLANNING.md](PLANNING.md).
@@ -103,7 +108,7 @@
 
 ```mermaid
 flowchart LR
-  Login[Вход stub] --> Checks[Проверки]
+  Login[Вход JWT] --> Checks[Проверки]
   Checks --> CheckForm[Форма проверки]
   Checks --> Recs[Рекомендации]
   Recs --> RecForm[Форма рекомендации]

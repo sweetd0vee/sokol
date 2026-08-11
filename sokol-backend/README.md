@@ -142,7 +142,7 @@ python -m compileall app scripts tests
 python -m unittest discover -s tests
 ```
 
-Тесты покрывают генерацию Раздела II, ДЗ, XML/bookmark-утилиты, period helpers analytics и HTTP smoke analytics/attachments (**72** test, 1 skipped).  
+Тесты покрывают генерацию Раздела II, ДЗ, XML/bookmark-утилиты, auth/RBAC, dictionary validation, period helpers analytics и HTTP smoke analytics/attachments (**~84** test, 1 skipped).  
 Зависимость `httpx` нужна для `fastapi.testclient.TestClient`.
 
 ## Частые проблемы

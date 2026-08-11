@@ -15,14 +15,14 @@
 
 ## Возможности
 
-- Авторизация (локальная заглушка; готово к замене на Keycloak).
-- Разделы: Проверки, Рекомендации, Наблюдения (демо без API), Аналитика, Планирование (дашборды охвата), Канцлер (заглушка), Настройки, Инструменты, Профиль.
+- Авторизация: JWT (`POST /api/v1/auth/login`), Bearer interceptor, роли `admin` / `auditor` (OIDC — следующий шаг).
+- Разделы: Проверки, Рекомендации, Наблюдения (демо без API), Аналитика, Планирование, Канцлер (заглушка), Настройки, Инструменты, Профиль.
 - Формы проверок/рекомендаций: токены в `src/constants/formLayout.ts`.
 - Вложения: через backend `/attachments` + MinIO.
 - Инструменты: Раздел II АЗ (± гиперссылки), ДЗ, раздел I «Аудиторское мнение» (Ollama).
-- Аналитика: вкладка «Проверки» — `GET /api/v1/analytics/checks`; остальные вкладки — клиентские агрегаты; экспорт XLSX/PDF/DOCX/HTML. Подробно: [docs/ANALYTICS.md](docs/ANALYTICS.md).
-- Планирование: клиентские дашборды — [docs/PLANNING.md](docs/PLANNING.md) (экспорт пока выключен).
-- Профиль: ФИО + аватар в localStorage.
+- Аналитика: `GET /api/v1/analytics/{checks|recommendations|monitoring|dva}`; экспорт XLSX/PDF/DOCX/HTML. Подробно: [docs/ANALYTICS.md](docs/ANALYTICS.md).
+- Планирование: `GET /api/v1/analytics/planning` — [docs/PLANNING.md](docs/PLANNING.md) (экспорт пока выключен).
+- Профиль: ФИО + аватар в localStorage; смена пароля — UI без API.
 - Экспорт таблиц проверок и рекомендаций в XLSX, DOCX и PDF.
 
 ## Стек
@@ -93,8 +93,8 @@ VITE_DEV_API_PORT=8802
 | `/checks`, `/checks/new`, `/checks/:id/edit` | проверки |
 | `/recommendations`, `/recommendations/new`, `/recommendations/:id/edit` | рекомендации |
 | `/observations`, `/observations/new`, `/observations/:id/edit` | наблюдения: демо-таблица + заглушка формы |
-| `/analytics` | аналитика: проверки (API), рекомендации/мониторинг/ДВА (клиент) |
-| `/planning` | планирование: дашборды охвата |
+| `/analytics` | аналитика: серверные дашборды checks/recs/monitoring/DVA |
+| `/planning` | планирование: `GET /analytics/planning` |
 | `/tools` | инструменты генерации документов |
 | `/kantsler` | раздел «Канцлер» (заглушка) |
 | `/settings` | справочники |

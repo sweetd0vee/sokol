@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Одностраничное приложение внутреннего аудита: CRUD проверок/рекомендаций, справочники, клиентский экспорт таблиц, гибридная аналитика (checks API + клиентские вкладки), планирование охвата, вложения через API/MinIO, демо-таблица наблюдений, вызов backend DOCX-tools, заготовки наблюдений/канцлера и профиль.
+Одностраничное приложение внутреннего аудита: CRUD проверок/рекомендаций, справочники, JWT-auth, серверная аналитика и планирование, клиентский экспорт таблиц/дашбордов, вложения через API/MinIO, демо-таблица наблюдений, вызов backend DOCX-tools, заготовка канцлера и профиль.
 
 ## Структура `src/`
 
@@ -12,7 +12,7 @@ src/
 ├── App.tsx                  # QueryClient + Auth + SokolData + Router
 ├── api/                     # axios client, domain API, mappers, errors
 ├── components/
-│   ├── auth/                # LoginPage, AuthGuard
+│   ├── auth/                # LoginPage, AuthGuard, AdminGuard
 │   ├── layout/              # AppLayout, AuthLayout, Sidebar
 │   ├── checks/              # CheckFormPage, attachments, recommendations block
 │   ├── recommendations/     # Form, closure, selects
@@ -25,7 +25,7 @@ src/
 │   ├── profile/             # ProfilePage
 │   ├── tabs/                # Checks, Recommendations, Observations, Analytics, Planning, Tools, Settings, Kantsler
 │   └── ui/                  # Button, Input, Select, Modal, DatePicker, …
-├── contexts/                # Auth, SokolData
+├── contexts/                # Auth (JWT), SokolData
 ├── data/                    # локальные демо-наборы (наблюдения)
 ├── hooks/                   # useAuth, reference options, current user name
 ├── types/                   # Check, Recommendation, Observation
@@ -33,7 +33,6 @@ src/
 ├── utils/                   # dates, exports, analytics*, checkKey, attachments, navigation
 └── config/env.ts            # API_BASE_URL
 ```
-
 ## Дерево провайдеров и маршрутов
 
 ```mermaid
@@ -60,10 +59,10 @@ flowchart TB
 | `/recommendations`, `.../new`, `.../:id/edit` | list / form | protected |
 | `/observations`, `.../new`, `.../:id/edit` | демо-список / заглушка формы (без API) | protected |
 | `/analytics` | `AnalyticsTab` | protected |
-| `/planning` | `PlanningTab` (клиентские дашборды) | protected |
+| `/planning` | `PlanningTab` (`GET /analytics/planning`) | protected |
 | `/tools` | `ToolsTab` | protected |
 | `/kantsler` | stub | protected |
-| `/settings` | `SettingsTab` | protected |
+| `/settings` | `SettingsTab` (admin mutate) | protected |
 | `/profile` | `ProfilePage` | protected |
 | `*` | → `/checks` | protected |
 
@@ -87,17 +86,18 @@ flowchart LR
   RQ --> API
   SokolCtx --> RQ
   SettingsTab --> RQ
-  AnalyticsTab --> SokolCtx
+  AnalyticsTab --> API
+  PlanningTab --> API
   ToolsTab --> API
   Local --> Filters[фильтры / формы / файлы]
 ```
 
 | Слой | Что хранит |
 |------|------------|
-| **AuthContext** | `user`, login/logout; hydrate из `sokol_auth` |
+| **AuthContext** | `user` (shortName, role, accessToken), login/logout; hydrate из `sokol_auth` |
 | **SokolDataContext** | checks (limit 500) + recommendations (limit 1000) через RQ; CRUD helpers; связи recommendation↔check |
-| **React Query** | кэш списков checks/recommendations, settings |
-| **localStorage** | auth, профиль ФИО, avatar data URL |
+| **React Query** | кэш списков checks/recommendations, settings, analytics |
+| **localStorage** | auth JWT+профиль, avatar data URL |
 | **location.state** | черновики форм проверки/рекомендации при кросс-навигации |
 | **Component state** | фильтры, пагинация, модалки, `File` вложений, фильтры дашбордов |
 
@@ -107,9 +107,12 @@ flowchart LR
 
 | Файл | Backend |
 |------|---------|
-| `api/client.ts` | Axios, `baseURL = API_BASE_URL`, `toApiError` |
+| `api/client.ts` | Axios, `baseURL = API_BASE_URL`, Bearer interceptor, 401 → logout |
+| `api/auth.ts` | `POST /auth/login`, типы токена |
 | `api/checks.ts` | CRUD `/checks` |
 | `api/recommendations.ts` | CRUD + `parse-recommendations` |
+| `api/analytics.ts` | `/analytics/{checks,recommendations,monitoring,dva,planning}` |
+| `api/attachments.ts` | list/upload/download/delete + storage status |
 | `api/settings.ts` | `makeSettingsCrud` → auditors / audit_types / check_kinds / effectiveness_ratings |
 | `settings/SingleFieldDictionaryPanel` | label-справочники в Settings (аудиторы, виды проверок, оценки) |
 | `api/tools.ts` | section-ii, section-ii-links, memorandum (timeout 120s); audit-opinion + prompt/models (timeout 600s) |
@@ -172,7 +175,7 @@ flowchart TB
 
 - `ChecksTab` — клиентские filter/sort/paginate, «Мои» по ФИО профиля, экспорт.
 - `CheckFormPage` — авто `serial_number` (`utils/checkKey`), статус от дат, метаданные документов, импорт рекомендаций из АЗ.
-- Вложения (`CheckAttachmentsSection`) — **только в памяти браузера**, на API не уходят.
+- Вложения (`CheckAttachmentsSection`) — через `/api/v1/attachments` + MinIO (при недоступном storage — notice).
 
 ### Рекомендации
 
@@ -193,15 +196,14 @@ flowchart TB
 ### Аналитика
 
 - `AnalyticsTab` — вкладки «Проверки» / «Рекомендации» / «Мониторинг» / «ДВА».
-- **Проверки:** `GET /api/v1/analytics/checks` (`api/analytics.ts`, `ChecksAnalyticsDashboard`).
-- **Остальные вкладки:** агрегаты из `SokolDataContext` (`checkAnalytics` / `recommendationAnalytics` / `analyticsPeriod`).
+- Все вкладки: `GET /api/v1/analytics/*` (`api/analytics.ts` + соответствующие dashboards).
 - Сетка: `AnalyticsDashboardGrid` — **статическая** (`static: true`, без `localStorage` layout).
 - Экспорт: `analyticsExport` → `analyticsVisualExport` + `dashboardChartRegistry` — форматы **xlsx / pdf / docx / html**.
 - Подробности: [ANALYTICS.md](ANALYTICS.md).
 
 ### Планирование
 
-- `PlanningTab` + `PlanningAnalyticsDashboard` — клиентские дашборды охвата; см. [PLANNING.md](PLANNING.md).
+- `PlanningTab` + `PlanningAnalyticsDashboard` — `GET /api/v1/analytics/planning`; см. [PLANNING.md](PLANNING.md).
 - Экспорт в UI пока отключён (`canExport={false}`).
 
 ### Наблюдения
@@ -220,19 +222,22 @@ sequenceDiagram
   participant U as User
   participant LP as LoginPage
   participant AC as AuthProvider
+  participant API as POST /auth/login
   participant LS as localStorage
   participant AG as AuthGuard
 
   U->>LP: username + password
   LP->>AC: login()
-  Note over AC: любой non-empty credentials
-  AC->>LS: sokol_auth
+  AC->>API: credentials
+  API-->>AC: access_token + role
+  AC->>LS: sokol_auth (token, role, names)
   LP->>AG: navigate /checks
   AG->>AC: isAuthenticated?
-  AC-->>AG: yes
+  AC-->>AG: yes (token present)
 ```
 
-Axios **не** ставит `Authorization`. Смена пароля в профиле — UI-only.
+Axios ставит `Authorization: Bearer`. 401 → событие `sokol:auth-unauthorized` → logout.  
+Смена пароля в профиле — UI-only (нет API). OIDC/Keycloak — следующий шаг.
 
 ## Диаграмма классов (логические типы)
 
@@ -259,8 +264,10 @@ classDiagram
     +string deadline
   }
   class User {
-    +string username
+    +string shortName
     +string displayName
+    +string role
+    +string accessToken
   }
   class SokolDataContextValue {
     +Check[] checks
@@ -317,9 +324,9 @@ sequenceDiagram
 
 1. Таблицы фильтруются **на клиенте** после bulk-fetch (500/1000) — не server-driven pagination UI.
 2. Вложения персистятся через `/api/v1/attachments` + MinIO при настроенном storage; без MinIO upload недоступен.
-3. Analytics: серверные агрегаты есть только для вкладки «Проверки»; остальные вкладки ограничены объёмом SokolData.
-4. Auth stub — нет защиты API.
-5. «Наблюдения» — демо-таблица без backend CRUD; «Канцлер» — заглушка. Планирование — рабочие клиентские дашборды.
+3. Analytics/planning — серверные агрегаты; при росте портфеля нагрузка на API (полная выборка в память процесса).
+4. Auth — internal JWT (не OIDC); fake «смена пароля» в профиле.
+5. «Наблюдения» — демо-таблица без backend CRUD; «Канцлер» — заглушка.
 6. Есть Vitest (`npm test`); e2e (Playwright) в CI пока нет.
 
 ## Связь с backend docs

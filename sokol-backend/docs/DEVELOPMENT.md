@@ -42,6 +42,9 @@ SOKOL_CORS_ORIGINS=http://localhost:5180
 |------------|--------------|------------|
 | `DATABASE_URL` | `Settings` | asyncpg URL (обязательно) |
 | `SOKOL_CORS_ORIGINS` | `Settings.cors_origins` | origins через запятую; пусто → `*` |
+| `SOKOL_JWT_SECRET` | `Settings` | секрет подписи JWT |
+| `SOKOL_JWT_EXPIRE_MINUTES` | `Settings` | TTL токена (default 480) |
+| `SOKOL_AUTH_USERS` | `Settings` | JSON-пользователи; пусто → локальные defaults |
 | `SOKOL_MAX_UPLOAD_MB` | `Settings` | лимит upload (default 100) |
 | `SOKOL_OLLAMA_URL` | `Settings` | Ollama base URL |
 | `SOKOL_OLLAMA_MODEL` | `Settings` | модель по умолчанию |
@@ -90,7 +93,7 @@ python -m compileall app scripts tests
 python -m unittest discover -s tests
 ```
 
-На момент обновления docs: **72 tests** (1 skipped); фокус — section_ii / memorandum / bookmarks / links + analytics period helpers + API smoke (analytics/attachments с моками).  
+На момент обновления docs: **~84 tests** (1 skipped); фокус — section_ii / memorandum / bookmarks / links + auth/RBAC + dictionary validation + analytics period helpers + API smoke (analytics/attachments с моками).  
 Для TestClient добавлен `httpx` в `requirements.txt`.
 
 Нет обязательного CI pipeline в репозитории.
@@ -102,6 +105,7 @@ python -m unittest discover -s tests
 | `DATABASE_URL is required` | нет `.secrets/sokol.env` | скопировать example |
 | CORS errors с UI | origins не совпадают с портом Vite | выставить `SOKOL_CORS_ORIGINS=http://localhost:5180` |
 | UI ходит на 8800, API на 8802 | Docker vs local | сверить `run_dev.ps1` и `VITE_DEV_API_PORT` |
+| 401 на CRUD | нет / просрочен JWT | login через UI или `POST /auth/login` |
 | 502 на audit-opinion | Ollama не запущена / нет модели | `ollama serve` + `ollama pull qwen3.5:35b` |
 | 413 на upload | файл > лимита | увеличить `SOKOL_MAX_UPLOAD_MB` |
 | Port already in use | старый uvicorn | `netstat` / taskkill на 8802 |
@@ -110,6 +114,8 @@ python -m unittest discover -s tests
 
 ```
 tests/
+  test_auth_rbac.py
+  test_dictionary_validation.py
   test_api_analytics.py
   test_api_attachments.py
   test_checks_analytics_period.py
@@ -117,6 +123,9 @@ tests/
   test_bookmark_utils.py
   test_observation_links.py
   test_memorandum.py
+  auth_test_utils.py
 ```
+
+Запуск: `python -m unittest discover -s tests` (Python **3.12**).
 
 API smoke-тесты мокают DB/MinIO через `TestClient` + `dependency_overrides` (без живой Postgres).

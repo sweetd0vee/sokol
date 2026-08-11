@@ -2,7 +2,7 @@
 
 **Дата:** 2026-08-11  
 **Метод:** статический разбор `src/`, сверка с backend API, ревью analytics export / planning.  
-**Область:** routing, contexts, API, analytics, planning, forms, tools, attachments.
+**Область:** routing, contexts, API, analytics, planning, forms, tools, attachments, auth.
 
 ## Итоговая оценка
 
@@ -14,11 +14,11 @@
 | Надёжность / ошибки | 6/10 |
 | Производительность (статика) | 6.5/10 |
 | Тесты | 4/10 (Vitest есть, покрытие узкое) |
-| Безопасность | 6.5/10 |
-| Согласованность с backend | 8/10 |
-| Документация | 8.5/10 (после актуализации 11.08) |
+| Безопасность | 7/10 (JWT+RBAC; fake password) |
+| Согласованность с backend | 8.5/10 |
+| Документация | 8.5/10 (актуализация 11.08) |
 
-**Итого ≈ 7.3/10.** Сильный UX и API-обвязка; гибридная аналитика (checks API) и визуальный экспорт зрелеют. Auth JWT+RBAC подключён; HTML/PNG capture по-прежнему хрупкий. План — [PLAN.md](../../PLAN.md).
+**Итого ≈ 7.4/10.** Сильный UX и API-обвязка; серверная аналитика (все вкладки + planning) и визуальный экспорт зрелеют. Auth JWT+RBAC подключён; HTML/PNG capture по-прежнему хрупкий. План — [PLAN.md](../../PLAN.md).
 
 ---
 
@@ -26,11 +26,11 @@
 
 1. Понятное разделение `api` / `contexts` / `components` / `utils`.
 2. TanStack Query + `SokolDataProvider` для CRUD.
-3. Вкладка «Проверки» не упирается в list-limit 500 — ходит в `/analytics/checks`.
+3. Analytics/planning не упираются в list-limit 500 — ходят в `/analytics/*`.
 4. Экспорт дашбордов: xlsx/pdf/docx/html; матрица эффективности собирается программно в HTML.
 5. Settings DRY (`makeSettingsCrud`, `SingleFieldDictionaryPanel`).
 6. Attachments через API, а не только память браузера.
-7. Планирование — реальные дашборды охвата.
+7. JWT login + Bearer interceptor + AdminGuard.
 
 ---
 
@@ -54,9 +54,9 @@ Login через `POST /api/v1/auth/login`, Bearer interceptor, роли `admin`
 
 ### Medium
 
-#### M1. Остальные analytics-вкладки ограничены SokolData (500/1000)
+#### M1. Analytics грузит полный срез на сервере
 
-Искажение KPI при больших портфелях. Нужен server analytics по образцу checks.
+Клиентские вкладки больше не ограничены SokolData; узкое место сместилось на backend RAM/latency при росте портфеля.
 
 #### M2. Статическая сетка + scrollIntoView при экспорте
 
@@ -87,8 +87,7 @@ UI создаёт ложное ожидание кнопок экспорта.
 | Тема | Статус |
 |------|--------|
 | CRUD | OK |
-| `/analytics/checks` | OK |
-| Other analytics tabs | client-only |
+| `/analytics/*` (+ planning) | OK |
 | Attachments | OK при MinIO |
 | Auth | JWT + RBAC (admin/auditor) |
 
@@ -96,10 +95,9 @@ UI создаёт ложное ожидание кнопок экспорта.
 
 ## Рекомендуемый порядок
 
-1. OIDC/Keycloak поверх текущего JWT (если выдадут IdP).  
+1. OIDC/Keycloak поверх текущего JWT (если выдадут IdP); убрать fake password.  
 2. Стабилизировать HTML-экспорт (data-driven блоки, меньше PNG-зависимостей где возможно).  
-3. Server analytics для recs/monitoring/DVA.  
-4. CI: lint + build + test.  
-5. Включить planning export или скрыть контролы.
+3. CI: lint + build + test; SQL-оптимизация analytics на BE при росте данных.  
+4. Включить planning export или скрыть контролы.
 
 Backend review: [sokol-backend/docs/CODE_REVIEW.md](../../sokol-backend/docs/CODE_REVIEW.md).

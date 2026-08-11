@@ -37,8 +37,8 @@ export function DocxToolPanel({
       </div>
 
       <div className="w-full max-w-[288px] space-y-4">
-        <label className="flex min-h-[6.5rem] w-full cursor-pointer items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 transition hover:border-sber-dark/40 hover:bg-gray-50 dark:border-slate-600 dark:bg-slate-700/40 dark:hover:border-sber-light/70 dark:hover:bg-slate-700">
-          <FileUp size={18} className="shrink-0 text-sber-dark" />
+        <label className="flex min-h-[6.5rem] w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-gray-100 px-4 py-3 text-center transition hover:bg-gray-200 focus-within:outline-none focus-within:ring-2 focus-within:ring-gray-300/50 dark:bg-slate-700 dark:hover:bg-slate-600">
+          <FileUp size={18} className="shrink-0 text-sber-dark dark:text-sber-light" />
           <span className="truncate text-sm text-gray-700 dark:text-slate-200">
             {file ? file.name : 'Выберите файл .docx'}
           </span>

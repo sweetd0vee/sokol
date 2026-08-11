@@ -23,17 +23,6 @@ type AttachmentUploadResponse = {
   attachment: StoredAttachment;
 };
 
-type StorageStatusResponse = {
-  enabled: boolean;
-  reachable: boolean;
-  bucket_layout: string;
-};
-
-export async function fetchStorageStatus(): Promise<StorageStatusResponse> {
-  const { data } = await api.get<StorageStatusResponse>('/api/v1/attachments/storage/status');
-  return data;
-}
-
 export async function fetchAttachments(params: {
   entity_type: AttachmentEntityType;
   entity_id: number | string;
@@ -82,11 +71,6 @@ export async function downloadAttachment(attachmentId: number | string): Promise
   link.click();
   link.remove();
   URL.revokeObjectURL(objectUrl);
-}
-
-export function attachmentDownloadUrl(attachmentId: number | string): string {
-  const base = api.defaults.baseURL?.replace(/\/$/, '') ?? '';
-  return `${base}/api/v1/attachments/${attachmentId}/download`;
 }
 
 export async function deleteAttachment(attachmentId: number | string): Promise<void> {

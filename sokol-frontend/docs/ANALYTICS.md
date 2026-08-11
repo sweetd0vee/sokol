@@ -11,10 +11,12 @@
 | Мониторинг | `GET /api/v1/analytics/monitoring` |
 | ДВА | `GET /api/v1/analytics/dva` |
 
+Планирование (отдельный раздел `/planning`): `GET /api/v1/analytics/planning` — см. [PLANNING.md](PLANNING.md).
+
 Общие query-параметры (повторяемые списки): `granularity`, `years`, `quarters`, `months`, `auditors`, `departments`.  
 Для рекомендаций/мониторинга дополнительно: `statuses`, `additionalStatuses`, `materialityLevels`.
 
-Ответ — готовые KPI/серии + `filterOptions` (аудиторы, департаменты, `anchorDates`). Поля в camelCase.
+Ответ — готовые KPI/серии + `filterOptions` (аудиторы, департаменты, `anchorDates`). Поля в camelCase. Требуется Bearer JWT.
 
 ## Общая логика UI
 

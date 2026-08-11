@@ -2,7 +2,7 @@
 
 **Дата:** 2026-08-11  
 **Метод:** статический разбор актуального кода, сверка docs↔implementation, просмотр analytics/attachments/export стыка с фронтом.  
-**Область:** FastAPI, CRUD, ORM, DOCX tools, analytics, storage, Docker/env.
+**Область:** FastAPI, CRUD, ORM, DOCX tools, analytics, storage, Docker/env, auth.
 
 ## Итоговая оценка
 
@@ -11,15 +11,15 @@
 | Архитектура слоёв | 7.5/10 |
 | Поддерживаемость CRUD | 8/10 |
 | DOCX pipeline | 6.5/10 |
-| Analytics | 7/10 (checks API) · 4/10 (остальные вкладки ещё на клиенте) |
+| Analytics | 7.5/10 (все вкладки + planning на API) |
 | Storage / attachments | 7/10 |
-| Тесты | 6/10 DOCX · 5/10 API smoke (analytics/attachments mocked) |
-| Безопасность | 6.5/10 |
-| Production readiness | 4.5/10 |
-| Согласованность с фронтом | 8/10 |
-| Документация | 8/10 (после актуализации 11.08) |
+| Тесты | 6/10 DOCX · 6/10 API smoke (auth/analytics/attachments mocked) |
+| Безопасность | 7/10 (JWT+RBAC; нет OIDC/audit log) |
+| Production readiness | 5.5/10 |
+| Согласованность с фронтом | 8.5/10 |
+| Документация | 8.5/10 (актуализация 11.08) |
 
-**Вердикт:** доменный CRUD и DOCX-контур зрелые; появился server-side analytics для проверок и MinIO-вложения. Для prod по-прежнему критичны auth и Alembic. Runbook миграций/данных: [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md). План — [PLAN.md](../../PLAN.md).
+**Вердикт:** доменный CRUD, DOCX, server analytics и MinIO-вложения зрелые; JWT+RBAC закрывает path B. Для prod критичны Alembic и банковский IdP/OIDC. Runbook миграций/данных: [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md). План — [PLAN.md](../../PLAN.md).
 
 ---
 
@@ -28,10 +28,10 @@
 1. Чистое разделение endpoints / schemas / crud / models / services.
 2. Async SQLAlchemy + dependency injection session.
 3. DOCX Раздела II — ZIP/XML с тестами bookmarks/links.
-4. `GET /analytics/checks` считает по всей БД (не упирается в list limit 500/1000).
+4. Analytics API для checks / recommendations / monitoring / dva / planning (не упирается в list limit).
 5. Attachments: metadata table + bucket-per-check + sync buckets.
-6. DRY справочников через `dictionary_crud`.
-7. Docker entrypoint: wait DB/MinIO → schema migrate → seed → optional demo import.
+6. DRY справочников через `dictionary_crud` + validation на mutate.
+7. Internal JWT + RBAC; Docker entrypoint: wait DB/MinIO → schema migrate → seed → optional demo import.
 
 ---
 
@@ -54,20 +54,20 @@ Internal JWT: `POST /api/v1/auth/login`, Bearer на `/api/v1/*` кроме heal
 `await file.read()` до 100 MB. **Риск:** OOM / DoS при параллельных jobs.  
 **Рекомендация:** streaming на диск + семафор.
 
-#### H4. Analytics checks без пагинации/лимитов на сервере
+#### H4. Analytics без пагинации/лимитов на сервере
 
-Сервис грузит все checks (+ recommendations) в память процесса. При росте портфеля — рост latency/RAM.  
+Сервисы грузят сущности (+ recommendations) в память процесса. При росте портфеля — рост latency/RAM.  
 **Рекомендация:** мониторинг; SQL-агрегации / материализованные срезы; кэш filterOptions.
 
 ### Medium
 
 #### M1. Конфиг частично размазан — закрыто
 
-CORS / upload / Ollama / MinIO читаются через `Settings` (`app.core.config`). `main.py` использует `settings.cors_origins`.
+CORS / upload / JWT / MinIO читаются через `Settings` (`app.core.config`). `main.py` использует `settings.cors_origins`.
 
 #### M2. API/DB coverage still shallow
 
-Есть unittest smoke для `/analytics/*` и `/attachments/*` (моки session/MinIO). Нет integration-тестов на живой Postgres/MinIO и нет полного CRUD smoke.
+Есть unittest smoke для auth, `/analytics/*` и `/attachments/*` (моки session/MinIO). Нет integration-тестов на живой Postgres/MinIO и нет полного CRUD smoke.
 
 #### M3. Ad-hoc migrate в entrypoint неполные
 
@@ -95,20 +95,18 @@ Entrypoint гоняет effectiveness + attachments; остальные `migrate
 | Тема | Статус |
 |------|--------|
 | CRUD checks/recommendations/settings | OK |
-| `GET /analytics/checks` | OK (вкладка «Проверки») |
-| Analytics other tabs | клиент (`SokolDataContext`) |
+| Analytics (все вкладки + planning) | OK |
 | Attachments API | OK при настроенном MinIO |
-| Auth | JWT + RBAC (auditor/admin); OIDC позже | stub FE / open BE |
+| Auth | JWT + RBAC (auditor/admin); OIDC позже |
 
 ---
 
 ## Рекомендуемый порядок работ
 
 1. Alembic baseline + запрет `create_all` в prod bootstrap.  
-2. Auth (Keycloak) + запрет анонимного API.  
+2. OIDC/Keycloak (если IdP) + audit log; убрать fake password на FE.  
 3. Расширить API smoke до живой Postgres/MinIO в CI; SQL-оптимизация analytics при росте данных.  
-4. SQL-оптимизация analytics при росте данных; API для recommendations/monitoring/DVA.  
-5. Streaming upload + job queue для DOCX.
+4. Streaming upload + job queue для DOCX.
 
 ---
 

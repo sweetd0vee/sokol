@@ -69,7 +69,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     try {
-      const data = await loginRequest(shortName.trim(), password);
+      const data = await loginRequest(shortName.trim(), password.trim());
       const userData: User = {
         shortName: data.username,
         displayName: data.display_name || data.username,

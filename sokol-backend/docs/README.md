@@ -1,6 +1,6 @@
 # SOKOL Backend — документация
 
-Каталог описывает **актуальное** состояние backend (август 2026). **План развития:** [PLAN.md](../../PLAN.md).
+Каталог описывает **актуальное** состояние backend (**11 августа 2026**). **План развития:** [PLAN.md](../../PLAN.md).
 
 ## Что читать
 
@@ -20,12 +20,13 @@
 
 FastAPI-сервис внутреннего аудита «Сокол»:
 
-- CRUD проверок и рекомендаций (PostgreSQL, async SQLAlchemy).
-- CRUD справочников: аудиторы, типы аудита, виды проверок (`check_kinds`), оценки эффективности.
-- **Analytics:** `GET /api/v1/analytics/checks` — серверная агрегация вкладки «Проверки».
+- **Auth:** internal JWT + RBAC (`auditor` / `admin`); публичны health и `POST /auth/login`.
+- CRUD проверок и рекомендаций (PostgreSQL, async SQLAlchemy); validation справочников на create/update.
+- CRUD справочников: аудиторы, типы аудита, виды проверок (`check_kinds`), оценки эффективности (mutate — admin).
+- **Analytics:** `GET /api/v1/analytics/{checks|recommendations|monitoring|dva|planning}` — серверные агрегаты по всей БД.
 - **Attachments:** метаданные в Postgres + файлы в MinIO (`/api/v1/attachments`).
-- Инструменты `.docx`: Раздел II АЗ (± гиперссылки на наблюдения), докладная записка, парсинг рекомендаций из АЗ, раздел I «Аудиторское мнение» через Ollama.
-- **Нет** auth, Alembic (пока `create_all` + `migrate_*.py`), очередей.
+- Инструменты `.docx`: Раздел II АЗ (± гиперссылки), докладная записка, парсинг рекомендаций, раздел I через Ollama.
+- **Нет** Alembic (пока `create_all` + `migrate_*.py`), OIDC, очередей DOCX.
 
 ## Стек
 
@@ -35,10 +36,11 @@ FastAPI-сервис внутреннего аудита «Сокол»:
 | FastAPI / Uvicorn | 0.115 / 0.30 |
 | SQLAlchemy + asyncpg | 2.0 / 0.31 |
 | PostgreSQL | 16 (Docker, host port 5433) |
+| Auth | PyJWT (HS256) + PBKDF2 пароли |
 | Object storage | MinIO (S3-compatible) |
 | DOCX | `python-docx` + низкоуровневый ZIP/XML |
 | LLM | Ollama (`qwen3.5:35b` по умолчанию) |
-| Тесты | `unittest` — **72** (1 skipped); DOCX + analytics period + API smoke |
+| Тесты | `unittest` — **~84** (1 skipped); DOCX + auth + dictionary + analytics + attachments smoke |
 
 ## Порты
 

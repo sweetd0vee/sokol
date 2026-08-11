@@ -5,6 +5,20 @@ import { Input } from '../ui/Input';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { isValidFullNameShort, normalizeFullNameShort } from '../../utils/fullName';
 
+const SIMPLE_LOGINS = new Set(['admin', 'auditor']);
+
+function normalizeLogin(value: string): string {
+  const trimmed = value.trim();
+  if (SIMPLE_LOGINS.has(trimmed.toLowerCase())) {
+    return trimmed.toLowerCase();
+  }
+  return normalizeFullNameShort(trimmed);
+}
+
+function isValidLogin(value: string): boolean {
+  return SIMPLE_LOGINS.has(value.toLowerCase()) || isValidFullNameShort(value);
+}
+
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -19,15 +33,15 @@ export function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const normalizedFullName = normalizeFullNameShort(fullName);
-      if (!isValidFullNameShort(normalizedFullName)) {
-        setError('Введите Фамилию И.О. в формате, например: Иванов И.О.');
+      const normalizedLogin = normalizeLogin(fullName);
+      if (!isValidLogin(normalizedLogin)) {
+        setError('Введите логин admin / auditor или Фамилию И.О., например: Иванов И.О.');
         return;
       }
 
-      const ok = await login(normalizedFullName, password);
+      const ok = await login(normalizedLogin, password.trim());
       if (!ok) {
-        setError('Введите Фамилию И.О. и пароль');
+        setError('Введите логин и пароль');
         return;
       }
       navigate('/checks', { replace: true });
@@ -48,11 +62,11 @@ export function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <Input
-            label="Фамилия И.О."
+            label="Логин"
             value={fullName}
             onChange={setFullName}
-            onBlur={() => setFullName((prev) => normalizeFullNameShort(prev))}
-            placeholder="Введите Фамилию И.О."
+            onBlur={() => setFullName((prev) => normalizeLogin(prev))}
+            placeholder="admin или Фамилия И.О."
             inputClassName="py-5 text-xl"
           />
           <Input
@@ -75,6 +89,11 @@ export function LoginPage() {
             }
           />
           {error && <p className="text-lg text-red-600 dark:text-red-400">{error}</p>}
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            Dev: <span className="font-medium">admin</span> / <span className="font-medium">admin</span>
+            {' · '}
+            <span className="font-medium">auditor</span> / <span className="font-medium">auditor</span>
+          </p>
           <button
             type="submit"
             disabled={loading}

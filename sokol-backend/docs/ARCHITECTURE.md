@@ -14,22 +14,23 @@ sokol-backend/
 │   │   ├── router.py           # корневой api_router
 │   │   └── v1/
 │   │       ├── router.py       # prefix /api/v1
-│   │       └── endpoints/      # health, checks, recommendations, analytics, attachments, settings, tools
-│   ├── core/config.py          # Settings (pydantic-settings)
+│   │       └── endpoints/      # health, auth, checks, recommendations, analytics, attachments, settings, tools
+│   ├── core/                   # config, security (JWT), users, roles
 │   ├── crud/                   # async CRUD-функции (не классы-репозитории)
 │   ├── db/                     # session, init_db, seeds, ad-hoc migrate_*.py
 │   ├── models/                 # SQLAlchemy ORM
 │   ├── schemas/                # Pydantic v2
 │   ├── services/
 │   │   ├── reports/            # section_ii + memorandum + audit_opinion
-│   │   ├── analytics/          # checks analytics aggregations
+│   │   ├── analytics/          # checks / recommendations / dva / planning aggregations
+│   │   ├── dictionary_validation.py
 │   │   └── storage/            # MinIO client
 │   └── utils/                  # check_key, paths
-├── tests/                      # unittest (DOCX) + analytics period helpers
+├── tests/                      # unittest: DOCX + auth + dictionary + analytics/attachments smoke
 ├── scripts/                    # seed Excel, helpers
 ├── data/images/                # PNG материальности для Раздела II
 ├── docker/                     # Compose + Dockerfiles
-└── .secrets/sokol.env          # DATABASE_URL, CORS, MinIO, …
+└── .secrets/sokol.env          # DATABASE_URL, CORS, JWT, MinIO, …
 ```
 
 ## Слои
@@ -39,6 +40,7 @@ flowchart TB
   subgraph HTTP
     Client[Frontend / Swagger]
     MW[CORSMiddleware]
+    AUTH[JWT get_current_user]
     EP[endpoints/*.py]
   end
 
@@ -46,11 +48,13 @@ flowchart TB
     CRUD[crud/*_crud.py]
     SCH[schemas]
     ORM[models]
+    VAL[dictionary_validation]
   end
 
   subgraph Infra
     SES[db/session.py]
     PG[(PostgreSQL)]
+    MINIO[(MinIO)]
   end
 
   subgraph Reports
@@ -61,12 +65,14 @@ flowchart TB
     OLL[(Ollama)]
   end
 
-  Client --> MW --> EP
+  Client --> MW --> AUTH --> EP
   EP --> CRUD
+  EP --> VAL
   CRUD --> SES --> PG
   EP --> SCH
   CRUD --> ORM
   EP --> TOOLS
+  EP --> MINIO
   TOOLS --> SII
   TOOLS --> MEM
   TOOLS --> AO
@@ -94,16 +100,18 @@ flowchart TB
 4. Подключает `api_router` → `api_v1_router` с prefix `/api/v1`.
 5. `GET /` → `{service, version: "v1"}`.
 
-Нет: auth middleware, exception handlers, request logging, rate limit.
+Auth: `Depends(get_current_user)` на всех роутерах кроме `health` и `auth` (login публичный).  
+Нет: exception handlers, request logging, rate limit.
 
 ## API-модули
 
 | Router prefix | Файл | Домен |
 |---------------|------|-------|
-| `/status` | `health.py` | liveness |
+| `/status` | `health.py` | liveness (публичный) |
+| `/auth` | `auth.py` | login + `/me` |
 | `/checks` | `checks.py` | проверки |
 | `/recommendations` | `recommendations.py` | рекомендации |
-| `/analytics` | `analytics.py` | агрегации вкладки «Проверки» |
+| `/analytics` | `analytics.py` | checks / recommendations / monitoring / dva / planning |
 | `/attachments` | `attachments.py` | вложения (MinIO + metadata) |
 | `/settings/auditors` | `auditors.py` | справочник |
 | `/settings/audit_types` | `audit_types.py` | справочник |
@@ -117,7 +125,8 @@ flowchart TB
 
 | Символ | Тип | Ответственность |
 |--------|-----|-----------------|
-| `Settings` | `BaseSettings` | `app_name`, `api_v1_prefix`, `database_url`, CORS, Ollama, MinIO, upload limit |
+| `Settings` | `BaseSettings` | `app_name`, `api_v1_prefix`, `database_url`, CORS, JWT, Ollama, MinIO, upload limit |
+| `CurrentUser` / `Role` | deps + roles | JWT subject, display_name, admin/auditor |
 | `Base` | DeclarativeBase | метаданные ORM |
 | `get_db_session` | async generator | session per request |
 
@@ -300,16 +309,15 @@ flowchart LR
 - Alembic-миграции (только `create_all` + `app/db/migrate_*.py`; runbook — [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md))
 - Celery / Redis / фоновые очереди
 - MailHog в коде приложения
-- Analytics API для вкладок «Рекомендации» / «Мониторинг» / «ДВА» (реализован только `GET /analytics/checks`)
 - CRUD наблюдений
+- Drill-down / сохранённые отчёты аналитики
 
 ## Связь с фронтендом
 
 | Контракт | Backend | Frontend |
 |----------|---------|----------|
+| Auth JWT + RBAC | `/auth/login`, Bearer | `AuthContext`, interceptor, `AdminGuard` |
 | CRUD checks/recommendations/settings | есть | `src/api/*.ts` + mappers |
 | Tools DOCX + audit-opinion | `/tools/*` | `src/api/tools.ts`, `ToolsTab`, `AuditOpinionPanel` |
-| Analytics checks | `GET /analytics/checks` | `ChecksAnalyticsDashboard` + `api/analytics.ts` |
-| Analytics other tabs | нет | клиентские агрегаты из `SokolDataContext` |
+| Analytics | `/analytics/{checks,recommendations,monitoring,dva,planning}` | `api/analytics.ts` + dashboards |
 | Attachments | `/attachments/*` + MinIO | `api/attachments.ts`, панели вложений |
-| Auth header | не требуется | stub login в localStorage |

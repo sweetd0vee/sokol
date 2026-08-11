@@ -5,11 +5,6 @@ import {
   getFileExtension,
 } from './fileHelpers';
 
-export type AttachedFileItem = {
-  id: string;
-  file: File;
-};
-
 export type PersistedAttachmentListItem = {
   clientId: string;
   serverId?: number;
@@ -21,7 +16,3 @@ export type PersistedAttachmentListItem = {
 };
 
 export { createAttachmentId, filesWord, formatFileSize, getFileExtension };
-
-export function countFilesForSlot(files: Record<string, AttachedFileItem[]>, slotId: string) {
-  return files[slotId]?.length ?? 0;
-}

@@ -7,10 +7,10 @@
 ## Фаза 0 — гигиена
 
 - [x] Зафиксировать порты: Docker **8800**, local `run_dev.ps1` **8802**.
-- [x] `GET /api/v1/analytics/checks` для вкладки «Проверки».
+- [x] Analytics API: checks / recommendations / monitoring / dva / planning.
 - [x] Attachments API + MinIO (см. [STORAGE.md](STORAGE.md)).
-- [ ] Унифицировать чтение env только через `Settings`.
-- [ ] Актуализировать compose profiles (MinIO в default стеке — проверить docs/DOCKER).
+- [x] Env app-конфига через `Settings` (CORS, upload, JWT, MinIO).
+- [x] Dictionary validation на create/update checks/recommendations.
 
 ## Фаза 1 — миграции и CI
 
@@ -18,12 +18,13 @@
 - [ ] Перенести `migrate_*.py` в ревизии.
 - [ ] Prod: только `alembic upgrade head`, не `create_all`.
 - [ ] Integration tests: TestClient + тестовая Postgres (CRUD + analytics + attachments smoke).
-- [ ] GitHub Actions: `compileall`, `unittest` (+ pytest для analytics helpers).
+- [ ] GitHub Actions: `compileall`, `unittest`.
 
 ## Фаза 2 — безопасность
 
-- [ ] JWT/OIDC (Keycloak); `Authorization` на `/api/v1/*`.
-- [ ] Роли: auditor / admin.
+- [x] Internal JWT; `Authorization` на `/api/v1/*` (кроме health + login).
+- [x] Роли: auditor / admin.
+- [ ] OIDC / Keycloak поверх JWT.
 - [ ] Audit log: delete check, tools generate, settings mutate, attachment delete.
 
 ## Фаза 3 — DOCX platform
@@ -35,9 +36,9 @@
 
 ## Фаза 4 — продукт
 
-- [ ] Analytics API для рекомендаций / мониторинга / ДВА.
-- [ ] SQL-агрегации / кэш для `/analytics/checks` при росте данных.
-- [ ] FK/валидация строковых справочных полей (опционально).
+- [x] Analytics API для рекомендаций / мониторинга / ДВА / planning.
+- [ ] SQL-агрегации / кэш analytics при росте данных.
+- [ ] FK справочников (validation уже есть).
 - [ ] CRUD наблюдений (если войдёт в scope).
 - [ ] Очередь фоновых отчётов.
 

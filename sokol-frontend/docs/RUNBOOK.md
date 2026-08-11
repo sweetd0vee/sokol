@@ -74,17 +74,19 @@ docker compose -f docker/docker-compose.yml up
 ```bash
 npm run lint
 npm run build
+npm test
 ```
 
-Отдельного `npm test` нет.
+Vitest: `npm test` (`vitest run`).
 
 ## Частые проблемы
 
 | Симптом | Действие |
 |---------|----------|
 | 500 / ECONNREFUSED на `/api` | Запустить backend на **8802** или поправить `VITE_DEV_API_PORT` |
+| 401 / редирект на login | JWT отсутствует или просрочен — войти заново (`admin`/`admin` или `auditor`/`auditor`) |
 | CORS | `SOKOL_CORS_ORIGINS=http://localhost:5180` + restart API |
-| Аналитика пустая / ошибка загрузки | Нужен backend на **8802** с роутами `/api/v1/analytics/*`; перезапустите uvicorn, если OpenAPI без раздела analytics |
+| Аналитика пустая / ошибка загрузки | Нужен backend на **8802** с роутами `/api/v1/analytics/*`; перезапустите uvicorn |
 | Audit-opinion 502 / timeout | Нужна Ollama с моделью; клиентский timeout 600s |
 | `vite: Permission denied` | `chmod +x node_modules/.bin/vite` (Unix) |
 | Rollup native missing | удалить `node_modules` + lockfile → `npm install` |

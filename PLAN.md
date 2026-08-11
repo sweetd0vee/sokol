@@ -1,8 +1,8 @@
 # План развития SOKOL
 
-**Актуально:** 7 августа 2026  
+**Актуально:** 11 августа 2026  
 **Жёсткий дедлайн go-live:** **1 сентября 2026 (пн)**  
-**Окно:** 7 авг → 1 сен = **25 календарных / ~18 рабочих дней** (без учёта выходных; при работе в сб — запас).
+**Окно:** 11 авг → 1 сен = **21 календарный / ~15 рабочих дней** (без учёта выходных; при работе в сб — запас).
 
 **Назначение:** единый план дальнейших действий. Playbooks A–D ниже — технические детали; **календарь и scope freeze** — в разделе [Go-live 01.09.2026](#go-live-01092026--жёсткий-план).
 
@@ -239,19 +239,19 @@ gantt
 
 | Область | Готово | Не готово / ограничения |
 |---------|--------|-------------------------|
-| **Проверки и рекомендации** | CRUD, фильтры на клиенте, экспорт XLSX/DOCX/PDF, импорт рекомендаций из АЗ | Server-side pagination/filter не используется UI |
-| **Справочники** | CRUD: аудиторы, виды аудита, виды проверок, оценки эффективности | Нет FK к доменным строкам; check_kinds не везде в форме проверки |
+| **Проверки и рекомендации** | CRUD, фильтры на клиенте, экспорт XLSX/DOCX/PDF, импорт рекомендаций из АЗ; validation справочников на create/update | Server-side pagination/filter не используется UI; bulk import обходит validation |
+| **Справочники** | CRUD: аудиторы, виды аудита, виды проверок, оценки эффективности (mutate — admin) | Нет FK к доменным строкам; check_kinds не везде в форме проверки |
 | **Инструменты DOCX** | Раздел II (± ссылки), ДЗ, парсинг, раздел I (Ollama) | Upload in-memory; нет очереди |
-| **Аналитика** | `GET /analytics/checks` + клиентские вкладки recs/monitoring/DVA; экспорт xlsx/pdf/docx/html | Нет server analytics для остальных вкладок |
-| **Планирование** | Клиентские дашборды охвата | Экспорт отключён; нет backend planning API |
-| **Auth** | Stub login на фронте | Нет JWT/OIDC на API |
+| **Аналитика** | `GET /analytics/{checks,recommendations,monitoring,dva}` — серверные агрегаты; экспорт xlsx/pdf/docx/html | Нет SQL-оптимизаций/кэша при росте портфеля; drill-down API нет |
+| **Планирование** | `GET /analytics/planning` + UI дашборды охвата | Экспорт отключён |
+| **Auth** | Internal JWT + RBAC (`auditor`/`admin`); FE login + Bearer interceptor | Нет OIDC/Keycloak; fake «смена пароля» в профиле |
 | **БД** | PostgreSQL + `create_all` + ad-hoc `migrate_*.py` | Нет Alembic — см. [ALEMBIC_AND_DATA.md](sokol-backend/docs/ALEMBIC_AND_DATA.md) |
-| **Файлы** | Attachments API + MinIO; DOCX tools temp cleanup | Нужна настройка MinIO; бэкап файлов отдельно от PG |
+| **Файлы** | Attachments API + MinIO; DOCX tools temp cleanup | Нужна настройка MinIO на стенде; бэкап файлов отдельно от PG |
 | **CI/CD** | Ручные unittest / npm lint+test | Нет обязательного GitHub Actions |
 | **Наблюдения, канцлер** | Наблюдения: демо-таблица; канцлер: stub | Нет backend для наблюдений/канцлера |
 | **Legacy** | `sokol-instruments/` | Не основной стек |
 
-**Тесты backend:** 72 unittest (1 skipped) — DOCX + analytics period + API smoke (analytics/attachments с моками).  
+**Тесты backend:** ~84 unittest (1 skipped) — DOCX + auth/RBAC + dictionary validation + analytics period + API smoke (analytics/attachments с моками).  
 **Тесты frontend:** Vitest (`npm test`), покрытие пока узкое.
 
 ---
@@ -273,8 +273,8 @@ gantt
 |---|--------|-----------------|---------------------|
 | 0.1 | Зафиксировать два режима портов (Docker **8800**, local **8802**) | docs | ✅ Сделано в README, DOCKER.md, `*/docs` |
 | 0.2 | Пометить `sokol-instruments/` как legacy | docs | README с явной отсылкой к основному стеку |
-| 0.3 | Убрать или изолировать MinIO/MailHog в compose (`profiles: ["extras"]`) | infra | ✅ В backend compose MinIO/MailHog вынесены из default `docker compose up` |
-| 0.4 | Свести env в единый `Settings` (CORS, max upload) | backend | Все `os.getenv` для app-конфига — через pydantic-settings |
+| 0.3 | Убрать или изолировать MinIO/MailHog в compose (`profiles: ["extras"]`) | infra | ✅ MinIO в основном стеке; MailHog не используется кодом |
+| 0.4 | Свести env в единый `Settings` (CORS, upload, JWT, MinIO) | backend | ✅ App-конфиг через pydantic-settings (`app.core.config`) |
 | 0.5 | (Опционально) Унифицировать порт API в коде | backend + frontend | Один порт local/Docker, если onboarding всё ещё путает |
 
 **Выход фазы:** новый разработчик поднимает стек по корневому README без расхождений в портах и env.
@@ -315,22 +315,20 @@ gantt
 
 | # | Задача | Детали реализации |
 |---|--------|-------------------|
-| 2.1 | **Auth middleware** | JWT или OIDC (Keycloak); dependency `get_current_user` на всех `/api/v1/*` кроме health |
-| 2.2 | **Роли** | Минимум: `auditor` (read/write домен), `admin` (справочники + delete) |
+| 2.1 | **Auth middleware** | ✅ Internal JWT; `get_current_user` на `/api/v1/*` кроме health + `/auth/login`. OIDC — следующий шаг |
+| 2.2 | **Роли** | ✅ `auditor` (домен R/W), `admin` (справочники + DELETE) |
 | 2.3 | **Audit log** | Structured logging критичных операций: delete check, tools generate, settings mutate |
 
 ### Frontend
 
 | # | Задача | Детали реализации |
 |---|--------|-------------------|
-| 2.4 | **Keycloak / OIDC** | Замена stub `LoginPage`; Axios interceptor `Authorization: Bearer` |
-| 2.5 | **AuthGuard** | Проверка валидности токена, не только localStorage flag |
+| 2.4 | **Keycloak / OIDC** | ✅ JWT login + Axios Bearer; OIDC — когда выдадут IdP |
+| 2.5 | **AuthGuard** | ✅ Токен в localStorage; 401 → logout |
 | 2.6 | **Профиль** | Убрать fake «смена пароля» **или** disabled + текст «через SSO» |
 | 2.7 | **«Мои» проверки** | Привязка к server-side identity (subject/displayName), не только localStorage ФИО |
 
-**Выход фазы:** API недоступен без токена; UI не показывает ложных успехов auth.
-
-**Зависимости:** 2.4–2.7 блокируются 2.1; можно начать с API key / internal JWT, затем Keycloak.
+**Выход фазы:** ✅ API недоступен без токена. Осталось: OIDC, audit log, fake password, «Мои» по server identity.
 
 ---
 
@@ -360,8 +358,8 @@ gantt
 | # | Задача | Backend | Frontend |
 |---|--------|---------|----------|
 | 4.1 | Server-side filter/pagination | Расширить query params list endpoints | `ChecksTab` / `RecommendationsTab` — запросы с `search`, `status`, `skip/limit` |
-| 4.2 | Вложения | MinIO (или S3) + metadata table; `POST /attachments` | Upload с формы; явный статус «сохранено» / «ошибка» |
-| 4.3 | Нормализация справочников | FK или validation `check_leader` / `check_type` against settings | Combobox из API вместо свободного текста (постепенно) |
+| 4.2 | Вложения | ✅ MinIO + metadata + `/attachments` | ✅ Upload с формы; статус storage |
+| 4.3 | Нормализация справочников | ✅ Validation на create/update (без FK) | Combobox из API вместо свободного текста (постепенно) |
 
 ### 4B — новые модули (средний приоритет)
 
@@ -375,7 +373,7 @@ gantt
 
 | # | Задача | Условие |
 |---|--------|---------|
-| 4.7 | Server-side analytics API | Когда `limit=1000` на рекомендациях становится узким местом |
+| 4.7 | Server-side analytics API | ✅ checks / recommendations / monitoring / dva / planning |
 | 4.8 | Виртуализация таблиц | Длинные списки на клиенте |
 
 **Выход фазы 4A:** вложения персистятся; списки не тянут 1000 записей без необходимости.
@@ -398,15 +396,15 @@ gantt
 
 | Критерий | Сейчас | Цель (минимум prod) | Фаза |
 |----------|--------|---------------------|------|
-| Auth | ❌ | JWT/OIDC обязательно | 2 |
+| Auth | ✅ JWT + RBAC | OIDC желателен; JWT ok для go-live | 2 |
 | Миграции БД | `create_all` | Alembic | 1 |
 | CI | ❌ | unittest + lint + build | 1 |
-| API integration tests | ❌ | smoke CRUD | 1 |
-| Frontend tests | ❌ | Vitest mappers + smoke E2E | 1, 5 |
+| API integration tests | smoke + mocks | smoke CRUD на живой Postgres | 1 |
+| Frontend tests | Vitest узкий | Vitest mappers + smoke E2E | 1, 5 |
 | Upload `/tools` | in-memory | stream + limit concurrency | 3 |
-| Вложения | UI only | object storage + API | 4 |
-| Analytics | client-side | client-side OK до роста данных | — |
-| Документация | актуальна | обновлять после каждой фазы | 0+ |
+| Вложения | ✅ MinIO + API | настроенный storage на UAT/prod | 4 |
+| Analytics | ✅ server API | SQL/кэш при росте данных | — |
+| Документация | актуальна 11.08 | обновлять после каждой фазы | 0+ |
 
 ---
 
@@ -463,16 +461,16 @@ gantt
 
 ## Playbook A — внедрение MinIO (файловое хранилище)
 
-**Статус:** не реализовано. В compose уже есть заготовка MinIO под `profiles: ["extras"]`, код приложения к нему не обращается.  
-**Цель фазы 4.2:** персистентные вложения проверок/рекомендаций (и опционально артефакты `/tools`).
+**Статус:** ✅ реализовано в коде (API + UI + Docker). Операционный runbook — [STORAGE.md](sokol-backend/docs/STORAGE.md).  
+Ниже — исторический план внедрения (A.1–A.5) и критерии приёмки на банковском стенде.
 
-### A.1 Текущая модель файлов
+### A.1 Модель файлов (актуально)
 
-| Поток | Где живёт файл | Проблема |
-|-------|----------------|----------|
-| `/api/v1/tools/*` | multipart → RAM → `NamedTemporaryFile` → ответ → cleanup | нет архива исходников/результатов |
-| Вложения на формах check/recommendation | `File` в React state | пропадают при reload; пользователь думает, что «сохранил» |
-| Object storage | MinIO в extras, без env в API | не используется |
+| Поток | Где живёт файл | Статус |
+|-------|----------------|--------|
+| `/api/v1/tools/*` | multipart → RAM → `NamedTemporaryFile` → ответ → cleanup | без архива исходников/результатов |
+| Вложения check/recommendation | Postgres metadata + MinIO objects | ✅ через `/api/v1/attachments` |
+| Object storage | MinIO в compose | ✅ при заданных `SOKOL_MINIO_*` |
 
 ### A.2 Целевая архитектура
 
@@ -536,10 +534,10 @@ sokol-files/
 
 ### A.4 Критерии готовности MinIO
 
-- [ ] Файл переживает reload страницы и рестарт API.
+- [x] Файл переживает reload страницы и рестарт API (при настроенном MinIO).
 - [ ] Удаление сущности optionally каскадом чистит objects (или orphan GC job).
 - [ ] В банковском контуре MinIO недоступен с рабочих станций напрямую (только API).
-- [ ] Документы: API.md, DOCKER.md, DATA_AND_DB.md обновлены.
+- [x] Документы: API.md, DOCKER.md, STORAGE.md, DATA_AND_DB.md.
 
 ### A.5 Что сознательно не делать в первом инкременте
 
@@ -675,7 +673,7 @@ flowchart TB
 | `VITE_API_URL` | proxy / empty | absolute internal API URL на этапе build UI **или** same-origin nginx |
 | `SOKOL_OLLAMA_URL` | `http://localhost:11434` | `http://host.docker.internal:11434` (локальная Ollama на хосте; не в Docker) |
 | MinIO_* | extras profile | обязательны после Playbook A |
-| Auth | stub | OIDC client id/secret |
+| Auth | JWT (path B) | OIDC client id/secret |
 
 **Важно для UI:** Vite env вшивается на **build-time**. Для банка либо:
 
@@ -687,7 +685,7 @@ flowchart TB
 1. Согласовать VM, диски (`postgres-data`, `minio-data`), firewall, DNS, TLS; Ollama — отдельно на хосте.
 2. Развернуть Postgres → Alembic upgrade → seed справочников.
 3. Поднять API + UI за proxy; health: `/api/v1/status`.
-4. Прогнать smoke: login (stub/OIDC) → список проверок → создать черновик → tools section-ii на тестовом АЗ.
+4. Прогнать smoke: login (JWT) → список проверок → создать черновик → tools section-ii на тестовом АЗ.
 5. Загрузить обезличенный/реальный пилотный набор (Playbook D).
 6. Подключить Ollama (если раздел I нужен на UAT).
 7. Чеклист ИБ + акт пилота.
@@ -758,14 +756,14 @@ docker compose exec api alembic upgrade head
 
 ### Must-have до пилота с реальными данными
 
-| # | Доработка | Зачем |
-|---|-----------|-------|
-| 1 | Alembic + запрет create_all в prod | безопасные обновления схемы |
-| 2 | Auth (OIDC/JWT) + убрать fake password | требование ИБ |
-| 3 | CI lint/test/build | не ломать стенд регрессиями |
-| 4 | Явный UX «вложения не сохраняются» **или** MinIO attachments | не терять доверие пользователей |
-| 5 | Import dry-run + отчёт ошибок | загрузка реальных проверок |
-| 6 | Bank deploy runbook (TLS, DNS, backup) — этот playbook C | воспроизводимый UAT |
+| # | Доработка | Зачем | Статус |
+|---|-----------|-------|--------|
+| 1 | Alembic + запрет create_all в prod | безопасные обновления схемы | открыто |
+| 2 | Auth (OIDC/JWT) + убрать fake password | требование ИБ | JWT+RBAC ✅; fake password / OIDC открыто |
+| 3 | CI lint/test/build | не ломать стенд регрессиями | открыто |
+| 4 | MinIO attachments **или** disclaimer | не терять доверие пользователей | MinIO API ✅; стенд настроить |
+| 5 | Import dry-run + отчёт ошибок | загрузка реальных проверок | открыто |
+| 6 | Bank deploy runbook (TLS, DNS, backup) — playbook C | воспроизводимый UAT | открыто |
 
 ### Should-have в первой промышленной версии
 
@@ -774,7 +772,7 @@ docker compose exec api alembic upgrade head
 | 7 | Server-side filter/pagination списков |
 | 8 | Streaming upload + concurrency limit для `/tools` |
 | 9 | Подключить «Виды проверок» к форме проверки / фильтрам |
-| 10 | Validation справочников vs доменные строки (или FK) |
+| 10 | FK справочников (validation на API уже есть) |
 | 11 | Toast/error UI вместо `console.error` в Settings |
 | 12 | Audit log критичных операций |
 
@@ -786,7 +784,7 @@ docker compose exec api alembic upgrade head
 | 14 | Планирование и Канцлер (или скрыть из nav) |
 | 15 | Golden DOCX в CI, мок Ollama для audit-opinion |
 | 16 | Playwright smoke |
-| 17 | Server-side analytics API — только при росте данных |
+| 17 | SQL-оптимизация / кэш analytics при росте данных |
 | 18 | Виртуализация больших таблиц |
 
 ### Техдолг после недавнего рефакторинга справочников
@@ -803,9 +801,9 @@ docker compose exec api alembic upgrade head
 
 С учётом банковского контура и MinIO:
 
-1. **Спринт F1:** Alembic baseline + CI + единый Settings env (фазы 0.4, 1.x).
-2. **Спринт F2:** Auth OIDC + CORS/TLS на UAT (фаза 2 + playbook C skeleton).
-3. **Спринт F3:** Import dry-run + загрузка пилотных реальных проверок (playbook D) на UAT.
-4. **Спринт F4:** MinIO attachments (playbook A) **или** временно жёсткий UX-дисклеймер по файлам.
-5. **Спринт F5:** DOCX hardening (stream/semaphore) + wire «Виды проверок» в формы.
-6. Далее — наблюдения / планирование по запросу бизнеса.
+1. **Спринт F1:** Alembic baseline + CI (фаза 1.x).  
+2. **Спринт F2:** OIDC поверх JWT (если IdP) + CORS/TLS на UAT (playbook C) + убрать fake password.  
+3. **Спринт F3:** Import dry-run + загрузка пилотных реальных проверок (playbook D) на UAT.  
+4. **Спринт F4:** Harden MinIO на банковском стенде (backup тома, ACL) + wire «Виды проверок» в формы.  
+5. **Спринт F5:** DOCX streaming/semaphore.  
+6. Далее — наблюдения / планирование export / канцлер по запросу бизнеса.

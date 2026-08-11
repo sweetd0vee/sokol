@@ -41,6 +41,8 @@ def verify_password(plain_password: str, stored: str) -> bool:
             iterations,
         ).hex()
         return hmac.compare_digest(digest, expected)
+    if len(plain_password) != len(stored):
+        return False
     return hmac.compare_digest(plain_password, stored)
 
 

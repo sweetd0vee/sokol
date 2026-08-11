@@ -95,12 +95,18 @@ docker compose up --build -d api ui
 - Backend-only: `sokol-backend/docker/app/docker-compose.yml`
 - Frontend-only (сеть `sokol` уже есть): `sokol-frontend/docker/docker-compose.yml`
 
-## Банковский контур / MinIO / миграции
+## Auth в Docker
 
-Пошаговые **будущие** инструкции (пока без реализации в коде):
+API требует Bearer JWT на всех `/api/v1/*`, кроме `GET /api/v1/status`.  
+Задайте в `sokol-backend/docker/app/.env`: `SOKOL_JWT_SECRET`, опционально `SOKOL_AUTH_USERS`.  
+Вход в UI: http://localhost:5180/login.
+
+## Банковский контур / данные / миграции
+
+Уже в коде: **MinIO + attachments API** — [STORAGE.md](sokol-backend/docs/STORAGE.md).
+
+Ещё в плане (playbook B–D в [PLAN.md](PLAN.md)):
 
 - развёртывание во внутренней сети банка, TLS, air-gap, backup;
-- внедрение MinIO для вложений;
-- Alembic и загрузка реальных проверок —
-
-см. разделы playbook A–D в [PLAN.md](PLAN.md).
+- Alembic вместо `create_all` + ad-hoc `migrate_*.py`;
+- загрузка реальных проверок (import dry-run / сверка).
