@@ -60,7 +60,7 @@ const buildDemoObservations = (recommendations: Recommendation[]): Observation[]
     return {
       ...seed,
       check_serial_number: relatedRecommendations[0]?.serial_number ?? fallbackCheckSerial,
-      auditor: relatedRecommendations[0]?.auditor ?? 'Иванов А.А.',
+      auditor: relatedRecommendations[0]?.auditor ?? 'Важник Д.С.',
       recommendation_ids: relatedRecommendations.map((recommendation) => recommendation.id),
     };
   });

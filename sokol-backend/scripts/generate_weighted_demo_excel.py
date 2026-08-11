@@ -29,6 +29,7 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1]
 ROOT = BACKEND_ROOT.parent
 sys.path.insert(0, str(BACKEND_ROOT))
 
+from app.db.auditor_names import AUDITORS as AUDITOR_NAMES  # noqa: E402
 from app.utils.check_key import assign_serial_numbers  # noqa: E402
 
 DEFAULT_DATA_DIR = ROOT / "data"
@@ -88,17 +89,11 @@ RECOMMENDATION_HEADERS = [
     "closure_information",
 ]
 
+# Веса по убыванию — неравномерная нагрузка на аудиторов из справочника.
+_AUDITOR_WEIGHTS = (28, 20, 16, 12, 10, 8, 6, 4, 3, 2, 1)
 AUDITORS = [
-    ("Иванов А.А.", 28),
-    ("Петрова И.В.", 20),
-    ("Смирнов К.П.", 16),
-    ("Кузнецова Е.Н.", 12),
-    ("Алексеев Д.С.", 8),
-    ("Громова Т.В.", 6),
-    ("Сорокин М.А.", 4),
-    ("Белова О.И.", 3),
-    ("Захаров П.П.", 2),
-    ("Николаева Л.С.", 1),
+    (name, _AUDITOR_WEIGHTS[index] if index < len(_AUDITOR_WEIGHTS) else 1)
+    for index, name in enumerate(AUDITOR_NAMES)
 ]
 
 MANAGERS = [

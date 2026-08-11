@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+from app.db.auditor_names import AUDITORS
 from app.db.seed_check_kinds import CHECK_KINDS
 from app.db.seed_effectiveness_ratings import EFFECTIVENESS_RATINGS
 from app.utils.check_key import assign_serial_numbers
@@ -26,28 +27,8 @@ STATUS_TO_INDICATOR = {
     "unresolved": "не решено",
 }
 
-LEADERS = [
-    "Иванов А.А.",
-    "Петрова И.В.",
-    "Смирнов К.П.",
-    "Кузнецова Е.Н.",
-    "Алексеев Д.С.",
-    "Громова Т.В.",
-    "Сорокин М.А.",
-    "Белова О.И.",
-    "Захаров П.П.",
-    "Николаева Л.С.",
-    "Фёдоров И.А.",
-    "Ершова Н.П.",
-    "Морозов С.Г.",
-    "Орлова В.А.",
-    "Соловьёв П.Н.",
-    "Демидова И.Р.",
-    "Пономарёв А.Д.",
-    "Тимофеева Е.А.",
-    "Лебедев В.Н.",
-    "Важник Д.С.",
-]
+# Руководители проверок / аудиторы = актуальный справочник auditors.
+LEADERS = tuple(AUDITORS)
 
 MANAGERS = [
     "Голец О.В.",

@@ -3,25 +3,12 @@ from collections.abc import Sequence
 
 from sqlalchemy import select
 
+from app.db.auditor_names import AUDITORS
 from app.db.init_db import init_db
 from app.db.session import AsyncSessionLocal
 from app.models.auditors import Auditor
 
 # DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db python -m app.db.seed_auditors
-
-AUDITORS = [
-    "Важник Д.С.",
-    "Бутримович С.А.",
-    "Харитонов A.И.",
-    "Крейзо В.С.",
-    "Гуль E.Г.",
-    "Сеньковец Т.И.",
-    "Якубович В.В.",
-    "Каракосова E.Д.",
-    "Голубицкая А.О.",
-    "Хорошко М.Г.",
-    "Каминская В.В.",
-]
 
 
 async def seed_auditors(auditors: Sequence[str]) -> int:
