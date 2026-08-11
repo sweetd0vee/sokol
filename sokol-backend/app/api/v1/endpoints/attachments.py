@@ -17,6 +17,7 @@ from app.crud.attachments_crud import (
 from app.crud.checks_crud import get_check
 from app.crud.recommendations_crud import get_recommendation
 from app.db.session import get_db_session
+from app.api.deps import require_admin
 from app.models.attachments import Attachment
 from app.schemas.attachments import (
     CHECK_ATTACHMENT_SLOTS,
@@ -195,6 +196,7 @@ async def download_attachment_endpoint(
 async def delete_attachment_endpoint(
     attachment_id: int,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> None:
     if not settings.minio_enabled:
         raise HTTPException(status_code=503, detail="Файловое хранилище не настроено.")

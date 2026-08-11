@@ -1,5 +1,6 @@
 import { Download, Loader2, Trash2 } from 'lucide-react';
-import { attachmentDownloadUrl } from '../../api/attachments';
+import { downloadAttachment } from '../../api/attachments';
+import { useAuth } from '../../hooks/useAuth';
 import {
   formatFileSize,
   getFileExtension,
@@ -17,6 +18,8 @@ export function AttachmentFileList({
   onRemove,
   emptyMessage = 'Файлы не прикреплены.',
 }: AttachmentFileListProps) {
+  const { isAdmin } = useAuth();
+
   if (items.length === 0) {
     return (
       <p className="rounded-lg bg-gray-100 px-4 py-6 text-sm text-gray-500 dark:bg-slate-700 dark:text-slate-400">
@@ -44,24 +47,28 @@ export function AttachmentFileList({
               </span>
             )}
             {item.status === 'saved' && item.serverId != null && (
-              <a
-                href={attachmentDownloadUrl(item.serverId)}
-                download
+              <button
+                type="button"
+                onClick={() => {
+                  void downloadAttachment(item.serverId!);
+                }}
                 className="rounded-lg p-2 text-gray-400 transition hover:bg-blue-50 hover:text-[#6699FF] dark:hover:bg-slate-600"
                 aria-label={`Скачать ${item.name}`}
               >
                 <Download size={18} />
-              </a>
+              </button>
             )}
-            <button
-              type="button"
-              onClick={() => onRemove(item.clientId)}
-              disabled={item.status === 'uploading'}
-              className="rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:bg-red-950/30"
-              aria-label={`Удалить ${item.name}`}
-            >
-              <Trash2 size={18} />
-            </button>
+            {(isAdmin || item.status !== 'saved') && (
+              <button
+                type="button"
+                onClick={() => onRemove(item.clientId)}
+                disabled={item.status === 'uploading'}
+                className="rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:bg-red-950/30"
+                aria-label={`Удалить ${item.name}`}
+              >
+                <Trash2 size={18} />
+              </button>
+            )}
           </div>
         </li>
       ))}

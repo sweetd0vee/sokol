@@ -1,9 +1,31 @@
 import { useState, useCallback, useEffect, type ReactNode } from 'react';
+import { loginRequest } from '../api/auth';
+import { getErrorMessage, toApiError } from '../api/errors';
 import { AUTH_STORAGE_KEY } from '../constants/storage';
-import { AuthContext, type AuthContextValue, type User } from './auth';
+import { AuthContext, type AuthContextValue, type User, type UserRole } from './auth';
 
 interface AuthProviderProps {
   children: ReactNode;
+}
+
+function parseStoredUser(raw: string): User | null {
+  try {
+    const parsed = JSON.parse(raw) as Partial<User> & { username?: string };
+    const shortName = parsed?.shortName?.trim() || parsed?.username?.trim() || '';
+    const accessToken = parsed?.accessToken?.trim() || '';
+    const role = parsed?.role === 'admin' || parsed?.role === 'auditor' ? parsed.role : null;
+    if (!shortName || !accessToken || !role) {
+      return null;
+    }
+    return {
+      shortName,
+      displayName: parsed.displayName?.trim() || shortName,
+      role: role as UserRole,
+      accessToken,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -14,13 +36,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored) as Partial<User> & { username?: string };
-        const shortName = parsed?.shortName?.trim() || parsed?.username?.trim() || '';
-        if (shortName) {
-          setUser({
-            shortName,
-            displayName: parsed.displayName?.trim() || shortName,
-          });
+        const parsed = parseStoredUser(stored);
+        if (parsed) {
+          setUser(parsed);
+        } else {
+          localStorage.removeItem(AUTH_STORAGE_KEY);
         }
       }
     } catch {
@@ -30,28 +50,46 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
-  const login = useCallback(async (shortName: string, password: string): Promise<boolean> => {
-    if (!shortName.trim() || !password.trim()) {return false;}
-
-    // Простая авторизация — позже будет заменена на Keycloak
-    const userData: User = {
-      shortName: shortName.trim(),
-      displayName: shortName.trim(),
-    };
-    setUser(userData);
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userData));
-    return true;
-  }, []);
-
   const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem(AUTH_STORAGE_KEY);
   }, []);
 
+  useEffect(() => {
+    const onUnauthorized = () => {
+      logout();
+    };
+    window.addEventListener('sokol:auth-unauthorized', onUnauthorized);
+    return () => window.removeEventListener('sokol:auth-unauthorized', onUnauthorized);
+  }, [logout]);
+
+  const login = useCallback(async (shortName: string, password: string): Promise<boolean> => {
+    if (!shortName.trim() || !password.trim()) {
+      return false;
+    }
+
+    try {
+      const data = await loginRequest(shortName.trim(), password);
+      const userData: User = {
+        shortName: data.username,
+        displayName: data.display_name || data.username,
+        role: data.role,
+        accessToken: data.access_token,
+      };
+      setUser(userData);
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userData));
+      return true;
+    } catch (error) {
+      const apiError = toApiError(error);
+      throw new Error(getErrorMessage(apiError, 'Неверный логин или пароль'));
+    }
+  }, []);
+
   const value: AuthContextValue = {
     user,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user?.accessToken,
     isLoading,
+    isAdmin: user?.role === 'admin',
     login,
     logout,
   };

@@ -66,10 +66,20 @@ DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db
 SOKOL_MAX_UPLOAD_MB=100
 SOKOL_CORS_ORIGINS=http://localhost:5180
 
+SOKOL_JWT_SECRET=sokol-dev-jwt-secret-change-me
+SOKOL_JWT_EXPIRE_MINUTES=480
+
 SOKOL_OLLAMA_URL=http://localhost:11434
 SOKOL_OLLAMA_MODEL=qwen3.5:35b
 SOKOL_OLLAMA_TIMEOUT_S=600
 ```
+
+Локальные пользователи по умолчанию (если `SOKOL_AUTH_USERS` пуст):
+
+| Логин | Пароль | Роль |
+|-------|--------|------|
+| `Админ А.А.` | `admin` | admin |
+| `Аудитор А.А.` | `auditor` | auditor |
 
 ## Docker
 
@@ -90,6 +100,9 @@ docker compose up --build -d
 |------------|------------|
 | `DATABASE_URL` | async SQLAlchemy URL (обязателен) |
 | `SOKOL_CORS_ORIGINS` | origins фронтенда через запятую (dev: `http://localhost:5180`) |
+| `SOKOL_JWT_SECRET` | секрет подписи JWT (смените вне dev) |
+| `SOKOL_JWT_EXPIRE_MINUTES` | TTL токена, default `480` |
+| `SOKOL_AUTH_USERS` | JSON-список пользователей; пусто → локальные defaults |
 | `SOKOL_MAX_UPLOAD_MB` | лимит upload `.docx`, default `100` |
 | `SOKOL_OLLAMA_URL` | URL Ollama (default `http://localhost:11434`) |
 | `SOKOL_OLLAMA_MODEL` | модель по умолчанию (`qwen3.5:35b`) |

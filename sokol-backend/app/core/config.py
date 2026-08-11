@@ -11,6 +11,13 @@ class Settings(BaseSettings):
     sokol_max_upload_mb: int = 100
     sokol_cors_origins: str = ""
 
+    # Auth (internal JWT; path B until OIDC/Keycloak)
+    sokol_jwt_secret: str = "sokol-dev-jwt-secret-change-me"
+    sokol_jwt_expire_minutes: int = 480
+    # JSON array: [{"username":"...","password":"...","role":"admin|auditor","display_name":"..."}]
+    # Empty → built-in local defaults (Админ А.А. / admin, Аудитор А.А. / auditor).
+    sokol_auth_users: str = ""
+
     # MinIO / S3-compatible object storage
     sokol_minio_endpoint: str = ""
     sokol_minio_access_key: str = ""

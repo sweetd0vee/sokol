@@ -13,6 +13,7 @@ from app.crud.auditors_crud import (
     update_auditor,
 )
 from app.db.session import get_db_session
+from app.api.deps import require_admin
 from app.schemas.auditors import (
     AuditorCreate,
     AuditorListResponse,
@@ -28,6 +29,7 @@ router = APIRouter(prefix="/settings/auditors", tags=["auditors"])
 async def create_auditor_endpoint(
     auditor_in: AuditorCreate,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> AuditorRead:
     return await create_auditor(session, auditor_in)
 
@@ -60,6 +62,7 @@ async def update_auditor_endpoint(
     auditor_id: UUID,
     auditor_in: AuditorUpdate,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> AuditorRead:
     auditor = await get_auditor(session, auditor_id)
     if not auditor:
@@ -71,6 +74,7 @@ async def update_auditor_endpoint(
 async def delete_auditor_endpoint(
     auditor_id: UUID,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> None:
     auditor = await get_auditor(session, auditor_id)
     if not auditor:

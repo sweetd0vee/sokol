@@ -31,6 +31,7 @@ import {
 import { EXPORT_FORMATS, type ExportFormat, exportRecommendationsTable } from '../../utils/exports';
 import { formatRuDate, parseDateValue, toEndOfDayMs, toStartOfDayMs } from '../../utils/dates';
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
+import { useAuth } from '../../hooks/useAuth';
 import { useAuditorOptions } from '../../hooks/useReferenceOptions';
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
 import { ConfirmDialog } from '../ui/Modal';
@@ -157,6 +158,7 @@ export function RecommendationsTab() {
   const { options: auditObjectOptions } = useAuditObjectOptions(auditObject);
 
   const { recommendations, checks, deleteRecommendation } = useSokolData();
+  const { isAdmin } = useAuth();
 
   const filteredRecommendations = useMemo(() => {
     return recommendations.filter((recommendation) => {
@@ -612,14 +614,16 @@ export function RecommendationsTab() {
                         <PencilLine size={14} />
                         Редактировать
                       </Link>
-                      <button
-                        type="button"
-                        onClick={() => handleRequestDelete(recommendation)}
-                        className={`${LIST_ACTION_BUTTON_CLASS} border border-[#003366] text-[#003366] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white`}
-                      >
-                        <Trash2 size={14} />
-                        Удалить
-                      </button>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleRequestDelete(recommendation)}
+                          className={`${LIST_ACTION_BUTTON_CLASS} border border-[#003366] text-[#003366] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white`}
+                        >
+                          <Trash2 size={14} />
+                          Удалить
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

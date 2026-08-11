@@ -4,7 +4,13 @@
 
 Интерактивная документация: `http://127.0.0.1:8802/docs` (порт из `run_dev.ps1`).
 
-Auth: **отсутствует**. Все endpoints открыты.
+Auth: **internal JWT** (Bearer). Публичны только `GET /` и `GET /api/v1/status`.  
+Роли: `auditor` (домен read/write), `admin` (справочники mutate + все DELETE).
+
+Логин: `POST /api/v1/auth/login` → `{ access_token, role, username, display_name }`.  
+Профиль: `GET /api/v1/auth/me`.
+
+Пользователи: env `SOKOL_AUTH_USERS` (JSON) или локальные defaults `Админ А.А.`/`admin`, `Аудитор А.А.`/`auditor`.
 
 Общий формат списков: `{ "items": [...], "total": N }`.
 

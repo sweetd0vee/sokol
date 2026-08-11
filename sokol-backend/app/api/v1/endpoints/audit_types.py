@@ -13,6 +13,7 @@ from app.crud.audit_types_crud import (
     update_audit_type,
 )
 from app.db.session import get_db_session
+from app.api.deps import require_admin
 from app.schemas.audit_types import (
     AuditTypeCreate,
     AuditTypeListResponse,
@@ -28,6 +29,7 @@ router = APIRouter(prefix="/settings/audit_types", tags=["audit_types"])
 async def create_audit_type_endpoint(
     audit_type_in: AuditTypeCreate,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> AuditTypeRead:
     return await create_audit_type(session, audit_type_in)
 
@@ -60,6 +62,7 @@ async def update_audit_type_endpoint(
     audit_type_id: UUID,
     audit_type_in: AuditTypeUpdate,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> AuditTypeRead:
     audit_type = await get_audit_type(session, audit_type_id)
     if not audit_type:
@@ -71,6 +74,7 @@ async def update_audit_type_endpoint(
 async def delete_audit_type_endpoint(
     audit_type_id: UUID,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> None:
     audit_type = await get_audit_type(session, audit_type_id)
     if not audit_type:

@@ -14,11 +14,11 @@
 | Надёжность / ошибки | 6/10 |
 | Производительность (статика) | 6.5/10 |
 | Тесты | 4/10 (Vitest есть, покрытие узкое) |
-| Безопасность | 3/10 |
+| Безопасность | 6.5/10 |
 | Согласованность с backend | 8/10 |
 | Документация | 8.5/10 (после актуализации 11.08) |
 
-**Итого ≈ 7.0/10.** Сильный UX и API-обвязка; гибридная аналитика (checks API) и визуальный экспорт зрелеют. Критичны stub-auth и хрупкость HTML/PNG capture. План — [PLAN.md](../../PLAN.md).
+**Итого ≈ 7.3/10.** Сильный UX и API-обвязка; гибридная аналитика (checks API) и визуальный экспорт зрелеют. Auth JWT+RBAC подключён; HTML/PNG capture по-прежнему хрупкий. План — [PLAN.md](../../PLAN.md).
 
 ---
 
@@ -38,9 +38,9 @@
 
 ### Critical / High
 
-#### H1. Auth — декорация
+#### H1. Auth — декорация — закрыто (path B)
 
-Любые non-empty credentials; нет JWT. **Риск:** полный доступ к открытому API.
+Login через `POST /api/v1/auth/login`, Bearer interceptor, роли `admin`/`auditor` в UI (Settings, DELETE). OIDC/Keycloak — следующий шаг.
 
 #### H2. HTML-экспорт зависит от DOM-capture
 
@@ -90,13 +90,13 @@ UI создаёт ложное ожидание кнопок экспорта.
 | `/analytics/checks` | OK |
 | Other analytics tabs | client-only |
 | Attachments | OK при MinIO |
-| Auth | stub |
+| Auth | JWT + RBAC (admin/auditor) |
 
 ---
 
 ## Рекомендуемый порядок
 
-1. Auth UI + interceptor (вместе с backend OIDC).  
+1. OIDC/Keycloak поверх текущего JWT (если выдадут IdP).  
 2. Стабилизировать HTML-экспорт (data-driven блоки, меньше PNG-зависимостей где возможно).  
 3. Server analytics для recs/monitoring/DVA.  
 4. CI: lint + build + test.  

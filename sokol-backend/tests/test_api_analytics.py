@@ -25,6 +25,8 @@ from app.schemas.analytics import (
     RecommendationsSummaryByMateriality,
     RecommendationsSummaryByStatus,
 )
+from tests.auth_test_utils import override_current_user
+from app.core.roles import Role
 
 
 def _empty_checks_payload() -> ChecksAnalyticsResponse:
@@ -93,6 +95,7 @@ class AnalyticsApiTests(unittest.TestCase):
             yield AsyncMock()
 
         app.dependency_overrides[get_db_session] = _fake_session
+        override_current_user(Role.ADMIN)
         self.client = TestClient(app)
 
     def tearDown(self) -> None:

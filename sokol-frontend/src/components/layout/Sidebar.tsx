@@ -9,6 +9,7 @@ import {
   Eye,
   CalendarClock,
 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 const TABS = [
   { id: 'checks', path: '/checks', label: 'Проверки', icon: ClipboardList },
@@ -18,17 +19,20 @@ const TABS = [
   { id: 'planning', path: '/planning', label: 'Планирование', icon: CalendarClock },
   { id: 'tools', path: '/tools', label: 'Инструменты', icon: Wrench },
   { id: 'kantsler', path: '/kantsler', label: 'Канцлер', icon: FileCheck },
-  { id: 'settings', path: '/settings', label: 'Настройки', icon: Settings },
+  { id: 'settings', path: '/settings', label: 'Настройки', icon: Settings, adminOnly: true },
 ] as const;
 
 export function Sidebar() {
+  const { isAdmin } = useAuth();
+  const visibleTabs = TABS.filter((tab) => !('adminOnly' in tab && tab.adminOnly) || isAdmin);
+
   return (
     <aside className="w-56 min-h-screen bg-[#003366] flex flex-col shrink-0">
       <div className="flex h-[88px] items-center justify-center border-b border-sber-light/30 px-4">
         <h1 className="text-3xl font text-white">SOKOL</h1>
       </div>
       <nav className="flex flex-col p-2 flex-1">
-        {TABS.map(({ id, path, label, icon: Icon }) => (
+        {visibleTabs.map(({ id, path, label, icon: Icon }) => (
           <NavLink
             key={id}
             to={path}

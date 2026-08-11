@@ -14,7 +14,7 @@
 | Analytics | 7/10 (checks API) · 4/10 (остальные вкладки ещё на клиенте) |
 | Storage / attachments | 7/10 |
 | Тесты | 6/10 DOCX · 5/10 API smoke (analytics/attachments mocked) |
-| Безопасность | 3/10 |
+| Безопасность | 6.5/10 |
 | Production readiness | 4.5/10 |
 | Согласованность с фронтом | 8/10 |
 | Документация | 8/10 (после актуализации 11.08) |
@@ -39,10 +39,10 @@
 
 ### Critical / High
 
-#### H1. Нет авторизации и RBAC
+#### H1. Нет авторизации и RBAC — закрыто (path B)
 
-Все `/api/v1/*` открыты. **Риск:** чтение/удаление аудиторских данных, генерация DOCX, порча справочников и вложений.  
-**Рекомендация:** JWT/OIDC (Keycloak), роли `auditor` / `admin`.
+Internal JWT: `POST /api/v1/auth/login`, Bearer на `/api/v1/*` кроме health.  
+Роли: `auditor` (домен R/W), `admin` (справочники mutate + DELETE). Пользователи из `SOKOL_AUTH_USERS` или локальные defaults. OIDC/Keycloak — следующий шаг.
 
 #### H2. Нет Alembic
 
@@ -98,7 +98,7 @@ Entrypoint гоняет effectiveness + attachments; остальные `migrate
 | `GET /analytics/checks` | OK (вкладка «Проверки») |
 | Analytics other tabs | клиент (`SokolDataContext`) |
 | Attachments API | OK при настроенном MinIO |
-| Auth | stub FE / open BE |
+| Auth | JWT + RBAC (auditor/admin); OIDC позже | stub FE / open BE |
 
 ---
 

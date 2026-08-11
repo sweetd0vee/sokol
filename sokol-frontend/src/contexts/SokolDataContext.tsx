@@ -9,6 +9,7 @@ import {
   fetchRecommendations,
   updateRecommendation as updateRecommendationApi,
 } from '../api/recommendations';
+import { useAuth } from '../hooks/useAuth';
 import { SokolDataContext, type SokolDataContextValue } from './sokolData';
 
 interface SokolDataProviderProps {
@@ -17,15 +18,18 @@ interface SokolDataProviderProps {
 
 export function SokolDataProvider({ children }: SokolDataProviderProps) {
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
 
   const checksQuery = useQuery({
     queryKey: ['checks'],
     queryFn: () => fetchChecks({ limit: 500 }),
+    enabled: isAuthenticated,
   });
 
   const recommendationsQuery = useQuery({
     queryKey: ['recommendations'],
     queryFn: () => fetchRecommendations({ limit: 1000 }),
+    enabled: isAuthenticated,
   });
 
   const checks = useMemo(() => checksQuery.data?.items ?? [], [checksQuery.data?.items]);

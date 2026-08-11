@@ -67,6 +67,23 @@ export async function uploadAttachment(params: {
   return data.attachment;
 }
 
+export async function downloadAttachment(attachmentId: number | string): Promise<void> {
+  const { data, headers } = await api.get<Blob>(`/api/v1/attachments/${attachmentId}/download`, {
+    responseType: 'blob',
+  });
+  const disposition = String(headers['content-disposition'] ?? '');
+  const match = /filename="([^"]+)"/i.exec(disposition);
+  const filename = match?.[1] || `attachment-${attachmentId}`;
+  const objectUrl = URL.createObjectURL(data);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
 export function attachmentDownloadUrl(attachmentId: number | string): string {
   const base = api.defaults.baseURL?.replace(/\/$/, '') ?? '';
   return `${base}/api/v1/attachments/${attachmentId}/download`;

@@ -12,6 +12,7 @@ from app.crud.checks_crud import (
     update_check,
 )
 from app.db.session import get_db_session
+from app.api.deps import require_admin
 from app.models.checks import CheckStatus
 from app.schemas.checks import CheckCreate, CheckListResponse, CheckRead, CheckUpdate
 from app.services.dictionary_validation import DictionaryRefError
@@ -87,6 +88,7 @@ async def update_check_endpoint(
 async def delete_check_endpoint(
     check_id: int,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> None:
     check = await get_check(session, check_id)
     if not check:

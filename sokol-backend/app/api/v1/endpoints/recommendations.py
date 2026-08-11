@@ -13,6 +13,7 @@ from app.crud.recommendations_crud import (
     update_recommendation,
 )
 from app.db.session import get_db_session
+from app.api.deps import require_admin
 from app.schemas.recommendations import (
     RecommendationCreate,
     RecommendationListResponse,
@@ -104,6 +105,7 @@ async def update_recommendation_endpoint(
 async def delete_recommendation_endpoint(
     recommendation_id: int,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> None:
     recommendation = await get_recommendation(session, recommendation_id)
     if not recommendation:

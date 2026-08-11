@@ -17,6 +17,7 @@ import {
 import { EXPORT_FORMATS, type ExportFormat, exportChecks } from '../../utils/exports';
 import { formatRuDate, parseDateValue, toEndOfDayMs, toStartOfDayMs } from '../../utils/dates';
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
+import { useAuth } from '../../hooks/useAuth';
 import { useAuditorOptions } from '../../hooks/useReferenceOptions';
 import { ConfirmDialog } from '../ui/Modal';
 import { useSokolData } from '../../contexts/sokolData';
@@ -106,6 +107,7 @@ export function ChecksTab() {
   const { options: leaderOptions } = useAuditorOptions(checkLeader);
 
   const { checks, deleteCheck } = useSokolData();
+  const { isAdmin } = useAuth();
 
   const filteredChecks = useMemo(() => {
     return checks.filter((check) => {
@@ -522,14 +524,16 @@ export function ChecksTab() {
                             <PencilLine size={14} />
                             Редактировать
                           </Link>
-                          <button
-                            type="button"
-                            onClick={() => handleRequestDelete(check)}
-                            className={`${LIST_ACTION_BUTTON_CLASS} border border-[#003366] text-[#003366] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white`}
-                          >
-                            <Trash2 size={14} />
-                            Удалить
-                          </button>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => handleRequestDelete(check)}
+                              className={`${LIST_ACTION_BUTTON_CLASS} border border-[#003366] text-[#003366] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white`}
+                            >
+                              <Trash2 size={14} />
+                              Удалить
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

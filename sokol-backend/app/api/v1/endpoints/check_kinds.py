@@ -13,6 +13,7 @@ from app.crud.check_kinds_crud import (
     update_check_kind,
 )
 from app.db.session import get_db_session
+from app.api.deps import require_admin
 from app.schemas.check_kinds import (
     CheckKindCreate,
     CheckKindListResponse,
@@ -34,6 +35,7 @@ router = APIRouter(
 async def create_check_kind_endpoint(
     kind_in: CheckKindCreate,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> CheckKindRead:
     return await create_check_kind(session, kind_in)
 
@@ -68,6 +70,7 @@ async def update_check_kind_endpoint(
     kind_id: UUID,
     kind_in: CheckKindUpdate,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> CheckKindRead:
     kind = await get_check_kind(session, kind_id)
     if not kind:
@@ -79,6 +82,7 @@ async def update_check_kind_endpoint(
 async def delete_check_kind_endpoint(
     kind_id: UUID,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> None:
     kind = await get_check_kind(session, kind_id)
     if not kind:

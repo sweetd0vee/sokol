@@ -296,7 +296,7 @@ flowchart LR
 
 ## Явные non-goals (текущий код)
 
-- Auth / RBAC / JWT
+- OIDC / Keycloak (сейчас internal JWT + RBAC `auditor`/`admin`)
 - Alembic-миграции (только `create_all` + `app/db/migrate_*.py`; runbook — [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md))
 - Celery / Redis / фоновые очереди
 - MailHog в коде приложения

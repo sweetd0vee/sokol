@@ -13,6 +13,7 @@ from app.crud.effectiveness_ratings_crud import (
     update_effectiveness_rating,
 )
 from app.db.session import get_db_session
+from app.api.deps import require_admin
 from app.schemas.effectiveness_ratings import (
     EffectivenessRatingCreate,
     EffectivenessRatingListResponse,
@@ -34,6 +35,7 @@ router = APIRouter(
 async def create_effectiveness_rating_endpoint(
     rating_in: EffectivenessRatingCreate,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> EffectivenessRatingRead:
     return await create_effectiveness_rating(session, rating_in)
 
@@ -68,6 +70,7 @@ async def update_effectiveness_rating_endpoint(
     rating_id: UUID,
     rating_in: EffectivenessRatingUpdate,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> EffectivenessRatingRead:
     rating = await get_effectiveness_rating(session, rating_id)
     if not rating:
@@ -79,6 +82,7 @@ async def update_effectiveness_rating_endpoint(
 async def delete_effectiveness_rating_endpoint(
     rating_id: UUID,
     session: AsyncSession = Depends(get_db_session),
+    _: object = Depends(require_admin),
 ) -> None:
     rating = await get_effectiveness_rating(session, rating_id)
     if not rating:

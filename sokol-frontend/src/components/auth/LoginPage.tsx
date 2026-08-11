@@ -31,8 +31,8 @@ export function LoginPage() {
         return;
       }
       navigate('/checks', { replace: true });
-    } catch {
-      setError('Ошибка входа');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка входа');
     } finally {
       setLoading(false);
     }

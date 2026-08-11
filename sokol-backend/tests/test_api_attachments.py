@@ -18,6 +18,8 @@ from app.core.config import Settings
 from app.db.session import get_db_session
 from app.main import app
 from app.models.attachments import Attachment
+from tests.auth_test_utils import override_current_user
+from app.core.roles import Role
 
 
 class AttachmentsApiTests(unittest.TestCase):
@@ -26,6 +28,7 @@ class AttachmentsApiTests(unittest.TestCase):
             yield AsyncMock()
 
         app.dependency_overrides[get_db_session] = _fake_session
+        override_current_user(Role.ADMIN)
         self.client = TestClient(app)
 
     def tearDown(self) -> None:
