@@ -21,12 +21,12 @@ const TOOL_TABS = [
   { value: 'dz' as const, label: 'ДЗ' },
 ];
 
-const TOOLS_SECTION_CLASS = `${FORM_SECTION_CLASS} w-full border-0 dark:bg-slate-800/60`;
-const TOOLS_SECTION_TITLE_CLASS = `${FORM_SECTION_TITLE_CLASS} dark:text-slate-100`;
+const TOOLS_SECTION_CLASS =`${FORM_SECTION_CLASS} w-full border-0`;
+const TOOLS_SECTION_TITLE_CLASS =`${FORM_SECTION_TITLE_CLASS}`;
 
 const buildSectionIIOutputName = (name: string, withHyperlinks = false) =>
-  `${name.replace(/\.docx$/i, '')}${withHyperlinks ? '_section_ii_links' : '_section_ii'}.docx`;
-const buildMemorandumOutputName = (name: string) => `${name.replace(/\.docx$/i, '')}_dz.docx`;
+`${name.replace(/\.docx$/i, '')}${withHyperlinks ? '_section_ii_links' : '_section_ii'}.docx`;
+const buildMemorandumOutputName = (name: string) =>`${name.replace(/\.docx$/i, '')}_dz.docx`;
 
 export function ToolsTab() {
   const [activeTab, setActiveTab] = useState<'az' | 'dz'>('az');

@@ -29,7 +29,7 @@ function formatMetricValue(metric: AnalyticsSelectionSummaryMetric) {
   }
 
   const total = metric.hint.replace(/^из\s+/i, '').trim();
-  return `${metric.value}/${total}`;
+  return`${metric.value}/${total}`;
 }
 
 export function AnalyticsSelectionSummary({
@@ -37,12 +37,12 @@ export function AnalyticsSelectionSummary({
   items,
 }: AnalyticsSelectionSummaryProps) {
   return (
-    <section className="rounded-lg bg-gray-100 p-3.5 text-left dark:bg-slate-700">
-      <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-sber-light">Выбрано</h3>
+    <section className="rounded-lg bg-gray-100 p-3.5 text-left">
+      <h3 className="mb-3 text-base font-semibold text-gray-900">Выбрано</h3>
 
       <div className="mb-3 space-y-1.5">
         {metrics.map((metric) => (
-          <p key={metric.label} className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+          <p key={metric.label} className="text-sm font-semibold text-gray-900">
             <span>{metric.label}:</span>{' '}
             <span>{formatMetricValue(metric)}</span>
           </p>
@@ -53,11 +53,11 @@ export function AnalyticsSelectionSummary({
         {items.map((item) => {
           return (
             <div key={item.label}>
-              <p className="mb-2 text-sm font-medium leading-relaxed text-gray-900 dark:text-slate-100">
+              <p className="mb-2 text-sm font-medium leading-relaxed text-gray-900">
                 {item.label}
               </p>
               {item.chips.length === 0 ? (
-                <span className="inline-flex rounded-md bg-white/70 px-2 py-1 text-[11px] text-gray-500 dark:bg-slate-800/60 dark:text-slate-300">
+                <span className="inline-flex rounded-md bg-white/70 px-2 py-1 text-[11px] text-gray-500">
                   {item.emptyLabel ?? 'Все'}
                 </span>
               ) : (

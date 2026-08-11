@@ -45,7 +45,7 @@ export type AnalyticsFilterSidebarProps = {
 function SidebarSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
-      <p className="mb-2 text-sm font-medium leading-relaxed text-gray-900 dark:text-slate-100">
+      <p className="mb-2 text-sm font-medium leading-relaxed text-gray-900">
         {title}
       </p>
       <div className="space-y-2.5">{children}</div>
@@ -91,10 +91,10 @@ export function AnalyticsFilterSidebar({
 }: AnalyticsFilterSidebarProps) {
   return (
     <aside className="w-full shrink-0 space-y-5 lg:sticky lg:top-4 lg:w-80">
-      <section className="overflow-hidden rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed dark:bg-slate-700">
+      <section className="overflow-hidden rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed">
         <div className="mb-3 flex items-center gap-2">
           <div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-sber-light">Метрики</h3>
+            <h3 className="text-base font-semibold text-gray-900">Метрики</h3>
           </div>
         </div>
 
@@ -112,8 +112,8 @@ export function AnalyticsFilterSidebar({
                       onClick={() => onPeriodSliceChange(option.value)}
                       className={`rounded-lg border px-2 py-2 text-xs font-medium transition ${
                         isActive
-                          ? 'border-sber-dark bg-sber-dark text-white shadow-sm dark:border-sber-light dark:bg-sber-light dark:text-slate-900'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-sber-dark/50 hover:text-sber-dark dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-sber-light/70 dark:hover:text-sber-light'
+                          ? 'border-sber-dark bg-sber-dark text-white shadow-sm '
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-sber-dark/50 hover:text-sber-dark '
                       }`}
                     >
                       {option.label}
@@ -205,20 +205,20 @@ export function AnalyticsFilterSidebar({
 
       {selectionSummary}
 
-      <section className="rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed dark:bg-slate-700">
+      <section className="rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onExport}
             disabled={isExporting || !canExport}
-            className={`${FORM_SAVE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-900`}
+            className={`${FORM_SAVE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
           >
             {isExporting ? 'Экспорт...' : 'Экспорт'}
           </button>
           <select
             value={exportFormat}
             onChange={(event) => onExportFormatChange(event.target.value as AnalyticsExportFormat)}
-            className={`w-32 rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 ${FORM_EQUAL_CONTROL_CLASS}`}
+            className={`w-32 rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 ${FORM_EQUAL_CONTROL_CLASS}`}
           >
             {ANALYTICS_EXPORT_FORMATS.map((format) => (
               <option key={format.value} value={format.value}>

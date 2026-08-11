@@ -335,8 +335,8 @@ export function DvaAnalyticsDashboard() {
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[
-            { label: 'Проверок', value: filteredChecksTotal, hint: `из ${universeChecksTotal}` },
-            { label: 'Рекомендаций', value: filteredRecommendationsTotal, hint: `из ${universeRecommendationsTotal}` },
+            { label: 'Проверок', value: filteredChecksTotal, hint:`из ${universeChecksTotal}` },
+            { label: 'Рекомендаций', value: filteredRecommendationsTotal, hint:`из ${universeRecommendationsTotal}` },
             ]}
             items={[
               {

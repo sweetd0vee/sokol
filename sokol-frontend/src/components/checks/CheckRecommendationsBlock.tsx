@@ -23,7 +23,7 @@ type ParsedPreviewItem = Recommendation & { previewKey: string };
 const actionButtonClass =
   'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-50';
 const blueActionButtonClass =
-  `${actionButtonClass} border-2 border-[#6699FF] text-[#6699FF] hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white`;
+`${actionButtonClass} border-2 border-[#6699FF] text-[#6699FF] hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white`;
 const iconToolbarButtonClass =
   'inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark';
 
@@ -41,7 +41,7 @@ type EditablePreviewField = 'name' | 'audit_object' | 'manager' | 'deadline';
 
 const cellInputClass =
   'w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm outline-none transition focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/30';
-const cellTextareaClass = `${cellInputClass} min-h-[4.5rem] resize-y leading-snug`;
+const cellTextareaClass =`${cellInputClass} min-h-[4.5rem] resize-y leading-snug`;
 
 function ParsedPreviewTable({
   items,
@@ -211,7 +211,7 @@ export function CheckRecommendationsBlock({
     >,
     index: number,
   ): ParsedPreviewItem => ({
-    previewKey: `preview-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+    previewKey:`preview-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
     id: '0',
     serial_number: checkKey,
     sequence_number: storedRecommendations.length + index + 1,
@@ -484,7 +484,7 @@ export function CheckRecommendationsBlock({
                             Рекомендации из АЗ
                           </h3>
                           <p className="text-sm text-gray-500">
-                            {importAzFileName ? `Файл: ${importAzFileName}` : null}
+                            {importAzFileName ?`Файл: ${importAzFileName}` : null}
                             {importAzFileName ? ' · ' : null}
                             {parsedPreview.length} {pluralRecommendations(parsedPreview.length)}
                           </p>

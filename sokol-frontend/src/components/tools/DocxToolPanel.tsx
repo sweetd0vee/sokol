@@ -32,14 +32,14 @@ export function DocxToolPanel({
   return (
     <div className="space-y-4 pt-2">
       <div>
-        <div className="text-base font-semibold text-gray-900 dark:text-slate-100">{title}</div>
-        <p className="mt-1 text-base text-gray-500 dark:text-slate-300">{description}</p>
+        <div className="text-base font-semibold text-gray-900">{title}</div>
+        <p className="mt-1 text-base text-gray-500">{description}</p>
       </div>
 
       <div className="w-full max-w-[288px] space-y-4">
-        <label className="flex min-h-[6.5rem] w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-gray-100 px-4 py-3 text-center transition hover:bg-gray-200 focus-within:outline-none focus-within:ring-2 focus-within:ring-gray-300/50 dark:bg-slate-700 dark:hover:bg-slate-600">
-          <FileUp size={18} className="shrink-0 text-sber-dark dark:text-sber-light" />
-          <span className="truncate text-sm text-gray-700 dark:text-slate-200">
+        <label className="flex min-h-[6.5rem] w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-gray-100 px-4 py-3 text-center transition hover:bg-gray-200 focus-within:outline-none focus-within:ring-2 focus-within:ring-gray-300/50">
+          <FileUp size={18} className="shrink-0 text-sber-dark" />
+          <span className="truncate text-sm text-gray-700">
             {file ? file.name : 'Выберите файл .docx'}
           </span>
           <input type="file" accept={ACCEPTED_DOCX} onChange={handleFileChange} className="sr-only" />

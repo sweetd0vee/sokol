@@ -5,7 +5,7 @@ import { Input } from '../ui/Input';
 import { EmptyState, ErrorState, LoadingState } from '../ui/StateMessage';
 
 const SETTINGS_ADD_BUTTON_CLASS =
-  'inline-flex w-[140px] items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] dark:text-slate-900';
+  'inline-flex w-[140px] items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] ';
 
 export type TableRow = {
   key: string;
@@ -39,7 +39,7 @@ export function SettingsTableCard({
   const actionColumnIndex = columns.length - 1;
 
   return (
-    <div className="w-full max-w-7xl overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+    <div className="w-full max-w-7xl overflow-hidden rounded-xl border border-gray-200 bg-white">
       <div className="overflow-x-auto">
         <table className="w-full table-fixed text-base min-w-[640px]">
           <colgroup>
@@ -51,7 +51,7 @@ export function SettingsTableCard({
             ))}
           </colgroup>
           <thead>
-            <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-700/60">
+            <tr className="border-b border-gray-200 bg-gray-50">
               <th colSpan={columns.length} className="px-2 py-2 font-normal">
                 {showSearch && (
                   <Input
@@ -74,9 +74,9 @@ export function SettingsTableCard({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+          <tbody className="divide-y divide-gray-200">
             {rows.map((row) => (
-              <tr key={row.key} className="hover:bg-gray-50 dark:hover:bg-slate-800/70">
+              <tr key={row.key} className="hover:bg-gray-50">
                 {row.cells.map((cell, index) => (
                   <td key={`${row.key}-${index}`} className={index === actionColumnIndex ? 'px-0 py-3' : 'px-4 py-3'}>
                     {cell}
@@ -97,7 +97,7 @@ export function SettingsTableCard({
         <EmptyState className="rounded-none border-0" />
       ) : null}
       {onAdd && (
-        <div className="flex justify-start border-t border-gray-200 p-4 dark:border-slate-700">
+        <div className="flex justify-start border-t border-gray-200 p-4">
           <button
             type="button"
             onClick={onAdd}

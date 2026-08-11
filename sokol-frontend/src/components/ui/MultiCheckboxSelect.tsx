@@ -91,14 +91,14 @@ export function MultiCheckboxSelect({
   const triggerLabel =
     options.length === 0
       ? placeholder
-      : `Выбрано: ${value.length} из ${options.length}`;
+      :`Выбрано: ${value.length} из ${options.length}`;
 
   return (
     <div className={className} ref={rootRef} data-multi-checkbox-select>
       {label ? (
         <label
           className={[
-            'mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300',
+            'mb-1 block text-sm font-medium text-gray-700 ',
             labelClassName,
           ]
             .filter(Boolean)
@@ -114,7 +114,7 @@ export function MultiCheckboxSelect({
         aria-controls={listId}
         onClick={() => setOpen((prev) => !prev)}
         className={[
-          'flex w-full items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-left text-sm text-gray-900 outline-none transition hover:border-gray-400 focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100',
+          'flex w-full items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-left text-sm text-gray-900 outline-none transition hover:border-gray-400 focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 ',
           inputClassName,
         ]
           .filter(Boolean)
@@ -122,7 +122,7 @@ export function MultiCheckboxSelect({
       >
         <span
           className={`truncate ${
-            value.length === 0 ? 'text-gray-500 dark:text-slate-400' : 'text-gray-900 dark:text-slate-100'
+            value.length === 0 ? 'text-gray-500 ' : 'text-gray-900 '
           }`}
         >
           {triggerLabel}
@@ -131,29 +131,29 @@ export function MultiCheckboxSelect({
           className={`h-4 w-4 shrink-0 text-gray-500 transition ${open ? 'rotate-180' : ''}`}
         />
       </button>
-      {hint ? <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">{hint}</p> : null}
+      {hint ? <p className="mt-1 text-xs text-gray-500">{hint}</p> : null}
 
       {open ? (
         <div
           id={listId}
           role="listbox"
           aria-multiselectable
-          className="relative z-20 mt-1 max-h-56 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-600 dark:bg-slate-800"
+          className="relative z-20 mt-1 max-h-56 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg"
         >
-          <div className="sticky top-0 space-y-1.5 border-b border-gray-100 bg-white px-2 py-1.5 dark:border-slate-700 dark:bg-slate-800">
+          <div className="sticky top-0 space-y-1.5 border-b border-gray-100 bg-white px-2 py-1.5">
             <input
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Поиск"
-              className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
             />
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={selectAll}
                 disabled={options.length === 0}
-                className="rounded px-2 py-1 text-xs font-medium text-sber-dark hover:bg-sber-dark/5 disabled:opacity-40 dark:text-sber-light"
+                className="rounded px-2 py-1 text-xs font-medium text-sber-dark hover:bg-sber-dark/5 disabled:opacity-40"
               >
                 Все
               </button>
@@ -161,16 +161,16 @@ export function MultiCheckboxSelect({
                 type="button"
                 onClick={clearAll}
                 disabled={value.length === 0}
-                className="rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-40 dark:text-slate-300 dark:hover:bg-slate-700"
+                className="rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-40"
               >
                 Сбросить
               </button>
             </div>
           </div>
           {options.length === 0 ? (
-            <p className="px-3 py-3 text-xs text-gray-500 dark:text-slate-400">{emptyMessage}</p>
+            <p className="px-3 py-3 text-xs text-gray-500">{emptyMessage}</p>
           ) : filteredOptions.length === 0 ? (
-            <p className="px-3 py-3 text-xs text-gray-500 dark:text-slate-400">Ничего не найдено</p>
+            <p className="px-3 py-3 text-xs text-gray-500">Ничего не найдено</p>
           ) : (
             <ul className="py-1">
               {filteredOptions.map((option) => {
@@ -182,13 +182,13 @@ export function MultiCheckboxSelect({
                       role="option"
                       aria-selected={checked}
                       onClick={() => toggle(option.value)}
-                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-800 transition hover:bg-gray-50 dark:text-slate-100 dark:hover:bg-slate-700/80"
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-800 transition hover:bg-gray-50"
                     >
                       <span
                         className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
                           checked
                             ? 'border-sber-dark bg-sber-dark text-white'
-                            : 'border-gray-300 bg-white dark:border-slate-500 dark:bg-slate-800'
+                            : 'border-gray-300 bg-white '
                         }`}
                       >
                         {checked ? <Check className="h-3 w-3" strokeWidth={3} /> : null}

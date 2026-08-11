@@ -215,7 +215,7 @@ export function CheckFormPage() {
     if (!checkKey || !checkSaved) {
       return;
     }
-    const returnTo = isEditMode ? `/checks/${id}/edit` : '/checks/new';
+    const returnTo = isEditMode ?`/checks/${id}/edit` : '/checks/new';
     navigate('/recommendations/new', {
       state: {
         serialNumber: checkKey,

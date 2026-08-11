@@ -65,7 +65,7 @@ function buildRecommendationName(description: string, sequenceNumber: number) {
   if (firstLine) {
     return firstLine.slice(0, 500);
   }
-  return `Рекомендация ${sequenceNumber}`;
+  return`Рекомендация ${sequenceNumber}`;
 }
 
 
@@ -667,7 +667,7 @@ export function RecommendationFormPage() {
                     rows={1}
                     className="flex h-full min-h-0 w-full flex-1 flex-col"
                     inputClassName={[
-                      `${FORM_INPUT_CLASS} box-border h-full min-h-0 flex-1 resize-none overflow-y-auto`,
+`${FORM_INPUT_CLASS} box-border h-full min-h-0 flex-1 resize-none overflow-y-auto`,
                       showValidationErrors && requiredFieldErrors.closureInformation
                         ? FORM_FIELD_ERROR_CLASS
                         : '',

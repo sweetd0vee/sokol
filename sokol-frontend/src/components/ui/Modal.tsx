@@ -4,9 +4,9 @@ import { Button } from './Button';
 
 const OVERLAY_CLASS = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4';
 const CARD_CLASS =
-  'w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-xl dark:border-slate-600 dark:bg-slate-800';
+  'w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-xl ';
 const CARD_WIDE_CLASS =
-  'w-full max-w-3xl rounded-2xl border border-gray-200 bg-white p-6 text-left shadow-xl max-h-[90vh] overflow-y-auto dark:border-slate-600 dark:bg-slate-800';
+  'w-full max-w-3xl rounded-2xl border border-gray-200 bg-white p-6 text-left shadow-xl max-h-[90vh] overflow-y-auto ';
 
 type ModalProps = {
   title: string;
@@ -39,7 +39,7 @@ export function Modal({ title, children, wide, onClose }: ModalProps) {
         className={wide ? CARD_WIDE_CLASS : CARD_CLASS}
         onClick={(event) => event.stopPropagation()}
       >
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{title}</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
         {children}
       </div>
     </div>
@@ -96,7 +96,7 @@ export function ConfirmDialog({
   return (
     <Modal title={title}>
       <form onSubmit={handleSubmit} className="mt-2 space-y-6">
-        <div className="text-sm text-gray-600 dark:text-slate-300">{message}</div>
+        <div className="text-sm text-gray-600">{message}</div>
         <div className="flex items-center justify-center gap-3">
           <Button type="submit" variant="primary">
             {confirmLabel}

@@ -43,7 +43,7 @@ function AttachmentCard({
       type="button"
       onClick={onOpen}
       className={[
-        'flex w-full items-center justify-center rounded-lg bg-gray-100 text-center leading-relaxed transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/50 dark:bg-slate-700 dark:hover:bg-slate-600',
+        'flex w-full items-center justify-center rounded-lg bg-gray-100 text-center leading-relaxed transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/50 ',
         compact
           ? 'min-h-[6.5rem] flex-col gap-2 px-2 py-4'
           : 'min-h-[12rem] flex-col gap-2 px-4 py-5',
@@ -53,15 +53,15 @@ function AttachmentCard({
         <span
           className={
             compact
-              ? 'text-sm font-semibold text-gray-800 dark:text-slate-200'
-              : 'text-lg font-semibold text-gray-800 dark:text-slate-200'
+              ? 'text-sm font-semibold text-gray-800 '
+              : 'text-lg font-semibold text-gray-800 '
           }
         >
           {label}
         </span>
       )}
       {fileCount > 0 && (
-        <span className="text-xs text-gray-500 dark:text-slate-400">
+        <span className="text-xs text-gray-500">
           {fileCount} {filesWord(fileCount)}
         </span>
       )}
@@ -174,7 +174,7 @@ export function FileAttachmentsPanel({
 
   const content = (
     <>
-      {title && <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{title}</div>}
+      {title && <div className="text-xl font-semibold text-gray-900">{title}</div>}
       {!canPersist && !embedded && <AttachmentsUnavailableNotice message={unavailableMessage} />}
       <div className={`grid gap-4 ${columnsClassName}`}>
         {slots.map((slot) => (
@@ -209,7 +209,7 @@ export function FileAttachmentsPanel({
   }
 
   return (
-    <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-6 dark:border-slate-700 dark:bg-slate-800">
+    <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-6">
       {content}
     </div>
   );

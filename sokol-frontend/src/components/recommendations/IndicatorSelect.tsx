@@ -59,7 +59,7 @@ export function IndicatorSelect({
     <div className={className} ref={rootRef}>
       {label && (
         <label
-          className={['mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300', labelClassName]
+          className={['mb-1 block text-sm font-medium text-gray-700 ', labelClassName]
             .filter(Boolean)
             .join(' ')}
         >
@@ -74,7 +74,7 @@ export function IndicatorSelect({
           aria-controls={listId}
           onClick={() => setOpen((current) => !current)}
           className={[
-            'flex w-full items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 text-left text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-300/40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-400 dark:focus:ring-slate-500/30',
+            'flex w-full items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 text-left text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-300/40 ',
             inputClassName || 'py-2',
           ]
             .filter(Boolean)
@@ -83,7 +83,7 @@ export function IndicatorSelect({
           <span
             className={[
               'flex h-4 w-4 shrink-0 items-center justify-center',
-              selectedMeta?.className ?? 'text-gray-400 dark:text-slate-500',
+              selectedMeta?.className ?? 'text-gray-400 ',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -91,14 +91,14 @@ export function IndicatorSelect({
             {SelectedIcon ? <SelectedIcon size={16} strokeWidth={2.25} /> : null}
           </span>
           <span className="min-w-0 flex-1 truncate">{selected?.label ?? 'Не указан'}</span>
-          <ChevronDown size={16} className="shrink-0 text-gray-400 dark:text-slate-500" />
+          <ChevronDown size={16} className="shrink-0 text-gray-400" />
         </button>
 
         {open && (
           <ul
             id={listId}
             role="listbox"
-            className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-800"
+            className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
           >
             {options.map((option) => {
               const meta = INDICATOR_ICONS[option.value as RecommendationIndicator];
@@ -109,8 +109,8 @@ export function IndicatorSelect({
                   <button
                     type="button"
                     className={[
-                      'flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-900 transition hover:bg-gray-50 dark:text-slate-100 dark:hover:bg-slate-700/70',
-                      isActive ? 'bg-gray-50 font-medium dark:bg-slate-700/60' : '',
+                      'flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-900 transition hover:bg-gray-50 ',
+                      isActive ? 'bg-gray-50 font-medium ' : '',
                     ]
                       .filter(Boolean)
                       .join(' ')}
@@ -122,7 +122,7 @@ export function IndicatorSelect({
                     <span
                       className={[
                         'flex h-4 w-4 shrink-0 items-center justify-center',
-                        meta?.className ?? 'text-gray-400 dark:text-slate-500',
+                        meta?.className ?? 'text-gray-400 ',
                       ]
                         .filter(Boolean)
                         .join(' ')}

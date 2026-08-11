@@ -11,7 +11,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center text-gray-500 dark:text-slate-400">
+      <div className="flex min-h-[40vh] items-center justify-center text-gray-500">
         Загрузка...
       </div>
     );

@@ -162,8 +162,8 @@ export function PlanningAnalyticsDashboard() {
                   )}
                 </div>
                 {coverage.uncoveredDepartments.length > 0 ? (
-                  <div className="shrink-0 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-300">
-                    <p className="font-semibold text-slate-700 dark:text-slate-200">
+                  <div className="shrink-0 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                    <p className="font-semibold text-slate-700">
                       Не охвачено: {coverage.uncoveredRate}% ({coverage.uncovered} из {coverage.total})
                     </p>
                     <div className="mt-2 max-h-28 overflow-auto pr-1">
@@ -171,7 +171,7 @@ export function PlanningAnalyticsDashboard() {
                         {coverage.uncoveredDepartments.map((name) => (
                           <span
                             key={name}
-                            className="rounded-md bg-slate-200 px-2 py-0.5 font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-100"
+                            className="rounded-md bg-slate-200 px-2 py-0.5 font-medium text-slate-700"
                             title={name}
                           >
                             {name}
@@ -181,7 +181,7 @@ export function PlanningAnalyticsDashboard() {
                     </div>
                   </div>
                 ) : (
-                  <p className="shrink-0 text-xs text-emerald-700 dark:text-emerald-300">
+                  <p className="shrink-0 text-xs text-emerald-700">
                     Все известные департаменты охвачены проверками за период
                   </p>
                 )}
@@ -321,11 +321,11 @@ export function PlanningAnalyticsDashboard() {
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[
-              { label: 'Проверок', value: filteredChecksTotal, hint: `из ${universeChecksTotal}` },
+              { label: 'Проверок', value: filteredChecksTotal, hint:`из ${universeChecksTotal}` },
               {
                 label: 'Рекомендаций',
                 value: filteredRecommendationsTotal,
-                hint: `из ${universeRecommendationsTotal}`,
+                hint:`из ${universeRecommendationsTotal}`,
               },
             ]}
             items={[

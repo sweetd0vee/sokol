@@ -53,9 +53,9 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-slate-900">
-      <div className="absolute left-8 top-6 text-2xl font-semibold text-sber-dark dark:text-sber-light">СберБанк</div>
-      <div className="w-full max-w-4xl rounded-[32px] border border-gray-200 bg-white p-16 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="absolute left-8 top-6 text-2xl font-semibold text-sber-dark">СберБанк</div>
+      <div className="w-full max-w-4xl rounded-[32px] border border-gray-200 bg-white p-16 shadow-lg">
         <div className="text-center mb-12">
           <h1 className="mt-4 text-6xl font text-sber-dark">SOKOL</h1>
         </div>
@@ -80,7 +80,7 @@ export function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="rounded p-2.5 text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-sber-dark/30 dark:text-slate-400 dark:hover:text-slate-200"
+                className="rounded p-2.5 text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-sber-dark/30"
                 aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                 title={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
               >
@@ -88,8 +88,8 @@ export function LoginPage() {
               </button>
             }
           />
-          {error && <p className="text-lg text-red-600 dark:text-red-400">{error}</p>}
-          <p className="text-sm text-gray-500 dark:text-slate-400">
+          {error && <p className="text-lg text-red-600">{error}</p>}
+          <p className="text-sm text-gray-500">
             Dev: <span className="font-medium">admin</span> / <span className="font-medium">admin</span>
             {' · '}
             <span className="font-medium">auditor</span> / <span className="font-medium">auditor</span>

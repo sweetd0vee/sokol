@@ -39,21 +39,21 @@ export function AppLayout() {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-white dark:bg-slate-900">
+    <div className="flex min-h-screen bg-white">
       <Sidebar />
-      <div className="flex flex-1 flex-col bg-white dark:bg-slate-900">
-        <header className="flex h-[88px] items-center justify-end border-b border-gray-200 bg-white pl-6 pr-8 dark:border-slate-700 dark:bg-slate-800">
+      <div className="flex flex-1 flex-col bg-white">
+        <header className="flex h-[88px] items-center justify-end border-b border-gray-200 bg-white pl-6 pr-8">
           <div className="flex items-center gap-2">
           <Link
             to="/profile"
             className={`flex h-10 w-[288px] items-center gap-2 rounded-lg border px-3 text-sm transition ${
               isProfileActive
-                ? 'border-sber-dark text-sber-dark dark:border-sber-light dark:text-sber-light'
-                : 'border-gray-200 text-gray-700 hover:border-sber-dark/40 hover:text-sber-dark dark:border-slate-600 dark:text-slate-200 dark:hover:border-sber-light/70 dark:hover:text-sber-light'
+                ? 'border-sber-dark text-sber-dark '
+                : 'border-gray-200 text-gray-700 hover:border-sber-dark/40 hover:text-sber-dark '
             }`}
             title="Профиль"
           >
-            <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-slate-700">
+            <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
               {!avatarFailed && (
                 <img
                   src={avatarSrc}
@@ -63,7 +63,7 @@ export function AppLayout() {
                 />
               )}
               {avatarFailed && (
-                <span className="text-sm font-semibold text-sber-dark dark:text-sber-light">{initials}</span>
+                <span className="text-sm font-semibold text-sber-dark">{initials}</span>
               )}
             </span>
             <span className="truncate font-medium">{displayName}</span>
@@ -71,7 +71,7 @@ export function AppLayout() {
           <button
             type="button"
             onClick={logout}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-700 transition hover:border-sber-dark/40 hover:text-sber-dark dark:border-slate-600 dark:text-slate-200 dark:hover:border-sber-light/70 dark:hover:text-sber-light"
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-700 transition hover:border-sber-dark/40 hover:text-sber-dark"
             aria-label="Выйти"
             title="Выйти"
           >
@@ -80,7 +80,7 @@ export function AppLayout() {
           </div>
         </header>
         <main
-          className={`flex-1 overflow-auto bg-white dark:bg-slate-900 ${
+          className={`flex-1 overflow-auto bg-white ${
             isCompactFormPage ? 'px-4 py-4' : 'p-8'
           }`}
         >

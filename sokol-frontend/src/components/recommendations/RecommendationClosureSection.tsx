@@ -42,9 +42,9 @@ type RecommendationClosureSectionProps = {
 };
 
 const COMMENT_TEXTAREA_CLASS =
-  `${FORM_INPUT_CLASS} box-border h-full min-h-[9.75rem] flex-1 resize-none overflow-y-auto`;
+`${FORM_INPUT_CLASS} box-border h-full min-h-[9.75rem] flex-1 resize-none overflow-y-auto`;
 
-const ADD_BUTTON_CLASS = `${FORM_OUTLINE_BUTTON_CLASS} gap-1.5`;
+const ADD_BUTTON_CLASS =`${FORM_OUTLINE_BUTTON_CLASS} gap-1.5`;
 
 export function CollapsibleFormBlock({
   title,
@@ -255,7 +255,7 @@ export function RecommendationClosureSection({
               labelClassName={labelClassName}
               className="flex h-full min-h-0 w-full flex-1 flex-col"
               inputClassName={[
-                `${FORM_INPUT_CLASS} box-border h-full min-h-0 flex-1 resize-none overflow-y-auto`,
+`${FORM_INPUT_CLASS} box-border h-full min-h-0 flex-1 resize-none overflow-y-auto`,
                 removalIncomplete ? FORM_FIELD_ERROR_CLASS : '',
               ]
                 .filter(Boolean)

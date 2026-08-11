@@ -84,7 +84,7 @@ export function ProfilePage() {
 
   return (
     <div className={`${FORM_PAGE_CLASS} space-y-3`}>
-      <h2 className="text-xl font-bold text-sber-dark dark:text-sber-light">Профиль</h2>
+      <h2 className="text-xl font-bold text-sber-dark">Профиль</h2>
 
       <div className="space-y-3">
         <div className="flex flex-col items-start gap-4">
@@ -92,7 +92,7 @@ export function ProfilePage() {
             <button
               type="button"
               onClick={() => setIsAvatarPickerOpen((prev) => !prev)}
-              className="relative h-40 w-40 shrink-0 overflow-hidden rounded-3xl border border-gray-200 bg-gray-100 shadow-sm transition hover:border-sber-dark/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sber-dark/40 dark:border-slate-600 dark:bg-slate-700 sm:h-44 sm:w-44"
+              className="relative h-40 w-40 shrink-0 overflow-hidden rounded-3xl border border-gray-200 bg-gray-100 shadow-sm transition hover:border-sber-dark/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sber-dark/40 sm:h-44 sm:w-44"
               aria-expanded={isAvatarPickerOpen}
               aria-controls="profile-avatar-picker"
               aria-label="Изменить аватар"

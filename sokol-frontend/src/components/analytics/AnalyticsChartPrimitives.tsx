@@ -78,7 +78,7 @@ function ChartToolbar({
     <div data-chart-toolbar className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
       {onToggleExport ? (
         <label
-          className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-300 dark:hover:border-sber-light/70 dark:hover:text-sber-light"
+          className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark"
           title="В отчёт"
           aria-label="В отчёт"
         >
@@ -94,7 +94,7 @@ function ChartToolbar({
       <button
         type="button"
         onClick={onToggleFullscreen}
-        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark dark:border-slate-600 dark:text-slate-300 dark:hover:border-sber-light/70 dark:hover:text-sber-light"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark"
         title={isFullscreen ? 'Свернуть' : 'На весь экран'}
         aria-label={isFullscreen ? 'Свернуть' : 'На весь экран'}
       >
@@ -106,7 +106,7 @@ function ChartToolbar({
           type="button"
           onClick={onToggleDownload}
           disabled={isBusy}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-sber-light/70 dark:hover:text-sber-light"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark disabled:opacity-50"
           title={isBusy ? 'Сохранение…' : 'Ещё'}
           aria-label="Ещё"
           aria-haspopup="menu"
@@ -117,16 +117,16 @@ function ChartToolbar({
         {isDownloadOpen ? (
           <div
             role="menu"
-            className="absolute right-0 z-30 mt-1 w-44 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-800"
+            className="absolute right-0 z-30 mt-1 w-44 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
           >
-            <div className="px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-slate-500">
+            <div className="px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-400">
               Скачать
             </div>
             <button
               type="button"
               role="menuitem"
               onClick={() => onDownload('png')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-700"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
             >
               <Image className="h-3.5 w-3.5 text-sky-600" />
               PNG
@@ -135,7 +135,7 @@ function ChartToolbar({
               type="button"
               role="menuitem"
               onClick={() => onDownload('svg')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-700"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
             >
               <Image className="h-3.5 w-3.5 text-violet-600" />
               SVG
@@ -144,7 +144,7 @@ function ChartToolbar({
               type="button"
               role="menuitem"
               onClick={() => onDownload('pdf')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-700"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
             >
               <FileDown className="h-3.5 w-3.5 text-rose-600" />
               PDF
@@ -153,7 +153,7 @@ function ChartToolbar({
               type="button"
               role="menuitem"
               onClick={onCopyPng}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-700"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
             >
               <Clipboard className="h-3.5 w-3.5 text-emerald-600" />
               PNG в буфер
@@ -170,7 +170,7 @@ export function ChartCard({
   description,
   children,
   className = '',
-  accentClassName = 'border-gray-200 dark:border-slate-700',
+  accentClassName = 'border-gray-200 ',
   exportSectionId,
   exportSelected,
   onToggleExport,
@@ -257,7 +257,7 @@ export function ChartCard({
     setIsBusy(true);
     setIsDownloadOpen(false);
     try {
-      const baseName = `sokol-${slugifyFilename(title)}`;
+      const baseName =`sokol-${slugifyFilename(title)}`;
       if (format === 'pdf') {
         const dataUrl = await captureNode(node, 'png');
         const docDefinition: TDocumentDefinitions = {
@@ -290,11 +290,11 @@ export function ChartCard({
       }
 
       const dataUrl = await captureNode(node, format);
-      downloadDataUrl(dataUrl, `${baseName}.${format}`);
+      downloadDataUrl(dataUrl,`${baseName}.${format}`);
     } catch (error) {
       console.error('Chart download failed', error);
       window.alert(
-        `Не удалось скачать график: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`,
+`Не удалось скачать график: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`,
       );
     } finally {
       setIsBusy(false);
@@ -319,7 +319,7 @@ export function ChartCard({
     } catch (error) {
       console.error('Chart copy failed', error);
       window.alert(
-        `Не удалось скопировать график: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`,
+`Не удалось скопировать график: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`,
       );
     } finally {
       setIsBusy(false);
@@ -363,10 +363,10 @@ export function ChartCard({
       return (
         <section
           ref={exportCardRef}
-          className={`flex w-full flex-col rounded-lg border bg-white px-2 py-1.5 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
+          className={`flex w-full flex-col rounded-lg border bg-white px-2 py-1.5 shadow-sm ${accentClassName} ${className}`}
         >
           <div className="mb-1.5 flex shrink-0 items-center justify-between gap-2">
-            <h3 className="shrink-0 text-sm font-semibold leading-snug text-sber-dark dark:text-sber-light">{title}</h3>
+            <h3 className="shrink-0 text-sm font-semibold leading-snug text-sber-dark">{title}</h3>
             {toolbar}
           </div>
           <div ref={captureRef} className="min-w-0">
@@ -379,15 +379,15 @@ export function ChartCard({
     return (
       <section
         ref={exportCardRef}
-        className={`flex h-full flex-col rounded-lg border bg-white p-1.5 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
+        className={`flex h-full flex-col rounded-lg border bg-white p-1.5 shadow-sm ${accentClassName} ${className}`}
       >
         <div className="mb-0.5 flex items-start justify-between gap-1.5">
           <div className="min-w-0 space-y-0">
-            <div className="inline-flex items-center rounded-md pr-1 text-sber-dark dark:text-sber-light">
+            <div className="inline-flex items-center rounded-md pr-1 text-sber-dark">
               <h3 className="text-sm font-semibold leading-snug">{title}</h3>
             </div>
             {description ? (
-              <p className="text-xs leading-snug text-gray-500 dark:text-slate-400">{description}</p>
+              <p className="text-xs leading-snug text-gray-500">{description}</p>
             ) : null}
           </div>
           {toolbar}
@@ -404,20 +404,20 @@ export function ChartCard({
         role="presentation"
       >
         <div
-          className={`flex h-[88vh] w-[92vw] max-w-7xl flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl dark:bg-slate-900 ${accentClassName}`}
+          className={`flex h-[88vh] w-[92vw] max-w-7xl flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl ${accentClassName}`}
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 bg-white px-5 py-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 bg-white px-5 py-4 shadow-sm">
             <div className="min-w-0 space-y-0.5">
-              <h3 className="text-base font-semibold text-sber-dark dark:text-sber-light">{title}</h3>
-              <p className="text-sm text-gray-500 dark:text-slate-400">{description}</p>
+              <h3 className="text-base font-semibold text-sber-dark">{title}</h3>
+              <p className="text-sm text-gray-500">{description}</p>
             </div>
             <div className="flex items-center gap-1.5">
               {toolbar}
               <button
                 type="button"
                 onClick={() => setIsFullscreen(false)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-rose-300 hover:text-rose-600 dark:border-slate-600 dark:text-slate-300"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-rose-300 hover:text-rose-600"
                 title="Закрыть"
                 aria-label="Закрыть"
               >
@@ -425,7 +425,7 @@ export function ChartCard({
               </button>
             </div>
           </div>
-          <div className="min-h-0 flex-1 bg-white p-4 dark:bg-slate-900">{chartBody}</div>
+          <div className="min-h-0 flex-1 bg-white p-4">{chartBody}</div>
         </div>
       </div>
   );
@@ -433,15 +433,15 @@ export function ChartCard({
   return (
     <>
       <section
-        className={`rounded-xl border bg-white p-4 opacity-70 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
+        className={`rounded-xl border bg-white p-4 opacity-70 shadow-sm ${accentClassName} ${className}`}
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-0.5">
-            <h3 className="text-sm font-semibold text-sber-dark dark:text-sber-light">{title}</h3>
-            <p className="text-xs text-gray-500 dark:text-slate-400">{description}</p>
+            <h3 className="text-sm font-semibold text-sber-dark">{title}</h3>
+            <p className="text-xs text-gray-500">{description}</p>
           </div>
         </div>
-        <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-gray-200 text-xs text-gray-400 dark:border-slate-600">
+        <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-gray-200 text-xs text-gray-400">
           Открыто на весь экран
         </div>
       </section>
@@ -465,24 +465,24 @@ export function KpiCard({
   tone?: 'blue' | 'green' | 'red' | 'amber' | 'violet' | 'slate' | 'lilac' | 'indigo' | 'fuchsia' | 'purple';
 }) {
   const tones = {
-    blue: 'border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-100',
+    blue: 'border-blue-200 bg-blue-50 text-blue-900 ',
     green:
-      'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100',
-    red: 'border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-100',
+      'border-emerald-200 bg-emerald-50 text-emerald-900 ',
+    red: 'border-rose-200 bg-rose-50 text-rose-900 ',
     amber:
-      'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100',
+      'border-amber-200 bg-amber-50 text-amber-900 ',
     violet:
-      'border-violet-200 bg-violet-50 text-violet-900 dark:border-violet-900/50 dark:bg-violet-950/40 dark:text-violet-100',
+      'border-violet-200 bg-violet-50 text-violet-900 ',
     lilac:
-      'border-purple-200 bg-purple-50 text-purple-900 dark:border-purple-900/50 dark:bg-purple-950/40 dark:text-purple-100',
+      'border-purple-200 bg-purple-50 text-purple-900 ',
     indigo:
-      'border-indigo-200 bg-indigo-50 text-indigo-900 dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-indigo-100',
+      'border-indigo-200 bg-indigo-50 text-indigo-900 ',
     fuchsia:
-      'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-900 dark:border-fuchsia-900/50 dark:bg-fuchsia-950/40 dark:text-fuchsia-100',
+      'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-900 ',
     purple:
-      'border-violet-300 bg-violet-100 text-violet-950 dark:border-violet-800/60 dark:bg-violet-900/50 dark:text-violet-50',
+      'border-violet-300 bg-violet-100 text-violet-950 ',
     slate:
-      'border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100',
+      'border-slate-200 bg-slate-50 text-slate-900 ',
   };
 
   return (
@@ -502,7 +502,7 @@ export function KpiCard({
 export function EmptyChart({ message, heightClass = 'h-24' }: { message: string; heightClass?: string }) {
   return (
     <div
-      className={`flex ${heightClass} items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-500 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-400`}
+      className={`flex ${heightClass} items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-500`}
     >
       {message}
     </div>

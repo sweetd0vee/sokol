@@ -428,7 +428,7 @@ export function RecommendationsAnalyticsDashboard() {
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[
-            { label: 'Рекомендаций', value: filteredTotal, hint: `из ${universeTotal}` },
+            { label: 'Рекомендаций', value: filteredTotal, hint:`из ${universeTotal}` },
             ]}
             items={[
               {
@@ -482,7 +482,7 @@ export function RecommendationsAnalyticsDashboard() {
         )}
       >
         <div>
-          <p className="mb-2 text-sm font-medium leading-relaxed text-gray-900 dark:text-slate-100">Контроль</p>
+          <p className="mb-2 text-sm font-medium leading-relaxed text-gray-900">Контроль</p>
           <div className="space-y-2.5">
             <MultiCheckboxSelect options={MATERIALITY_LEVEL_OPTIONS} value={selectedMateriality} onChange={setSelectedMateriality} placeholder="Выберите уровень существенности" />
             <MultiCheckboxSelect options={RECOMMENDATION_STATUS_OPTIONS.map((item) => ({ value: item.value, label: item.label }))} value={selectedStatuses} onChange={setSelectedStatuses} placeholder="Выберите статус" />

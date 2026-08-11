@@ -55,7 +55,7 @@ function PieValueLabel({
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   const segmentFill = payload?.color ?? fill;
   const textColor = contrastLabelColor(segmentFill);
-  const percentLabel = `${Math.round(percent * 100)}%`;
+  const percentLabel =`${Math.round(percent * 100)}%`;
 
   if (labelMode === 'both') {
     return (
@@ -165,7 +165,7 @@ export function FocusableDonutChart({
               const payload = item?.payload as DonutDatum | undefined;
               const total = data.reduce((sum, entry) => sum + entry.value, 0);
               const percent = total > 0 ? Math.round((numericValue / total) * 100) : 0;
-              const displayValue = `${numericValue} (${percent}%)`;
+              const displayValue =`${numericValue} (${percent}%)`;
               return [displayValue, payload?.name ?? name];
             }}
             contentStyle={CHART_TOOLTIP_STYLE}

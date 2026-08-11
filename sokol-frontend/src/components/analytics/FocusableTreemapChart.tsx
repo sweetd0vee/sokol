@@ -82,7 +82,7 @@ function TreemapContent({
             fontWeight={700}
             style={{ pointerEvents: 'none', opacity: labelOpacity }}
           >
-            {name.length > 20 ? `${name.slice(0, 18)}...` : name}
+            {name.length > 20 ?`${name.slice(0, 18)}...` : name}
           </text>
           <text
             x={x + 8}

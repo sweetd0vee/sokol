@@ -28,7 +28,7 @@ export function SegmentedControl<T extends string>({
           className={`inline-flex min-w-[156px] items-center justify-center rounded-lg px-2.5 py-1 text-sm font-medium transition ${
             value === option.value
               ? 'bg-sber-dark text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 '
           } ${buttonClassName}`.trim()}
         >
           {option.label}

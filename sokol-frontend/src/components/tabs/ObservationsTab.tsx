@@ -314,7 +314,7 @@ export function ObservationsTab() {
             key={recommendation.id}
             to={`/recommendations/${recommendation.id}/edit`}
             state={{ recommendation }}
-            className="truncate text-[#003366] underline-offset-2 transition hover:text-[#3B82F6] hover:underline dark:text-sber-light"
+            className="truncate text-[#003366] underline-offset-2 transition hover:text-[#3B82F6] hover:underline"
             title={recommendation.name}
           >
             {recommendation.serial_number}.{recommendation.sequence_number} · {recommendation.name}
@@ -327,7 +327,7 @@ export function ObservationsTab() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-2xl font-bold text-sber-dark text-center sm:text-left dark:text-sber-light">
+        <h2 className="text-2xl font-bold text-sber-dark text-center sm:text-left">
           Наблюдения
         </h2>
         <div className="mx-auto flex w-[334px] shrink-0 items-center justify-center gap-3.5 sm:mx-0 sm:pr-px">
@@ -340,7 +340,7 @@ export function ObservationsTab() {
             className={`${LIST_ACTION_BUTTON_CLASS} transition-colors ${
               showOnlyMe
                 ? 'bg-[#6699FF] text-white border-2 border-[#6699FF]'
-                : 'bg-white text-[#6699FF] border-2 border-[#6699FF] hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white dark:bg-slate-800 dark:text-sber-light dark:border-sber-light'
+                : 'bg-white text-[#6699FF] border-2 border-[#6699FF] hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white '
             }`}
           >
             <User size={18} />
@@ -348,14 +348,14 @@ export function ObservationsTab() {
           </button>
           <Link
             to="/observations/new"
-            className={`${LIST_ACTION_BUTTON_CLASS} bg-[#90EE90] text-gray-700 transition hover:bg-[#7fdc7f] dark:text-slate-900`}
+            className={`${LIST_ACTION_BUTTON_CLASS} bg-[#90EE90] text-gray-700 transition hover:bg-[#7fdc7f]`}
           >
             Создать
           </Link>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <>
           <div className="overflow-x-auto">
             <table className="w-full text-base table-fixed min-w-[1900px]">
@@ -373,7 +373,7 @@ export function ObservationsTab() {
                 <col className="w-[334px]" />
               </colgroup>
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 dark:border-slate-700 dark:bg-slate-700/60">
+                <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="px-2 py-2 font-normal">
                     <Input
                       value={idFilter}
@@ -514,9 +514,9 @@ export function ObservationsTab() {
                   <th className="px-0 py-3 text-center font-medium">Действия</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+              <tbody className="divide-y divide-gray-200">
                 {pagedObservations.map((observation) => (
-                  <tr key={observation.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/70">
+                  <tr key={observation.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">{observation.id}</td>
                     <td className="px-4 py-3 font-medium">{observation.number}</td>
                     <td className="px-4 py-3">{observation.check_serial_number}</td>
@@ -570,7 +570,7 @@ export function ObservationsTab() {
               </tbody>
             </table>
             {filteredObservations.length === 0 && (
-              <div className="border-t border-gray-200 p-6 dark:border-slate-700">
+              <div className="border-t border-gray-200 p-6">
                 <EmptyState
                   title="Наблюдения не найдены"
                   description="Измените фильтры или создайте новое наблюдение."
@@ -578,19 +578,19 @@ export function ObservationsTab() {
               </div>
             )}
           </div>
-          <div className="flex flex-col gap-3 border-t border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700">
-            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-slate-300">
+          <div className="flex flex-col gap-3 border-t border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
               <span className="whitespace-nowrap">
                 Отработка фильтра: {filteredObservations.length} записей
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="whitespace-nowrap text-sm text-gray-600 dark:text-slate-300">
+              <span className="whitespace-nowrap text-sm text-gray-600">
                 {sortedObservations.length > 0
-                  ? `Показано ${(effectiveCurrentPage - 1) * pageSize + 1}–${Math.min(effectiveCurrentPage * pageSize, sortedObservations.length)} из ${sortedObservations.length}`
+                  ?`Показано ${(effectiveCurrentPage - 1) * pageSize + 1}–${Math.min(effectiveCurrentPage * pageSize, sortedObservations.length)} из ${sortedObservations.length}`
                   : 'Показано 0 из 0'}
               </span>
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>Строк на странице:</span>
                 <select
                   value={pageSize}
@@ -598,7 +598,7 @@ export function ObservationsTab() {
                     setPageSize(Number(event.target.value));
                     setCurrentPage(1);
                   }}
-                  className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sber-light dark:focus:ring-sber-light/25"
+                  className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
                 >
                   {[10, 15, 20].map((size) => (
                     <option key={size} value={size}>
@@ -618,7 +618,7 @@ export function ObservationsTab() {
                 >
                   <ChevronLeft size={20} />
                 </button>
-                <span className="text-sm text-gray-700 dark:text-slate-300">
+                <span className="text-sm text-gray-700">
                   Страница {effectiveCurrentPage} из {totalPages}
                 </span>
                 <button

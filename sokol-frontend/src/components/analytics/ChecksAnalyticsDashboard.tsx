@@ -378,7 +378,7 @@ export function ChecksAnalyticsDashboard() {
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[
-              { label: 'Проверок', value: filteredTotal, hint: `из ${universeTotal}` },
+              { label: 'Проверок', value: filteredTotal, hint:`из ${universeTotal}` },
             ]}
             items={[
               {

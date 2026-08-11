@@ -362,7 +362,7 @@ export function RecommendationsTab() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-2xl font-bold text-sber-dark text-center sm:text-left dark:text-sber-light">Рекомендации</h2>
+        <h2 className="text-2xl font-bold text-sber-dark text-center sm:text-left">Рекомендации</h2>
         <div className="mx-auto flex w-[334px] shrink-0 items-center justify-center gap-3.5 sm:mx-0 sm:pr-px">
           <button
             type="button"
@@ -370,7 +370,7 @@ export function RecommendationsTab() {
             className={`${LIST_ACTION_BUTTON_CLASS} transition-colors ${
               showOnlyMe
                 ? 'bg-[#6699FF] text-white border-2 border-[#6699FF]'
-                : 'bg-white text-[#6699FF] border-2 border-[#6699FF] hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white dark:bg-slate-800 dark:text-sber-light dark:border-sber-light'
+                : 'bg-white text-[#6699FF] border-2 border-[#6699FF] hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white '
             }`}
           >
             <User size={18} />
@@ -378,14 +378,14 @@ export function RecommendationsTab() {
           </button>
           <Link
             to="/recommendations/new"
-            className={`${LIST_ACTION_BUTTON_CLASS} bg-[#90EE90] text-gray-700 transition hover:bg-[#7fdc7f] dark:text-slate-900`}
+            className={`${LIST_ACTION_BUTTON_CLASS} bg-[#90EE90] text-gray-700 transition hover:bg-[#7fdc7f]`}
           >
             Создать
           </Link>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="overflow-x-auto">
           <table className="w-full text-base table-fixed min-w-[1800px]">
             <colgroup>
@@ -403,7 +403,7 @@ export function RecommendationsTab() {
               <col className="w-[334px]" />
             </colgroup>
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200 dark:border-slate-700 dark:bg-slate-700/60">
+              <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="px-2 py-2 font-normal">
                   <Input
                     value={idFilter}
@@ -548,9 +548,9 @@ export function RecommendationsTab() {
                 <th className="px-0 py-3 text-center font-medium">Действия</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+            <tbody className="divide-y divide-gray-200">
               {pagedRecommendations.map((recommendation) => (
-                <tr key={recommendation.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/70">
+                <tr key={recommendation.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">{recommendation.id}</td>
                   <td className="px-4 py-3">{recommendation.serial_number}</td>
                   <td className="px-4 py-3 truncate" title={recommendation.name}>
@@ -631,7 +631,7 @@ export function RecommendationsTab() {
             </tbody>
           </table>
           {filteredRecommendations.length === 0 && (
-              <div className="border-t border-gray-200 p-6 dark:border-slate-700">
+              <div className="border-t border-gray-200 p-6">
               <EmptyState
                 title="Рекомендации не найдены"
                 description="Измените фильтры или создайте новую рекомендацию."
@@ -640,21 +640,21 @@ export function RecommendationsTab() {
           )}
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700">
-          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-slate-300">
+        <div className="flex flex-col gap-3 border-t border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={handleExport}
                 disabled={isExporting || sortedRecommendations.length === 0}
-                className="inline-flex w-[160px] items-center justify-center whitespace-nowrap rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-900"
+                className="inline-flex w-[160px] items-center justify-center whitespace-nowrap rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isExporting ? 'Экспорт...' : 'Экспорт'}
               </button>
               <select
                 value={exportFormat}
                 onChange={(event) => setExportFormat(event.target.value as ExportFormat)}
-                className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sber-light dark:focus:ring-sber-light/25"
+                className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
               >
                 {EXPORT_FORMATS.map((format) => (
                   <option key={format.value} value={format.value}>
@@ -668,17 +668,17 @@ export function RecommendationsTab() {
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <span className="whitespace-nowrap text-sm text-gray-600 dark:text-slate-300">
+            <span className="whitespace-nowrap text-sm text-gray-600">
               {sortedRecommendations.length > 0
-                ? `Показано ${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, sortedRecommendations.length)} из ${sortedRecommendations.length}`
+                ?`Показано ${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, sortedRecommendations.length)} из ${sortedRecommendations.length}`
                 : 'Показано 0 из 0'}
             </span>
-            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
               <span>Строк на странице:</span>
               <select
                 value={pageSize}
                 onChange={(event) => setPageSize(Number(event.target.value))}
-                className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sber-light dark:focus:ring-sber-light/25"
+                className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
               >
                 {[10, 15, 20].map((size) => (
                   <option key={size} value={size}>
@@ -698,7 +698,7 @@ export function RecommendationsTab() {
               >
                 <ChevronLeft size={20} />
               </button>
-              <span className="text-sm text-gray-700 dark:text-slate-300">
+              <span className="text-sm text-gray-700">
                 Страница {currentPage} из {totalPages}
               </span>
               <button

@@ -27,7 +27,7 @@ export function MaterialitySelect({
       {label && (
         <label
           className={[
-            'mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300',
+            'mb-1 block text-sm font-medium text-gray-700 ',
             labelClassName,
           ]
             .filter(Boolean)
@@ -41,7 +41,7 @@ export function MaterialitySelect({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           className={[
-            'w-full appearance-none rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-300/40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-400 dark:focus:ring-slate-500/30',
+            'w-full appearance-none rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-300/40 ',
             inputClassName || 'py-2',
           ]
             .filter(Boolean)

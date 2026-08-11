@@ -37,7 +37,7 @@ export function Sidebar() {
             key={id}
             to={path}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
                 isActive
                   ? 'bg-sber-light text-white'
                   : 'text-white/85 hover:bg-[#0066CC] hover:text-white'

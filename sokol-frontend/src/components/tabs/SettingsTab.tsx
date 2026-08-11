@@ -68,7 +68,7 @@ export function SettingsTab() {
   const filteredAuditTypes = filterBySearch(
     auditTypes ?? [],
     auditTypeSearch,
-    (type) => `${type.code} ${type.name}`,
+    (type) =>`${type.code} ${type.name}`,
   );
 
   const handleRequestDelete = (entity: SettingsListKey, key: string, id?: EntityId) => {
@@ -257,7 +257,7 @@ export function SettingsTab() {
             getId={(item) => item.id}
             getValue={(item) => item.label}
             fieldKey="label"
-            searchText={(item) => `${item.code ?? ''} ${item.label}`}
+            searchText={(item) =>`${item.code ?? ''} ${item.label}`}
             onRequestDelete={(key, id) => handleRequestDelete('ratings', key, id)}
           />
         )}

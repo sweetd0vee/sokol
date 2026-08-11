@@ -26,8 +26,8 @@ export function Textarea({
   onBlur,
 }: TextareaProps) {
   const textareaClasses = [
-    'min-h-[3rem] w-full resize-y rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sber-light dark:focus:ring-sber-light/25',
-    readOnly ? 'bg-gray-100 text-gray-800 dark:bg-slate-700 dark:text-slate-200' : '',
+    'min-h-[3rem] w-full resize-y rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 ',
+    readOnly ? 'bg-gray-100 text-gray-800 ' : '',
     inputClassName,
   ]
     .filter(Boolean)
@@ -38,7 +38,7 @@ export function Textarea({
       {label && (
         <label
           className={[
-            'mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300',
+            'mb-1 block text-sm font-medium text-gray-700 ',
             labelClassName,
           ]
             .filter(Boolean)

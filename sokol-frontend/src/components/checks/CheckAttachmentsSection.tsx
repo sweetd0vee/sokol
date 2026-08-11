@@ -47,11 +47,11 @@ function AttachmentCard({ label, fileCount, onOpen }: AttachmentCardProps) {
     <button
       type="button"
       onClick={onOpen}
-      className="flex min-h-[6.5rem] w-full flex-col items-center justify-center gap-2 rounded-lg bg-gray-100 px-2 py-4 text-center leading-relaxed transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/50 dark:bg-slate-700 dark:hover:bg-slate-600"
+      className="flex min-h-[6.5rem] w-full flex-col items-center justify-center gap-2 rounded-lg bg-gray-100 px-2 py-4 text-center leading-relaxed transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/50"
     >
-      <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">{label}</span>
+      <span className="text-sm font-semibold text-gray-800">{label}</span>
       {fileCount > 0 && (
-        <span className="text-xs text-gray-500 dark:text-slate-400">
+        <span className="text-xs text-gray-500">
           {fileCount} {filesWord(fileCount)}
         </span>
       )}
@@ -104,7 +104,7 @@ function AttachmentFilesModal({
           return (
             <div key={group} className="space-y-3">
               <div className="flex flex-wrap items-center justify-start gap-3">
-                <h4 className="text-base font-semibold text-gray-900 dark:text-slate-100">
+                <h4 className="text-base font-semibold text-gray-900">
                   {ATTACHMENT_GROUP_LABELS[group]}
                 </h4>
                 <Button
