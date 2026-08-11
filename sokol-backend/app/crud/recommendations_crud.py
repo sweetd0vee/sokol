@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.recommendations import Recommendation
 from app.schemas.recommendations import RecommendationCreate, RecommendationUpdate
+from app.services.dictionary_validation import validate_recommendation_dictionary_fields
 
 
 def _apply_filters(
@@ -57,6 +58,7 @@ async def create_recommendation(
     check_id: int,
 ) -> Recommendation:
     data = recommendation_in.model_dump(mode="json")
+    await validate_recommendation_dictionary_fields(session, data)
     if not data.get("created_at"):
         data["created_at"] = date.today()
     data["sequence_number"] = await _get_next_sequence_number(session, check_id)
@@ -114,6 +116,7 @@ async def update_recommendation(
     check_id: Optional[int] = None,
 ) -> Recommendation:
     update_data = recommendation_in.model_dump(mode="json", exclude_unset=True)
+    await validate_recommendation_dictionary_fields(session, update_data)
     previous_check_id = recommendation.check_id
 
     if check_id is not None:

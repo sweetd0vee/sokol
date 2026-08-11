@@ -222,6 +222,7 @@ export function RecommendationFormPage() {
       description: descriptionMissing,
       auditObject: !auditObject,
       deadline: !deadline,
+      auditor: !(auditor || checkLeader),
       manager: !manager,
       indicator: !indicator || indicator === 'не указан',
       closureInformation: !closure.closureInformation.trim(),
@@ -233,7 +234,7 @@ export function RecommendationFormPage() {
       ...errors,
       hasErrors: Object.values(errors).some(Boolean),
     };
-  }, [auditObject, closure, deadline, description, indicator, manager]);
+  }, [auditObject, auditor, checkLeader, closure, deadline, description, indicator, manager]);
 
   useEffect(() => {
     if (
@@ -281,8 +282,8 @@ export function RecommendationFormPage() {
   };
 
   const buildPayload = (trimmedDescription: string): Recommendation => {
-    const resolvedAuditor = auditor || checkLeader || navigationState.auditor || 'Не указан';
-    const resolvedManager = manager || 'Не указан';
+    const resolvedAuditor = auditor || checkLeader || navigationState.auditor || '';
+    const resolvedManager = manager;
     const resolvedAuditObject = auditObject || 'Не указан';
     const resolvedSequenceNumber =
       isEditMode && source?.sequence_number ? source.sequence_number : sequenceNumber;
@@ -536,7 +537,12 @@ export function RecommendationFormPage() {
               placeholder="Выберите аудитора"
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
-              inputClassName={FORM_INPUT_CLASS}
+              inputClassName={[
+                FORM_INPUT_CLASS,
+                showValidationErrors && requiredFieldErrors.auditor ? FORM_FIELD_ERROR_CLASS : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             />
             <Select
               label="Объект аудита"

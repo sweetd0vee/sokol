@@ -90,7 +90,7 @@ flowchart TB
 
 1. Требует непустой `settings.database_url`, иначе `RuntimeError`.
 2. Создаёт `FastAPI(title=settings.app_name)`.
-3. CORS из `SOKOL_CORS_ORIGINS` (comma-separated; пусто → `*`).
+3. CORS из `settings.cors_origins` (`SOKOL_CORS_ORIGINS`, comma-separated; пусто → `*`).
 4. Подключает `api_router` → `api_v1_router` с prefix `/api/v1`.
 5. `GET /` → `{service, version: "v1"}`.
 
@@ -117,11 +117,9 @@ flowchart TB
 
 | Символ | Тип | Ответственность |
 |--------|-----|-----------------|
-| `Settings` | `BaseSettings` | `app_name`, `api_v1_prefix`, `database_url`, Ollama URL/model/timeout |
+| `Settings` | `BaseSettings` | `app_name`, `api_v1_prefix`, `database_url`, CORS, Ollama, MinIO, upload limit |
 | `Base` | DeclarativeBase | метаданные ORM |
 | `get_db_session` | async generator | session per request |
-
-Часть настроек **вне** `Settings`: `SOKOL_CORS_ORIGINS`, `SOKOL_MAX_UPLOAD_MB`.
 
 ### ORM (доменные сущности)
 

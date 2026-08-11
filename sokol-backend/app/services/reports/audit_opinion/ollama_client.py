@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import Any
 
 import requests
@@ -51,15 +50,15 @@ class OllamaError(RuntimeError):
 
 
 def _ollama_url() -> str:
-    return (settings.sokol_ollama_url or os.getenv("SOKOL_OLLAMA_URL", "http://localhost:11434")).rstrip("/")
+    return settings.sokol_ollama_url.rstrip("/")
 
 
 def _ollama_model() -> str:
-    return settings.sokol_ollama_model or os.getenv("SOKOL_OLLAMA_MODEL", "qwen3.5:35b")
+    return settings.sokol_ollama_model
 
 
 def _ollama_timeout() -> float:
-    return float(settings.sokol_ollama_timeout_s or os.getenv("SOKOL_OLLAMA_TIMEOUT_S", "600"))
+    return float(settings.sokol_ollama_timeout_s)
 
 
 def default_model() -> str:

@@ -1,5 +1,3 @@
-import os
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -13,11 +11,7 @@ if not settings.database_url:
     )
 
 app = FastAPI(title=settings.app_name)
-cors_raw = os.getenv("SOKOL_CORS_ORIGINS", "").strip()
-if cors_raw:
-    cors_origins = [origin.strip() for origin in cors_raw.split(",") if origin.strip()]
-else:
-    cors_origins = ["*"]
+cors_origins = settings.cors_origins
 
 app.add_middleware(
     CORSMiddleware,

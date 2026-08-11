@@ -13,7 +13,7 @@
 | DOCX pipeline | 6.5/10 |
 | Analytics | 7/10 (checks API) · 4/10 (остальные вкладки ещё на клиенте) |
 | Storage / attachments | 7/10 |
-| Тесты | 6/10 DOCX · 3/10 API/DB/analytics |
+| Тесты | 6/10 DOCX · 5/10 API smoke (analytics/attachments mocked) |
 | Безопасность | 3/10 |
 | Production readiness | 4.5/10 |
 | Согласованность с фронтом | 8/10 |
@@ -61,21 +61,22 @@
 
 ### Medium
 
-#### M1. Конфиг частично размазан
+#### M1. Конфиг частично размазан — закрыто
 
-Часть полей уже в `Settings` (MinIO, upload), CORS всё ещё может читаться через `os.getenv` в `main.py`. Унифицировать.
+CORS / upload / Ollama / MinIO читаются через `Settings` (`app.core.config`). `main.py` использует `settings.cors_origins`.
 
-#### M2. Тесты analytics не в основном раннере
+#### M2. API/DB coverage still shallow
 
-`tests/test_checks_analytics_period.py` — pytest-style `assert`, не `unittest.TestCase` → `unittest discover` их пропускает. Нет API-интеграционных тестов analytics/attachments.
+Есть unittest smoke для `/analytics/*` и `/attachments/*` (моки session/MinIO). Нет integration-тестов на живой Postgres/MinIO и нет полного CRUD smoke.
 
 #### M3. Ad-hoc migrate в entrypoint неполные
 
 Entrypoint гоняет effectiveness + attachments; остальные `migrate_*` зависят от ручного запуска на старых БД.
 
-#### M4. Справочники без FK
+#### M4. Справочники без FK — частично закрыто
 
-Строковые поля домена не валидируются против `auditors` / `check_kinds` / ratings.
+Строковые поля домена по-прежнему без FK; на create/update API валидируются против справочников:
+`check_leader` / `auditor` / `manager` → `auditors`, `check_view` → `check_kinds`, оценки эффективности → `effectiveness_ratings` (400 при неизвестном значении). Bulk import/seed обходят CRUD и не проходят эту проверку.
 
 #### M5. Синхронный DOCX на HTTP worker
 
@@ -105,7 +106,7 @@ Entrypoint гоняет effectiveness + attachments; остальные `migrate
 
 1. Alembic baseline + запрет `create_all` в prod bootstrap.  
 2. Auth (Keycloak) + запрет анонимного API.  
-3. Переписать analytics period tests под unittest **или** добавить pytest в CI; smoke TestClient для `/analytics/checks` и `/attachments`.  
+3. Расширить API smoke до живой Postgres/MinIO в CI; SQL-оптимизация analytics при росте данных.  
 4. SQL-оптимизация analytics при росте данных; API для recommendations/monitoring/DVA.  
 5. Streaming upload + job queue для DOCX.
 

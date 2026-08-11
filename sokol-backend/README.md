@@ -129,8 +129,8 @@ python -m compileall app scripts tests
 python -m unittest discover -s tests
 ```
 
-Тесты покрывают генерацию Раздела II, ДЗ и XML/bookmark-утилиты для `.docx` (**61** test, 1 skipped).  
-Хелперы периодов analytics: `tests/test_checks_analytics_period.py` (pytest-style; не входит в unittest discover).
+Тесты покрывают генерацию Раздела II, ДЗ, XML/bookmark-утилиты, period helpers analytics и HTTP smoke analytics/attachments (**72** test, 1 skipped).  
+Зависимость `httpx` нужна для `fastapi.testclient.TestClient`.
 
 ## Частые проблемы
 

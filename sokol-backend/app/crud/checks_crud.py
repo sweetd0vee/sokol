@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.attachments_crud import list_attachments_by_serial
 from app.models.checks import Check, CheckStatus
 from app.schemas.checks import CheckCreate, CheckUpdate
+from app.services.dictionary_validation import validate_check_dictionary_fields
 from app.services.storage.minio_storage import get_storage
 from app.utils.check_key import CheckKeySeed, generate_check_serial_number
 
@@ -47,6 +48,7 @@ async def _existing_key_seeds(session: AsyncSession) -> list[CheckKeySeed]:
 
 async def create_check(session: AsyncSession, check_in: CheckCreate) -> Check:
     data = check_in.model_dump()
+    await validate_check_dictionary_fields(session, data)
     if not data.get("created_at"):
         data["created_at"] = date.today()
     if not data.get("serial_number"):
@@ -112,6 +114,7 @@ async def update_check(
     session: AsyncSession, check: Check, check_in: CheckUpdate
 ) -> Check:
     update_data = check_in.model_dump(exclude_unset=True)
+    await validate_check_dictionary_fields(session, update_data)
     for field, value in update_data.items():
         setattr(check, field, value)
     session.add(check)

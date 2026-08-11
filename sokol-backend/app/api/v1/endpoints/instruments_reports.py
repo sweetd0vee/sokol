@@ -10,6 +10,7 @@ from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Uploa
 from fastapi.responses import Response
 from pydantic import BaseModel
 
+from app.core.config import settings
 from app.services.reports.audit_opinion import DEFAULT_AUDIT_OPINION_PROMPT
 from app.services.reports.audit_opinion import process_document as process_audit_opinion
 from app.services.reports.audit_opinion.ollama_client import (
@@ -26,7 +27,7 @@ router = APIRouter(prefix="/tools", tags=["tools"])
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 DOCX_EXT = ".docx"
 ALLOWED_MIME = {DOCX_MIME, "application/octet-stream"}
-MAX_UPLOAD_MB = float(os.getenv("SOKOL_MAX_UPLOAD_MB", "100"))
+MAX_UPLOAD_MB = float(settings.sokol_max_upload_mb)
 
 
 def _cleanup_files(*paths: str) -> None:

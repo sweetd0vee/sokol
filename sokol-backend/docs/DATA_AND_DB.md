@@ -108,7 +108,14 @@ erDiagram
   }
 ```
 
-Справочники **не связаны** FK с checks/recommendations: ФИО аудитора, тип проверки и т.п. хранятся как строки в основных таблицах; справочники питают UI-select’ы.
+Справочники **не связаны** FK с checks/recommendations: ФИО аудитора, вид проверки и т.п. хранятся как строки в основных таблицах; справочники питают UI-select’ы.
+
+На **create/update через API** значения проверяются на существование в справочнике (`app/services/dictionary_validation.py`):
+- `check_leader`, `auditor`, `manager` ∈ `auditors.full_name`
+- `check_view` ∈ `check_kinds.label`
+- `*_effectiveness` (если заданы) ∈ `effectiveness_ratings.label`
+
+Неизвестное значение → HTTP 400. Bulk import / demo seed пишут модели напрямую и эту проверку не вызывают.
 
 `attachments` ссылается на сущность логически (`entity_type` + `entity_id`) и на ключ проверки (`check_serial_number` → bucket `check-{serial}`).
 

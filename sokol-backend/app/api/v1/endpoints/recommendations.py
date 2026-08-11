@@ -19,6 +19,7 @@ from app.schemas.recommendations import (
     RecommendationRead,
     RecommendationUpdate,
 )
+from app.services.dictionary_validation import DictionaryRefError
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
@@ -31,7 +32,10 @@ async def create_recommendation_endpoint(
     check = await get_check_by_serial(session, recommendation_in.serial_number)
     if not check:
         raise HTTPException(status_code=400, detail="Проверка с указанным ключом не найдена.")
-    return await create_recommendation(session, recommendation_in, check_id=check.id)
+    try:
+        return await create_recommendation(session, recommendation_in, check_id=check.id)
+    except DictionaryRefError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("", response_model=RecommendationListResponse)
@@ -85,12 +89,15 @@ async def update_recommendation_endpoint(
             raise HTTPException(status_code=400, detail="Проверка с указанным ключом не найдена.")
         check_id = check.id
 
-    return await update_recommendation(
-        session,
-        recommendation,
-        recommendation_in,
-        check_id=check_id,
-    )
+    try:
+        return await update_recommendation(
+            session,
+            recommendation,
+            recommendation_in,
+            check_id=check_id,
+        )
+    except DictionaryRefError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.delete("/{recommendation_id}", status_code=status.HTTP_204_NO_CONTENT)

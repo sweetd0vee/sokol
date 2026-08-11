@@ -251,7 +251,7 @@ gantt
 | **Наблюдения, канцлер** | Наблюдения: демо-таблица; канцлер: stub | Нет backend для наблюдений/канцлера |
 | **Legacy** | `sokol-instruments/` | Не основной стек |
 
-**Тесты backend:** 61 unittest (1 skipped), фокус на DOCX; analytics period helpers — pytest-style вне discover.  
+**Тесты backend:** 72 unittest (1 skipped) — DOCX + analytics period + API smoke (analytics/attachments с моками).  
 **Тесты frontend:** Vitest (`npm test`), покрытие пока узкое.
 
 ---

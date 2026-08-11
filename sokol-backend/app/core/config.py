@@ -56,5 +56,13 @@ class Settings(BaseSettings):
     def max_upload_bytes(self) -> int:
         return max(1, self.sokol_max_upload_mb) * 1024 * 1024
 
+    @property
+    def cors_origins(self) -> list[str]:
+        """Comma-separated SOKOL_CORS_ORIGINS; empty → allow all (`*`)."""
+        raw = self.sokol_cors_origins.strip()
+        if not raw:
+            return ["*"]
+        return [origin.strip() for origin in raw.split(",") if origin.strip()] or ["*"]
+
 
 settings = Settings()

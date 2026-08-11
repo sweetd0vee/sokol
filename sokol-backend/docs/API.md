@@ -42,6 +42,8 @@ Auth: **отсутствует**. Все endpoints открыты.
 **Поля create/read (основные):**  
 `serial_number`, `check_name`, `short_name?`, `check_type`, `check_view`, `start_date`, `end_date?`, `check_leader`, `status`, `created_at`, `description?`, оценки эффективности (`process_effectiveness`, `svk_effectiveness`, `sur_effectiveness`, `svik_effectiveness`), документы приказа/программы/АЗ/ДЗ (`*_document_number`, `*_document_date`).
 
+**Валидация справочников (create/PATCH):** `check_leader` ∈ auditors, `check_view` ∈ check_kinds, непустые `*_effectiveness` ∈ effectiveness_ratings; иначе **400**.
+
 ---
 
 ## Analytics — `/api/v1/analytics`
@@ -98,6 +100,8 @@ Auth: **отсутствует**. Все endpoints открыты.
 | `additional_status` | `on_time`, `deadline_violated`, `on_control` |
 
 Дополнительно: `sequence_number`, `description`, `indicator`, `materiality_level`, поля продлений и снятия с контроля, `closure_*`.
+
+**Валидация справочников (create/PATCH):** `auditor` и `manager` ∈ auditors; иначе **400**.
 
 Фильтры списка — см. endpoint/crud (`check_id`, `search`, статусы и т.д. в коде `recommendations.py`).
 

@@ -38,7 +38,7 @@ FastAPI-сервис внутреннего аудита «Сокол»:
 | Object storage | MinIO (S3-compatible) |
 | DOCX | `python-docx` + низкоуровневый ZIP/XML |
 | LLM | Ollama (`qwen3.5:35b` по умолчанию) |
-| Тесты | `unittest` — **61** (1 skipped); фокус DOCX. Файл `test_checks_analytics_period.py` — pytest-style, в unittest discover не входит |
+| Тесты | `unittest` — **72** (1 skipped); DOCX + analytics period + API smoke |
 
 ## Порты
 

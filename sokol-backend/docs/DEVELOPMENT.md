@@ -36,13 +36,13 @@ SOKOL_CORS_ORIGINS=http://localhost:5180
 
 ## Env
 
-Файлы: `.env`, `.secrets/sokol.env` (см. `Settings` + `os.getenv`).
+Файлы: `.env`, `.secrets/sokol.env` (все через `Settings` в `app.core.config`).
 
 | Переменная | Где читается | Назначение |
 |------------|--------------|------------|
 | `DATABASE_URL` | `Settings` | asyncpg URL (обязательно) |
-| `SOKOL_CORS_ORIGINS` | `Settings` / `main.py` | origins через запятую |
-| `SOKOL_MAX_UPLOAD_MB` | `Settings` / tools | лимит upload (default 100) |
+| `SOKOL_CORS_ORIGINS` | `Settings.cors_origins` | origins через запятую; пусто → `*` |
+| `SOKOL_MAX_UPLOAD_MB` | `Settings` | лимит upload (default 100) |
 | `SOKOL_OLLAMA_URL` | `Settings` | Ollama base URL |
 | `SOKOL_OLLAMA_MODEL` | `Settings` | модель по умолчанию |
 | `SOKOL_OLLAMA_TIMEOUT_S` | `Settings` | timeout LLM (default 600) |
@@ -90,8 +90,8 @@ python -m compileall app scripts tests
 python -m unittest discover -s tests
 ```
 
-На момент обновления docs: **61 tests** (1 skipped); фокус — section_ii / memorandum / bookmarks / links.  
-`tests/test_checks_analytics_period.py` написан в pytest-стиле и **не** подхватывается `unittest discover` — либо переписать в `TestCase`, либо гонять через pytest.
+На момент обновления docs: **72 tests** (1 skipped); фокус — section_ii / memorandum / bookmarks / links + analytics period helpers + API smoke (analytics/attachments с моками).  
+Для TestClient добавлен `httpx` в `requirements.txt`.
 
 Нет обязательного CI pipeline в репозитории.
 
@@ -110,10 +110,13 @@ python -m unittest discover -s tests
 
 ```
 tests/
+  test_api_analytics.py
+  test_api_attachments.py
+  test_checks_analytics_period.py
   test_section_ii_parser.py
   test_bookmark_utils.py
   test_observation_links.py
   test_memorandum.py
 ```
 
-CRUD/API/DB integration tests пока отсутствуют.
+API smoke-тесты мокают DB/MinIO через `TestClient` + `dependency_overrides` (без живой Postgres).

@@ -14,6 +14,7 @@ from app.crud.checks_crud import (
 from app.db.session import get_db_session
 from app.models.checks import CheckStatus
 from app.schemas.checks import CheckCreate, CheckListResponse, CheckRead, CheckUpdate
+from app.services.dictionary_validation import DictionaryRefError
 
 
 router = APIRouter(prefix="/checks", tags=["checks"])
@@ -24,7 +25,10 @@ async def create_check_endpoint(
     check_in: CheckCreate,
     session: AsyncSession = Depends(get_db_session),
 ) -> CheckRead:
-    return await create_check(session, check_in)
+    try:
+        return await create_check(session, check_in)
+    except DictionaryRefError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("", response_model=CheckListResponse)
@@ -73,7 +77,10 @@ async def update_check_endpoint(
     check = await get_check(session, check_id)
     if not check:
         raise HTTPException(status_code=404, detail="Проверка не найдена.")
-    return await update_check(session, check, check_in)
+    try:
+        return await update_check(session, check, check_in)
+    except DictionaryRefError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.delete("/{check_id}", status_code=status.HTTP_204_NO_CONTENT)
