@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Одностраничное приложение внутреннего аудита: CRUD проверок/рекомендаций, справочники, клиентский экспорт таблиц, клиентские дашборды аналитики, демо-таблица наблюдений, вызов backend DOCX-tools (включая аудиторское мнение через Ollama), заготовки формы наблюдений/планирования/канцлера и профиль.
+Одностраничное приложение внутреннего аудита: CRUD проверок/рекомендаций, справочники, клиентский экспорт таблиц, гибридная аналитика (checks API + клиентские вкладки), планирование охвата, вложения через API/MinIO, демо-таблица наблюдений, вызов backend DOCX-tools, заготовки наблюдений/канцлера и профиль.
 
 ## Структура `src/`
 
@@ -18,6 +18,7 @@ src/
 │   ├── recommendations/     # Form, closure, selects
 │   ├── observations/        # ObservationFormPage (форма-заготовка)
 │   ├── analytics/           # Checks/Recommendations/Monitoring/DVA dashboards, chart primitives
+│   ├── planning/            # PlanningAnalyticsDashboard
 │   ├── attachments/         # FileAttachmentsPanel
 │   ├── tools/               # DocxToolPanel, AuditOpinionPanel
 │   ├── settings/            # table card, actions, helpers
@@ -59,7 +60,7 @@ flowchart TB
 | `/recommendations`, `.../new`, `.../:id/edit` | list / form | protected |
 | `/observations`, `.../new`, `.../:id/edit` | демо-список / заглушка формы (без API) | protected |
 | `/analytics` | `AnalyticsTab` | protected |
-| `/planning` | stub | protected |
+| `/planning` | `PlanningTab` (клиентские дашборды) | protected |
 | `/tools` | `ToolsTab` | protected |
 | `/kantsler` | stub | protected |
 | `/settings` | `SettingsTab` | protected |
@@ -192,18 +193,21 @@ flowchart TB
 ### Аналитика
 
 - `AnalyticsTab` — вкладки «Проверки» / «Рекомендации» / «Мониторинг» / «ДВА».
-- Данные из `SokolDataContext` (уже загруженные checks/recommendations); отдельного analytics API **нет**.
-- Агрегации: `utils/checkAnalytics.ts`, `utils/recommendationAnalytics.ts`, период — `utils/analyticsPeriod.ts`.
-- Дашборды: `ChecksAnalyticsDashboard`, `RecommendationsAnalyticsDashboard`, `MonitoringAnalyticsDashboard`, `DvaAnalyticsDashboard` (Recharts + grid layout).
-- Карточки можно переставлять; layout хранится в `localStorage` по ключам `sokol.analytics.layout.*`.
-- Экспорт: `utils/analyticsExport.ts`, `utils/analyticsVisualExport.ts` (XLSX / PDF / визуальные отчёты).
-- Подробное описание карточек и бизнес-смысла: [ANALYTICS.md](ANALYTICS.md).
+- **Проверки:** `GET /api/v1/analytics/checks` (`api/analytics.ts`, `ChecksAnalyticsDashboard`).
+- **Остальные вкладки:** агрегаты из `SokolDataContext` (`checkAnalytics` / `recommendationAnalytics` / `analyticsPeriod`).
+- Сетка: `AnalyticsDashboardGrid` — **статическая** (`static: true`, без `localStorage` layout).
+- Экспорт: `analyticsExport` → `analyticsVisualExport` + `dashboardChartRegistry` — форматы **xlsx / pdf / docx / html**.
+- Подробности: [ANALYTICS.md](ANALYTICS.md).
+
+### Планирование
+
+- `PlanningTab` + `PlanningAnalyticsDashboard` — клиентские дашборды охвата; см. [PLANNING.md](PLANNING.md).
+- Экспорт в UI пока отключён (`canExport={false}`).
 
 ### Наблюдения
 
-- `ObservationsTab` сейчас показывает демо-набор наблюдений из аудиторского заключения и связывает строки с существующими рекомендациями через ссылки на карточки рекомендаций.
-- Демо-данные лежат в `src/data/demoObservations.ts`.
-- `ObservationFormPage` остается заглушкой до появления backend CRUD/API.
+- `ObservationsTab` — демо-набор из `src/data/demoObservations.ts`.
+- `ObservationFormPage` — заглушка до backend CRUD.
 
 ### Экспорт таблиц (клиент)
 
@@ -312,12 +316,13 @@ sequenceDiagram
 ## Явные ограничения архитектуры
 
 1. Таблицы фильтруются **на клиенте** после bulk-fetch (500/1000) — не server-driven pagination UI.
-2. Вложения не персистятся.
-3. Аналитика считается **на клиенте** по уже загруженным данным — нет серверных агрегатов и отдельного analytics API.
+2. Вложения персистятся через `/api/v1/attachments` + MinIO при настроенном storage; без MinIO upload недоступен.
+3. Analytics: серверные агрегаты есть только для вкладки «Проверки»; остальные вкладки ограничены объёмом SokolData.
 4. Auth stub — нет защиты API.
-5. «Наблюдения» — демо-таблица без backend CRUD/API; форма, «Планирование» и «Канцлер» — заглушки.
-6. Нет frontend unit/e2e test script в `package.json`.
+5. «Наблюдения» — демо-таблица без backend CRUD; «Канцлер» — заглушка. Планирование — рабочие клиентские дашборды.
+6. Есть Vitest (`npm test`); e2e (Playwright) в CI пока нет.
 
 ## Связь с backend docs
 
-Подробности контрактов и DOCX: `sokol-backend/docs/API.md`, `REPORTS.md`, `ARCHITECTURE.md`.
+Контракты и DOCX: `sokol-backend/docs/API.md`, `REPORTS.md`, `ARCHITECTURE.md`.  
+БД / миграции / бэкапы: `sokol-backend/docs/ALEMBIC_AND_DATA.md`, `DATA_AND_DB.md`, `STORAGE.md`.

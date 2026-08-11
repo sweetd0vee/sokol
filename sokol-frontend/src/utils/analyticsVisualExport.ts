@@ -26,10 +26,13 @@ import {
 } from '../constants/analyticsExportSections';
 import {
   captureDashboardCharts,
+  chartHasPngPayload,
   isUsefulSvgMarkup,
+  namespaceSvgMarkupForEmbed,
   type DashboardChartCapture,
 } from './dashboardChartRegistry';
 import {
+  buildEffectivenessMatrixHtmlMarkup,
   EFFECTIVENESS_MATRIX_COLUMNS,
   getEffectivenessToneColor,
   type EffectivenessMatrixRow,
@@ -498,6 +501,35 @@ function escapeHtml(value: string) {
     .replaceAll("'", '&#39;');
 }
 
+function orderChartsBySelection(
+  charts: DashboardChartCapture[],
+  selectedSections: string[],
+): DashboardChartCapture[] {
+  const order = new Map(selectedSections.map((id, index) => [id, index]));
+  return [...charts].sort((left, right) => (order.get(left.id) ?? 999) - (order.get(right.id) ?? 999));
+}
+
+function resolveHtmlChartBody(chart: DashboardChartCapture, index: number): string {
+  const prefersHtml =
+    chart.id === 'effectivenessMatrix'
+    || chart.htmlMarkup?.includes('class="chart-html"')
+    || chart.htmlMarkup?.includes('class="kpi-strip"');
+  if (prefersHtml && chart.htmlMarkup) {
+    return chart.htmlMarkup;
+  }
+  if (chartHasPngPayload(chart.dataUrl)) {
+    return `<img class="chart-img" src="${chart.dataUrl}" alt="${escapeHtml(chart.title)}" width="${chart.width}" height="${chart.height}" />`;
+  }
+  if (isUsefulSvgMarkup(chart.svgMarkup)) {
+    const namespacedSvg = namespaceSvgMarkupForEmbed(chart.svgMarkup, `chart-${index}-${chart.id}`);
+    return `<div class="chart-svg" data-chart-index="${index}">${namespacedSvg}</div>`;
+  }
+  if (chart.htmlMarkup) {
+    return chart.htmlMarkup;
+  }
+  return '<p class="chart-empty" style="margin:0;padding:18px 0;text-align:center;color:#64748b;font-size:0.9rem">Не удалось отобразить график</p>';
+}
+
 async function buildVisualHtml(options: {
   documentTitle: string;
   meta: VisualExportMetaRow[];
@@ -517,15 +549,7 @@ async function buildVisualHtml(options: {
 
   const chartSections = charts
     .map((chart, index) => {
-      // Prefer validated SVG (+ legend), then real HTML blocks (tables/KPI), else PNG.
-      let chartBody: string;
-      if (isUsefulSvgMarkup(chart.svgMarkup)) {
-        chartBody = `<div class="chart-svg" data-chart-index="${index}">${chart.svgMarkup}</div>`;
-      } else if (chart.htmlMarkup) {
-        chartBody = chart.htmlMarkup;
-      } else {
-        chartBody = `<img class="chart-img" src="${chart.dataUrl}" alt="${escapeHtml(chart.title)}" width="${chart.width}" height="${chart.height}" />`;
-      }
+      const chartBody = resolveHtmlChartBody(chart, index);
       return `
       <section class="card" id="chart-${escapeHtml(chart.id)}">
         <header>
@@ -733,6 +757,58 @@ async function buildVisualHtml(options: {
       background: transparent;
       width: auto;
       font-weight: inherit;
+    }
+    .chart-html [data-export-html] {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chart-html [data-effectiveness-matrix-footer] {
+      display: grid;
+      grid-template-columns: 16% 40% 11% 11% 11% 11%;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      background: #f8fafc;
+    }
+    .chart-html [data-effectiveness-matrix-footer] > div:first-child {
+      grid-column: 1 / span 2;
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+    .chart-html [data-effectiveness-matrix-footer] > div:not(:first-child) {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 2px;
+      min-width: 0;
+    }
+    .chart-html [data-effectiveness-matrix-footer] > div:not(:first-child) > div {
+      max-width: 100%;
+    }
+    .chart-html [data-effectiveness-matrix-legend] {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .chart-html [data-effectiveness-matrix-legend] li {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .chart-html svg.recharts-surface {
+      display: block;
+      margin: 0 auto;
     }
     .kpi-strip {
       display: grid;
@@ -947,6 +1023,45 @@ async function buildVisualHtml(options: {
   URL.revokeObjectURL(url);
 }
 
+function enrichEffectivenessMatrixCapture(
+  charts: DashboardChartCapture[],
+  rows: EffectivenessMatrixRow[] | undefined,
+  selected: boolean,
+): DashboardChartCapture[] {
+  if (!selected || !rows?.length) {
+    return charts;
+  }
+
+  const htmlMarkup = buildEffectivenessMatrixHtmlMarkup(rows);
+  const matrixMeta = {
+    id: 'effectivenessMatrix',
+    title: 'Оценка эффективности',
+    description: 'Матрица оценок по проверкам за период',
+    width: 960,
+    height: 540,
+  } as const;
+
+  const index = charts.findIndex((chart) => chart.id === 'effectivenessMatrix');
+  if (index >= 0) {
+    const next = [...charts];
+    next[index] = {
+      ...next[index],
+      htmlMarkup,
+      svgMarkup: undefined,
+    };
+    return next;
+  }
+
+  return [
+    ...charts,
+    {
+      ...matrixMeta,
+      dataUrl: '',
+      htmlMarkup,
+    },
+  ];
+}
+
 export async function exportVisualAnalyticsReport(options: {
   format: 'xlsx' | 'pdf' | 'docx' | 'html';
   kind: VisualAnalyticsKind;
@@ -956,12 +1071,22 @@ export async function exportVisualAnalyticsReport(options: {
   selectedSections: string[];
   effectivenessMatrix?: EffectivenessMatrixRow[];
 }) {
-  const charts = await captureDashboardCharts(options.selectedSections, {
-    // HTML uses SVG/HTML markup; skipping PNG avoids html-to-image failures (oklch/lab CSS).
-    skipPng: options.format === 'html',
+  const capturedCharts = await captureDashboardCharts(options.selectedSections, {
+    // Keep PNG snapshots for HTML too — several inline SVGs otherwise clash on duplicate ids.
+    skipPng: false,
   });
+  const charts = orderChartsBySelection(
+    options.format === 'html'
+      ? enrichEffectivenessMatrixCapture(
+          capturedCharts,
+          options.effectivenessMatrix,
+          options.selectedSections.includes('effectivenessMatrix'),
+        )
+      : capturedCharts,
+    options.selectedSections,
+  );
   const canExportMatrixOnly =
-    options.format === 'xlsx'
+    (options.format === 'xlsx' || options.format === 'html')
     && Boolean(options.effectivenessMatrix?.length)
     && options.selectedSections.includes('effectivenessMatrix');
   if (charts.length === 0 && !canExportMatrixOnly) {
@@ -970,9 +1095,7 @@ export async function exportVisualAnalyticsReport(options: {
     );
   }
 
-  const chartsWithPng = charts.filter(
-    (chart) => chart.dataUrl.startsWith('data:image/png;base64,') && Boolean(chart.dataUrl.split(',')[1]),
-  );
+  const chartsWithPng = charts.filter((chart) => chartHasPngPayload(chart.dataUrl));
 
   if (options.format === 'pdf') {
     if (chartsWithPng.length === 0) {

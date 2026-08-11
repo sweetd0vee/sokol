@@ -312,6 +312,124 @@ export type EffectivenessColumnShare = {
   percent: number;
 };
 
+function escapeEffectivenessHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+const EFFECTIVENESS_EXPORT_PIE_SIZE_PX = 52;
+
+function buildEffectivenessSharePie(shares: EffectivenessColumnShare[]) {
+  if (shares.length === 0) {
+    return '<span style="color:#94a3b8;font-size:12px">—</span>';
+  }
+
+  let cursor = 0;
+  const gradientStops = shares
+    .map((share) => {
+      const start = cursor;
+      cursor += share.percent;
+      return `${share.color} ${start}% ${cursor}%`;
+    })
+    .join(', ');
+
+  const legend = shares
+    .map(
+      (share) =>
+        `<li style="display:flex;align-items:center;justify-content:center;gap:4px;font-size:10px;line-height:1.15">
+          <span style="width:6px;height:6px;border-radius:50%;background:${share.color};flex-shrink:0"></span>
+          <span style="font-weight:600">${share.percent}%</span>
+        </li>`,
+    )
+    .join('');
+
+  const size = EFFECTIVENESS_EXPORT_PIE_SIZE_PX;
+  return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;max-width:100%">
+    <div style="width:${size}px;height:${size}px;border-radius:50%;background:conic-gradient(${gradientStops});flex-shrink:0"></div>
+    <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px">${legend}</ul>
+  </div>`;
+}
+
+/** Self-contained HTML for effectiveness matrix export (no Tailwind / Recharts required). */
+export function buildEffectivenessMatrixHtmlMarkup(rows: EffectivenessMatrixRow[]): string {
+  if (rows.length === 0) {
+    return '<div class="chart-html"><p style="margin:0;color:#64748b;font-size:14px">Нет данных</p></div>';
+  }
+
+  const columnShares = Object.fromEntries(
+    EFFECTIVENESS_MATRIX_COLUMNS.map((column) => [
+      column.key,
+      buildEffectivenessColumnShares(rows, column.key),
+    ]),
+  ) as Record<EffectivenessColumnKey, EffectivenessColumnShare[]>;
+
+  const headerCells = EFFECTIVENESS_MATRIX_COLUMNS.map(
+    (column) =>
+      `<th style="padding:8px 4px;text-align:center;font-weight:600">${escapeEffectivenessHtml(column.label)}</th>`,
+  ).join('');
+
+  const bodyRows = rows
+    .map((row) => {
+      const toneCells = EFFECTIVENESS_MATRIX_COLUMNS.map((column) => {
+        const color = getEffectivenessToneColor(row.tones[column.key]);
+        const rating = row.ratings[column.key] || 'Не оценивалось';
+        return `<td style="padding:8px 4px;text-align:center" title="${escapeEffectivenessHtml(`${column.label}: ${rating}`)}">
+          <span style="display:inline-block;width:14px;height:14px;border-radius:2px;background:${color};border:1px solid rgba(0,0,0,0.1)"></span>
+        </td>`;
+      }).join('');
+
+      return `<tr style="border-bottom:1px solid #f3f4f6">
+        <th style="padding:6px 12px;text-align:left;font-weight:500" title="${escapeEffectivenessHtml(row.name)}">${escapeEffectivenessHtml(row.key)}</th>
+        <td style="padding:6px 12px;text-align:left;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeEffectivenessHtml(row.shortName || row.name)}">${escapeEffectivenessHtml(row.shortName || '—')}</td>
+        ${toneCells}
+      </tr>`;
+    })
+    .join('');
+
+  const footerPies = EFFECTIVENESS_MATRIX_COLUMNS.map(
+    (column) =>
+      `<div style="display:flex;align-items:center;justify-content:center;padding:8px 2px;min-width:0">${buildEffectivenessSharePie(columnShares[column.key])}</div>`,
+  ).join('');
+
+  const legend = EFFECTIVENESS_LEGEND.map(
+    (item) =>
+      `<li style="display:inline-flex;align-items:center;gap:6px">
+        <span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:${item.color};border:1px solid rgba(0,0,0,0.1)"></span>
+        <span>${escapeEffectivenessHtml(item.label)}</span>
+      </li>`,
+  ).join('');
+
+  return `<div class="chart-html"><div data-export-html style="display:flex;flex-direction:column;gap:8px">
+    <div style="border:1px solid #f3f4f6;border-radius:8px;overflow:hidden">
+      <div style="overflow:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed">
+          <colgroup>
+            <col style="width:16%" />
+            <col style="width:40%" />
+            ${EFFECTIVENESS_MATRIX_COLUMNS.map(() => '<col style="width:11%" />').join('')}
+          </colgroup>
+          <thead>
+            <tr style="border-bottom:1px solid #f3f4f6;background:#fff">
+              <th style="padding:8px 12px;text-align:left;font-weight:600">Ключ</th>
+              <th style="padding:8px 12px;text-align:left;font-weight:600">Краткое название</th>
+              ${headerCells}
+            </tr>
+          </thead>
+          <tbody>${bodyRows}</tbody>
+        </table>
+      </div>
+      <div data-effectiveness-matrix-footer style="display:grid;grid-template-columns:16% 40% 11% 11% 11% 11%;align-items:center;border-top:1px solid #e5e7eb;background:#f9fafb">
+        <div style="grid-column:1 / span 2;display:flex;align-items:center;padding:8px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#6b7280">Доля оценок</div>
+        ${footerPies}
+      </div>
+    </div>
+    <ul data-effectiveness-matrix-legend style="display:flex;flex-wrap:wrap;gap:8px 12px;list-style:none;padding:0;margin:0;font-size:12px;color:#4b5563">${legend}</ul>
+  </div></div>`;
+}
+
 export function buildEffectivenessColumnShares(
   rows: EffectivenessMatrixRow[],
   columnKey: EffectivenessColumnKey,

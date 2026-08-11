@@ -63,11 +63,11 @@
 Как аналитик или руководитель ДВА, я хочу видеть сводки по проверкам, рекомендациям, мониторингу и портфелю ДВА.
 
 - Вкладки «Проверки» / «Рекомендации» / «Мониторинг» / «ДВА» (`AnalyticsTab`).
-- Данные из уже загруженного `SokolDataContext` (checks + recommendations); **отдельного analytics API нет**.
-- Фильтры периода и срезы на клиенте (`checkAnalytics` / `recommendationAnalytics`).
-- Дашборды переставляются в grid layout; пользователь может выбрать секции для экспорта.
-- Экспорт дашбордов: таблицы и визуальные отчёты (`analyticsExport` / `analyticsVisualExport`).
-- Бизнес-смысл карточек и полный перечень дашбордов: [ANALYTICS.md](ANALYTICS.md).
+- **Проверки:** серверный `GET /api/v1/analytics/checks` (агрегация по всей БД).
+- **Остальные вкладки:** данные из `SokolDataContext` (checks ≤ 500, recommendations ≤ 1000).
+- Фильтры периода на клиенте; сетка карточек статическая.
+- Выбор секций и экспорт: XLSX / PDF / DOCX / HTML (`analyticsExport` / `analyticsVisualExport`).
+- Бизнес-смысл карточек: [ANALYTICS.md](ANALYTICS.md).
 
 ### US-10 Инструменты
 
@@ -94,7 +94,10 @@
 
 ### US-14 Планирование
 
-- Заглушка «в разработке» (`/planning`).
+- Рабочие клиентские дашборды охвата (`PlanningTab` / `PlanningAnalyticsDashboard`).
+- Фильтры: год / квартал / месяц, департаменты.
+- Экспорт пока отключён в UI.
+- Подробности: [PLANNING.md](PLANNING.md).
 
 ---
 
@@ -146,13 +149,15 @@ sequenceDiagram
 sequenceDiagram
   participant U as Пользователь
   participant AT as AnalyticsTab
+  participant API as GET /analytics/checks
   participant SD as SokolDataContext
-  participant Dash as Analytics Dashboards
+  participant Dash as Dashboards
   U->>AT: открыть аналитику
-  AT->>SD: checks + recommendations
-  AT->>Dash: Проверки / Рекомендации / Мониторинг / ДВА
-  U->>Dash: экспорт XLSX/PDF
-  Note over Dash: без analytics API
+  AT->>API: вкладка Проверки (фильтры)
+  API-->>AT: KPI + series + matrix
+  AT->>SD: другие вкладки (recs/monitoring/DVA)
+  AT->>Dash: рендер карточек
+  U->>Dash: экспорт XLSX/PDF/DOCX/HTML
 ```
 
 ### DOCX tools

@@ -104,8 +104,9 @@ sokol/
 | [sokol-backend/README.md](sokol-backend/README.md) | Env, Docker, тесты API |
 | [sokol-frontend/README.md](sokol-frontend/README.md) | Скрипты, env, маршруты |
 | [sokol-backend/docs/](sokol-backend/docs/README.md) | Архитектура и API backend |
+| [sokol-backend/docs/ALEMBIC_AND_DATA.md](sokol-backend/docs/ALEMBIC_AND_DATA.md) | Миграции, загрузка данных, бэкапы |
 | [sokol-frontend/docs/](sokol-frontend/docs/README.md) | Архитектура и UX frontend |
-| [sokol-frontend/docs/ANALYTICS.md](sokol-frontend/docs/ANALYTICS.md) | Подробное описание аналитики, дашбордов и бизнес-смысла |
+| [sokol-frontend/docs/ANALYTICS.md](sokol-frontend/docs/ANALYTICS.md) | Аналитика, дашборды, экспорт |
 | [sokol-instruments/README.md](sokol-instruments/README.md) | Legacy Streamlit (только для справки) |
 
 ## Go-live
@@ -115,14 +116,15 @@ sokol/
 
 ## Текущие возможности
 
-- **Проверки** — список, фильтры, сортировка, создание/редактирование, экспорт таблицы, импорт рекомендаций из АЗ, блок вложений (локально в браузере).
-- **Рекомендации** — список, фильтры, сортировка, создание/редактирование, экспорт; контрольная зона (срок исполнения, снятие с контроля, перенос срока); подсветка статусов как в таблице.
+- **Проверки** — список, фильтры, сортировка, создание/редактирование, экспорт таблицы, импорт рекомендаций из АЗ, вложения через API/MinIO.
+- **Рекомендации** — список, фильтры, сортировка, создание/редактирование, экспорт; контрольная зона (срок исполнения, снятие с контроля, перенос срока).
 - **Наблюдения** — демо-таблица наблюдений из АЗ со связями на рекомендации; форма и backend CRUD/API пока отсутствуют.
-- **Аналитика** — клиентские дашборды «Проверки», «Рекомендации», «Мониторинг», «ДВА» из уже загруженных данных; фильтры, переставляемые карточки, выбор секций и экспорт. Подробно: [ANALYTICS.md](sokol-frontend/docs/ANALYTICS.md).
+- **Аналитика** — вкладка «Проверки» через `GET /api/v1/analytics/checks`; «Рекомендации» / «Мониторинг» / «ДВА» — клиентские дашборды; экспорт XLSX/PDF/DOCX/HTML. Подробно: [ANALYTICS.md](sokol-frontend/docs/ANALYTICS.md).
+- **Планирование** — клиентские дашборды охвата ([PLANNING.md](sokol-frontend/docs/PLANNING.md)); экспорт пока отключён.
 - **Инструменты** — Раздел II АЗ (± гиперссылки), докладная записка (ДЗ), раздел I «Аудиторское мнение» через Ollama.
 - **Настройки** — справочники аудиторов, видов аудита, видов проверок, оценок эффективности.
 - **Профиль** — ФИО и аватар (localStorage); UI смены пароля без API.
-- **Планирование**, **Канцлер** — заглушки «в разработке».
+- **Канцлер** — заглушка «в разработке».
 
 Общие UI-токены форм: `sokol-frontend/src/constants/formLayout.ts` (см. [UI_STANDARDS.md](sokol-frontend/docs/UI_STANDARDS.md)).
 
@@ -133,6 +135,7 @@ Frontend:
 ```bash
 cd sokol-frontend
 npm run lint
+npm test
 npm run build
 ```
 
@@ -144,6 +147,7 @@ python -m compileall app scripts tests
 python -m unittest discover -s tests
 ```
 
+Документация БД / миграций / бэкапов: [sokol-backend/docs/ALEMBIC_AND_DATA.md](sokol-backend/docs/ALEMBIC_AND_DATA.md).
 ---
 
 ## Частые проблемы

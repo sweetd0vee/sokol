@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
+    analytics,
     attachments,
     audit_types,
     auditors,
@@ -16,6 +17,7 @@ from app.api.v1.endpoints import (
 api_v1_router = APIRouter()
 api_v1_router.include_router(health.router, tags=["health"])
 api_v1_router.include_router(instruments_reports.router)
+api_v1_router.include_router(analytics.router)
 api_v1_router.include_router(checks.router)
 api_v1_router.include_router(recommendations.router)
 api_v1_router.include_router(attachments.router)

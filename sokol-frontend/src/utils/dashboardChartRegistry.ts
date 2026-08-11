@@ -23,7 +23,7 @@ type ChartRegistration = {
 const chartRegistry = new Map<string, Set<ChartRegistration>>();
 
 function hasPngPayload(dataUrl: string) {
-  return dataUrl.startsWith('data:image/png;base64,') && Boolean(dataUrl.split(',')[1]);
+  return chartHasPngPayload(dataUrl);
 }
 
 function delay(ms: number) {
@@ -211,6 +211,42 @@ function rewriteFragmentIds(markup: string, uid: string): string {
     id.startsWith(`${uid}-`) ? `${prefix}${id}${suffix}` : `${prefix}${uid}-${id}${suffix}`,
   );
   return next;
+}
+
+/** Re-namespace SVG ids when several chart SVGs are embedded in one HTML page. */
+export function namespaceSvgMarkupForEmbed(markup: string, namespace: string): string {
+  const safeNamespace = namespace.replace(/[^a-zA-Z0-9_-]/g, '') || 'chart';
+  const legendMarker = markup.indexOf('<div class="chart-legend"');
+  const svgPart = legendMarker >= 0 ? markup.slice(0, legendMarker) : markup;
+  const legendPart = legendMarker >= 0 ? markup.slice(legendMarker) : '';
+
+  if (!/<svg\b/i.test(svgPart)) {
+    return markup;
+  }
+
+  const doc = new DOMParser().parseFromString(`<body>${svgPart}</body>`, 'text/html');
+  const svg = doc.body.querySelector('svg');
+  if (!svg) {
+    return markup;
+  }
+
+  svg.querySelectorAll('[id]').forEach((element) => {
+    const id = element.getAttribute('id');
+    if (!id || id.startsWith(`${safeNamespace}-`)) {
+      return;
+    }
+    element.setAttribute('id', `${safeNamespace}-${id}`);
+  });
+
+  let serialized = rewriteFragmentIds(new XMLSerializer().serializeToString(svg), safeNamespace);
+  if (legendPart) {
+    serialized = `${serialized}${legendPart}`;
+  }
+  return serialized;
+}
+
+export function chartHasPngPayload(dataUrl: string) {
+  return dataUrl.startsWith('data:image/png;base64,') && Boolean(dataUrl.split(',')[1]);
 }
 
 function escapeAttr(value: string) {
@@ -412,15 +448,28 @@ function extractKpiStripMarkup(node: HTMLElement): string | undefined {
   return `<div class="kpi-strip">${cardsHtml}</div>`;
 }
 
+function findExportHtmlRoot(node: HTMLElement): HTMLElement | null {
+  const exportRoot = node.querySelector('[data-export-html]');
+  return exportRoot instanceof HTMLElement ? exportRoot : null;
+}
+
+function buildExportHtmlMarkup(node: HTMLElement): string | undefined {
+  const exportRoot = findExportHtmlRoot(node);
+  if (!exportRoot) {
+    return undefined;
+  }
+  return `<div class="chart-html">${exportRoot.outerHTML}</div>`;
+}
+
 function extractHtmlMarkup(node: HTMLElement): string | undefined {
   try {
+    const exportHtml = buildExportHtmlMarkup(node);
+    if (exportHtml) {
+      return exportHtml;
+    }
     // Heatmaps / KPI blocks without Recharts — keep real HTML instead of a flat PNG.
     if (pickPrimarySvg(node)) {
       return undefined;
-    }
-    const exportRoot = node.querySelector('[data-export-html]');
-    if (exportRoot instanceof HTMLElement) {
-      return `<div class="chart-html">${exportRoot.outerHTML}</div>`;
     }
     const table = node.querySelector('table');
     if (table instanceof HTMLTableElement) {
@@ -439,11 +488,16 @@ function extractHtmlMarkup(node: HTMLElement): string | undefined {
 }
 
 async function waitForChartPaint(node: HTMLElement) {
-  for (let attempt = 0; attempt < 16; attempt += 1) {
-    if (pickPrimarySvg(node) || node.querySelector('table') || node.querySelector('p')) {
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    if (
+      pickPrimarySvg(node)
+      || node.querySelector('[data-export-html]')
+      || node.querySelector('table')
+      || node.querySelector('p')
+    ) {
       return;
     }
-    await delay(50);
+    await delay(75);
   }
 }
 
@@ -515,8 +569,9 @@ async function captureNode(
   const width = Math.max(Math.round(rect.width), node.offsetWidth || 0, 1);
   const height = Math.max(Math.round(rect.height), node.offsetHeight || 0, 1);
   // Never let SVG/HTML enrichment fail the whole card — PNG is the safety net.
-  const svgMarkup = extractSvgMarkup(node);
-  const htmlMarkup = isUsefulSvgMarkup(svgMarkup) ? undefined : extractHtmlMarkup(node);
+  const exportHtmlMarkup = buildExportHtmlMarkup(node);
+  const svgMarkup = exportHtmlMarkup ? undefined : extractSvgMarkup(node);
+  const htmlMarkup = exportHtmlMarkup ?? (isUsefulSvgMarkup(svgMarkup) ? undefined : extractHtmlMarkup(node));
   let dataUrl = '';
   const hasVector = isUsefulSvgMarkup(svgMarkup) || Boolean(htmlMarkup);
   if (!options?.skipPng || !hasVector) {
@@ -570,7 +625,7 @@ export async function captureDashboardCharts(
         } catch {
           node.scrollIntoView({ block: 'center', inline: 'nearest' });
         }
-        await delay(180);
+        await delay(320);
         const captured = await captureNode(node, { skipPng: options?.skipPng });
         const hasSvg = isUsefulSvgMarkup(captured.svgMarkup);
         const hasHtml = Boolean(captured.htmlMarkup);

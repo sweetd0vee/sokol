@@ -4,8 +4,10 @@
 
 - PostgreSQL 16 (Docker: host **5433** → container 5432).
 - SQLAlchemy 2.0 async + `asyncpg`.
-- Миграции: **нет Alembic**. Схема создаётся через `Base.metadata.create_all` в `app/db/init_db.py`.
-- Эволюция полей — ad-hoc скрипты `app/db/migrate_*.py` (statuses, closure, closure lists, indicators, materiality, fields, check effectiveness).
+- Миграции: **Alembic ещё не внедрён**. Схема создаётся через `Base.metadata.create_all` в `app/db/init_db.py`.
+- Эволюция полей — ad-hoc скрипты `app/db/migrate_*.py`.
+- Практический runbook (Alembic target, seed, бэкапы): **[ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md)**.
+- Object storage вложений: MinIO — **[STORAGE.md](STORAGE.md)**.
 
 ## Session
 
@@ -18,11 +20,13 @@
 ```mermaid
 erDiagram
   checks ||--o{ recommendations : "cascade delete"
+  checks ||--o{ attachments : "by serial / entity"
 
   checks {
     int id PK
     string serial_number UK
     string check_name
+    string short_name
     string check_type
     string check_view
     date start_date
@@ -31,6 +35,10 @@ erDiagram
     check_status status
     date created_at
     text description
+    string process_effectiveness
+    string svk_effectiveness
+    string sur_effectiveness
+    string svik_effectiveness
     string order_document_number
     date order_document_date
     string program_document_number
@@ -58,16 +66,24 @@ erDiagram
     recommendation_additional_status additional_status
     date created_at
     date actual_completion_date
-    string extension_1_reason
-    date extension_1_date
-    text extension_1_comment
-    string extension_2_reason
-    text extension_2_comment
-    string remove_from_control_reason
-    date remove_from_control_date
-    text remove_from_control_comment
+    json deadline_extensions
+    json control_removals
     string closure_verification_status
     text closure_information
+  }
+
+  attachments {
+    int id PK
+    string entity_type
+    int entity_id
+    string slot
+    string check_serial_number
+    string bucket
+    string object_key
+    string original_name
+    string content_type
+    int size_bytes
+    date created_at
   }
 
   auditors {
@@ -93,6 +109,8 @@ erDiagram
 ```
 
 Справочники **не связаны** FK с checks/recommendations: ФИО аудитора, тип проверки и т.п. хранятся как строки в основных таблицах; справочники питают UI-select’ы.
+
+`attachments` ссылается на сущность логически (`entity_type` + `entity_id`) и на ключ проверки (`check_serial_number` → bucket `check-{serial}`).
 
 ## Enum’ы
 
@@ -135,9 +153,13 @@ SQLAlchemy для recommendation enum’ов использует `values_callab
 | `seed_audit_types.py` | типы аудита |
 | `seed_check_kinds.py` | виды проверок |
 | `seed_effectiveness_ratings.py` | оценки эффективности |
-| `seed_demo_data.py` | синтетические проверки и рекомендации для демо-среды |
-| `import_seed_data.py` | загрузка из Excel |
-| `scripts/generate_seed_excel.py` | генерация seed Excel (`openpyxl`) |
+| `seed_demo_data.py` | синтетические проверки и рекомендации |
+| `import_seed_data.py` | загрузка из Excel (`--replace` = TRUNCATE) |
+| `sync_check_buckets.py` | создать MinIO-бакеты для существующих проверок |
+| `scripts/generate_seed_excel.py` | генерация seed Excel |
+| `scripts/generate_import_templates.py` | пустые шаблоны импорта |
+
+Подробные команды и правила безопасности: [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md).
 
 ## Ad-hoc migrate скрипты
 
@@ -150,13 +172,16 @@ SQLAlchemy для recommendation enum’ов использует `values_callab
 - `migrate_recommendation_indicators.py`
 - `migrate_materiality_required.py`
 - `migrate_check_effectiveness.py`
+- `migrate_check_short_name.py`
+- `migrate_attachments.py`
 
-Это **не** версионируемый migration framework: запускаются вручную при обновлении уже существующей БД.
+Это **не** версионируемый migration framework: запускаются вручную (или из Docker entrypoint) при обновлении уже существующей БД. Целевой путь — Alembic (см. [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md)).
 
 ## Ограничения схемы
 
 1. Нет soft-delete.
 2. Нет аудита изменений (кто/когда изменил).
-3. Вложения (приказ, программа, АЗ, ДЗ) на бэкенде **не хранятся** — только метаданные номеров/дат.
+3. Бинарные вложения хранятся в MinIO; в Postgres — метаданные `attachments` + номера/даты документов на `checks`.
 4. Материальность и индикатор — строки с дефолтами (`средний`, `не указан`), не FK на справочник.
-5. Смена enum’ов на живой БД требует ручного migrate-скрипта / ALTER TYPE.
+5. Смена enum’ов на живой БД требует осторожного ALTER TYPE (через migrate-скрипт сейчас / Alembic потом).
+6. Analytics API читает **все** проверки/рекомендации без list-лимита — при росте данных нужен мониторинг нагрузки.

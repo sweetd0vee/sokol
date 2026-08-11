@@ -1,34 +1,37 @@
 # Code Review — sokol-backend
 
-**Дата:** 2026-08-07 (актуализация; исходный разбор 2026-07-28)  
-**Метод:** статический разбор актуального кода + `unittest` (**61** test, 1 skipped) + ревью справочников/`dictionary_crud`.  
-**Область:** FastAPI, CRUD, ORM, DOCX tools, Docker/env, стык с фронтом.
+**Дата:** 2026-08-11  
+**Метод:** статический разбор актуального кода, сверка docs↔implementation, просмотр analytics/attachments/export стыка с фронтом.  
+**Область:** FastAPI, CRUD, ORM, DOCX tools, analytics, storage, Docker/env.
 
 ## Итоговая оценка
 
 | Критерий | Балл |
 |----------|------|
 | Архитектура слоёв | 7.5/10 |
-| Поддерживаемость CRUD | 8/10 (+ shared dictionary helpers) |
-| DOCX pipeline | 6.5/10 (сложность высока, тесты помогают) |
-| Тесты | 6/10 DOCX · 2/10 API/DB |
+| Поддерживаемость CRUD | 8/10 |
+| DOCX pipeline | 6.5/10 |
+| Analytics | 7/10 (checks API) · 4/10 (остальные вкладки ещё на клиенте) |
+| Storage / attachments | 7/10 |
+| Тесты | 6/10 DOCX · 3/10 API/DB/analytics |
 | Безопасность | 3/10 |
-| Production readiness | 4/10 |
-| Согласованность с фронтом | 7.5/10 |
+| Production readiness | 4.5/10 |
+| Согласованность с фронтом | 8/10 |
+| Документация | 8/10 (после актуализации 11.08) |
 
-**Вердикт:** сильный DOCX-контур и аккуратный CRUD-скелет; справочники унифицированы через `dictionary_crud`. Для промышленной эксплуатации не хватает auth, Alembic, CI и object storage. План внедрения — [PLAN.md](../../PLAN.md) (playbooks A–D).
+**Вердикт:** доменный CRUD и DOCX-контур зрелые; появился server-side analytics для проверок и MinIO-вложения. Для prod по-прежнему критичны auth и Alembic. Runbook миграций/данных: [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md). План — [PLAN.md](../../PLAN.md).
 
 ---
 
 ## Сильные стороны
 
-1. **Чистое разделение** endpoints / schemas / crud / models / reports.
-2. **Async SQLAlchemy + asyncpg** с dependency injection session.
-3. **DOCX Раздела II** — осознанный ZIP/XML подход с валидациями границ и тестами bookmarks/links.
-4. **Два режима Section II** (`section-ii` / `section-ii-links`) явно разделены.
-5. **Temp cleanup** через BackgroundTasks; лимит upload; MIME/расширение проверяются.
-6. Seed/import Excel для демо-данных; seed видов проверок (`check_kinds`).
-7. **DRY справочников:** `app/crud/dictionary_crud.py` — общие create/get/list/count/update/delete + ilike search; тонкие обёртки на ресурс сохраняют стабильные API-префиксы.
+1. Чистое разделение endpoints / schemas / crud / models / services.
+2. Async SQLAlchemy + dependency injection session.
+3. DOCX Раздела II — ZIP/XML с тестами bookmarks/links.
+4. `GET /analytics/checks` считает по всей БД (не упирается в list limit 500/1000).
+5. Attachments: metadata table + bucket-per-check + sync buckets.
+6. DRY справочников через `dictionary_crud`.
+7. Docker entrypoint: wait DB/MinIO → schema migrate → seed → optional demo import.
 
 ---
 
@@ -38,117 +41,80 @@
 
 #### H1. Нет авторизации и RBAC
 
-Все `/api/v1/*` доступны без токена. Для аудиторских данных это недопустимо во внешнем/shared network.
+Все `/api/v1/*` открыты. **Риск:** чтение/удаление аудиторских данных, генерация DOCX, порча справочников и вложений.  
+**Рекомендация:** JWT/OIDC (Keycloak), роли `auditor` / `admin`.
 
-**Риск:** чтение/удаление проверок, генерация документов, порча справочников.  
-**Рекомендация:** JWT/OIDC (Keycloak), middleware + роли минимум `auditor` / `admin`. См. PLAN фаза 2 и playbook C.
+#### H2. Нет Alembic
 
-#### H2. Нет Alembic — схема через `create_all` + ручные `migrate_*.py`
+Схема = `create_all` + ручные `migrate_*.py`. **Риск:** расхождение стендов, необратимые ALTER enum.  
+**Рекомендация:** baseline + `stamp head` на живых БД, дальше только `alembic upgrade head`. См. [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md).
 
-**Риск:** расхождение prod/dev, опасные ALTER TYPE для enum статусов, невозможность отката.  
-**Рекомендация:** Alembic baseline + перенос ad-hoc скриптов; prod только `alembic upgrade head`. См. PLAN playbook B.
+#### H3. Upload tools целиком в память
 
-#### H3. ~~Frontend вызывает `/api/v1/analytics/by-person`~~ — снято (август 2026)
+`await file.read()` до 100 MB. **Риск:** OOM / DoS при параллельных jobs.  
+**Рекомендация:** streaming на диск + семафор.
 
-Фронт считает аналитику на клиенте; backend analytics API не требуется для текущей UI.
+#### H4. Analytics checks без пагинации/лимитов на сервере
 
-#### H4. Upload целиком в память
-
-`_read_upload` → `await file.read()` до лимита 100 MB на каждый tools-запрос.
-
-**Риск:** OOM при параллельных upload, DoS.  
-**Рекомендация:** streaming на диск, семафор на concurrent DOCX jobs (фаза 3).
-
-#### H5. Нет персистентного файлового хранилища для вложений
-
-MinIO в compose (`profiles: ["extras"]`) не интегрирован; доменные вложения существуют только на клиенте.
-
-**Рекомендация:** PLAN playbook A (attachments API + metadata table + bucket layout).
+Сервис грузит все checks (+ recommendations) в память процесса. При росте портфеля — рост latency/RAM.  
+**Рекомендация:** мониторинг; SQL-агрегации / материализованные срезы; кэш filterOptions.
 
 ### Medium
 
-#### M1. Конфиг размазан
+#### M1. Конфиг частично размазан
 
-`Settings` знает только `database_url` / prefix / app_name. CORS и upload — через `os.getenv`.
+Часть полей уже в `Settings` (MinIO, upload), CORS всё ещё может читаться через `os.getenv` в `main.py`. Унифицировать.
 
-**Рекомендация:** единый `Settings` с валидацией (фаза 0.4).
+#### M2. Тесты analytics не в основном раннере
 
-#### M2. Синхронный DOCX на HTTP worker
+`tests/test_checks_analytics_period.py` — pytest-style `assert`, не `unittest.TestCase` → `unittest discover` их пропускает. Нет API-интеграционных тестов analytics/attachments.
 
-`asyncio.to_thread` не блокирует loop, но нет очереди, прогресса, таймаута на уровне сервиса (только axios 120s на фронте).
+#### M3. Ad-hoc migrate в entrypoint неполные
 
-#### M3. Крупные модули `docx_generator.py` / `docx_parser.py`
+Entrypoint гоняет effectiveness + attachments; остальные `migrate_*` зависят от ручного запуска на старых БД.
 
-Дробить на фазы (strip / parse / locate / build / rewrite) + golden АЗ в CI.
+#### M4. Справочники без FK
 
-#### M4. Compose-сервисы без кода
+Строковые поля домена не валидируются против `auditors` / `check_kinds` / ratings.
 
-MinIO/MailHog в extras — ок как заготовка; до интеграции держать вне default up и не включать в bank UAT без playbook A.
+#### M5. Синхронный DOCX на HTTP worker
 
-#### M5. Нет integration/API tests
-
-CRUD, cascade delete, enum round-trip, tools multipart, settings dictionaries — только ручная проверка / Swagger.
-
-#### M6. Два порта API (Docker vs local)
-
-`run_dev.ps1` → **8802**, Docker → **8800**. Документировано; опционально унифицировать.
-
-#### M7. Справочник `check_kinds` не связан с доменом
-
-Таблица и API есть; поля проверки (`check_view` / аналоги) всё ещё свободные строки / FE-константы. Нужен продуктовый wire + data cleanup перед FK.
+`to_thread` без очереди и прогресса; длинные jobs держат worker.
 
 ### Low
 
-#### L1. Нет structured logging / correlation id
-
-#### L2. `ParsedRecommendationItem` объявлен в endpoint-файле
-
-Лучше перенести в `schemas/`.
-
-#### L3. Справочники не связаны FK с доменными полями
-
-Приемлемо на текущем этапе; планировать validation/FK (фаза 4.3).
-
-#### L4. Exception handlers отсутствуют
-
-Сырые 500 без единого формата `detail` для не-HTTPException.
-
-#### L5. Endpoint-слой справочников всё ещё копипастится
-
-После DRY в CRUD можно (опционально) вынести factory роутов; **не** схлопывать в один URL `/settings/{kind}`.
+#### L1. Нет soft-delete / audit log мутаций.
+#### L2. Demo `--replace` в Docker при неверной env опасен для shared DB.
+#### L3. MailHog в compose не используется кодом.
 
 ---
 
-## Замечания по конкретным областям
+## FE ↔ BE стык (актуально)
 
-### CRUD / settings
-
-- Паттерн единообразен; label-справочники (`check_kinds`, `effectiveness_ratings`, `auditors`) и `audit_types` используют `dictionary_crud`.
-- Фильтры list на сервере есть, но фронт тянет большие страницы и фильтрует клиентски.
-- Cascade delete checks → recommendations корректен на уровне ORM.
-
-### Reports
-
-- Разделение section_ii (XML) vs memorandum (python-docx) обосновано.
-- Эвристики заголовков требуют каталога эталонных АЗ в CI.
-
-### Безопасность DOCX
-
-- Проверка расширения/MIME поверхностна.
-- Нет антивируса/sandbox; ZIP bombs теоретически возможны до лимита размера.
-- Политика XXE/ElementTree — зафиксировать тестами при hardening.
+| Тема | Статус |
+|------|--------|
+| CRUD checks/recommendations/settings | OK |
+| `GET /analytics/checks` | OK (вкладка «Проверки») |
+| Analytics other tabs | клиент (`SokolDataContext`) |
+| Attachments API | OK при настроенном MinIO |
+| Auth | stub FE / open BE |
 
 ---
 
-## Приоритетный план
+## Рекомендуемый порядок работ
 
-Сводный план фаз, playbooks MinIO / миграции / bank deploy / реальные данные — в **[PLAN.md](../../PLAN.md)**. Backend backlog — [ROADMAP.md](ROADMAP.md).
+1. Alembic baseline + запрет `create_all` в prod bootstrap.  
+2. Auth (Keycloak) + запрет анонимного API.  
+3. Переписать analytics period tests под unittest **или** добавить pytest в CI; smoke TestClient для `/analytics/checks` и `/attachments`.  
+4. SQL-оптимизация analytics при росте данных; API для recommendations/monitoring/DVA.  
+5. Streaming upload + job queue для DOCX.
 
 ---
 
-## Что не считать багом
+## Связанные документы
 
-- Отсутствие Celery — осознанный текущий scope.
-- Хранение вложений только на клиенте — нет backend API для файлов (задокументированный gap).
-- Stub auth на фронте — симптом H1.
-- Отсутствие analytics API — осознанно.
+- [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md)
+- [STORAGE.md](STORAGE.md)
+- [API.md](API.md)
+- [PLAN.md](../../PLAN.md)
+- Frontend review: [sokol-frontend/docs/CODE_REVIEW.md](../../sokol-frontend/docs/CODE_REVIEW.md)

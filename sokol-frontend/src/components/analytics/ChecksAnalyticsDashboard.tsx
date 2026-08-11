@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
   BarChart,
@@ -11,8 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { Check } from '../../types/check';
-import type { Recommendation } from '../../types/recommendation';
+import { fetchChecksAnalytics } from '../../api/analytics';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
@@ -26,27 +26,12 @@ import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constant
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { parseDateValue } from '../../utils/dates';
-import {
-  buildCheckDepartmentDistribution,
-  buildCompletionShare,
-  buildCumulativeSeries,
-  buildEffectivenessMatrix,
-  buildPeriodSeries,
-  buildTypeDistribution,
-  buildViewDistribution,
-  collectAnalyticsAuditors,
-  collectAuditObjects,
-  filterChecksForAnalytics,
-  summarizeChecks,
-  type PeriodGranularity,
-} from '../../utils/checkAnalytics';
+import type { PeriodGranularity } from '../../utils/checkAnalytics';
+import { ErrorState, LoadingState } from '../ui/StateMessage';
 
-type ChecksAnalyticsDashboardProps = {
-  checks: Check[];
-  recommendations: Recommendation[];
-};
+const EMPTY_ANCHOR_DATES = [new Date(2025, 0, 1).getTime(), new Date(2026, 11, 1).getTime()];
 
-export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnalyticsDashboardProps) {
+export function ChecksAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('xlsx');
@@ -56,14 +41,27 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
     CHECK_EXPORT_SECTIONS.map((section) => section.id) as CheckExportSectionId[],
   );
 
-  const anchorDates = useMemo(
-    () => [
-      ...checks.map((check) => parseDateValue(check.start_date)),
-      new Date(2025, 0, 1).getTime(),
-      new Date(2026, 11, 1).getTime(),
-    ],
-    [checks],
-  );
+  const bootstrapQuery = useQuery({
+    queryKey: ['analytics', 'checks', 'bootstrap'],
+    queryFn: () =>
+      fetchChecksAnalytics({
+        granularity: 'year',
+        years: [],
+        quarters: [],
+        months: [],
+        auditors: [],
+        departments: [],
+      }),
+    staleTime: 60_000,
+  });
+
+  const anchorDates = useMemo(() => {
+    const fromApi = (bootstrapQuery.data?.filterOptions.anchorDates ?? [])
+      .map((value) => parseDateValue(value))
+      .filter((value): value is number => value !== null);
+    return fromApi.length > 0 ? [...fromApi, ...EMPTY_ANCHOR_DATES] : EMPTY_ANCHOR_DATES;
+  }, [bootstrapQuery.data?.filterOptions.anchorDates]);
+
   const {
     periodSlice,
     selectedYears,
@@ -85,63 +83,59 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
     removeActivePeriodValue,
   } = useAnalyticsPeriodFilters(anchorDates);
 
-  const auditorOptions = useMemo(
-    () => toAnalyticsSelectOptions(collectAnalyticsAuditors(checks, recommendations)),
-    [checks, recommendations],
-  );
-  const departmentOptions = useMemo(
-    () => toAnalyticsSelectOptions(collectAuditObjects(recommendations)),
-    [recommendations],
-  );
+  const granularity: PeriodGranularity = periodSlice;
+  const hasActiveFilters =
+    selectedYearKeys.length > 0
+    || selectedQuarterKeys.length > 0
+    || selectedMonthKeys.length > 0
+    || selectedAuditors.length > 0
+    || selectedDepartments.length > 0
+    || granularity !== 'year';
 
-  const filteredChecks = useMemo(
-    () =>
-      filterChecksForAnalytics(checks, {
-        auditors: selectedAuditors,
-        departments: selectedDepartments,
-        recommendations,
-        granularity: 'month',
-        selectedPeriods: [],
-        selectedYears: selectedYearKeys,
-        selectedQuarters: selectedQuarterKeys,
-        selectedMonths: selectedMonthKeys,
-        effectivenessArea: 'any',
-        selectedEffectivenessRatings: [],
-      }),
-    [
-      checks,
-      recommendations,
-      selectedAuditors,
-      selectedDepartments,
+  const analyticsQuery = useQuery({
+    queryKey: [
+      'analytics',
+      'checks',
+      granularity,
       selectedYearKeys,
       selectedQuarterKeys,
       selectedMonthKeys,
+      selectedAuditors,
+      selectedDepartments,
     ],
+    queryFn: () =>
+      fetchChecksAnalytics({
+        granularity,
+        years: selectedYearKeys,
+        quarters: selectedQuarterKeys,
+        months: selectedMonthKeys,
+        auditors: selectedAuditors,
+        departments: selectedDepartments,
+      }),
+    enabled: bootstrapQuery.isSuccess,
+    initialData: !hasActiveFilters ? bootstrapQuery.data : undefined,
+    initialDataUpdatedAt: !hasActiveFilters ? bootstrapQuery.dataUpdatedAt : undefined,
+  });
+
+  const data = analyticsQuery.data ?? bootstrapQuery.data;
+  const auditorOptions = useMemo(
+    () => toAnalyticsSelectOptions(data?.filterOptions.auditors ?? []),
+    [data?.filterOptions.auditors],
+  );
+  const departmentOptions = useMemo(
+    () => toAnalyticsSelectOptions(data?.filterOptions.departments ?? []),
+    [data?.filterOptions.departments],
   );
 
-  const granularity: PeriodGranularity = periodSlice;
-  const summary = useMemo(() => summarizeChecks(filteredChecks), [filteredChecks]);
-  const completionShare = useMemo(() => buildCompletionShare(filteredChecks), [filteredChecks]);
-  const periodSeries = useMemo(() => buildPeriodSeries(filteredChecks, granularity), [filteredChecks, granularity]);
-  const cumulativeSeries = useMemo(() => buildCumulativeSeries(filteredChecks, granularity), [filteredChecks, granularity]);
-  const flowSeries = useMemo(
-    () =>
-      periodSeries.map((item) => ({
-        ...item,
-        cumulative: cumulativeSeries.find((point) => point.key === item.key)?.cumulative ?? item.total,
-      })),
-    [periodSeries, cumulativeSeries],
-  );
-  const viewDistribution = useMemo(() => buildViewDistribution(filteredChecks), [filteredChecks]);
-  const typeDistribution = useMemo(() => buildTypeDistribution(filteredChecks), [filteredChecks]);
-  const departmentMap = useMemo(
-    () => buildCheckDepartmentDistribution(filteredChecks, recommendations),
-    [filteredChecks, recommendations],
-  );
-  const effectivenessMatrix = useMemo(
-    () => buildEffectivenessMatrix(filteredChecks),
-    [filteredChecks],
-  );
+  const summary = data?.summary ?? { total: 0, not_started: 0, in_progress: 0, completed: 0 };
+  const completionShare = data?.completionShare ?? 0;
+  const flowSeries = data?.periodSeries ?? [];
+  const viewDistribution = data?.viewDistribution ?? [];
+  const typeDistribution = data?.typeDistribution ?? [];
+  const departmentMap = data?.departmentMap ?? [];
+  const effectivenessMatrix = data?.effectivenessMatrix ?? [];
+  const universeTotal = data?.universeTotal ?? 0;
+  const filteredTotal = data?.filteredTotal ?? 0;
 
   const resetFilters = () => {
     resetPeriodSelections();
@@ -150,7 +144,9 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
   };
 
   const handleExport = async () => {
-    if (filteredChecks.length === 0 || isExporting) {return;}
+    if (filteredTotal === 0 || isExporting || !data) {
+      return;
+    }
     if (exportSections.selectedSections.length === 0) {
       window.alert('Выберите хотя бы один дашборд для экспорта');
       return;
@@ -159,12 +155,16 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
     try {
       await exportChecksDashboard(
         {
-          checks,
-          filteredChecks,
+          checks: [],
+          filteredChecks: [],
           granularity,
           auditors: selectedAuditors,
           departments: selectedDepartments,
           selectedSections: exportSections.selectedSections,
+          selectedPeriodLabels: activePeriodValues,
+          universeTotal,
+          filteredTotal,
+          effectivenessMatrixOverride: effectivenessMatrix,
         },
         exportFormat,
       );
@@ -191,7 +191,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
             onToggleExport={() => exportSections.toggleSection('summary')}
           >
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
-              <KpiCard label="Всего" value={summary.total} hint={`из ${checks.length}`} tone="violet" />
+              <KpiCard label="Всего" value={summary.total} hint={`из ${universeTotal}`} tone="violet" />
               <KpiCard label="Запланировано" value={summary.not_started} tone="slate" />
               <KpiCard label="В процессе" value={summary.in_progress} tone="amber" />
               <KpiCard label="Завершено" value={summary.completed} tone="green" />
@@ -319,7 +319,6 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       },
     ],
     [
-      checks.length,
       completionShare,
       departmentMap,
       effectivenessMatrix,
@@ -327,9 +326,24 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
       flowSeries,
       summary,
       typeDistribution,
+      universeTotal,
       viewDistribution,
     ],
   );
+
+  if (bootstrapQuery.isLoading && !data) {
+    return <LoadingState title="Загрузка аналитики проверок…" />;
+  }
+
+  if ((bootstrapQuery.isError || analyticsQuery.isError) && !data) {
+    const error = analyticsQuery.error ?? bootstrapQuery.error;
+    return (
+      <ErrorState
+        title="Не удалось загрузить аналитику проверок"
+        description={error instanceof Error ? error.message : 'неизвестная ошибка'}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-stretch">
@@ -355,7 +369,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
         exportFormat={exportFormat}
         onExportFormatChange={setExportFormat}
         isExporting={isExporting}
-        canExport={filteredChecks.length > 0}
+        canExport={filteredTotal > 0}
         onExport={handleExport}
         exportSelectedCount={exportSections.selectedCount}
         exportTotalCount={exportSections.totalCount}
@@ -364,7 +378,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[
-            { label: 'Проверок', value: filteredChecks.length, hint: `из ${checks.length}` },
+              { label: 'Проверок', value: filteredTotal, hint: `из ${universeTotal}` },
             ]}
             items={[
               {
@@ -390,7 +404,12 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
         )}
       />
 
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        {analyticsQuery.isFetching ? (
+          <div className="pointer-events-none absolute right-2 top-2 z-10 rounded-md bg-white/90 px-2 py-1 text-xs text-slate-500 shadow-sm">
+            Обновление…
+          </div>
+        ) : null}
         <AnalyticsDashboardGrid cards={cards} />
       </main>
     </div>

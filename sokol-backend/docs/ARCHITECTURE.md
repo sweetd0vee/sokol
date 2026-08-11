@@ -14,19 +14,22 @@ sokol-backend/
 │   │   ├── router.py           # корневой api_router
 │   │   └── v1/
 │   │       ├── router.py       # prefix /api/v1
-│   │       └── endpoints/      # health, checks, recommendations, settings, tools
+│   │       └── endpoints/      # health, checks, recommendations, analytics, attachments, settings, tools
 │   ├── core/config.py          # Settings (pydantic-settings)
 │   ├── crud/                   # async CRUD-функции (не классы-репозитории)
 │   ├── db/                     # session, init_db, seeds, ad-hoc migrate_*.py
 │   ├── models/                 # SQLAlchemy ORM
 │   ├── schemas/                # Pydantic v2
-│   ├── services/reports/       # section_ii + memorandum + audit_opinion
+│   ├── services/
+│   │   ├── reports/            # section_ii + memorandum + audit_opinion
+│   │   ├── analytics/          # checks analytics aggregations
+│   │   └── storage/            # MinIO client
 │   └── utils/                  # check_key, paths
-├── tests/                      # unittest (DOCX)
+├── tests/                      # unittest (DOCX) + analytics period helpers
 ├── scripts/                    # seed Excel, helpers
 ├── data/images/                # PNG материальности для Раздела II
 ├── docker/                     # Compose + Dockerfiles
-└── .secrets/sokol.env          # DATABASE_URL, CORS, …
+└── .secrets/sokol.env          # DATABASE_URL, CORS, MinIO, …
 ```
 
 ## Слои
@@ -100,6 +103,8 @@ flowchart TB
 | `/status` | `health.py` | liveness |
 | `/checks` | `checks.py` | проверки |
 | `/recommendations` | `recommendations.py` | рекомендации |
+| `/analytics` | `analytics.py` | агрегации вкладки «Проверки» |
+| `/attachments` | `attachments.py` | вложения (MinIO + metadata) |
 | `/settings/auditors` | `auditors.py` | справочник |
 | `/settings/audit_types` | `audit_types.py` | справочник |
 | `/settings/check_kinds` | `check_kinds.py` | справочник |
@@ -294,11 +299,11 @@ flowchart LR
 ## Явные non-goals (текущий код)
 
 - Auth / RBAC / JWT
-- Alembic-миграции (только `create_all` + `app/db/migrate_*.py`)
+- Alembic-миграции (только `create_all` + `app/db/migrate_*.py`; runbook — [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md))
 - Celery / Redis / фоновые очереди
-- S3 / MinIO в коде приложения (сервис может быть в Compose, но не используется)
-- MailHog в коде (MinIO в Compose extras есть, приложением не используется)
-- Analytics API (`/api/v1/analytics/*` **отсутствует**; фронт считает аналитику на клиенте из загруженных checks/recommendations)
+- MailHog в коде приложения
+- Analytics API для вкладок «Рекомендации» / «Мониторинг» / «ДВА» (реализован только `GET /analytics/checks`)
+- CRUD наблюдений
 
 ## Связь с фронтендом
 
@@ -306,5 +311,7 @@ flowchart LR
 |----------|---------|----------|
 | CRUD checks/recommendations/settings | есть | `src/api/*.ts` + mappers |
 | Tools DOCX + audit-opinion | `/tools/*` | `src/api/tools.ts`, `ToolsTab`, `AuditOpinionPanel` |
-| Analytics | **нет API** | клиентские дашборды из SokolData |
+| Analytics checks | `GET /analytics/checks` | `ChecksAnalyticsDashboard` + `api/analytics.ts` |
+| Analytics other tabs | нет | клиентские агрегаты из `SokolDataContext` |
+| Attachments | `/attachments/*` + MinIO | `api/attachments.ts`, панели вложений |
 | Auth header | не требуется | stub login в localStorage |

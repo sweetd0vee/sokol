@@ -40,7 +40,43 @@ Auth: **отсутствует**. Все endpoints открыты.
 | `check_type` | string | — | |
 
 **Поля create/read (основные):**  
-`serial_number`, `check_name`, `check_type`, `check_view`, `start_date`, `end_date?`, `check_leader`, `status`, `created_at`, `description?`, документы приказа/программы/АЗ/ДЗ (`*_document_number`, `*_document_date`).
+`serial_number`, `check_name`, `short_name?`, `check_type`, `check_view`, `start_date`, `end_date?`, `check_leader`, `status`, `created_at`, `description?`, оценки эффективности (`process_effectiveness`, `svk_effectiveness`, `sur_effectiveness`, `svik_effectiveness`), документы приказа/программы/АЗ/ДЗ (`*_document_number`, `*_document_date`).
+
+---
+
+## Analytics — `/api/v1/analytics`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| `GET` | `/analytics/checks` | серверная агрегация вкладки «Проверки» (без лимита list API) |
+
+**Query:**
+
+| Параметр | Тип | Notes |
+|----------|-----|--------|
+| `granularity` | `year` \| `quarter` \| `month` | default `year` |
+| `years`, `quarters`, `months` | list[str] | ключи периодов (`2025`, `2025-Q1`, `2025-08`); OR между измерениями |
+| `auditors`, `departments` | list[str] | фильтры ФИО / объект аудита |
+
+**Ответ (camelCase):** `universeTotal`, `filteredTotal`, KPI summary, `completionShare`, `periodSeries`, `viewDistribution`, `typeDistribution`, `departmentMap`, `effectivenessMatrix`, `filterOptions` (`auditors`, `departments`, `anchorDates`).
+
+Остальные вкладки аналитики (рекомендации / мониторинг / ДВА) пока считаются на клиенте.
+
+Подробнее: [ANALYTICS.md](../../sokol-frontend/docs/ANALYTICS.md).
+
+---
+
+## Attachments — `/api/v1/attachments`
+
+Метаданные в PostgreSQL, файлы в MinIO. См. [STORAGE.md](STORAGE.md).
+
+| Method | Path | Описание |
+|--------|------|----------|
+| `GET` | `/attachments/storage/status` | доступность хранилища |
+| `GET` | `/attachments` | список (`entity_type`, `entity_id`) |
+| `POST` | `/attachments` | multipart upload |
+| `GET` | `/attachments/{id}/download` | скачивание |
+| `DELETE` | `/attachments/{id}` | удаление object + row |
 
 ---
 
@@ -135,8 +171,10 @@ MIME: OOXML DOCX или `application/octet-stream`.
 
 ## Чего нет в API
 
-- `/api/v1/analytics/*` — **не реализован**; фронт считает аналитику на клиенте и этот endpoint не вызывает.
-- Auth, upload вложений проверок, WebSocket, batch-import Excel через API.
+- Auth / RBAC.
+- Analytics для вкладок «Рекомендации» / «Мониторинг» / «ДВА» (только `GET /analytics/checks`).
+- WebSocket, batch-import Excel через HTTP API (import — CLI `app.db.import_seed_data`).
+- CRUD наблюдений.
 
 ---
 

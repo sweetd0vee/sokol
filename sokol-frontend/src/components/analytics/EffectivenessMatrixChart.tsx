@@ -164,7 +164,7 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
         </div>
 
         <div className="shrink-0 border-t border-gray-200 bg-gray-50/90 dark:border-slate-600 dark:bg-slate-900/60">
-          <div className="flex w-full items-stretch">
+          <div className="flex w-full items-stretch" data-effectiveness-matrix-footer>
             <div className="flex w-[56%] shrink-0 items-center px-3 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
               Доля оценок
             </div>
@@ -189,7 +189,10 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
         </p>
       )}
 
-      <ul className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-gray-600 dark:text-slate-300">
+      <ul
+        className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-gray-600 dark:text-slate-300"
+        data-effectiveness-matrix-legend
+      >
         {EFFECTIVENESS_LEGEND.map((item) => (
           <li key={item.tone} className="inline-flex items-center gap-1.5">
             <span

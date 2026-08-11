@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { PageHeader } from '../ui/PageHeader';
 import { SegmentedControl } from '../ui/SegmentedControl';
-import { ErrorState, LoadingState } from '../ui/StateMessage';
-import { useSokolData } from '../../contexts/sokolData';
 import { ChecksAnalyticsDashboard } from '../analytics/ChecksAnalyticsDashboard';
 import { RecommendationsAnalyticsDashboard } from '../analytics/RecommendationsAnalyticsDashboard';
 import { MonitoringAnalyticsDashboard } from '../analytics/MonitoringAnalyticsDashboard';
@@ -19,7 +17,6 @@ type AnalyticsTabId = (typeof ANALYTICS_TABS)[number]['value'];
 
 export function AnalyticsTab() {
   const [activeTab, setActiveTab] = useState<AnalyticsTabId>('checks');
-  const { checks, recommendations, isLoading, isError, error } = useSokolData();
 
   return (
     <div className="w-full space-y-5 text-left">
@@ -32,29 +29,10 @@ export function AnalyticsTab() {
         />
       </div>
 
-      {isLoading ? <LoadingState title="Загрузка данных…" /> : null}
-      {isError ? (
-        <ErrorState
-          title="Не удалось загрузить данные"
-          description={error?.message ?? 'неизвестная ошибка'}
-        />
-      ) : null}
-
-      {!isLoading && !isError && activeTab === 'checks' ? (
-        <ChecksAnalyticsDashboard checks={checks} recommendations={recommendations} />
-      ) : null}
-
-      {!isLoading && !isError && activeTab === 'recommendations' ? (
-        <RecommendationsAnalyticsDashboard recommendations={recommendations} />
-      ) : null}
-
-      {!isLoading && !isError && activeTab === 'monitoring' ? (
-        <MonitoringAnalyticsDashboard recommendations={recommendations} />
-      ) : null}
-
-      {!isLoading && !isError && activeTab === 'dva' ? (
-        <DvaAnalyticsDashboard checks={checks} recommendations={recommendations} />
-      ) : null}
+      {activeTab === 'checks' ? <ChecksAnalyticsDashboard /> : null}
+      {activeTab === 'recommendations' ? <RecommendationsAnalyticsDashboard /> : null}
+      {activeTab === 'monitoring' ? <MonitoringAnalyticsDashboard /> : null}
+      {activeTab === 'dva' ? <DvaAnalyticsDashboard /> : null}
     </div>
   );
 }

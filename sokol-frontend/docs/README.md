@@ -8,20 +8,30 @@
 |----------|------------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Структура, провайдеры, API-слой, компоненты, диаграммы |
 | [ANALYTICS.md](ANALYTICS.md) | Дашборды аналитики, бизнес-смысл карточек, фильтры и экспорт |
+| [ANALYTICS_TZ.docx](ANALYTICS_TZ.docx) | ТЗ / описание дашбордов со скриншотами |
 | [PLANNING.md](PLANNING.md) | Дашборды планирования: охват, аналитика департаментов, красные рекомендации |
 | [USER_STORIES.md](USER_STORIES.md) | Пользовательские истории и потоки |
 | [RUNBOOK.md](RUNBOOK.md) | Установка, env, Docker, проверки |
 | [BPMN.md](BPMN.md) | BPMN 2.0 XML основных процессов |
-| [SECTION_II_ALGORITHM.md](SECTION_II_ALGORITHM.md) | Полный алгоритм парсинга АЗ и генерации таблицы Раздела II |
-| [UI_STANDARDS.md](UI_STANDARDS.md) | Размеры блоков/окон (px), сетка форм, стандарты цветов |
-| [ROADMAP.md](ROADMAP.md) | Frontend backlog (детали — в [PLAN.md](../../PLAN.md)) |
+| [SECTION_II_ALGORITHM.md](SECTION_II_ALGORITHM.md) | Алгоритм парсинга АЗ и генерации Раздела II |
+| [UI_STANDARDS.md](UI_STANDARDS.md) | Размеры, сетка форм, цвета |
+| [ROADMAP.md](ROADMAP.md) | Frontend backlog |
 | [CODE_REVIEW.md](CODE_REVIEW.md) | Замечания по коду и риски |
+
+Backend: [sokol-backend/docs](../../sokol-backend/docs/README.md), в т.ч. [ALEMBIC_AND_DATA.md](../../sokol-backend/docs/ALEMBIC_AND_DATA.md).
 
 ## Кратко о приложении
 
-SPA «Сокол» (React 19 + Vite 7): проверки, рекомендации, демо-таблица наблюдений, клиентская аналитика и планирование охвата, DOCX-инструменты (Раздел II, ДЗ, аудиторское мнение), справочники, профиль. Заготовки: форма наблюдений, канцлер. Данные — через `/api/v1` к `sokol-backend` (кроме аналитики/планирования и демо-наблюдений). Auth — **stub** (localStorage), Keycloak планируется.
+SPA «Сокол» (React 19 + Vite 7):
 
-Общие токены форм create/edit: `src/constants/formLayout.ts`.
+- CRUD проверок и рекомендаций, справочники, профиль (stub auth).
+- **Аналитика:** backend API — `GET /api/v1/analytics/{checks|recommendations|monitoring|dva}`.
+- **Планирование:** `GET /api/v1/analytics/planning` (`PlanningAnalyticsDashboard`); экспорт пока отключён.
+- **Вложения:** через backend attachments API + MinIO (не только память браузера).
+- DOCX-инструменты: Раздел II, ДЗ, аудиторское мнение (Ollama).
+- Наблюдения — демо-таблица без backend CRUD; канцлер — заглушка.
+
+Общие токены форм: `src/constants/formLayout.ts`.
 
 ## Стек
 
@@ -32,14 +42,17 @@ SPA «Сокол» (React 19 + Vite 7): проверки, рекомендаци
 | Axios | HTTP |
 | Tailwind 3 | стили (`sber` palette) |
 | Recharts | графики аналитики |
+| react-grid-layout | статическая сетка дашбордов |
 | xlsx-js-style / docx / pdfmake / html-to-image | клиентский экспорт |
-| lucide-react, react-datepicker | иконки, даты |
+| Vitest | unit-тесты (`npm test`) |
 
-## Dev-порты (актуально)
+Пересборка `ANALYTICS_TZ.docx` (нужен UI на `:5180`): `npm run docs:analytics-tz:full`.
+
+## Dev-порты
 
 | Режим | UI | API |
 |-------|----|-----|
 | Локальная разработка | **5180** | **8802** (`VITE_DEV_API_PORT`) |
 | Docker (коробка) | **5180** | **8800** (`VITE_API_URL`) |
 
-Локально: прокси Vite `/api` → `http://127.0.0.1:8802`. Backend: `run_dev.ps1`.
+Локально: прокси Vite `/api` → `http://127.0.0.1:8802`.

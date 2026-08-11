@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
   BarChart,
@@ -12,12 +13,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type {
-  MaterialityLevel,
-  Recommendation,
-  RecommendationAdditionalStatus,
-  RecommendationStatus,
-} from '../../types/recommendation';
+import { fetchRecommendationsAnalytics } from '../../api/analytics';
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
@@ -39,33 +35,19 @@ import {
   MATERIALITY_LEVEL_OPTIONS,
   RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS,
   RECOMMENDATION_STATUS_OPTIONS,
-  getIndicatorLabel,
 } from '../../constants/recommendations';
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
-import { parseDateValue } from '../../utils/dates';
+import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
 import {
-  buildMaterialityDistribution,
-  buildPeriodSeries,
-  buildAuditObjectDistribution,
-  buildCheckLinkDistribution,
-  buildCumulativeSeries,
-  buildIndicatorDistribution,
-  collectAuditObjects,
-  collectRecommendationAuditors,
-  filterRecommendationsForAnalytics,
-  INDICATOR_COLORS,
   MATERIALITY_COLORS,
   STATUS_COLORS,
-  summarizeRecommendations,
   type PeriodGranularity,
 } from '../../utils/recommendationAnalytics';
+import { ErrorState, LoadingState } from '../ui/StateMessage';
+import type { MaterialityLevel } from '../../types/recommendation';
 
-type RecommendationsAnalyticsDashboardProps = {
-  recommendations: Recommendation[];
-};
-
-export function RecommendationsAnalyticsDashboard({ recommendations }: RecommendationsAnalyticsDashboardProps) {
+export function RecommendationsAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedMateriality, setSelectedMateriality] = useState<string[]>([]);
@@ -78,14 +60,13 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
     RECOMMENDATION_EXPORT_SECTIONS.map((section) => section.id) as RecommendationExportSectionId[],
   );
 
-  const anchorDates = useMemo(
-    () => [
-      ...recommendations.map((item) => parseDateValue(item.deadline)),
-      new Date(2025, 0, 1).getTime(),
-      new Date(2026, 11, 1).getTime(),
-    ],
-    [recommendations],
-  );
+  const bootstrapQuery = useQuery({
+    queryKey: ['analytics', 'recommendations', 'bootstrap'],
+    queryFn: () => fetchRecommendationsAnalytics({ granularity: 'year' }),
+    staleTime: 60_000,
+  });
+
+  const anchorDates = useAnalyticsAnchorDates(bootstrapQuery.data?.filterOptions.anchorDates);
   const {
     periodSlice,
     selectedYears,
@@ -107,76 +88,78 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
     removeActivePeriodValue,
   } = useAnalyticsPeriodFilters(anchorDates);
 
-  const auditorOptions = useMemo(
-    () => toAnalyticsSelectOptions(collectRecommendationAuditors(recommendations)),
-    [recommendations],
-  );
-  const departmentOptions = useMemo(
-    () => toAnalyticsSelectOptions(collectAuditObjects(recommendations)),
-    [recommendations],
-  );
+  const granularity: PeriodGranularity = periodSlice;
+  const hasActiveFilters = hasAnalyticsPeriodFilters({
+    yearKeys: selectedYearKeys,
+    quarterKeys: selectedQuarterKeys,
+    monthKeys: selectedMonthKeys,
+    auditors: selectedAuditors,
+    departments: selectedDepartments,
+    statuses: selectedStatuses,
+    additionalStatuses: selectedAdditionalStatuses,
+    materialityLevels: selectedMateriality,
+    granularity,
+  });
 
-  const filtered = useMemo(
-    () =>
-      filterRecommendationsForAnalytics(recommendations, {
-        dateFrom: null,
-        dateTo: null,
-        auditors: selectedAuditors,
-        departments: selectedDepartments,
-        statuses: selectedStatuses as RecommendationStatus[],
-        additionalStatuses: selectedAdditionalStatuses as RecommendationAdditionalStatus[],
-        materialityLevels: selectedMateriality as MaterialityLevel[],
-        granularity: 'month',
-        selectedPeriods: [],
-        selectedYears: selectedYearKeys,
-        selectedQuarters: selectedQuarterKeys,
-        selectedMonths: selectedMonthKeys,
-      }),
-    [
-      recommendations,
-      selectedAdditionalStatuses,
+  const analyticsQuery = useQuery({
+    queryKey: [
+      'analytics',
+      'recommendations',
+      granularity,
+      selectedYearKeys,
+      selectedQuarterKeys,
+      selectedMonthKeys,
       selectedAuditors,
       selectedDepartments,
-      selectedMateriality,
-      selectedMonthKeys,
-      selectedQuarterKeys,
       selectedStatuses,
-      selectedYearKeys,
+      selectedAdditionalStatuses,
+      selectedMateriality,
     ],
+    queryFn: () =>
+      fetchRecommendationsAnalytics({
+        granularity,
+        years: selectedYearKeys,
+        quarters: selectedQuarterKeys,
+        months: selectedMonthKeys,
+        auditors: selectedAuditors,
+        departments: selectedDepartments,
+        statuses: selectedStatuses,
+        additionalStatuses: selectedAdditionalStatuses,
+        materialityLevels: selectedMateriality,
+      }),
+    enabled: bootstrapQuery.isSuccess,
+    initialData: !hasActiveFilters ? bootstrapQuery.data : undefined,
+    initialDataUpdatedAt: !hasActiveFilters ? bootstrapQuery.dataUpdatedAt : undefined,
+  });
+
+  const data = analyticsQuery.data ?? bootstrapQuery.data;
+  const auditorOptions = useMemo(
+    () => toAnalyticsSelectOptions(data?.filterOptions.auditors ?? []),
+    [data?.filterOptions.auditors],
+  );
+  const departmentOptions = useMemo(
+    () => toAnalyticsSelectOptions(data?.filterOptions.departments ?? []),
+    [data?.filterOptions.departments],
   );
 
-  const granularity: PeriodGranularity = periodSlice;
-  const summary = useMemo(() => summarizeRecommendations(filtered), [filtered]);
-  const periodSeries = useMemo(() => buildPeriodSeries(filtered, granularity), [filtered, granularity]);
-  const cumulativeSeries = useMemo(() => buildCumulativeSeries(filtered, granularity), [filtered, granularity]);
-  const materialityDistribution = useMemo(
-    () =>
-      buildMaterialityDistribution(filtered).map((item) => {
-        const level = MATERIALITY_LEVEL_OPTIONS.find((option) => option.label === item.name)?.value;
-        return {
-          ...item,
-          color: level ? MATERIALITY_COLORS[level] : RECOMMENDATIONS_PALETTE[0],
-        };
-      }),
-    [filtered],
-  );
-  const indicatorDistribution = useMemo(
-    () =>
-      buildIndicatorDistribution(filtered).map((item) => {
-        const indicator = (Object.keys(INDICATOR_COLORS) as Array<
-          keyof typeof INDICATOR_COLORS
-        >).find((key) => getIndicatorLabel(key) === item.name);
-        return {
-          ...item,
-          color: indicator
-            ? INDICATOR_COLORS[indicator]
-            : RECOMMENDATIONS_PALETTE[2],
-        };
-      }),
-    [filtered],
-  );
-  const objectDistribution = useMemo(() => buildAuditObjectDistribution(filtered), [filtered]);
-  const checkLinks = useMemo(() => buildCheckLinkDistribution(filtered), [filtered]);
+  const summary = data?.summary ?? {
+    total: 0,
+    byStatus: { completed: 0, unresolved: 0, on_control: 0, in_progress: 0 },
+    byMateriality: { низкий: 0, средний: 0, высокий: 0 },
+    byAdditional: { on_time: 0, deadline_violated: 0, on_control: 0 },
+    withExtensions: 0,
+    withCompletionDate: 0,
+    completionRate: 0,
+    violationRate: 0,
+  };
+  const periodSeries = data?.periodSeries ?? [];
+  const cumulativeSeries = data?.cumulativeSeries ?? [];
+  const materialityDistribution = data?.materialityDistribution ?? [];
+  const indicatorDistribution = data?.indicatorDistribution ?? [];
+  const objectDistribution = data?.objectDistribution ?? [];
+  const checkLinks = data?.checkLinks ?? [];
+  const universeTotal = data?.universeTotal ?? 0;
+  const filteredTotal = data?.filteredTotal ?? 0;
 
   const resetFilters = () => {
     resetPeriodSelections();
@@ -188,7 +171,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
   };
 
   const handleExport = async () => {
-    if (filtered.length === 0 || isExporting) {return;}
+    if (filteredTotal === 0 || isExporting) {return;}
     if (exportSections.selectedSections.length === 0) {
       window.alert('Выберите хотя бы один дашборд для экспорта');
       return;
@@ -197,8 +180,8 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
     try {
       await exportRecommendationsDashboard(
         {
-          recommendations,
-          filteredRecommendations: filtered,
+          recommendations: [],
+          filteredRecommendations: [],
           granularity,
           dateFrom: null,
           dateTo: null,
@@ -232,7 +215,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
             onToggleExport={() => exportSections.toggleSection('summary')}
           >
             <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-6">
-              <KpiCard label="Всего" value={summary.total} hint={`из ${recommendations.length}`} tone="violet" />
+              <KpiCard label="Всего" value={summary.total} hint={`из ${universeTotal}`} tone="violet" />
               <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
               <KpiCard label="Не решено" value={summary.byStatus.unresolved} tone="slate" />
               <KpiCard label="Высокая существенность" value={summary.byMateriality.высокий} tone="amber" />
@@ -394,10 +377,23 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
       materialityDistribution,
       objectDistribution,
       periodSeries,
-      recommendations.length,
+      universeTotal,
       summary,
     ],
   );
+
+  if (bootstrapQuery.isLoading && !data) {
+    return <LoadingState title="Загрузка аналитики рекомендаций…" />;
+  }
+  if ((bootstrapQuery.isError || analyticsQuery.isError) && !data) {
+    const error = analyticsQuery.error ?? bootstrapQuery.error;
+    return (
+      <ErrorState
+        title="Не удалось загрузить аналитику рекомендаций"
+        description={error instanceof Error ? error.message : 'неизвестная ошибка'}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-stretch">
@@ -423,7 +419,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
         exportFormat={exportFormat}
         onExportFormatChange={setExportFormat}
         isExporting={isExporting}
-        canExport={filtered.length > 0}
+        canExport={filteredTotal > 0}
         onExport={handleExport}
         exportSelectedCount={exportSections.selectedCount}
         exportTotalCount={exportSections.totalCount}
@@ -432,7 +428,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[
-            { label: 'Рекомендаций', value: filtered.length, hint: `из ${recommendations.length}` },
+            { label: 'Рекомендаций', value: filteredTotal, hint: `из ${universeTotal}` },
             ]}
             items={[
               {

@@ -68,6 +68,10 @@ export type ChecksDashboardExportInput = {
   departments?: string[];
   selectedPeriodLabels?: string[];
   selectedSections: string[];
+  /** When set (server analytics), used instead of checks.length / filteredChecks.length. */
+  universeTotal?: number;
+  filteredTotal?: number;
+  effectivenessMatrixOverride?: ReturnType<typeof buildEffectivenessMatrix>;
 };
 
 export type RecommendationsDashboardExportInput = {
@@ -1268,8 +1272,10 @@ export async function exportChecksDashboard(
   format: AnalyticsExportFormat,
 ) {
   const { checks, filteredChecks, granularity, auditors, selectedSections } = input;
+  const universeTotal = input.universeTotal ?? checks.length;
+  const filteredTotal = input.filteredTotal ?? filteredChecks.length;
   const effectivenessMatrix = selectedSections.includes('effectivenessMatrix')
-    ? buildEffectivenessMatrix(filteredChecks)
+    ? (input.effectivenessMatrixOverride ?? buildEffectivenessMatrix(filteredChecks))
     : undefined;
   await exportVisualAnalyticsReport({
     format,
@@ -1283,8 +1289,8 @@ export async function exportChecksDashboard(
       ...(input.selectedPeriodLabels?.map((label) => ['Период', label] as [string, string]) ?? []),
       ['Аудиторы', auditors.length ? auditors.join(', ') : 'Все'],
       ['Департаменты', input.departments?.length ? input.departments.join(', ') : 'Все'],
-      ['Записей в выборке', String(filteredChecks.length)],
-      ['Всего в системе', String(checks.length)],
+      ['Записей в выборке', String(filteredTotal)],
+      ['Всего в системе', String(universeTotal)],
       ['Дашбордов в отчёте', String(selectedSections.filter((id) => id !== 'source').length)],
       ['Сформировано', new Date().toLocaleString('ru-RU')],
     ],

@@ -41,13 +41,16 @@ SOKOL_CORS_ORIGINS=http://localhost:5180
 | Переменная | Где читается | Назначение |
 |------------|--------------|------------|
 | `DATABASE_URL` | `Settings` | asyncpg URL (обязательно) |
-| `SOKOL_CORS_ORIGINS` | `main.py` | origins через запятую |
-| `SOKOL_MAX_UPLOAD_MB` | `instruments_reports` | лимит upload (default 100) |
+| `SOKOL_CORS_ORIGINS` | `Settings` / `main.py` | origins через запятую |
+| `SOKOL_MAX_UPLOAD_MB` | `Settings` / tools | лимит upload (default 100) |
 | `SOKOL_OLLAMA_URL` | `Settings` | Ollama base URL |
 | `SOKOL_OLLAMA_MODEL` | `Settings` | модель по умолчанию |
 | `SOKOL_OLLAMA_TIMEOUT_S` | `Settings` | timeout LLM (default 600) |
+| `SOKOL_MINIO_*` | `Settings` | endpoint, keys, secure — см. [STORAGE.md](STORAGE.md) |
+| `SOKOL_LOAD_DEMO_DATA` | Docker entrypoint | импорт Excel после seed |
+| `SOKOL_SEED_REPLACE` | Docker entrypoint | TRUNCATE перед импортом |
 
-`SOKOL_OLLAMA_*` — см. таблицу выше. Сервисы MinIO/MailHog из Compose **не используются** кодом приложения.
+Подробности MinIO: [STORAGE.md](STORAGE.md). Миграции / seed / бэкапы: [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md).
 
 ## Инициализация БД
 
@@ -57,18 +60,26 @@ SOKOL_CORS_ORIGINS=http://localhost:5180
 python -c "import asyncio; from app.db.init_db import init_db; asyncio.run(init_db())"
 ```
 
-(точные entrypoints см. в `app/db/init_db.py`.)
+При обновлении уже существующей БД после смены схемы — соответствующие `app/db/migrate_*.py` (см. список в [DATA_AND_DB.md](DATA_AND_DB.md)).
 
-Seed: модули `seed_*.py`, `import_seed_data.py`, `scripts/generate_seed_excel.py`.
+Seed:
 
-При обновлении уже существующей БД после смены схемы — соответствующие `app/db/migrate_*.py`.
+```bash
+python -m app.db.seed_auditors
+python -m app.db.seed_audit_types
+python -m app.db.seed_check_kinds
+python -m app.db.seed_effectiveness_ratings
+python -m app.db.import_seed_data          # без --replace
+# python -m app.db.import_seed_data --replace   # ОПАСНО: нужен бэкап
+python -m app.db.sync_check_buckets        # если MinIO включён
+```
 
 ## Docker
 
-Полный стек: корневой `docker-compose.yml` (API на **8800**, UI, Postgres; Ollama — локально на хосте) — см. [DOCKER.md](../../DOCKER.md).
+Полный стек: корневой `docker-compose.yml` (API на **8800**, UI, Postgres, MinIO; Ollama — локально на хосте) — см. [DOCKER.md](../../DOCKER.md).
 
-Каталог `docker/`: Compose (API, Postgres; MinIO/MailHog опционально через profile `extras`).  
-API Dockerfile: Python 3.12-slim, CMD uvicorn на **8800** внутри контейнера.
+Каталог `docker/app`: Compose API + Postgres (+ MinIO).  
+API Dockerfile: Python 3.12-slim, CMD uvicorn на **8800** внутри контейнера; entrypoint ждёт БД, делает init/migrate/seed.
 
 Для локальной разработки чаще удобнее venv + `run_dev.ps1` (**8802**) + Postgres из compose.
 
@@ -79,9 +90,10 @@ python -m compileall app scripts tests
 python -m unittest discover -s tests
 ```
 
-На момент обновления docs: **61 tests** (1 skipped); фокус — section_ii / memorandum / bookmarks / links.
+На момент обновления docs: **61 tests** (1 skipped); фокус — section_ii / memorandum / bookmarks / links.  
+`tests/test_checks_analytics_period.py` написан в pytest-стиле и **не** подхватывается `unittest discover` — либо переписать в `TestCase`, либо гонять через pytest.
 
-Нет pytest-конфига как основного раннера; CI в репозитории backend не описан как обязательный.
+Нет обязательного CI pipeline в репозитории.
 
 ## Типичные проблемы
 

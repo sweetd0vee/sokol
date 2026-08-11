@@ -239,18 +239,20 @@ gantt
 
 | Область | Готово | Не готово / ограничения |
 |---------|--------|-------------------------|
-| **Проверки и рекомендации** | CRUD, фильтры на клиенте, экспорт XLSX/DOCX/PDF, импорт рекомендаций из АЗ | Server-side pagination/filter не используется UI; вложения только в браузере |
-| **Справочники** | CRUD: аудиторы, виды аудита, **виды проверок**, оценки эффективности; Settings UI DRY | Нет FK/валидации строковых полей домена против справочников; «вид проверки» ещё не подключён к форме проверки |
-| **Инструменты DOCX** | Раздел II (± ссылки), ДЗ, парсинг рекомендаций, раздел I (Ollama) | Upload in-memory; нет очереди; слабое покрытие audit-opinion тестами |
-| **Аналитика** | Клиентские дашборды «Проверки», «Рекомендации», «Мониторинг», «ДВА» и экспорт из `SokolDataContext` | Нет analytics API (пока не нужен) |
-| **Auth** | Stub login на фронте | Нет JWT/OIDC на API; fake «смена пароля» |
-| **БД** | PostgreSQL + `create_all` + ad-hoc `migrate_*.py` | Нет Alembic; риск расхождения prod/dev |
-| **Файлы** | DOCX tools: temp на диске + cleanup; compose MinIO в `profiles: ["extras"]` | Приложение **не** использует MinIO; вложения форм — только браузер |
-| **CI/CD** | Ручные `unittest` / `npm run lint` | Нет GitHub Actions / pipeline на PR |
-| **Наблюдения, планирование, канцлер** | Наблюдения: демо-таблица со связями на рекомендации; планирование/канцлер: UI-заглушки | Нет backend/API для наблюдений, планирования и канцлера |
-| **Legacy** | `sokol-instruments/` — Streamlit-прототип DOCX | Не входит в основной стек; логика перенесена в `sokol-backend` |
+| **Проверки и рекомендации** | CRUD, фильтры на клиенте, экспорт XLSX/DOCX/PDF, импорт рекомендаций из АЗ | Server-side pagination/filter не используется UI |
+| **Справочники** | CRUD: аудиторы, виды аудита, виды проверок, оценки эффективности | Нет FK к доменным строкам; check_kinds не везде в форме проверки |
+| **Инструменты DOCX** | Раздел II (± ссылки), ДЗ, парсинг, раздел I (Ollama) | Upload in-memory; нет очереди |
+| **Аналитика** | `GET /analytics/checks` + клиентские вкладки recs/monitoring/DVA; экспорт xlsx/pdf/docx/html | Нет server analytics для остальных вкладок |
+| **Планирование** | Клиентские дашборды охвата | Экспорт отключён; нет backend planning API |
+| **Auth** | Stub login на фронте | Нет JWT/OIDC на API |
+| **БД** | PostgreSQL + `create_all` + ad-hoc `migrate_*.py` | Нет Alembic — см. [ALEMBIC_AND_DATA.md](sokol-backend/docs/ALEMBIC_AND_DATA.md) |
+| **Файлы** | Attachments API + MinIO; DOCX tools temp cleanup | Нужна настройка MinIO; бэкап файлов отдельно от PG |
+| **CI/CD** | Ручные unittest / npm lint+test | Нет обязательного GitHub Actions |
+| **Наблюдения, канцлер** | Наблюдения: демо-таблица; канцлер: stub | Нет backend для наблюдений/канцлера |
+| **Legacy** | `sokol-instruments/` | Не основной стек |
 
-**Тесты backend:** 61 unittest (1 skipped), фокус на DOCX. **Тесты frontend:** отсутствуют.
+**Тесты backend:** 61 unittest (1 skipped), фокус на DOCX; analytics period helpers — pytest-style вне discover.  
+**Тесты frontend:** Vitest (`npm test`), покрытие пока узкое.
 
 ---
 

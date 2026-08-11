@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
   BarChart,
@@ -12,61 +13,36 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { Check } from '../../types/check';
-import type { Recommendation } from '../../types/recommendation';
+import { fetchDvaAnalytics } from '../../api/analytics';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, CHART_AXIS_TICK, CHART_CATEGORY_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
-import { AuditorPeriodHeatmap } from './AuditorPeriodHeatmap';
 import { CHECKS_PALETTE, RECOMMENDATIONS_PALETTE } from './analyticsPalette';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { DVA_EXPORT_SECTIONS, type DvaExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
-import { parseDateValue } from '../../utils/dates';
-import {
-  buildAuditorDistribution as buildCheckAuditorDistribution,
-  buildCompletionShare,
-  buildDocumentReadiness,
-  buildDvaAuditorPeriodMatrix,
-  buildPeriodSeries as buildCheckPeriodSeries,
-  collectAnalyticsAuditors,
-  collectAuditObjects,
-  filterChecksForAnalytics,
-  summarizeChecks,
-  type PeriodGranularity,
-} from '../../utils/checkAnalytics';
-import {
-  buildAuditObjectDistribution,
-  buildAuditorDistribution as buildRecommendationAuditorDistribution,
-  buildPeriodSeries as buildRecommendationPeriodSeries,
-  filterRecommendationsForAnalytics,
-  summarizeRecommendations,
-} from '../../utils/recommendationAnalytics';
+import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
+import type { PeriodGranularity } from '../../utils/checkAnalytics';
+import { ErrorState, LoadingState } from '../ui/StateMessage';
 
-type DvaAnalyticsDashboardProps = {
-  checks: Check[];
-  recommendations: Recommendation[];
-};
-
-export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsDashboardProps) {
+export function DvaAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('xlsx');
   const [isExporting, setIsExporting] = useState(false);
 
   const exportSections = useExportSections(DVA_EXPORT_SECTIONS.map((section) => section.id) as DvaExportSectionId[]);
-  const anchorDates = useMemo(
-    () => [
-      ...checks.map((check) => parseDateValue(check.start_date)),
-      ...recommendations.map((item) => parseDateValue(item.deadline)),
-      new Date(2025, 0, 1).getTime(),
-      new Date(2026, 11, 1).getTime(),
-    ],
-    [checks, recommendations],
-  );
+
+  const bootstrapQuery = useQuery({
+    queryKey: ['analytics', 'dva', 'bootstrap'],
+    queryFn: () => fetchDvaAnalytics({ granularity: 'year' }),
+    staleTime: 60_000,
+  });
+
+  const anchorDates = useAnalyticsAnchorDates(bootstrapQuery.data?.filterOptions.anchorDates);
   const {
     periodSlice,
     selectedYears,
@@ -88,102 +64,73 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
     removeActivePeriodValue,
   } = useAnalyticsPeriodFilters(anchorDates);
 
+  const granularity: PeriodGranularity = periodSlice;
+  const hasActiveFilters = hasAnalyticsPeriodFilters({
+    yearKeys: selectedYearKeys,
+    quarterKeys: selectedQuarterKeys,
+    monthKeys: selectedMonthKeys,
+    auditors: selectedAuditors,
+    departments: selectedDepartments,
+    granularity,
+  });
+
+  const analyticsQuery = useQuery({
+    queryKey: [
+      'analytics',
+      'dva',
+      granularity,
+      selectedYearKeys,
+      selectedQuarterKeys,
+      selectedMonthKeys,
+      selectedAuditors,
+      selectedDepartments,
+    ],
+    queryFn: () =>
+      fetchDvaAnalytics({
+        granularity,
+        years: selectedYearKeys,
+        quarters: selectedQuarterKeys,
+        months: selectedMonthKeys,
+        auditors: selectedAuditors,
+        departments: selectedDepartments,
+      }),
+    enabled: bootstrapQuery.isSuccess,
+    initialData: !hasActiveFilters ? bootstrapQuery.data : undefined,
+    initialDataUpdatedAt: !hasActiveFilters ? bootstrapQuery.dataUpdatedAt : undefined,
+  });
+
+  const data = analyticsQuery.data ?? bootstrapQuery.data;
   const auditorOptions = useMemo(
-    () => toAnalyticsSelectOptions(collectAnalyticsAuditors(checks, recommendations)),
-    [checks, recommendations],
+    () => toAnalyticsSelectOptions(data?.filterOptions.auditors ?? []),
+    [data?.filterOptions.auditors],
   );
   const departmentOptions = useMemo(
-    () => toAnalyticsSelectOptions(collectAuditObjects(recommendations)),
-    [recommendations],
+    () => toAnalyticsSelectOptions(data?.filterOptions.departments ?? []),
+    [data?.filterOptions.departments],
   );
 
-  const filteredChecks = useMemo(
-    () =>
-      filterChecksForAnalytics(checks, {
-        auditors: selectedAuditors,
-        departments: selectedDepartments,
-        recommendations,
-        granularity: 'month',
-        selectedPeriods: [],
-        selectedYears: selectedYearKeys,
-        selectedQuarters: selectedQuarterKeys,
-        selectedMonths: selectedMonthKeys,
-        effectivenessArea: 'any',
-        selectedEffectivenessRatings: [],
-      }),
-    [checks, recommendations, selectedAuditors, selectedDepartments, selectedMonthKeys, selectedQuarterKeys, selectedYearKeys],
-  );
-  const filteredRecommendations = useMemo(
-    () =>
-      filterRecommendationsForAnalytics(recommendations, {
-        dateFrom: null,
-        dateTo: null,
-        auditors: selectedAuditors,
-        departments: selectedDepartments,
-        materialityLevels: [],
-        granularity: 'month',
-        selectedPeriods: [],
-        selectedYears: selectedYearKeys,
-        selectedQuarters: selectedQuarterKeys,
-        selectedMonths: selectedMonthKeys,
-      }),
-    [recommendations, selectedAuditors, selectedDepartments, selectedMonthKeys, selectedQuarterKeys, selectedYearKeys],
-  );
-
-  const granularity: PeriodGranularity = periodSlice;
-  const checkSummary = useMemo(() => summarizeChecks(filteredChecks), [filteredChecks]);
-  const recSummary = useMemo(() => summarizeRecommendations(filteredRecommendations), [filteredRecommendations]);
-  const checkPeriods = useMemo(() => buildCheckPeriodSeries(filteredChecks, granularity), [filteredChecks, granularity]);
-  const recPeriods = useMemo(() => buildRecommendationPeriodSeries(filteredRecommendations, granularity), [filteredRecommendations, granularity]);
-  const portfolioSeries = useMemo(() => {
-    const map = new Map<string, { key: string; label: string; sortKey: number; checks: number; recommendations: number }>();
-    checkPeriods.forEach((item) => map.set(item.key, { key: item.key, label: item.label, sortKey: item.sortKey, checks: item.total, recommendations: 0 }));
-    recPeriods.forEach((item) => {
-      const current = map.get(item.key) ?? { key: item.key, label: item.label, sortKey: item.sortKey, checks: 0, recommendations: 0 };
-      current.recommendations = item.total;
-      map.set(item.key, current);
-    });
-    return [...map.values()].sort((a, b) => a.sortKey - b.sortKey);
-  }, [checkPeriods, recPeriods]);
-  const auditorLoad = useMemo(() => {
-    const map = new Map<string, { checks: number; recommendations: number }>();
-
-    buildCheckAuditorDistribution(filteredChecks).forEach((item) => {
-      const current = map.get(item.name) ?? { checks: 0, recommendations: 0 };
-      current.checks = item.value;
-      map.set(item.name, current);
-    });
-
-    buildRecommendationAuditorDistribution(filteredRecommendations).forEach((item) => {
-      const current = map.get(item.name) ?? { checks: 0, recommendations: 0 };
-      current.recommendations = item.value;
-      map.set(item.name, current);
-    });
-
-    return [...map.entries()]
-      .map(([name, counts]) => ({
-        name,
-        checks: counts.checks,
-        recommendations: counts.recommendations,
-        value: counts.checks + counts.recommendations,
-      }))
-      .filter((item) => item.checks > 0 || item.recommendations > 0)
-      .sort((a, b) => b.value - a.value);
-  }, [filteredChecks, filteredRecommendations]);
-  const auditorChecksTreemap = useMemo(
-    () => buildCheckAuditorDistribution(filteredChecks).filter((item) => item.value > 0),
-    [filteredChecks],
-  );
-  const auditorRecommendationsTreemap = useMemo(
-    () => buildRecommendationAuditorDistribution(filteredRecommendations).filter((item) => item.value > 0),
-    [filteredRecommendations],
-  );
-  const departmentMap = useMemo(() => buildAuditObjectDistribution(filteredRecommendations), [filteredRecommendations]);
-  const documentReadiness = useMemo(() => buildDocumentReadiness(filteredChecks), [filteredChecks]);
-  const auditorMatrix = useMemo(
-    () => buildDvaAuditorPeriodMatrix(filteredChecks, filteredRecommendations, granularity),
-    [filteredChecks, filteredRecommendations, granularity],
-  );
+  const checkSummary = data?.checkSummary ?? { total: 0, not_started: 0, in_progress: 0, completed: 0 };
+  const recSummary = data?.recommendationSummary ?? {
+    total: 0,
+    byStatus: { completed: 0, unresolved: 0, on_control: 0, in_progress: 0 },
+    byMateriality: { низкий: 0, средний: 0, высокий: 0 },
+    byAdditional: { on_time: 0, deadline_violated: 0, on_control: 0 },
+    withExtensions: 0,
+    withCompletionDate: 0,
+    completionRate: 0,
+    violationRate: 0,
+  };
+  const completionShare = data?.completionShare ?? 0;
+  const portfolioSeries = data?.portfolioSeries ?? [];
+  const auditorLoad = data?.auditorLoad ?? [];
+  const auditorChecksTreemap = data?.auditorChecksTreemap ?? [];
+  const auditorRecommendationsTreemap = data?.auditorRecommendationsTreemap ?? [];
+  const departmentMap = data?.departmentMap ?? [];
+  const documentReadiness = data?.documentReadiness ?? [];
+  const filteredChecksTotal = data?.filteredChecksTotal ?? 0;
+  const filteredRecommendationsTotal = data?.filteredRecommendationsTotal ?? 0;
+  const universeChecksTotal = data?.universeChecksTotal ?? 0;
+  const universeRecommendationsTotal = data?.universeRecommendationsTotal ?? 0;
 
   const resetFilters = () => {
     resetPeriodSelections();
@@ -192,7 +139,7 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
   };
 
   const handleExport = async () => {
-    if ((filteredChecks.length === 0 && filteredRecommendations.length === 0) || isExporting) {return;}
+    if ((filteredChecksTotal === 0 && filteredRecommendationsTotal === 0) || isExporting) {return;}
     if (exportSections.selectedSections.length === 0) {
       window.alert('Выберите хотя бы один дашборд для экспорта');
       return;
@@ -208,8 +155,8 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
           meta: [
             ['Аудиторы', selectedAuditors.length ? selectedAuditors.join(', ') : 'Все'],
             ['Департаменты', selectedDepartments.length ? selectedDepartments.join(', ') : 'Все'],
-            ['Проверок в выборке', String(filteredChecks.length)],
-            ['Рекомендаций в выборке', String(filteredRecommendations.length)],
+            ['Проверок в выборке', String(filteredChecksTotal)],
+            ['Рекомендаций в выборке', String(filteredRecommendationsTotal)],
           ],
         },
         exportFormat,
@@ -234,7 +181,7 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
               <KpiCard label="Рекомендации" value={recSummary.total} tone="violet" />
               <KpiCard label="Аудиторы" value={auditorLoad.length} tone="slate" />
               <KpiCard label="Объекты аудита" value={departmentMap.length} tone="amber" />
-              <KpiCard label="Завершённость" value={buildCompletionShare(filteredChecks)} suffix="%" tone="green" />
+              <KpiCard label="Завершённость" value={completionShare} suffix="%" tone="green" />
               <KpiCard label="Исполнение рек." value={recSummary.completionRate} suffix="%" tone="green" />
             </div>
           </ChartCard>
@@ -281,26 +228,8 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
         ),
       },
       {
-        id: 'auditorMatrix',
-        defaultLayout: { x: 0, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
-        render: () => (
-          <ChartCard
-            title="Матрица аудитор × срок"
-            description="Число проверок (по дате начала) и рекомендаций (по сроку исполнения) на каждого аудитора в каждый период. Темнее ячейка — выше нагрузка."
-            exportSectionId="auditorMatrix"
-            exportSelected={exportSections.isSelected('auditorMatrix')}
-            onToggleExport={() => exportSections.toggleSection('auditorMatrix')}
-          >
-            <AuditorPeriodHeatmap
-              periods={auditorMatrix.periods}
-              rows={auditorMatrix.rows.slice(0, 12)}
-            />
-          </ChartCard>
-        ),
-      },
-      {
         id: 'documentsClosure',
-        defaultLayout: { x: 6, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 5, w: 12, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard title="Документы и закрытие" description="Готовность документов проверок и закрытие рекомендаций" exportSectionId="documentsClosure" exportSelected={exportSections.isSelected('documentsClosure')} onToggleExport={() => exportSections.toggleSection('documentsClosure')}>
             <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={[...documentReadiness, { name: 'Закрытие рек.', filled: recSummary.withCompletionDate, empty: Math.max(recSummary.total - recSummary.withCompletionDate, 0) }]} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="name" tick={CHART_AXIS_TICK} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} /><Bar dataKey="filled" name="Готово" stackId="docs" fill="#22C55E"><LabelList dataKey="filled" position="center" fontSize={CHART_VALUE_LABEL_SIZE} fill="#fff" /></Bar><Bar dataKey="empty" name="Не готово" stackId="docs" fill="#CBD5E1"><LabelList dataKey="empty" position="center" fontSize={CHART_VALUE_LABEL_SIZE} /></Bar></BarChart></ResponsiveContainer></div>
@@ -354,12 +283,24 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
       departmentMap,
       documentReadiness,
       exportSections,
-      auditorMatrix,
       portfolioSeries,
       recSummary,
-      filteredChecks,
+      completionShare,
     ],
   );
+
+  if (bootstrapQuery.isLoading && !data) {
+    return <LoadingState title="Загрузка аналитики ДВА…" />;
+  }
+  if ((bootstrapQuery.isError || analyticsQuery.isError) && !data) {
+    const error = analyticsQuery.error ?? bootstrapQuery.error;
+    return (
+      <ErrorState
+        title="Не удалось загрузить аналитику ДВА"
+        description={error instanceof Error ? error.message : 'неизвестная ошибка'}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-stretch">
@@ -385,7 +326,7 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
         exportFormat={exportFormat}
         onExportFormatChange={setExportFormat}
         isExporting={isExporting}
-        canExport={filteredChecks.length > 0 || filteredRecommendations.length > 0}
+        canExport={filteredChecksTotal > 0 || filteredRecommendationsTotal > 0}
         onExport={handleExport}
         exportSelectedCount={exportSections.selectedCount}
         exportTotalCount={exportSections.totalCount}
@@ -394,8 +335,8 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[
-            { label: 'Проверок', value: filteredChecks.length, hint: `из ${checks.length}` },
-            { label: 'Рекомендаций', value: filteredRecommendations.length, hint: `из ${recommendations.length}` },
+            { label: 'Проверок', value: filteredChecksTotal, hint: `из ${universeChecksTotal}` },
+            { label: 'Рекомендаций', value: filteredRecommendationsTotal, hint: `из ${universeRecommendationsTotal}` },
             ]}
             items={[
               {

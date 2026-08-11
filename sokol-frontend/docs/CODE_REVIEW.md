@@ -1,36 +1,36 @@
 # Code Review — sokol-frontend
 
-**Дата:** 2026-08-07 (актуализация; исходный разбор 2026-07-28)  
-**Метод:** статический разбор актуального `src/` + сверка с backend API + ревью рефакторинга Settings.  
-**Область:** routing, contexts, API, вкладки, формы, tools, settings, profile.
+**Дата:** 2026-08-11  
+**Метод:** статический разбор `src/`, сверка с backend API, ревью analytics export / planning.  
+**Область:** routing, contexts, API, analytics, planning, forms, tools, attachments.
 
 ## Итоговая оценка
 
 | Критерий | Балл |
 |----------|------|
 | Архитектура и структура | 7.5/10 |
-| Читаемость | 7.5/10 (+ DRY settings) |
+| Читаемость | 7.5/10 |
 | UX-консистентность | 8/10 |
-| Надёжность / ошибки | 5.5/10 |
+| Надёжность / ошибки | 6/10 |
 | Производительность (статика) | 6.5/10 |
-| Тесты | 1/10 |
+| Тесты | 4/10 (Vitest есть, покрытие узкое) |
 | Безопасность | 3/10 |
-| Согласованность с backend | 7.5/10 |
-| Документация | 8.5/10 |
+| Согласованность с backend | 8/10 |
+| Документация | 8.5/10 (после актуализации 11.08) |
 
-**Итого ≈ 6.8/10.** Сильный UX-каркас и API-обвязка CRUD/tools; справочники вынесены в переиспользуемые панели; критичны stub-auth и отсутствие тестов. План — [PLAN.md](../../PLAN.md).
+**Итого ≈ 7.0/10.** Сильный UX и API-обвязка; гибридная аналитика (checks API) и визуальный экспорт зрелеют. Критичны stub-auth и хрупкость HTML/PNG capture. План — [PLAN.md](../../PLAN.md).
 
 ---
 
 ## Сильные стороны
 
 1. Понятное разделение `api` / `contexts` / `components` / `utils`.
-2. TanStack Query + `SokolDataProvider` дают единый CRUD-фасад для checks/recommendations.
-3. Mappers и `errors.ts` аккуратно нормализуют FastAPI-ответы (включая blob errors tools).
-4. Settings ходят в backend CRUD; четыре справочника в SegmentedControl, включая **Виды проверок**.
-5. **Рефакторинг Settings (2026-08-07):** `makeSettingsCrud` в `api/settings.ts`; `useSingleFieldDictionary` + `SingleFieldDictionaryPanel` для аудиторов / видов проверок / оценок — меньше копипасты модалок.
-6. Повторяемый UI kit и визуальный язык `sber`.
-7. Tools поддерживают все три DOCX-режима backend, включая `section-ii-links`.
+2. TanStack Query + `SokolDataProvider` для CRUD.
+3. Вкладка «Проверки» не упирается в list-limit 500 — ходит в `/analytics/checks`.
+4. Экспорт дашбордов: xlsx/pdf/docx/html; матрица эффективности собирается программно в HTML.
+5. Settings DRY (`makeSettingsCrud`, `SingleFieldDictionaryPanel`).
+6. Attachments через API, а не только память браузера.
+7. Планирование — реальные дашборды охвата.
 
 ---
 
@@ -40,90 +40,66 @@
 
 #### H1. Auth — декорация
 
-`LoginPage` принимает любые non-empty credentials; нет JWT; Axios без `Authorization`.
+Любые non-empty credentials; нет JWT. **Риск:** полный доступ к открытому API.
 
-**Риск:** любой, кто открыл UI к открытому API, работает с полными данными.  
-**Рекомендация:** Keycloak/OIDC + interceptor; AuthGuard по валидному токену (PLAN фаза 2).
+#### H2. HTML-экспорт зависит от DOM-capture
 
-#### H2. ~~Analytics сломан на стыке с backend~~ — снято (август 2026)
+`captureDashboardCharts` требует зарегистрированные видимые карточки; Recharts SVG с общими `id` ломали мульти-график в HTML (смягчено PNG + namespace).  
+**Риск:** «Не удалось снять дашборды» / пустые секции при off-screen/empty cards.  
+**Рекомендация:** для ключевых секций — data-driven HTML (как матрица), меньше полагаться на screenshot.
 
-Клиентские дашборды из `SokolDataContext`; отдельный analytics API не вызывается.
+#### H3. Fake смена пароля
 
-#### H3. Смена пароля — fake success UX
-
-`ProfilePage` показывает модалку смены пароля без API.
-
-**Рекомендация:** убрать до auth API либо disabled + «через SSO».
+`ProfilePage` показывает success без API.
 
 ### Medium
 
-#### M1. Bulk fetch + client filters
+#### M1. Остальные analytics-вкладки ограничены SokolData (500/1000)
 
-`limit: 500` / `1000` без server-side filter UI. При росте данных — долгий first paint.
+Искажение KPI при больших портфелях. Нужен server analytics по образцу checks.
 
-#### M2. Вложения только локально
+#### M2. Статическая сетка + scrollIntoView при экспорте
 
-Пользователь добавляет файлы на форме, но они не сохраняются.
+Долгий экспорт всех секций; возможны пропуски невидимых/пустых карточек.
 
-**Рекомендация:** MinIO + attachments API (PLAN playbook A) **или** явная пометка «не сохраняется» до API.
+#### M3. Planning export отключён
 
-#### M3. Крупные page-компоненты
+UI создаёт ложное ожидание кнопок экспорта.
 
-`ChecksTab`, `RecommendationsTab`, `CheckFormPage` всё ещё тяжёлые. Settings стал тоньше, но `auditTypes` (code+name) ещё не вынесен в dual-field panel.
+#### M4. Client-side table filters after bulk fetch
 
-#### M4. «Мои» завязаны на localStorage ФИО
+Не масштабируется; нет server pagination в UI.
 
-Не совпадёт с будущим SSO displayName.
+#### M5. Узкое покрытие Vitest
 
-#### M5. Нет frontend tests
-
-Нет Vitest/RTL/Playwright в scripts.
-
-#### M6. Два порта API (Docker vs local)
-
-`.env.development` = **8802**, Docker UI → API **8800**.
-
-#### M7. «Виды проверок» в Settings ≠ options формы проверки
-
-Справочник CRUD готов; форма/константы `CHECK_VIEW_OPTIONS` могут расходиться с `check_kinds`. Нужен wire после подтверждения бизнеса (PLAN D.3).
+Нет тестов export registry / analytics API client / attachments errors.
 
 ### Low
 
-#### L1. `console.error` / тихие catch в Settings вместо toast
-
-#### L2. Kantsler stub в основной навигации — шум
-
-#### L3. Зависимость `xlsx` + `xlsx-js-style` — дублирование; `npm audit` в CI
-
-#### L4. QueryClient: `retry: 1` глобально — мелочь
+#### L1. Канцлер-stub в навигации.
+#### L2. Демо-наблюдения могут путать пользователей («как будто данные из БД»).
+#### L3. Legacy tabular exporters в `analyticsExport.ts` помечены `void` — технический долг на удаление.
 
 ---
 
-## Устаревшие findings (сняты)
+## FE ↔ BE стык
 
-- нестабильные ключи справочников без `id` → **исправлено**;
-- delete/persistence справочников только локально → **исправлено**;
-- мёртвый контракт `analytics/by-person` → **снято**;
-- SettingsTab как непрозрачный монолит из 4× копипасты label-CRUD → **частично исправлено** (single-field panel + crud factory).
-
----
-
-## Приоритетный план
-
-Сводный план + playbooks MinIO / bank deploy / реальные данные — **[PLAN.md](../../PLAN.md)**. Frontend backlog — [ROADMAP.md](ROADMAP.md).
+| Тема | Статус |
+|------|--------|
+| CRUD | OK |
+| `/analytics/checks` | OK |
+| Other analytics tabs | client-only |
+| Attachments | OK при MinIO |
+| Auth | stub |
 
 ---
 
-## Стык FE ↔ BE (чеклист)
+## Рекомендуемый порядок
 
-| Контракт | FE | BE | Статус |
-|----------|----|----|--------|
-| Checks CRUD | ✅ | ✅ | OK |
-| Recommendations CRUD | ✅ | ✅ | OK |
-| Settings: auditors / audit_types / ratings | ✅ | ✅ | OK |
-| Settings: check_kinds («Виды проверок») | ✅ Settings UI | ✅ API | OK в списках; **не** в форме проверки |
-| section-ii / section-ii-links / memorandum | ✅ | ✅ | OK |
-| parse-recommendations | ✅ | ✅ | OK |
-| analytics API | ❌ (client-side) | ❌ | OK — FE не вызывает |
-| Auth Bearer | ❌ | ❌ | оба stub |
-| File attachments | UI only | ❌ | gap; playbook A |
+1. Auth UI + interceptor (вместе с backend OIDC).  
+2. Стабилизировать HTML-экспорт (data-driven блоки, меньше PNG-зависимостей где возможно).  
+3. Server analytics для recs/monitoring/DVA.  
+4. CI: lint + build + test.  
+5. Включить planning export или скрыть контролы.
+
+Backend review: [sokol-backend/docs/CODE_REVIEW.md](../../sokol-backend/docs/CODE_REVIEW.md).

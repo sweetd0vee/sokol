@@ -94,6 +94,7 @@ docker compose up --build -d
 | `SOKOL_OLLAMA_URL` | URL Ollama (default `http://localhost:11434`) |
 | `SOKOL_OLLAMA_MODEL` | модель по умолчанию (`qwen3.5:35b`) |
 | `SOKOL_OLLAMA_TIMEOUT_S` | timeout LLM-запроса, default `600` |
+| `SOKOL_MINIO_*` | MinIO endpoint/keys — см. `docs/STORAGE.md` |
 
 ## Генерация документов
 
@@ -113,6 +114,8 @@ docker compose up --build -d
 - `docs/ARCHITECTURE.md` — архитектура и слои
 - `docs/API.md` — HTTP API и контракты
 - `docs/DATA_AND_DB.md` — модели, БД, seed/import
+- `docs/ALEMBIC_AND_DATA.md` — Alembic (target), загрузка данных, бэкапы
+- `docs/STORAGE.md` — MinIO и вложения
 - `docs/REPORTS.md` — Раздел II, ДЗ, audit opinion
 - `docs/DEVELOPMENT.md` — запуск, Docker, env, тесты
 - `docs/CODE_REVIEW.md` — ревью и риски
@@ -126,7 +129,8 @@ python -m compileall app scripts tests
 python -m unittest discover -s tests
 ```
 
-Тесты покрывают генерацию Раздела II, ДЗ и XML/bookmark-утилиты для `.docx` (**61** test, 1 skipped).
+Тесты покрывают генерацию Раздела II, ДЗ и XML/bookmark-утилиты для `.docx` (**61** test, 1 skipped).  
+Хелперы периодов analytics: `tests/test_checks_analytics_period.py` (pytest-style; не входит в unittest discover).
 
 ## Частые проблемы
 

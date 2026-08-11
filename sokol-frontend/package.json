@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "docs:analytics-screenshots": "node scripts/capture-analytics-screenshots.mjs",
+    "docs:analytics-tz": "node scripts/generate-analytics-spec-docx.mjs",
+    "docs:analytics-tz:full": "npm run docs:analytics-screenshots && npm run docs:analytics-tz"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.0",
@@ -42,6 +45,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "playwright": "^1.62.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.9.3",

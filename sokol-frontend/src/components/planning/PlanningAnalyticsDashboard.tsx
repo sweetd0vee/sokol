@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
   BarChart,
@@ -10,8 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { Check } from '../../types/check';
-import type { Recommendation } from '../../types/recommendation';
+import { fetchPlanningAnalytics } from '../../api/analytics';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from '../analytics/AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from '../analytics/AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from '../analytics/AnalyticsSelectionSummary';
@@ -28,42 +28,22 @@ import { FocusableDonutChart } from '../analytics/FocusableDonutChart';
 import { CHECKS_PALETTE, RECOMMENDATIONS_PALETTE } from '../analytics/analyticsPalette';
 import type { AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
-import { parseDateValue } from '../../utils/dates';
-import {
-  collectAuditObjects,
-  filterChecksForAnalytics,
-} from '../../utils/checkAnalytics';
-import { filterRecommendationsForAnalytics } from '../../utils/recommendationAnalytics';
-import {
-  PLANNING_HIGH_MATERIALITY_COLOR,
-  buildCoveredDepartments,
-  buildDepartmentAnalytics,
-  buildDepartmentCoverage,
-  buildHighMaterialityByDepartment,
-} from '../../utils/planningAnalytics';
+import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
+import { PLANNING_HIGH_MATERIALITY_COLOR } from '../../utils/planningAnalytics';
+import { ErrorState, LoadingState } from '../ui/StateMessage';
+import type { PeriodGranularity } from '../../utils/checkAnalytics';
 
-type PlanningAnalyticsDashboardProps = {
-  checks: Check[];
-  recommendations: Recommendation[];
-};
-
-export function PlanningAnalyticsDashboard({
-  checks,
-  recommendations,
-}: PlanningAnalyticsDashboardProps) {
+export function PlanningAnalyticsDashboard() {
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('xlsx');
 
-  const anchorDates = useMemo(
-    () => [
-      ...checks.map((check) => parseDateValue(check.start_date)),
-      ...recommendations.map((item) => parseDateValue(item.deadline)),
-      new Date(2025, 0, 1).getTime(),
-      new Date(2026, 11, 1).getTime(),
-    ],
-    [checks, recommendations],
-  );
+  const bootstrapQuery = useQuery({
+    queryKey: ['analytics', 'planning', 'bootstrap'],
+    queryFn: () => fetchPlanningAnalytics({ granularity: 'year' }),
+    staleTime: 60_000,
+  });
 
+  const anchorDates = useAnalyticsAnchorDates(bootstrapQuery.data?.filterOptions.anchorDates);
   const {
     periodSlice,
     selectedYears,
@@ -85,103 +65,61 @@ export function PlanningAnalyticsDashboard({
     removeActivePeriodValue,
   } = useAnalyticsPeriodFilters(anchorDates);
 
-  const allDepartments = useMemo(() => collectAuditObjects(recommendations), [recommendations]);
+  const granularity: PeriodGranularity = periodSlice;
+  const hasActiveFilters = hasAnalyticsPeriodFilters({
+    yearKeys: selectedYearKeys,
+    quarterKeys: selectedQuarterKeys,
+    monthKeys: selectedMonthKeys,
+    departments: selectedDepartments,
+    granularity,
+  });
+
+  const analyticsQuery = useQuery({
+    queryKey: [
+      'analytics',
+      'planning',
+      granularity,
+      selectedYearKeys,
+      selectedQuarterKeys,
+      selectedMonthKeys,
+      selectedDepartments,
+    ],
+    queryFn: () =>
+      fetchPlanningAnalytics({
+        granularity,
+        years: selectedYearKeys,
+        quarters: selectedQuarterKeys,
+        months: selectedMonthKeys,
+        departments: selectedDepartments,
+      }),
+    enabled: bootstrapQuery.isSuccess,
+    initialData: !hasActiveFilters ? bootstrapQuery.data : undefined,
+    initialDataUpdatedAt: !hasActiveFilters ? bootstrapQuery.dataUpdatedAt : undefined,
+  });
+
+  const data = analyticsQuery.data ?? bootstrapQuery.data;
   const departmentOptions = useMemo(
-    () => toAnalyticsSelectOptions(allDepartments),
-    [allDepartments],
+    () => toAnalyticsSelectOptions(data?.filterOptions.departments ?? []),
+    [data?.filterOptions.departments],
   );
 
-  const filteredChecks = useMemo(
-    () =>
-      filterChecksForAnalytics(checks, {
-        auditors: [],
-        departments: selectedDepartments,
-        recommendations,
-        granularity: 'month',
-        selectedPeriods: [],
-        selectedYears: selectedYearKeys,
-        selectedQuarters: selectedQuarterKeys,
-        selectedMonths: selectedMonthKeys,
-        effectivenessArea: 'any',
-        selectedEffectivenessRatings: [],
-      }),
-    [
-      checks,
-      recommendations,
-      selectedDepartments,
-      selectedYearKeys,
-      selectedQuarterKeys,
-      selectedMonthKeys,
-    ],
-  );
-
-  // Coverage must be calculated only by the selected period (not by the "selected departments" filter).
-  const filteredChecksForCoverage = useMemo(
-    () =>
-      filterChecksForAnalytics(checks, {
-        auditors: [],
-        departments: [],
-        recommendations,
-        granularity: 'month',
-        selectedPeriods: [],
-        selectedYears: selectedYearKeys,
-        selectedQuarters: selectedQuarterKeys,
-        selectedMonths: selectedMonthKeys,
-        effectivenessArea: 'any',
-        selectedEffectivenessRatings: [],
-      }),
-    [
-      checks,
-      recommendations,
-      selectedYearKeys,
-      selectedQuarterKeys,
-      selectedMonthKeys,
-    ],
-  );
-
-  const filteredRecommendations = useMemo(
-    () =>
-      filterRecommendationsForAnalytics(recommendations, {
-        dateFrom: null,
-        dateTo: null,
-        auditors: [],
-        departments: selectedDepartments,
-        materialityLevels: [],
-        granularity: 'month',
-        selectedPeriods: [],
-        selectedYears: selectedYearKeys,
-        selectedQuarters: selectedQuarterKeys,
-        selectedMonths: selectedMonthKeys,
-      }),
-    [
-      recommendations,
-      selectedDepartments,
-      selectedYearKeys,
-      selectedQuarterKeys,
-      selectedMonthKeys,
-    ],
-  );
-
-  const coveredDepartments = useMemo(
-    () => buildCoveredDepartments(filteredChecksForCoverage, recommendations),
-    [filteredChecksForCoverage, recommendations],
-  );
-  const coverage = useMemo(
-    () => buildDepartmentCoverage(allDepartments, coveredDepartments),
-    [allDepartments, coveredDepartments],
-  );
-  const departmentAnalytics = useMemo(
-    () => buildDepartmentAnalytics(filteredChecks, filteredRecommendations),
-    [filteredChecks, filteredRecommendations],
-  );
-  const highMaterialityRanking = useMemo(
-    () => buildHighMaterialityByDepartment(filteredRecommendations),
-    [filteredRecommendations],
-  );
-  const highMaterialityTotal = useMemo(
-    () => highMaterialityRanking.reduce((sum, item) => sum + item.value, 0),
-    [highMaterialityRanking],
-  );
+  const coverage = data?.coverage ?? {
+    covered: 0,
+    uncovered: 0,
+    total: 0,
+    coverageRate: 0,
+    uncoveredRate: 0,
+    coveredDepartments: [],
+    uncoveredDepartments: [],
+    donut: [],
+  };
+  const departmentAnalytics = data?.departmentAnalytics ?? [];
+  const highMaterialityRanking = data?.highMaterialityByDepartment ?? [];
+  const highMaterialityTotal = data?.highMaterialityTotal ?? 0;
+  const filteredChecksTotal = data?.filteredChecksTotal ?? 0;
+  const filteredRecommendationsTotal = data?.filteredRecommendationsTotal ?? 0;
+  const universeChecksTotal = data?.universeChecksTotal ?? 0;
+  const universeRecommendationsTotal = data?.universeRecommendationsTotal ?? 0;
 
   const resetFilters = () => {
     resetPeriodSelections();
@@ -340,6 +278,19 @@ export function PlanningAnalyticsDashboard({
     [coverage, departmentAnalytics, highMaterialityRanking, highMaterialityTotal],
   );
 
+  if (bootstrapQuery.isLoading && !data) {
+    return <LoadingState title="Загрузка аналитики планирования…" />;
+  }
+  if ((bootstrapQuery.isError || analyticsQuery.isError) && !data) {
+    const error = analyticsQuery.error ?? bootstrapQuery.error;
+    return (
+      <ErrorState
+        title="Не удалось загрузить аналитику планирования"
+        description={error instanceof Error ? error.message : 'неизвестная ошибка'}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-stretch">
       <AnalyticsFilterSidebar
@@ -370,11 +321,11 @@ export function PlanningAnalyticsDashboard({
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[
-              { label: 'Проверок', value: filteredChecks.length, hint: `из ${checks.length}` },
+              { label: 'Проверок', value: filteredChecksTotal, hint: `из ${universeChecksTotal}` },
               {
                 label: 'Рекомендаций',
-                value: filteredRecommendations.length,
-                hint: `из ${recommendations.length}`,
+                value: filteredRecommendationsTotal,
+                hint: `из ${universeRecommendationsTotal}`,
               },
             ]}
             items={[
