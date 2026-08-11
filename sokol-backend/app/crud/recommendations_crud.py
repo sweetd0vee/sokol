@@ -57,8 +57,14 @@ async def create_recommendation(
     recommendation_in: RecommendationCreate,
     check_id: int,
 ) -> Recommendation:
-    data = recommendation_in.model_dump(mode="json")
-    await validate_recommendation_dictionary_fields(session, data)
+    data = recommendation_in.model_dump()
+    await validate_recommendation_dictionary_fields(
+        session,
+        {
+            "auditor": data.get("auditor"),
+            "manager": data.get("manager"),
+        },
+    )
     if not data.get("created_at"):
         data["created_at"] = date.today()
     data["sequence_number"] = await _get_next_sequence_number(session, check_id)
@@ -115,8 +121,15 @@ async def update_recommendation(
     recommendation_in: RecommendationUpdate,
     check_id: Optional[int] = None,
 ) -> Recommendation:
-    update_data = recommendation_in.model_dump(mode="json", exclude_unset=True)
-    await validate_recommendation_dictionary_fields(session, update_data)
+    update_data = recommendation_in.model_dump(exclude_unset=True)
+    await validate_recommendation_dictionary_fields(
+        session,
+        {
+            key: update_data[key]
+            for key in ("auditor", "manager")
+            if key in update_data
+        },
+    )
     previous_check_id = recommendation.check_id
 
     if check_id is not None:
