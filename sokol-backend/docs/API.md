@@ -111,7 +111,8 @@ Auth: **internal JWT** (Bearer). Публичны только `GET /` и `GET /
 
 Дополнительно: `sequence_number`, `description`, `indicator`, `materiality_level`, поля продлений и снятия с контроля, `closure_*`.
 
-**Валидация справочников (create/PATCH):** `auditor` и `manager` ∈ auditors; иначе **400**.
+**Валидация справочников (create/PATCH):** `auditor` ∈ auditors; иначе **400**.  
+`manager` (руководитель объекта аудита) — свободный текст, без проверки по справочнику.
 
 Фильтры списка — см. endpoint/crud (`check_id`, `search`, статусы и т.д. в коде `recommendations.py`).
 

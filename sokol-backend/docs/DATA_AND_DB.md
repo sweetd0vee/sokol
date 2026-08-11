@@ -111,7 +111,8 @@ erDiagram
 Справочники **не связаны** FK с checks/recommendations: ФИО аудитора, вид проверки и т.п. хранятся как строки в основных таблицах; справочники питают UI-select’ы.
 
 На **create/update через API** значения проверяются на существование в справочнике (`app/services/dictionary_validation.py`):
-- `check_leader`, `auditor`, `manager` ∈ `auditors.full_name`
+- `check_leader`, `auditor` ∈ `auditors.full_name`
+- `manager` (руководитель объекта аудита) — свободный текст, не из справочника auditors
 - `check_view` ∈ `check_kinds.label`
 - `*_effectiveness` (если заданы) ∈ `effectiveness_ratings.label`
 

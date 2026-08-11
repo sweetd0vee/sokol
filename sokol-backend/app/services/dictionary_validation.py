@@ -93,8 +93,9 @@ async def validate_recommendation_dictionary_fields(
     session: AsyncSession,
     fields: Mapping[str, Optional[str]],
 ) -> None:
-    """Validate recommendation person fields present in ``fields``."""
+    """Validate recommendation auditor against auditors dictionary.
+
+    ``manager`` is руководитель объекта аудита (свободный текст), не из справочника auditors.
+    """
     if "auditor" in fields and fields["auditor"] is not None:
         await ensure_auditor_name(session, fields["auditor"], field="auditor")
-    if "manager" in fields and fields["manager"] is not None:
-        await ensure_auditor_name(session, fields["manager"], field="manager")

@@ -109,9 +109,22 @@ class DictionaryValidationTests(unittest.TestCase):
             with self.assertRaises(DictionaryRefError) as ctx:
                 await validate_recommendation_dictionary_fields(
                     session,
-                    {"auditor": "Не указан", "manager": "Важник Д.С."},
+                    {"auditor": "Не указан", "manager": "Филианова О.В"},
                 )
             self.assertEqual(ctx.exception.field, "auditor")
+
+        asyncio.run(run())
+
+    def test_recommendation_allows_manager_outside_auditors(self) -> None:
+        session = _session_with_hits({"auditors": True})
+
+        async def run() -> None:
+            await validate_recommendation_dictionary_fields(
+                session,
+                {"auditor": "Важник Д.С.", "manager": "Филианова О.В"},
+            )
+            # manager must not trigger a second auditors lookup
+            self.assertEqual(session.execute.await_count, 1)
 
         asyncio.run(run())
 

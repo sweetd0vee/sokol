@@ -76,7 +76,7 @@ Entrypoint гоняет effectiveness + attachments; остальные `migrate
 #### M4. Справочники без FK — частично закрыто
 
 Строковые поля домена по-прежнему без FK; на create/update API валидируются против справочников:
-`check_leader` / `auditor` / `manager` → `auditors`, `check_view` → `check_kinds`, оценки эффективности → `effectiveness_ratings` (400 при неизвестном значении). Bulk import/seed обходят CRUD и не проходят эту проверку.
+`check_leader` / `auditor` → `auditors`, `check_view` → `check_kinds`, оценки эффективности → `effectiveness_ratings` (400 при неизвестном значении). `manager` (руководитель объекта) — свободный текст. Bulk import/seed обходят CRUD и не проходят эту проверку.
 
 #### M5. Синхронный DOCX на HTTP worker
 
