@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ResponsiveContainer, Tooltip, Treemap } from 'recharts';
 import { PALETTE } from './analyticsPalette';
+import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { contrastLabelColor } from './chartContrast';
 
 export type TreemapDatum = {
@@ -77,7 +78,7 @@ function TreemapContent({
             x={x + 8}
             y={y + 18}
             fill={textColor}
-            fontSize={13}
+            fontSize={14}
             fontWeight={700}
             style={{ pointerEvents: 'none', opacity: labelOpacity }}
           >
@@ -87,7 +88,7 @@ function TreemapContent({
             x={x + 8}
             y={y + 34}
             fill={textColor}
-            fontSize={14}
+            fontSize={15}
             style={{ pointerEvents: 'none', opacity: labelOpacity }}
           >
             {value}
@@ -121,12 +122,7 @@ export function FocusableTreemapChart({ data, palette = PALETTE }: FocusableTree
         >
           <Tooltip
             formatter={(value, name) => [value, name]}
-            contentStyle={{
-              borderRadius: 10,
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 8px 20px rgba(15, 23, 42, 0.08)',
-              fontSize: 13,
-            }}
+            contentStyle={CHART_TOOLTIP_STYLE}
           />
         </Treemap>
       </ResponsiveContainer>

@@ -7,6 +7,7 @@ export type DepartmentCoverage = {
   uncovered: number;
   total: number;
   coverageRate: number;
+  uncoveredRate: number;
   coveredDepartments: string[];
   uncoveredDepartments: string[];
   donut: Array<{ name: string; value: number; color: string }>;
@@ -52,12 +53,14 @@ export function buildDepartmentCoverage(
   const uncovered = uncoveredList.length;
   const total = universe.length;
   const coverageRate = total > 0 ? Math.round((covered / total) * 100) : 0;
+  const uncoveredRate = total > 0 ? Math.round((uncovered / total) * 100) : 0;
 
   return {
     covered,
     uncovered,
     total,
     coverageRate,
+    uncoveredRate,
     coveredDepartments: coveredList,
     uncoveredDepartments: uncoveredList,
     donut: [

@@ -22,12 +22,13 @@ import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
-import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { ChartCard, CHART_AXIS_TICK, CHART_CATEGORY_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
   RECOMMENDATIONS_CUMULATIVE_LINE_COLOR,
   RECOMMENDATIONS_PALETTE,
+  RECOMMENDATIONS_PERIOD_BAR_COLOR,
 } from './analyticsPalette';
 import { exportRecommendationsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import {
@@ -259,12 +260,12 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={cumulativeSeries} margin={{ top: 22, right: 12, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="label" tick={{ fontSize: 13 }} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 13 }} />
+                    <XAxis dataKey="label" tick={CHART_AXIS_TICK} />
+                    <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
                     <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: 13 }} />
-                    <Bar dataKey="total" name="За период" fill={RECOMMENDATIONS_PALETTE[5]} radius={[4, 4, 0, 0]}>
-                      <LabelList dataKey="total" position="top" fontSize={12} />
+                    <Legend wrapperStyle={CHART_LEGEND_STYLE} />
+                    <Bar dataKey="total" name="За период" fill={RECOMMENDATIONS_PERIOD_BAR_COLOR} radius={[4, 4, 0, 0]}>
+                      <LabelList dataKey="total" position="top" fontSize={CHART_VALUE_LABEL_SIZE} />
                     </Bar>
                     <Line
                       type="monotone"
@@ -277,7 +278,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
                       <LabelList
                         dataKey="cumulative"
                         position="top"
-                        fontSize={12}
+                        fontSize={CHART_VALUE_LABEL_SIZE}
                         fill={RECOMMENDATIONS_CUMULATIVE_LINE_COLOR}
                         offset={8}
                       />
@@ -301,7 +302,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
             onToggleExport={() => exportSections.toggleSection('statusByPeriod')}
           >
             {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 13 }} /><YAxis allowDecimals={false} tick={{ fontSize: 13 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 13 }} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]} />)}</BarChart></ResponsiveContainer></div>
+              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={CHART_AXIS_TICK} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]} />)}</BarChart></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),
@@ -318,7 +319,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
             onToggleExport={() => exportSections.toggleSection('materialityByPeriod')}
           >
             {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 13 }} /><YAxis allowDecimals={false} tick={{ fontSize: 13 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 13 }} /><Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий} /><Bar dataKey="medium" name="Средний" stackId="mat" fill={MATERIALITY_COLORS.средний} /><Bar dataKey="high" name="Высокий" stackId="mat" fill={MATERIALITY_COLORS.высокий} /></BarChart></ResponsiveContainer></div>
+              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={CHART_AXIS_TICK} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} /><Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий} /><Bar dataKey="medium" name="Средний" stackId="mat" fill={MATERIALITY_COLORS.средний} /><Bar dataKey="high" name="Высокий" stackId="mat" fill={MATERIALITY_COLORS.высокий} /></BarChart></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),
@@ -340,7 +341,6 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
               <FocusableDonutChart
                 data={materialityDistribution}
                 palette={RECOMMENDATIONS_PALETTE}
-                showPercentInLabel
               />
             )}
           </ChartCard>
@@ -360,7 +360,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
             {indicatorDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableDonutChart data={indicatorDistribution} palette={RECOMMENDATIONS_PALETTE} showPercentInLabel />
+              <FocusableDonutChart data={indicatorDistribution} palette={RECOMMENDATIONS_PALETTE} />
             )}
           </ChartCard>
         ),
@@ -370,7 +370,7 @@ export function RecommendationsAnalyticsDashboard({ recommendations }: Recommend
         defaultLayout: { x: 6, y: 8, w: 6, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard title="По проверкам" description="Количество рекомендаций на ключ проверки" exportSectionId="checkLinks" exportSelected={exportSections.isSelected('checkLinks')} onToggleExport={() => exportSections.toggleSection('checkLinks')}>
-            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={checkLinks.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 13 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill={RECOMMENDATIONS_PALETTE[6]} radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={12} /></Bar></BarChart></ResponsiveContainer></div>
+            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={checkLinks.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} /><YAxis type="category" dataKey="name" width={120} tick={CHART_CATEGORY_AXIS_TICK} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill={RECOMMENDATIONS_PALETTE[6]} radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={CHART_VALUE_LABEL_SIZE} /></Bar></BarChart></ResponsiveContainer></div>
           </ChartCard>
         ),
       },

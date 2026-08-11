@@ -17,19 +17,20 @@ import type { Recommendation } from '../../types/recommendation';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
-import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { ChartCard, CHART_AXIS_TICK, CHART_CATEGORY_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
-import { PALETTE } from './analyticsPalette';
+import { AuditorPeriodHeatmap } from './AuditorPeriodHeatmap';
+import { CHECKS_PALETTE, RECOMMENDATIONS_PALETTE } from './analyticsPalette';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { DVA_EXPORT_SECTIONS, type DvaExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
-import { collectCalendarPeriodOptions, getPeriodBucket } from '../../utils/analyticsPeriod';
 import { parseDateValue } from '../../utils/dates';
 import {
   buildAuditorDistribution as buildCheckAuditorDistribution,
   buildCompletionShare,
   buildDocumentReadiness,
+  buildDvaAuditorPeriodMatrix,
   buildPeriodSeries as buildCheckPeriodSeries,
   collectAnalyticsAuditors,
   collectAuditObjects,
@@ -39,6 +40,7 @@ import {
 } from '../../utils/checkAnalytics';
 import {
   buildAuditObjectDistribution,
+  buildAuditorDistribution as buildRecommendationAuditorDistribution,
   buildPeriodSeries as buildRecommendationPeriodSeries,
   filterRecommendationsForAnalytics,
   summarizeRecommendations,
@@ -144,30 +146,44 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
     return [...map.values()].sort((a, b) => a.sortKey - b.sortKey);
   }, [checkPeriods, recPeriods]);
   const auditorLoad = useMemo(() => {
-    const map = new Map<string, number>();
-    buildCheckAuditorDistribution(filteredChecks).forEach((item) => map.set(item.name, (map.get(item.name) ?? 0) + item.value));
-    filteredRecommendations.forEach((item) => {
-      const name = item.auditor.trim() || 'Без аудитора';
-      map.set(name, (map.get(name) ?? 0) + 1);
+    const map = new Map<string, { checks: number; recommendations: number }>();
+
+    buildCheckAuditorDistribution(filteredChecks).forEach((item) => {
+      const current = map.get(item.name) ?? { checks: 0, recommendations: 0 };
+      current.checks = item.value;
+      map.set(item.name, current);
     });
-    return [...map.entries()].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+
+    buildRecommendationAuditorDistribution(filteredRecommendations).forEach((item) => {
+      const current = map.get(item.name) ?? { checks: 0, recommendations: 0 };
+      current.recommendations = item.value;
+      map.set(item.name, current);
+    });
+
+    return [...map.entries()]
+      .map(([name, counts]) => ({
+        name,
+        checks: counts.checks,
+        recommendations: counts.recommendations,
+        value: counts.checks + counts.recommendations,
+      }))
+      .filter((item) => item.checks > 0 || item.recommendations > 0)
+      .sort((a, b) => b.value - a.value);
   }, [filteredChecks, filteredRecommendations]);
+  const auditorChecksTreemap = useMemo(
+    () => buildCheckAuditorDistribution(filteredChecks).filter((item) => item.value > 0),
+    [filteredChecks],
+  );
+  const auditorRecommendationsTreemap = useMemo(
+    () => buildRecommendationAuditorDistribution(filteredRecommendations).filter((item) => item.value > 0),
+    [filteredRecommendations],
+  );
   const departmentMap = useMemo(() => buildAuditObjectDistribution(filteredRecommendations), [filteredRecommendations]);
   const documentReadiness = useMemo(() => buildDocumentReadiness(filteredChecks), [filteredChecks]);
-  const matrix = useMemo(() => {
-    const periodLabels = collectCalendarPeriodOptions(anchorDates, granularity).slice(0, 8);
-    return auditorLoad.slice(0, 8).map((auditor) => {
-      const byPeriod: Record<string, number> = {};
-      filteredChecks.forEach((check) => {
-        if (check.check_leader !== auditor.name) {return;}
-        const ms = parseDateValue(check.start_date);
-        if (ms === null) {return;}
-        const period = getPeriodBucket(ms, granularity);
-        byPeriod[period.label] = (byPeriod[period.label] ?? 0) + 1;
-      });
-      return { auditor: auditor.name, total: auditor.value, byPeriod, periods: periodLabels };
-    });
-  }, [anchorDates, auditorLoad, filteredChecks, granularity]);
+  const auditorMatrix = useMemo(
+    () => buildDvaAuditorPeriodMatrix(filteredChecks, filteredRecommendations, granularity),
+    [filteredChecks, filteredRecommendations, granularity],
+  );
 
   const resetFilters = () => {
     resetPeriodSelections();
@@ -226,31 +242,40 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
       },
       {
         id: 'portfolio',
-        defaultLayout: { x: 0, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard title="Портфель проверок и рекомендаций" description="Общий объём работ по срокам" exportSectionId="portfolio" exportSelected={exportSections.isSelected('portfolio')} onToggleExport={() => exportSections.toggleSection('portfolio')}>
             {portfolioSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={portfolioSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 13 }} /><YAxis allowDecimals={false} tick={{ fontSize: 13 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 13 }} /><Bar dataKey="recommendations" name="Рекомендации" fill="#A78BFA" radius={[4, 4, 0, 0]}><LabelList dataKey="recommendations" position="top" fontSize={12} /></Bar><Line type="monotone" dataKey="checks" name="Проверки" stroke="#003366" strokeWidth={2.5} /></ComposedChart></ResponsiveContainer></div>
+              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={portfolioSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={CHART_AXIS_TICK} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} /><Bar dataKey="recommendations" name="Рекомендации" fill="#A78BFA" radius={[4, 4, 0, 0]}><LabelList dataKey="recommendations" position="top" fontSize={CHART_VALUE_LABEL_SIZE} /></Bar><Line type="monotone" dataKey="checks" name="Проверки" stroke="#003366" strokeWidth={2.5} /></ComposedChart></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),
       },
       {
         id: 'auditorLoad',
-        defaultLayout: { x: 4, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
-          <ChartCard title="Нагрузка аудиторов" description="Проверки + рекомендации" exportSectionId="auditorLoad" exportSelected={exportSections.isSelected('auditorLoad')} onToggleExport={() => exportSections.toggleSection('auditorLoad')}>
-            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={auditorLoad.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 13 }} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} /><Tooltip /><Bar dataKey="value" name="Единицы нагрузки" fill="#1E40AF" radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={12} /></Bar></BarChart></ResponsiveContainer></div>
-          </ChartCard>
-        ),
-      },
-      {
-        id: 'departmentMap',
-        defaultLayout: { x: 8, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
-        render: () => (
-          <ChartCard title="Карта департаментов" description="Объекты аудита по объёму рекомендаций" exportSectionId="departmentMap" exportSelected={exportSections.isSelected('departmentMap')} onToggleExport={() => exportSections.toggleSection('departmentMap')}>
-            {departmentMap.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <FocusableTreemapChart data={departmentMap} palette={PALETTE} />
+          <ChartCard title="Нагрузка аудиторов" description="Проверки и рекомендации по аудиторам за период" exportSectionId="auditorLoad" exportSelected={exportSections.isSelected('auditorLoad')} onToggleExport={() => exportSections.toggleSection('auditorLoad')}>
+            {auditorLoad.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <div className="h-full min-h-[13rem]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={auditorLoad.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 32, left: 30, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
+                    <YAxis type="category" dataKey="name" width={120} tick={CHART_CATEGORY_AXIS_TICK} />
+                    <Tooltip />
+                    <Legend wrapperStyle={CHART_LEGEND_STYLE} />
+                    <Bar dataKey="checks" name="Проверки" fill="#003366" radius={[0, 4, 4, 0]}>
+                      <LabelList dataKey="checks" position="right" fontSize={CHART_VALUE_LABEL_SIZE} />
+                    </Bar>
+                    <Bar dataKey="recommendations" name="Рекомендации" fill="#A78BFA" radius={[0, 4, 4, 0]}>
+                      <LabelList dataKey="recommendations" position="right" fontSize={CHART_VALUE_LABEL_SIZE} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </ChartCard>
         ),
@@ -259,28 +284,17 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
         id: 'auditorMatrix',
         defaultLayout: { x: 0, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
-          <ChartCard title="Матрица аудитор × срок" description="Тепловая таблица нагрузки" exportSectionId="auditorMatrix" exportSelected={exportSections.isSelected('auditorMatrix')} onToggleExport={() => exportSections.toggleSection('auditorMatrix')}>
-            {matrix.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem] overflow-auto rounded-lg border border-gray-100 text-xs dark:border-slate-700">
-                <table className="min-w-full border-collapse">
-                  <tbody>
-                    {matrix.map((row) => (
-                      <tr key={row.auditor} className="border-b border-gray-100 dark:border-slate-700">
-                        <th className="sticky left-0 bg-white px-2 py-1.5 text-left font-medium text-gray-700 dark:bg-slate-800 dark:text-slate-200">{row.auditor}</th>
-                        {row.periods.map((period) => {
-                          const value = row.byPeriod[period.label] ?? 0;
-                          return (
-                            <td key={period.key} title={period.label} className="px-2 py-1.5 text-center text-white" style={{ backgroundColor: value ? PALETTE[Math.min(value, PALETTE.length - 1)] : '#E5E7EB' }}>
-                              {value || ''}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+          <ChartCard
+            title="Матрица аудитор × срок"
+            description="Число проверок (по дате начала) и рекомендаций (по сроку исполнения) на каждого аудитора в каждый период. Темнее ячейка — выше нагрузка."
+            exportSectionId="auditorMatrix"
+            exportSelected={exportSections.isSelected('auditorMatrix')}
+            onToggleExport={() => exportSections.toggleSection('auditorMatrix')}
+          >
+            <AuditorPeriodHeatmap
+              periods={auditorMatrix.periods}
+              rows={auditorMatrix.rows.slice(0, 12)}
+            />
           </ChartCard>
         ),
       },
@@ -289,31 +303,62 @@ export function DvaAnalyticsDashboard({ checks, recommendations }: DvaAnalyticsD
         defaultLayout: { x: 6, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard title="Документы и закрытие" description="Готовность документов проверок и закрытие рекомендаций" exportSectionId="documentsClosure" exportSelected={exportSections.isSelected('documentsClosure')} onToggleExport={() => exportSections.toggleSection('documentsClosure')}>
-            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={[...documentReadiness, { name: 'Закрытие рек.', filled: recSummary.withCompletionDate, empty: Math.max(recSummary.total - recSummary.withCompletionDate, 0) }]} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="name" tick={{ fontSize: 13 }} /><YAxis allowDecimals={false} tick={{ fontSize: 13 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 13 }} /><Bar dataKey="filled" name="Готово" stackId="docs" fill="#22C55E"><LabelList dataKey="filled" position="center" fontSize={12} fill="#fff" /></Bar><Bar dataKey="empty" name="Не готово" stackId="docs" fill="#CBD5E1"><LabelList dataKey="empty" position="center" fontSize={12} /></Bar></BarChart></ResponsiveContainer></div>
+            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={[...documentReadiness, { name: 'Закрытие рек.', filled: recSummary.withCompletionDate, empty: Math.max(recSummary.total - recSummary.withCompletionDate, 0) }]} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="name" tick={CHART_AXIS_TICK} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} /><Bar dataKey="filled" name="Готово" stackId="docs" fill="#22C55E"><LabelList dataKey="filled" position="center" fontSize={CHART_VALUE_LABEL_SIZE} fill="#fff" /></Bar><Bar dataKey="empty" name="Не готово" stackId="docs" fill="#CBD5E1"><LabelList dataKey="empty" position="center" fontSize={CHART_VALUE_LABEL_SIZE} /></Bar></BarChart></ResponsiveContainer></div>
           </ChartCard>
         ),
       },
       {
-        id: 'auditorTreemap',
-        defaultLayout: { x: 0, y: 8, w: 12, h: 3, minW: 4, minH: 2 },
+        id: 'auditorChecksTreemap',
+        defaultLayout: { x: 0, y: 8, w: 6, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
-            title="Tree Map аудиторов"
-            description="Площадь блока показывает нагрузку аудитора (проверки + рекомендации)"
-            exportSectionId="auditorTreemap"
-            exportSelected={exportSections.isSelected('auditorTreemap')}
-            onToggleExport={() => exportSections.toggleSection('auditorTreemap')}
+            title="Tree Map аудиторов по количеству проверок"
+            description="Площадь блока пропорциональна числу проверок аудитора за период"
+            exportSectionId="auditorChecksTreemap"
+            exportSelected={exportSections.isSelected('auditorChecksTreemap')}
+            onToggleExport={() => exportSections.toggleSection('auditorChecksTreemap')}
           >
-            {auditorLoad.length === 0 ? (
+            {auditorChecksTreemap.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableTreemapChart data={auditorLoad} />
+              <FocusableTreemapChart data={auditorChecksTreemap} palette={CHECKS_PALETTE} />
+            )}
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'auditorRecommendationsTreemap',
+        defaultLayout: { x: 6, y: 8, w: 6, h: 3, minW: 4, minH: 2 },
+        render: () => (
+          <ChartCard
+            title="Tree Map аудиторов по количеству рекомендаций"
+            description="Площадь блока пропорциональна числу рекомендаций аудитора за период"
+            exportSectionId="auditorRecommendationsTreemap"
+            exportSelected={exportSections.isSelected('auditorRecommendationsTreemap')}
+            onToggleExport={() => exportSections.toggleSection('auditorRecommendationsTreemap')}
+          >
+            {auditorRecommendationsTreemap.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <FocusableTreemapChart data={auditorRecommendationsTreemap} palette={RECOMMENDATIONS_PALETTE} />
             )}
           </ChartCard>
         ),
       },
     ],
-    [auditorLoad, checkSummary.total, departmentMap, documentReadiness, exportSections, matrix, portfolioSeries, recSummary, filteredChecks],
+    [
+      auditorChecksTreemap,
+      auditorLoad,
+      auditorRecommendationsTreemap,
+      checkSummary.total,
+      departmentMap,
+      documentReadiness,
+      exportSections,
+      auditorMatrix,
+      portfolioSeries,
+      recSummary,
+      filteredChecks,
+    ],
   );
 
   return (

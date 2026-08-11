@@ -26,41 +26,45 @@ function ColumnSharePie({ shares }: { shares: EffectivenessColumnShare[] }) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-1.5">
-      <PieChart width={72} height={72}>
+    <div className="flex flex-col items-center gap-2">
+      <PieChart width={92} height={92}>
         <Pie
           data={data}
           dataKey="value"
           nameKey="name"
           cx="50%"
           cy="50%"
-          outerRadius={32}
-          innerRadius={12}
-          stroke="#fff"
-          strokeWidth={1}
+          outerRadius={40}
+          innerRadius={0}
+          stroke="none"
           isAnimationActive={false}
         >
-          {data.map((entry) => (
-            <Cell key={entry.name} fill={entry.color} />
-          ))}
-        </Pie>
-        <Tooltip
-          formatter={(value, name, item) => {
-            const percent = (item?.payload as { percent?: number } | undefined)?.percent ?? 0;
-            return [`${value} (${percent}%)`, name];
-          }}
-          contentStyle={{ fontSize: 12 }}
-        />
-      </PieChart>
-      <ul className="flex max-w-[6.5rem] flex-col gap-0.5 text-[10px] leading-tight text-gray-600 dark:text-slate-300">
+            {data.map((entry) => (
+              <Cell key={entry.name} fill={entry.color} />
+            ))}
+          </Pie>
+          <Tooltip
+            formatter={(value, name, item) => {
+              const percent = (item?.payload as { percent?: number } | undefined)?.percent ?? 0;
+              return [`${value} (${percent}%)`, name];
+            }}
+            contentStyle={{
+              borderRadius: 8,
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 6px 16px rgba(15, 23, 42, 0.08)',
+              fontSize: 14,
+            }}
+          />
+        </PieChart>
+      <ul className="flex max-w-[7rem] flex-col gap-1 text-[11px] leading-tight text-gray-600 dark:text-slate-300">
         {shares.map((share) => (
-          <li key={share.tone} className="inline-flex items-center justify-center gap-1">
+          <li key={share.tone} className="inline-flex items-center justify-center gap-1.5">
             <span
-              className="inline-block h-2 w-2 shrink-0 rounded-sm border border-black/10"
+              className="inline-block h-2 w-2 shrink-0 rounded-full ring-1 ring-black/5"
               style={{ backgroundColor: share.color }}
               aria-hidden
             />
-            <span>{share.percent}%</span>
+            <span className="font-semibold tabular-nums">{share.percent}%</span>
           </li>
         ))}
       </ul>
@@ -165,7 +169,7 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
               Доля оценок
             </div>
             {EFFECTIVENESS_MATRIX_COLUMNS.map((column) => (
-              <div key={column.key} className="flex w-[11%] items-center justify-center px-1 py-3">
+              <div key={column.key} className="flex w-[11%] items-center justify-center px-1 py-4">
                 <ColumnSharePie shares={columnShares[column.key]} />
               </div>
             ))}

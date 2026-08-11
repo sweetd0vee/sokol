@@ -31,10 +31,20 @@ export const DVA_EXPORT_SECTIONS = [
   { id: 'summary', label: 'Сводка KPI', sheetName: 'Сводка', headerFill: '312E81' },
   { id: 'portfolio', label: 'Портфель', sheetName: 'Портфель', headerFill: '1D4ED8' },
   { id: 'auditorLoad', label: 'Нагрузка аудиторов', sheetName: 'Нагрузка аудиторов', headerFill: '1E40AF' },
-  { id: 'departmentMap', label: 'Карта департаментов', sheetName: 'Карта департаментов', headerFill: '0E7490' },
   { id: 'auditorMatrix', label: 'Матрица аудитор×срок', sheetName: 'Матрица аудитор-срок', headerFill: '4338CA' },
   { id: 'documentsClosure', label: 'Документы и закрытие', sheetName: 'Документы закрытие', headerFill: '065F46' },
-  { id: 'auditorTreemap', label: 'Tree Map аудиторов', sheetName: 'Аудиторы TreeMap', headerFill: '1E40AF' },
+  {
+    id: 'auditorChecksTreemap',
+    label: 'Tree Map аудиторов по проверкам',
+    sheetName: 'Аудиторы проверки',
+    headerFill: '003366',
+  },
+  {
+    id: 'auditorRecommendationsTreemap',
+    label: 'Tree Map аудиторов по рекомендациям',
+    sheetName: 'Аудиторы рекомендации',
+    headerFill: '7C3AED',
+  },
 ] as const;
 
 export type CheckExportSectionId = (typeof CHECK_EXPORT_SECTIONS)[number]['id'];

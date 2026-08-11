@@ -14,7 +14,7 @@ import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
-import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
@@ -172,7 +172,7 @@ export function MonitoringAnalyticsDashboard({ recommendations }: MonitoringAnal
         render: () => (
           <ChartCard title="Динамика сроков исполнения" description="Статусы рекомендаций по срокам" exportSectionId="deadlineDynamics" exportSelected={exportSections.isSelected('deadlineDynamics')} onToggleExport={() => exportSections.toggleSection('deadlineDynamics')}>
             {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={{ fontSize: 13 }} /><YAxis allowDecimals={false} tick={{ fontSize: 13 }} /><Tooltip /><Legend wrapperStyle={{ fontSize: 13 }} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]} />)}</BarChart></ResponsiveContainer></div>
+              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={CHART_AXIS_TICK} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]} />)}</BarChart></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),

@@ -61,8 +61,11 @@ export const RECOMMENDATIONS_PALETTE = [
   '#E9D5FF', // light orchid
 ];
 
-/** Cumulative «Всего» line — same hue family, dark enough to read on white. */
+/** Cumulative «Всего» line — mint from «Исполнено» status, dark enough to read on white. */
 export const RECOMMENDATIONS_CUMULATIVE_LINE_COLOR = '#6BBF8E';
+
+/** «За период» bars on the cumulative recommendations chart — soft lilac. */
+export const RECOMMENDATIONS_PERIOD_BAR_COLOR = '#C4B5FD';
 
 export {
   MATERIALITY_COLORS as RECOMMENDATIONS_MATERIALITY_COLORS,

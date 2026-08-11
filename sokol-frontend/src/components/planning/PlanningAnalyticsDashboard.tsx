@@ -15,7 +15,15 @@ import type { Recommendation } from '../../types/recommendation';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from '../analytics/AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from '../analytics/AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from '../analytics/AnalyticsSelectionSummary';
-import { ChartCard, EmptyChart, KpiCard } from '../analytics/AnalyticsChartPrimitives';
+import {
+  ChartCard,
+  CHART_AXIS_TICK,
+  CHART_CATEGORY_AXIS_TICK,
+  CHART_LEGEND_STYLE,
+  CHART_VALUE_LABEL_SIZE,
+  EmptyChart,
+  KpiCard,
+} from '../analytics/AnalyticsChartPrimitives';
 import { FocusableDonutChart } from '../analytics/FocusableDonutChart';
 import { CHECKS_PALETTE, RECOMMENDATIONS_PALETTE } from '../analytics/analyticsPalette';
 import type { AnalyticsExportFormat } from '../../utils/analyticsExport';
@@ -107,6 +115,30 @@ export function PlanningAnalyticsDashboard({
     ],
   );
 
+  // Coverage must be calculated only by the selected period (not by the "selected departments" filter).
+  const filteredChecksForCoverage = useMemo(
+    () =>
+      filterChecksForAnalytics(checks, {
+        auditors: [],
+        departments: [],
+        recommendations,
+        granularity: 'month',
+        selectedPeriods: [],
+        selectedYears: selectedYearKeys,
+        selectedQuarters: selectedQuarterKeys,
+        selectedMonths: selectedMonthKeys,
+        effectivenessArea: 'any',
+        selectedEffectivenessRatings: [],
+      }),
+    [
+      checks,
+      recommendations,
+      selectedYearKeys,
+      selectedQuarterKeys,
+      selectedMonthKeys,
+    ],
+  );
+
   const filteredRecommendations = useMemo(
     () =>
       filterRecommendationsForAnalytics(recommendations, {
@@ -131,8 +163,8 @@ export function PlanningAnalyticsDashboard({
   );
 
   const coveredDepartments = useMemo(
-    () => buildCoveredDepartments(filteredChecks, recommendations),
-    [filteredChecks, recommendations],
+    () => buildCoveredDepartments(filteredChecksForCoverage, recommendations),
+    [filteredChecksForCoverage, recommendations],
   );
   const coverage = useMemo(
     () => buildDepartmentCoverage(allDepartments, coveredDepartments),
@@ -166,7 +198,7 @@ export function PlanningAnalyticsDashboard({
             <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-4">
               <KpiCard label="Охват департаментов" value={coverage.coverageRate} suffix="%" tone="blue" />
               <KpiCard label="С проверками" value={coverage.covered} hint={`из ${coverage.total}`} tone="green" />
-              <KpiCard label="Без охвата" value={coverage.uncovered} tone="slate" />
+              <KpiCard label="Не охвачено" value={coverage.uncoveredRate} suffix="%" tone="slate" />
               <KpiCard label="Красные рекомендации" value={highMaterialityTotal} tone="red" />
             </div>
           </ChartCard>
@@ -178,7 +210,7 @@ export function PlanningAnalyticsDashboard({
         render: () => (
           <ChartCard
             title="Охват департаментов"
-            description="Доля подразделений с проверками за период"
+            description="Доля подразделений с проверками за выбранный период"
           >
             {coverage.total === 0 ? (
               <EmptyChart message="Нет департаментов в данных" />
@@ -188,17 +220,27 @@ export function PlanningAnalyticsDashboard({
                   {coverage.donut.length === 0 ? (
                     <EmptyChart message="Нет данных" />
                   ) : (
-                    <FocusableDonutChart data={coverage.donut} showPercentInLabel />
+                    <FocusableDonutChart data={coverage.donut} />
                   )}
                 </div>
                 {coverage.uncoveredDepartments.length > 0 ? (
                   <div className="shrink-0 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-300">
                     <p className="font-semibold text-slate-700 dark:text-slate-200">
-                      Без охвата ({coverage.uncovered}):
+                      Не охвачено: {coverage.uncoveredRate}% ({coverage.uncovered} из {coverage.total})
                     </p>
-                    <p className="mt-1 line-clamp-3">
-                      {coverage.uncoveredDepartments.join(', ')}
-                    </p>
+                    <div className="mt-2 max-h-28 overflow-auto pr-1">
+                      <div className="flex flex-wrap gap-1">
+                        {coverage.uncoveredDepartments.map((name) => (
+                          <span
+                            key={name}
+                            className="rounded-md bg-slate-200 px-2 py-0.5 font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-100"
+                            title={name}
+                          >
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <p className="shrink-0 text-xs text-emerald-700 dark:text-emerald-300">
@@ -229,15 +271,15 @@ export function PlanningAnalyticsDashboard({
                     margin={{ top: 8, right: 24, left: 8, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 13 }} />
+                    <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
                     <YAxis
                       type="category"
                       dataKey="name"
                       width={120}
-                      tick={{ fontSize: 12 }}
+                      tick={CHART_CATEGORY_AXIS_TICK}
                     />
                     <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: 13 }} />
+                    <Legend wrapperStyle={CHART_LEGEND_STYLE} />
                     <Bar dataKey="checks" name="Проверки" fill={CHECKS_PALETTE[8]} radius={[0, 4, 4, 0]} />
                     <Bar
                       dataKey="recommendations"
@@ -271,12 +313,12 @@ export function PlanningAnalyticsDashboard({
                     margin={{ top: 8, right: 36, left: 8, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 13 }} />
+                    <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
                     <YAxis
                       type="category"
                       dataKey="name"
                       width={140}
-                      tick={{ fontSize: 12 }}
+                      tick={CHART_CATEGORY_AXIS_TICK}
                     />
                     <Tooltip />
                     <Bar
@@ -285,7 +327,7 @@ export function PlanningAnalyticsDashboard({
                       fill={PLANNING_HIGH_MATERIALITY_COLOR}
                       radius={[0, 6, 6, 0]}
                     >
-                      <LabelList dataKey="value" position="right" fontSize={12} />
+                      <LabelList dataKey="value" position="right" fontSize={CHART_VALUE_LABEL_SIZE} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>

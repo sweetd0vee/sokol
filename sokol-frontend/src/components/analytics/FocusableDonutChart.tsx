@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { PALETTE } from './analyticsPalette';
+import { CHART_LEGEND_STYLE, CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { contrastLabelColor } from './chartContrast';
 
 export type DonutDatum = {
@@ -12,6 +13,9 @@ export type DonutDatum = {
 type FocusableDonutChartProps = {
   data: DonutDatum[];
   palette?: readonly string[];
+  /** What to show on segment labels. Defaults to percent; absolute values appear in the tooltip. */
+  labelMode?: 'value' | 'percent' | 'both';
+  /** @deprecated Use labelMode instead. */
   showPercentInLabel?: boolean;
   /** When false, values appear only in the hover tooltip. */
   showValueLabels?: boolean;
@@ -25,12 +29,12 @@ type LabelProps = {
   outerRadius?: number;
   value?: number;
   percent?: number;
-  showPercent?: boolean;
+  labelMode?: 'value' | 'percent' | 'both';
   fill?: string;
   payload?: DonutDatum;
 };
 
-function DonutValueLabel({
+function PieValueLabel({
   cx = 0,
   cy = 0,
   midAngle = 0,
@@ -38,7 +42,7 @@ function DonutValueLabel({
   outerRadius = 0,
   value = 0,
   percent = 0,
-  showPercent = false,
+  labelMode = 'percent',
   fill,
   payload,
 }: LabelProps) {
@@ -46,12 +50,42 @@ function DonutValueLabel({
     return null;
   }
   const RADIAN = Math.PI / 180;
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.52;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.62;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   const segmentFill = payload?.color ?? fill;
   const textColor = contrastLabelColor(segmentFill);
   const percentLabel = `${Math.round(percent * 100)}%`;
+
+  if (labelMode === 'both') {
+    return (
+      <g style={{ pointerEvents: 'none' }}>
+        <text
+          x={x}
+          y={y - 5}
+          fill={textColor}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={15}
+          fontWeight={700}
+        >
+          {value}
+        </text>
+        <text
+          x={x}
+          y={y + 11}
+          fill={textColor}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={12}
+          fontWeight={600}
+          opacity={0.92}
+        >
+          {percentLabel}
+        </text>
+      </g>
+    );
+  }
 
   return (
     <g style={{ pointerEvents: 'none' }}>
@@ -61,10 +95,10 @@ function DonutValueLabel({
         fill={textColor}
         textAnchor="middle"
         dominantBaseline="central"
-        fontSize={showPercent ? 14 : 15}
+        fontSize={labelMode === 'percent' ? 15 : 16}
         fontWeight={700}
       >
-        {showPercent ? percentLabel : value}
+        {labelMode === 'percent' ? percentLabel : value}
       </text>
     </g>
   );
@@ -73,31 +107,31 @@ function DonutValueLabel({
 export function FocusableDonutChart({
   data,
   palette = PALETTE,
-  showPercentInLabel = false,
+  labelMode = 'percent',
+  showPercentInLabel,
   showValueLabels = true,
 }: FocusableDonutChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const colors = palette.length > 0 ? palette : PALETTE;
+  const resolvedLabelMode =
+    showPercentInLabel === undefined ? labelMode : showPercentInLabel ? 'percent' : 'value';
 
   return (
     <div className="h-full min-h-[13rem]">
       <ResponsiveContainer width="100%" height="100%">
-        <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+        <PieChart margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
           <Pie
             data={data}
             dataKey="value"
             nameKey="name"
             cx="50%"
-            cy="44%"
-            innerRadius="48%"
-            outerRadius="78%"
-            paddingAngle={2.5}
-            cornerRadius={4}
-            stroke="#ffffff"
-            strokeWidth={2}
+            cy="42%"
+            innerRadius={0}
+            outerRadius="72%"
+            stroke="none"
             label={
               showValueLabels
-                ? (props) => <DonutValueLabel {...props} showPercent={showPercentInLabel} />
+                ? (props) => <PieValueLabel {...props} labelMode={resolvedLabelMode} />
                 : false
             }
             labelLine={false}
@@ -113,8 +147,8 @@ export function FocusableDonutChart({
                   key={entry.name}
                   fill={entry.color ?? colors[index % colors.length]}
                   fillOpacity={isDimmed ? 0.32 : 1}
-                  stroke={isActive ? '#0f172a' : '#ffffff'}
-                  strokeWidth={isActive ? 2.5 : 2}
+                  stroke={isActive ? '#0f172a' : 'none'}
+                  strokeWidth={isActive ? 2 : 0}
                   style={{
                     cursor: 'pointer',
                     filter: isDimmed ? 'brightness(0.72) saturate(0.85)' : isActive ? 'brightness(1.04)' : undefined,
@@ -131,22 +165,17 @@ export function FocusableDonutChart({
               const payload = item?.payload as DonutDatum | undefined;
               const total = data.reduce((sum, entry) => sum + entry.value, 0);
               const percent = total > 0 ? Math.round((numericValue / total) * 100) : 0;
-              const displayValue = showPercentInLabel ? `${numericValue} (${percent}%)` : numericValue;
+              const displayValue = `${numericValue} (${percent}%)`;
               return [displayValue, payload?.name ?? name];
             }}
-            contentStyle={{
-              borderRadius: 10,
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 8px 20px rgba(15, 23, 42, 0.08)',
-              fontSize: 13,
-            }}
+            contentStyle={CHART_TOOLTIP_STYLE}
           />
           <Legend
             verticalAlign="bottom"
             align="center"
             iconType="circle"
-            iconSize={8}
-            wrapperStyle={{ fontSize: 13, paddingTop: 4 }}
+            iconSize={9}
+            wrapperStyle={{ ...CHART_LEGEND_STYLE, paddingTop: 4 }}
           />
         </PieChart>
       </ResponsiveContainer>

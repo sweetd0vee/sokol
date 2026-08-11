@@ -394,6 +394,63 @@ export function buildAuditorPeriodMatrix(
   return { periods, rows };
 }
 
+export type DvaAuditorPeriodCell = {
+  checks: number;
+  recommendations: number;
+};
+
+export type DvaAuditorPeriodRow = {
+  auditor: string;
+  total: number;
+  byPeriod: Record<string, DvaAuditorPeriodCell>;
+};
+
+/** Combined checks (by leader × start date) + recommendations (by auditor × deadline). */
+export function buildDvaAuditorPeriodMatrix(
+  checks: Check[],
+  recommendations: Recommendation[],
+  granularity: PeriodGranularity,
+): { periods: PeriodBucket[]; rows: DvaAuditorPeriodRow[] } {
+  const periodMap = new Map<string, PeriodBucket>();
+  const rowMap = new Map<string, DvaAuditorPeriodRow>();
+
+  const touchRow = (auditorRaw: string) => {
+    const auditor = auditorRaw.trim() || 'Не указан';
+    return rowMap.get(auditor) ?? { auditor, total: 0, byPeriod: {} };
+  };
+
+  const add = (auditorRaw: string, period: PeriodBucket, field: 'checks' | 'recommendations') => {
+    periodMap.set(period.key, period);
+    const row = touchRow(auditorRaw);
+    const cell = row.byPeriod[period.key] ?? { checks: 0, recommendations: 0 };
+    cell[field] += 1;
+    row.byPeriod[period.key] = cell;
+    row.total += 1;
+    rowMap.set(row.auditor, row);
+  };
+
+  checks.forEach((check) => {
+    const startMs = parseDateValue(check.start_date);
+    if (startMs === null) {
+      return;
+    }
+    add(check.check_leader, getPeriodBucket(startMs, granularity), 'checks');
+  });
+
+  recommendations.forEach((item) => {
+    const deadlineMs = parseDateValue(item.deadline);
+    if (deadlineMs === null) {
+      return;
+    }
+    add(item.auditor, getPeriodBucket(deadlineMs, granularity), 'recommendations');
+  });
+
+  return {
+    periods: [...periodMap.values()].sort((a, b) => a.sortKey - b.sortKey),
+    rows: [...rowMap.values()].sort((a, b) => b.total - a.total),
+  };
+}
+
 export function collectAnalyticsAuditors(checks: Check[], recommendations: Recommendation[]): string[] {
   return [
     ...new Set(

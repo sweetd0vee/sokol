@@ -9,6 +9,18 @@ import { registerDashboardChart } from '../../utils/dashboardChartRegistry';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
+/** Shared Recharts typography for analytics dashboards. */
+export const CHART_AXIS_TICK = { fontSize: 15 } as const;
+export const CHART_CATEGORY_AXIS_TICK = { fontSize: 14 } as const;
+export const CHART_LEGEND_STYLE = { fontSize: 15 } as const;
+export const CHART_VALUE_LABEL_SIZE = 14;
+export const CHART_TOOLTIP_STYLE = {
+  fontSize: 14,
+  borderRadius: 10,
+  border: '1px solid #e2e8f0',
+  boxShadow: '0 8px 20px rgba(15, 23, 42, 0.08)',
+} as const;
+
 function slugifyFilename(value: string) {
   return (
     value
@@ -354,7 +366,7 @@ export function ChartCard({
           className={`flex w-full flex-col rounded-lg border bg-white px-2 py-1.5 shadow-sm dark:bg-slate-800 ${accentClassName} ${className}`}
         >
           <div className="mb-1.5 flex shrink-0 items-center justify-between gap-2">
-            <h3 className="shrink-0 text-xs font-semibold leading-snug text-sber-dark dark:text-sber-light">{title}</h3>
+            <h3 className="shrink-0 text-sm font-semibold leading-snug text-sber-dark dark:text-sber-light">{title}</h3>
             {toolbar}
           </div>
           <div ref={captureRef} className="min-w-0">
@@ -372,10 +384,10 @@ export function ChartCard({
         <div className="mb-0.5 flex items-start justify-between gap-1.5">
           <div className="min-w-0 space-y-0">
             <div className="inline-flex items-center rounded-md pr-1 text-sber-dark dark:text-sber-light">
-              <h3 className="text-xs font-semibold leading-snug">{title}</h3>
+              <h3 className="text-sm font-semibold leading-snug">{title}</h3>
             </div>
             {description ? (
-              <p className="text-[10px] leading-snug text-gray-500 dark:text-slate-400">{description}</p>
+              <p className="text-xs leading-snug text-gray-500 dark:text-slate-400">{description}</p>
             ) : null}
           </div>
           {toolbar}

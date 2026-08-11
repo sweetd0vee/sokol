@@ -16,7 +16,7 @@ import type { Recommendation } from '../../types/recommendation';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
-import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { EffectivenessMatrixChart } from './EffectivenessMatrixChart';
@@ -218,10 +218,10 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={flowSeries} margin={{ top: 22, right: 12, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="label" tick={{ fontSize: 13 }} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 13 }} />
+                    <XAxis dataKey="label" tick={CHART_AXIS_TICK} />
+                    <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
                     <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: 13 }} />
+                    <Legend wrapperStyle={CHART_LEGEND_STYLE} />
                     <Bar dataKey="total" name="За период" fill={CHECKS_PALETTE[11]} radius={[4, 4, 0, 0]} />
                     <Line type="monotone" dataKey="cumulative" name="Всего" stroke={CHECKS_PALETTE[0]} strokeWidth={2.5} dot={{ r: 3 }} />
                   </ComposedChart>
@@ -249,8 +249,8 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={viewDistribution} layout="vertical" margin={{ top: 8, right: 24, left: 16, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 13 }} />
-                    <YAxis dataKey="name" type="category" width={92} tick={{ fontSize: 13 }} />
+                    <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
+                    <YAxis dataKey="name" type="category" width={92} tick={CHART_AXIS_TICK} />
                     <Tooltip />
                     <Bar dataKey="value" name="Проверки" fill={CHECKS_PALETTE[8]} radius={[0, 6, 6, 0]} />
                   </BarChart>
@@ -274,7 +274,7 @@ export function ChecksAnalyticsDashboard({ checks, recommendations }: ChecksAnal
             {typeDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableDonutChart data={typeDistribution} palette={CHECKS_PALETTE} showPercentInLabel />
+              <FocusableDonutChart data={typeDistribution} palette={CHECKS_PALETTE} />
             )}
           </ChartCard>
         ),
