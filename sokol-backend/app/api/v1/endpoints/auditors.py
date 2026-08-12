@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.crud.dictionary_errors import DuplicateDictionaryError
 from app.crud.auditors_crud import (
     count_auditors,
     create_auditor,
@@ -31,7 +32,10 @@ async def create_auditor_endpoint(
     session: AsyncSession = Depends(get_db_session),
     _: object = Depends(require_admin),
 ) -> AuditorRead:
-    return await create_auditor(session, auditor_in)
+    try:
+        return await create_auditor(session, auditor_in)
+    except DuplicateDictionaryError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.get("", response_model=AuditorListResponse)
@@ -67,7 +71,10 @@ async def update_auditor_endpoint(
     auditor = await get_auditor(session, auditor_id)
     if not auditor:
         raise HTTPException(status_code=404, detail="Аудитор не найден.")
-    return await update_auditor(session, auditor, auditor_in)
+    try:
+        return await update_auditor(session, auditor, auditor_in)
+    except DuplicateDictionaryError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.delete("/{auditor_id}", status_code=status.HTTP_204_NO_CONTENT)

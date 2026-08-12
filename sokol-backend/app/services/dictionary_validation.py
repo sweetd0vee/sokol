@@ -11,6 +11,7 @@ from sqlalchemy.orm import DeclarativeBase
 from app.models.auditors import Auditor
 from app.models.check_kinds import CheckKind
 from app.models.effectiveness_ratings import EffectivenessRating
+from app.utils.dictionary_text import normalize_dictionary_label
 
 
 class DictionaryRefError(ValueError):
@@ -31,8 +32,12 @@ async def _value_exists(
     column,
     value: str,
 ) -> bool:
-    result = await session.execute(select(model.id).where(column == value).limit(1))
-    return result.scalar_one_or_none() is not None
+    normalized = normalize_dictionary_label(value)
+    result = await session.execute(select(model))
+    for item in result.scalars():
+        if normalize_dictionary_label(str(getattr(item, column.key))) == normalized:
+            return True
+    return False
 
 
 async def ensure_auditor_name(

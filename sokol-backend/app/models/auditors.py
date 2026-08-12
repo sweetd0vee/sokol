@@ -16,4 +16,4 @@ class Auditor(Base):
         default=uuid4,
         index=True,
     )
-    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)

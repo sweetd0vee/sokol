@@ -61,6 +61,9 @@ services:
       SOKOL_MINIO_ACCESS_KEY: ${SOKOL_MINIO_ACCESS_KEY:-sokol}
       SOKOL_MINIO_SECRET_KEY: ${SOKOL_MINIO_SECRET_KEY:-change-me}
       SOKOL_MINIO_SECURE: ${SOKOL_MINIO_SECURE:-0}
+      SOKOL_JWT_SECRET: ${SOKOL_JWT_SECRET:-sokol-dev-jwt-secret-change-me}
+      SOKOL_ADMIN_PASSWORD: ${SOKOL_ADMIN_PASSWORD:-admin}
+      SOKOL_DEFAULT_USER_PASSWORD: ${SOKOL_DEFAULT_USER_PASSWORD:-auditor}
     depends_on:
       db:
         condition: service_healthy

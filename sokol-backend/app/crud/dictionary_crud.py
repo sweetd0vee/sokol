@@ -8,6 +8,9 @@ from sqlalchemy import ColumnElement, Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
+from app.crud.dictionary_errors import DuplicateDictionaryError
+from app.utils.dictionary_text import normalize_dictionary_label
+
 ModelT = TypeVar("ModelT", bound=DeclarativeBase)
 
 
@@ -24,9 +27,46 @@ def apply_ilike_search(
     return query.where(or_(*(column.ilike(term) for column in columns)))
 
 
+async def find_dictionary_duplicate_by_label(
+    session: AsyncSession,
+    model: type[ModelT],
+    column: ColumnElement[Any],
+    value: str,
+    *,
+    exclude_id: Optional[UUID] = None,
+) -> Optional[ModelT]:
+    normalized = normalize_dictionary_label(value)
+    result = await session.execute(select(model))
+    for item in result.scalars():
+        if exclude_id is not None and getattr(item, "id") == exclude_id:
+            continue
+        current = getattr(item, column.key)
+        if normalize_dictionary_label(str(current)) == normalized:
+            return item
+    return None
+
+
 async def create_dictionary_item(
-    session: AsyncSession, model: type[ModelT], payload: dict[str, Any]
+    session: AsyncSession,
+    model: type[ModelT],
+    payload: dict[str, Any],
+    *,
+    label_field: Optional[str] = None,
+    dictionary_name: Optional[str] = None,
 ) -> ModelT:
+    if label_field and label_field in payload:
+        payload = dict(payload)
+        payload[label_field] = normalize_dictionary_label(str(payload[label_field]))
+        if dictionary_name:
+            column = getattr(model, label_field)
+            duplicate = await find_dictionary_duplicate_by_label(
+                session, model, column, payload[label_field]
+            )
+            if duplicate is not None:
+                raise DuplicateDictionaryError(
+                    dictionary=dictionary_name,
+                    label=payload[label_field],
+                )
     item = model(**payload)
     session.add(item)
     await session.commit()
@@ -72,8 +112,30 @@ async def count_dictionary_items(
 
 
 async def update_dictionary_item(
-    session: AsyncSession, item: ModelT, payload: dict[str, Any]
+    session: AsyncSession,
+    item: ModelT,
+    payload: dict[str, Any],
+    *,
+    label_field: Optional[str] = None,
+    dictionary_name: Optional[str] = None,
 ) -> ModelT:
+    if label_field and label_field in payload and payload[label_field] is not None:
+        payload = dict(payload)
+        payload[label_field] = normalize_dictionary_label(str(payload[label_field]))
+        if dictionary_name:
+            column = getattr(item.__class__, label_field)
+            duplicate = await find_dictionary_duplicate_by_label(
+                session,
+                item.__class__,
+                column,
+                payload[label_field],
+                exclude_id=getattr(item, "id"),
+            )
+            if duplicate is not None:
+                raise DuplicateDictionaryError(
+                    dictionary=dictionary_name,
+                    label=payload[label_field],
+                )
     for field, value in payload.items():
         setattr(item, field, value)
     session.add(item)

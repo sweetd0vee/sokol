@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_admin
+from app.crud.dictionary_errors import DuplicateDictionaryError
 from app.crud.departments_crud import (
     count_departments,
     create_department,
@@ -35,7 +36,10 @@ async def create_department_endpoint(
     session: AsyncSession = Depends(get_db_session),
     _: object = Depends(require_admin),
 ) -> DepartmentRead:
-    return await create_department(session, department_in)
+    try:
+        return await create_department(session, department_in)
+    except DuplicateDictionaryError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.get("", response_model=DepartmentListResponse)
@@ -73,7 +77,10 @@ async def update_department_endpoint(
     department = await get_department(session, department_id)
     if not department:
         raise HTTPException(status_code=404, detail="Департамент не найден.")
-    return await update_department(session, department, department_in)
+    try:
+        return await update_department(session, department, department_in)
+    except DuplicateDictionaryError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.delete("/{department_id}", status_code=status.HTTP_204_NO_CONTENT)

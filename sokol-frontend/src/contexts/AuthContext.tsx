@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, type ReactNode } from 'react';
 import { loginRequest } from '../api/auth';
 import { getErrorMessage, toApiError } from '../api/errors';
-import { AUTH_STORAGE_KEY } from '../constants/storage';
+import { AUTH_STORAGE_KEY, PROFILE_EVENT_NAME, PROFILE_STORAGE_KEY } from '../constants/storage';
 import { AuthContext, type AuthContextValue, type User, type UserRole } from './auth';
 
 interface AuthProviderProps {
@@ -78,6 +78,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       };
       setUser(userData);
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userData));
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ fullName: data.username }));
+      window.dispatchEvent(new CustomEvent(PROFILE_EVENT_NAME, { detail: data.username }));
       return true;
     } catch (error) {
       const apiError = toApiError(error);

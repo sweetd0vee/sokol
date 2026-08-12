@@ -41,7 +41,10 @@ export function useCurrentUserName() {
   }, []);
 
   return useMemo(() => {
-    if (profileFullName) {return profileFullName;}
-    return user?.displayName?.trim() || user?.shortName?.trim() || '';
+    const authName = user?.shortName?.trim() || user?.displayName?.trim() || '';
+    if (authName) {
+      return authName;
+    }
+    return profileFullName;
   }, [profileFullName, user?.displayName, user?.shortName]);
 }

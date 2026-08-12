@@ -16,4 +16,4 @@ class Department(Base):
         default=uuid4,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)

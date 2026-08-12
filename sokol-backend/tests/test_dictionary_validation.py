@@ -27,7 +27,17 @@ def _session_with_hits(hits: dict[str, bool]) -> AsyncMock:
     async def execute(statement):  # noqa: ANN001
         result = MagicMock()
         table = _table_name(statement)
-        result.scalar_one_or_none.return_value = 1 if hits.get(table) else None
+        if hits.get(table):
+            item = MagicMock()
+            if table == "auditors":
+                item.full_name = "Важник Д.С."
+            elif table == "check_kinds":
+                item.label = "Корпо"
+            elif table == "effectiveness_ratings":
+                item.label = "удовлетворительно"
+            result.scalars.return_value = [item]
+        else:
+            result.scalars.return_value = []
         return result
 
     session.execute.side_effect = execute

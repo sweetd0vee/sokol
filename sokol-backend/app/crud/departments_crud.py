@@ -20,7 +20,11 @@ async def create_department(
     session: AsyncSession, department_in: DepartmentCreate
 ) -> Department:
     return await create_dictionary_item(
-        session, Department, department_in.model_dump()
+        session,
+        Department,
+        department_in.model_dump(),
+        label_field="name",
+        dictionary_name="departments",
     )
 
 
@@ -64,7 +68,11 @@ async def update_department(
     department_in: DepartmentUpdate,
 ) -> Department:
     return await update_dictionary_item(
-        session, department, department_in.model_dump(exclude_unset=True)
+        session,
+        department,
+        department_in.model_dump(exclude_unset=True),
+        label_field="name",
+        dictionary_name="departments",
     )
 
 

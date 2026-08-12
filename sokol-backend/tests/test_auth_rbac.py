@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import unittest
 from unittest.mock import AsyncMock, patch
+from uuid import uuid4
 
 os.environ.setdefault(
     "DATABASE_URL",
@@ -16,15 +17,26 @@ from fastapi.testclient import TestClient
 
 from app.api.deps import CurrentUser, get_current_user
 from app.core.roles import Role
-from app.core.users import clear_auth_users_cache
+from app.core.security import hash_password
 from app.db.session import get_db_session
 from app.main import app
+from app.models.users import User
+
+
+def _admin_user() -> User:
+    return User(
+        id=uuid4(),
+        username="Админ А.А.",
+        password_hash=hash_password("admin"),
+        role=Role.ADMIN.value,
+        display_name="Администратор",
+        aliases="admin",
+        is_active=True,
+    )
 
 
 class AuthRbacTests(unittest.TestCase):
     def setUp(self) -> None:
-        clear_auth_users_cache()
-
         async def _fake_session():
             yield AsyncMock()
 
@@ -33,7 +45,6 @@ class AuthRbacTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         app.dependency_overrides.clear()
-        clear_auth_users_cache()
         self.client.close()
 
     def test_status_is_public(self) -> None:
@@ -44,7 +55,9 @@ class AuthRbacTests(unittest.TestCase):
         response = self.client.get("/api/v1/checks")
         self.assertEqual(response.status_code, 401)
 
-    def test_login_and_me(self) -> None:
+    @patch("app.api.v1.endpoints.auth.get_user_by_username", new_callable=AsyncMock)
+    def test_login_and_me(self, mock_get_user: AsyncMock) -> None:
+        mock_get_user.return_value = _admin_user()
         login = self.client.post(
             "/api/v1/auth/login",
             json={"username": "Админ А.А.", "password": "admin"},
@@ -61,7 +74,9 @@ class AuthRbacTests(unittest.TestCase):
         self.assertEqual(me.status_code, 200)
         self.assertEqual(me.json()["role"], "admin")
 
-    def test_login_accepts_admin_alias(self) -> None:
+    @patch("app.api.v1.endpoints.auth.get_user_by_username", new_callable=AsyncMock)
+    def test_login_accepts_admin_alias(self, mock_get_user: AsyncMock) -> None:
+        mock_get_user.return_value = _admin_user()
         login = self.client.post(
             "/api/v1/auth/login",
             json={"username": "admin", "password": "admin"},
@@ -73,8 +88,8 @@ class AuthRbacTests(unittest.TestCase):
     def test_auditor_cannot_delete_check(self) -> None:
         async def _auditor() -> CurrentUser:
             return CurrentUser(
-                username="Аудитор А.А.",
-                display_name="Аудитор А.А.",
+                username="Важник Д.С.",
+                display_name="Важник Д.С.",
                 role=Role.AUDITOR,
             )
 
@@ -85,8 +100,8 @@ class AuthRbacTests(unittest.TestCase):
     def test_auditor_cannot_mutate_settings(self) -> None:
         async def _auditor() -> CurrentUser:
             return CurrentUser(
-                username="Аудитор А.А.",
-                display_name="Аудитор А.А.",
+                username="Важник Д.С.",
+                display_name="Важник Д.С.",
                 role=Role.AUDITOR,
             )
 

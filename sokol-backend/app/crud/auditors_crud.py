@@ -20,7 +20,11 @@ async def create_auditor(
     session: AsyncSession, auditor_in: AuditorCreate
 ) -> Auditor:
     return await create_dictionary_item(
-        session, Auditor, auditor_in.model_dump()
+        session,
+        Auditor,
+        auditor_in.model_dump(),
+        label_field="full_name",
+        dictionary_name="auditors",
     )
 
 
@@ -60,7 +64,11 @@ async def update_auditor(
     session: AsyncSession, auditor: Auditor, auditor_in: AuditorUpdate
 ) -> Auditor:
     return await update_dictionary_item(
-        session, auditor, auditor_in.model_dump(exclude_unset=True)
+        session,
+        auditor,
+        auditor_in.model_dump(exclude_unset=True),
+        label_field="full_name",
+        dictionary_name="auditors",
     )
 
 

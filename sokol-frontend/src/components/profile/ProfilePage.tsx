@@ -1,83 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { AVATAR_PRESETS, readStoredAvatarId, resolveAvatarSrc } from '../../constants/avatars';
 import { Input } from '../ui/Input';
-import {
-  AVATAR_EVENT_NAME,
-  AVATAR_STORAGE_KEY,
-  PROFILE_EVENT_NAME,
-  PROFILE_STORAGE_KEY,
-} from '../../constants/storage';
-import { isValidFullNameShort, normalizeFullNameShort } from '../../utils/fullName';
-import { FORM_PAGE_CLASS, FORM_SAVE_BUTTON_CLASS } from '../../constants/formLayout';
-
-type ProfileInfo = {
-  fullName: string;
-};
+import { AVATAR_EVENT_NAME, AVATAR_STORAGE_KEY } from '../../constants/storage';
+import { FORM_PAGE_CLASS } from '../../constants/formLayout';
 
 export function ProfilePage() {
   const { user } = useAuth();
-  const displayName = user?.displayName ?? user?.shortName ?? '—';
+  const fullName = user?.shortName ?? user?.displayName ?? '—';
   const [avatarId, setAvatarId] = useState(() => readStoredAvatarId());
-  const [fullNameError, setFullNameError] = useState('');
   const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false);
-  const [profile, setProfile] = useState<ProfileInfo>(() => {
-    const fallback: ProfileInfo = {
-      fullName: displayName === '—' ? '' : displayName,
-    };
-    const stored = localStorage.getItem(PROFILE_STORAGE_KEY);
-    if (!stored) {
-      return fallback;
-    }
-    try {
-      const parsed = JSON.parse(stored) as Partial<ProfileInfo>;
-      return { fullName: parsed.fullName ?? fallback.fullName };
-    } catch {
-      return fallback;
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
-    window.dispatchEvent(new CustomEvent(PROFILE_EVENT_NAME, { detail: profile.fullName }));
-  }, [profile]);
 
   const handleSelectAvatar = (id: string) => {
     setAvatarId(id);
     localStorage.setItem(AVATAR_STORAGE_KEY, id);
     window.dispatchEvent(new CustomEvent(AVATAR_EVENT_NAME, { detail: id }));
     setIsAvatarPickerOpen(false);
-  };
-
-  const handleFullNameChange = (value: string) => {
-    setProfile({ fullName: value });
-    if (fullNameError) {
-      setFullNameError('');
-    }
-  };
-
-  const handleFullNameBlur = () => {
-    const normalized = normalizeFullNameShort(profile.fullName);
-    setProfile({ fullName: normalized });
-    if (!normalized) {
-      setFullNameError('');
-      return;
-    }
-    if (!isValidFullNameShort(normalized)) {
-      setFullNameError('Введите в формате: Фамилия И.О. (например: Иванов И.О.)');
-      return;
-    }
-    setFullNameError('');
-  };
-
-  const handleSaveProfile = () => {
-    const normalized = normalizeFullNameShort(profile.fullName);
-    setProfile({ fullName: normalized });
-    if (normalized && !isValidFullNameShort(normalized)) {
-      setFullNameError('Введите в формате: Фамилия И.О. (например: Иванов И.О.)');
-      return;
-    }
-    setFullNameError('');
   };
 
   const selectedSrc = resolveAvatarSrc(avatarId);
@@ -135,27 +73,17 @@ export function ProfilePage() {
 
           <Input
             label="Фамилия И.О."
-            value={profile.fullName}
-            onChange={handleFullNameChange}
-            onBlur={handleFullNameBlur}
+            value={fullName}
+            onChange={() => {}}
             placeholder="Иванов И.О."
             className="w-[288px] max-w-[288px]"
-            inputClassName="py-1.5 text-sm"
+            inputClassName="py-1.5 text-sm bg-gray-50"
+            disabled
           />
-          {fullNameError && (
-            <p className="w-[288px] max-w-[288px] text-left text-sm text-red-600">{fullNameError}</p>
-          )}
+          <p className="w-[288px] max-w-[288px] text-left text-sm text-gray-500">
+            Логин и ФИО в профиле совпадают и задаются учётной записью.
+          </p>
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={handleSaveProfile}
-          className={`${FORM_SAVE_BUTTON_CLASS} min-w-[8.75rem]`}
-        >
-          Сохранить
-        </button>
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ from app.models.recommendations import (
     RecommendationAdditionalStatus,
     RecommendationStatus,
 )
+from app.models.users import User
 
 __all__ = [
     "Attachment",
@@ -25,4 +26,5 @@ __all__ = [
     "Recommendation",
     "RecommendationAdditionalStatus",
     "RecommendationStatus",
+    "User",
 ]
