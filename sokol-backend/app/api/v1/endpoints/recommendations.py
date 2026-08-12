@@ -6,13 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db_session
 from app.api.deps import require_admin
 from app.schemas.recommendations import (
+    RecommendationBatchRequest,
     RecommendationCreate,
     RecommendationListResponse,
     RecommendationRead,
     RecommendationUpdate,
 )
 from app.services import recommendations_service
-from app.services.crud_errors import InvalidReferenceError, ResourceNotFoundError
+from app.services.crud_errors import InvalidReferenceError, ResourceNotFoundError, StorageOperationError
 from app.services.dictionary_validation import DictionaryRefError
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
@@ -29,6 +30,21 @@ async def create_recommendation_endpoint(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except DictionaryRefError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/batch", response_model=RecommendationListResponse, status_code=status.HTTP_201_CREATED)
+async def batch_recommendations_endpoint(
+    payload: RecommendationBatchRequest,
+    session: AsyncSession = Depends(get_db_session),
+) -> RecommendationListResponse:
+    try:
+        return await recommendations_service.batch_recommendations(session, payload)
+    except InvalidReferenceError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except DictionaryRefError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except StorageOperationError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @router.get("", response_model=RecommendationListResponse)
@@ -89,4 +105,6 @@ async def delete_recommendation_endpoint(
         await recommendations_service.delete_recommendation(session, recommendation_id)
     except ResourceNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except StorageOperationError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
     return None

@@ -13,7 +13,7 @@ from app.models.checks import Check, CheckStatus
 from app.models.recommendations import Recommendation
 from app.schemas.checks import CheckCreate, CheckUpdate
 from app.services.dictionary_validation import validate_check_dictionary_fields
-from app.services.storage.minio_storage import get_storage
+from app.services.storage.minio_storage import check_bucket_name, get_storage
 from app.utils.check_key import CheckKeySeed, generate_check_serial_number
 
 logger = logging.getLogger(__name__)
@@ -184,6 +184,17 @@ async def update_check(
             exclude_check_id=check.id,
         )
         if check.serial_number != old_serial_number:
+            storage = get_storage()
+            if storage is not None:
+                try:
+                    await storage.copy_check_bucket_objects(old_serial_number, check.serial_number)
+                except Exception:  # noqa: BLE001
+                    logger.exception(
+                        "Failed to migrate MinIO bucket for check serial %s -> %s",
+                        old_serial_number,
+                        check.serial_number,
+                    )
+                    raise
             await session.execute(
                 update(Recommendation)
                 .where(Recommendation.check_id == check.id)
@@ -192,11 +203,21 @@ async def update_check(
             await session.execute(
                 update(Attachment)
                 .where(Attachment.check_serial_number == old_serial_number)
-                .values(check_serial_number=check.serial_number),
+                .values(
+                    check_serial_number=check.serial_number,
+                    bucket=check_bucket_name(check.serial_number),
+                ),
             )
     session.add(check)
     await session.commit()
     await session.refresh(check)
+    if should_regenerate_serial and check.serial_number != old_serial_number:
+        storage = get_storage()
+        if storage is not None:
+            try:
+                await storage.delete_check_bucket(old_serial_number)
+            except Exception:  # noqa: BLE001
+                logger.exception("Failed to delete old MinIO bucket for check %s", old_serial_number)
     return check
 
 

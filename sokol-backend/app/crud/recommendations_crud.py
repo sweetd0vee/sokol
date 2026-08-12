@@ -41,6 +41,10 @@ async def _get_next_sequence_number(session: AsyncSession, check_id: int) -> int
     return int(result.scalar_one()) + 1
 
 
+async def get_next_sequence_number(session: AsyncSession, check_id: int) -> int:
+    return await _get_next_sequence_number(session, check_id)
+
+
 async def _renumber_recommendations_for_check(session: AsyncSession, check_id: int) -> None:
     result = await session.execute(
         select(Recommendation)
@@ -51,6 +55,50 @@ async def _renumber_recommendations_for_check(session: AsyncSession, check_id: i
     for index, item in enumerate(items, start=1):
         item.sequence_number = index
     session.add_all(items)
+
+
+async def renumber_recommendations_for_check(session: AsyncSession, check_id: int) -> None:
+    await _renumber_recommendations_for_check(session, check_id)
+
+
+async def list_recommendations_for_check(
+    session: AsyncSession,
+    check_id: int,
+) -> Sequence[Recommendation]:
+    result = await session.execute(
+        select(Recommendation)
+        .where(Recommendation.check_id == check_id)
+        .order_by(Recommendation.sequence_number, Recommendation.id)
+    )
+    return result.scalars().all()
+
+
+async def add_recommendation_row(
+    session: AsyncSession,
+    data: dict,
+    *,
+    check_id: int,
+    sequence_number: int,
+) -> Recommendation:
+    payload = dict(data)
+    if not payload.get("created_at"):
+        payload["created_at"] = date.today()
+    payload["sequence_number"] = sequence_number
+    recommendation = Recommendation(
+        check_id=check_id,
+        **payload,
+    )
+    session.add(recommendation)
+    await session.flush()
+    return recommendation
+
+
+async def delete_recommendation_row(
+    session: AsyncSession,
+    recommendation: Recommendation,
+) -> None:
+    await session.delete(recommendation)
+    await session.flush()
 
 
 async def create_recommendation(
@@ -66,15 +114,12 @@ async def create_recommendation(
             "manager": data.get("manager"),
         },
     )
-    if not data.get("created_at"):
-        data["created_at"] = date.today()
-    data["sequence_number"] = await _get_next_sequence_number(session, check_id)
-
-    recommendation = Recommendation(
+    recommendation = await add_recommendation_row(
+        session,
+        data,
         check_id=check_id,
-        **data,
+        sequence_number=await _get_next_sequence_number(session, check_id),
     )
-    session.add(recommendation)
     await session.commit()
     await session.refresh(recommendation)
     return recommendation
@@ -153,7 +198,6 @@ async def update_recommendation(
 
 async def delete_recommendation(session: AsyncSession, recommendation: Recommendation) -> None:
     check_id = recommendation.check_id
-    await session.delete(recommendation)
-    await session.flush()
+    await delete_recommendation_row(session, recommendation)
     await _renumber_recommendations_for_check(session, check_id)
     await session.commit()

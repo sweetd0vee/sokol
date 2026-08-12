@@ -5,11 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud import checks_crud, recommendations_crud
 from app.models.recommendations import Recommendation
 from app.schemas.recommendations import (
+    RecommendationBatchRequest,
     RecommendationCreate,
     RecommendationListResponse,
     RecommendationUpdate,
 )
+from app.services import attachments_service
 from app.services.crud_errors import InvalidReferenceError, ResourceNotFoundError
+from app.services.dictionary_validation import validate_recommendation_dictionary_fields
 
 
 async def create_recommendation(
@@ -24,6 +27,61 @@ async def create_recommendation(
         recommendation_in,
         check_id=check.id,
     )
+
+
+async def batch_recommendations(
+    session: AsyncSession,
+    payload: RecommendationBatchRequest,
+) -> RecommendationListResponse:
+    check = await checks_crud.get_check_by_serial(session, payload.serial_number)
+    if check is None:
+        raise InvalidReferenceError("Проверка с указанным ключом не найдена.")
+
+    normalized_items = []
+    for item in payload.items:
+        data = item.model_dump()
+        data["serial_number"] = check.serial_number
+        await validate_recommendation_dictionary_fields(
+            session,
+            {
+                "auditor": data.get("auditor"),
+                "manager": data.get("manager"),
+            },
+        )
+        normalized_items.append(data)
+
+    try:
+        if payload.mode == "replace":
+            existing = await recommendations_crud.list_recommendations_for_check(session, check.id)
+            for recommendation in existing:
+                await attachments_service.delete_attachments_for_entity(
+                    session,
+                    entity_type="recommendation",
+                    entity_id=recommendation.id,
+                )
+                await recommendations_crud.delete_recommendation_row(session, recommendation)
+            next_sequence = 1
+        else:
+            next_sequence = await recommendations_crud.get_next_sequence_number(session, check.id)
+
+        created = []
+        for index, data in enumerate(normalized_items, start=next_sequence):
+            created.append(
+                await recommendations_crud.add_recommendation_row(
+                    session,
+                    data,
+                    check_id=check.id,
+                    sequence_number=index,
+                )
+            )
+
+        await session.commit()
+        for recommendation in created:
+            await session.refresh(recommendation)
+        return RecommendationListResponse(items=list(created), total=len(created))
+    except Exception:
+        await session.rollback()
+        raise
 
 
 async def list_recommendations(
@@ -83,5 +141,16 @@ async def update_recommendation(
 
 async def delete_recommendation(session: AsyncSession, recommendation_id: int) -> None:
     recommendation = await get_recommendation(session, recommendation_id)
-    await recommendations_crud.delete_recommendation(session, recommendation)
+    try:
+        await attachments_service.delete_attachments_for_entity(
+            session,
+            entity_type="recommendation",
+            entity_id=recommendation.id,
+        )
+        await recommendations_crud.delete_recommendation_row(session, recommendation)
+        await recommendations_crud.renumber_recommendations_for_check(session, recommendation.check_id)
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
 

@@ -28,6 +28,8 @@ type FetchRecommendationsParams = {
   serial_number?: string;
 };
 
+export type RecommendationBatchMode = 'append' | 'replace';
+
 export async function fetchRecommendations(
   params: FetchRecommendationsParams = {},
 ): Promise<{ items: Recommendation[]; total: number }> {
@@ -52,6 +54,30 @@ export async function createRecommendation(recommendation: Recommendation): Prom
     return mapRecommendationFromApi(data);
   } catch (error) {
     const message = getErrorMessage(error, 'Не удалось создать рекомендацию.');
+    throw new Error(message);
+  }
+}
+
+export async function batchRecommendations(
+  serialNumber: string,
+  items: Recommendation[],
+  mode: RecommendationBatchMode = 'append',
+): Promise<{ items: Recommendation[]; total: number }> {
+  try {
+    const { data } = await api.post<RecommendationListResponse>('/api/v1/recommendations/batch', {
+      serial_number: serialNumber,
+      mode,
+      items: items.map((item) => ({
+        ...mapRecommendationToCreate(item),
+        serial_number: serialNumber,
+      })),
+    });
+    return {
+      items: data.items.map(mapRecommendationFromApi),
+      total: data.total,
+    };
+  } catch (error) {
+    const message = getErrorMessage(error, 'Не удалось сохранить рекомендации.');
     throw new Error(message);
   }
 }

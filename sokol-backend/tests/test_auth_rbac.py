@@ -21,6 +21,7 @@ from app.core.security import create_access_token, hash_password
 from app.db.session import get_db_session
 from app.main import app
 from app.models.users import User
+from app.services.crud_errors import ResourceNotFoundError
 
 
 def _admin_user() -> User:
@@ -217,9 +218,9 @@ class AuthRbacTests(unittest.TestCase):
 
         app.dependency_overrides[get_current_user] = _admin
         with patch(
-            "app.api.v1.endpoints.checks.get_check",
+            "app.services.checks_service.delete_check",
             new_callable=AsyncMock,
-            return_value=None,
+            side_effect=ResourceNotFoundError("Проверка не найдена."),
         ):
             response = self.client.delete("/api/v1/checks/999999")
         # Auth passed; missing entity → 404 from handler.

@@ -1,5 +1,7 @@
 import { toPng } from 'html-to-image';
 
+const EXPORT_PNG_PIXEL_RATIO = 3;
+
 export type DashboardChartCapture = {
   id: string;
   title: string;
@@ -19,6 +21,10 @@ type ChartRegistration = {
   description: string;
   getNode: () => HTMLElement | null;
 };
+
+const EXPORT_CAPTURE_ATTRIBUTE = 'data-analytics-export-capture-id';
+const EXPORT_TITLE_ATTRIBUTE = 'data-analytics-export-title';
+const EXPORT_DESCRIPTION_ATTRIBUTE = 'data-analytics-export-description';
 
 const chartRegistry = new Map<string, Set<ChartRegistration>>();
 
@@ -46,23 +52,45 @@ function isCaptureableNode(node: HTMLElement | null): node is HTMLElement {
 
 function resolveVisibleRegistration(id: string): { entry: ChartRegistration; node: HTMLElement } | null {
   const entries = chartRegistry.get(id);
-  if (!entries || entries.size === 0) {
-    return null;
-  }
   let fallback: { entry: ChartRegistration; node: HTMLElement } | null = null;
-  for (const entry of entries) {
-    const node = entry.getNode();
-    if (!node?.isConnected) {
+
+  if (entries && entries.size > 0) {
+    for (const entry of entries) {
+      const node = entry.getNode();
+      if (!node?.isConnected) {
+        continue;
+      }
+      if (!fallback) {
+        fallback = { entry, node };
+      }
+      if (isCaptureableNode(node)) {
+        return { entry, node };
+      }
+    }
+  }
+
+  const domFallback = resolveDomRegistration(id);
+  return domFallback ?? fallback;
+}
+
+function resolveDomRegistration(id: string): { entry: ChartRegistration; node: HTMLElement } | null {
+  const candidates = [...document.querySelectorAll(`[${EXPORT_CAPTURE_ATTRIBUTE}]`)];
+  for (const candidate of candidates) {
+    if (!(candidate instanceof HTMLElement) || candidate.getAttribute(EXPORT_CAPTURE_ATTRIBUTE) !== id) {
       continue;
     }
-    if (!fallback) {
-      fallback = { entry, node };
+    if (!isCaptureableNode(candidate)) {
+      continue;
     }
-    if (isCaptureableNode(node)) {
-      return { entry, node };
-    }
+    const entry: ChartRegistration = {
+      id,
+      title: candidate.getAttribute(EXPORT_TITLE_ATTRIBUTE) || id,
+      description: candidate.getAttribute(EXPORT_DESCRIPTION_ATTRIBUTE) || '',
+      getNode: () => candidate,
+    };
+    return { entry, node: candidate };
   }
-  return fallback;
+  return null;
 }
 
 function withClearedAncestorTransforms<T>(node: HTMLElement, run: () => Promise<T>): Promise<T> {
@@ -507,7 +535,7 @@ async function captureNodeAsPng(node: HTMLElement, width: number, height: number
       await delay(40);
       return toPng(node, {
         cacheBust: true,
-        pixelRatio: 2,
+        pixelRatio: EXPORT_PNG_PIXEL_RATIO,
         backgroundColor: '#ffffff',
         width,
         height,
@@ -543,7 +571,7 @@ async function captureNodeAsPng(node: HTMLElement, width: number, height: number
       await delay(80);
       return await toPng(clone, {
         cacheBust: true,
-        pixelRatio: 2,
+        pixelRatio: EXPORT_PNG_PIXEL_RATIO,
         backgroundColor: '#ffffff',
         width,
         height,

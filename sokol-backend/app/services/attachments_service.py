@@ -23,7 +23,7 @@ from app.services.crud_errors import (
     StorageOperationError,
     UnsupportedAttachmentContentTypeError,
 )
-from app.services.storage.minio_storage import require_storage
+from app.services.storage.minio_storage import get_storage, require_storage
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +156,14 @@ async def upload_attachment(
         content_type=content_type,
         size_bytes=stored.size_bytes,
     )
-    saved = await attachments_crud.create_attachment(session, row)
+    try:
+        saved = await attachments_crud.create_attachment(session, row)
+    except Exception:
+        try:
+            await storage.delete_object(stored.bucket, stored.object_key)
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to compensate orphan upload %s/%s", stored.bucket, stored.object_key)
+        raise
     return AttachmentUploadResponse(attachment=saved)
 
 
@@ -197,4 +204,26 @@ async def delete_attachment(session: AsyncSession, attachment_id: int) -> None:
         raise StorageOperationError("Не удалось удалить файл из хранилища.") from exc
 
     await attachments_crud.delete_attachment(session, attachment)
+
+
+async def delete_attachments_for_entity(
+    session: AsyncSession,
+    *,
+    entity_type: str,
+    entity_id: int,
+) -> None:
+    attachment_rows = await attachments_crud.list_attachments(
+        session,
+        entity_type=entity_type,
+        entity_id=entity_id,
+    )
+    storage = get_storage()
+    for attachment in attachment_rows:
+        if storage is not None:
+            try:
+                await storage.delete_object(attachment.bucket, attachment.object_key)
+            except Exception as exc:  # noqa: BLE001
+                logger.exception("MinIO delete failed for attachment %s", attachment.id)
+                raise StorageOperationError("Не удалось удалить файл из хранилища.") from exc
+        await attachments_crud.delete_attachment(session, attachment, commit=False)
 

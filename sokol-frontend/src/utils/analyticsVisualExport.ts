@@ -93,9 +93,22 @@ function fitImageSize(
 }
 
 const DOCX_PAGE_MARGIN_TWIPS = 720;
-const DOCX_CHART_MAX_WIDTH = 760;
-const DOCX_CHART_MAX_HEIGHT = 430;
+const DOCX_CHART_RENDER_SCALE = 3;
+const DOCX_CHART_MAX_WIDTH = 980;
+const DOCX_CHART_MAX_HEIGHT = 520;
 const DOCX_FRAME_BORDER = { style: BorderStyle.SINGLE, size: 1, color: 'D7DEE7' };
+
+const DOCX_LANDSCAPE_PAGE = {
+  size: {
+    orientation: PageOrientation.LANDSCAPE,
+  },
+  margin: {
+    top: DOCX_PAGE_MARGIN_TWIPS,
+    right: DOCX_PAGE_MARGIN_TWIPS,
+    bottom: DOCX_PAGE_MARGIN_TWIPS,
+    left: DOCX_PAGE_MARGIN_TWIPS,
+  },
+};
 
 async function buildVisualPdf(options: {
   documentTitle: string;
@@ -437,61 +450,67 @@ async function buildVisualDocx(options: {
     ),
   });
 
-  const chartChildren = charts.flatMap((chart, index) => {
+  const chartSections = charts.map((chart) => {
     const fitted = fitImageSize(
-      chart.width * 2,
-      chart.height * 2,
+      chart.width * DOCX_CHART_RENDER_SCALE,
+      chart.height * DOCX_CHART_RENDER_SCALE,
       DOCX_CHART_MAX_WIDTH,
       DOCX_CHART_MAX_HEIGHT,
     );
-    return [
-      new Paragraph({
-        text: chart.title,
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: index === 0 ? 320 : 560, after: 80 },
-      }),
-      new Paragraph({
-        children: [new TextRun({ text: chart.description, color: '64748B', size: 20 })],
-        spacing: { after: 180 },
-      }),
-      new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: {
-          top: DOCX_FRAME_BORDER,
-          bottom: DOCX_FRAME_BORDER,
-          left: DOCX_FRAME_BORDER,
-          right: DOCX_FRAME_BORDER,
-          insideHorizontal: DOCX_FRAME_BORDER,
-          insideVertical: DOCX_FRAME_BORDER,
-        },
-        rows: [
-          new TableRow({
-            children: [
-              new TableCell({
-                margins: {
-                  top: 160,
-                  bottom: 160,
-                  left: 160,
-                  right: 160,
-                },
-                children: [
-                  new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    children: [
-                      new ImageRun({
-                        data: dataUrlToUint8Array(chart.dataUrl),
-                        transformation: fitted,
-                        type: 'png',
-                      }),
-                    ],
-                  }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      }),
-    ];
+
+    return {
+      properties: {
+        page: DOCX_LANDSCAPE_PAGE,
+      },
+      children: [
+        new Paragraph({
+          text: chart.title,
+          heading: HeadingLevel.HEADING_2,
+          spacing: { after: 80 },
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: chart.description, color: '64748B', size: 20 })],
+          spacing: { after: 160 },
+        }),
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: {
+            top: DOCX_FRAME_BORDER,
+            bottom: DOCX_FRAME_BORDER,
+            left: DOCX_FRAME_BORDER,
+            right: DOCX_FRAME_BORDER,
+            insideHorizontal: DOCX_FRAME_BORDER,
+            insideVertical: DOCX_FRAME_BORDER,
+          },
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({
+                  margins: {
+                    top: 120,
+                    bottom: 120,
+                    left: 120,
+                    right: 120,
+                  },
+                  children: [
+                    new Paragraph({
+                      alignment: AlignmentType.CENTER,
+                      children: [
+                        new ImageRun({
+                          data: dataUrlToUint8Array(chart.dataUrl),
+                          transformation: fitted,
+                          type: 'png',
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        }),
+      ],
+    };
   });
 
   const doc = new Document({
@@ -500,17 +519,7 @@ async function buildVisualDocx(options: {
     sections: [
       {
         properties: {
-          page: {
-            size: {
-              orientation: PageOrientation.LANDSCAPE,
-            },
-            margin: {
-              top: DOCX_PAGE_MARGIN_TWIPS,
-              right: DOCX_PAGE_MARGIN_TWIPS,
-              bottom: DOCX_PAGE_MARGIN_TWIPS,
-              left: DOCX_PAGE_MARGIN_TWIPS,
-            },
-          },
+          page: DOCX_LANDSCAPE_PAGE,
         },
         children: [
           new Paragraph({
@@ -521,16 +530,16 @@ async function buildVisualDocx(options: {
           new Paragraph({
             children: [
               new TextRun({
-                text: 'Отчёт по выбранным дашбордам. Графики, подписи и легенды соответствуют экранной версии.',
+                text: 'Отчёт по выбранным дашбордам. Каждый график вынесен на отдельную страницу в крупном размере.',
                 color: '64748B',
               }),
             ],
             spacing: { after: 240 },
           }),
           metaTable,
-          ...chartChildren,
         ],
       },
+      ...chartSections,
     ],
   });
 

@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Literal
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -162,3 +163,9 @@ class RecommendationRead(RecommendationBase):
 class RecommendationListResponse(BaseModel):
     items: list[RecommendationRead]
     total: int
+
+
+class RecommendationBatchRequest(BaseModel):
+    serial_number: str = Field(..., min_length=1, max_length=32)
+    mode: Literal["append", "replace"] = "append"
+    items: list[RecommendationCreate] = Field(..., min_length=1, max_length=200)

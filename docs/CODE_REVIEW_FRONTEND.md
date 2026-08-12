@@ -1,7 +1,7 @@
 # Код-ревью frontend
 
 **Общая оценка:** 7.8 / 10 · React 19, TypeScript, Vite, TanStack Query  
-**Смысл оценки:** frontend хорошо закрывает основные сценарии аудитора, смена пароля уже подключена к API, lint/test стали жёстче. Главные риски теперь: edit-check по прямой ссылке, production stub route, усечение данных, неатомарные bulk операции и hardening вложений/экспортов.
+**Смысл оценки:** frontend хорошо закрывает основные сценарии аудитора, смена пароля уже подключена к API, lint/test стали жёстче. Главные риски теперь: edit-check по прямой ссылке, production stub route, усечение данных и hardening вложений/экспортов.
 
 ## Архитектура
 
@@ -21,7 +21,7 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 | App shell / routing | **7 / 10** | AuthProvider, layout и Router собраны понятно | В nav/route виден demo/stub раздел `kantsler` |
 | Auth UI / API client | **7.5 / 10** | Login, Bearer interceptor, 401 logout и change-password закрывают базовый сценарий | Нет OIDC-flow, нет e2e успешного login/change-password |
 | Checks workflow | **7 / 10** | Форма и список работают с backend; `serial_number` только читается из API | Edit route не fetchит check по id и может создать дубль при прямой ссылке |
-| Recommendations workflow | **7 / 10** | CRUD, статусы, вложения и связь с проверкой покрывают основной процесс | Save errors не показываются в форме; batch import/bulk replace рискованы при частичном сбое |
+| Recommendations workflow | **8 / 10** | CRUD, статусы, вложения, связь с проверкой и atomic batch import/replace покрывают основной процесс | Save errors не показываются в форме |
 | Data layer / context | **7 / 10** | API clients + mappers + React Query дают единый контракт | `SokolDataContext` тянет bulk limits 500/1000 без явного warning |
 | Attachments UI | **7 / 10** | Панели вложений подключены к check/recommendation, upload limits берутся с backend | Нужен общий banner/disabled state при недоступном MinIO |
 | Analytics dashboards | **8 / 10** | Серверные агрегаты, фильтры и визуализации полезны бизнесу | При росте данных нужен drill-down/server pagination |
@@ -29,7 +29,7 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 | Planning | **7 / 10** | Dashboard подключён к backend analytics | Export выключен, модуль надо явно позиционировать как ограниченный |
 | Tools / DOCX UI | **8 / 10** | UI соответствует текущему backend: section-ii, links, memorandum, parse recommendations | Нет очереди/прогресса для долгих jobs |
 | UI kit / forms | **8 / 10** | Есть переиспользуемые controls и `formLayout` constants | Нет Storybook/visual regression |
-| Tests / lint | **8.5 / 10** | 44 Vitest проходят, lint без ошибок/warnings; есть form payload tests и Playwright smoke | Нет e2e успешного auth flow, CRUD flow, storage state и truncation cases |
+| Tests / lint | **8.5 / 10** | 45 Vitest проходят, lint без ошибок/warnings; есть form payload/API tests и Playwright smoke | Нет e2e успешного auth flow, CRUD flow, storage state и truncation cases |
 
 ## Маршруты vs backend
 
@@ -60,7 +60,7 @@ Server aggregates ✅. Visual export (xlsx/pdf/docx/html) — DOM capture хру
 
 ## Тесты
 
-44 Vitest теста: filters, checkKey helpers, fileHelpers, reference options, form payload checks.
+45 Vitest тестов: filters, checkKey helpers, fileHelpers, reference options, form payload checks и recommendation batch API.
 
 Lint: 0 errors, 0 warnings.
 
@@ -121,22 +121,15 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 **Тесты:** mock API возвращает `items.length=500`, `total=501`; UI показывает warning. Поиск проверки за пределами первой страницы всё равно может выбрать нужную запись через API.
 
-### FE-04 · P1 · Bulk операции рекомендаций неатомарны
+### FE-04 · P1 · Bulk операции рекомендаций были неатомарны — закрыто
 
 **Где:** `src/contexts/SokolDataContext.tsx`, `src/components/checks/CheckRecommendationsBlock.tsx`.
 
-**Симптом:** `replaceRecommendationsForCheck` берёт существующие рекомендации по serial, удаляет их через `Promise.all`, затем создаёт новые через `Promise.all`. Импорт рекомендаций из АЗ в `CheckRecommendationsBlock` создаёт рекомендации по одной; при ошибке на N-й записи предыдущие уже сохранены.
+**Было:** `replaceRecommendationsForCheck` удалял старые рекомендации через `Promise.all`, затем создавал новые через `Promise.all`. Импорт рекомендаций из АЗ создавал rows по одной.
 
-**Риск:** если удаление прошло, а одно создание упало, пользователь теряет старые рекомендации или получает неполный набор. При import partial failure повторная попытка может создать дубликаты.
+**Исправлено:** добавлен `batchRecommendations`; `SokolDataContext` использует backend batch append/replace, а `CheckRecommendationsBlock` отправляет импорт из АЗ одним atomic request.
 
-**Как исправить:**
-
-1. Правильный вариант: backend endpoints для batch import / bulk replace с одной DB transaction.
-2. Frontend отправляет весь desired list и получает итоговые rows.
-3. До backend endpoint показывать прогресс, количество созданных строк и явный partial-failure error.
-4. Для `replaceRecommendationsForCheck` не использовать “delete all + create all” без transaction.
-
-**Тесты:** при ошибке create второй рекомендации старые рекомендации остаются; import fail на 3-й записи показывает “создано 2, не создано N” и не скрывает ошибку.
+**Тесты:** Vitest проверяет payload/response mapping batch API.
 
 ### FE-05 · P1 · Нет общего UX для недоступного MinIO
 
@@ -238,7 +231,6 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 | P0 | Edit проверки по прямой ссылке не должен создавать дубль |
 | P0 | Скрыть Kantsler |
 | P1 | «Показано X из Y» в таблицах |
-| P1 | Batch import / `replaceRecommendationsForCheck` — без backend transaction |
 | P1 | Banner/disabled state при недоступном storage |
 | P1 | Error UI для save recommendation и list fetch |
 | P1 | E2E успешный auth/logout/change-password |

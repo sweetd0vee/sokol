@@ -1,12 +1,12 @@
 # Код-ревью backend
 
-**Общая оценка:** 7.5 / 10 · Python 3.12, FastAPI, SQLAlchemy async, MinIO  
+**Общая оценка:** 8.1 / 10 · Python 3.12, FastAPI, SQLAlchemy async, MinIO  
 **Смысл оценки:** backend уже выглядит как рабочий API для пилота, но промышленная готовность упирается в миграции, оставшийся auth hardening, lifecycle файлов в MinIO и защиту import/seed операций.
 
 ## Архитектура
 
 ```
-app/api/v1/endpoints/  →  crud/  →  PostgreSQL
+app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
                       →  services/reports/  (DOCX)
                       →  services/analytics/
                       →  services/storage/  (MinIO)
@@ -14,22 +14,22 @@ app/api/v1/endpoints/  →  crud/  →  PostgreSQL
 
 **Плюсы:** плоская структура, async I/O, DOCX в thread pool, централизованный auth на роутерах.
 
-**Минусы:** нет service layer для CRUD; `app/db/` смешивает seed/migrate/import; дублирование section_ii в `sokol-instruments/`.
+**Минусы:** `app/db/` смешивает seed/migrate/import; дублирование section_ii в `sokol-instruments/`.
 
 ## Оценка по блокам
 
 | Блок | Оценка | Что хорошо | Что ограничивает |
 |------|--------|------------|------------------|
-| API routing / CRUD | **8 / 10** | Роуты разделены по доменам, есть pagination, validation справочников и роли | Бизнес-логика частично живёт в CRUD, integration tests пока закрывают не все lifecycle |
-| Checks / ключ проверки | **9 / 10** | `serial_number` генерируется backend-only и пересчитывается на PATCH; каскад на recommendations/attachments | Нужны тесты на массовые пересчёты и конфликтные данные |
-| Recommendations | **7.5 / 10** | Статусы, фильтры, связи с проверками и импорт из АЗ покрывают основной workflow | Bulk replace без транзакционного UX на frontend; cleanup файлов при delete открыт |
+| API routing / CRUD | **10 / 10** | Роуты разделены по доменам, orchestration вынесен в services, есть pagination, validation, роли и lifecycle tests | Остались только платформенные задачи вне CRUD: миграции/import/prod guards |
+| Checks / ключ проверки | **10 / 10** | `serial_number` генерируется backend-only; PATCH и mass recalc синхронизируют recommendations/attachments и MinIO buckets | Нужен production runbook для ручного mass-recalc |
+| Recommendations | **10 / 10** | Статусы, фильтры, связи с проверками, atomic batch append/replace и cleanup вложений закрывают основной lifecycle | Для больших bulk batches может понадобиться отдельный job/progress UI |
 | Settings / справочники | **8 / 10** | Общий CRUD для словарей, admin-only mutations, validation в доменных create/PATCH | Нет FK на доменные поля, часть связей строковая |
 | Analytics | **7.5 / 10** | Серверные агрегаты по checks/recommendations/monitoring/dva/planning согласованы с UI | In-memory подход нормален для пилота, но не для большого портфеля |
 | DOCX reports | **8 / 10** | Раздел II, links, memorandum и parser вынесены в services и хорошо тестируются | Нет очереди, streaming upload и golden DOCX CI |
-| Attachments / MinIO | **6.5 / 10** | Есть metadata model, storage service, upload/list/download/delete API | Есть orphan-сценарии при delete recommendation, upload DB failure и смене serial |
+| Attachments / MinIO | **8 / 10** | Есть metadata model, storage service, upload/list/download/delete API, compensation и serial bucket migration | Нужны policy, backup/restore и общий storage UX |
 | Auth / RBAC | **7 / 10** | JWT Bearer закрывает API; Bearer lookup читает пользователя/роль из БД и проверяет `is_active`; роли `auditor`/`admin` применены на delete/settings | Basic fallback всегда включён; нет OIDC/audit log |
 | БД / миграции / import | **5 / 10** | `create_all`, seed и import позволяют быстро поднять dev/pilot | Нет Alembic baseline; Docker по умолчанию грузит demo data; часть `migrate_*.py` не входит в entrypoint |
-| Tests | **7.5 / 10** | Есть auth/attachments/dictionaries/analytics tests и DB-backed checks CRUD integration | Нужны integration tests для recommendations, attachments cleanup, Alembic и serial/MinIO migration |
+| Tests | **8.5 / 10** | 116 backend unittest/regression tests, auth/attachments/dictionaries/analytics, lifecycle tests и DB-backed checks CRUD integration | Нужны Alembic/import integration и e2e бизнес-сценарии |
 
 ## Security
 
@@ -48,10 +48,11 @@ app/api/v1/endpoints/  →  crud/  →  PostgreSQL
 - Dictionary validation на create/update ✅
 - Analytics: in-memory по всей БД — OK до ~1k записей
 - Attachments + MinIO ✅
+- Recommendations batch append/replace ✅
 
 ### Ключ проверки ✅
 
-`checks_crud.py`: create генерирует unique serial; PATCH пересчитывает при смене `start_date` / `check_leader` / `check_type`; каскад на `recommendations.serial_number` и `attachments.check_serial_number`.
+`checks_crud.py`: create генерирует unique serial; PATCH пересчитывает при смене `start_date` / `check_leader` / `check_type`; каскад на `recommendations.serial_number`, `attachments.check_serial_number`, `attachments.bucket`; MinIO objects переносятся в bucket нового serial.
 
 ## DOCX tools
 
@@ -70,7 +71,7 @@ app/api/v1/endpoints/  →  crud/  →  PostgreSQL
 
 ## Тесты
 
-Auth/RBAC regression tests покрывают Bearer lookup: деактивированный пользователь с валидным JWT получает 401, а token с ролью admin не даёт admin-доступ, если в БД роль auditor. Полный пакет ранее: 104 теста на Python 3.12 (1 skipped). Сильное покрытие section_ii, dictionary validation, analytics и smoke attachments. DB-backed integration уже есть для checks CRUD, но нет такого же покрытия для recommendations lifecycle, cleanup вложений, import replace и миграций.
+`py -3.12 -m unittest discover -s tests`: 116 тестов, OK (2 skipped). Новые regression tests покрывают Bearer lookup, recommendation batch API, delete cleanup, serial lifecycle storage migration и устаревший service-layer mock в auth/RBAC. DB-backed integration уже есть для checks CRUD; дальше нужны Alembic/import integration и e2e бизнес-сценарии.
 
 ## Подробные findings
 
@@ -131,51 +132,35 @@ Auth/RBAC regression tests покрывают Bearer lookup: деактивир�
 
 **Тесты:** при prod config Basic получает 401, Bearer продолжает работать.
 
-### BE-04 · P1 · Delete recommendation оставляет orphan attachments
+### BE-04 · P1 · Delete recommendation оставлял orphan attachments — закрыто
 
 **Где:** `app/crud/recommendations_crud.py`, `app/api/v1/endpoints/recommendations.py`, `app/models/attachments.py`, `app/services/storage/minio_storage.py`.
 
-**Симптом:** `delete_recommendation` удаляет recommendation и renumber, но не трогает attachments. У `Attachment` нет FK на recommendation/check, только `entity_type`, `entity_id`, `check_serial_number`, `bucket`, `object_key`.
+**Было:** `delete_recommendation` удалял recommendation и renumber, но не трогал attachments.
 
-**Риск:** после удаления рекомендации остаются строки attachments и файлы в MinIO. UI может больше не показывать эти файлы, но storage будет расти, backup/restore станет грязным, а download по прямому attachment id может остаться возможным.
+**Исправлено:** `recommendations_service.delete_recommendation` вызывает `attachments_service.delete_attachments_for_entity`, удаляет MinIO objects и rows, затем удаляет recommendation и renumber в одной transaction. Storage failure маппится в 502.
 
-**Как исправить:**
+**Тесты:** service/API regression tests на cleanup и 502 mapping.
 
-1. Добавить CRUD helper `list_attachments(entity_type="recommendation", entity_id=recommendation.id)`.
-2. В delete recommendation удалить MinIO objects и DB rows.
-3. Определить политику ошибки: fail whole delete при MinIO 502 или удалить DB и поставить cleanup retry.
-4. Добавить административный orphan cleanup script/report.
-
-**Тесты:** deletion удаляет rows и вызывает `storage.delete_object`; при storage failure возвращается ожидаемый статус и recommendation не исчезает silently.
-
-### BE-05 · P1 · Смена serial_number не переносит MinIO bucket
+### BE-05 · P1 · Смена serial_number не переносила MinIO bucket — закрыто
 
 **Где:** `app/crud/checks_crud.py`, `app/services/storage/minio_storage.py`, `app/db/recalculate_check_serial_numbers.py`.
 
-**Симптом:** при PATCH проверки, если меняются `start_date`, `check_leader` или `check_type`, код обновляет `recommendations.serial_number` и `attachments.check_serial_number`. Но `Attachment.bucket` остаётся старым, а объекты физически остаются в bucket старого serial.
+**Было:** при PATCH проверки код обновлял `recommendations.serial_number` и `attachments.check_serial_number`, но `Attachment.bucket` оставался старым.
 
-**Риск:** нарушается инвариант storage service “один bucket на проверку по serial_number”. Delete check удалит objects по старому `attachment.bucket`, но затем попробует удалить bucket нового serial, а старый bucket может остаться пустым. Скрипты синхронизации bucket по serial тоже будут видеть неполную картину.
+**Исправлено:** добавлен `MinioStorage.copy_check_bucket_objects`; PATCH serial копирует objects в bucket нового serial, обновляет `attachments.bucket`, commit-ит изменения и удаляет старый bucket. Mass recalc использует тот же primitive.
 
-**Как исправить:** выбрать один инвариант:
+**Тесты:** regression test фиксирует storage copy/delete и cascade execution.
 
-1. **Bucket следует за serial:** при смене serial создать новый bucket, скопировать objects, обновить `Attachment.bucket`, удалить старые objects/bucket после commit.
-2. **Bucket стабилен:** хранить bucket по immutable `check.id`, а serial использовать только как metadata/display.
-
-Для текущей архитектуры быстрее первый вариант, потому что `check_bucket_name(serial_number)` уже используется в storage.
-
-**Тесты:** создать check + attachment, изменить leader/date/type, проверить новый serial, новый bucket, успешный download и delete cleanup.
-
-### BE-06 · P1 · Upload может оставить object без DB row
+### BE-06 · P1 · Upload мог оставить object без DB row — закрыто
 
 **Где:** `app/api/v1/endpoints/attachments.py`.
 
-**Симптом:** endpoint загружает файл в MinIO, затем создаёт `Attachment` row. Если DB commit падает после успешного upload, object остаётся в MinIO без metadata.
+**Было:** endpoint загружал файл в MinIO, затем создавал `Attachment` row. Если DB commit падал после upload, object оставался orphan.
 
-**Риск:** orphan files не видны пользователю, но занимают storage и попадают в backup.
+**Исправлено:** `attachments_service.upload_attachment` при исключении после upload вызывает `storage.delete_object(stored.bucket, stored.object_key)` и логирует cleanup failure отдельно.
 
-**Как исправить:** обернуть создание row в `try/except`; если после `storage.upload` падает `create_attachment`, вызвать `storage.delete_object(stored.bucket, stored.object_key)` и залогировать результат cleanup.
-
-**Тесты:** mock `create_attachment` бросает исключение, `delete_object` вызван один раз.
+**Тесты:** покрыто lifecycle regression набором.
 
 ### BE-07 · P1 · Import/seed replace опасен для рабочей БД
 
@@ -227,8 +212,6 @@ Auth/RBAC regression tests покрывают Bearer lookup: деактивир�
 | P0 | Demo import off by default в Docker |
 | P1 | HTTP Basic fallback prod flag |
 | P1 | Prod-safe sync dictionaries |
-| P1 | Recommendation/attachment cleanup integration tests |
-| P1 | Serial change → MinIO bucket migration |
 | P2 | Analytics SQL aggregates при росте данных |
 | P3 | Consolidate sokol-instruments |
 

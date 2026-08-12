@@ -6,7 +6,6 @@ import argparse
 import asyncio
 from dataclasses import dataclass
 
-from minio.commonconfig import CopySource
 from sqlalchemy import select, update
 
 from app.core.config import settings
@@ -67,31 +66,7 @@ async def _copy_bucket_objects(old_serial: str, new_serial: str) -> int:
     storage = get_storage()
     if storage is None:
         return 0
-
-    old_bucket = check_bucket_name(old_serial)
-    new_bucket = check_bucket_name(new_serial)
-    if old_bucket == new_bucket:
-        return 0
-
-    client = storage._client  # noqa: SLF001 — разовая миграция данных
-
-    def _copy() -> int:
-        if not client.bucket_exists(old_bucket):
-            return 0
-        if not client.bucket_exists(new_bucket):
-            client.make_bucket(new_bucket)
-
-        copied = 0
-        for obj in client.list_objects(old_bucket, recursive=True):
-            client.copy_object(
-                new_bucket,
-                obj.object_name,
-                CopySource(old_bucket, obj.object_name),
-            )
-            copied += 1
-        return copied
-
-    return await asyncio.to_thread(_copy)
+    return await storage.copy_check_bucket_objects(old_serial, new_serial)
 
 
 async def recalculate_check_serial_numbers(*, apply: bool) -> int:

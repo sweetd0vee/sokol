@@ -4,6 +4,7 @@ import type { Check } from '../types/check';
 import type { Recommendation } from '../types/recommendation';
 import { createCheck, deleteCheck as deleteCheckApi, fetchChecks, updateCheck as updateCheckApi } from '../api/checks';
 import {
+  batchRecommendations,
   createRecommendation,
   deleteRecommendation as deleteRecommendationApi,
   fetchRecommendations,
@@ -84,6 +85,15 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
     [invalidateAll],
   );
 
+  const addRecommendationsForCheck = useCallback(
+    async (serialNumber: string, items: Recommendation[]) => {
+      const result = await batchRecommendations(serialNumber, items, 'append');
+      await invalidateAll();
+      return result.items;
+    },
+    [invalidateAll],
+  );
+
   const updateRecommendation = useCallback(
     async (recommendation: Recommendation) => {
       const updated = await updateRecommendationApi(recommendation.id, recommendation);
@@ -108,23 +118,11 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
   );
 
   const replaceRecommendationsForCheck = useCallback(
-    async (serialNumber: string, items: Recommendation[], previousSerialNumber?: string) => {
-      const keysToReplace = new Set(
-        [serialNumber, previousSerialNumber].filter((value): value is string => Boolean(value)),
-      );
-      const existing = recommendations.filter((item) => keysToReplace.has(item.serial_number));
-      await Promise.all(existing.map((item) => deleteRecommendationApi(item.id)));
-      await Promise.all(
-        items.map((item) =>
-          createRecommendation({
-            ...item,
-            serial_number: serialNumber,
-          }),
-        ),
-      );
+    async (serialNumber: string, items: Recommendation[]) => {
+      await batchRecommendations(serialNumber, items, 'replace');
       await invalidateAll();
     },
-    [invalidateAll, recommendations],
+    [invalidateAll],
   );
 
   const value = useMemo<SokolDataContextValue>(
@@ -139,6 +137,7 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
       updateCheck,
       deleteCheck,
       addRecommendation,
+      addRecommendationsForCheck,
       updateRecommendation,
       deleteRecommendation,
       getRecommendationsByCheckKey,
@@ -158,6 +157,7 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
       updateCheck,
       deleteCheck,
       addRecommendation,
+      addRecommendationsForCheck,
       updateRecommendation,
       deleteRecommendation,
       getRecommendationsByCheckKey,

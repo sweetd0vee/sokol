@@ -194,6 +194,13 @@ export function ChartCard({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
+  const exportCaptureAttributes = exportSectionId
+    ? {
+        'data-analytics-export-capture-id': exportSectionId,
+        'data-analytics-export-title': title,
+        'data-analytics-export-description': description,
+      }
+    : {};
 
   useEffect(() => {
     if (!exportSectionId) {
@@ -349,6 +356,7 @@ export function ChartCard({
   const chartBody = (
     <div
       ref={captureRef}
+      {...exportCaptureAttributes}
       className={
         isFullscreen
           ? 'h-full min-h-0 overflow-auto rounded-lg bg-white p-2 [&>*]:!h-full [&_.recharts-responsive-container]:!h-full'
@@ -374,7 +382,7 @@ export function ChartCard({
             )}
             {toolbar}
           </div>
-          <div ref={captureRef} className="min-w-0">
+          <div ref={captureRef} {...exportCaptureAttributes} className="min-w-0">
             {children}
           </div>
         </section>

@@ -31,11 +31,11 @@
 | P1-04 | Таблицы: «Показано X из Y» | 1 d |
 | P1-05 | MinIO policy + UI banner при недоступном storage | 1–2 d |
 | P1-06 | Import dry-run + reject report | 2 d |
-| P1-07 | Delete recommendation → cleanup MinIO | 0.5 d |
+| P1-07 | ~~Delete recommendation → cleanup MinIO~~ | **done** |
 | P1-08 | Runbook backup/restore Postgres + MinIO | 2 d |
 | P1-09 | HTTP Basic fallback: отключить/feature-flag для prod | 0.5 d |
-| P1-10 | Bulk replace recommendations перенести в backend transaction | 1–2 d |
-| P1-11 | Attachment cleanup при upload DB failure и смене serial bucket | 1–2 d |
+| P1-10 | ~~Bulk replace recommendations перенести в backend transaction~~ | **done** |
+| P1-11 | ~~Attachment cleanup при upload DB failure и смене serial bucket~~ | **done** |
 | P1-12 | Prod-safe `sync_dictionaries`: без destructive delete на старте | 1 d |
 | P1-13 | `RecommendationFormPage` save error + list loading/error UI | 0.5–1 d |
 
@@ -56,8 +56,8 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · ro
 
 | Метрика | Сейчас | Target 01.09 |
 |---------|--------|--------------|
-| BE tests (py 3.12) | 104 | ≥110 + integration |
-| FE tests | 44 | ≥55 |
+| BE tests (py 3.12) | 116 | ≥120 + integration |
+| FE tests | 45 | ≥55 |
 | ESLint warnings | 0 | 0 |
 | Open P0 | 4 | 0 |
 | Demo routes visible | 1 | 0 |
@@ -80,9 +80,9 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · ro
 | P0-06 | Добавить `fetchCheck(id)` и `useQuery` в `CheckFormPage`; edit mode не может вызвать `addCheck`. | Hard refresh `/checks/:id/edit` заполняет поля; 404 показывает `ErrorState`; тест подтверждает отсутствие duplicate create. |
 | P1-04 | Протащить `total` из `fetchChecks/fetchRecommendations` в UI и показать truncation warning. | При `items.length < total` пользователь видит “Показано X из Y”; export явно говорит “текущая выборка” или грузит все данные. |
 | P1-05 | Добавить frontend `useStorageStatus` и backend/storage runbook: disabled/unreachable states, retry, policy/backup. | Upload disabled при недоступном MinIO; пользователь видит причину; backup/restore steps описаны. |
-| P1-07 | При delete recommendation удалять attachments rows и MinIO objects. | Интеграционный/HTTP тест подтверждает cleanup; orphan report не находит файлы удалённой рекомендации. |
+| P1-07 | **Закрыто:** при delete recommendation удаляются attachments rows и MinIO objects. | Service/API regression tests подтверждают cleanup и 502 при storage failure. |
 | P1-09 | Добавить `SOKOL_ENABLE_BASIC_AUTH`; в prod не принимать `_basic`, если flag выключен. | При prod config Basic получает 401; Bearer продолжает работать. |
-| P1-10 | Добавить backend transaction endpoint для bulk replace recommendations и перевести frontend с delete-all/create-all. | Partial failure не удаляет старые рекомендации; sequence numbers стабильны. |
-| P1-11 | Добавить compensation при upload failure и определить migration strategy для bucket при смене serial. | Ошибка DB после upload удаляет MinIO object; PATCH serial сохраняет download/delete вложений. |
+| P1-10 | **Закрыто:** добавлен backend batch endpoint для append/replace recommendations; frontend переведён с delete-all/create-all. | Batch append/replace атомарны; frontend import из АЗ отправляет один request. |
+| P1-11 | **Закрыто:** добавлен compensation при upload failure и bucket migration при смене serial. | Ошибка DB после upload удаляет MinIO object; PATCH serial переносит objects и обновляет `attachments.bucket`. |
 | P1-12 | Изменить `sync_dictionaries`: prod merge-only, destructive sync только с dev/demo flag. | Пользовательские auditors/departments/users не удаляются после restart; delete проверяет использование. |
 | P1-13 | Добавить `saveError` в `RecommendationFormPage`; в списках показывать `LoadingState`/`ErrorState` и retry. | Rejected save виден пользователю и не очищает форму; failed fetch не выглядит как пустая таблица. |

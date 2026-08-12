@@ -6,10 +6,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.attachments import Attachment
 
 
-async def create_attachment(session: AsyncSession, attachment: Attachment) -> Attachment:
+async def create_attachment(
+    session: AsyncSession,
+    attachment: Attachment,
+    *,
+    commit: bool = True,
+) -> Attachment:
     session.add(attachment)
-    await session.commit()
-    await session.refresh(attachment)
+    if commit:
+        await session.commit()
+        await session.refresh(attachment)
+    else:
+        await session.flush()
     return attachment
 
 
@@ -53,9 +61,17 @@ async def count_attachments(
     return int(result.scalar_one())
 
 
-async def delete_attachment(session: AsyncSession, attachment: Attachment) -> None:
+async def delete_attachment(
+    session: AsyncSession,
+    attachment: Attachment,
+    *,
+    commit: bool = True,
+) -> None:
     await session.delete(attachment)
-    await session.commit()
+    if commit:
+        await session.commit()
+    else:
+        await session.flush()
 
 
 async def delete_attachments_for_check(session: AsyncSession, check_id: int) -> None:

@@ -185,7 +185,7 @@ export function CheckRecommendationsBlock({
   checkSaved,
   onAddManually,
 }: CheckRecommendationsBlockProps) {
-  const { getRecommendationsByCheckKey, addRecommendation } = useSokolData();
+  const { getRecommendationsByCheckKey, addRecommendationsForCheck } = useSokolData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importAzFileName, setImportAzFileName] = useState<string | null>(null);
   const [parsedPreview, setParsedPreview] = useState<ParsedPreviewItem[]>([]);
@@ -370,14 +370,7 @@ export function CheckRecommendationsBlock({
       return;
     }
     try {
-      const base = storedRecommendations.length;
-      for (const [index, recommendation] of parsedPreview.entries()) {
-        const payload = toRecommendationPayload(recommendation);
-        await addRecommendation({
-          ...payload,
-          sequence_number: base + index + 1,
-        });
-      }
+      await addRecommendationsForCheck(checkKey, parsedPreview.map(toRecommendationPayload));
       setParsedPreview([]);
       setParseError(null);
       setImportAzFileName(null);

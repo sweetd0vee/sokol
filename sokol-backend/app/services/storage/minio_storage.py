@@ -11,6 +11,7 @@ from functools import lru_cache
 from typing import BinaryIO
 
 from minio import Minio
+from minio.commonconfig import CopySource
 from minio.error import S3Error
 
 from app.core.config import settings
@@ -114,6 +115,30 @@ class MinioStorage:
 
     async def delete_object(self, bucket: str, object_key: str) -> None:
         await asyncio.to_thread(self._client.remove_object, bucket, object_key)
+
+    async def copy_check_bucket_objects(self, old_serial_number: str, new_serial_number: str) -> int:
+        old_bucket = check_bucket_name(old_serial_number)
+        new_bucket = check_bucket_name(new_serial_number)
+        if old_bucket == new_bucket:
+            return 0
+
+        def _copy() -> int:
+            if not self._client.bucket_exists(old_bucket):
+                return 0
+            if not self._client.bucket_exists(new_bucket):
+                self._client.make_bucket(new_bucket)
+
+            copied = 0
+            for obj in self._client.list_objects(old_bucket, recursive=True):
+                self._client.copy_object(
+                    new_bucket,
+                    obj.object_name,
+                    CopySource(old_bucket, obj.object_name),
+                )
+                copied += 1
+            return copied
+
+        return await asyncio.to_thread(_copy)
 
     async def delete_check_bucket(self, serial_number: str) -> None:
         bucket = check_bucket_name(serial_number)
