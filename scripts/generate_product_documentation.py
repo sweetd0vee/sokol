@@ -12,6 +12,7 @@ from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
 
 OUTPUT = Path(__file__).resolve().parent.parent / "docs" / "SOKOL_Документация_продукта.docx"
+OUTPUT_CONFLUENCE = Path(__file__).resolve().parent.parent / "docs" / "SOKOL_Документация_продукта_Confluence.docx"
 
 # Brand colors
 COLOR_PRIMARY = RGBColor(0x1A, 0x36, 0x5D)  # dark blue
@@ -97,7 +98,9 @@ def add_toc_placeholder(doc: Document) -> None:
         "8. Аналитика и BI-инструменты",
         "9. Словарь терминов",
         "10. Что в разработке",
-        "11. Места для скриншотов",
+        "11. Техническая реализация",
+        "12. Места для скриншотов",
+        "Приложение А. Публикация в Confluence",
     ]
     for item in items:
         p = doc.add_paragraph(item, style="List Number")
@@ -115,7 +118,7 @@ def add_section_about(doc: Document) -> None:
 
     paragraphs = [
         (
-            "SOKOL (Сокол) — это внутренняя CRM-система с инструментами бизнес-аналитики (BI), "
+            "SOKOL (Сокол) — внутренняя CRM-система с инструментами бизнес-аналитики (BI), "
             "разработанная для департамента внутреннего аудита (ДВА). Система объединяет в одном "
             "месте учёт проверок, контроль исполнения рекомендаций, аналитические дашборды и "
             "автоматизацию подготовки аудиторских документов."
@@ -773,7 +776,7 @@ def add_section_roadmap(doc: Document) -> None:
 
     p = doc.add_paragraph(
         "Система активно развивается. Ниже — функции, которые запланированы или находятся "
-        "в стадии реализации. Целевая дата промышленного запуска — 1 сентября 2026."
+        "в стадии реализации. Целевая дата промышленного запуска (go-live) — 1 сентября 2026."
     )
     for run in p.runs:
         run.font.name = "Calibri"
@@ -801,13 +804,313 @@ def add_section_roadmap(doc: Document) -> None:
     add_horizontal_line(doc)
 
 
+def add_section_technical(doc: Document) -> None:
+    h = doc.add_heading("11. Техническая реализация", level=1)
+    style_heading(h, 1)
+
+    intro = (
+        "Этот раздел предназначен для IT-специалистов, администраторов и разработчиков, "
+        "которым нужен обзор архитектуры SOKOL без погружения в исходный код. "
+        "Подробная техническая документация хранится в репозитории проекта."
+    )
+    p = doc.add_paragraph(intro)
+    for run in p.runs:
+        run.font.name = "Calibri"
+        run.font.size = Pt(11)
+
+    # 11.1 Architecture
+    h2 = doc.add_heading("11.1. Архитектура системы", level=2)
+    style_heading(h2, 2)
+
+    arch_paragraphs = [
+        (
+            "SOKOL построена по классической трёхуровневой схеме «клиент — сервер — база данных». "
+            "Пользователь работает в веб-браузере; интерфейс (React SPA) обращается к REST API "
+            "(FastAPI), который читает и записывает данные в PostgreSQL. Файлы-вложения "
+            "(приказы, программы, АЗ, подтверждения) хранятся в объектном хранилище MinIO."
+        ),
+        (
+            "Обработка Word-документов (формирование раздела II АЗ, докладной записки, "
+            "парсинг рекомендаций) выполняется на сервере. Генерация раздела I «Аудиторское мнение» "
+            "с помощью ИИ опционально подключается через локальный сервис Ollama."
+        ),
+    ]
+    for text in arch_paragraphs:
+        p = doc.add_paragraph(text)
+        p.paragraph_format.space_after = Pt(6)
+        for run in p.runs:
+            run.font.name = "Calibri"
+            run.font.size = Pt(10)
+
+    # Architecture diagram as text table
+    h3 = doc.add_heading("Схема компонентов", level=3)
+    style_heading(h3, 3)
+
+    table = doc.add_table(rows=1, cols=3)
+    table.style = "Table Grid"
+    hdr = table.rows[0].cells
+    for i, text in enumerate(["Компонент", "Технология", "Назначение"]):
+        hdr[i].text = text
+        set_cell_shading(hdr[i], "1A365D")
+        for p in hdr[i].paragraphs:
+            for run in p.runs:
+                run.font.bold = True
+                run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                run.font.name = "Calibri"
+                run.font.size = Pt(10)
+
+    components = [
+        ("Веб-интерфейс (UI)", "React 19, TypeScript, Vite 7, Tailwind CSS", "Реестры, формы, аналитика, экспорт"),
+        ("HTTP API", "Python 3.12, FastAPI, Pydantic v2", "Бизнес-логика, авторизация, REST-контракты"),
+        ("База данных", "PostgreSQL 16", "Проверки, рекомендации, справочники"),
+        ("Файловое хранилище", "MinIO (S3-совместимое)", "Вложения к проверкам и рекомендациям"),
+        ("Генерация ИИ (опционально)", "Ollama + LLM (qwen3.5:35b)", "Раздел I «Аудиторское мнение»"),
+    ]
+    for comp, tech, purpose in components:
+        row = table.add_row().cells
+        row[0].text = comp
+        row[1].text = tech
+        row[2].text = purpose
+        for cell in row:
+            for p in cell.paragraphs:
+                for run in p.runs:
+                    run.font.name = "Calibri"
+                    run.font.size = Pt(9)
+
+    doc.add_paragraph()
+    flow = doc.add_paragraph(
+        "Поток данных: Браузер → React (порт 5180) → FastAPI (порт 8800/8802) → PostgreSQL (5433) "
+        "и MinIO. Запросы к /api/v1/* защищены JWT-токеном (Bearer)."
+    )
+    for run in flow.runs:
+        run.font.name = "Calibri"
+        run.font.size = Pt(10)
+        run.font.italic = True
+
+    # 11.2 Data model
+    h2 = doc.add_heading("11.2. Основные сущности данных", level=2)
+    style_heading(h2, 2)
+
+    p = doc.add_paragraph(
+        "Центральные объекты предметной области и их связи:"
+    )
+    for run in p.runs:
+        run.font.name = "Calibri"
+        run.font.size = Pt(10)
+
+    entities = [
+        ("Проверка (Check)", "Аудиторское мероприятие: ключ, название, тип, вид, статус, даты, документы, оценки эффективности"),
+        ("Рекомендация (Recommendation)", "Требование к подразделению; привязана к проверке; срок, статус, существенность, контрольная зона"),
+        ("Аудитор (Auditor)", "Справочник сотрудников ДВА"),
+        ("Департамент / объект аудита", "Подразделение банка — целевой объект рекомендации"),
+        ("Вид проверки, вид аудита, оценка эффективности", "Справочники для классификации и отчётности"),
+        ("Вложение (Attachment)", "Файл в MinIO с метаданными в БД"),
+    ]
+    for name, desc in entities:
+        p = doc.add_paragraph()
+        run = p.add_run(f"{name}: ")
+        run.font.bold = True
+        run.font.name = "Calibri"
+        run.font.size = Pt(10)
+        run = p.add_run(desc)
+        run.font.name = "Calibri"
+        run.font.size = Pt(10)
+
+    # 11.3 API
+    h2 = doc.add_heading("11.3. REST API", level=2)
+    style_heading(h2, 2)
+
+    api_paragraphs = [
+        "Все операции доступны через REST API с префиксом /api/v1. Интерактивная документация (Swagger UI) "
+        "доступна по адресу /docs на сервере API.",
+        "Основные группы эндпоинтов:",
+    ]
+    for text in api_paragraphs:
+        p = doc.add_paragraph(text)
+        for run in p.runs:
+            run.font.name = "Calibri"
+            run.font.size = Pt(10)
+
+    api_groups = [
+        ("/auth", "Вход (login), профиль текущего пользователя (/me)"),
+        ("/checks", "CRUD проверок, экспорт, импорт рекомендаций из АЗ"),
+        ("/recommendations", "CRUD рекомендаций, контрольная зона, экспорт"),
+        ("/analytics/{checks|recommendations|monitoring|dva|planning}", "Серверные агрегаты для BI-дашбордов"),
+        ("/attachments", "Загрузка, скачивание и удаление вложений"),
+        ("/settings/*", "Справочники (mutate — только admin)"),
+        ("/tools/*", "Генерация и разбор DOCX (Раздел II, ДЗ, парсинг рекомендаций, аудиторское мнение)"),
+    ]
+    for prefix, desc in api_groups:
+        p = doc.add_paragraph(f"• {prefix} — {desc}", style="List Bullet")
+        for run in p.runs:
+            run.font.name = "Calibri"
+            run.font.size = Pt(10)
+
+    # 11.4 Security
+    h2 = doc.add_heading("11.4. Безопасность и доступ", level=2)
+    style_heading(h2, 2)
+
+    security_items = [
+        "Аутентификация: JWT-токен после успешного входа (POST /api/v1/auth/login).",
+        "Авторизация: роли auditor и admin. Администратор может удалять записи и управлять справочниками.",
+        "Все эндпоинты /api/v1/* (кроме health и login) требуют заголовок Authorization: Bearer <token>.",
+        "CORS настраивается переменной SOKOL_CORS_ORIGINS (список разрешённых origin фронтенда).",
+        "Планируется: корпоративная авторизация через Keycloak/OIDC.",
+    ]
+    for item in security_items:
+        p = doc.add_paragraph(item, style="List Bullet")
+        for run in p.runs:
+            run.font.name = "Calibri"
+            run.font.size = Pt(10)
+
+    # 11.5 Deployment
+    h2 = doc.add_heading("11.5. Развёртывание", level=2)
+    style_heading(h2, 2)
+
+    p = doc.add_paragraph(
+        "Система поддерживает два режима запуска:"
+    )
+    for run in p.runs:
+        run.font.name = "Calibri"
+        run.font.size = Pt(10)
+
+    deploy_modes = [
+        (
+            "Docker (коробочный стек)",
+            "docker compose up из корня репозитория. Поднимаются PostgreSQL, API и UI. "
+            "Ollama запускается отдельно на хосте.",
+        ),
+        (
+            "Локальная разработка",
+            "Два процесса: uvicorn (API, порт 8802) и npm run dev (UI, порт 5180). "
+            "PostgreSQL — локально или в Docker.",
+        ),
+    ]
+    for title, desc in deploy_modes:
+        p = doc.add_paragraph()
+        run = p.add_run(f"{title}: ")
+        run.font.bold = True
+        run.font.name = "Calibri"
+        run.font.size = Pt(10)
+        run = p.add_run(desc)
+        run.font.name = "Calibri"
+        run.font.size = Pt(10)
+
+    # Ports table
+    h3 = doc.add_heading("Порты и адреса", level=3)
+    style_heading(h3, 3)
+
+    table = doc.add_table(rows=1, cols=4)
+    table.style = "Table Grid"
+    hdr = table.rows[0].cells
+    for i, text in enumerate(["Сервис", "Docker", "Локальная разработка", "Назначение"]):
+        hdr[i].text = text
+        set_cell_shading(hdr[i], "1A365D")
+        for p in hdr[i].paragraphs:
+            for run in p.runs:
+                run.font.bold = True
+                run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                run.font.name = "Calibri"
+                run.font.size = Pt(9)
+
+    ports = [
+        ("UI (React)", "5180", "5180", "Веб-интерфейс для пользователей"),
+        ("API (FastAPI)", "8800", "8802", "REST API и Swagger (/docs)"),
+        ("PostgreSQL", "5433", "5433", "База данных"),
+        ("Ollama (опционально)", "11434", "11434", "LLM для аудиторского мнения"),
+    ]
+    for svc, docker, local, purpose in ports:
+        row = table.add_row().cells
+        row[0].text = svc
+        row[1].text = docker
+        row[2].text = local
+        row[3].text = purpose
+        for cell in row:
+            for p in cell.paragraphs:
+                for run in p.runs:
+                    run.font.name = "Calibri"
+                    run.font.size = Pt(9)
+
+    # 11.6 Frontend specifics
+    h2 = doc.add_heading("11.6. Клиентская часть (UI)", level=2)
+    style_heading(h2, 2)
+
+    ui_items = [
+        "Одностраничное приложение (SPA) на React 19 с маршрутизацией по вкладкам.",
+        "Состояние серверных данных — TanStack Query; HTTP-клиент — Axios с Bearer interceptor.",
+        "Аналитика: Recharts для графиков; экспорт — xlsx-js-style, docx, pdfmake, html-to-image.",
+        "Единые токены оформления форм — src/constants/formLayout.ts.",
+        "Профиль пользователя (имя, аватар) хранится в localStorage браузера.",
+    ]
+    for item in ui_items:
+        p = doc.add_paragraph(item, style="List Bullet")
+        for run in p.runs:
+            run.font.name = "Calibri"
+            run.font.size = Pt(10)
+
+    # 11.7 Integrations
+    h2 = doc.add_heading("11.7. Интеграции и расширения", level=2)
+    style_heading(h2, 2)
+
+    table = doc.add_table(rows=1, cols=3)
+    table.style = "Table Grid"
+    hdr = table.rows[0].cells
+    for i, text in enumerate(["Интеграция", "Статус", "Описание"]):
+        hdr[i].text = text
+        set_cell_shading(hdr[i], "1A365D")
+        for p in hdr[i].paragraphs:
+            for run in p.runs:
+                run.font.bold = True
+                run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                run.font.name = "Calibri"
+                run.font.size = Pt(9)
+
+    integrations = [
+        ("Ollama (LLM)", "Реализовано", "Генерация раздела I АЗ; требует локальный ollama serve"),
+        ("MinIO (S3)", "Реализовано", "Хранение вложений; настраивается через SOKOL_MINIO_*"),
+        ("Keycloak / OIDC", "В разработке", "Корпоративный SSO вместо локальных учётных записей"),
+        ("Канцлер (ЭДО)", "В разработке", "Обмен документами с системой документооборота банка"),
+    ]
+    for name, status, desc in integrations:
+        row = table.add_row().cells
+        row[0].text = name
+        row[1].text = status
+        row[2].text = desc
+        for cell in row:
+            for p in cell.paragraphs:
+                for run in p.runs:
+                    run.font.name = "Calibri"
+                    run.font.size = Pt(9)
+
+    # 11.8 Repo structure
+    h2 = doc.add_heading("11.8. Структура репозитория", level=2)
+    style_heading(h2, 2)
+
+    repo_items = [
+        "sokol/ — корень: docker-compose.yml, PLAN.md, DOCKER.md",
+        "sokol-backend/ — FastAPI API, модели, CRUD, сервисы аналитики и DOCX, тесты",
+        "sokol-frontend/ — React UI, компоненты, API-клиент, аналитика",
+        "sokol-instruments/ — legacy Streamlit-прототип (не входит в основной стек)",
+        "sokol-backend/docs/ — архитектура, API, БД, миграции, отчёты",
+        "sokol-frontend/docs/ — UX, аналитика, runbook",
+    ]
+    for item in repo_items:
+        p = doc.add_paragraph(item, style="List Bullet")
+        for run in p.runs:
+            run.font.name = "Calibri"
+            run.font.size = Pt(10)
+
+    add_horizontal_line(doc)
+
+
 def add_section_screenshots(doc: Document) -> None:
-    h = doc.add_heading("11. Места для скриншотов", level=1)
+    h = doc.add_heading("12. Места для скриншотов", level=1)
     style_heading(h, 1)
 
     p = doc.add_paragraph(
         "Ниже — рекомендуемые места для вставки скриншотов интерфейса. "
-        "Замените серые блоки на актуальные изображения экранов системы."
+        "Замените серые блоки-заглушки на актуальные изображения экранов системы (PNG или JPG, "
+        "ширина 1200–1600 px для читаемости в Confluence)."
     )
     for run in p.runs:
         run.font.name = "Calibri"
@@ -847,6 +1150,78 @@ def add_section_screenshots(doc: Document) -> None:
         doc.add_paragraph()
 
 
+def add_section_confluence(doc: Document) -> None:
+    h = doc.add_heading("Приложение А. Публикация в Confluence", level=1)
+    style_heading(h, 1)
+
+    intro = (
+        "Документ подготовлен для загрузки в Jira Confluence. Ниже — рекомендуемый порядок "
+        "публикации и советы по форматированию."
+    )
+    p = doc.add_paragraph(intro)
+    for run in p.runs:
+        run.font.name = "Calibri"
+        run.font.size = Pt(11)
+
+    steps = [
+        (
+            "Создание страницы",
+            "В нужном пространстве Confluence создайте страницу «SOKOL — документация продукта» "
+            "(или дочернюю страницу в разделе ДВА / IT).",
+        ),
+        (
+            "Импорт документа",
+            "Вариант 1 — импорт Word: «…» → Import → Word (.docx) → выберите этот файл. "
+            "Confluence сохранит заголовки, таблицы и нумерованные списки. "
+            "Вариант 2 — копирование: откройте .docx в Word и вставьте содержимое на страницу "
+            "(Ctrl+A → Ctrl+C → Ctrl+V в редактор Confluence).",
+        ),
+        (
+            "Скриншоты",
+            "В разделе 12 замените серые блоки-заглушки на изображения интерфейса. "
+            "В Confluence: перетащите PNG/JPG в место заглушки или используйте /image.",
+        ),
+        (
+            "Макросы (опционально)",
+            "Для оглавления на странице Confluence добавьте макрос Table of Contents после заголовка "
+            "«Содержание». Для диаграмм архитектуры — макрос Mermaid или вставка PNG-схемы.",
+        ),
+        (
+            "Метки (labels)",
+            "Рекомендуемые метки страницы: sokol, dva, internal-audit, product-doc, bi.",
+        ),
+        (
+            "Права доступа",
+            "Ограничьте редактирование страницы группой владельцев продукта; просмотр — "
+            "для сотрудников ДВА и заинтересованных подразделений.",
+        ),
+        (
+            "Версионирование",
+            "При обновлении документа измените дату на титульной странице, перегенерируйте .docx "
+            "и обновите страницу Confluence (или создайте дочернюю «История изменений»).",
+        ),
+    ]
+
+    for i, (title, text) in enumerate(steps, 1):
+        h3 = doc.add_heading(f"Шаг {i}. {title}", level=3)
+        style_heading(h3, 3)
+        p = doc.add_paragraph(text)
+        for run in p.runs:
+            run.font.name = "Calibri"
+            run.font.size = Pt(10)
+
+    doc.add_paragraph()
+    note = doc.add_paragraph(
+        "Техническая документация для разработчиков (архитектура, API, БД, миграции) "
+        "ведётся отдельно в репозитории Git и не дублируется на этой странице."
+    )
+    for run in note.runs:
+        run.font.name = "Calibri"
+        run.font.size = Pt(10)
+        run.font.italic = True
+        run.font.color.rgb = COLOR_MUTED
+
+
 def build_document() -> Document:
     doc = Document()
 
@@ -874,7 +1249,9 @@ def build_document() -> Document:
     add_section_analytics(doc)
     add_section_glossary(doc)
     add_section_roadmap(doc)
+    add_section_technical(doc)
     add_section_screenshots(doc)
+    add_section_confluence(doc)
 
     return doc
 
@@ -882,8 +1259,12 @@ def build_document() -> Document:
 def main() -> None:
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     doc = build_document()
-    doc.save(str(OUTPUT))
-    print(f"Документ сохранён: {OUTPUT}")
+    try:
+        doc.save(str(OUTPUT))
+        print(f"Saved: {OUTPUT}")
+    except PermissionError:
+        doc.save(str(OUTPUT_CONFLUENCE))
+        print(f"Original file locked; saved copy: {OUTPUT_CONFLUENCE}")
 
 
 if __name__ == "__main__":
