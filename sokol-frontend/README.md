@@ -47,7 +47,6 @@ VITE_DEV_API_PORT=8802
 |------|--------|
 | `/checks`, `/checks/new`, `/checks/:id/edit` | проверки |
 | `/recommendations`, `.../new`, `.../:id/edit` | рекомендации |
-| `/observations` | наблюдения (демо, без API) |
 | `/analytics` | аналитика |
 | `/planning` | планирование |
 | `/tools` | DOCX-инструменты |

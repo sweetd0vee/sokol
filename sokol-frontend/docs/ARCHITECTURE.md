@@ -29,7 +29,6 @@ QueryClient → AuthProvider → SokolDataProvider → Router
 | `/planning` | `PlanningTab` |
 | `/tools` | `ToolsTab` |
 | `/settings` | `SettingsTab` (admin mutate) |
-| `/observations` | демо без API |
 | `/profile` | localStorage avatar, fake password change |
 
 ## State
@@ -76,7 +75,7 @@ Login → `POST /auth/login` → token в localStorage → Bearer на все з
 ## Ограничения
 
 - Таблицы: client-side filter после bulk-fetch (нет server pagination).
-- Наблюдения — demo data; канцлер — stub.
+- Канцлер — stub.
 - HTML-экспорт дашбордов зависит от DOM-capture (хрупко при off-screen карточках).
 
 Backend-контракты: [API.md](../../sokol-backend/docs/API.md).

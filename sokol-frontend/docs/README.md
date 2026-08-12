@@ -20,7 +20,7 @@ SPA на React 19 + Vite 7:
 - **Данные** — TanStack Query + `SokolDataProvider` (checks/recommendations).
 - **Analytics/planning** — `GET /api/v1/analytics/*`.
 - **Tools** — upload `.docx` → backend.
-- **Наблюдения, Канцлер** — демо/заглушки.
+- **Канцлер** — заглушка.
 
 Токены форм: `src/constants/formLayout.ts`.
 

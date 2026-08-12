@@ -13,8 +13,6 @@ import { RecommendationFormPage } from './components/recommendations/Recommendat
 import { ChecksTab } from './components/tabs/ChecksTab';
 import { CheckFormPage } from './components/checks/CheckFormPage';
 import { AnalyticsTab } from './components/tabs/AnalyticsTab';
-import { ObservationsTab } from './components/tabs/ObservationsTab';
-import { ObservationFormPage } from './components/observations/ObservationFormPage';
 import { PlanningTab } from './components/tabs/PlanningTab';
 import { KantslerTab } from './components/tabs/KantslerTab';
 import { SettingsTab } from './components/tabs/SettingsTab';
@@ -42,9 +40,6 @@ function AppContent() {
           <Route path="/checks" element={<ChecksTab />} />
           <Route path="/checks/new" element={<CheckFormPage />} />
           <Route path="/checks/:id/edit" element={<CheckFormPage />} />
-          <Route path="/observations" element={<ObservationsTab />} />
-          <Route path="/observations/new" element={<ObservationFormPage />} />
-          <Route path="/observations/:id/edit" element={<ObservationFormPage />} />
           <Route path="/analytics" element={<AnalyticsTab />} />
           <Route path="/planning" element={<PlanningTab />} />
           <Route path="/tools" element={<ToolsTab />} />

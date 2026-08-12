@@ -18,7 +18,6 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 | Route | Backend |
 |-------|---------|
 | checks, recommendations, analytics, planning, tools, settings | ✅ |
-| observations | ❌ demo data |
 | kantsler | ❌ stub |
 | profile password change | ❌ fake UI |
 
@@ -49,7 +48,7 @@ Lint: 0 errors, 27 warnings (`react-hooks/exhaustive-deps`).
 
 | Приоритет | Finding |
 |-----------|---------|
-| P0 | Скрыть Observations / Kantsler / fake password |
+| P0 | Скрыть Kantsler / fake password |
 | P1 | «Показано X из Y» в таблицах |
 | P1 | `replaceRecommendationsForCheck` — delete-all + create-all без транзакции |
 | P2 | Split `exports.ts`, data-driven HTML export |

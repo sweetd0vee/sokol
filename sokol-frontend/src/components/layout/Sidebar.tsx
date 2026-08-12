@@ -6,7 +6,6 @@ import {
   FileCheck,
   Settings,
   Wrench,
-  Eye,
   CalendarClock,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
@@ -14,7 +13,6 @@ import { useAuth } from '../../hooks/useAuth';
 const TABS = [
   { id: 'checks', path: '/checks', label: 'Проверки', icon: ClipboardList },
   { id: 'recommendations', path: '/recommendations', label: 'Рекомендации', icon: FileText },
-  { id: 'observations', path: '/observations', label: 'Наблюдения', icon: Eye },
   { id: 'analytics', path: '/analytics', label: 'Аналитика', icon: BarChart3 },
   { id: 'planning', path: '/planning', label: 'Планирование', icon: CalendarClock },
   { id: 'tools', path: '/tools', label: 'Инструменты', icon: Wrench },

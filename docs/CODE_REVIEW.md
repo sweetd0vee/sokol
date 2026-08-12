@@ -37,7 +37,7 @@
 |----|------|--------|
 | C1 | Нет Alembic — ad-hoc `migrate_*.py` | открыт |
 | C2 | JWT: роль из payload, без lookup в БД | открыт |
-| C3 | Demo UI (Observations, Kantsler, fake password) | открыт |
+| C3 | Demo UI (Kantsler, fake password) | открыт |
 | C4 | Docs/API описывают audit-opinion, **кода нет** | открыт |
 | C5 | Demo import на prod (`SOKOL_LOAD_DEMO_DATA`) | открыт |
 
@@ -49,7 +49,7 @@
 ## Топ рекомендаций
 
 1. Alembic baseline (P0)
-2. Скрыть Observations / Kantsler / fake password (P0)
+2. Скрыть Kantsler / fake password (P0)
 3. Убрать audit-opinion из docs или реализовать endpoint (P0/P1)
 4. JWT lookup user + `is_active` (P1)
 5. «Показано N из total» в таблицах (P1)

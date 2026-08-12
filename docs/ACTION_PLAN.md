@@ -14,7 +14,7 @@
 
 | ID | Задача | Effort |
 |----|--------|--------|
-| P0-01 | Скрыть Observations, Kantsler; disable fake password в Profile | 0.5 d |
+| P0-01 | Скрыть Kantsler; disable fake password в Profile | 0.5 d |
 | P0-02 | Prod: strong `SOKOL_JWT_SECRET`, fail-fast на default | 0.5 d |
 | P0-03 | `SOKOL_LOAD_DEMO_DATA=0` на UAT/prod | 0.5 d |
 | P0-04 | Alembic baseline + `upgrade head` | 3–5 d |
@@ -54,7 +54,7 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · in
 | FE tests | 32 | ≥45 |
 | ESLint warnings | 27 | ≤10 |
 | Open P0 | 5 | 0 |
-| Demo routes visible | 3 | 0 |
+| Demo routes visible | 2 | 0 |
 
 ## Эта неделя (12–15.08)
 
