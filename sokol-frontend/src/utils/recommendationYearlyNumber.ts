@@ -105,7 +105,9 @@ export function resolveRecommendationYearlyDisplayNumber(
   }
 
   const previewId =
-    options.recommendationId != null && String(options.recommendationId)
+    options.recommendationId !== undefined &&
+    options.recommendationId !== null &&
+    String(options.recommendationId)
       ? String(options.recommendationId)
       : DRAFT_RECOMMENDATION_ID;
 
