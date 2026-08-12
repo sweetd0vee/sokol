@@ -14,7 +14,7 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 
 **Плюсы:** плоская структура, async I/O, DOCX в thread pool, централизованный auth на роутерах.
 
-**Минусы:** `app/db/` смешивает seed/migrate/import; дублирование section_ii в `sokol-instruments/`.
+**Минусы:** `app/db/` смешивает seed/migrate/import.
 
 ## Оценка по блокам
 
@@ -213,6 +213,5 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 | P1 | HTTP Basic fallback prod flag |
 | P1 | Prod-safe sync dictionaries |
 | P2 | Analytics SQL aggregates при росте данных |
-| P3 | Consolidate sokol-instruments |
 
 Задачи: [ACTION_PLAN.md](ACTION_PLAN.md)

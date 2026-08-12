@@ -1,7 +1,7 @@
 # SOKOL — код-ревью
 
 **Дата:** 12 августа 2026  
-**Объект:** `sokol-backend`, `sokol-frontend`, legacy `sokol-instruments`
+**Объект:** `sokol-backend`, `sokol-frontend`
 
 ## Как читать оценки
 
