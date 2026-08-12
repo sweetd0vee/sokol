@@ -53,6 +53,17 @@ export const LIST_ACTION_BUTTON_CLASS =
   'inline-flex w-[160px] items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium';
 export const LIST_ACTION_GROUP_CLASS = 'ml-auto flex w-[334px] items-center justify-end gap-3.5 whitespace-nowrap';
 
+/** Base chrome for list table filter controls. */
+export const LIST_FILTER_BASE_CLASS = 'py-1.5 text-sm';
+
+/** Active filter highlight — same sky blue as pressed «Мои». */
+export const LIST_FILTER_ACTIVE_CLASS =
+  '!bg-[#6699FF] !border-[#6699FF] text-white focus:!border-[#6699FF] focus:!ring-[#6699FF]/40';
+
+export function listFilterClass(active: boolean) {
+  return active ? `${LIST_FILTER_BASE_CLASS} ${LIST_FILTER_ACTIVE_CLASS}` : LIST_FILTER_BASE_CLASS;
+}
+
 /** Equal width for primary action buttons across forms and lists. */
 export const FORM_ACTION_BUTTON_CLASS = 'w-[160px] justify-center whitespace-nowrap';
 

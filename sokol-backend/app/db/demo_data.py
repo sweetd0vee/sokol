@@ -6,6 +6,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 from app.db.auditor_names import AUDITORS
+from app.db.department_names import DEPARTMENTS
 from app.db.seed_check_kinds import CHECK_KINDS
 from app.db.seed_effectiveness_ratings import EFFECTIVENESS_RATINGS
 from app.utils.check_key import assign_serial_numbers
@@ -38,19 +39,7 @@ MANAGERS = [
     "Федорова Н.К.",
 ]
 
-AUDIT_OBJECTS = [
-    "Департамент розничного бизнеса",
-    "Департамент комплаенса",
-    "Департамент ИТ",
-    "Служба клиентского сервиса",
-    "Финансовый департамент",
-    "Архивный отдел",
-    "Департамент рисков",
-    "Департамент внутреннего аудита",
-    "Контакт-центр",
-    "Сеть филиалов",
-    "Кредитный департамент",
-]
+AUDIT_OBJECTS = list(DEPARTMENTS)
 
 # Названия ≥3 предложений, по типу проверки; длина ≤255 (лимит БД/схемы).
 CHECK_NAME_TEMPLATES_BY_TYPE: dict[str, tuple[str, ...]] = {

@@ -30,6 +30,7 @@ ROOT = BACKEND_ROOT.parent
 sys.path.insert(0, str(BACKEND_ROOT))
 
 from app.db.auditor_names import AUDITORS as AUDITOR_NAMES  # noqa: E402
+from app.db.department_names import DEPARTMENTS as DEPARTMENT_NAMES  # noqa: E402
 from app.utils.check_key import assign_serial_numbers  # noqa: E402
 
 DEFAULT_DATA_DIR = ROOT / "data"
@@ -104,17 +105,10 @@ MANAGERS = [
     ("Федорова Н.К.", 8),
 ]
 
+_DEPARTMENT_WEIGHTS = (22, 18, 15, 12, 10, 8, 6, 4, 3, 2, 1)
 AUDIT_OBJECTS = [
-    ("Департамент розничного бизнеса", 22),
-    ("Департамент комплаенса", 18),
-    ("Департамент ИТ", 15),
-    ("Департамент рисков", 12),
-    ("Сеть филиалов", 10),
-    ("Кредитный департамент", 8),
-    ("Финансовый департамент", 6),
-    ("Служба клиентского сервиса", 4),
-    ("Контакт-центр", 3),
-    ("Архивный отдел", 2),
+    (name, _DEPARTMENT_WEIGHTS[index] if index < len(_DEPARTMENT_WEIGHTS) else 1)
+    for index, name in enumerate(DEPARTMENT_NAMES)
 ]
 
 CHECK_TYPES = [("planned", 58), ("unscheduled", 24), ("thematic", 18)]

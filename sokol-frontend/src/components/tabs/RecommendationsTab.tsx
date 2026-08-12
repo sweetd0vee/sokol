@@ -41,6 +41,7 @@ import { INDICATOR_ICONS } from '../recommendations/indicatorIcons';
 import {
   LIST_ACTION_BUTTON_CLASS,
   LIST_ACTION_GROUP_CLASS,
+  listFilterClass,
 } from '../../constants/formLayout';
 
 type SortKey =
@@ -290,6 +291,7 @@ export function RecommendationsTab() {
     setManager('');
     setDeadlineFrom(null);
     setDeadlineTo(null);
+    setShowOnlyMe(false);
   };
 
   const handleRequestDelete = (recommendation: Recommendation) => {
@@ -390,7 +392,7 @@ export function RecommendationsTab() {
           <table className="w-full text-base table-fixed min-w-[1800px]">
             <colgroup>
               <col className="w-16" />
-              <col className="w-24" />
+              <col className="w-40" />
               <col />
               <col className="w-52" />
               <col className="w-28" />
@@ -409,7 +411,7 @@ export function RecommendationsTab() {
                     value={idFilter}
                     onChange={setIdFilter}
                     placeholder="ID"
-                    inputClassName="py-1.5 text-sm"
+                    inputClassName={listFilterClass(Boolean(idFilter.trim()))}
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
@@ -417,7 +419,7 @@ export function RecommendationsTab() {
                     value={keyFilter}
                     onChange={setKeyFilter}
                     placeholder="Ключ"
-                    inputClassName="py-1.5 text-sm"
+                    inputClassName={listFilterClass(Boolean(keyFilter.trim()))}
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
@@ -425,7 +427,7 @@ export function RecommendationsTab() {
                     value={nameFilter}
                     onChange={setNameFilter}
                     placeholder="Название"
-                    inputClassName="py-1.5 text-sm"
+                    inputClassName={listFilterClass(Boolean(nameFilter.trim()))}
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
@@ -434,7 +436,7 @@ export function RecommendationsTab() {
                     onChange={setAuditObject}
                     options={auditObjectOptions}
                     placeholder="Все"
-                    inputClassName="py-1.5 text-sm"
+                    inputClassName={listFilterClass(Boolean(auditObject))}
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
@@ -443,7 +445,7 @@ export function RecommendationsTab() {
                     onChange={setIndicator}
                     options={INDICATOR_OPTIONS}
                     placeholder="Все"
-                    inputClassName="py-1.5 text-sm"
+                    inputClassName={listFilterClass(Boolean(indicator))}
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
@@ -452,13 +454,13 @@ export function RecommendationsTab() {
                       selected={deadlineFrom}
                       onChange={setDeadlineFrom}
                       placeholder="с"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(deadlineFrom))}
                     />
                     <DatePicker
                       selected={deadlineTo}
                       onChange={setDeadlineTo}
                       placeholder="по"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(deadlineTo))}
                     />
                   </div>
                 </th>
@@ -468,7 +470,7 @@ export function RecommendationsTab() {
                     onChange={setMaterialityLevel}
                     options={MATERIALITY_LEVEL_OPTIONS}
                     placeholder="Все"
-                    inputClassName="py-1.5 text-sm"
+                    inputClassName={listFilterClass(Boolean(materialityLevel))}
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
@@ -477,7 +479,7 @@ export function RecommendationsTab() {
                     onChange={setAuditor}
                     options={auditorOptions}
                     placeholder="Все"
-                    inputClassName="py-1.5 text-sm"
+                    inputClassName={listFilterClass(Boolean(auditor))}
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
@@ -486,7 +488,7 @@ export function RecommendationsTab() {
                     onChange={setManager}
                     options={managerOptions}
                     placeholder="Все"
-                    inputClassName="py-1.5 text-sm"
+                    inputClassName={listFilterClass(Boolean(manager))}
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
@@ -495,7 +497,7 @@ export function RecommendationsTab() {
                     onChange={setStatus}
                     options={RECOMMENDATION_STATUS_OPTIONS}
                     placeholder="Все"
-                    inputClassName="py-1.5 text-sm"
+                    inputClassName={listFilterClass(Boolean(status))}
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
@@ -504,7 +506,7 @@ export function RecommendationsTab() {
                     onChange={setAdditionalStatus}
                     options={RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS}
                     placeholder="Все"
-                    inputClassName="py-1.5 text-sm"
+                    inputClassName={listFilterClass(Boolean(additionalStatus))}
                   />
                 </th>
                 <th className="px-0 py-2 font-normal">

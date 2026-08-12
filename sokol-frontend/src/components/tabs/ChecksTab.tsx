@@ -24,6 +24,7 @@ import { useSokolData } from '../../contexts/sokolData';
 import {
   LIST_ACTION_BUTTON_CLASS,
   LIST_ACTION_GROUP_CLASS,
+  listFilterClass,
 } from '../../constants/formLayout';
 
 type SortKey =
@@ -221,6 +222,7 @@ export function ChecksTab() {
     setCheckLeader('');
     setStartDateFrom(null);
     setStartDateTo(null);
+    setShowOnlyMe(false);
   };
 
   const handleRequestDelete = (check: Check) => {
@@ -304,7 +306,7 @@ export function ChecksTab() {
             <table className="w-full text-base table-fixed min-w-[1600px]">
               <colgroup>
                 <col className="w-16" />
-                <col className="w-28" />
+                <col className="w-40" />
                 <col />
                 <col className="w-32" />
                 <col className="w-36" />
@@ -320,7 +322,7 @@ export function ChecksTab() {
                       value={idFilter}
                       onChange={setIdFilter}
                       placeholder="ID"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(idFilter.trim()))}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
@@ -328,7 +330,7 @@ export function ChecksTab() {
                       value={keyFilter}
                       onChange={setKeyFilter}
                       placeholder="Ключ"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(keyFilter.trim()))}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
@@ -336,7 +338,7 @@ export function ChecksTab() {
                       value={nameFilter}
                       onChange={setNameFilter}
                       placeholder="Название"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(nameFilter.trim()))}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
@@ -345,7 +347,7 @@ export function ChecksTab() {
                       onChange={setCheckType}
                       options={CHECK_TYPE_OPTIONS}
                       placeholder="Все"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(checkType))}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
@@ -354,7 +356,7 @@ export function ChecksTab() {
                       onChange={setCheckView}
                       options={CHECK_VIEW_OPTIONS}
                       placeholder="Все"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(checkView))}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
@@ -363,13 +365,13 @@ export function ChecksTab() {
                         selected={startDateFrom}
                         onChange={setStartDateFrom}
                         placeholder="с"
-                        inputClassName="py-1.5 text-sm"
+                        inputClassName={listFilterClass(Boolean(startDateFrom))}
                       />
                       <DatePicker
                         selected={startDateTo}
                         onChange={setStartDateTo}
                         placeholder="по"
-                        inputClassName="py-1.5 text-sm"
+                        inputClassName={listFilterClass(Boolean(startDateTo))}
                       />
                     </div>
                   </th>
@@ -379,7 +381,7 @@ export function ChecksTab() {
                       onChange={setCheckLeader}
                       options={leaderOptions}
                       placeholder="Все"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(checkLeader))}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
@@ -388,7 +390,7 @@ export function ChecksTab() {
                       onChange={setStatus}
                       options={CHECK_STATUS_OPTIONS}
                       placeholder="Все"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(status))}
                     />
                   </th>
                   <th className="px-0 py-2 font-normal">

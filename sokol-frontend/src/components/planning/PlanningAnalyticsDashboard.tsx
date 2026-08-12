@@ -4,6 +4,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   LabelList,
   Legend,
   ResponsiveContainer,
@@ -24,7 +25,6 @@ import {
   EmptyChart,
   KpiCard,
 } from '../analytics/AnalyticsChartPrimitives';
-import { FocusableDonutChart } from '../analytics/FocusableDonutChart';
 import { CHECKS_PALETTE, RECOMMENDATIONS_PALETTE } from '../analytics/analyticsPalette';
 import type { AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
@@ -32,6 +32,9 @@ import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/
 import { PLANNING_HIGH_MATERIALITY_COLOR } from '../../utils/planningAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 import type { PeriodGranularity } from '../../utils/checkAnalytics';
+
+const COVERAGE_ZERO_COLOR = '#CBD5E1';
+const COVERAGE_CHECKS_COLOR = CHECKS_PALETTE[8];
 
 export function PlanningAnalyticsDashboard() {
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
@@ -112,6 +115,7 @@ export function PlanningAnalyticsDashboard() {
     coveredDepartments: [],
     uncoveredDepartments: [],
     donut: [],
+    checksByDepartment: [],
   };
   const departmentAnalytics = data?.departmentAnalytics ?? [];
   const highMaterialityRanking = data?.highMaterialityByDepartment ?? [];
@@ -144,55 +148,61 @@ export function PlanningAnalyticsDashboard() {
       },
       {
         id: 'coverage',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 4, minW: 3, minH: 3 },
-        render: () => (
-          <ChartCard
-            title="Охват департаментов"
-            description="Доля подразделений с проверками за выбранный период"
-          >
-            {coverage.total === 0 ? (
-              <EmptyChart message="Нет департаментов в данных" />
-            ) : (
-              <div className="flex h-full min-h-[13rem] flex-col gap-3">
-                <div className="min-h-0 flex-1">
-                  {coverage.donut.length === 0 ? (
-                    <EmptyChart message="Нет данных" />
-                  ) : (
-                    <FocusableDonutChart data={coverage.donut} />
-                  )}
-                </div>
-                {coverage.uncoveredDepartments.length > 0 ? (
-                  <div className="shrink-0 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                    <p className="font-semibold text-slate-700">
-                      Не охвачено: {coverage.uncoveredRate}% ({coverage.uncovered} из {coverage.total})
-                    </p>
-                    <div className="mt-2 max-h-28 overflow-auto pr-1">
-                      <div className="flex flex-wrap gap-1">
-                        {coverage.uncoveredDepartments.map((name) => (
-                          <span
-                            key={name}
-                            className="rounded-md bg-slate-200 px-2 py-0.5 font-medium text-slate-700"
-                            title={name}
-                          >
-                            {name}
-                          </span>
-                        ))}
-                      </div>
+        defaultLayout: { x: 0, y: 2, w: 6, h: 5, minW: 3, minH: 3 },
+        render: () => {
+          const checksByDepartment = coverage.checksByDepartment;
+          const chartHeight = Math.max(208, checksByDepartment.length * 28);
+          return (
+            <ChartCard
+              title="Охват департаментов"
+              description="Число проверок по подразделениям за выбранный период (по возрастанию)"
+            >
+              {checksByDepartment.length === 0 ? (
+                <EmptyChart message="Нет департаментов в данных" />
+              ) : (
+                <div className="flex h-full min-h-[13rem] flex-col gap-2">
+                  <div className="min-h-0 flex-1 overflow-auto">
+                    <div style={{ height: chartHeight, minHeight: '100%' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={checksByDepartment}
+                          layout="vertical"
+                          margin={{ top: 8, right: 36, left: 8, bottom: 0 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                          <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            width={140}
+                            tick={CHART_CATEGORY_AXIS_TICK}
+                          />
+                          <Tooltip />
+                          <Bar dataKey="value" name="Проверки" radius={[0, 4, 4, 0]}>
+                            {checksByDepartment.map((row) => (
+                              <Cell
+                                key={row.name}
+                                fill={row.value > 0 ? COVERAGE_CHECKS_COLOR : COVERAGE_ZERO_COLOR}
+                              />
+                            ))}
+                            <LabelList dataKey="value" position="right" fontSize={CHART_VALUE_LABEL_SIZE} />
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
                   </div>
-                ) : (
-                  <p className="shrink-0 text-xs text-emerald-700">
-                    Все известные департаменты охвачены проверками за период
+                  <p className="shrink-0 text-sm font-semibold leading-snug text-sber-dark">
+                    Не охвачено: {coverage.uncovered} из {coverage.total} ({coverage.uncoveredRate}%)
                   </p>
-                )}
-              </div>
-            )}
-          </ChartCard>
-        ),
+                </div>
+              )}
+            </ChartCard>
+          );
+        },
       },
       {
         id: 'departmentAnalytics',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 4, minW: 3, minH: 3 },
+        defaultLayout: { x: 6, y: 2, w: 6, h: 5, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Аналитика департаментов"
@@ -234,7 +244,7 @@ export function PlanningAnalyticsDashboard() {
       },
       {
         id: 'highMateriality',
-        defaultLayout: { x: 0, y: 6, w: 12, h: 4, minW: 6, minH: 3 },
+        defaultLayout: { x: 0, y: 7, w: 12, h: 4, minW: 6, minH: 3 },
         render: () => (
           <ChartCard
             title="Красные рекомендации по департаментам"
@@ -321,11 +331,11 @@ export function PlanningAnalyticsDashboard() {
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[
-              { label: 'Проверок', value: filteredChecksTotal, hint:`из ${universeChecksTotal}` },
+              { label: 'Проверок', value: filteredChecksTotal, hint: `из ${universeChecksTotal}` },
               {
                 label: 'Рекомендаций',
                 value: filteredRecommendationsTotal,
-                hint:`из ${universeRecommendationsTotal}`,
+                hint: `из ${universeRecommendationsTotal}`,
               },
             ]}
             items={[

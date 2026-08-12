@@ -158,6 +158,7 @@ export type PlanningCoverage = {
   coveredDepartments: string[];
   uncoveredDepartments: string[];
   donut: Array<{ name: string; value: number; color: string }>;
+  checksByDepartment: NamedCount[];
 };
 
 export type PlanningAnalyticsResponse = {

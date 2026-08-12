@@ -33,6 +33,7 @@ import type { Recommendation } from '../../types/recommendation';
 import {
   LIST_ACTION_BUTTON_CLASS,
   LIST_ACTION_GROUP_CLASS,
+  listFilterClass,
 } from '../../constants/formLayout';
 
 type SortKey =
@@ -251,6 +252,7 @@ export function ObservationsTab() {
     setAuditor('');
     setDeadlineFrom(null);
     setDeadlineTo(null);
+    setShowOnlyMe(false);
     setCurrentPage(1);
   };
 
@@ -382,7 +384,7 @@ export function ObservationsTab() {
                         setCurrentPage(1);
                       }}
                       placeholder="ID"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(idFilter.trim()))}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
@@ -393,7 +395,7 @@ export function ObservationsTab() {
                         setCurrentPage(1);
                       }}
                       placeholder="№ наблюдения"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(numberFilter.trim()))}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
@@ -404,7 +406,7 @@ export function ObservationsTab() {
                         setCurrentPage(1);
                       }}
                       placeholder="Проверка"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(checkFilter.trim()))}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
@@ -415,7 +417,7 @@ export function ObservationsTab() {
                         setCurrentPage(1);
                       }}
                       placeholder="Раздел АЗ"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(chapterFilter.trim()))}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
@@ -426,7 +428,7 @@ export function ObservationsTab() {
                         setCurrentPage(1);
                       }}
                       placeholder="Название наблюдения"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(nameFilter.trim()))}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
@@ -438,7 +440,7 @@ export function ObservationsTab() {
                       }}
                       options={MATERIALITY_LEVEL_OPTIONS}
                       placeholder="Все"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(materialityLevel))}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
@@ -450,7 +452,7 @@ export function ObservationsTab() {
                           setCurrentPage(1);
                         }}
                         placeholder="с"
-                        inputClassName="py-1.5 text-sm"
+                        inputClassName={listFilterClass(Boolean(deadlineFrom))}
                       />
                       <DatePicker
                         selected={deadlineTo}
@@ -459,7 +461,7 @@ export function ObservationsTab() {
                           setCurrentPage(1);
                         }}
                         placeholder="по"
-                        inputClassName="py-1.5 text-sm"
+                        inputClassName={listFilterClass(Boolean(deadlineTo))}
                       />
                     </div>
                   </th>
@@ -472,7 +474,7 @@ export function ObservationsTab() {
                       }}
                       options={auditorOptions}
                       placeholder="Все"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(auditor))}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
@@ -484,7 +486,7 @@ export function ObservationsTab() {
                       }}
                       options={OBSERVATION_STATUS_OPTIONS}
                       placeholder="Все"
-                      inputClassName="py-1.5 text-sm"
+                      inputClassName={listFilterClass(Boolean(status))}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal" />

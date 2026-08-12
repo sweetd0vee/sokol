@@ -262,6 +262,7 @@ class PlanningCoverage(BaseModel):
     covered_departments: list[str] = Field(serialization_alias="coveredDepartments")
     uncovered_departments: list[str] = Field(serialization_alias="uncoveredDepartments")
     donut: list[PlanningCoverageDonutSlice]
+    checks_by_department: list[NamedCount] = Field(serialization_alias="checksByDepartment")
 
 
 class PlanningDepartmentAnalyticsRow(BaseModel):

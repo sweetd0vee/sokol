@@ -53,12 +53,11 @@ def _check_department_distribution(
 
 def _build_coverage(
     all_departments: list[str],
-    covered_departments: list[str],
+    check_counts: dict[str, int],
 ) -> PlanningCoverage:
-    covered_set = set(covered_departments)
     universe = sorted({name for name in all_departments if name}, key=lambda value: value.casefold())
-    covered_list = [name for name in universe if name in covered_set]
-    uncovered_list = [name for name in universe if name not in covered_set]
+    covered_list = [name for name in universe if check_counts.get(name, 0) > 0]
+    uncovered_list = [name for name in universe if check_counts.get(name, 0) <= 0]
     covered = len(covered_list)
     uncovered = len(uncovered_list)
     total = len(universe)
@@ -68,6 +67,10 @@ def _build_coverage(
         PlanningCoverageDonutSlice(name="С охватом", value=covered, color="#22C55E"),
         PlanningCoverageDonutSlice(name="Без охвата", value=uncovered, color="#CBD5E1"),
     ]
+    checks_by_department = sorted(
+        [NamedCount(name=name, value=check_counts.get(name, 0)) for name in universe],
+        key=lambda row: (row.value, row.name.casefold()),
+    )
     return PlanningCoverage(
         covered=covered,
         uncovered=uncovered,
@@ -77,6 +80,7 @@ def _build_coverage(
         covered_departments=covered_list,
         uncovered_departments=uncovered_list,
         donut=[slice_ for slice_ in donut if slice_.value > 0],
+        checks_by_department=checks_by_department,
     )
 
 
@@ -158,12 +162,14 @@ async def build_planning_analytics(
         months=months,
     )
 
-    covered = [
-        name
-        for name in _check_department_distribution(filtered_checks_for_coverage, recommendations)
+    check_counts = {
+        name: count
+        for name, count in _check_department_distribution(
+            filtered_checks_for_coverage, recommendations
+        ).items()
         if name != "Без департамента"
-    ]
-    coverage = _build_coverage(all_departments, covered)
+    }
+    coverage = _build_coverage(all_departments, check_counts)
     high_ranking = _high_materiality_by_department(filtered_recommendations)
 
     return PlanningAnalyticsResponse(

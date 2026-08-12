@@ -5,18 +5,22 @@ import {
   createAuditor,
   createAuditType,
   createCheckKind,
+  createDepartment,
   createEffectivenessRating,
   deleteAuditor,
   deleteAuditType,
   deleteCheckKind,
+  deleteDepartment,
   deleteEffectivenessRating,
   fetchAuditors,
   fetchAuditTypes,
   fetchCheckKinds,
+  fetchDepartments,
   fetchEffectivenessRatings,
   updateAuditor,
   updateAuditType,
   updateCheckKind,
+  updateDepartment,
   updateEffectivenessRating,
 } from '../../api/settings';
 import { Input } from '../ui/Input';
@@ -89,6 +93,9 @@ export function SettingsTab() {
       if (entity === 'auditors') {
         await deleteAuditor(id);
         await queryClient.invalidateQueries({ queryKey: ['settings', 'auditors'] });
+      } else if (entity === 'departments') {
+        await deleteDepartment(id);
+        await queryClient.invalidateQueries({ queryKey: ['settings', 'departments'] });
       } else if (entity === 'auditTypes') {
         await deleteAuditType(id);
         await queryClient.invalidateQueries({ queryKey: ['settings', 'audit-types'] });
@@ -199,21 +206,25 @@ export function SettingsTab() {
           />
         )}
 
-        {activeList === 'auditTypes' && (
-          <SettingsTableCard
-            title="Вид аудита"
-            columns={['Код', 'Название', 'Действия']}
-            rows={auditTypeRows}
-            isLoading={auditTypesLoading}
-            error={auditTypesError}
-            onAdd={() => {
-              setNewAuditTypeCode('');
-              setNewAuditTypeName('');
-              setIsAddAuditTypeOpen(true);
+        {activeList === 'departments' && (
+          <SingleFieldDictionaryPanel
+            title="Департаменты"
+            columnLabel="Название"
+            fieldLabel="Название департамента"
+            addModalTitle="Новый департамент"
+            editModalTitle="Редактирование департамента"
+            placeholder="Введите название"
+            queryKey={['settings', 'departments']}
+            api={{
+              fetchAll: fetchDepartments,
+              create: (payload) => createDepartment({ name: payload.name }),
+              update: (id, payload) => updateDepartment(id, { name: payload.name }),
+              remove: deleteDepartment,
             }}
-            searchValue={auditTypeSearch}
-            onSearchChange={setAuditTypeSearch}
-            searchPlaceholder="Поиск"
+            getId={(item) => item.id}
+            getValue={(item) => item.name}
+            fieldKey="name"
+            onRequestDelete={(key, id) => handleRequestDelete('departments', key, id)}
           />
         )}
 
@@ -239,6 +250,24 @@ export function SettingsTab() {
           />
         )}
 
+        {activeList === 'auditTypes' && (
+          <SettingsTableCard
+            title="Вид аудита"
+            columns={['Код', 'Название', 'Действия']}
+            rows={auditTypeRows}
+            isLoading={auditTypesLoading}
+            error={auditTypesError}
+            onAdd={() => {
+              setNewAuditTypeCode('');
+              setNewAuditTypeName('');
+              setIsAddAuditTypeOpen(true);
+            }}
+            searchValue={auditTypeSearch}
+            onSearchChange={setAuditTypeSearch}
+            searchPlaceholder="Поиск"
+          />
+        )}
+
         {activeList === 'ratings' && (
           <SingleFieldDictionaryPanel
             title="Оценки эффективности"
@@ -257,7 +286,7 @@ export function SettingsTab() {
             getId={(item) => item.id}
             getValue={(item) => item.label}
             fieldKey="label"
-            searchText={(item) =>`${item.code ?? ''} ${item.label}`}
+            searchText={(item) => `${item.code ?? ''} ${item.label}`}
             onRequestDelete={(key, id) => handleRequestDelete('ratings', key, id)}
           />
         )}

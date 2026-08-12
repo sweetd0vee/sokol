@@ -22,6 +22,11 @@ export type EffectivenessRating = {
   label: string;
 };
 
+export type Department = {
+  id?: string;
+  name: string;
+};
+
 type ListResponse<T> = {
   items: T[];
   total: number;
@@ -71,6 +76,10 @@ const auditorsCrud = makeSettingsCrud<Auditor, Pick<Auditor, 'full_name'>>(
   '/api/v1/settings/auditors',
   { encodeId: false },
 );
+const departmentsCrud = makeSettingsCrud<Department, Pick<Department, 'name'>>(
+  '/api/v1/settings/departments',
+  { encodeId: false },
+);
 const auditTypesCrud = makeSettingsCrud<AuditType, Pick<AuditType, 'code' | 'name'>>(
   '/api/v1/settings/audit_types',
 );
@@ -87,6 +96,11 @@ export const fetchAuditors = auditorsCrud.fetchAll;
 export const createAuditor = auditorsCrud.create;
 export const updateAuditor = auditorsCrud.update;
 export const deleteAuditor = auditorsCrud.remove;
+
+export const fetchDepartments = departmentsCrud.fetchAll;
+export const createDepartment = departmentsCrud.create;
+export const updateDepartment = departmentsCrud.update;
+export const deleteDepartment = departmentsCrud.remove;
 
 export const fetchAuditTypes = auditTypesCrud.fetchAll;
 export const createAuditType = auditTypesCrud.create;
