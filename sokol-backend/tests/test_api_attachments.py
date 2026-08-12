@@ -61,17 +61,17 @@ class AttachmentsApiTests(unittest.TestCase):
         )
         with (
             patch(
-                "app.api.v1.endpoints.attachments._resolve_check_serial",
+                "app.services.attachments_service.resolve_attachment_target",
                 new_callable=AsyncMock,
                 return_value=("26IVP01P1", None),
             ),
             patch(
-                "app.api.v1.endpoints.attachments.list_attachments",
+                "app.services.attachments_service.attachments_crud.list_attachments",
                 new_callable=AsyncMock,
                 return_value=[row],
             ),
             patch(
-                "app.api.v1.endpoints.attachments.count_attachments",
+                "app.services.attachments_service.attachments_crud.count_attachments",
                 new_callable=AsyncMock,
                 return_value=1,
             ),
@@ -113,7 +113,7 @@ class AttachmentsApiTests(unittest.TestCase):
         with (
             patch.object(Settings, "minio_enabled", new_callable=PropertyMock, return_value=True),
             patch(
-                "app.api.v1.endpoints.attachments._resolve_check_serial",
+                "app.services.attachments_service.resolve_attachment_target",
                 new_callable=AsyncMock,
                 return_value=("26IVP01P1", None),
             ),
@@ -135,7 +135,7 @@ class AttachmentsApiTests(unittest.TestCase):
         with (
             patch.object(Settings, "minio_enabled", new_callable=PropertyMock, return_value=True),
             patch(
-                "app.api.v1.endpoints.attachments.get_attachment",
+                "app.services.attachments_service.attachments_crud.get_attachment",
                 new_callable=AsyncMock,
                 return_value=None,
             ),

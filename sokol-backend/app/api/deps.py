@@ -55,24 +55,22 @@ async def get_current_user(
             ) from exc
 
         username = str(payload.get("sub") or "").strip()
-        role_raw = str(payload.get("role") or "").strip().lower()
-        display_name = str(payload.get("display_name") or username).strip() or username
         if not username:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Недействительный токен.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        try:
-            role = Role(role_raw)
-        except ValueError as exc:
+
+        user = await get_user_by_username(session, username)
+        if user is None or not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Недействительная роль в токене.",
+                detail="Пользователь не найден или деактивирован.",
                 headers={"WWW-Authenticate": "Bearer"},
-            ) from exc
+            )
 
-        return CurrentUser(username=username, display_name=display_name, role=role)
+        return _user_from_record(user)
 
     if basic_credentials is not None and basic_credentials.username:
         user = await get_user_by_username(session, basic_credentials.username)

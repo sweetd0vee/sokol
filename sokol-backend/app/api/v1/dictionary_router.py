@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from typing import Any, Optional, TypeVar
 from uuid import UUID
@@ -14,22 +13,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import require_admin
 from app.crud.dictionary_errors import DuplicateDictionaryError
 from app.db.session import get_db_session
+from app.services.crud_errors import ResourceNotFoundError
+from app.services.dictionary_service import DictionaryCrud, DictionaryService
 
 CreateT = TypeVar("CreateT", bound=BaseModel)
 UpdateT = TypeVar("UpdateT", bound=BaseModel)
 ReadT = TypeVar("ReadT", bound=BaseModel)
 ListT = TypeVar("ListT", bound=BaseModel)
-EntityT = TypeVar("EntityT")
-
-
-@dataclass(frozen=True)
-class DictionaryCrud:
-    create: Callable[[AsyncSession, CreateT], Awaitable[EntityT]]
-    get: Callable[[AsyncSession, UUID], Awaitable[EntityT | None]]
-    list: Callable[[AsyncSession, int, int, Optional[str]], Awaitable[Sequence[EntityT]]]
-    count: Callable[[AsyncSession, Optional[str]], Awaitable[int]]
-    update: Callable[[AsyncSession, EntityT, UpdateT], Awaitable[EntityT]]
-    delete: Callable[[AsyncSession, EntityT], Awaitable[None]]
 
 
 @dataclass(frozen=True)
@@ -47,7 +37,7 @@ class DictionaryRouterConfig:
 
 def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
     router = APIRouter(prefix=config.prefix, tags=config.tags)
-    crud = config.crud
+    service = DictionaryService(crud=config.crud, not_found=config.not_found)
     create_schema = config.create_schema
     update_schema = config.update_schema
     read_schema = config.read_schema
@@ -60,7 +50,7 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
         _: object = Depends(require_admin),
     ) -> Any:
         try:
-            return await crud.create(session, payload)
+            return await service.create(session, payload)
         except DuplicateDictionaryError as exc:
             if config.handle_duplicates:
                 raise HTTPException(status_code=409, detail=str(exc)) from exc
@@ -73,8 +63,7 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
         search: Optional[str] = Query(None, min_length=1),
         session: AsyncSession = Depends(get_db_session),
     ) -> Any:
-        items = await crud.list(session, skip, limit, search)
-        total = await crud.count(session, search)
+        items, total = await service.list(session, skip, limit, search)
         return list_schema(items=list(items), total=total)
 
     @router.get("/{item_id}", response_model=read_schema)
@@ -82,10 +71,10 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
         item_id: UUID,
         session: AsyncSession = Depends(get_db_session),
     ) -> Any:
-        item = await crud.get(session, item_id)
-        if not item:
-            raise HTTPException(status_code=404, detail=config.not_found)
-        return item
+        try:
+            return await service.get(session, item_id)
+        except ResourceNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     @router.patch("/{item_id}", response_model=read_schema)
     async def update_endpoint(
@@ -94,11 +83,10 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
         session: AsyncSession = Depends(get_db_session),
         _: object = Depends(require_admin),
     ) -> Any:
-        item = await crud.get(session, item_id)
-        if not item:
-            raise HTTPException(status_code=404, detail=config.not_found)
         try:
-            return await crud.update(session, item, payload)
+            return await service.update(session, item_id, payload)
+        except ResourceNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         except DuplicateDictionaryError as exc:
             if config.handle_duplicates:
                 raise HTTPException(status_code=409, detail=str(exc)) from exc
@@ -114,10 +102,10 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
         session: AsyncSession = Depends(get_db_session),
         _: object = Depends(require_admin),
     ) -> Response:
-        item = await crud.get(session, item_id)
-        if not item:
-            raise HTTPException(status_code=404, detail=config.not_found)
-        await crud.delete(session, item)
+        try:
+            await service.delete(session, item_id)
+        except ResourceNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     return router

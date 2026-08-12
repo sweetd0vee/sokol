@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 
 from app.api.deps import CurrentUser, get_current_user
 from app.core.roles import Role
-from app.core.security import hash_password
+from app.core.security import create_access_token, hash_password
 from app.db.session import get_db_session
 from app.main import app
 from app.models.users import User
@@ -31,6 +31,18 @@ def _admin_user() -> User:
         role=Role.ADMIN.value,
         display_name="Администратор",
         aliases="admin",
+        is_active=True,
+    )
+
+
+def _auditor_user(username: str = "Важник Д.С.") -> User:
+    return User(
+        id=uuid4(),
+        username=username,
+        password_hash=hash_password("auditor"),
+        role=Role.AUDITOR.value,
+        display_name=username,
+        aliases=None,
         is_active=True,
     )
 
@@ -55,9 +67,16 @@ class AuthRbacTests(unittest.TestCase):
         response = self.client.get("/api/v1/checks")
         self.assertEqual(response.status_code, 401)
 
+    @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
     @patch("app.api.v1.endpoints.auth.get_user_by_username", new_callable=AsyncMock)
-    def test_login_and_me(self, mock_get_user: AsyncMock) -> None:
-        mock_get_user.return_value = _admin_user()
+    def test_login_and_me(
+        self,
+        mock_login_get_user: AsyncMock,
+        mock_deps_get_user: AsyncMock,
+    ) -> None:
+        user = _admin_user()
+        mock_login_get_user.return_value = user
+        mock_deps_get_user.return_value = user
         login = self.client.post(
             "/api/v1/auth/login",
             json={"username": "Админ А.А.", "password": "admin"},
@@ -73,6 +92,42 @@ class AuthRbacTests(unittest.TestCase):
         )
         self.assertEqual(me.status_code, 200)
         self.assertEqual(me.json()["role"], "admin")
+
+    @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
+    def test_bearer_rejects_deactivated_user(self, mock_get_user: AsyncMock) -> None:
+        user = _admin_user()
+        user.is_active = False
+        mock_get_user.return_value = user
+        token = create_access_token(
+            subject=user.username,
+            role=Role.ADMIN,
+            display_name=user.display_name,
+        )
+
+        response = self.client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
+    def test_bearer_uses_database_role_for_rbac(self, mock_get_user: AsyncMock) -> None:
+        user = _auditor_user(username="Админ А.А.")
+        mock_get_user.return_value = user
+        token = create_access_token(
+            subject=user.username,
+            role=Role.ADMIN,
+            display_name="Администратор",
+        )
+
+        response = self.client.post(
+            "/api/v1/settings/auditors",
+            json={"full_name": "Тест Т.Т."},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        self.assertEqual(response.status_code, 403)
 
     @patch("app.api.v1.endpoints.auth.update_user_password", new_callable=AsyncMock)
     @patch("app.api.v1.endpoints.auth.get_user_by_username", new_callable=AsyncMock)

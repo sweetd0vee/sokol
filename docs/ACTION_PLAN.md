@@ -16,15 +16,16 @@
 |----|--------|--------|
 | P0-01 | Скрыть Kantsler из production nav/route | 0.5 d |
 | P0-02 | Prod: `SOKOL_ENV=prod` + strong `SOKOL_JWT_SECRET`, fail-fast на default | **done** |
-| P0-03 | Запретить `import/seed --replace` и presentation demo bootstrap на UAT/prod без явного confirm | 0.5 d |
+| P0-03 | Docker demo import off by default; запретить `import/seed --replace` на UAT/prod без явного confirm | 0.5 d |
 | P0-04 | Alembic baseline + `upgrade head` | 3–5 d |
 | P0-05 | Audit-opinion: убрать из `docs/API` | **done** |
+| P0-06 | `CheckFormPage` edit by URL: fetch by id и запрет fallback create | 0.5–1 d |
 
 ## P1 — до пилота
 
 | ID | Задача | Effort |
 |----|--------|--------|
-| P1-01 | JWT: lookup user в БД + `is_active` | 1 d |
+| P1-01 | ~~JWT: lookup user в БД + `is_active`~~ | **done** |
 | P1-02 | CI workflow добавлен; включить required checks по [CI.md](CI.md) | 0.5 d |
 | P1-03 | ~~Server serial_number~~ — **выполнено** | — |
 | P1-04 | Таблицы: «Показано X из Y» | 1 d |
@@ -32,9 +33,11 @@
 | P1-06 | Import dry-run + reject report | 2 d |
 | P1-07 | Delete recommendation → cleanup MinIO | 0.5 d |
 | P1-08 | Runbook backup/restore Postgres + MinIO | 2 d |
-| P1-09 | JWT Bearer: user lookup + `is_active` на каждый request | 1 d |
+| P1-09 | HTTP Basic fallback: отключить/feature-flag для prod | 0.5 d |
 | P1-10 | Bulk replace recommendations перенести в backend transaction | 1–2 d |
 | P1-11 | Attachment cleanup при upload DB failure и смене serial bucket | 1–2 d |
+| P1-12 | Prod-safe `sync_dictionaries`: без destructive delete на старте | 1 d |
+| P1-13 | `RecommendationFormPage` save error + list loading/error UI | 0.5–1 d |
 
 ## P2 — после go-live / параллельно
 
@@ -44,7 +47,7 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · ro
 
 | Gate | Дата | Критерий |
 |------|------|----------|
-| G-A | 14.08 | P0-01..03; Alembic started |
+| G-A | 14.08 | P0-01..03, P0-06; Alembic started |
 | G-B | 20.08 | Auth UAT; CI green; branch protection requires CI checks |
 | G-C | 27.08 | MinIO decision; DOCX smoke; no P0 |
 | G-D | 01.09 | PLAN G1–G12 signed |
@@ -72,10 +75,14 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · ro
 | ID | Что сделать в коде | Definition of Done |
 |----|--------------------|--------------------|
 | P0-01 | Убрать `kantsler` из `Sidebar.TABS` и route `/kantsler` или закрыть feature flag `VITE_ENABLE_KANTSLER`. | В production build меню не содержит `Канцлер`; прямой `/kantsler` не показывает stub; Playwright smoke зелёный. |
+| P0-03 | В `sokol-backend/docker/app/docker-compose.yml` и `entrypoint.sh` поставить demo load default `0`; в prod guard запретить demo/replace flags. | Пустой prod/UAT контейнер не импортирует demo Excel сам; `SOKOL_SEED_REPLACE=1` в prod падает до bootstrap. |
 | P0-04 | Ввести Alembic baseline и заменить prod `create_all` flow на `alembic upgrade head`. | Пустая test DB поднимается миграциями; повторный upgrade no-op; runbook обновлён. |
+| P0-06 | Добавить `fetchCheck(id)` и `useQuery` в `CheckFormPage`; edit mode не может вызвать `addCheck`. | Hard refresh `/checks/:id/edit` заполняет поля; 404 показывает `ErrorState`; тест подтверждает отсутствие duplicate create. |
 | P1-04 | Протащить `total` из `fetchChecks/fetchRecommendations` в UI и показать truncation warning. | При `items.length < total` пользователь видит “Показано X из Y”; export явно говорит “текущая выборка” или грузит все данные. |
 | P1-05 | Добавить frontend `useStorageStatus` и backend/storage runbook: disabled/unreachable states, retry, policy/backup. | Upload disabled при недоступном MinIO; пользователь видит причину; backup/restore steps описаны. |
 | P1-07 | При delete recommendation удалять attachments rows и MinIO objects. | Интеграционный/HTTP тест подтверждает cleanup; orphan report не находит файлы удалённой рекомендации. |
-| P1-09 | `get_current_user` для Bearer читает пользователя из БД и проверяет `is_active`; Basic выключается в prod. | Деактивированный пользователь с валидным JWT получает 401; смена роли применяется без ожидания истечения token. |
+| P1-09 | Добавить `SOKOL_ENABLE_BASIC_AUTH`; в prod не принимать `_basic`, если flag выключен. | При prod config Basic получает 401; Bearer продолжает работать. |
 | P1-10 | Добавить backend transaction endpoint для bulk replace recommendations и перевести frontend с delete-all/create-all. | Partial failure не удаляет старые рекомендации; sequence numbers стабильны. |
 | P1-11 | Добавить compensation при upload failure и определить migration strategy для bucket при смене serial. | Ошибка DB после upload удаляет MinIO object; PATCH serial сохраняет download/delete вложений. |
+| P1-12 | Изменить `sync_dictionaries`: prod merge-only, destructive sync только с dev/demo flag. | Пользовательские auditors/departments/users не удаляются после restart; delete проверяет использование. |
+| P1-13 | Добавить `saveError` в `RecommendationFormPage`; в списках показывать `LoadingState`/`ErrorState` и retry. | Rejected save виден пользователю и не очищает форму; failed fetch не выглядит как пустая таблица. |

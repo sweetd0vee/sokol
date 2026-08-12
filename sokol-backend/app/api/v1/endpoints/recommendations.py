@@ -3,15 +3,6 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud.checks_crud import get_check_by_serial
-from app.crud.recommendations_crud import (
-    count_recommendations,
-    create_recommendation,
-    delete_recommendation,
-    get_recommendation,
-    list_recommendations,
-    update_recommendation,
-)
 from app.db.session import get_db_session
 from app.api.deps import require_admin
 from app.schemas.recommendations import (
@@ -20,6 +11,8 @@ from app.schemas.recommendations import (
     RecommendationRead,
     RecommendationUpdate,
 )
+from app.services import recommendations_service
+from app.services.crud_errors import InvalidReferenceError, ResourceNotFoundError
 from app.services.dictionary_validation import DictionaryRefError
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
@@ -30,11 +23,10 @@ async def create_recommendation_endpoint(
     recommendation_in: RecommendationCreate,
     session: AsyncSession = Depends(get_db_session),
 ) -> RecommendationRead:
-    check = await get_check_by_serial(session, recommendation_in.serial_number)
-    if not check:
-        raise HTTPException(status_code=400, detail="Проверка с указанным ключом не найдена.")
     try:
-        return await create_recommendation(session, recommendation_in, check_id=check.id)
+        return await recommendations_service.create_recommendation(session, recommendation_in)
+    except InvalidReferenceError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except DictionaryRefError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -47,19 +39,13 @@ async def list_recommendations_endpoint(
     serial_number: Optional[str] = Query(None, min_length=1),
     session: AsyncSession = Depends(get_db_session),
 ) -> RecommendationListResponse:
-    items = await list_recommendations(
+    return await recommendations_service.list_recommendations(
         session,
         skip=skip,
         limit=limit,
         search=search,
         serial_number=serial_number,
     )
-    total = await count_recommendations(
-        session,
-        search=search,
-        serial_number=serial_number,
-    )
-    return RecommendationListResponse(items=list(items), total=total)
 
 
 @router.get("/{recommendation_id}", response_model=RecommendationRead)
@@ -67,10 +53,10 @@ async def get_recommendation_endpoint(
     recommendation_id: int,
     session: AsyncSession = Depends(get_db_session),
 ) -> RecommendationRead:
-    recommendation = await get_recommendation(session, recommendation_id)
-    if not recommendation:
-        raise HTTPException(status_code=404, detail="Рекомендация не найдена.")
-    return recommendation
+    try:
+        return await recommendations_service.get_recommendation(session, recommendation_id)
+    except ResourceNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.patch("/{recommendation_id}", response_model=RecommendationRead)
@@ -79,24 +65,16 @@ async def update_recommendation_endpoint(
     recommendation_in: RecommendationUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> RecommendationRead:
-    recommendation = await get_recommendation(session, recommendation_id)
-    if not recommendation:
-        raise HTTPException(status_code=404, detail="Рекомендация не найдена.")
-
-    check_id: Optional[int] = None
-    if recommendation_in.serial_number:
-        check = await get_check_by_serial(session, recommendation_in.serial_number)
-        if not check:
-            raise HTTPException(status_code=400, detail="Проверка с указанным ключом не найдена.")
-        check_id = check.id
-
     try:
-        return await update_recommendation(
+        return await recommendations_service.update_recommendation(
             session,
-            recommendation,
+            recommendation_id,
             recommendation_in,
-            check_id=check_id,
         )
+    except ResourceNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except InvalidReferenceError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except DictionaryRefError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -107,8 +85,8 @@ async def delete_recommendation_endpoint(
     session: AsyncSession = Depends(get_db_session),
     _: object = Depends(require_admin),
 ) -> None:
-    recommendation = await get_recommendation(session, recommendation_id)
-    if not recommendation:
-        raise HTTPException(status_code=404, detail="Рекомендация не найдена.")
-    await delete_recommendation(session, recommendation)
+    try:
+        await recommendations_service.delete_recommendation(session, recommendation_id)
+    except ResourceNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     return None

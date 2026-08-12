@@ -1,7 +1,7 @@
 # Код-ревью frontend
 
 **Общая оценка:** 7.8 / 10 · React 19, TypeScript, Vite, TanStack Query  
-**Смысл оценки:** frontend хорошо закрывает основные сценарии аудитора, смена пароля уже подключена к API, lint/test стали жёстче. Главные риски теперь не “сломанный UI”, а production stub route, усечение данных, неатомарный bulk replace и hardening вложений/экспортов.
+**Смысл оценки:** frontend хорошо закрывает основные сценарии аудитора, смена пароля уже подключена к API, lint/test стали жёстче. Главные риски теперь: edit-check по прямой ссылке, production stub route, усечение данных, неатомарные bulk операции и hardening вложений/экспортов.
 
 ## Архитектура
 
@@ -20,8 +20,8 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 |------|--------|------------|------------------|
 | App shell / routing | **7 / 10** | AuthProvider, layout и Router собраны понятно | В nav/route виден demo/stub раздел `kantsler` |
 | Auth UI / API client | **7.5 / 10** | Login, Bearer interceptor, 401 logout и change-password закрывают базовый сценарий | Нет OIDC-flow, нет e2e успешного login/change-password |
-| Checks workflow | **8 / 10** | Форма и список работают с backend; `serial_number` только читается из API | Крупный `CheckFormPage`, нужны form tests |
-| Recommendations workflow | **7.5 / 10** | CRUD, статусы, вложения и связь с проверкой покрывают основной процесс | Bulk replace delete-all/create-all рискован при сбое |
+| Checks workflow | **7 / 10** | Форма и список работают с backend; `serial_number` только читается из API | Edit route не fetchит check по id и может создать дубль при прямой ссылке |
+| Recommendations workflow | **7 / 10** | CRUD, статусы, вложения и связь с проверкой покрывают основной процесс | Save errors не показываются в форме; batch import/bulk replace рискованы при частичном сбое |
 | Data layer / context | **7 / 10** | API clients + mappers + React Query дают единый контракт | `SokolDataContext` тянет bulk limits 500/1000 без явного warning |
 | Attachments UI | **7 / 10** | Панели вложений подключены к check/recommendation, upload limits берутся с backend | Нужен общий banner/disabled state при недоступном MinIO |
 | Analytics dashboards | **8 / 10** | Серверные агрегаты, фильтры и визуализации полезны бизнесу | При росте данных нужен drill-down/server pagination |
@@ -68,7 +68,25 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 ## Подробные findings
 
-### FE-01 · P0 · `Kantsler` виден как production route
+### FE-01 · P0 · Edit проверки по прямой ссылке может создать дубль
+
+**Где:** `src/components/checks/CheckFormPage.tsx`, `src/api/checks.ts`, `src/contexts/SokolDataContext.tsx`.
+
+**Симптом:** `/checks/:id/edit` берёт проверку только из `location.state.check` или `checks.find()` в глобальном context. Context загружает максимум 500 checks. Если открыть edit URL напрямую, обновить страницу или редактировать проверку вне первых 500 записей, `existing` становится `undefined`. При submit условие `isEditMode && existing?.id` не срабатывает, и код уходит в `addCheck(payload)`.
+
+**Риск:** пользователь думает, что редактирует существующую проверку, но создаёт новую. Это прямой риск дублей и потери доверия к данным.
+
+**Как исправить:**
+
+1. Добавить `fetchCheck(id)` в `src/api/checks.ts` на `GET /api/v1/checks/{id}`.
+2. В `CheckFormPage` подключить `useQuery(['check', id], ...)` при `isEditMode && !existingFromList && !locationState?.check`.
+3. Пока идёт загрузка показывать `LoadingState`.
+4. При 404 показывать `ErrorState` и кнопку “К списку”.
+5. В edit mode запретить fallback на `addCheck`: если `id` есть, submit может делать только update или показывать ошибку “Проверка не загружена”.
+
+**Тесты:** component test: `/checks/999/edit` без state вызывает `fetchCheck`, поля заполняются, `addCheck` не вызывается. E2E: hard refresh на edit page сохраняет режим редактирования.
+
+### FE-02 · P0 · `Kantsler` виден как production route
 
 **Где:** `src/App.tsx`, `src/components/layout/Sidebar.tsx`, `src/components/tabs/KantslerTab.tsx`.
 
@@ -85,7 +103,7 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 **Тесты:** Playwright в production build не видит пункт `Канцлер`; прямой переход `/kantsler` не показывает stub.
 
-### FE-02 · P1 · Глобальные списки могут быть усечены без warning
+### FE-03 · P1 · Глобальные списки могут быть усечены без warning
 
 **Где:** `src/contexts/SokolDataContext.tsx`, `src/api/checks.ts`, `src/api/recommendations.ts`.
 
@@ -103,24 +121,24 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 **Тесты:** mock API возвращает `items.length=500`, `total=501`; UI показывает warning. Поиск проверки за пределами первой страницы всё равно может выбрать нужную запись через API.
 
-### FE-03 · P1 · `replaceRecommendationsForCheck` неатомарен
+### FE-04 · P1 · Bulk операции рекомендаций неатомарны
 
-**Где:** `src/contexts/SokolDataContext.tsx`.
+**Где:** `src/contexts/SokolDataContext.tsx`, `src/components/checks/CheckRecommendationsBlock.tsx`.
 
-**Симптом:** функция берёт существующие рекомендации по serial, удаляет их через `Promise.all`, затем создаёт новые через `Promise.all`.
+**Симптом:** `replaceRecommendationsForCheck` берёт существующие рекомендации по serial, удаляет их через `Promise.all`, затем создаёт новые через `Promise.all`. Импорт рекомендаций из АЗ в `CheckRecommendationsBlock` создаёт рекомендации по одной; при ошибке на N-й записи предыдущие уже сохранены.
 
-**Риск:** если удаление прошло, а одно создание упало, пользователь теряет старые рекомендации или получает неполный набор. Параллельные запросы также не гарантируют ожидаемый порядок `sequence_number`, если backend зависит от max+1 на момент create.
+**Риск:** если удаление прошло, а одно создание упало, пользователь теряет старые рекомендации или получает неполный набор. При import partial failure повторная попытка может создать дубликаты.
 
 **Как исправить:**
 
-1. Правильный вариант: backend endpoint `PUT /checks/{id}/recommendations` или `POST /recommendations/bulk-replace` с одной DB transaction.
+1. Правильный вариант: backend endpoints для batch import / bulk replace с одной DB transaction.
 2. Frontend отправляет весь desired list и получает итоговые rows.
-3. До backend endpoint не использовать “delete all + create all” для сохранения формы проверки; показывать предупреждение и избегать silent partial success.
-4. Если временно оставить frontend flow, делать последовательные операции и сохранять старый snapshot для ручного восстановления при ошибке.
+3. До backend endpoint показывать прогресс, количество созданных строк и явный partial-failure error.
+4. Для `replaceRecommendationsForCheck` не использовать “delete all + create all” без transaction.
 
-**Тесты:** при ошибке create второй рекомендации старые рекомендации остаются; после успешного bulk replace порядок rows стабилен.
+**Тесты:** при ошибке create второй рекомендации старые рекомендации остаются; import fail на 3-й записи показывает “создано 2, не создано N” и не скрывает ошибку.
 
-### FE-04 · P1 · Нет общего UX для недоступного MinIO
+### FE-05 · P1 · Нет общего UX для недоступного MinIO
 
 **Где:** `src/components/attachments/FileAttachmentsPanel.tsx`, `src/components/checks/CheckAttachmentsSection.tsx`, `src/api/capabilities.ts`.
 
@@ -138,7 +156,24 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 **Тесты:** component test для `FileAttachmentsPanel` при disabled/unreachable; retry вызывает refetch; кнопка upload disabled.
 
-### FE-05 · P1 · Auth e2e пока проверяет только негативные сценарии
+### FE-06 · P1 · Ошибки сохранения рекомендаций и загрузки списков видны не везде
+
+**Где:** `src/components/recommendations/RecommendationFormPage.tsx`, `src/components/tabs/ChecksTab.tsx`, `src/components/tabs/RecommendationsTab.tsx`, `src/contexts/SokolDataContext.tsx`.
+
+**Симптом:** `RecommendationFormPage.saveRecommendation` делает `try/finally`, но без `catch` и без `saveError`. При rejected `addRecommendation/updateRecommendation` пользователь не получает понятного сообщения. Context отдаёт `isLoading/isError/error`, но табы не всегда превращают это в `LoadingState`/`ErrorState`.
+
+**Риск:** пользователь нажимает “Сохранить”, request падает, форма остаётся без объяснения. При падении bulk fetch таблица может выглядеть как пустой список.
+
+**Как исправить:**
+
+1. Добавить `saveError` в `RecommendationFormPage` по образцу `CheckFormPage`.
+2. В `catch` использовать `getErrorMessage(error, 'Не удалось сохранить рекомендацию.')`.
+3. В `ChecksTab`/`RecommendationsTab` показывать loading/error state и кнопку retry через `refetch`.
+4. Не делать navigate после save, если request завершился ошибкой.
+
+**Тесты:** rejected save показывает текст ошибки и не очищает форму; rejected list query показывает error UI и retry вызывает `refetch`.
+
+### FE-07 · P1 · Auth e2e пока проверяет только негативные сценарии
 
 **Где:** `e2e/auth.spec.ts`, `src/contexts/AuthContext.tsx`, `src/components/profile/ProfilePage.tsx`.
 
@@ -155,7 +190,19 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 **Тесты:** Playwright `auth.spec.ts` расширить до позитивного flow; unit оставить для ошибок mapper/interceptor.
 
-### FE-06 · P2 · `exports.ts` слишком крупный и хрупкий
+### FE-08 · P2 · `useEntityAttachments` вызывает setState во время render
+
+**Где:** `src/hooks/useEntityAttachments.ts`.
+
+**Симптом:** hook сравнивает `prevEntityKey` с `entityKey` прямо в теле render и вызывает `setPrevEntityKey`/`setPendingItems`.
+
+**Риск:** React Strict Mode может подсветить warning; поведение сброса pending uploads становится менее предсказуемым при быстрых переходах между сущностями.
+
+**Как исправить:** перенести сброс pending state в `useEffect(() => { setPendingItems([]) }, [entityKey])`; `prevEntityKey` убрать или хранить в `useRef`, если нужен для сравнения.
+
+**Тесты:** hook test: при смене `entityId` pending files очищаются без render-phase update warning.
+
+### FE-09 · P2 · `exports.ts` слишком крупный и хрупкий
 
 **Где:** `src/utils/exports.ts`, `src/components/analytics/*`, `src/components/planning/PlanningAnalyticsDashboard.tsx`.
 
@@ -172,7 +219,7 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 **Тесты:** unit на builders; smoke на dashboard export с fixture.
 
-### FE-07 · P2 · Route-level bundle не дробится
+### FE-10 · P2 · Route-level bundle не дробится
 
 **Где:** `src/App.tsx`.
 
@@ -188,11 +235,14 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 | Приоритет | Finding |
 |-----------|---------|
+| P0 | Edit проверки по прямой ссылке не должен создавать дубль |
 | P0 | Скрыть Kantsler |
 | P1 | «Показано X из Y» в таблицах |
-| P1 | `replaceRecommendationsForCheck` — delete-all + create-all без транзакции |
+| P1 | Batch import / `replaceRecommendationsForCheck` — без backend transaction |
 | P1 | Banner/disabled state при недоступном storage |
+| P1 | Error UI для save recommendation и list fetch |
 | P1 | E2E успешный auth/logout/change-password |
+| P2 | `useEntityAttachments` — убрать setState из render |
 | P2 | Split `exports.ts`, data-driven HTML export |
 | P3 | Virtualized tables, OpenAPI codegen |
 

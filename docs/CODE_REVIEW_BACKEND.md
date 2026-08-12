@@ -1,7 +1,7 @@
 # Код-ревью backend
 
-**Общая оценка:** 7.4 / 10 · Python 3.12, FastAPI, SQLAlchemy async, MinIO  
-**Смысл оценки:** backend уже выглядит как рабочий API для пилота, но промышленная готовность упирается в миграции, auth hardening, lifecycle файлов в MinIO и защиту import/seed операций.
+**Общая оценка:** 7.5 / 10 · Python 3.12, FastAPI, SQLAlchemy async, MinIO  
+**Смысл оценки:** backend уже выглядит как рабочий API для пилота, но промышленная готовность упирается в миграции, оставшийся auth hardening, lifecycle файлов в MinIO и защиту import/seed операций.
 
 ## Архитектура
 
@@ -27,8 +27,8 @@ app/api/v1/endpoints/  →  crud/  →  PostgreSQL
 | Analytics | **7.5 / 10** | Серверные агрегаты по checks/recommendations/monitoring/dva/planning согласованы с UI | In-memory подход нормален для пилота, но не для большого портфеля |
 | DOCX reports | **8 / 10** | Раздел II, links, memorandum и parser вынесены в services и хорошо тестируются | Нет очереди, streaming upload и golden DOCX CI |
 | Attachments / MinIO | **6.5 / 10** | Есть metadata model, storage service, upload/list/download/delete API | Есть orphan-сценарии при delete recommendation, upload DB failure и смене serial |
-| Auth / RBAC | **6.5 / 10** | JWT Bearer закрывает API; роли `auditor`/`admin` применены на delete/settings; change-password реализован | Роль берётся из token payload; Basic fallback всегда включён; нет user lookup/is_active на каждый request |
-| БД / миграции / import | **5.5 / 10** | `create_all`, seed и import позволяют быстро поднять dev/pilot | Нет Alembic baseline; `migrate_*.py` опасны для повторяемого prod |
+| Auth / RBAC | **7 / 10** | JWT Bearer закрывает API; Bearer lookup читает пользователя/роль из БД и проверяет `is_active`; роли `auditor`/`admin` применены на delete/settings | Basic fallback всегда включён; нет OIDC/audit log |
+| БД / миграции / import | **5 / 10** | `create_all`, seed и import позволяют быстро поднять dev/pilot | Нет Alembic baseline; Docker по умолчанию грузит demo data; часть `migrate_*.py` не входит в entrypoint |
 | Tests | **7.5 / 10** | Есть auth/attachments/dictionaries/analytics tests и DB-backed checks CRUD integration | Нужны integration tests для recommendations, attachments cleanup, Alembic и serial/MinIO migration |
 
 ## Security
@@ -38,7 +38,7 @@ app/api/v1/endpoints/  →  crud/  →  PostgreSQL
 | JWT Bearer | ✅ |
 | PBKDF2 пароли | ✅ |
 | DELETE / settings | admin only ✅ |
-| Role из JWT без DB lookup | ⚠️ P1 |
+| Bearer role из БД + `is_active` | ✅ |
 | Default JWT secret в dev | ⚠️ override на prod |
 | HTTP Basic fallback | ⚠️ отключить/feature-flag на prod |
 
@@ -70,15 +70,15 @@ app/api/v1/endpoints/  →  crud/  →  PostgreSQL
 
 ## Тесты
 
-104 теста на Python 3.12 (1 skipped). Сильное покрытие section_ii, auth/RBAC, dictionary validation, analytics и smoke attachments. DB-backed integration уже есть для checks CRUD, но нет такого же покрытия для recommendations lifecycle, cleanup вложений, import replace и миграций.
+Auth/RBAC regression tests покрывают Bearer lookup: деактивированный пользователь с валидным JWT получает 401, а token с ролью admin не даёт admin-доступ, если в БД роль auditor. Полный пакет ранее: 104 теста на Python 3.12 (1 skipped). Сильное покрытие section_ii, dictionary validation, analytics и smoke attachments. DB-backed integration уже есть для checks CRUD, но нет такого же покрытия для recommendations lifecycle, cleanup вложений, import replace и миграций.
 
 ## Подробные findings
 
 ### BE-01 · P0 · Нет Alembic baseline
 
-**Где:** `app/db/init_db.py`, `app/db/migrate_*.py`, `tests/test_checks_crud_integration.py`.
+**Где:** `app/db/init_db.py`, `app/db/migrate_*.py`, `sokol-backend/docker/app/entrypoint.sh`, `tests/test_checks_crud_integration.py`.
 
-**Симптом:** dev/test поднимают схему через `Base.metadata.create_all()`, а изменения накатываются отдельными скриптами `migrate_*.py`. В `tests/test_checks_crud_integration.py` схема также создаётся напрямую из metadata.
+**Симптом:** dev/test/Docker bootstrap поднимают схему через `Base.metadata.create_all()`, а изменения накатываются отдельными скриптами `migrate_*.py`. В `entrypoint.sh` вызывается только часть миграций: `migrate_check_effectiveness`, `migrate_attachments`, `migrate_dictionary_uniqueness`, `migrate_recommendation_observation_name`. Остальные `migrate_*.py` могут не попасть на стенд автоматически. В `tests/test_checks_crud_integration.py` схема также создаётся напрямую из metadata.
 
 **Риск:** на UAT/prod невозможно надёжно воспроизвести историю схемы, проверить порядок миграций и откатить неудачное изменение. Разные окружения могут иметь разные наборы колонок/индексов, хотя код уже ожидает новые поля.
 
@@ -92,23 +92,32 @@ app/api/v1/endpoints/  →  crud/  →  PostgreSQL
 
 **Тесты:** пустая PostgreSQL БД → `alembic upgrade head` → приложение стартует; повторный `upgrade head` не меняет схему; новая миграция имеет downgrade или явно documented no-downgrade.
 
-### BE-02 · P1 · Bearer auth доверяет role из JWT
+### BE-01a · P0 · Docker по умолчанию грузит demo data
 
-**Где:** `app/api/deps.py`, `app/api/v1/endpoints/auth.py`, `app/models/users.py`.
+**Где:** `sokol-backend/docker/app/entrypoint.sh`, `sokol-backend/docker/app/docker-compose.yml`, `app/db/import_seed_data.py`.
 
-**Симптом:** `get_current_user` декодирует token и возвращает `CurrentUser` из полей `sub`, `role`, `display_name`. База пользователей не читается для Bearer-запроса. `change-password` уже делает lookup и проверяет `is_active`, но остальные endpoints нет.
+**Симптом:** compose задаёт `SOKOL_LOAD_DEMO_DATA: ${SOKOL_LOAD_DEMO_DATA:-1}`. Entry point при пустой таблице `checks` запускает `import_seed_data()`. Если включить `SOKOL_SEED_REPLACE=1`, `import_seed_data(replace=True)` делает `TRUNCATE TABLE recommendations, checks RESTART IDENTITY CASCADE`.
 
-**Риск:** если пользователя деактивировали, поменяли роль или удалили, старый token продолжит давать доступ до истечения TTL. При текущем TTL 480 минут это почти рабочий день.
+**Риск:** на пустом UAT/prod контейнер может сам загрузить demo Excel. При ошибочном `SOKOL_SEED_REPLACE=1` рабочие проверки и рекомендации будут очищены.
 
 **Как исправить:**
 
-1. После decode брать только `sub` из token.
-2. Читать пользователя через `get_user_by_username(session, username)`.
-3. Проверять `user is not None` и `user.is_active`.
-4. Формировать `CurrentUser` из БД, а не из token.
-5. Решить судьбу `role` в token: убрать или оставить как неавторитетную подсказку.
+1. Поменять default `SOKOL_LOAD_DEMO_DATA` в compose/entrypoint на `0`.
+2. В `startup_validation.py` добавить prod guard: `SOKOL_ENV=prod` несовместим с demo load и seed replace.
+3. Для demo стенда оставить явный opt-in в `.env.demo`.
+4. В runbook написать, что prod import только через dry-run + backup + confirm.
 
-**Тесты:** валидный JWT деактивированного пользователя возвращает 401; пользователь с token роли admin, но ролью auditor в БД, получает 403 на admin endpoint.
+**Тесты:** prod + `SOKOL_LOAD_DEMO_DATA=1` падает до старта; prod + `SOKOL_SEED_REPLACE=1` падает; default compose env не включает demo load.
+
+### BE-02 · P1 · Bearer auth доверял role из JWT — закрыто
+
+**Где:** `app/api/deps.py`, `tests/test_auth_rbac.py`.
+
+**Было:** `get_current_user` декодировал token и возвращал `CurrentUser` из полей `sub`, `role`, `display_name`. База пользователей не читалась для Bearer-запроса.
+
+**Исправлено:** Bearer-ветка берёт из JWT только `sub`, читает пользователя через `get_user_by_username(session, username)`, проверяет `user is not None` и `user.is_active`, затем формирует `CurrentUser` из БД. `role` и `display_name` в token остались неавторитетными.
+
+**Тесты:** добавлены regression tests: валидный JWT деактивированного пользователя возвращает 401; пользователь с token роли admin, но ролью auditor в БД, получает 403 на admin endpoint.
 
 ### BE-03 · P1 · HTTP Basic fallback включён всегда
 
@@ -180,6 +189,23 @@ app/api/v1/endpoints/  →  crud/  →  PostgreSQL
 
 **Тесты:** prod replace без confirm падает; dry-run не меняет БД; replace требует database name с `test/demo` в тестовом сценарии.
 
+### BE-07a · P1 · `sync_dictionaries` удаляет пользовательские справочники на старте
+
+**Где:** `app/db/sync_dictionaries.py`, `sokol-backend/docker/app/entrypoint.sh`.
+
+**Симптом:** `sync_auditors`, `sync_departments`, `sync_users` сравнивают БД с каноническими списками `AUDITORS`/`DEPARTMENTS`. Всё, чего нет в списках, удаляется. Entry point вызывает sync при каждом старте контейнера.
+
+**Риск:** администратор может добавить аудитора, подразделение или пользователя через UI/API, а после рестарта контейнера запись исчезнет. Checks/recommendations хранят строковые ссылки, поэтому исторические данные могут остаться с “висячими” значениями.
+
+**Как исправить:**
+
+1. Для prod сделать sync merge-only: добавлять недостающие системные записи, но не удалять пользовательские.
+2. Destructive sync оставить только для dev/demo через explicit flag.
+3. Перед удалением проверять использование в checks/recommendations и писать отчёт.
+4. Для users вместо delete рассмотреть `is_active=false` с audit trail.
+
+**Тесты:** добавить auditor/department/user через API, запустить prod bootstrap sync, запись остаётся; destructive sync работает только с dev/demo flag.
+
 ### BE-08 · P2 · Analytics in-memory масштабируется только для пилота
 
 **Где:** `app/services/analytics/*`, `app/api/v1/endpoints/analytics.py`.
@@ -198,7 +224,9 @@ app/api/v1/endpoints/  →  crud/  →  PostgreSQL
 |-----------|---------|
 | P0 | Alembic |
 | P0 | Guard demo import на prod |
-| P1 | JWT user lookup |
+| P0 | Demo import off by default в Docker |
+| P1 | HTTP Basic fallback prod flag |
+| P1 | Prod-safe sync dictionaries |
 | P1 | Recommendation/attachment cleanup integration tests |
 | P1 | Serial change → MinIO bucket migration |
 | P2 | Analytics SQL aggregates при росте данных |
