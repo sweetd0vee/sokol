@@ -89,11 +89,6 @@ export function LoginPage() {
             }
           />
           {error && <p className="text-lg text-red-600">{error}</p>}
-          <p className="text-sm text-gray-500">
-            Админ: <span className="font-medium">admin</span> / <span className="font-medium">admin</span>
-            {' · '}
-            Аудитор: <span className="font-medium">Фамилия И.О.</span> / <span className="font-medium">auditor</span>
-          </p>
           <button
             type="submit"
             disabled={loading}

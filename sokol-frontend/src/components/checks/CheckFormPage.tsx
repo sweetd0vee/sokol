@@ -1,9 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
+import { ErrorState } from '../ui/StateMessage';
+import { getErrorMessage } from '../../api/errors';
 import type { Check, CheckStatus, CheckType } from '../../types/check';
 import { CHECK_TYPE_OPTIONS, CHECK_VIEW_OPTIONS } from '../../constants/checks';
 import {
@@ -21,6 +23,7 @@ import {
 } from '../../utils/checkFormNavigation';
 import {
   FORM_FIELD_CLASS,
+  FORM_FIELD_ERROR_CLASS,
   FORM_FIELD_SPAN_2_CLASS,
   FORM_INPUT_CLASS,
   FORM_LABEL_CLASS,
@@ -107,6 +110,9 @@ export function CheckFormPage() {
   const [svikEffectiveness, setSvikEffectiveness] = useState(
     restoredDraft?.svikEffectiveness ?? existing?.svik_effectiveness ?? '',
   );
+  const [isSaving, setIsSaving] = useState(false);
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { options: leaderOptions } = useAuditorOptions(checkLeader);
   const { options: effectivenessOptions } = useEffectivenessRatingOptions(
     processEffectiveness,
@@ -136,6 +142,20 @@ export function CheckFormPage() {
       setEndDate(value);
     }
   };
+
+  const requiredFieldErrors = useMemo(() => {
+    const errors = {
+      checkName: !checkName.trim(),
+      checkType: !checkType,
+      checkView: !checkView,
+      checkLeader: !checkLeader,
+      startDate: !startDate,
+    };
+    return {
+      ...errors,
+      hasErrors: Object.values(errors).some(Boolean),
+    };
+  }, [checkName, checkType, checkView, checkLeader, startDate]);
 
   const missingKeyFields = [
     !startDate ? 'дату начала' : '',
@@ -228,45 +248,57 @@ export function CheckFormPage() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!checkKey || !checkType || !checkView || !checkLeader || !startDate) {
+    if (isSaving) {
+      return;
+    }
+    setShowValidationErrors(true);
+    setSaveError(null);
+    if (!checkKey || requiredFieldErrors.hasErrors) {
       return;
     }
 
-    const payload: Check = {
-      id: existing?.id ?? '0',
-      serial_number: checkKey,
-      check_name: checkName.trim(),
-      short_name: shortName.trim() || undefined,
-      check_type: checkType as CheckType,
-      check_view: checkView as Check['check_view'],
-      start_date: toIsoDate(startDate) ?? '',
-      end_date: toIsoDate(endDate),
-      check_leader: checkLeader,
-      status: (status || existing?.status || 'not_started') as CheckStatus,
-      created_at: existing?.created_at ?? new Date().toISOString().slice(0, 10),
-      description: existing?.description,
-      order_document_number: orderDocumentNumber || undefined,
-      order_document_date: toIsoDate(orderDocumentDate),
-      program_document_number: programDocumentNumber || undefined,
-      program_document_date: toIsoDate(programDocumentDate),
-      az_document_number: azDocumentNumber || undefined,
-      az_document_date: toIsoDate(azDocumentDate),
-      dz_document_number: dzDocumentNumber || undefined,
-      dz_document_date: toIsoDate(dzDocumentDate),
-      process_effectiveness: processEffectiveness || undefined,
-      svk_effectiveness: svkEffectiveness || undefined,
-      sur_effectiveness: surEffectiveness || undefined,
-      svik_effectiveness: svikEffectiveness || undefined,
-    };
+    setIsSaving(true);
+    try {
+      const payload: Check = {
+        id: existing?.id ?? '0',
+        serial_number: checkKey,
+        check_name: checkName.trim(),
+        short_name: shortName.trim() || undefined,
+        check_type: checkType as CheckType,
+        check_view: checkView as Check['check_view'],
+        start_date: toIsoDate(startDate) ?? '',
+        end_date: toIsoDate(endDate),
+        check_leader: checkLeader,
+        status: (status || existing?.status || 'not_started') as CheckStatus,
+        created_at: existing?.created_at ?? new Date().toISOString().slice(0, 10),
+        description: existing?.description,
+        order_document_number: orderDocumentNumber || undefined,
+        order_document_date: toIsoDate(orderDocumentDate),
+        program_document_number: programDocumentNumber || undefined,
+        program_document_date: toIsoDate(programDocumentDate),
+        az_document_number: azDocumentNumber || undefined,
+        az_document_date: toIsoDate(azDocumentDate),
+        dz_document_number: dzDocumentNumber || undefined,
+        dz_document_date: toIsoDate(dzDocumentDate),
+        process_effectiveness: processEffectiveness || undefined,
+        svk_effectiveness: svkEffectiveness || undefined,
+        sur_effectiveness: surEffectiveness || undefined,
+        svik_effectiveness: svikEffectiveness || undefined,
+      };
 
-    if (isEditMode && existing?.id) {
-      await updateCheck(payload);
-      navigate('/checks');
-      return;
+      if (isEditMode && existing?.id) {
+        await updateCheck(payload);
+        navigate('/checks');
+        return;
+      }
+
+      const created = await addCheck(payload);
+      navigate(`/checks/${created.id}/edit`, { replace: true, state: { check: created } });
+    } catch (error) {
+      setSaveError(getErrorMessage(error, 'Не удалось сохранить проверку.'));
+    } finally {
+      setIsSaving(false);
     }
-
-    const created = await addCheck(payload);
-    navigate(`/checks/${created.id}/edit`, { replace: true, state: { check: created } });
   };
   return (
     <div className={`${FORM_PAGE_CLASS} ${FORM_STACK_CLASS}`}>
@@ -290,7 +322,12 @@ export function CheckFormPage() {
             placeholder="Название проверки"
             rows={4}
             labelClassName={FORM_LABEL_CLASS}
-            inputClassName={FORM_TEXTAREA_CLASS}
+            inputClassName={[
+              FORM_TEXTAREA_CLASS,
+              showValidationErrors && requiredFieldErrors.checkName ? FORM_FIELD_ERROR_CLASS : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
           />
           <div className={FORM_ROW_3}>
             <Textarea
@@ -313,7 +350,12 @@ export function CheckFormPage() {
               placeholder="Выберите тип"
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
-              inputClassName={FORM_INPUT_CLASS}
+              inputClassName={[
+                FORM_INPUT_CLASS,
+                showValidationErrors && requiredFieldErrors.checkType ? FORM_FIELD_ERROR_CLASS : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             />
             <Select
               label="Вид"
@@ -323,7 +365,12 @@ export function CheckFormPage() {
               placeholder="Выберите вид"
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
-              inputClassName={FORM_INPUT_CLASS}
+              inputClassName={[
+                FORM_INPUT_CLASS,
+                showValidationErrors && requiredFieldErrors.checkView ? FORM_FIELD_ERROR_CLASS : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             />
             <Select
               label="Руководитель проверки"
@@ -333,7 +380,12 @@ export function CheckFormPage() {
               placeholder="Выберите руководителя"
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
-              inputClassName={FORM_INPUT_CLASS}
+              inputClassName={[
+                FORM_INPUT_CLASS,
+                showValidationErrors && requiredFieldErrors.checkLeader ? FORM_FIELD_ERROR_CLASS : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             />
           </div>
           <div className={FORM_ROW_3}>
@@ -343,7 +395,12 @@ export function CheckFormPage() {
               onChange={handleStartDateChange}
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
-              inputClassName={FORM_INPUT_CLASS}
+              inputClassName={[
+                FORM_INPUT_CLASS,
+                showValidationErrors && requiredFieldErrors.startDate ? FORM_FIELD_ERROR_CLASS : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             />
             <DatePicker
               label="Окончание"
@@ -455,13 +512,22 @@ export function CheckFormPage() {
           onAddManually={handleNavigateToNewRecommendation}
         />
 
-        <div className="flex flex-wrap justify-start gap-3">
-          <button
-            type="submit"
-            className={FORM_SAVE_BUTTON_CLASS}
-          >
-            Сохранить
-          </button>
+        <div className="space-y-5">
+          {showValidationErrors && requiredFieldErrors.hasErrors && (
+            <div className="rounded-lg border border-[#e8b4b4] bg-[#fff3f3] px-4 py-2 text-sm font-medium leading-relaxed text-[#a63d3d]">
+              Заполните необходимые поля
+            </div>
+          )}
+          {saveError && <ErrorState description={saveError} />}
+          <div className="flex flex-wrap justify-start gap-3">
+            <button
+              type="submit"
+              disabled={isSaving}
+              className={`${FORM_SAVE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
+            >
+              {isSaving ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          </div>
         </div>
       </form>
     </div>

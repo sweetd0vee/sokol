@@ -602,7 +602,7 @@ export function ObservationsTab() {
                   }}
                   className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
                 >
-                  {[10, 15, 20].map((size) => (
+                  {[10, 15, 20, 50, 100].map((size) => (
                     <option key={size} value={size}>
                       {size}
                     </option>
