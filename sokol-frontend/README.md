@@ -72,5 +72,4 @@ JWT auth · CRUD проверок/рекомендаций · справочни
 | 500 / ECONNREFUSED | backend на **8802** |
 | 401 | перелогиниться |
 | CORS | `SOKOL_CORS_ORIGINS` + restart API |
-| Audit-opinion 502 | Ollama на хосте |
 | Порт 5180 занят | сменить `VITE_DEV_SERVER_PORT` |

@@ -9,6 +9,9 @@ import {
   type EffectivenessMatrixRow,
 } from '../../utils/checkAnalytics';
 
+const SHARE_PIE_SIZE = 128;
+const SHARE_PIE_OUTER_RADIUS = 56;
+
 type EffectivenessMatrixChartProps = {
   rows: EffectivenessMatrixRow[];
 };
@@ -26,15 +29,15 @@ function ColumnSharePie({ shares }: { shares: EffectivenessColumnShare[] }) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <PieChart width={92} height={92}>
+    <div className="flex flex-col items-center gap-2.5">
+      <PieChart width={SHARE_PIE_SIZE} height={SHARE_PIE_SIZE}>
         <Pie
           data={data}
           dataKey="value"
           nameKey="name"
           cx="50%"
           cy="50%"
-          outerRadius={40}
+          outerRadius={SHARE_PIE_OUTER_RADIUS}
           innerRadius={0}
           stroke="none"
           isAnimationActive={false}
@@ -56,11 +59,11 @@ function ColumnSharePie({ shares }: { shares: EffectivenessColumnShare[] }) {
             }}
           />
         </PieChart>
-      <ul className="flex max-w-[7rem] flex-col gap-1 text-[11px] leading-tight text-gray-600">
+      <ul className="flex max-w-[8rem] flex-col gap-1 text-xs leading-tight text-gray-600">
         {shares.map((share) => (
           <li key={share.tone} className="inline-flex items-center justify-center gap-1.5">
             <span
-              className="inline-block h-2 w-2 shrink-0 rounded-full ring-1 ring-black/5"
+              className="inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/5"
               style={{ backgroundColor: share.color }}
               aria-hidden
             />
@@ -92,10 +95,10 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
         <div className="min-h-0 flex-1 overflow-auto">
           <table className="w-full table-fixed border-collapse text-sm">
             <colgroup>
-              <col className="w-[16%]" />
-              <col className="w-[40%]" />
+              <col className="w-[14%]" />
+              <col className="w-[34%]" />
               {EFFECTIVENESS_MATRIX_COLUMNS.map((column) => (
-                <col key={column.key} className="w-[11%]" />
+                <col key={column.key} className="w-[13%]" />
               ))}
             </colgroup>
             <thead className="sticky top-0 z-[1] bg-white">
@@ -165,11 +168,11 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
 
         <div className="shrink-0 border-t border-gray-200 bg-gray-50/90">
           <div className="flex w-full items-stretch" data-effectiveness-matrix-footer>
-            <div className="flex w-[56%] shrink-0 items-center px-3 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div className="flex w-[48%] shrink-0 items-center px-3 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
               Доля оценок
             </div>
             {EFFECTIVENESS_MATRIX_COLUMNS.map((column) => (
-              <div key={column.key} className="flex w-[11%] items-center justify-center px-1 py-4">
+              <div key={column.key} className="flex w-[13%] items-center justify-center px-1 py-5">
                 <ColumnSharePie shares={columnShares[column.key]} />
               </div>
             ))}

@@ -9,7 +9,8 @@
 | [DATA_AND_DB.md](DATA_AND_DB.md) | Модели, enum'ы, seed |
 | [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md) | БД: init, migrate, import, бэкапы |
 | [STORAGE.md](STORAGE.md) | MinIO, вложения |
-| [REPORTS.md](REPORTS.md) | Раздел II, ДЗ, audit opinion |
+| [REPORTS.md](REPORTS.md) | Раздел II, ДЗ |
+| [CODE_REVIEW](../../docs/CODE_REVIEW_BACKEND.md) | Код-ревью |
 | [PLAN.md](../../PLAN.md) | Roadmap и приоритеты |
 
 ## Кратко о сервисе
@@ -20,13 +21,13 @@ FastAPI + PostgreSQL (async SQLAlchemy):
 - **CRUD** — проверки, рекомендации, справочники; validation справочников на create/update.
 - **Analytics** — `GET /api/v1/analytics/{checks|recommendations|monitoring|dva|planning}`.
 - **Attachments** — Postgres + MinIO.
-- **Tools** — генерация/разбор `.docx` (Раздел II, ДЗ, Ollama).
+- **Tools** — Раздел II, ДЗ, parse-recommendations. Audit opinion — planned.
 
 **Пока нет:** Alembic (схема через `create_all` + `migrate_*.py`), OIDC, CRUD наблюдений.
 
 ## Стек
 
-Python 3.12 · FastAPI · SQLAlchemy 2 + asyncpg · PostgreSQL 16 · MinIO · python-docx · Ollama · unittest
+Python 3.12 · FastAPI · SQLAlchemy 2 + asyncpg · PostgreSQL 16 · MinIO · python-docx · unittest
 
 ## Порты
 

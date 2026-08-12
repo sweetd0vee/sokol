@@ -64,7 +64,7 @@ const getSortValue = (recommendation: Recommendation, key: SortKey) => {
     case 'serial_number':
       return recommendation.serial_number;
     case 'name':
-      return recommendation.name;
+      return `${recommendation.name} ${recommendation.observation_name ?? ''}`;
     case 'audit_object':
       return recommendation.audit_object;
     case 'deadline':
@@ -169,8 +169,15 @@ export function RecommendationsTab() {
       if (keyFilter && !recommendation.serial_number.toLowerCase().includes(keyFilter.trim().toLowerCase())) {
         return false;
       }
-      if (nameFilter && !recommendation.name.toLowerCase().includes(nameFilter.trim().toLowerCase())) {
-        return false;
+      if (nameFilter) {
+        const query = nameFilter.trim().toLowerCase();
+        const searchableName = [
+          recommendation.name,
+          recommendation.observation_name ?? '',
+        ].join(' ').toLowerCase();
+        if (!searchableName.includes(query)) {
+          return false;
+        }
       }
       if (status && recommendation.status !== status) {
         return false;
@@ -555,8 +562,18 @@ export function RecommendationsTab() {
                 <tr key={recommendation.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">{recommendation.id}</td>
                   <td className="px-4 py-3">{recommendation.serial_number}</td>
-                  <td className="px-4 py-3 truncate" title={recommendation.name}>
-                    {recommendation.name}
+                  <td
+                    className="px-4 py-3"
+                    title={`Название рекомендации: ${recommendation.name}\nНазвание наблюдения: ${recommendation.observation_name ?? ''}`}
+                  >
+                    <div className="min-w-0 space-y-1">
+                      <div className="truncate">{recommendation.name}</div>
+                      {recommendation.observation_name ? (
+                        <div className="truncate text-sm leading-snug text-gray-500">
+                          {recommendation.observation_name}
+                        </div>
+                      ) : null}
+                    </div>
                   </td>
                   <td className="px-4 py-3 truncate" title={recommendation.audit_object}>
                     {recommendation.audit_object}

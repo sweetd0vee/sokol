@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FileUp, Paperclip } from 'lucide-react';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
@@ -12,7 +13,15 @@ import {
   filesWord,
 } from '../../utils/checkAttachments';
 import { useEntityAttachments } from '../../hooks/useEntityAttachments';
+import { fetchCapabilities } from '../../api/capabilities';
 import { AttachmentFileList, AttachmentsUnavailableNotice } from '../attachments/AttachmentFileList';
+import {
+  DEFAULT_MAX_UPLOAD_BYTES,
+  DEFAULT_MAX_UPLOAD_MB,
+  formatUploadLimit,
+  isFileWithinUploadLimit,
+  uploadLimitError,
+} from '../../utils/uploadLimits';
 import {
   FORM_INPUT_CLASS,
   FORM_LABEL_CLASS,
@@ -68,6 +77,8 @@ type AttachmentFilesModalProps = {
   groups: AttachmentFileGroup[];
   filesBySlot: ReturnType<typeof useEntityAttachments>['filesBySlot'];
   canPersist: boolean;
+  maxUploadBytes: number;
+  maxUploadMb: number;
   onAddFiles: (group: AttachmentFileGroup, newFiles: File[]) => void;
   onRemoveFile: (group: AttachmentFileGroup, clientId: string) => void;
   onClose: () => void;
@@ -78,11 +89,14 @@ function AttachmentFilesModal({
   groups,
   filesBySlot,
   canPersist,
+  maxUploadBytes,
+  maxUploadMb,
   onAddFiles,
   onRemoveFile,
   onClose,
 }: AttachmentFilesModalProps) {
   const inputRefs = useRef<Partial<Record<AttachmentFileGroup, HTMLInputElement | null>>>({});
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handlePickFiles = (group: AttachmentFileGroup) => {
     const input = inputRefs.current[group];
@@ -97,6 +111,16 @@ function AttachmentFilesModal({
       <div className="mt-4 space-y-6">
         {!canPersist && (
           <AttachmentsUnavailableNotice message="Сохраните проверку, чтобы прикрепить файлы." />
+        )}
+        {canPersist && (
+          <p className="text-sm text-gray-500">
+            Максимальный размер одного файла: {formatUploadLimit(maxUploadMb)}.
+          </p>
+        )}
+        {uploadError && (
+          <div className="rounded-lg border border-[#e8b4b4] bg-[#fff3f3] px-4 py-2 text-sm font-medium leading-relaxed text-[#a63d3d]">
+            {uploadError}
+          </div>
         )}
 
         {groups.map((group) => {
@@ -128,6 +152,12 @@ function AttachmentFilesModal({
                   className="sr-only"
                   onChange={(event) => {
                     const picked = Array.from(event.target.files ?? []);
+                    setUploadError(null);
+                    const oversized = picked.find((file) => !isFileWithinUploadLimit(file, maxUploadBytes));
+                    if (oversized) {
+                      setUploadError(uploadLimitError(oversized, maxUploadMb));
+                      return;
+                    }
                     if (picked.length > 0) {
                       onAddFiles(group, picked);
                     }
@@ -200,6 +230,13 @@ export function CheckAttachmentsSection({
     entityId: checkId,
   });
   const [openSlot, setOpenSlot] = useState<AttachmentSlot | null>(null);
+  const capabilitiesQuery = useQuery({
+    queryKey: ['capabilities'],
+    queryFn: fetchCapabilities,
+    staleTime: 5 * 60 * 1000,
+  });
+  const maxUploadMb = capabilitiesQuery.data?.max_upload_mb ?? DEFAULT_MAX_UPLOAD_MB;
+  const maxUploadBytes = capabilitiesQuery.data?.max_upload_bytes ?? DEFAULT_MAX_UPLOAD_BYTES;
 
   const modalGroups = useMemo((): AttachmentFileGroup[] => {
     if (openSlot === 'dz') {
@@ -261,6 +298,8 @@ export function CheckAttachmentsSection({
           groups={modalGroups}
           filesBySlot={filesBySlot}
           canPersist={canPersist}
+          maxUploadBytes={maxUploadBytes}
+          maxUploadMb={maxUploadMb}
           onAddFiles={(group, newFiles) => {
             void addFiles(group, newFiles);
           }}

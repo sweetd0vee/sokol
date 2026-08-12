@@ -6,6 +6,7 @@ from typing import List
 class MemorandumRecommendation:
     paragraphs: List[str] = field(default_factory=list)
     deadline: str = ""
+    observation_name: str = ""
 
 
 @dataclass

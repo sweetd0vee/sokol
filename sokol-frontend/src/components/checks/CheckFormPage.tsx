@@ -8,10 +8,6 @@ import { ErrorState } from '../ui/StateMessage';
 import { getErrorMessage } from '../../api/errors';
 import type { Check, CheckStatus, CheckType } from '../../types/check';
 import { CHECK_TYPE_OPTIONS, CHECK_VIEW_OPTIONS } from '../../constants/checks';
-import {
-  buildCheckKeySeeds,
-  generateCheckSerialNumber,
-} from '../../utils/checkKey';
 import { toInputDate, toIsoDate, toStartOfDayMs } from '../../utils/dates';
 import { useSokolData } from '../../contexts/sokolData';
 import { useAuditorOptions, useEffectivenessRatingOptions } from '../../hooks/useReferenceOptions';
@@ -163,29 +159,15 @@ export function CheckFormPage() {
     !checkType ? 'тип' : '',
   ].filter(Boolean);
 
-  const checkKey = (() => {
-    if (!startDate || !checkLeader || !checkType) {
-      return '';
-    }
-    if (
-      existing?.serial_number
-      && checkType === existing.check_type
-      && checkLeader === existing.check_leader
-      && existingStartDate
-      && toIsoDate(startDate) === toIsoDate(existingStartDate)
-    ) {
-      return existing.serial_number;
-    }
-    const seedChecks = checks
-      .filter((item) => item.id !== existing?.id)
-      .map(({ serial_number: _serial, ...rest }) => rest);
-    return generateCheckSerialNumber({
-      startDate,
-      checkLeader,
-      checkType: checkType as CheckType,
-      existing: buildCheckKeySeeds(seedChecks),
-    });
-  })();
+  const checkKey = existing?.serial_number ?? '';
+  const keySourceChanged = Boolean(
+    existing?.serial_number
+    && (
+      checkType !== existing.check_type
+      || checkLeader !== existing.check_leader
+      || (startDate && existingStartDate && toIsoDate(startDate) !== toIsoDate(existingStartDate))
+    ),
+  );
 
   const buildCheckFormDraft = useCallback((): CheckFormDraft => ({
     existingCheck: existing,
@@ -253,7 +235,7 @@ export function CheckFormPage() {
     }
     setShowValidationErrors(true);
     setSaveError(null);
-    if (!checkKey || requiredFieldErrors.hasErrors) {
+    if (requiredFieldErrors.hasErrors) {
       return;
     }
 
@@ -261,7 +243,7 @@ export function CheckFormPage() {
     try {
       const payload: Check = {
         id: existing?.id ?? '0',
-        serial_number: checkKey,
+        serial_number: existing?.serial_number ?? '',
         check_name: checkName.trim(),
         short_name: shortName.trim() || undefined,
         check_type: checkType as CheckType,
@@ -424,6 +406,16 @@ export function CheckFormPage() {
               {missingKeyFields.length > 0 && (
                 <p className="mt-1 text-xs text-red-600">
                   Для автоматической генерации ключа заполните: {missingKeyFields.join(', ')}.
+                </p>
+              )}
+              {!existing?.serial_number && missingKeyFields.length === 0 && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Ключ назначит сервер после сохранения проверки.
+                </p>
+              )}
+              {keySourceChanged && (
+                <p className="mt-1 text-xs text-amber-700">
+                  При сохранении сервер пересчитает ключ и обновит связанные рекомендации.
                 </p>
               )}
             </div>

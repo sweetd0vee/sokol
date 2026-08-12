@@ -1,8 +1,17 @@
 import { useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FileUp, Paperclip } from 'lucide-react';
 import type { AttachmentEntityType } from '../../api/attachments';
+import { fetchCapabilities } from '../../api/capabilities';
 import { useEntityAttachments } from '../../hooks/useEntityAttachments';
 import { filesWord } from '../../utils/fileAttachments';
+import {
+  DEFAULT_MAX_UPLOAD_BYTES,
+  DEFAULT_MAX_UPLOAD_MB,
+  formatUploadLimit,
+  isFileWithinUploadLimit,
+  uploadLimitError,
+} from '../../utils/uploadLimits';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { AttachmentFileList, AttachmentsUnavailableNotice } from './AttachmentFileList';
@@ -78,6 +87,8 @@ function AttachmentFilesModal({
   slotId,
   items,
   canPersist,
+  maxUploadBytes,
+  maxUploadMb,
   unavailableMessage,
   onAddFiles,
   onRemoveFile,
@@ -87,18 +98,31 @@ function AttachmentFilesModal({
   slotId: string;
   items: ReturnType<typeof useEntityAttachments>['filesBySlot'][string];
   canPersist: boolean;
+  maxUploadBytes: number;
+  maxUploadMb: number;
   unavailableMessage: string;
   onAddFiles: (slotId: string, newFiles: File[]) => void;
   onRemoveFile: (slotId: string, clientId: string) => void;
   onClose: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const slotFiles = items ?? [];
 
   return (
     <Modal title={title} wide onClose={onClose}>
       <div className="mt-4 space-y-3">
         {!canPersist && <AttachmentsUnavailableNotice message={unavailableMessage} />}
+        {canPersist && (
+          <p className="text-sm text-gray-500">
+            Максимальный размер одного файла: {formatUploadLimit(maxUploadMb)}.
+          </p>
+        )}
+        {uploadError && (
+          <div className="rounded-lg border border-[#e8b4b4] bg-[#fff3f3] px-4 py-2 text-sm font-medium leading-relaxed text-[#a63d3d]">
+            {uploadError}
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center justify-start gap-3">
           <Button
@@ -125,6 +149,12 @@ function AttachmentFilesModal({
             className="sr-only"
             onChange={(event) => {
               const picked = Array.from(event.target.files ?? []);
+              setUploadError(null);
+              const oversized = picked.find((file) => !isFileWithinUploadLimit(file, maxUploadBytes));
+              if (oversized) {
+                setUploadError(uploadLimitError(oversized, maxUploadMb));
+                return;
+              }
               if (picked.length > 0) {
                 onAddFiles(slotId, picked);
               }
@@ -169,6 +199,13 @@ export function FileAttachmentsPanel({
     entityId,
   });
   const [openSlotId, setOpenSlotId] = useState<string | null>(null);
+  const capabilitiesQuery = useQuery({
+    queryKey: ['capabilities'],
+    queryFn: fetchCapabilities,
+    staleTime: 5 * 60 * 1000,
+  });
+  const maxUploadMb = capabilitiesQuery.data?.max_upload_mb ?? DEFAULT_MAX_UPLOAD_MB;
+  const maxUploadBytes = capabilitiesQuery.data?.max_upload_bytes ?? DEFAULT_MAX_UPLOAD_BYTES;
 
   const openSlot = slots.find((slot) => slot.id === openSlotId);
 
@@ -195,6 +232,8 @@ export function FileAttachmentsPanel({
           slotId={openSlot.id}
           items={filesBySlot[openSlot.id]}
           canPersist={canPersist}
+          maxUploadBytes={maxUploadBytes}
+          maxUploadMb={maxUploadMb}
           unavailableMessage={unavailableMessage}
           onAddFiles={addFiles}
           onRemoveFile={removeFile}

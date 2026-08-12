@@ -37,7 +37,7 @@ function pluralRecommendations(n: number): string {
   return 'рекомендаций';
 }
 
-type EditablePreviewField = 'name' | 'audit_object' | 'manager' | 'deadline';
+type EditablePreviewField = 'name' | 'observation_name' | 'audit_object' | 'manager' | 'deadline';
 
 const cellInputClass =
   'w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm outline-none transition focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/30';
@@ -63,8 +63,9 @@ function ParsedPreviewTable({
       <colgroup>
         <col className={expanded ? 'w-14' : 'w-12'} />
         <col />
-        <col className={expanded ? 'w-[20%]' : 'w-[18%]'} />
+        <col className={expanded ? 'w-[22%]' : 'w-[20%]'} />
         <col className={expanded ? 'w-[18%]' : 'w-[16%]'} />
+        <col className={expanded ? 'w-[16%]' : 'w-[14%]'} />
         <col className={expanded ? 'w-44' : 'w-[8.5rem]'} />
         <col className="w-12" />
       </colgroup>
@@ -72,6 +73,7 @@ function ParsedPreviewTable({
         <tr className="bg-gray-100 text-gray-800">
           <th className="px-3 py-2.5 text-left font-medium">№</th>
           <th className="px-3 py-2.5 text-left font-medium">Рекомендация</th>
+          <th className="px-3 py-2.5 text-left font-medium">Наблюдение</th>
           <th className="px-3 py-2.5 text-left font-medium">Объект аудита</th>
           <th className="px-3 py-2.5 text-left font-medium">Руководитель</th>
           <th className="px-3 py-2.5 text-left font-medium">Срок исполнения</th>
@@ -97,6 +99,21 @@ function ParsedPreviewTable({
                 <p className={`${nameClamp} whitespace-pre-wrap break-words leading-snug`}>
                   {item.name || '—'}
                 </p>
+              )}
+            </td>
+            <td className="px-3 py-2.5 align-top text-gray-700">
+              {editable ? (
+                <textarea
+                  value={item.observation_name ?? ''}
+                  onChange={(event) =>
+                    onChange?.(item.previewKey, 'observation_name', event.target.value)
+                  }
+                  rows={2}
+                  className={cellTextareaClass}
+                  aria-label={`Наблюдение ${index + 1}`}
+                />
+              ) : (
+                <span className={`${cellClamp} break-words`}>{item.observation_name || '—'}</span>
               )}
             </td>
             <td className="px-3 py-2.5 align-top text-gray-700">
@@ -207,7 +224,14 @@ export function CheckRecommendationsBlock({
   const buildRecommendation = (
     draft: Pick<
       Recommendation,
-      'name' | 'audit_object' | 'deadline' | 'auditor' | 'manager' | 'status' | 'additional_status'
+      | 'name'
+      | 'observation_name'
+      | 'audit_object'
+      | 'deadline'
+      | 'auditor'
+      | 'manager'
+      | 'status'
+      | 'additional_status'
     >,
     index: number,
   ): ParsedPreviewItem => ({
@@ -216,6 +240,7 @@ export function CheckRecommendationsBlock({
     serial_number: checkKey,
     sequence_number: storedRecommendations.length + index + 1,
     name: draft.name.trim(),
+    observation_name: draft.observation_name?.trim() || undefined,
     description: draft.name.trim(),
     indicator: 'не указан',
     materiality_level: 'средний',
@@ -240,6 +265,7 @@ export function CheckRecommendationsBlock({
           buildRecommendation(
             {
               name: item.name,
+              observation_name: item.observation_name ?? '',
               audit_object: item.audit_object,
               deadline: normalizeRecommendationDeadline(item.deadline),
               auditor: checkLeader,
@@ -316,6 +342,9 @@ export function CheckRecommendationsBlock({
         }
         if (field === 'deadline') {
           return { ...item, deadline: normalizeRecommendationDeadline(value) || value };
+        }
+        if (field === 'observation_name') {
+          return { ...item, observation_name: value };
         }
         if (field === 'audit_object') {
           return { ...item, audit_object: value.slice(0, 255) };

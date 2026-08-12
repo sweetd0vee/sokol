@@ -34,11 +34,14 @@ export type ApiCheck = {
   svik_effectiveness?: string | null;
 };
 
+type ApiCheckWrite = Omit<ApiCheck, 'id' | 'serial_number'>;
+
 export type ApiRecommendation = {
   id: number;
   serial_number: string;
   sequence_number: number;
   name: string;
+  observation_name?: string | null;
   description: string;
   indicator: string;
   materiality_level: string;
@@ -97,9 +100,8 @@ export function mapCheckFromApi(api: ApiCheck): Check {
   };
 }
 
-export function mapCheckToCreate(check: Check): Omit<ApiCheck, 'id'> {
+export function mapCheckToCreate(check: Check): ApiCheckWrite {
   return {
-    serial_number: check.serial_number,
     check_name: check.check_name,
     short_name: check.short_name ?? null,
     check_type: check.check_type,
@@ -125,7 +127,7 @@ export function mapCheckToCreate(check: Check): Omit<ApiCheck, 'id'> {
   };
 }
 
-export function mapCheckToUpdate(check: Check): Partial<Omit<ApiCheck, 'id'>> {
+export function mapCheckToUpdate(check: Check): Partial<ApiCheckWrite> {
   return mapCheckToCreate(check);
 }
 
@@ -135,6 +137,7 @@ export function mapRecommendationFromApi(api: ApiRecommendation): Recommendation
     serial_number: api.serial_number,
     sequence_number: api.sequence_number ?? 1,
     name: api.name,
+    observation_name: api.observation_name ?? undefined,
     description: api.description ?? api.name,
     indicator: normalizeRecommendationIndicator(api.indicator),
     materiality_level: normalizeMaterialityLevel(api.materiality_level),
@@ -167,6 +170,7 @@ export function mapRecommendationToCreate(
   return {
     serial_number: recommendation.serial_number,
     name: recommendation.name,
+    observation_name: recommendation.observation_name || null,
     description: recommendation.description,
     indicator: recommendation.indicator,
     materiality_level: recommendation.materiality_level,

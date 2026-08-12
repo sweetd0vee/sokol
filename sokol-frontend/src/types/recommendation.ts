@@ -16,6 +16,7 @@ export interface Recommendation {
   serial_number: string;
   sequence_number: number;
   name: string;
+  observation_name?: string;
   description: string;
   indicator: RecommendationIndicator;
   materiality_level: MaterialityLevel;

@@ -74,6 +74,46 @@ class AuthRbacTests(unittest.TestCase):
         self.assertEqual(me.status_code, 200)
         self.assertEqual(me.json()["role"], "admin")
 
+    @patch("app.api.v1.endpoints.auth.update_user_password", new_callable=AsyncMock)
+    @patch("app.api.v1.endpoints.auth.get_user_by_username", new_callable=AsyncMock)
+    def test_change_password(self, mock_get_user: AsyncMock, mock_update: AsyncMock) -> None:
+        user = _admin_user()
+        mock_get_user.return_value = user
+
+        async def _admin() -> CurrentUser:
+            return CurrentUser(
+                username=user.username,
+                display_name=user.display_name,
+                role=Role.ADMIN,
+            )
+
+        app.dependency_overrides[get_current_user] = _admin
+        response = self.client.post(
+            "/api/v1/auth/change-password",
+            json={"current_password": "admin", "new_password": "new-secret"},
+        )
+        self.assertEqual(response.status_code, 204, response.text)
+        mock_update.assert_awaited_once()
+
+    @patch("app.api.v1.endpoints.auth.get_user_by_username", new_callable=AsyncMock)
+    def test_change_password_rejects_wrong_current(self, mock_get_user: AsyncMock) -> None:
+        mock_get_user.return_value = _admin_user()
+
+        async def _admin() -> CurrentUser:
+            return CurrentUser(
+                username="Админ А.А.",
+                display_name="Администратор",
+                role=Role.ADMIN,
+            )
+
+        app.dependency_overrides[get_current_user] = _admin
+        response = self.client.post(
+            "/api/v1/auth/change-password",
+            json={"current_password": "wrong", "new_password": "new-secret"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("текущий пароль", response.json()["detail"].lower())
+
     @patch("app.api.v1.endpoints.auth.get_user_by_username", new_callable=AsyncMock)
     def test_login_accepts_admin_alias(self, mock_get_user: AsyncMock) -> None:
         mock_get_user.return_value = _admin_user()

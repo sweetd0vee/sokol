@@ -17,3 +17,13 @@ export async function loginRequest(username: string, password: string): Promise<
   });
   return data;
 }
+
+export async function changePasswordRequest(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  await api.post('/api/v1/auth/change-password', {
+    current_password: currentPassword,
+    new_password: newPassword,
+  });
+}

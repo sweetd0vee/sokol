@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '../ui/PageHeader';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { DocxToolPanel } from '../tools/DocxToolPanel';
@@ -7,9 +8,17 @@ import {
   generateSectionIITemplate,
   generateSectionIIWithLinks,
 } from '../../api/tools';
+import { fetchCapabilities } from '../../api/capabilities';
 import { getErrorMessage } from '../../api/errors';
 import { downloadBlob } from '../../utils/download';
 import { isDocxFile } from '../../utils/docx';
+import {
+  DEFAULT_MAX_UPLOAD_BYTES,
+  DEFAULT_MAX_UPLOAD_MB,
+  formatUploadLimit,
+  isFileWithinUploadLimit,
+  uploadLimitError,
+} from '../../utils/uploadLimits';
 import {
   FORM_SECTION_CLASS,
   FORM_SECTION_TITLE_CLASS,
@@ -39,12 +48,34 @@ export function ToolsTab() {
   const [isAzProcessing, setIsAzProcessing] = useState(false);
   const [isAzLinksProcessing, setIsAzLinksProcessing] = useState(false);
   const [isDzProcessing, setIsDzProcessing] = useState(false);
+  const capabilitiesQuery = useQuery({
+    queryKey: ['capabilities'],
+    queryFn: fetchCapabilities,
+    staleTime: 5 * 60 * 1000,
+  });
+  const maxUploadMb = capabilitiesQuery.data?.max_upload_mb ?? DEFAULT_MAX_UPLOAD_MB;
+  const maxUploadBytes = capabilitiesQuery.data?.max_upload_bytes ?? DEFAULT_MAX_UPLOAD_BYTES;
+  const uploadLimitLabel = formatUploadLimit(maxUploadMb);
+
+  const validateDocxFile = (file: File | null) => {
+    if (!file) {
+      return null;
+    }
+    if (!isDocxFile(file)) {
+      return 'Файл должен быть в формате .docx.';
+    }
+    if (!isFileWithinUploadLimit(file, maxUploadBytes)) {
+      return uploadLimitError(file, maxUploadMb);
+    }
+    return null;
+  };
 
   const handleAzFileChange = (file: File | null) => {
     setAzError(null);
-    if (file && !isDocxFile(file)) {
+    const validationError = validateDocxFile(file);
+    if (validationError) {
       setAzFile(null);
-      setAzError('Файл должен быть в формате .docx.');
+      setAzError(validationError);
       return;
     }
     setAzFile(file);
@@ -52,9 +83,10 @@ export function ToolsTab() {
 
   const handleAzLinksFileChange = (file: File | null) => {
     setAzLinksError(null);
-    if (file && !isDocxFile(file)) {
+    const validationError = validateDocxFile(file);
+    if (validationError) {
       setAzLinksFile(null);
-      setAzLinksError('Файл должен быть в формате .docx.');
+      setAzLinksError(validationError);
       return;
     }
     setAzLinksFile(file);
@@ -62,9 +94,10 @@ export function ToolsTab() {
 
   const handleDzFileChange = (file: File | null) => {
     setDzError(null);
-    if (file && !isDocxFile(file)) {
+    const validationError = validateDocxFile(file);
+    if (validationError) {
       setDzFile(null);
-      setDzError('Файл должен быть в формате .docx.');
+      setDzError(validationError);
       return;
     }
     setDzFile(file);
@@ -142,6 +175,7 @@ export function ToolsTab() {
                 onProcess={handleGenerateSectionII}
                 isProcessing={isAzProcessing}
                 error={azError}
+                uploadLimitLabel={uploadLimitLabel}
               />
               <DocxToolPanel
                 title="2. Парсинг Раздела II Аудиторского Заключения (с гиперссылками)"
@@ -151,6 +185,7 @@ export function ToolsTab() {
                 onProcess={handleGenerateSectionIIWithLinks}
                 isProcessing={isAzLinksProcessing}
                 error={azLinksError}
+                uploadLimitLabel={uploadLimitLabel}
               />
             </div>
           </div>
@@ -167,6 +202,7 @@ export function ToolsTab() {
               onProcess={handleGenerateMemorandum}
               isProcessing={isDzProcessing}
               error={dzError}
+              uploadLimitLabel={uploadLimitLabel}
             />
           </div>
         )}

@@ -10,6 +10,7 @@ import type { Recommendation } from '../types/recommendation';
 
 export type ParsedRecommendation = {
   name: string;
+  observation_name?: string;
   audit_object: string;
   manager: string;
   deadline: string;

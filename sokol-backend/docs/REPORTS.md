@@ -7,52 +7,23 @@ HTTP: `app/api/v1/endpoints/instruments_reports.py`. Логика: `app/services
 - Только `.docx`, лимит `SOKOL_MAX_UPLOAD_MB` (default 100).
 - Файл в память → temp → `asyncio.to_thread` → cleanup.
 
-## Раздел II
+## Раздел II ✅
 
 **Endpoints:** `POST /tools/section-ii`, `POST /tools/section-ii-links`
 
-**Оркестратор:** `section_ii/docx_generator.process_document()`
+OOXML (ZIP/XML): парсинг Раздела III → таблица после Раздела I. Модули: `section_ii/docx_parser`, `table_builder`, `bookmark_utils`, …
 
-Вставляет таблицу Раздела II после Раздела I, парся наблюдения из Раздела III. Работает через ZIP/XML (не python-docx) — сохраняет титул и оглавление.
+## Докладная ✅
 
-**Шаги:**
+**Endpoint:** `POST /tools/memorandum`  
+**Связанный:** `POST /tools/parse-recommendations` — JSON для импорта на форме проверки.
 
-1. Копия исходного DOCX
-2. Удаление ранее сгенерированного Раздела II
-3. Парсинг наблюдений Раздела III
-4. Опционально — bookmarks `SokolObs*` (режим hyperlinks)
-5. Вставка heading + table XML + иконки материальности
-6. Валидация prefix / границ страниц
+## Audit opinion (Ollama) — planned ❌
 
-**Модули:** `docx_parser`, `docx_blocks`, `field_parser`, `table_builder`, `xml_utils`, `bookmark_utils`, `observation_links`, `heading_detection`.
+В `API.md` и env (`SOKOL_OLLAMA_*`) описан контракт `POST /tools/audit-opinion`, но **код не реализован** (`app/services/reports/audit_opinion/` отсутствует). UI тоже нет.
 
-**Тесты:** `test_section_ii_parser.py`, `test_bookmark_utils.py`, `test_observation_links.py`.
-
-## Докладная записка
-
-**Endpoint:** `POST /tools/memorandum`
-
-АЗ с готовым Разделом II → новый DOCX через python-docx. Без Раздела II — **400**.
-
-**Связанный парсинг:** `POST /tools/parse-recommendations` — JSON для импорта рекомендаций на форме проверки.
-
-## Раздел I (Ollama)
-
-**Endpoints:**
-
-- `GET /tools/audit-opinion/default-prompt`
-- `GET /tools/audit-opinion/models`
-- `POST /tools/audit-opinion`
-
-Наблюдения → Ollama chat → правка раздела I в DOCX.
-
-**Env:** `SOKOL_OLLAMA_URL`, `SOKOL_OLLAMA_MODEL`, `SOKOL_OLLAMA_TIMEOUT_S`.
-
-Без Ollama — **502**. Frontend timeout: 600s.
+До реализации — не документировать как рабочий endpoint.
 
 ## Ограничения
 
-- CPU-bound на HTTP worker, нет очереди/прогресса.
-- Upload целиком в RAM.
-- Результаты не сохраняются в storage.
-- Хрупкость к нестандартной вёрстке АЗ.
+CPU-bound на worker · upload в RAM · результаты не в storage · хрупкость к нестандартной вёрстке АЗ.

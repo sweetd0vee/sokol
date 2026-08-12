@@ -98,6 +98,7 @@ export function RecommendationFormPage() {
   const [serialNumber, setSerialNumber] = useState(
     () => navigationState.serialNumber ?? '',
   );
+  const [observationName, setObservationName] = useState('');
   const [description, setDescription] = useState('');
   const [auditObject, setAuditObject] = useState('');
   const [deadline, setDeadline] = useState<Date | null>(null);
@@ -123,6 +124,7 @@ export function RecommendationFormPage() {
   useEffect(() => {
     if (isEditMode && source) {
       setSerialNumber(source.serial_number);
+      setObservationName(source.observation_name ?? '');
       setDescription(source.description || source.name);
       setAuditObject(source.audit_object);
       setDeadline(toInputDate(source.deadline));
@@ -139,6 +141,7 @@ export function RecommendationFormPage() {
       const prefillingLeader =
         navigationState.checkLeader || navigationState.checkFormDraft?.checkLeader || '';
       setSerialNumber(navigationState.serialNumber ?? '');
+      setObservationName('');
       setDescription('');
       setAuditObject('');
       setDeadline(null);
@@ -299,7 +302,7 @@ export function RecommendationFormPage() {
     navigate(returnTo, { replace: true, state: returnState });
   };
 
-  const buildPayload = (trimmedDescription: string): Recommendation => {
+  const buildPayload = (trimmedDescription: string, resolvedSerialNumber = serialNumber): Recommendation => {
     const resolvedAuditor = auditor || checkLeader || navigationState.auditor || '';
     const resolvedManager = manager;
     const resolvedAuditObject = auditObject || 'Не указан';
@@ -308,9 +311,10 @@ export function RecommendationFormPage() {
 
     return {
       id: isEditMode ? (source?.id ?? '0') : '0',
-      serial_number: serialNumber,
+      serial_number: resolvedSerialNumber,
       sequence_number: resolvedSequenceNumber,
       name: buildRecommendationName(trimmedDescription, resolvedSequenceNumber),
+      observation_name: observationName.trim() || undefined,
       description: trimmedDescription,
       indicator,
       materiality_level: materialityLevel,
@@ -331,19 +335,21 @@ export function RecommendationFormPage() {
 
   const persistCheckLeaderIfNeeded = async () => {
     if (!linkedCheck || !checkLeader.trim() || checkLeader === linkedCheck.check_leader) {
-      return;
+      return serialNumber;
     }
-    await updateCheck({ ...linkedCheck, check_leader: checkLeader });
+    const updatedCheck = await updateCheck({ ...linkedCheck, check_leader: checkLeader });
+    setSerialNumber(updatedCheck.serial_number);
+    return updatedCheck.serial_number;
   };
 
 
-  const openCreateAnotherByCheck = (replace = false) => {
+  const openCreateAnotherByCheck = (replace = false, nextSerialNumber = serialNumber) => {
     const leader =
       checkLeader || linkedCheck?.check_leader || navigationState.checkLeader || '';
     navigate('/recommendations/new', {
       replace,
       state: {
-        serialNumber,
+        serialNumber: nextSerialNumber,
         checkLeader: leader,
       } satisfies RecommendationFormLocationState,
     });
@@ -361,8 +367,8 @@ export function RecommendationFormPage() {
 
     setIsSaving(true);
     try {
-      const payload = buildPayload(trimmedDescription);
-      await persistCheckLeaderIfNeeded();
+      const resolvedSerialNumber = await persistCheckLeaderIfNeeded();
+      const payload = buildPayload(trimmedDescription, resolvedSerialNumber);
 
       if (isEditMode) {
         await updateRecommendation(payload);
@@ -373,7 +379,7 @@ export function RecommendationFormPage() {
       await addRecommendation(payload);
 
       if (mode === 'createAnotherCheckOnly') {
-        openCreateAnotherByCheck(true);
+        openCreateAnotherByCheck(true, resolvedSerialNumber);
         return;
       }
 
@@ -447,6 +453,7 @@ export function RecommendationFormPage() {
 
       <form onSubmit={handleSubmit} className={FORM_STACK_CLASS}>
         <div className={FORM_SECTION_CLASS}>
+          <div className={FORM_SECTION_TITLE_CLASS}>Проверка</div>
           <div className={FORM_ROW_4}>
             {isKeyLocked ? (
               <Input
@@ -487,6 +494,18 @@ export function RecommendationFormPage() {
             rows={4}
             labelClassName={FORM_LABEL_CLASS}
             inputClassName={`${FORM_TEXTAREA_CLASS} text-gray-800`}
+          />
+        </div>
+
+        <div className={FORM_SECTION_CLASS}>
+          <div className={FORM_SECTION_TITLE_CLASS}>Наблюдение</div>
+          <Textarea
+            value={observationName}
+            onChange={setObservationName}
+            placeholder="Название наблюдения"
+            rows={3}
+            labelClassName={FORM_LABEL_CLASS}
+            inputClassName={FORM_TEXTAREA_CLASS}
           />
         </div>
 

@@ -10,7 +10,7 @@ components/    # pages по разделам (checks, analytics, tools, …)
 contexts/      # AuthContext, SokolDataProvider
 constants/     # статусы, formLayout.ts
 hooks/         # auth, reference options
-utils/         # dates, exports, checkKey, attachments
+utils/         # dates, exports, uploadLimits, attachments
 config/env.ts  # API_BASE_URL
 ```
 
@@ -52,12 +52,14 @@ Redux/Zustand нет.
 | `analytics.ts` | `/analytics/*` |
 | `attachments.ts` | MinIO через API |
 | `settings.ts` | `makeSettingsCrud` для справочников |
-| `tools.ts` | DOCX (120s), audit-opinion (600s) |
+| `tools.ts` | section-ii, memorandum (120s) |
 | `mappers.ts` | API ↔ frontend types |
 
 ## Ключевые модули
 
-**Проверки** — фильтры/сортировка на клиенте, авто `serial_number`, импорт из АЗ, вложения.
+**Проверки** — фильтры на клиенте, `serial_number` с backend, импорт из АЗ, вложения.
+
+**Tools** — `DocxToolPanel`: section-ii, memorandum (audit opinion — planned).
 
 **Рекомендации** — closure, продления, снятие с контроля, вложения.
 

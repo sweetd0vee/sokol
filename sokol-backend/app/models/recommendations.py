@@ -29,6 +29,7 @@ class Recommendation(Base):
     serial_number: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     sequence_number: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     name: Mapped[str] = mapped_column(Text, nullable=False)
+    observation_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     indicator: Mapped[str] = mapped_column(String(32), nullable=False, default="не указан")
     materiality_level: Mapped[str] = mapped_column(String(32), nullable=False, default="средний")

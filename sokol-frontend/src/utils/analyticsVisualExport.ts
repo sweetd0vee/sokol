@@ -4,10 +4,12 @@
 import ExcelJS from 'exceljs';
 import {
   AlignmentType,
+  BorderStyle,
   Document,
   HeadingLevel,
   ImageRun,
   Packer,
+  PageOrientation,
   Paragraph,
   Table,
   TableCell,
@@ -89,6 +91,11 @@ function fitImageSize(
     height: Math.max(Math.round(height * ratio), 1),
   };
 }
+
+const DOCX_PAGE_MARGIN_TWIPS = 720;
+const DOCX_CHART_MAX_WIDTH = 760;
+const DOCX_CHART_MAX_HEIGHT = 430;
+const DOCX_FRAME_BORDER = { style: BorderStyle.SINGLE, size: 1, color: 'D7DEE7' };
 
 async function buildVisualPdf(options: {
   documentTitle: string;
@@ -431,7 +438,12 @@ async function buildVisualDocx(options: {
   });
 
   const chartChildren = charts.flatMap((chart, index) => {
-    const fitted = fitImageSize(chart.width * 2, chart.height * 2, 880, 500);
+    const fitted = fitImageSize(
+      chart.width * 2,
+      chart.height * 2,
+      DOCX_CHART_MAX_WIDTH,
+      DOCX_CHART_MAX_HEIGHT,
+    );
     return [
       new Paragraph({
         text: chart.title,
@@ -442,13 +454,40 @@ async function buildVisualDocx(options: {
         children: [new TextRun({ text: chart.description, color: '64748B', size: 20 })],
         spacing: { after: 180 },
       }),
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [
-          new ImageRun({
-            data: dataUrlToUint8Array(chart.dataUrl),
-            transformation: fitted,
-            type: 'png',
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: {
+          top: DOCX_FRAME_BORDER,
+          bottom: DOCX_FRAME_BORDER,
+          left: DOCX_FRAME_BORDER,
+          right: DOCX_FRAME_BORDER,
+          insideHorizontal: DOCX_FRAME_BORDER,
+          insideVertical: DOCX_FRAME_BORDER,
+        },
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({
+                margins: {
+                  top: 160,
+                  bottom: 160,
+                  left: 160,
+                  right: 160,
+                },
+                children: [
+                  new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [
+                      new ImageRun({
+                        data: dataUrlToUint8Array(chart.dataUrl),
+                        transformation: fitted,
+                        type: 'png',
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
           }),
         ],
       }),
@@ -460,7 +499,19 @@ async function buildVisualDocx(options: {
     title: documentTitle,
     sections: [
       {
-        properties: {},
+        properties: {
+          page: {
+            size: {
+              orientation: PageOrientation.LANDSCAPE,
+            },
+            margin: {
+              top: DOCX_PAGE_MARGIN_TWIPS,
+              right: DOCX_PAGE_MARGIN_TWIPS,
+              bottom: DOCX_PAGE_MARGIN_TWIPS,
+              left: DOCX_PAGE_MARGIN_TWIPS,
+            },
+          },
+        },
         children: [
           new Paragraph({
             text: documentTitle,

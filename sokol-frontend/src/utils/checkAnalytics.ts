@@ -180,7 +180,7 @@ function escapeEffectivenessHtml(value: string) {
     .replace(/"/g, '&quot;');
 }
 
-const EFFECTIVENESS_EXPORT_PIE_SIZE_PX = 52;
+const EFFECTIVENESS_EXPORT_PIE_SIZE_PX = 76;
 
 function buildEffectivenessSharePie(shares: EffectivenessColumnShare[]) {
   if (shares.length === 0) {
@@ -199,15 +199,15 @@ function buildEffectivenessSharePie(shares: EffectivenessColumnShare[]) {
   const legend = shares
     .map(
       (share) =>
-        `<li style="display:flex;align-items:center;justify-content:center;gap:4px;font-size:10px;line-height:1.15">
-          <span style="width:6px;height:6px;border-radius:50%;background:${share.color};flex-shrink:0"></span>
+        `<li style="display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;line-height:1.15">
+          <span style="width:7px;height:7px;border-radius:50%;background:${share.color};flex-shrink:0"></span>
           <span style="font-weight:600">${share.percent}%</span>
         </li>`,
     )
     .join('');
 
   const size = EFFECTIVENESS_EXPORT_PIE_SIZE_PX;
-  return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;max-width:100%">
+  return `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;max-width:100%">
     <div style="width:${size}px;height:${size}px;border-radius:50%;background:conic-gradient(${gradientStops});flex-shrink:0"></div>
     <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px">${legend}</ul>
   </div>`;
@@ -267,9 +267,9 @@ export function buildEffectivenessMatrixHtmlMarkup(rows: EffectivenessMatrixRow[
       <div style="overflow:auto">
         <table style="width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed">
           <colgroup>
-            <col style="width:16%" />
-            <col style="width:40%" />
-            ${EFFECTIVENESS_MATRIX_COLUMNS.map(() => '<col style="width:11%" />').join('')}
+            <col style="width:14%" />
+            <col style="width:34%" />
+            ${EFFECTIVENESS_MATRIX_COLUMNS.map(() => '<col style="width:13%" />').join('')}
           </colgroup>
           <thead>
             <tr style="border-bottom:1px solid #f3f4f6;background:#fff">
@@ -281,7 +281,7 @@ export function buildEffectivenessMatrixHtmlMarkup(rows: EffectivenessMatrixRow[
           <tbody>${bodyRows}</tbody>
         </table>
       </div>
-      <div data-effectiveness-matrix-footer style="display:grid;grid-template-columns:16% 40% 11% 11% 11% 11%;align-items:center;border-top:1px solid #e5e7eb;background:#f9fafb">
+      <div data-effectiveness-matrix-footer style="display:grid;grid-template-columns:14% 34% 13% 13% 13% 13%;align-items:center;border-top:1px solid #e5e7eb;background:#f9fafb">
         <div style="grid-column:1 / span 2;display:flex;align-items:center;padding:8px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#6b7280">Доля оценок</div>
         ${footerPies}
       </div>

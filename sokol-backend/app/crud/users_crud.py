@@ -61,6 +61,14 @@ async def create_user(
     return user
 
 
+async def update_user_password(session: AsyncSession, user: User, new_password: str) -> User:
+    user.password_hash = hash_password(new_password)
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user
+
+
 async def ensure_user(
     session: AsyncSession,
     *,

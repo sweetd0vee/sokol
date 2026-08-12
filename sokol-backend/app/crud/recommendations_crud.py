@@ -21,6 +21,7 @@ def _apply_filters(
         query = query.where(
             or_(
                 Recommendation.name.ilike(search_term),
+                Recommendation.observation_name.ilike(search_term),
                 Recommendation.description.ilike(search_term),
                 Recommendation.audit_object.ilike(search_term),
                 Recommendation.auditor.ilike(search_term),

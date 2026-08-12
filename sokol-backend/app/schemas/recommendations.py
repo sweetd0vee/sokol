@@ -38,6 +38,7 @@ def _normalize_closure_items(value: object) -> object:
 class RecommendationBase(BaseModel):
     serial_number: str = Field(..., min_length=1, max_length=32)
     name: str = Field(..., min_length=1)
+    observation_name: Optional[str] = None
     description: str = ""
     indicator: str = Field(default="не указан", max_length=32)
     materiality_level: str = Field(default="средний", max_length=32)
@@ -98,6 +99,7 @@ class RecommendationCreate(RecommendationBase):
 class RecommendationUpdate(BaseModel):
     serial_number: Optional[str] = Field(None, min_length=1, max_length=32)
     name: Optional[str] = Field(None, min_length=1)
+    observation_name: Optional[str] = None
     description: Optional[str] = None
     indicator: Optional[str] = Field(None, max_length=32)
     materiality_level: Optional[str] = Field(None, max_length=32)

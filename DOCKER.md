@@ -1,6 +1,6 @@
 # Docker
 
-Compose поднимает **Postgres + MinIO + API + Frontend**. Ollama **не** в Docker — API ходит на хост (`http://host.docker.internal:11434`).
+Ollama **не** в Docker (зарезервировано для planned audit-opinion).
 
 ## Порты
 
@@ -10,15 +10,11 @@ Compose поднимает **Postgres + MinIO + API + Frontend**. Ollama **не*
 | API / Swagger | http://localhost:8800/docs |
 | Postgres | localhost:5433 |
 | MinIO API / Console | http://localhost:9000 / http://localhost:9001 |
-| Ollama (на хосте) | http://localhost:11434 |
 
 ## Первый запуск
 
 ```powershell
 # из корня sokol/
-ollama serve
-ollama pull qwen3.5:35b
-
 copy .env.example .env
 copy sokol-backend\docker\app\.env.example sokol-backend\docker\app\.env
 
@@ -26,6 +22,8 @@ docker compose up --build -d
 ```
 
 UI: http://localhost:5180
+
+Ollama (для planned audit-opinion): `ollama serve` + `ollama pull qwen3.5:35b` — **не обязательно** для текущего стека.
 
 Если Postgres уже запущен:
 
@@ -57,7 +55,6 @@ Bearer JWT на всех `/api/v1/*`, кроме `GET /api/v1/status`. Вход:
 | Симптом | Действие |
 |---------|----------|
 | UI не видит API | http://localhost:8800/docs, CORS `http://localhost:5180` |
-| Ollama timeout | `ollama list`, `ollama pull qwen3.5:35b`, `ollama serve` на `0.0.0.0:11434` |
 | Порт занят | Освободить 5180 / 8800 / 5433 |
 
 Частичный стек: `sokol-backend/docker/app/docker-compose.yml`, `sokol-frontend/docker/docker-compose.yml`.

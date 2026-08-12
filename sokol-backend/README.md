@@ -76,7 +76,8 @@ Seed/import/бэкапы: [docs/ALEMBIC_AND_DATA.md](docs/ALEMBIC_AND_DATA.md).
 | `POST /api/v1/tools/section-ii-links` | Раздел II с гиперссылками |
 | `POST /api/v1/tools/memorandum` | Докладная записка |
 | `POST /api/v1/tools/parse-recommendations` | Парсинг рекомендаций из АЗ |
-| `POST /api/v1/tools/audit-opinion` | Раздел I через Ollama |
+
+> **Audit opinion (Ollama)** — описан в [API.md](docs/API.md) как planned, endpoint **не реализован**.
 
 Подробно: [docs/REPORTS.md](docs/REPORTS.md).
 
@@ -88,7 +89,7 @@ Seed/import/бэкапы: [docs/ALEMBIC_AND_DATA.md](docs/ALEMBIC_AND_DATA.md).
 
 ```bash
 python -m compileall app tests
-python -m unittest discover -s tests
+py -3.12 -m unittest discover -s tests   # требуется Python 3.12
 ```
 
 Нужен `httpx` для `TestClient`.
@@ -99,5 +100,5 @@ python -m unittest discover -s tests
 |---------|----------|
 | `DATABASE_URL is required` | скопировать `.secrets/sokol.env.example` |
 | CORS | `SOKOL_CORS_ORIGINS=http://localhost:5180` |
-| 502 audit-opinion | `ollama serve` + `ollama pull qwen3.5:35b` |
+| 502 на tools | проверить backend и логи DOCX-пайплайна |
 | Порт занят | `netstat -ano \| findstr :8802` → `taskkill /PID <pid> /F` |

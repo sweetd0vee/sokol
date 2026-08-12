@@ -12,7 +12,10 @@ from app.services.reports.memorandum.models import (
     MemorandumSource,
 )
 from app.services.reports.memorandum.parser import document_has_section_ii, parse_az_for_memorandum
-from app.services.reports.memorandum.section_ii_table_parser import parse_section_ii_for_memorandum
+from app.services.reports.memorandum.section_ii_table_parser import (
+    _extract_observation_name,
+    parse_section_ii_for_memorandum,
+)
 from app.services.reports.section_ii.docx_generator import process_document
 
 
@@ -36,6 +39,14 @@ def _build_az_without_section_ii(path: Path) -> None:
 
 
 class MemorandumGeneratorTest(unittest.TestCase):
+    def test_extracts_observation_name_without_row_label(self):
+        name = _extract_observation_name([
+            "Наблюдение 3.1.",
+            "Несвоевременное обновление лимитов кредитования",
+        ])
+
+        self.assertEqual(name, "Несвоевременное обновление лимитов кредитования")
+
     def test_document_without_section_ii_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             az_path = Path(tmp) / "az_no_ii.docx"

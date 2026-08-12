@@ -183,9 +183,10 @@ export function ChecksAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
         render: () => (
           <ChartCard
-            title="Сводка KPI"
+            title="Итого"
             description=""
             dense
+            hideTitle
             exportSectionId="summary"
             exportSelected={exportSections.isSelected('summary')}
             onToggleExport={() => exportSections.toggleSection('summary')}

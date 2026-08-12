@@ -1,6 +1,6 @@
 # SOKOL
 
-Внутренний инструмент аудита: React UI + FastAPI API + PostgreSQL. Опционально Ollama для генерации раздела I («Аудиторское мнение»).
+Внутренний инструмент аудита: React UI + FastAPI API + PostgreSQL.
 
 ## Порты
 
@@ -50,6 +50,7 @@ sokol/
 
 | Раздел | Содержание |
 |--------|------------|
+| [docs/README.md](docs/README.md) | Код-ревью и план действий |
 | [sokol-backend/README.md](sokol-backend/README.md) | Запуск, env, тесты |
 | [sokol-backend/docs/](sokol-backend/docs/README.md) | Архитектура, API, БД, reports |
 | [sokol-frontend/README.md](sokol-frontend/README.md) | Скрипты, маршруты, env |
@@ -61,7 +62,7 @@ sokol/
 - **Auth** — JWT (`POST /api/v1/auth/login`), роли `auditor` / `admin`. Dev: `admin`/`admin`, `auditor`/`auditor`.
 - **Проверки и рекомендации** — CRUD, фильтры, экспорт таблиц, вложения (MinIO), импорт рекомендаций из АЗ.
 - **Аналитика** — `GET /api/v1/analytics/{checks|recommendations|monitoring|dva|planning}`.
-- **Инструменты** — Раздел II АЗ, докладная записка, аудиторское мнение (Ollama).
+- **Инструменты** — Раздел II АЗ, докладная записка, парсинг рекомендаций. Audit opinion (Ollama) — **в плане, не реализовано**.
 - **Настройки** — справочники (mutate — только `admin`).
 - **Наблюдения, Канцлер** — демо/заглушки, backend CRUD нет.
 
@@ -69,7 +70,7 @@ sokol/
 
 ```bash
 cd sokol-frontend && npm run lint && npm test && npm run build
-cd sokol-backend && python -m compileall app tests && python -m unittest discover -s tests
+cd sokol-backend && py -3.12 -m unittest discover -s tests
 ```
 
 ## Частые проблемы

@@ -175,6 +175,7 @@ export function ChartCard({
   exportSelected,
   onToggleExport,
   dense = false,
+  hideTitle = false,
 }: {
   title: string;
   description: string;
@@ -185,6 +186,7 @@ export function ChartCard({
   exportSelected?: boolean;
   onToggleExport?: () => void;
   dense?: boolean;
+  hideTitle?: boolean;
 }) {
   const exportCardRef = useRef<HTMLElement>(null);
   const captureRef = useRef<HTMLDivElement>(null);
@@ -365,7 +367,11 @@ export function ChartCard({
           className={`flex w-full flex-col rounded-lg border bg-white px-2 py-1.5 shadow-sm ${accentClassName} ${className}`}
         >
           <div className="mb-1.5 flex shrink-0 items-center justify-between gap-2">
-            <h3 className="shrink-0 text-sm font-semibold leading-snug text-sber-dark">{title}</h3>
+            {!hideTitle ? (
+              <h3 className="shrink-0 text-sm font-semibold leading-snug text-sber-dark">{title}</h3>
+            ) : (
+              <span aria-hidden className="min-w-0 flex-1" />
+            )}
             {toolbar}
           </div>
           <div ref={captureRef} className="min-w-0">
@@ -382,9 +388,11 @@ export function ChartCard({
       >
         <div className="mb-0.5 flex items-start justify-between gap-1.5">
           <div className="min-w-0 space-y-0">
-            <div className="inline-flex items-center rounded-md pr-1 text-sber-dark">
-              <h3 className="text-sm font-semibold leading-snug">{title}</h3>
-            </div>
+            {!hideTitle ? (
+              <div className="inline-flex items-center rounded-md pr-1 text-sber-dark">
+                <h3 className="text-sm font-semibold leading-snug">{title}</h3>
+              </div>
+            ) : null}
             {description ? (
               <p className="text-xs leading-snug text-gray-500">{description}</p>
             ) : null}
@@ -408,8 +416,8 @@ export function ChartCard({
         >
           <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 bg-white px-5 py-4 shadow-sm">
             <div className="min-w-0 space-y-0.5">
-              <h3 className="text-base font-semibold text-sber-dark">{title}</h3>
-              <p className="text-sm text-gray-500">{description}</p>
+              {!hideTitle ? <h3 className="text-base font-semibold text-sber-dark">{title}</h3> : null}
+              {description ? <p className="text-sm text-gray-500">{description}</p> : null}
             </div>
             <div className="flex items-center gap-1.5">
               {toolbar}
@@ -436,8 +444,8 @@ export function ChartCard({
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-0.5">
-            <h3 className="text-sm font-semibold text-sber-dark">{title}</h3>
-            <p className="text-xs text-gray-500">{description}</p>
+            {!hideTitle ? <h3 className="text-sm font-semibold text-sber-dark">{title}</h3> : null}
+            {description ? <p className="text-xs text-gray-500">{description}</p> : null}
           </div>
         </div>
         <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-gray-200 text-xs text-gray-400">

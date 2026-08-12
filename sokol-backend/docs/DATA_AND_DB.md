@@ -36,7 +36,7 @@ Import/seed обходят validation.
 
 ## Ключ проверки
 
-`serial_number` — уникален, генерируется на FE (`checkKey.ts`) и BE (`check_key.py`). У рекомендаций: `serial_number` + `check_id` + `sequence_number`.
+`serial_number` — уникален, генерируется и пересчитывается на backend (`check_key.py`). Frontend не отправляет ключ в create/update payload, а показывает значение из ответа API. При смене даты начала, руководителя или типа проверки backend обновляет ключ и синхронизирует `recommendations.serial_number` / `attachments.check_serial_number`.
 
 ## Seed и import
 

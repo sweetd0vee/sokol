@@ -85,6 +85,7 @@ def _generate_memorandum_file(input_path: str, output_path: str) -> tuple[str | 
 
 class ParsedRecommendationItem(BaseModel):
     name: str
+    observation_name: str = ""
     audit_object: str
     manager: str
     deadline: str
@@ -121,6 +122,7 @@ def _parse_recommendations_from_docx(input_path: str) -> tuple[list[ParsedRecomm
             items.append(
                 ParsedRecommendationItem(
                     name=name,
+                    observation_name=(recommendation.observation_name or "").strip(),
                     audit_object=((group.name or "").strip() or "Не указан")[:255],
                     manager=((group.manager or "").strip() or "Не указан")[:255],
                     deadline=_deadline_to_iso(recommendation.deadline),

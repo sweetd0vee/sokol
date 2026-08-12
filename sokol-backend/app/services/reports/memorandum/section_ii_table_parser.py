@@ -31,6 +31,10 @@ DEADLINE_VALUE_RE = re.compile(
     re.IGNORECASE,
 )
 SROK_INLINE_RE = re.compile(r"Срок\s*[–\-—]\s*", re.IGNORECASE)
+OBSERVATION_PREFIX_RE = re.compile(
+    r"^Наблюдени[ея]?\s*(?:№?\s*\d+|[IVXLC]+)?\s*[:.)\-–—]*\s*",
+    re.IGNORECASE,
+)
 
 
 def _cell_texts(tr) -> List[str]:
@@ -74,6 +78,15 @@ def _parse_audit_object_header(raw_text: str) -> Tuple[str, str, str]:
 def _normalize_deadline(value: str) -> str:
     cleaned = re.sub(r"\s+", " ", (value or "").strip()).rstrip(".")
     return cleaned
+
+
+def _extract_observation_name(cells: List[str]) -> str:
+    raw = " ".join(cell for cell in cells[1:] if cell.strip()).strip()
+    if not raw:
+        raw = cells[0].strip() if cells else ""
+    cleaned = re.sub(r"\s+", " ", raw)
+    without_prefix = OBSERVATION_PREFIX_RE.sub("", cleaned).strip()
+    return without_prefix or cleaned
 
 
 def _extract_deadline_and_rest(chunk: str) -> Tuple[str, str]:
@@ -181,6 +194,7 @@ def parse_section_ii_for_memorandum(file_path: str) -> Tuple[Optional[Memorandum
 
     groups: List[MemorandumAuditObject] = []
     group_index: dict = {}
+    current_observation_name = ""
 
     for tr in table.findall(f"./{{{W_NS}}}tr"):
         cells = _cell_texts(tr)
@@ -190,9 +204,13 @@ def parse_section_ii_for_memorandum(file_path: str) -> Tuple[Optional[Memorandum
         first_cell = cells[0].strip()
         if SECTION2_TABLE_HEADER.lower() in first_cell.lower():
             continue
-        if CHAPTER_ROW_RE.match(first_cell) or OBS_ROW_LABEL_RE.match(first_cell):
+        if CHAPTER_ROW_RE.match(first_cell):
+            continue
+        if OBS_ROW_LABEL_RE.match(first_cell):
+            current_observation_name = _extract_observation_name(cells)
             continue
         if OBS_START_RE.search(first_cell) and not REC_ROW_LABEL_RE.match(first_cell):
+            current_observation_name = _extract_observation_name(cells)
             continue
         if not REC_ROW_LABEL_RE.match(first_cell):
             continue
@@ -208,6 +226,8 @@ def parse_section_ii_for_memorandum(file_path: str) -> Tuple[Optional[Memorandum
             deadline_match = SROK_TAIL_RE.search(body_text)
             deadline = _normalize_deadline(deadline_match.group(0).split("–", 1)[-1]) if deadline_match else ""
             recommendations = [MemorandumRecommendation(paragraphs=[clean_body], deadline=deadline)]
+        for recommendation in recommendations:
+            recommendation.observation_name = current_observation_name
 
         _append_to_groups(groups, group_index, audit_object, manager, recommendations)
 

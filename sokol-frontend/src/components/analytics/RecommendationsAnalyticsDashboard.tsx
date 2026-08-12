@@ -210,6 +210,7 @@ export function RecommendationsAnalyticsDashboard() {
             title="Сводка KPI"
             description=""
             dense
+            hideTitle
             exportSectionId="summary"
             exportSelected={exportSections.isSelected('summary')}
             onToggleExport={() => exportSections.toggleSection('summary')}

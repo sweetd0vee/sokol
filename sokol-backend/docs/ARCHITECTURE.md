@@ -14,7 +14,7 @@ app/
 ├── models/              # SQLAlchemy ORM
 ├── schemas/             # Pydantic v2
 ├── services/
-│   ├── reports/         # section_ii, memorandum, audit_opinion
+│   ├── reports/         # section_ii, memorandum
 │   ├── analytics/
 │   ├── dictionary_validation.py
 │   └── storage/         # MinIO
@@ -58,10 +58,9 @@ Enum'ы и поля: [DATA_AND_DB.md](DATA_AND_DB.md).
 | Пайплайн | Код | Endpoint |
 |----------|-----|----------|
 | Раздел II | `services/reports/section_ii/` | `/tools/section-ii*` |
-| Докладная | `services/reports/memorandum/` | `/tools/memorandum` |
-| Раздел I | `services/reports/audit_opinion/` + Ollama | `/tools/audit-opinion` |
+| Докладная | `services/reports/memorandum/` | `/tools/memorandum`, `/tools/parse-recommendations` |
 
-Раздел II правит OOXML (ZIP/XML), не python-docx — сохраняет титул и оглавление. Алгоритм: [REPORTS.md](REPORTS.md).
+Раздел II правит OOXML (ZIP/XML). Алгоритм: [REPORTS.md](REPORTS.md).
 
 ## Bootstrap (`main.py`)
 

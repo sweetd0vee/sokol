@@ -12,6 +12,7 @@ type DocxToolPanelProps = {
   error: string | null;
   buttonLabel?: string;
   processingLabel?: string;
+  uploadLimitLabel?: string;
 };
 
 export function DocxToolPanel({
@@ -24,6 +25,7 @@ export function DocxToolPanel({
   error,
   buttonLabel = 'Сгенерировать и скачать',
   processingLabel = 'Обработка...',
+  uploadLimitLabel,
 }: DocxToolPanelProps) {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onFileChange(event.target.files?.[0] ?? null);
@@ -44,6 +46,11 @@ export function DocxToolPanel({
           </span>
           <input type="file" accept={ACCEPTED_DOCX} onChange={handleFileChange} className="sr-only" />
         </label>
+        {uploadLimitLabel && (
+          <p className="text-xs text-gray-500">
+            Максимальный размер файла: {uploadLimitLabel}.
+          </p>
+        )}
 
         <button
           type="button"

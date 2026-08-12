@@ -78,6 +78,7 @@ from app.db.import_seed_data import import_seed_data
 from app.db.migrate_attachments import migrate as migrate_attachments
 from app.db.migrate_check_effectiveness import migrate as migrate_effectiveness
 from app.db.migrate_dictionary_uniqueness import migrate as migrate_dictionary_uniqueness
+from app.db.migrate_recommendation_observation_name import migrate as migrate_recommendation_observation_name
 from app.db.seed_audit_types import AUDIT_TYPES, seed_audit_types
 from app.db.seed_check_kinds import CHECK_KINDS, seed_check_kinds
 from app.db.seed_effectiveness_ratings import EFFECTIVENESS_RATINGS, seed_effectiveness_ratings
@@ -92,6 +93,7 @@ async def bootstrap() -> None:
     await migrate_effectiveness()
     await migrate_attachments()
     await migrate_dictionary_uniqueness()
+    await migrate_recommendation_observation_name()
     await seed_audit_types(AUDIT_TYPES)
     await seed_check_kinds(CHECK_KINDS)
     await seed_effectiveness_ratings(EFFECTIVENESS_RATINGS)

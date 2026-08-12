@@ -4,7 +4,7 @@
 
 Интерактивная документация: `http://127.0.0.1:8802/docs` (порт из `run_dev.ps1`).
 
-Auth: **internal JWT** (Bearer). Публичны только `GET /` и `GET /api/v1/status`.  
+Auth: **internal JWT** (Bearer). Публичны только `GET /`, `GET /api/v1/status` и `GET /api/v1/capabilities`.  
 Роли: `auditor` (домен read/write), `admin` (справочники mutate + все DELETE).
 
 Логин: `POST /api/v1/auth/login` → `{ access_token, role, username, display_name }`.  
@@ -21,6 +21,7 @@ Auth: **internal JWT** (Bearer). Публичны только `GET /` и `GET /
 | Method | Path | Ответ |
 |--------|------|--------|
 | `GET` | `/api/v1/status` | статус сервиса |
+| `GET` | `/api/v1/capabilities` | runtime capabilities: `max_upload_mb`, `max_upload_bytes` |
 | `GET` | `/` | `{ "service": "SOKOL API", "version": "v1" }` |
 
 ---
@@ -45,8 +46,10 @@ Auth: **internal JWT** (Bearer). Публичны только `GET /` и `GET /
 | `status` | enum | — | `not_started` \| `in_progress` \| `completed` |
 | `check_type` | string | — | |
 
-**Поля create/read (основные):**  
-`serial_number`, `check_name`, `short_name?`, `check_type`, `check_view`, `start_date`, `end_date?`, `check_leader`, `status`, `created_at`, `description?`, оценки эффективности (`process_effectiveness`, `svk_effectiveness`, `sur_effectiveness`, `svik_effectiveness`), документы приказа/программы/АЗ/ДЗ (`*_document_number`, `*_document_date`).
+**Поля create/PATCH (основные):**  
+`check_name`, `short_name?`, `check_type`, `check_view`, `start_date`, `end_date?`, `check_leader`, `status`, `created_at`, `description?`, оценки эффективности (`process_effectiveness`, `svk_effectiveness`, `sur_effectiveness`, `svik_effectiveness`), документы приказа/программы/АЗ/ДЗ (`*_document_number`, `*_document_date`). `serial_number` не принимается от клиента: backend генерирует его на create и пересчитывает на PATCH при смене `start_date` / `check_leader` / `check_type`.
+
+**Read:** `CheckRead` дополнительно возвращает `id`, `serial_number`, `created_at`.
 
 **Валидация справочников (create/PATCH):** `check_leader` ∈ auditors, `check_view` ∈ check_kinds, непустые `*_effectiveness` ∈ effectiveness_ratings; иначе **400**.
 
@@ -109,12 +112,12 @@ Auth: **internal JWT** (Bearer). Публичны только `GET /` и `GET /
 | `status` | `completed`, `unresolved`, `on_control`, `in_progress` |
 | `additional_status` | `on_time`, `deadline_violated`, `on_control` |
 
-Дополнительно: `sequence_number`, `description`, `indicator`, `materiality_level`, поля продлений и снятия с контроля, `closure_*`.
+Дополнительно: `sequence_number`, `description`, `observation_name`, `indicator`, `materiality_level`, поля продлений и снятия с контроля, `closure_*`.
 
 **Валидация справочников (create/PATCH):** `auditor` ∈ auditors; иначе **400**.  
 `manager` (руководитель объекта аудита) — свободный текст, без проверки по справочнику.
 
-Фильтры списка — см. endpoint/crud (`check_id`, `search`, статусы и т.д. в коде `recommendations.py`).
+Фильтры списка — см. endpoint/crud (`check_id`, `search`, статусы и т.д. в коде `recommendations.py`). `search` ищет по названию рекомендации, названию наблюдения, описанию, объекту аудита, аудитору, руководителю и ключу проверки.
 
 ---
 
@@ -154,19 +157,6 @@ MIME: OOXML DOCX или `application/octet-stream`.
 | `POST` | `/tools/section-ii-links` | DOCX | То же + bookmarks/hyperlinks к наблюдениям; `*_section_ii_links.docx` |
 | `POST` | `/tools/memorandum` | DOCX | ДЗ из АЗ с готовым Разделом II; `*_dz.docx` |
 | `POST` | `/tools/parse-recommendations` | `application/json` | массив рекомендаций из таблицы Раздела II АЗ |
-| `GET` | `/tools/audit-opinion/default-prompt` | JSON `{ "prompt": "..." }` | дефолтный промпт для раздела I |
-| `GET` | `/tools/audit-opinion/models` | JSON `{ "models": [...], "default_model": "..." }` | список моделей Ollama; **502**, если Ollama недоступна |
-| `POST` | `/tools/audit-opinion` | DOCX | раздел I «Аудиторское мнение»; имя `*_section_i.docx` |
-
-**`POST /tools/audit-opinion`** — `multipart/form-data`:
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| `file` | файл `.docx` | исходный АЗ |
-| `prompt` | string (form) | опционально; пусто → дефолтный промпт |
-| `model` | string (form) | опционально; пусто → `SOKOL_OLLAMA_MODEL` |
-
-Ошибки Ollama → **502**. Timeout клиента на фронте: **600s** (остальные tools — 120s).
 
 **`ParsedRecommendationItem`:**
 
@@ -182,10 +172,15 @@ MIME: OOXML DOCX или `application/octet-stream`.
 Ошибки парсинга/валидации документа: **400** с `detail` (строка).  
 Файл не создан: **500**. Слишком большой: **413**.
 
+### Audit opinion — planned (не реализовано)
+
+Раздел I через Ollama: routes и `services/reports/audit_opinion/` **отсутствуют**. Env `SOKOL_OLLAMA_*` зарезервирован. См. [REPORTS.md](REPORTS.md).
+
 ---
 
 ## Чего нет в API
 
+- **`/tools/audit-opinion`** — не реализовано.
 - OIDC / Keycloak (есть internal JWT + RBAC).
 - Alembic HTTP; schema — `create_all` + CLI `migrate_*.py`.
 - WebSocket, batch-import Excel через HTTP API (import — CLI `app.db.import_seed_data`).
