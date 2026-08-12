@@ -78,8 +78,6 @@ Seed/import/бэкапы: [docs/ALEMBIC_AND_DATA.md](docs/ALEMBIC_AND_DATA.md).
 | `POST /api/v1/tools/memorandum` | Докладная записка |
 | `POST /api/v1/tools/parse-recommendations` | Парсинг рекомендаций из АЗ |
 
-> **Audit opinion (Ollama)** — описан в [API.md](docs/API.md) как planned, endpoint **не реализован**.
-
 Подробно: [docs/REPORTS.md](docs/REPORTS.md).
 
 ## Документация

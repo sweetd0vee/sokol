@@ -21,7 +21,7 @@ FastAPI + PostgreSQL (async SQLAlchemy):
 - **CRUD** — проверки, рекомендации, справочники; validation справочников на create/update.
 - **Analytics** — `GET /api/v1/analytics/{checks|recommendations|monitoring|dva|planning}`.
 - **Attachments** — Postgres + MinIO.
-- **Tools** — Раздел II, ДЗ, parse-recommendations. Audit opinion — planned.
+- **Tools** — Раздел II, ДЗ, parse-recommendations.
 
 **Пока нет:** Alembic (схема через `create_all` + `migrate_*.py`), OIDC, CRUD наблюдений.
 

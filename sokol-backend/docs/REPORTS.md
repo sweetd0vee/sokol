@@ -18,9 +18,9 @@ OOXML (ZIP/XML): парсинг Раздела III → таблица после
 **Endpoint:** `POST /tools/memorandum`  
 **Связанный:** `POST /tools/parse-recommendations` — JSON для импорта на форме проверки.
 
-## Audit opinion (Ollama) — planned ❌
+## Audit opinion (Ollama) — backlog ❌
 
-В `API.md` и env (`SOKOL_OLLAMA_*`) описан контракт `POST /tools/audit-opinion`, но **код не реализован** (`app/services/reports/audit_opinion/` отсутствует). UI тоже нет.
+Контракт `POST /tools/audit-opinion` не входит в текущий `API.md`: **код не реализован** (`app/services/reports/audit_opinion/` отсутствует), routes и UI отсутствуют. Env `SOKOL_OLLAMA_*` остаётся техническим хвостом/backlog для возможного Раздела I.
 
 До реализации — не документировать как рабочий endpoint.
 

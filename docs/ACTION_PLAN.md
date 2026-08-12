@@ -18,7 +18,7 @@
 | P0-02 | Prod: `SOKOL_ENV=prod` + strong `SOKOL_JWT_SECRET`, fail-fast на default | **done** |
 | P0-03 | `SOKOL_LOAD_DEMO_DATA=0` на UAT/prod | 0.5 d |
 | P0-04 | Alembic baseline + `upgrade head` | 3–5 d |
-| P0-05 | Audit-opinion: **реализовать или убрать из docs/API** | 0.5–3 d |
+| P0-05 | Audit-opinion: убрать из `docs/API` | **done** |
 
 ## P1 — до пилота
 
@@ -53,13 +53,13 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · in
 | BE tests (py 3.12) | 104 | ≥110 + integration |
 | FE tests | 32 | ≥45 |
 | ESLint warnings | 27 | ≤10 |
-| Open P0 | 5 | 0 |
+| Open P0 | 4 | 0 |
 | Demo routes visible | 2 | 0 |
 
 ## Эта неделя (12–15.08)
 
 1. P0-01 — скрыть demo UI  
 2. P0-02, P0-03 — prod guards  
-3. P0-05 — синхронизировать docs с кодом (audit-opinion)  
-4. P0-04 — старт Alembic  
-5. P1-02 — CI  
+3. P0-04 — старт Alembic  
+4. P1-02 — CI  
+5. P1-05 — MinIO policy / storage UX  
