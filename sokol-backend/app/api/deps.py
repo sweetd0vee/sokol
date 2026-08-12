@@ -106,4 +106,3 @@ def require_roles(*roles: Role):
 
 
 require_admin = require_roles(Role.ADMIN)
-require_authenticated = get_current_user

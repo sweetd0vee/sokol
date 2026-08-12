@@ -4,14 +4,12 @@ from __future__ import annotations
 
 from typing import Mapping, Optional
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import DeclarativeBase
 
+from app.crud.dictionary_crud import find_dictionary_duplicate_by_label
 from app.models.auditors import Auditor
 from app.models.check_kinds import CheckKind
 from app.models.effectiveness_ratings import EffectivenessRating
-from app.utils.dictionary_text import normalize_dictionary_label
 
 
 class DictionaryRefError(ValueError):
@@ -28,16 +26,12 @@ class DictionaryRefError(ValueError):
 
 async def _value_exists(
     session: AsyncSession,
-    model: type[DeclarativeBase],
+    model: type,
     column,
     value: str,
 ) -> bool:
-    normalized = normalize_dictionary_label(value)
-    result = await session.execute(select(model))
-    for item in result.scalars():
-        if normalize_dictionary_label(str(getattr(item, column.key))) == normalized:
-            return True
-    return False
+    duplicate = await find_dictionary_duplicate_by_label(session, model, column, value)
+    return duplicate is not None
 
 
 async def ensure_auditor_name(

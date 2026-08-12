@@ -16,6 +16,7 @@ from app.schemas.analytics import (
     PlanningDepartmentAnalyticsRow,
 )
 from app.services.analytics.common import (
+    check_department_distribution,
     collect_audit_objects,
     filter_checks,
     filter_recommendations,
@@ -23,32 +24,6 @@ from app.services.analytics.common import (
     load_recommendations,
     pad_anchor_dates,
 )
-
-
-def _check_department_distribution(
-    checks: list[Check],
-    recommendations: list[Recommendation],
-) -> dict[str, int]:
-    by_serial: dict[str, list[Recommendation]] = defaultdict(list)
-    for item in recommendations:
-        serial = (item.serial_number or "").strip()
-        if serial:
-            by_serial[serial].append(item)
-
-    counts: dict[str, int] = defaultdict(int)
-    for check in checks:
-        linked = by_serial.get(check.serial_number, [])
-        departments = {
-            (item.audit_object or "").strip()
-            for item in linked
-            if item.audit_object and item.audit_object.strip()
-        }
-        if not departments:
-            counts["Без департамента"] += 1
-            continue
-        for department in departments:
-            counts[department] += 1
-    return counts
 
 
 def _build_coverage(
@@ -89,7 +64,7 @@ def _department_analytics(
     recommendations: list[Recommendation],
     all_recommendations_for_links: list[Recommendation],
 ) -> list[PlanningDepartmentAnalyticsRow]:
-    check_by_dept = _check_department_distribution(checks, all_recommendations_for_links)
+    check_by_dept = check_department_distribution(checks, all_recommendations_for_links)
     rec_by_dept: dict[str, int] = defaultdict(int)
     high_by_dept: dict[str, int] = defaultdict(int)
     for item in recommendations:
@@ -164,7 +139,7 @@ async def build_planning_analytics(
 
     check_counts = {
         name: count
-        for name, count in _check_department_distribution(
+        for name, count in check_department_distribution(
             filtered_checks_for_coverage, recommendations
         ).items()
         if name != "Без департамента"

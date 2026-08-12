@@ -6,6 +6,7 @@ import unittest
 from types import SimpleNamespace
 
 from app.services.analytics import planning_analytics as planning
+from app.services.analytics.common import check_department_distribution
 
 
 def _check(serial_number: str) -> SimpleNamespace:
@@ -34,7 +35,7 @@ class PlanningAnalyticsTests(unittest.TestCase):
             _recommendation("SN-2", None),
         ]
 
-        counts = planning._check_department_distribution(checks, recommendations)
+        counts = check_department_distribution(checks, recommendations)
 
         self.assertEqual(counts["Финансы"], 1)
         self.assertEqual(counts["Риски"], 1)

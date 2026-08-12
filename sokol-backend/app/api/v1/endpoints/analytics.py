@@ -1,8 +1,14 @@
-from typing import Literal
-
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.analytics_deps import (
+    AudiencePeriodFilters,
+    PlanningFilters,
+    RecommendationFilters,
+    audience_period_filters,
+    planning_filters,
+    recommendation_filters,
+)
 from app.db.session import get_db_session
 from app.schemas.analytics import (
     ChecksAnalyticsResponse,
@@ -18,81 +24,58 @@ from app.services.analytics.recommendations_analytics import build_recommendatio
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
-PeriodGranularity = Literal["year", "quarter", "month"]
-
 
 @router.get("/checks", response_model=ChecksAnalyticsResponse)
 async def get_checks_analytics(
-    granularity: PeriodGranularity = Query("year"),
-    years: list[str] = Query(default=[]),
-    quarters: list[str] = Query(default=[]),
-    months: list[str] = Query(default=[]),
-    auditors: list[str] = Query(default=[]),
-    departments: list[str] = Query(default=[]),
+    filters: AudiencePeriodFilters = Depends(audience_period_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> ChecksAnalyticsResponse:
     return await build_checks_analytics(
         session,
-        granularity=granularity,
-        years=years,
-        quarters=quarters,
-        months=months,
-        auditors=auditors,
-        departments=departments,
+        granularity=filters.granularity,
+        years=filters.years,
+        quarters=filters.quarters,
+        months=filters.months,
+        auditors=filters.auditors,
+        departments=filters.departments,
     )
 
 
 @router.get("/recommendations", response_model=RecommendationsAnalyticsResponse)
 async def get_recommendations_analytics(
-    granularity: PeriodGranularity = Query("year"),
-    years: list[str] = Query(default=[]),
-    quarters: list[str] = Query(default=[]),
-    months: list[str] = Query(default=[]),
-    auditors: list[str] = Query(default=[]),
-    departments: list[str] = Query(default=[]),
-    statuses: list[str] = Query(default=[]),
-    additional_statuses: list[str] = Query(default=[], alias="additionalStatuses"),
-    materiality_levels: list[str] = Query(default=[], alias="materialityLevels"),
+    filters: RecommendationFilters = Depends(recommendation_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> RecommendationsAnalyticsResponse:
     return await build_recommendations_analytics(
         session,
-        granularity=granularity,
-        years=years,
-        quarters=quarters,
-        months=months,
-        auditors=auditors,
-        departments=departments,
-        statuses=statuses,
-        additional_statuses=additional_statuses,
-        materiality_levels=materiality_levels,
+        granularity=filters.granularity,
+        years=filters.years,
+        quarters=filters.quarters,
+        months=filters.months,
+        auditors=filters.auditors,
+        departments=filters.departments,
+        statuses=filters.statuses,
+        additional_statuses=filters.additional_statuses,
+        materiality_levels=filters.materiality_levels,
     )
 
 
 @router.get("/monitoring", response_model=MonitoringAnalyticsResponse)
 async def get_monitoring_analytics(
-    granularity: PeriodGranularity = Query("year"),
-    years: list[str] = Query(default=[]),
-    quarters: list[str] = Query(default=[]),
-    months: list[str] = Query(default=[]),
-    auditors: list[str] = Query(default=[]),
-    departments: list[str] = Query(default=[]),
-    statuses: list[str] = Query(default=[]),
-    additional_statuses: list[str] = Query(default=[], alias="additionalStatuses"),
-    materiality_levels: list[str] = Query(default=[], alias="materialityLevels"),
+    filters: RecommendationFilters = Depends(recommendation_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> MonitoringAnalyticsResponse:
     full = await build_recommendations_analytics(
         session,
-        granularity=granularity,
-        years=years,
-        quarters=quarters,
-        months=months,
-        auditors=auditors,
-        departments=departments,
-        statuses=statuses,
-        additional_statuses=additional_statuses,
-        materiality_levels=materiality_levels,
+        granularity=filters.granularity,
+        years=filters.years,
+        quarters=filters.quarters,
+        months=filters.months,
+        auditors=filters.auditors,
+        departments=filters.departments,
+        statuses=filters.statuses,
+        additional_statuses=filters.additional_statuses,
+        materiality_levels=filters.materiality_levels,
     )
     return MonitoringAnalyticsResponse(
         universe_total=full.universe_total,
@@ -108,39 +91,30 @@ async def get_monitoring_analytics(
 
 @router.get("/dva", response_model=DvaAnalyticsResponse)
 async def get_dva_analytics(
-    granularity: PeriodGranularity = Query("year"),
-    years: list[str] = Query(default=[]),
-    quarters: list[str] = Query(default=[]),
-    months: list[str] = Query(default=[]),
-    auditors: list[str] = Query(default=[]),
-    departments: list[str] = Query(default=[]),
+    filters: AudiencePeriodFilters = Depends(audience_period_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> DvaAnalyticsResponse:
     return await build_dva_analytics(
         session,
-        granularity=granularity,
-        years=years,
-        quarters=quarters,
-        months=months,
-        auditors=auditors,
-        departments=departments,
+        granularity=filters.granularity,
+        years=filters.years,
+        quarters=filters.quarters,
+        months=filters.months,
+        auditors=filters.auditors,
+        departments=filters.departments,
     )
 
 
 @router.get("/planning", response_model=PlanningAnalyticsResponse)
 async def get_planning_analytics(
-    granularity: PeriodGranularity = Query("year"),
-    years: list[str] = Query(default=[]),
-    quarters: list[str] = Query(default=[]),
-    months: list[str] = Query(default=[]),
-    departments: list[str] = Query(default=[]),
+    filters: PlanningFilters = Depends(planning_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> PlanningAnalyticsResponse:
     return await build_planning_analytics(
         session,
-        granularity=granularity,
-        years=years,
-        quarters=quarters,
-        months=months,
-        departments=departments,
+        granularity=filters.granularity,
+        years=filters.years,
+        quarters=filters.quarters,
+        months=filters.months,
+        departments=filters.departments,
     )

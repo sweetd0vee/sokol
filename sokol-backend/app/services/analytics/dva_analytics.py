@@ -4,11 +4,10 @@ from collections import defaultdict
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.checks import Check, CheckStatus
+from app.models.checks import Check
 from app.models.recommendations import Recommendation
 from app.schemas.analytics import (
     ChecksAnalyticsFilterOptions,
-    ChecksSummary,
     DocumentReadinessRow,
     DvaAnalyticsResponse,
     DvaAuditorLoadRow,
@@ -19,42 +18,21 @@ from app.schemas.analytics import (
     NamedCount,
     PeriodBucketSchema,
     PeriodGranularity,
-    RecommendationsSummary,
 )
 from app.services.analytics.common import (
     collect_analytics_auditors,
     collect_audit_objects,
+    completion_share_from_checks,
     filter_checks,
     filter_recommendations,
     load_checks_with_recommendations,
     load_recommendations,
+    named_counts,
     pad_anchor_dates,
+    summarize_checks,
 )
 from app.services.analytics.period import get_period_bucket
 from app.services.analytics.recommendations_analytics import summarize_recommendations
-
-
-def _summarize_checks(checks: list[Check]) -> ChecksSummary:
-    by_status = {
-        CheckStatus.NOT_STARTED: 0,
-        CheckStatus.IN_PROGRESS: 0,
-        CheckStatus.COMPLETED: 0,
-    }
-    for check in checks:
-        by_status[check.status] += 1
-    return ChecksSummary(
-        total=len(checks),
-        not_started=by_status[CheckStatus.NOT_STARTED],
-        in_progress=by_status[CheckStatus.IN_PROGRESS],
-        completed=by_status[CheckStatus.COMPLETED],
-    )
-
-
-def _completion_share(checks: list[Check]) -> int:
-    if not checks:
-        return 0
-    completed = sum(1 for check in checks if check.status == CheckStatus.COMPLETED)
-    return round((completed / len(checks)) * 100)
 
 
 def _check_period_totals(checks: list[Check], granularity: PeriodGranularity) -> dict[str, DvaPortfolioPoint]:
@@ -206,20 +184,12 @@ def _auditor_matrix(
     )
 
 
-def _named_counts(counts: dict[str, int]) -> list[NamedCount]:
-    return [
-        NamedCount(name=name, value=value)
-        for name, value in sorted(counts.items(), key=lambda row: (-row[1], row[0]))
-        if value > 0
-    ]
-
-
 def _audit_object_distribution(recommendations: list[Recommendation]) -> list[NamedCount]:
     counts: dict[str, int] = defaultdict(int)
     for item in recommendations:
         name = (item.audit_object or "").strip() or "Без объекта"
         counts[name] += 1
-    return _named_counts(counts)
+    return named_counts(counts, positive_only=True)
 
 
 async def build_dva_analytics(
@@ -252,7 +222,7 @@ async def build_dva_analytics(
         months=months,
     )
 
-    check_summary = _summarize_checks(filtered_checks)
+    check_summary = summarize_checks(filtered_checks)
     rec_summary = summarize_recommendations(filtered_recommendations)
     portfolio = _merge_recommendation_periods(
         _check_period_totals(filtered_checks, granularity),
@@ -270,14 +240,15 @@ async def build_dva_analytics(
         granularity=granularity,
         check_summary=check_summary,
         recommendation_summary=rec_summary,
-        completion_share=_completion_share(filtered_checks),
+        completion_share=completion_share_from_checks(filtered_checks),
         portfolio_series=portfolio,
         auditor_load=auditor_load,
         auditor_matrix=_auditor_matrix(filtered_checks, filtered_recommendations, granularity),
         document_readiness=_document_readiness(filtered_checks),
-        auditor_checks_treemap=_named_counts(_check_auditor_distribution(filtered_checks)),
-        auditor_recommendations_treemap=_named_counts(
-            _recommendation_auditor_distribution(filtered_recommendations)
+        auditor_checks_treemap=named_counts(_check_auditor_distribution(filtered_checks), positive_only=True),
+        auditor_recommendations_treemap=named_counts(
+            _recommendation_auditor_distribution(filtered_recommendations),
+            positive_only=True,
         ),
         department_map=department_map,
         filter_options=ChecksAnalyticsFilterOptions(

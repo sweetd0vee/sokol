@@ -25,6 +25,7 @@ from app.services.analytics.common import (
     collect_recommendation_auditors,
     filter_recommendations,
     load_recommendations,
+    named_counts,
     pad_anchor_dates,
 )
 from app.services.analytics.period import get_period_bucket
@@ -250,10 +251,7 @@ def build_audit_object_distribution(items: list[Recommendation]) -> list[NamedCo
     for item in items:
         name = (item.audit_object or "").strip() or "Без объекта"
         counts[name] += 1
-    return [
-        NamedCount(name=name, value=value)
-        for name, value in sorted(counts.items(), key=lambda row: (-row[1], row[0]))
-    ]
+    return named_counts(counts)
 
 
 def build_check_link_distribution(items: list[Recommendation]) -> list[NamedCount]:
@@ -261,10 +259,7 @@ def build_check_link_distribution(items: list[Recommendation]) -> list[NamedCoun
     for item in items:
         key = (item.serial_number or "").strip() or "Без проверки"
         counts[key] += 1
-    return [
-        NamedCount(name=name, value=value)
-        for name, value in sorted(counts.items(), key=lambda row: (-row[1], row[0]))[:12]
-    ]
+    return named_counts(counts)[:12]
 
 
 def _filter_options(items: list[Recommendation]) -> ChecksAnalyticsFilterOptions:

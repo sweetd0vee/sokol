@@ -18,7 +18,8 @@ import {
   WidthType,
 } from 'docx';
 import type { Check } from '../types/check';
-import { getCheckStatusLabel, getCheckTypeLabel } from '../constants/checks';
+import { getCheckStatusLabel, getCheckTypeLabel, getCheckViewLabel } from '../constants/checks';
+import { buildCheckYearlyNumbers } from './checkYearlyNumber';
 import type { Recommendation } from '../types/recommendation';
 import {
   getIndicatorLabel,
@@ -78,6 +79,7 @@ const CHECK_COLUMN_KEYS = [
   'Ключ',
   'Название проверки',
   'Тип проверки',
+  'Вид',
   'Дата начала',
   'Руководитель проверки',
   'Статус',
@@ -400,9 +402,10 @@ function getPdfColumnWidths(headers: string[]): Array<number | '*'> {
     Статус: 40,
     'Дополнительный статус': 54,
     'Название проверки': '*',
-    'Тип проверки': 55,
-    'Дата начала': 48,
-    'Руководитель проверки': 70,
+    'Тип проверки': 48,
+    Вид: 44,
+    'Дата начала': 44,
+    'Руководитель проверки': 62,
   };
   return headers.map((header) => widthByHeader[header] ?? '*');
 }
@@ -569,12 +572,13 @@ function formatCheckDate(value?: string) {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('ru-RU');
 }
 
-function toCheckRows(checks: Check[]): ExportRow[] {
+function toCheckRows(checks: Check[], yearlyNumbers: Map<string, number>): ExportRow[] {
   return checks.map((check) => ({
-    ID: check.id,
+    ID: yearlyNumbers.get(check.id) ?? '',
     Ключ: check.serial_number ?? '',
     'Название проверки': check.check_name ?? '',
     'Тип проверки': getCheckTypeLabel(check.check_type),
+    Вид: getCheckViewLabel(check.check_view),
     'Дата начала': formatCheckDate(check.start_date),
     'Руководитель проверки': check.check_leader ?? '',
     Статус: getCheckStatusLabel(check.status),
@@ -606,8 +610,8 @@ function toRecommendationTableRows(
 }
 
 
-function exportChecksXlsx(checks: Check[], filename: string) {
-  const rows = toCheckRows(checks);
+function exportChecksXlsx(checks: Check[], filename: string, yearlyNumbers: Map<string, number>) {
+  const rows = toCheckRows(checks, yearlyNumbers);
   const ws = XLSX.utils.json_to_sheet(rows);
   applySheetTableStyle(ws, getHeaders(rows, CHECK_COLUMN_KEYS), rows);
   const wb = XLSX.utils.book_new();
@@ -615,13 +619,13 @@ function exportChecksXlsx(checks: Check[], filename: string) {
   XLSX.writeFile(wb, filename);
 }
 
-async function exportChecksDocx(checks: Check[], filename: string) {
-  const rows = toCheckRows(checks);
+async function exportChecksDocx(checks: Check[], filename: string, yearlyNumbers: Map<string, number>) {
+  const rows = toCheckRows(checks, yearlyNumbers);
   await exportRowsDocx(rows, getHeaders(rows, CHECK_COLUMN_KEYS), 'Проверки — Сокол', filename);
 }
 
-function exportChecksPdf(checks: Check[], filename: string) {
-  const rows = toCheckRows(checks);
+function exportChecksPdf(checks: Check[], filename: string, yearlyNumbers: Map<string, number>) {
+  const rows = toCheckRows(checks, yearlyNumbers);
   exportRowsPdf(rows, getHeaders(rows, CHECK_COLUMN_KEYS), 'Проверки — Сокол', filename);
 }
 
@@ -789,18 +793,20 @@ async function exportRecommendationsTablePdf(
 export async function exportChecks(
   checks: Check[],
   format: ExportFormat,
-  filenameBase: string
+  filenameBase: string,
+  allChecksForNumbering: Check[] = checks,
 ) {
+  const yearlyNumbers = buildCheckYearlyNumbers(allChecksForNumbering);
   const filename = `${filenameBase}.${format}`;
   switch (format) {
     case 'xlsx':
-      exportChecksXlsx(checks, filename);
+      exportChecksXlsx(checks, filename, yearlyNumbers);
       break;
     case 'docx':
-      await exportChecksDocx(checks, filename);
+      await exportChecksDocx(checks, filename, yearlyNumbers);
       break;
     case 'pdf':
-      exportChecksPdf(checks, filename);
+      exportChecksPdf(checks, filename, yearlyNumbers);
       break;
   }
 }

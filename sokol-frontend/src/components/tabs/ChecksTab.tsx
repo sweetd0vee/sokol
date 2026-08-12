@@ -26,6 +26,7 @@ import {
   LIST_ACTION_GROUP_CLASS,
   listFilterClass,
 } from '../../constants/formLayout';
+import { buildCheckYearlyNumbers, getCheckYearlyNumber } from '../../utils/checkYearlyNumber';
 
 type SortKey =
   | 'id'
@@ -38,10 +39,10 @@ type SortKey =
   | 'status';
 
 
-const getSortValue = (check: Check, key: SortKey) => {
+const getSortValue = (check: Check, key: SortKey, yearlyNumbers: Map<string, number>) => {
   switch (key) {
     case 'id':
-      return check.id;
+      return getCheckYearlyNumber(check, yearlyNumbers);
     case 'serial_number':
       return check.serial_number;
     case 'check_name':
@@ -109,11 +110,16 @@ export function ChecksTab() {
 
   const { checks, deleteCheck } = useSokolData();
   const { isAdmin } = useAuth();
+  const yearlyNumbers = useMemo(() => buildCheckYearlyNumbers(checks), [checks]);
 
   const filteredChecks = useMemo(() => {
     return checks.filter((check) => {
-      if (idFilter && !check.id.toLowerCase().includes(idFilter.trim().toLowerCase())) {
-        return false;
+      if (idFilter) {
+        const yearlyNumber = getCheckYearlyNumber(check, yearlyNumbers);
+        const yearlyNumberText = yearlyNumber === null ? '' : String(yearlyNumber);
+        if (!yearlyNumberText.includes(idFilter.trim())) {
+          return false;
+        }
       }
       if (keyFilter && !check.serial_number.toLowerCase().includes(keyFilter.trim().toLowerCase())) {
         return false;
@@ -157,6 +163,7 @@ export function ChecksTab() {
     });
   }, [
     checks,
+    yearlyNumbers,
     idFilter,
     keyFilter,
     nameFilter,
@@ -177,13 +184,13 @@ export function ChecksTab() {
     }
     const sorted = [...filteredChecks];
     sorted.sort((a, b) => {
-      const valueA = getSortValue(a, sortKey);
-      const valueB = getSortValue(b, sortKey);
+      const valueA = getSortValue(a, sortKey, yearlyNumbers);
+      const valueB = getSortValue(b, sortKey, yearlyNumbers);
       const cmp = compareValues(valueA, valueB);
       return sortConfig.direction === 'asc' ? cmp : -cmp;
     });
     return sorted;
-  }, [filteredChecks, sortConfig]);
+  }, [filteredChecks, sortConfig, yearlyNumbers]);
 
   const totalPages = Math.max(1, Math.ceil(sortedChecks.length / pageSize));
   const pagedChecks = useMemo(() => {
@@ -247,7 +254,7 @@ export function ChecksTab() {
     }
     setIsExporting(true);
     try {
-      await exportChecks(sortedChecks, exportFormat, 'checks');
+      await exportChecks(sortedChecks, exportFormat, 'checks', checks);
     } finally {
       setIsExporting(false);
     }
@@ -492,7 +499,7 @@ export function ChecksTab() {
                 <tbody className="divide-y divide-gray-200">
                   {pagedChecks.map((check) => (
                     <tr key={check.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">{check.id}</td>
+                      <td className="px-4 py-3">{getCheckYearlyNumber(check, yearlyNumbers) ?? '—'}</td>
                       <td className="px-4 py-3">{check.serial_number}</td>
                       <td className="px-4 py-3 truncate" title={check.check_name}>
                         {check.check_name}
