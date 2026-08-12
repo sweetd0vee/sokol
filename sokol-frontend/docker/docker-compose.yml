@@ -13,6 +13,8 @@ services:
       - "5180:5180"
     environment:
       - VITE_API_URL=${VITE_API_URL:-http://localhost:8800}
+      - VITE_DEV_API_HOST=api
+      - VITE_DEV_API_PORT=8800
     networks:
       - sokol
 

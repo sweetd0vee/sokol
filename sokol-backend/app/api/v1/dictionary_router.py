@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Optional, TypeVar
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -104,16 +104,20 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
                 raise HTTPException(status_code=409, detail=str(exc)) from exc
             raise
 
-    @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+    @router.delete(
+        "/{item_id}",
+        status_code=status.HTTP_204_NO_CONTENT,
+        response_class=Response,
+    )
     async def delete_endpoint(
         item_id: UUID,
         session: AsyncSession = Depends(get_db_session),
         _: object = Depends(require_admin),
-    ) -> None:
+    ) -> Response:
         item = await crud.get(session, item_id)
         if not item:
             raise HTTPException(status_code=404, detail=config.not_found)
         await crud.delete(session, item)
-        return None
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     return router

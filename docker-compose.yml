@@ -89,6 +89,9 @@ services:
     environment:
       # Браузер ходит на опубликованный порт API на хосте
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8800}
+      # Vite proxy внутри контейнера — на сервис api, не на 127.0.0.1
+      VITE_DEV_API_HOST: api
+      VITE_DEV_API_PORT: 8800
     networks:
       - sokol
 
