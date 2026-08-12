@@ -6,7 +6,6 @@ import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { ErrorState } from '../ui/StateMessage';
 import { getErrorMessage } from '../../api/errors';
-import type { Check, CheckStatus, CheckType } from '../../types/check';
 import { CHECK_TYPE_OPTIONS, CHECK_VIEW_OPTIONS } from '../../constants/checks';
 import { toInputDate, toIsoDate, toStartOfDayMs } from '../../utils/dates';
 import { useSokolData } from '../../contexts/sokolData';
@@ -17,6 +16,7 @@ import {
   type CheckFormDraft,
   type CheckFormLocationState,
 } from '../../utils/checkFormNavigation';
+import { buildCheckPayload, getCheckRequiredFieldErrors } from '../../utils/checkFormPayload';
 import {
   FORM_FIELD_CLASS,
   FORM_FIELD_ERROR_CLASS,
@@ -140,17 +140,13 @@ export function CheckFormPage() {
   };
 
   const requiredFieldErrors = useMemo(() => {
-    const errors = {
-      checkName: !checkName.trim(),
-      checkType: !checkType,
-      checkView: !checkView,
-      checkLeader: !checkLeader,
-      startDate: !startDate,
-    };
-    return {
-      ...errors,
-      hasErrors: Object.values(errors).some(Boolean),
-    };
+    return getCheckRequiredFieldErrors({
+      checkName,
+      checkType,
+      checkView,
+      checkLeader,
+      startDate,
+    });
   }, [checkName, checkType, checkView, checkLeader, startDate]);
 
   const missingKeyFields = [
@@ -241,32 +237,29 @@ export function CheckFormPage() {
 
     setIsSaving(true);
     try {
-      const payload: Check = {
-        id: existing?.id ?? '0',
-        serial_number: existing?.serial_number ?? '',
-        check_name: checkName.trim(),
-        short_name: shortName.trim() || undefined,
-        check_type: checkType as CheckType,
-        check_view: checkView as Check['check_view'],
-        start_date: toIsoDate(startDate) ?? '',
-        end_date: toIsoDate(endDate),
-        check_leader: checkLeader,
-        status: (status || existing?.status || 'not_started') as CheckStatus,
-        created_at: existing?.created_at ?? new Date().toISOString().slice(0, 10),
-        description: existing?.description,
-        order_document_number: orderDocumentNumber || undefined,
-        order_document_date: toIsoDate(orderDocumentDate),
-        program_document_number: programDocumentNumber || undefined,
-        program_document_date: toIsoDate(programDocumentDate),
-        az_document_number: azDocumentNumber || undefined,
-        az_document_date: toIsoDate(azDocumentDate),
-        dz_document_number: dzDocumentNumber || undefined,
-        dz_document_date: toIsoDate(dzDocumentDate),
-        process_effectiveness: processEffectiveness || undefined,
-        svk_effectiveness: svkEffectiveness || undefined,
-        sur_effectiveness: surEffectiveness || undefined,
-        svik_effectiveness: svikEffectiveness || undefined,
-      };
+      const payload = buildCheckPayload({
+        existing,
+        checkName,
+        shortName,
+        checkType,
+        checkView,
+        checkLeader,
+        startDate,
+        endDate,
+        status,
+        orderDocumentNumber,
+        orderDocumentDate,
+        programDocumentNumber,
+        programDocumentDate,
+        azDocumentNumber,
+        azDocumentDate,
+        dzDocumentNumber,
+        dzDocumentDate,
+        processEffectiveness,
+        svkEffectiveness,
+        surEffectiveness,
+        svikEffectiveness,
+      });
 
       if (isEditMode && existing?.id) {
         await updateCheck(payload);

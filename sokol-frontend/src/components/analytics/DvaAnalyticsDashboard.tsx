@@ -26,6 +26,23 @@ import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/
 import type { PeriodGranularity } from '../../utils/checkAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 
+const EMPTY_CHECK_SUMMARY = { total: 0, not_started: 0, in_progress: 0, completed: 0 };
+const EMPTY_RECOMMENDATION_SUMMARY = {
+  total: 0,
+  byStatus: { completed: 0, unresolved: 0, on_control: 0, in_progress: 0 },
+  byMateriality: { низкий: 0, средний: 0, высокий: 0 },
+  byAdditional: { on_time: 0, deadline_violated: 0, on_control: 0 },
+  withExtensions: 0,
+  withCompletionDate: 0,
+  completionRate: 0,
+  violationRate: 0,
+};
+const EMPTY_AUDITOR_LOAD: never[] = [];
+const EMPTY_AUDITOR_CHECKS_TREEMAP: never[] = [];
+const EMPTY_AUDITOR_RECOMMENDATIONS_TREEMAP: never[] = [];
+const EMPTY_DEPARTMENT_MAP: never[] = [];
+const EMPTY_DOCUMENT_READINESS: never[] = [];
+
 export function DvaAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
@@ -107,23 +124,14 @@ export function DvaAnalyticsDashboard() {
     [data?.filterOptions.departments],
   );
 
-  const checkSummary = data?.checkSummary ?? { total: 0, not_started: 0, in_progress: 0, completed: 0 };
-  const recSummary = data?.recommendationSummary ?? {
-    total: 0,
-    byStatus: { completed: 0, unresolved: 0, on_control: 0, in_progress: 0 },
-    byMateriality: { низкий: 0, средний: 0, высокий: 0 },
-    byAdditional: { on_time: 0, deadline_violated: 0, on_control: 0 },
-    withExtensions: 0,
-    withCompletionDate: 0,
-    completionRate: 0,
-    violationRate: 0,
-  };
+  const checkSummary = data?.checkSummary ?? EMPTY_CHECK_SUMMARY;
+  const recSummary = data?.recommendationSummary ?? EMPTY_RECOMMENDATION_SUMMARY;
   const completionShare = data?.completionShare ?? 0;
-  const auditorLoad = data?.auditorLoad ?? [];
-  const auditorChecksTreemap = data?.auditorChecksTreemap ?? [];
-  const auditorRecommendationsTreemap = data?.auditorRecommendationsTreemap ?? [];
-  const departmentMap = data?.departmentMap ?? [];
-  const documentReadiness = data?.documentReadiness ?? [];
+  const auditorLoad = data?.auditorLoad ?? EMPTY_AUDITOR_LOAD;
+  const auditorChecksTreemap = data?.auditorChecksTreemap ?? EMPTY_AUDITOR_CHECKS_TREEMAP;
+  const auditorRecommendationsTreemap = data?.auditorRecommendationsTreemap ?? EMPTY_AUDITOR_RECOMMENDATIONS_TREEMAP;
+  const departmentMap = data?.departmentMap ?? EMPTY_DEPARTMENT_MAP;
+  const documentReadiness = data?.documentReadiness ?? EMPTY_DOCUMENT_READINESS;
   const filteredChecksTotal = data?.filteredChecksTotal ?? 0;
   const filteredRecommendationsTotal = data?.filteredRecommendationsTotal ?? 0;
   const universeChecksTotal = data?.universeChecksTotal ?? 0;

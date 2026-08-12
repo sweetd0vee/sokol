@@ -37,6 +37,10 @@ function pluralRecommendations(n: number): string {
   return 'рекомендаций';
 }
 
+function toRecommendationPayload({ previewKey: _previewKey, ...payload }: ParsedPreviewItem): Recommendation {
+  return payload;
+}
+
 type EditablePreviewField = 'name' | 'observation_name' | 'audit_object' | 'manager' | 'deadline';
 
 const cellInputClass =
@@ -368,7 +372,7 @@ export function CheckRecommendationsBlock({
     try {
       const base = storedRecommendations.length;
       for (const [index, recommendation] of parsedPreview.entries()) {
-        const { previewKey: _previewKey, ...payload } = recommendation;
+        const payload = toRecommendationPayload(recommendation);
         await addRecommendation({
           ...payload,
           sequence_number: base + index + 1,

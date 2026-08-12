@@ -43,6 +43,11 @@ import {
   LIST_ACTION_GROUP_CLASS,
   listFilterClass,
 } from '../../constants/formLayout';
+import {
+  buildRecommendationYearlyNumbers,
+  getRecommendationYearlyId,
+  getRecommendationYearlySortValue,
+} from '../../utils/recommendationYearlyNumber';
 
 type SortKey =
   | 'id'
@@ -57,10 +62,14 @@ type SortKey =
   | 'status'
   | 'additional_status';
 
-const getSortValue = (recommendation: Recommendation, key: SortKey) => {
+const getSortValue = (
+  recommendation: Recommendation,
+  key: SortKey,
+  yearlyNumbers: Map<string, number>,
+) => {
   switch (key) {
     case 'id':
-      return recommendation.id;
+      return getRecommendationYearlySortValue(recommendation, yearlyNumbers);
     case 'serial_number':
       return recommendation.serial_number;
     case 'name':
@@ -160,11 +169,18 @@ export function RecommendationsTab() {
 
   const { recommendations, checks, deleteRecommendation } = useSokolData();
   const { isAdmin } = useAuth();
+  const recommendationYearlyNumbers = useMemo(
+    () => buildRecommendationYearlyNumbers(recommendations),
+    [recommendations],
+  );
 
   const filteredRecommendations = useMemo(() => {
     return recommendations.filter((recommendation) => {
-      if (idFilter && !recommendation.id.toLowerCase().includes(idFilter.trim().toLowerCase())) {
-        return false;
+      if (idFilter) {
+        const yearlyId = getRecommendationYearlyId(recommendation, recommendationYearlyNumbers) ?? '';
+        if (!yearlyId.includes(idFilter.trim())) {
+          return false;
+        }
       }
       if (keyFilter && !recommendation.serial_number.toLowerCase().includes(keyFilter.trim().toLowerCase())) {
         return false;
@@ -224,6 +240,7 @@ export function RecommendationsTab() {
     });
   }, [
     recommendations,
+    recommendationYearlyNumbers,
     idFilter,
     keyFilter,
     nameFilter,
@@ -247,13 +264,13 @@ export function RecommendationsTab() {
     }
     const sorted = [...filteredRecommendations];
     sorted.sort((a, b) => {
-      const valueA = getSortValue(a, sortKey);
-      const valueB = getSortValue(b, sortKey);
+      const valueA = getSortValue(a, sortKey, recommendationYearlyNumbers);
+      const valueB = getSortValue(b, sortKey, recommendationYearlyNumbers);
       const cmp = compareValues(valueA, valueB);
       return sortConfig.direction === 'asc' ? cmp : -cmp;
     });
     return sorted;
-  }, [filteredRecommendations, sortConfig]);
+  }, [filteredRecommendations, sortConfig, recommendationYearlyNumbers]);
 
   const totalPages = Math.max(1, Math.ceil(sortedRecommendations.length / pageSize));
   const pagedRecommendations = useMemo(() => {
@@ -325,6 +342,7 @@ export function RecommendationsTab() {
     try {
       await exportRecommendationsTable(
         sortedRecommendations,
+        recommendations,
         checks,
         exportFormat,
         'recommendations',
@@ -398,7 +416,7 @@ export function RecommendationsTab() {
         <div className="overflow-x-auto">
           <table className="w-full text-base table-fixed min-w-[1800px]">
             <colgroup>
-              <col className="w-16" />
+              <col className="w-24" />
               <col className="w-40" />
               <col />
               <col className="w-52" />
@@ -529,7 +547,7 @@ export function RecommendationsTab() {
                 </th>
               </tr>
               <tr className="bg-[#003366] text-white">
-                {renderSortableHeader('id', 'ID')}
+                {renderSortableHeader('id', 'ID', 'whitespace-nowrap')}
                 {renderSortableHeader('serial_number', 'Ключ')}
                 {renderSortableHeader('name', 'Название')}
                 {renderSortableHeader(
@@ -560,7 +578,9 @@ export function RecommendationsTab() {
             <tbody className="divide-y divide-gray-200">
               {pagedRecommendations.map((recommendation) => (
                 <tr key={recommendation.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">{recommendation.id}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {getRecommendationYearlyId(recommendation, recommendationYearlyNumbers) ?? '—'}
+                  </td>
                   <td className="px-4 py-3">{recommendation.serial_number}</td>
                   <td
                     className="px-4 py-3"

@@ -25,7 +25,7 @@
 | ID | Задача | Effort |
 |----|--------|--------|
 | P1-01 | JWT: lookup user в БД + `is_active` | 1 d |
-| P1-02 | CI: BE unittest (py 3.12) + FE lint/test/build | 1–2 d |
+| P1-02 | CI workflow добавлен; включить required checks по [CI.md](CI.md) | 0.5 d |
 | P1-03 | ~~Server serial_number~~ — **выполнено** | — |
 | P1-04 | Таблицы: «Показано X из Y» | 1 d |
 | P1-05 | MinIO policy + UI banner при недоступном storage | 1–2 d |
@@ -42,7 +42,7 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · in
 | Gate | Дата | Критерий |
 |------|------|----------|
 | G-A | 14.08 | P0-01..03; Alembic started |
-| G-B | 20.08 | Auth UAT; CI green |
+| G-B | 20.08 | Auth UAT; CI green; branch protection requires CI checks |
 | G-C | 27.08 | MinIO decision; DOCX smoke; no P0 |
 | G-D | 01.09 | PLAN G1–G12 signed |
 
@@ -61,5 +61,5 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · in
 1. P0-01 — скрыть demo UI  
 2. P0-02, P0-03 — prod guards  
 3. P0-04 — старт Alembic  
-4. P1-02 — CI  
+4. P1-02 — включить required CI checks  
 5. P1-05 — MinIO policy / storage UX  

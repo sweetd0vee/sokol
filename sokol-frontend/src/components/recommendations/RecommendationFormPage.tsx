@@ -35,9 +35,12 @@ import {
   createEmptyRecommendationClosure,
   hasIncompleteClosureRows,
   closureFromRecommendation,
-  closureToRecommendationFields,
   type RecommendationClosureForm,
 } from '../../constants/recommendationClosure';
+import {
+  buildRecommendationPayload,
+  getRecommendationRequiredFieldErrors,
+} from '../../utils/recommendationFormPayload';
 import {
   FORM_EQUAL_CONTROL_CLASS,
   FORM_FIELD_CLASS,
@@ -57,18 +60,6 @@ import {
   FORM_STACK_CLASS,
   FORM_TEXTAREA_CLASS,
 } from '../../constants/formLayout';
-
-function buildRecommendationName(description: string, sequenceNumber: number) {
-  const firstLine = description
-    .split('\n')
-    .map((line) => line.trim())
-    .find(Boolean);
-  if (firstLine) {
-    return firstLine.slice(0, 500);
-  }
-  return`Рекомендация ${sequenceNumber}`;
-}
-
 
 export function RecommendationFormPage() {
   const { id } = useParams();
@@ -235,23 +226,17 @@ export function RecommendationFormPage() {
   const recommendationId = isEditMode ? (source?.id ?? id ?? null) : null;
 
   const requiredFieldErrors = useMemo(() => {
-    const descriptionMissing = !description.trim();
-    const errors = {
-      description: descriptionMissing,
-      auditObject: !auditObject,
-      deadline: !deadline,
-      auditor: !(auditor || checkLeader),
-      manager: !manager,
-      indicator: !indicator || indicator === 'не указан',
-      closureInformation: !closure.closureInformation.trim(),
-      actualCompletionDate: !closure.actualCompletionDate,
-      extensions: hasIncompleteClosureRows(closure.extensions),
-      removals: hasIncompleteClosureRows(closure.removals),
-    };
-    return {
-      ...errors,
-      hasErrors: Object.values(errors).some(Boolean),
-    };
+    return getRecommendationRequiredFieldErrors({
+      description,
+      auditObject,
+      deadline,
+      auditor,
+      checkLeader,
+      manager,
+      indicator,
+      closure,
+      hasIncompleteClosureRows,
+    });
   }, [auditObject, auditor, checkLeader, closure, deadline, description, indicator, manager]);
 
   useEffect(() => {
@@ -302,35 +287,26 @@ export function RecommendationFormPage() {
     navigate(returnTo, { replace: true, state: returnState });
   };
 
-  const buildPayload = (trimmedDescription: string, resolvedSerialNumber = serialNumber): Recommendation => {
-    const resolvedAuditor = auditor || checkLeader || navigationState.auditor || '';
-    const resolvedManager = manager;
-    const resolvedAuditObject = auditObject || 'Не указан';
-    const resolvedSequenceNumber =
-      isEditMode && source?.sequence_number ? source.sequence_number : sequenceNumber;
-
-    return {
-      id: isEditMode ? (source?.id ?? '0') : '0',
-      serial_number: resolvedSerialNumber,
-      sequence_number: resolvedSequenceNumber,
-      name: buildRecommendationName(trimmedDescription, resolvedSequenceNumber),
-      observation_name: observationName.trim() || undefined,
+  const buildPayload = (trimmedDescription: string, resolvedSerialNumber = serialNumber): Recommendation =>
+    buildRecommendationPayload({
+      isEditMode,
+      source,
+      serialNumber: resolvedSerialNumber,
+      sequenceNumber,
       description: trimmedDescription,
+      observationName,
+      auditObject,
+      deadline,
+      auditor,
+      checkLeader,
+      navigationAuditor: navigationState.auditor,
+      manager,
+      status,
+      additionalStatus,
       indicator,
-      materiality_level: materialityLevel,
-      audit_object: resolvedAuditObject,
-      deadline: toIsoDate(deadline) ?? '',
-      auditor: resolvedAuditor,
-      manager: resolvedManager,
-      status: status as Recommendation['status'],
-      additional_status: additionalStatus as Recommendation['additional_status'],
-      created_at:
-        isEditMode && source?.created_at
-          ? source.created_at
-          : new Date().toISOString().slice(0, 10),
-      ...closureToRecommendationFields(closure),
-    };
-  };
+      materialityLevel,
+      closure,
+    });
 
 
   const persistCheckLeaderIfNeeded = async () => {

@@ -26,6 +26,20 @@ import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/
 import { STATUS_COLORS, type PeriodGranularity } from '../../utils/recommendationAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 
+const EMPTY_RECOMMENDATION_SUMMARY = {
+  total: 0,
+  byStatus: { completed: 0, unresolved: 0, on_control: 0, in_progress: 0 },
+  byMateriality: { низкий: 0, средний: 0, высокий: 0 },
+  byAdditional: { on_time: 0, deadline_violated: 0, on_control: 0 },
+  withExtensions: 0,
+  withCompletionDate: 0,
+  completionRate: 0,
+  violationRate: 0,
+};
+const EMPTY_PERIOD_SERIES: never[] = [];
+const EMPTY_STATUS_DISTRIBUTION: never[] = [];
+const EMPTY_ADDITIONAL_STATUS_DISTRIBUTION: never[] = [];
+
 export function MonitoringAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
@@ -121,19 +135,10 @@ export function MonitoringAnalyticsDashboard() {
     [data?.filterOptions.departments],
   );
 
-  const summary = data?.summary ?? {
-    total: 0,
-    byStatus: { completed: 0, unresolved: 0, on_control: 0, in_progress: 0 },
-    byMateriality: { низкий: 0, средний: 0, высокий: 0 },
-    byAdditional: { on_time: 0, deadline_violated: 0, on_control: 0 },
-    withExtensions: 0,
-    withCompletionDate: 0,
-    completionRate: 0,
-    violationRate: 0,
-  };
-  const periodSeries = data?.periodSeries ?? [];
-  const statusDistribution = data?.statusDistribution ?? [];
-  const additionalStatusDistribution = data?.additionalStatusDistribution ?? [];
+  const summary = data?.summary ?? EMPTY_RECOMMENDATION_SUMMARY;
+  const periodSeries = data?.periodSeries ?? EMPTY_PERIOD_SERIES;
+  const statusDistribution = data?.statusDistribution ?? EMPTY_STATUS_DISTRIBUTION;
+  const additionalStatusDistribution = data?.additionalStatusDistribution ?? EMPTY_ADDITIONAL_STATUS_DISTRIBUTION;
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
 

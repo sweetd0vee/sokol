@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "test:watch": "vitest",
     "docs:analytics-screenshots": "node scripts/capture-analytics-screenshots.mjs",
     "docs:analytics-tz": "node scripts/generate-analytics-spec-docx.mjs",
@@ -35,6 +36,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.62.1",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-datepicker": "^7.0.0",

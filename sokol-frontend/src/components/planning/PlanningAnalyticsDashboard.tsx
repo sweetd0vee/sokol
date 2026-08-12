@@ -35,6 +35,19 @@ import type { PeriodGranularity } from '../../utils/checkAnalytics';
 
 const COVERAGE_ZERO_COLOR = '#CBD5E1';
 const COVERAGE_CHECKS_COLOR = CHECKS_PALETTE[8];
+const EMPTY_COVERAGE = {
+  covered: 0,
+  uncovered: 0,
+  total: 0,
+  coverageRate: 0,
+  uncoveredRate: 0,
+  coveredDepartments: [],
+  uncoveredDepartments: [],
+  donut: [],
+  checksByDepartment: [],
+};
+const EMPTY_DEPARTMENT_ANALYTICS: never[] = [];
+const EMPTY_HIGH_MATERIALITY_RANKING: never[] = [];
 
 export function PlanningAnalyticsDashboard() {
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
@@ -106,19 +119,9 @@ export function PlanningAnalyticsDashboard() {
     [data?.filterOptions.departments],
   );
 
-  const coverage = data?.coverage ?? {
-    covered: 0,
-    uncovered: 0,
-    total: 0,
-    coverageRate: 0,
-    uncoveredRate: 0,
-    coveredDepartments: [],
-    uncoveredDepartments: [],
-    donut: [],
-    checksByDepartment: [],
-  };
-  const departmentAnalytics = data?.departmentAnalytics ?? [];
-  const highMaterialityRanking = data?.highMaterialityByDepartment ?? [];
+  const coverage = data?.coverage ?? EMPTY_COVERAGE;
+  const departmentAnalytics = data?.departmentAnalytics ?? EMPTY_DEPARTMENT_ANALYTICS;
+  const highMaterialityRanking = data?.highMaterialityByDepartment ?? EMPTY_HIGH_MATERIALITY_RANKING;
   const highMaterialityTotal = data?.highMaterialityTotal ?? 0;
   const filteredChecksTotal = data?.filteredChecksTotal ?? 0;
   const filteredRecommendationsTotal = data?.filteredRecommendationsTotal ?? 0;

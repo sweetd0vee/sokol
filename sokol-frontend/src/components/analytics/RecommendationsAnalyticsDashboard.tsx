@@ -47,6 +47,23 @@ import {
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 import type { MaterialityLevel } from '../../types/recommendation';
 
+const EMPTY_RECOMMENDATION_SUMMARY = {
+  total: 0,
+  byStatus: { completed: 0, unresolved: 0, on_control: 0, in_progress: 0 },
+  byMateriality: { низкий: 0, средний: 0, высокий: 0 },
+  byAdditional: { on_time: 0, deadline_violated: 0, on_control: 0 },
+  withExtensions: 0,
+  withCompletionDate: 0,
+  completionRate: 0,
+  violationRate: 0,
+};
+const EMPTY_PERIOD_SERIES: never[] = [];
+const EMPTY_CUMULATIVE_SERIES: never[] = [];
+const EMPTY_MATERIALITY_DISTRIBUTION: never[] = [];
+const EMPTY_INDICATOR_DISTRIBUTION: never[] = [];
+const EMPTY_OBJECT_DISTRIBUTION: never[] = [];
+const EMPTY_CHECK_LINKS: never[] = [];
+
 export function RecommendationsAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
@@ -142,22 +159,13 @@ export function RecommendationsAnalyticsDashboard() {
     [data?.filterOptions.departments],
   );
 
-  const summary = data?.summary ?? {
-    total: 0,
-    byStatus: { completed: 0, unresolved: 0, on_control: 0, in_progress: 0 },
-    byMateriality: { низкий: 0, средний: 0, высокий: 0 },
-    byAdditional: { on_time: 0, deadline_violated: 0, on_control: 0 },
-    withExtensions: 0,
-    withCompletionDate: 0,
-    completionRate: 0,
-    violationRate: 0,
-  };
-  const periodSeries = data?.periodSeries ?? [];
-  const cumulativeSeries = data?.cumulativeSeries ?? [];
-  const materialityDistribution = data?.materialityDistribution ?? [];
-  const indicatorDistribution = data?.indicatorDistribution ?? [];
-  const objectDistribution = data?.objectDistribution ?? [];
-  const checkLinks = data?.checkLinks ?? [];
+  const summary = data?.summary ?? EMPTY_RECOMMENDATION_SUMMARY;
+  const periodSeries = data?.periodSeries ?? EMPTY_PERIOD_SERIES;
+  const cumulativeSeries = data?.cumulativeSeries ?? EMPTY_CUMULATIVE_SERIES;
+  const materialityDistribution = data?.materialityDistribution ?? EMPTY_MATERIALITY_DISTRIBUTION;
+  const indicatorDistribution = data?.indicatorDistribution ?? EMPTY_INDICATOR_DISTRIBUTION;
+  const objectDistribution = data?.objectDistribution ?? EMPTY_OBJECT_DISTRIBUTION;
+  const checkLinks = data?.checkLinks ?? EMPTY_CHECK_LINKS;
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
 

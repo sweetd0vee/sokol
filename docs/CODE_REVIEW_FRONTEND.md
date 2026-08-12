@@ -1,6 +1,6 @@
 # Код-ревью frontend
 
-**Общая оценка:** 7.4 / 10 · React 19, TypeScript, Vite, TanStack Query  
+**Общая оценка:** 7.7 / 10 · React 19, TypeScript, Vite, TanStack Query  
 **Смысл оценки:** frontend хорошо закрывает основные сценарии аудитора, но часть экранов всё ещё выглядит как демо/заглушка, а большие списки и экспорты требуют hardening.
 
 ## Архитектура
@@ -29,7 +29,7 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 | Planning | **7 / 10** | Dashboard подключён к backend analytics | Export выключен, модуль надо явно позиционировать как ограниченный |
 | Tools / DOCX UI | **8 / 10** | UI соответствует текущему backend: section-ii, links, memorandum, parse recommendations | Нет очереди/прогресса для долгих jobs |
 | UI kit / forms | **8 / 10** | Есть переиспользуемые controls и `formLayout` constants | Нет Storybook/visual regression |
-| Tests / lint | **6 / 10** | 32 Vitest проходят, lint без ошибок | 27 warnings, нет e2e и form tests |
+| Tests / lint | **10 / 10** | 44 Vitest проходят, lint без ошибок и warnings; есть form tests и Playwright e2e smoke | Поддерживать покрытие при изменении форм и auth flow |
 
 ## Маршруты vs backend
 
@@ -58,9 +58,11 @@ Server aggregates ✅. Visual export (xlsx/pdf/docx/html) — DOM capture хру
 
 ## Тесты
 
-32 теста (filters, checkKey helpers, fileHelpers, reference options). Нет e2e, нет form tests.
+44 Vitest теста: filters, checkKey helpers, fileHelpers, reference options, form payload checks.
 
-Lint: 0 errors, 27 warnings (`react-hooks/exhaustive-deps`).
+Lint: 0 errors, 0 warnings.
+
+E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 ## Findings
 
@@ -71,7 +73,6 @@ Lint: 0 errors, 27 warnings (`react-hooks/exhaustive-deps`).
 | P1 | `replaceRecommendationsForCheck` — delete-all + create-all без транзакции |
 | P1 | Banner/disabled state при недоступном storage |
 | P2 | Split `exports.ts`, data-driven HTML export |
-| P2 | eslint useMemo warnings |
 | P3 | Virtualized tables, OpenAPI codegen |
 
 Задачи: [ACTION_PLAN.md](ACTION_PLAN.md)

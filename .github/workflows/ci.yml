@@ -15,12 +15,27 @@ jobs:
   backend:
     name: Backend (Python 3.12)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: sokol_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sokol_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: sokol-backend
     env:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5433/sokol_db
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5433/sokol_test
       SOKOL_JWT_SECRET: ci-test-jwt-secret
+      SOKOL_RUN_DB_INTEGRATION_TESTS: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4

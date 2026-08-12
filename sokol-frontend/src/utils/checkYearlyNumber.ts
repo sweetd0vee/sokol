@@ -9,6 +9,10 @@ function getCheckYear(check: Check): number | null {
   return new Date(startMs).getFullYear();
 }
 
+function formatYearlyId(year: number, yearlyNumber: number): string {
+  return `${String(year).slice(-2)}-${yearlyNumber}`;
+}
+
 function compareChecksForYearlyNumber(a: Check, b: Check) {
   const dateA = parseDateValue(a.start_date) ?? 0;
   const dateB = parseDateValue(b.start_date) ?? 0;
@@ -53,4 +57,24 @@ export function buildCheckYearlyNumbers(checks: Check[]): Map<string, number> {
 
 export function getCheckYearlyNumber(check: Check, yearlyNumbers: Map<string, number>): number | null {
   return yearlyNumbers.get(check.id) ?? null;
+}
+
+export function getCheckYearlyId(check: Check, yearlyNumbers: Map<string, number>): string | null {
+  const year = getCheckYear(check);
+  const yearlyNumber = getCheckYearlyNumber(check, yearlyNumbers);
+  if (year === null || yearlyNumber === null) {
+    return null;
+  }
+
+  return formatYearlyId(year, yearlyNumber);
+}
+
+export function getCheckYearlySortValue(check: Check, yearlyNumbers: Map<string, number>): number | null {
+  const year = getCheckYear(check);
+  const yearlyNumber = getCheckYearlyNumber(check, yearlyNumbers);
+  if (year === null || yearlyNumber === null) {
+    return null;
+  }
+
+  return year * 10000 + yearlyNumber;
 }

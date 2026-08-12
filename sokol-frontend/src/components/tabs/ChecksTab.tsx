@@ -26,7 +26,11 @@ import {
   LIST_ACTION_GROUP_CLASS,
   listFilterClass,
 } from '../../constants/formLayout';
-import { buildCheckYearlyNumbers, getCheckYearlyNumber } from '../../utils/checkYearlyNumber';
+import {
+  buildCheckYearlyNumbers,
+  getCheckYearlyId,
+  getCheckYearlySortValue,
+} from '../../utils/checkYearlyNumber';
 
 type SortKey =
   | 'id'
@@ -42,7 +46,7 @@ type SortKey =
 const getSortValue = (check: Check, key: SortKey, yearlyNumbers: Map<string, number>) => {
   switch (key) {
     case 'id':
-      return getCheckYearlyNumber(check, yearlyNumbers);
+      return getCheckYearlySortValue(check, yearlyNumbers);
     case 'serial_number':
       return check.serial_number;
     case 'check_name':
@@ -115,9 +119,8 @@ export function ChecksTab() {
   const filteredChecks = useMemo(() => {
     return checks.filter((check) => {
       if (idFilter) {
-        const yearlyNumber = getCheckYearlyNumber(check, yearlyNumbers);
-        const yearlyNumberText = yearlyNumber === null ? '' : String(yearlyNumber);
-        if (!yearlyNumberText.includes(idFilter.trim())) {
+        const yearlyId = getCheckYearlyId(check, yearlyNumbers) ?? '';
+        if (!yearlyId.includes(idFilter.trim())) {
           return false;
         }
       }
@@ -312,7 +315,7 @@ export function ChecksTab() {
           <div className="overflow-x-auto">
             <table className="w-full text-base table-fixed min-w-[1600px]">
               <colgroup>
-                <col className="w-16" />
+                <col className="w-24" />
                 <col className="w-40" />
                 <col />
                 <col className="w-32" />
@@ -413,7 +416,7 @@ export function ChecksTab() {
                   </th>
                 </tr>
                 <tr className="bg-[#003366] text-white">
-                  <th className="px-4 py-3 text-left font-medium">
+                  <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
                     <button
                       type="button"
                       onClick={() => handleSort('id')}
@@ -499,7 +502,7 @@ export function ChecksTab() {
                 <tbody className="divide-y divide-gray-200">
                   {pagedChecks.map((check) => (
                     <tr key={check.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">{getCheckYearlyNumber(check, yearlyNumbers) ?? '—'}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{getCheckYearlyId(check, yearlyNumbers) ?? '—'}</td>
                       <td className="px-4 py-3">{check.serial_number}</td>
                       <td className="px-4 py-3 truncate" title={check.check_name}>
                         {check.check_name}

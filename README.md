@@ -51,6 +51,7 @@ sokol/
 | Раздел | Содержание |
 |--------|------------|
 | [docs/README.md](docs/README.md) | Код-ревью и план действий |
+| [docs/CI.md](docs/CI.md) | CI workflow и обязательный GitHub gate |
 | [sokol-backend/README.md](sokol-backend/README.md) | Запуск, env, тесты |
 | [sokol-backend/docs/](sokol-backend/docs/README.md) | Архитектура, API, БД, reports |
 | [sokol-frontend/README.md](sokol-frontend/README.md) | Скрипты, маршруты, env |
@@ -67,6 +68,8 @@ sokol/
 - **Канцлер** — заглушка «в разработке».
 
 ## Проверки качества
+
+CI: `.github/workflows/ci.yml`; required checks для branch protection описаны в [docs/CI.md](docs/CI.md).
 
 ```bash
 cd sokol-frontend && npm run lint && npm test && npm run build

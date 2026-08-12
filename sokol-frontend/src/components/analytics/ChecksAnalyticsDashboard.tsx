@@ -30,6 +30,12 @@ import type { PeriodGranularity } from '../../utils/checkAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 
 const EMPTY_ANCHOR_DATES = [new Date(2025, 0, 1).getTime(), new Date(2026, 11, 1).getTime()];
+const EMPTY_CHECKS_SUMMARY = { total: 0, not_started: 0, in_progress: 0, completed: 0 };
+const EMPTY_FLOW_SERIES: never[] = [];
+const EMPTY_VIEW_DISTRIBUTION: never[] = [];
+const EMPTY_TYPE_DISTRIBUTION: never[] = [];
+const EMPTY_DEPARTMENT_MAP: never[] = [];
+const EMPTY_EFFECTIVENESS_MATRIX: never[] = [];
 
 export function ChecksAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
@@ -127,13 +133,13 @@ export function ChecksAnalyticsDashboard() {
     [data?.filterOptions.departments],
   );
 
-  const summary = data?.summary ?? { total: 0, not_started: 0, in_progress: 0, completed: 0 };
+  const summary = data?.summary ?? EMPTY_CHECKS_SUMMARY;
   const completionShare = data?.completionShare ?? 0;
-  const flowSeries = data?.periodSeries ?? [];
-  const viewDistribution = data?.viewDistribution ?? [];
-  const typeDistribution = data?.typeDistribution ?? [];
-  const departmentMap = data?.departmentMap ?? [];
-  const effectivenessMatrix = data?.effectivenessMatrix ?? [];
+  const flowSeries = data?.periodSeries ?? EMPTY_FLOW_SERIES;
+  const viewDistribution = data?.viewDistribution ?? EMPTY_VIEW_DISTRIBUTION;
+  const typeDistribution = data?.typeDistribution ?? EMPTY_TYPE_DISTRIBUTION;
+  const departmentMap = data?.departmentMap ?? EMPTY_DEPARTMENT_MAP;
+  const effectivenessMatrix = data?.effectivenessMatrix ?? EMPTY_EFFECTIVENESS_MATRIX;
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
 

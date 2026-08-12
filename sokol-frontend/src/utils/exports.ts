@@ -19,7 +19,11 @@ import {
 } from 'docx';
 import type { Check } from '../types/check';
 import { getCheckStatusLabel, getCheckTypeLabel, getCheckViewLabel } from '../constants/checks';
-import { buildCheckYearlyNumbers } from './checkYearlyNumber';
+import { buildCheckYearlyNumbers, getCheckYearlyId } from './checkYearlyNumber';
+import {
+  buildRecommendationYearlyNumbers,
+  getRecommendationYearlyId,
+} from './recommendationYearlyNumber';
 import type { Recommendation } from '../types/recommendation';
 import {
   getIndicatorLabel,
@@ -761,7 +765,7 @@ function formatCheckDate(value?: string) {
 
 function toCheckRows(checks: Check[], yearlyNumbers: Map<string, number>): ExportRow[] {
   return checks.map((check) => ({
-    ID: yearlyNumbers.get(check.id) ?? '',
+    ID: getCheckYearlyId(check, yearlyNumbers) ?? '',
     Ключ: check.serial_number ?? '',
     'Название проверки': check.check_name ?? '',
     'Тип проверки': getCheckTypeLabel(check.check_type),
@@ -775,13 +779,14 @@ function toCheckRows(checks: Check[], yearlyNumbers: Map<string, number>): Expor
 function toRecommendationTableRows(
   recommendations: Recommendation[],
   checks: Check[],
+  yearlyNumbers: Map<string, number>,
 ): ExportRow[] {
   const checkNameByKey = new Map(
     checks.map((check) => [check.serial_number, check.check_name?.trim() ?? ''] as const),
   );
 
   return recommendations.map((recommendation) => ({
-    ID: recommendation.id,
+    ID: getRecommendationYearlyId(recommendation, yearlyNumbers) ?? '',
     Ключ: recommendation.serial_number,
     'Название проверки': checkNameByKey.get(recommendation.serial_number) ?? '',
     'Название рекомендации': recommendation.name,
@@ -831,8 +836,9 @@ async function exportRecommendationsTableXlsx(
   recommendations: Recommendation[],
   checks: Check[],
   filename: string,
+  yearlyNumbers: Map<string, number>,
 ) {
-  const rows = toRecommendationTableRows(recommendations, checks);
+  const rows = toRecommendationTableRows(recommendations, checks, yearlyNumbers);
   const headers = getHeaders(rows, RECOMMENDATION_TABLE_COLUMN_KEYS);
   const indicatorIcons = await preloadIndicatorIcons(rows.map((row) => toCellText(row.Индикатор)));
 
@@ -955,8 +961,9 @@ async function exportRecommendationsTableDocx(
   recommendations: Recommendation[],
   checks: Check[],
   filename: string,
+  yearlyNumbers: Map<string, number>,
 ) {
-  const rows = toRecommendationTableRows(recommendations, checks);
+  const rows = toRecommendationTableRows(recommendations, checks, yearlyNumbers);
   const indicatorIcons = await preloadIndicatorIcons(rows.map((row) => toCellText(row.Индикатор)));
   await exportRowsDocx(
     rows,
@@ -971,8 +978,9 @@ async function exportRecommendationsTablePdf(
   recommendations: Recommendation[],
   checks: Check[],
   filename: string,
+  yearlyNumbers: Map<string, number>,
 ) {
-  const rows = toRecommendationTableRows(recommendations, checks);
+  const rows = toRecommendationTableRows(recommendations, checks, yearlyNumbers);
   const indicatorIcons = await preloadIndicatorIcons(rows.map((row) => toCellText(row.Индикатор)));
   exportRowsPdf(
     rows,
@@ -987,8 +995,9 @@ async function exportRecommendationsTableHtml(
   recommendations: Recommendation[],
   checks: Check[],
   filename: string,
+  yearlyNumbers: Map<string, number>,
 ) {
-  const rows = toRecommendationTableRows(recommendations, checks);
+  const rows = toRecommendationTableRows(recommendations, checks, yearlyNumbers);
   const indicatorIcons = await preloadIndicatorIcons(rows.map((row) => toCellText(row.Индикатор)));
   exportRowsHtml(
     rows,
@@ -1025,23 +1034,25 @@ export async function exportChecks(
 
 export async function exportRecommendationsTable(
   recommendations: Recommendation[],
+  allRecommendationsForNumbering: Recommendation[],
   checks: Check[],
   format: ExportFormat,
   filenameBase: string
 ) {
   const filename = `${filenameBase}.${format}`;
+  const yearlyNumbers = buildRecommendationYearlyNumbers(allRecommendationsForNumbering);
   switch (format) {
     case 'xlsx':
-      await exportRecommendationsTableXlsx(recommendations, checks, filename);
+      await exportRecommendationsTableXlsx(recommendations, checks, filename, yearlyNumbers);
       break;
     case 'docx':
-      await exportRecommendationsTableDocx(recommendations, checks, filename);
+      await exportRecommendationsTableDocx(recommendations, checks, filename, yearlyNumbers);
       break;
     case 'pdf':
-      await exportRecommendationsTablePdf(recommendations, checks, filename);
+      await exportRecommendationsTablePdf(recommendations, checks, filename, yearlyNumbers);
       break;
     case 'html':
-      await exportRecommendationsTableHtml(recommendations, checks, filename);
+      await exportRecommendationsTableHtml(recommendations, checks, filename, yearlyNumbers);
       break;
   }
 }
