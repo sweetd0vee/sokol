@@ -50,6 +50,7 @@ Dev-пользователи (если `SOKOL_AUTH_USERS` пуст): `Админ
 |------------|------------|
 | `DATABASE_URL` | async SQLAlchemy URL (обязателен) |
 | `SOKOL_CORS_ORIGINS` | origins фронта через запятую |
+| `SOKOL_ENV` | `development` (default) или `prod` — в prod weak/default JWT secret блокирует старт |
 | `SOKOL_JWT_SECRET` / `SOKOL_JWT_EXPIRE_MINUTES` | JWT (default TTL 480 мин) |
 | `SOKOL_AUTH_USERS` | JSON-пользователи; пусто → dev defaults |
 | `SOKOL_MAX_UPLOAD_MB` | лимит upload `.docx` (default 100) |

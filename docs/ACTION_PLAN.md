@@ -15,7 +15,7 @@
 | ID | Задача | Effort |
 |----|--------|--------|
 | P0-01 | Скрыть Kantsler; disable fake password в Profile | 0.5 d |
-| P0-02 | Prod: strong `SOKOL_JWT_SECRET`, fail-fast на default | 0.5 d |
+| P0-02 | Prod: `SOKOL_ENV=prod` + strong `SOKOL_JWT_SECRET`, fail-fast на default | **done** |
 | P0-03 | `SOKOL_LOAD_DEMO_DATA=0` на UAT/prod | 0.5 d |
 | P0-04 | Alembic baseline + `upgrade head` | 3–5 d |
 | P0-05 | Audit-opinion: **реализовать или убрать из docs/API** | 0.5–3 d |

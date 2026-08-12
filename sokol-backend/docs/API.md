@@ -172,15 +172,10 @@ MIME: OOXML DOCX или `application/octet-stream`.
 Ошибки парсинга/валидации документа: **400** с `detail` (строка).  
 Файл не создан: **500**. Слишком большой: **413**.
 
-### Audit opinion — planned (не реализовано)
-
-Раздел I через Ollama: routes и `services/reports/audit_opinion/` **отсутствуют**. Env `SOKOL_OLLAMA_*` зарезервирован. См. [REPORTS.md](REPORTS.md).
-
 ---
 
 ## Чего нет в API
 
-- **`/tools/audit-opinion`** — не реализовано.
 - OIDC / Keycloak (есть internal JWT + RBAC).
 - Alembic HTTP; schema — `create_all` + CLI `migrate_*.py`.
 - WebSocket, batch-import Excel через HTTP API (import — CLI `app.db.import_seed_data`).

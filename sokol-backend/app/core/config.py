@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     sokol_cors_origins: str = ""
 
     # Auth (JWT + HTTP Basic; users in PostgreSQL `users` table)
+    sokol_env: str = "development"
     sokol_jwt_secret: str = "sokol-dev-jwt-secret-change-me"
     sokol_jwt_expire_minutes: int = 480
     sokol_admin_password: str = "admin"
