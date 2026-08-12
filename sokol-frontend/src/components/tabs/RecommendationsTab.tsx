@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   PencilLine,
-  Trash2,
   User,
 } from 'lucide-react';
 import { Select } from '../ui/Select';
@@ -31,16 +30,13 @@ import {
 import { EXPORT_FORMATS, type ExportFormat, exportRecommendationsTable } from '../../utils/exports';
 import { formatRuDate, parseDateValue, toEndOfDayMs, toStartOfDayMs } from '../../utils/dates';
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
-import { useAuth } from '../../hooks/useAuth';
 import { useAuditorOptions } from '../../hooks/useReferenceOptions';
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
-import { ConfirmDialog } from '../ui/Modal';
 import { useSokolData } from '../../contexts/sokolData';
 import { recommendationMatchesCurrentUser } from '../../utils/personMatch';
 import { INDICATOR_ICONS } from '../recommendations/indicatorIcons';
 import {
   LIST_ACTION_BUTTON_CLASS,
-  LIST_ACTION_GROUP_CLASS,
   listFilterClass,
 } from '../../constants/formLayout';
 import {
@@ -155,7 +151,6 @@ export function RecommendationsTab() {
   const [deadlineTo, setDeadlineTo] = useState<Date | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
-  const [deleteCandidate, setDeleteCandidate] = useState<Recommendation | null>(null);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('xlsx');
   const [isExporting, setIsExporting] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: SortKey | null; direction: 'asc' | 'desc' }>({
@@ -167,8 +162,7 @@ export function RecommendationsTab() {
   const { options: managerOptions } = useAuditorOptions(manager);
   const { options: auditObjectOptions } = useAuditObjectOptions(auditObject);
 
-  const { recommendations, checks, deleteRecommendation } = useSokolData();
-  const { isAdmin } = useAuth();
+  const { recommendations, checks } = useSokolData();
   const recommendationYearlyNumbers = useMemo(
     () => buildRecommendationYearlyNumbers(recommendations),
     [recommendations],
@@ -318,22 +312,6 @@ export function RecommendationsTab() {
     setShowOnlyMe(false);
   };
 
-  const handleRequestDelete = (recommendation: Recommendation) => {
-    setDeleteCandidate(recommendation);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!deleteCandidate) {
-      return;
-    }
-    await deleteRecommendation(deleteCandidate.id);
-    setDeleteCandidate(null);
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteCandidate(null);
-  };
-
   const handleExport = async () => {
     if (sortedRecommendations.length === 0) {
       return;
@@ -427,7 +405,7 @@ export function RecommendationsTab() {
               <col className="w-[140px]" />
               <col className="w-40" />
               <col className="w-52" />
-              <col className="w-[334px]" />
+              <col className="w-[174px]" />
             </colgroup>
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -535,7 +513,7 @@ export function RecommendationsTab() {
                   />
                 </th>
                 <th className="px-0 py-2 font-normal">
-                  <div className={LIST_ACTION_GROUP_CLASS}>
+                  <div className="ml-auto flex w-[160px] items-center justify-end whitespace-nowrap">
                     <button
                       type="button"
                       onClick={handleResetFilters}
@@ -644,7 +622,7 @@ export function RecommendationsTab() {
                     </span>
                   </td>
                   <td className="px-0 py-3">
-                    <div className={LIST_ACTION_GROUP_CLASS}>
+                    <div className="ml-auto flex w-[160px] items-center justify-end whitespace-nowrap">
                       <Link
                         to={`/recommendations/${recommendation.id}/edit`}
                         state={{ recommendation }}
@@ -653,16 +631,6 @@ export function RecommendationsTab() {
                         <PencilLine size={14} />
                         Редактировать
                       </Link>
-                      {isAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => handleRequestDelete(recommendation)}
-                          className={`${LIST_ACTION_BUTTON_CLASS} border border-[#003366] text-[#003366] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white`}
-                        >
-                          <Trash2 size={14} />
-                          Удалить
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -754,15 +722,6 @@ export function RecommendationsTab() {
           </div>
         </div>
       </div>
-
-      {deleteCandidate && (
-        <ConfirmDialog
-          title="Удаление рекомендации"
-          message={`Вы действительно хотите удалить рекомендацию «${deleteCandidate.name}»?`}
-          onConfirm={handleConfirmDelete}
-          onCancel={handleCancelDelete}
-        />
-      )}
     </div>
   );
 }

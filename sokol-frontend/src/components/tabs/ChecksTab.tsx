@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ChevronsUpDown, ChevronLeft, ChevronRight, PencilLine, Trash2, User } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronsUpDown, ChevronLeft, ChevronRight, PencilLine, User } from 'lucide-react';
 import { Select } from '../ui/Select';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
@@ -17,13 +17,10 @@ import {
 import { EXPORT_FORMATS, type ExportFormat, exportChecks } from '../../utils/exports';
 import { formatRuDate, parseDateValue, toEndOfDayMs, toStartOfDayMs } from '../../utils/dates';
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
-import { useAuth } from '../../hooks/useAuth';
 import { useAuditorOptions } from '../../hooks/useReferenceOptions';
-import { ConfirmDialog } from '../ui/Modal';
 import { useSokolData } from '../../contexts/sokolData';
 import {
   LIST_ACTION_BUTTON_CLASS,
-  LIST_ACTION_GROUP_CLASS,
   listFilterClass,
 } from '../../constants/formLayout';
 import {
@@ -102,7 +99,6 @@ export function ChecksTab() {
   const [startDateTo, setStartDateTo] = useState<Date | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
-  const [deleteCandidate, setDeleteCandidate] = useState<Check | null>(null);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('xlsx');
   const [isExporting, setIsExporting] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: SortKey | null; direction: 'asc' | 'desc' }>({
@@ -112,8 +108,7 @@ export function ChecksTab() {
   const normalizedMyName = useMemo(() => myName.trim().toLowerCase(), [myName]);
   const { options: leaderOptions } = useAuditorOptions(checkLeader);
 
-  const { checks, deleteCheck } = useSokolData();
-  const { isAdmin } = useAuth();
+  const { checks } = useSokolData();
   const yearlyNumbers = useMemo(() => buildCheckYearlyNumbers(checks), [checks]);
 
   const filteredChecks = useMemo(() => {
@@ -235,22 +230,6 @@ export function ChecksTab() {
     setShowOnlyMe(false);
   };
 
-  const handleRequestDelete = (check: Check) => {
-    setDeleteCandidate(check);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!deleteCandidate) {
-      return;
-    }
-    await deleteCheck(deleteCandidate.id);
-    setDeleteCandidate(null);
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteCandidate(null);
-  };
-
   const handleExport = async () => {
     if (sortedChecks.length === 0) {
       return;
@@ -323,7 +302,7 @@ export function ChecksTab() {
                 <col className="w-32" />
                 <col className="w-40" />
                 <col className="w-40" />
-                <col className="w-[334px]" />
+                <col className="w-[174px]" />
               </colgroup>
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
@@ -404,7 +383,7 @@ export function ChecksTab() {
                     />
                   </th>
                   <th className="px-0 py-2 font-normal">
-                    <div className={LIST_ACTION_GROUP_CLASS}>
+                    <div className="ml-auto flex w-[160px] items-center justify-end whitespace-nowrap">
                       <button
                         type="button"
                         onClick={handleResetFilters}
@@ -527,7 +506,7 @@ export function ChecksTab() {
                         </span>
                       </td>
                       <td className="px-0 py-3">
-                        <div className={LIST_ACTION_GROUP_CLASS}>
+                        <div className="ml-auto flex w-[160px] items-center justify-end whitespace-nowrap">
                           <Link
                             to={`/checks/${check.id}/edit`}
                             state={{ check }}
@@ -536,16 +515,6 @@ export function ChecksTab() {
                             <PencilLine size={14} />
                             Редактировать
                           </Link>
-                          {isAdmin && (
-                            <button
-                              type="button"
-                              onClick={() => handleRequestDelete(check)}
-                              className={`${LIST_ACTION_BUTTON_CLASS} border border-[#003366] text-[#003366] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white`}
-                            >
-                              <Trash2 size={14} />
-                              Удалить
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -634,15 +603,6 @@ export function ChecksTab() {
           </div>
         </>
       </div>
-
-      {deleteCandidate && (
-        <ConfirmDialog
-          title="Удаление проверки"
-          message={`Вы действительно хотите удалить проверку «${deleteCandidate.serial_number}»?`}
-          onConfirm={handleConfirmDelete}
-          onCancel={handleCancelDelete}
-        />
-      )}
     </div>
   );
 }

@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Trash2 } from 'lucide-react';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
+import { ConfirmDialog } from '../ui/Modal';
 import { fetchCheck } from '../../api/checks';
 import { getErrorMessage } from '../../api/errors';
 import { CHECK_TYPE_OPTIONS, CHECK_VIEW_OPTIONS } from '../../constants/checks';
 import { toInputDate, toIsoDate, toStartOfDayMs } from '../../utils/dates';
 import { useSokolData } from '../../contexts/sokolData';
+import { useAuth } from '../../hooks/useAuth';
 import { useAuditorOptions, useEffectivenessRatingOptions } from '../../hooks/useReferenceOptions';
 import { CheckAttachmentsSection } from './CheckAttachmentsSection';
 import { CheckRecommendationsBlock } from './CheckRecommendationsBlock';
@@ -46,7 +49,9 @@ export function CheckFormPage() {
     checks,
     addCheck,
     updateCheck,
+    deleteCheck,
   } = useSokolData();
+  const { isAdmin } = useAuth();
   const existingFromList = checks.find((item) => item.id === id);
   const locationState = location.state as CheckFormLocationState | null;
   const restoredDraft = locationState?.restoredDraft;
@@ -117,6 +122,8 @@ export function CheckFormPage() {
     restoredDraft?.svikEffectiveness ?? existing?.svik_effectiveness ?? '',
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [hydratedCheckId, setHydratedCheckId] = useState(existing?.id ?? null);
@@ -316,6 +323,24 @@ export function CheckFormPage() {
       setIsSaving(false);
     }
   };
+
+  const handleConfirmDelete = async () => {
+    if (!existing?.id || isDeleting) {
+      return;
+    }
+    setIsDeleting(true);
+    setSaveError(null);
+    try {
+      await deleteCheck(existing.id);
+      navigate('/checks');
+    } catch (error) {
+      setSaveError(getErrorMessage(error, 'Не удалось удалить проверку.'));
+      setDeleteConfirmOpen(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isEditMode && !existing && checkQuery.isLoading) {
     return (
       <div className={`${FORM_PAGE_CLASS} ${FORM_STACK_CLASS}`}>
@@ -576,17 +601,36 @@ export function CheckFormPage() {
             </div>
           )}
           {saveError && <ErrorState description={saveError} />}
-          <div className="flex flex-wrap justify-start gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || isDeleting}
               className={`${FORM_SAVE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
             >
               {isSaving ? 'Сохранение...' : 'Сохранить'}
             </button>
+            {isEditMode && existing?.id && isAdmin && (
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={isSaving || isDeleting}
+                className={`${FORM_OUTLINE_BUTTON_CLASS} gap-2 disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                <Trash2 size={14} />
+                {isDeleting ? 'Удаление...' : 'Удалить'}
+              </button>
+            )}
           </div>
         </div>
       </form>
+      {deleteConfirmOpen && existing && (
+        <ConfirmDialog
+          title="Удаление проверки"
+          message={`Вы действительно хотите удалить проверку «${existing.serial_number}»?`}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleteConfirmOpen(false)}
+        />
+      )}
     </div>
   );
 }

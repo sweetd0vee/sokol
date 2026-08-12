@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Trash2 } from 'lucide-react';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
-import { LoadingState } from '../ui/StateMessage';
+import { ErrorState, LoadingState } from '../ui/StateMessage';
+import { ConfirmDialog } from '../ui/Modal';
 import type { MaterialityLevel, Recommendation, RecommendationIndicator } from '../../types/recommendation';
 import {
   RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS,
@@ -18,7 +20,9 @@ import {
 } from '../../constants/recommendations';
 import { fetchCheckBySerialNumber } from '../../api/checks';
 import { fetchRecommendation } from '../../api/recommendations';
+import { getErrorMessage } from '../../api/errors';
 import { useSokolData } from '../../contexts/sokolData';
+import { useAuth } from '../../hooks/useAuth';
 import { toNameOptions, useAuditorOptions } from '../../hooks/useReferenceOptions';
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
 import { toInputDate, toIsoDate } from '../../utils/dates';
@@ -66,8 +70,9 @@ export function RecommendationFormPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationState = (location.state as RecommendationFormLocationState | null) ?? {};
-  const { checks, recommendations, addRecommendation, updateRecommendation, updateCheck } =
+  const { checks, recommendations, addRecommendation, updateRecommendation, deleteRecommendation, updateCheck } =
     useSokolData();
+  const { isAdmin } = useAuth();
   const isEditMode = Boolean(id);
   const fromCheckForm = Boolean(navigationState.returnTo && navigationState.checkFormDraft);
 
@@ -109,8 +114,11 @@ export function RecommendationFormPage() {
     createEmptyRecommendationClosure(),
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isExecutionDeadlineOpen, setIsExecutionDeadlineOpen] = useState(true);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isEditMode && source) {
@@ -337,6 +345,7 @@ export function RecommendationFormPage() {
       return;
     }
     setShowValidationErrors(true);
+    setSaveError(null);
     if (!serialNumber || !trimmedDescription || !status || !additionalStatus || requiredFieldErrors.hasErrors) {
       return;
     }
@@ -385,6 +394,23 @@ export function RecommendationFormPage() {
       return;
     }
     await saveRecommendation('createAnotherCheckOnly');
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!recommendationId || isDeleting) {
+      return;
+    }
+    setIsDeleting(true);
+    setSaveError(null);
+    try {
+      await deleteRecommendation(String(recommendationId));
+      navigate('/recommendations');
+    } catch (error) {
+      setSaveError(getErrorMessage(error, 'Не удалось удалить рекомендацию.'));
+      setDeleteConfirmOpen(false);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (isEditMode && isFetching && !source) {
@@ -726,25 +752,47 @@ export function RecommendationFormPage() {
               Заполните необходимые поля
             </div>
           )}
-          <div className="flex flex-wrap justify-start gap-3">
-            <button
-              type="submit"
-              disabled={isSaving}
-              className={`${FORM_SAVE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
-            >
-              {isSaving ? 'Сохранение...' : 'Сохранить'}
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleCreateAnotherCheckOnly()}
-              disabled={isSaving}
-              className={`${FORM_OUTLINE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
-            >
-              Создать еще
-            </button>
+          {saveError && <ErrorState description={saveError} />}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap justify-start gap-3">
+              <button
+                type="submit"
+                disabled={isSaving || isDeleting}
+                className={`${FORM_SAVE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                {isSaving ? 'Сохранение...' : 'Сохранить'}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleCreateAnotherCheckOnly()}
+                disabled={isSaving || isDeleting}
+                className={`${FORM_OUTLINE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                Создать еще
+              </button>
+            </div>
+            {isEditMode && recommendationId && isAdmin && (
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={isSaving || isDeleting}
+                className={`${FORM_OUTLINE_BUTTON_CLASS} gap-2 disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                <Trash2 size={14} />
+                {isDeleting ? 'Удаление...' : 'Удалить'}
+              </button>
+            )}
           </div>
         </div>
       </form>
+      {deleteConfirmOpen && source && (
+        <ConfirmDialog
+          title="Удаление рекомендации"
+          message={`Вы действительно хотите удалить рекомендацию «${source.name}»?`}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleteConfirmOpen(false)}
+        />
+      )}
     </div>
   );
 }
