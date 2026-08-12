@@ -1,6 +1,5 @@
 import { Download, Loader2, Trash2 } from 'lucide-react';
 import { downloadAttachment } from '../../api/attachments';
-import { useAuth } from '../../hooks/useAuth';
 import {
   formatFileSize,
   getFileExtension,
@@ -11,14 +10,15 @@ type AttachmentFileListProps = {
   items: PersistedAttachmentListItem[];
   onRemove: (clientId: string) => void;
   emptyMessage?: string;
+  canRemoveSaved?: boolean;
 };
 
 export function AttachmentFileList({
   items,
   onRemove,
   emptyMessage = 'Файлы не прикреплены.',
+  canRemoveSaved = false,
 }: AttachmentFileListProps) {
-  const { isAdmin } = useAuth();
 
   if (items.length === 0) {
     return (
@@ -58,7 +58,7 @@ export function AttachmentFileList({
                 <Download size={18} />
               </button>
             )}
-            {(isAdmin || item.status !== 'saved') && (
+            {(canRemoveSaved || item.status !== 'saved') && (
               <button
                 type="button"
                 onClick={() => onRemove(item.clientId)}

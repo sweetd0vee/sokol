@@ -4,6 +4,7 @@ import {
   buildRecommendationYearlyNumbers,
   getRecommendationYearlyId,
   getRecommendationYearlySortValue,
+  resolveRecommendationYearlyDisplayNumber,
 } from './recommendationYearlyNumber';
 
 function makeRecommendation(id: string, deadline: string): Recommendation {
@@ -63,5 +64,31 @@ describe('buildRecommendationYearlyNumbers', () => {
     expect(getRecommendationYearlySortValue(recommendations[0], numbers)).toBe(20260002);
     expect(getRecommendationYearlySortValue(recommendations[1], numbers)).toBe(20250001);
     expect(getRecommendationYearlySortValue(recommendations[2], numbers)).toBe(20260001);
+  });
+});
+
+describe('resolveRecommendationYearlyDisplayNumber', () => {
+  it('возвращает номер внутри года для существующей рекомендации', () => {
+    const recommendations = [
+      makeRecommendation('1', '2026-01-02'),
+      makeRecommendation('2', '2026-08-01'),
+    ];
+
+    expect(
+      resolveRecommendationYearlyDisplayNumber(recommendations, {
+        recommendationId: '2',
+        fallback: recommendations[1],
+      }),
+    ).toBe(2);
+  });
+
+  it('прогнозирует номер для новой рекомендации по сроку исполнения', () => {
+    const recommendations = [makeRecommendation('1', '2026-01-02')];
+
+    expect(
+      resolveRecommendationYearlyDisplayNumber(recommendations, {
+        deadline: '2026-12-31',
+      }),
+    ).toBe(2);
   });
 });

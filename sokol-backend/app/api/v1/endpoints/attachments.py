@@ -5,7 +5,7 @@ from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db_session
-from app.api.deps import require_admin
+from app.api.deps import CurrentUser, get_current_user
 from app.schemas.attachments import (
     AttachmentListResponse,
     AttachmentRead,
@@ -14,6 +14,7 @@ from app.schemas.attachments import (
 )
 from app.services import attachments_service
 from app.services.crud_errors import (
+    AccessDeniedError,
     AttachmentTooLargeError,
     EmptyAttachmentPayloadError,
     InvalidAttachmentSlotError,
@@ -27,6 +28,8 @@ router = APIRouter(prefix="/attachments", tags=["attachments"])
 
 
 def _raise_http_error(exc: Exception) -> None:
+    if isinstance(exc, AccessDeniedError):
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     if isinstance(exc, ResourceNotFoundError):
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     if isinstance(exc, InvalidAttachmentSlotError | EmptyAttachmentPayloadError):
@@ -72,6 +75,7 @@ async def upload_attachment_endpoint(
     slot: str = Form(..., min_length=1, max_length=64),
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_db_session),
+    user: CurrentUser = Depends(get_current_user),
 ) -> AttachmentUploadResponse:
     content_type = (file.content_type or "application/octet-stream").split(";")[0].strip().lower()
     payload = await file.read()
@@ -85,6 +89,7 @@ async def upload_attachment_endpoint(
             original_name=original_name,
             content_type=content_type,
             payload=payload,
+            user=user,
         )
     except Exception as exc:  # noqa: BLE001
         _raise_http_error(exc)
@@ -113,10 +118,10 @@ async def download_attachment_endpoint(
 async def delete_attachment_endpoint(
     attachment_id: int,
     session: AsyncSession = Depends(get_db_session),
-    _: object = Depends(require_admin),
+    user: CurrentUser = Depends(get_current_user),
 ) -> None:
     try:
-        await attachments_service.delete_attachment(session, attachment_id)
+        await attachments_service.delete_attachment(session, attachment_id, user)
     except Exception as exc:  # noqa: BLE001
         _raise_http_error(exc)
     return None

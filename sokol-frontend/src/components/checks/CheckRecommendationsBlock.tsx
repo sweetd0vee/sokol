@@ -20,6 +20,12 @@ type CheckRecommendationsBlockProps = {
 
 type ParsedPreviewItem = Recommendation & { previewKey: string };
 
+type RecentUploadSession = {
+  ids: string[];
+  count: number;
+  fileName: string | null;
+};
+
 const actionButtonClass =
   'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-50';
 const blueActionButtonClass =
@@ -185,16 +191,34 @@ export function CheckRecommendationsBlock({
   checkSaved,
   onAddManually,
 }: CheckRecommendationsBlockProps) {
-  const { getRecommendationsByCheckKey, addRecommendationsForCheck } = useSokolData();
+  const { getRecommendationsByCheckKey, addRecommendationsForCheck, removeRecommendationsByIds } =
+    useSokolData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importAzFileName, setImportAzFileName] = useState<string | null>(null);
   const [parsedPreview, setParsedPreview] = useState<ParsedPreviewItem[]>([]);
+  const [recentUpload, setRecentUpload] = useState<RecentUploadSession | null>(null);
   const [isParsing, setIsParsing] = useState(false);
+  const [isUndoingUpload, setIsUndoingUpload] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const canAdd = Boolean(checkKey.trim()) && checkSaved;
-  const docxFlowActive = Boolean(importAzFileName || isParsing || parseError || parsedPreview.length > 0);
+  const docxFlowActive = Boolean(
+    importAzFileName
+    || isParsing
+    || parseError
+    || parsedPreview.length > 0
+    || recentUpload,
+  );
+  const canCancelUpload = parsedPreview.length > 0 || Boolean(recentUpload);
+
+  useEffect(() => {
+    setRecentUpload(null);
+    setParsedPreview([]);
+    setImportAzFileName(null);
+    setParseError(null);
+    setIsFullscreen(false);
+  }, [checkKey]);
 
   useEffect(() => {
     if (parsedPreview.length === 0) {
@@ -260,6 +284,7 @@ export function CheckRecommendationsBlock({
   const parseAzFile = async (file: File) => {
     setParseError(null);
     setParsedPreview([]);
+    setRecentUpload(null);
     setImportAzFileName(file.name);
     setIsParsing(true);
     try {
@@ -365,15 +390,50 @@ export function CheckRecommendationsBlock({
     setIsFullscreen(false);
   };
 
+  const handleUndoRecentUpload = async () => {
+    if (!recentUpload || recentUpload.ids.length === 0 || isUndoingUpload) {
+      return;
+    }
+    setIsUndoingUpload(true);
+    setParseError(null);
+    try {
+      await removeRecommendationsByIds(recentUpload.ids);
+      setRecentUpload(null);
+      setImportAzFileName(null);
+      setIsFullscreen(false);
+    } catch (error) {
+      setParseError(getErrorMessage(error, 'Не удалось отменить загрузку рекомендаций.'));
+    } finally {
+      setIsUndoingUpload(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (parsedPreview.length > 0) {
+      handleClearPreview();
+      return;
+    }
+    if (recentUpload) {
+      void handleUndoRecentUpload();
+    }
+  };
+
   const handleAddParsed = async () => {
     if (!canAdd || parsedPreview.length === 0) {
       return;
     }
     try {
-      await addRecommendationsForCheck(checkKey, parsedPreview.map(toRecommendationPayload));
+      const created = await addRecommendationsForCheck(
+        checkKey,
+        parsedPreview.map(toRecommendationPayload),
+      );
+      setRecentUpload({
+        ids: created.map((item) => String(item.id)),
+        count: created.length,
+        fileName: importAzFileName,
+      });
       setParsedPreview([]);
       setParseError(null);
-      setImportAzFileName(null);
       setIsFullscreen(false);
     } catch (error) {
       setParseError(getErrorMessage(error, 'Не удалось добавить рекомендации.'));
@@ -437,6 +497,31 @@ export function CheckRecommendationsBlock({
             />
           )}
           {parseError && <ErrorState title="Ошибка" description={parseError} />}
+          {recentUpload && parsedPreview.length === 0 && !isParsing && (
+            <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-sm leading-relaxed text-amber-950">
+                В проверку добавлено{' '}
+                <span className="font-semibold">{recentUpload.count}</span>{' '}
+                {pluralRecommendations(recentUpload.count)}
+                {recentUpload.fileName ? (
+                  <>
+                    {' '}
+                    из файла <span className="font-medium">{recentUpload.fileName}</span>
+                  </>
+                ) : null}
+                . Если это произошло по ошибке, можно отменить загрузку — рекомендации будут удалены
+                из базы.
+              </p>
+              <button
+                type="button"
+                onClick={() => void handleCancel()}
+                disabled={isUndoingUpload}
+                className={blueActionButtonClass}
+              >
+                {isUndoingUpload ? 'Отмена загрузки...' : 'Отменить'}
+              </button>
+            </div>
+          )}
           {parsedPreview.length > 0 && !isParsing && (
             <div className="space-y-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -477,7 +562,7 @@ export function CheckRecommendationsBlock({
                   <button
                     type="button"
                     onClick={() => void handleAddParsed()}
-                    disabled={!canAdd}
+                    disabled={!canAdd || isUndoingUpload}
                     className={blueActionButtonClass}
                   >
                     <Plus size={16} />
@@ -485,7 +570,8 @@ export function CheckRecommendationsBlock({
                   </button>
                   <button
                     type="button"
-                    onClick={handleClearPreview}
+                    onClick={handleCancel}
+                    disabled={!canCancelUpload || isUndoingUpload}
                     className={blueActionButtonClass}
                   >
                     Отменить
@@ -552,7 +638,7 @@ export function CheckRecommendationsBlock({
                         <button
                           type="button"
                           onClick={() => void handleAddParsed()}
-                          disabled={!canAdd}
+                          disabled={!canAdd || isUndoingUpload}
                           className={blueActionButtonClass}
                         >
                           <Plus size={16} />
@@ -560,7 +646,8 @@ export function CheckRecommendationsBlock({
                         </button>
                         <button
                           type="button"
-                          onClick={handleClearPreview}
+                          onClick={handleCancel}
+                          disabled={!canCancelUpload || isUndoingUpload}
                           className={blueActionButtonClass}
                         >
                           Отменить

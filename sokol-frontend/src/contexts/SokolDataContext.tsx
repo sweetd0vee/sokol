@@ -5,6 +5,7 @@ import type { Recommendation } from '../types/recommendation';
 import { createCheck, deleteCheck as deleteCheckApi, fetchChecks, updateCheck as updateCheckApi } from '../api/checks';
 import {
   batchRecommendations,
+  batchDeleteRecommendations,
   createRecommendation,
   deleteRecommendation as deleteRecommendationApi,
   fetchRecommendations,
@@ -111,6 +112,17 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
     [invalidateAll],
   );
 
+  const removeRecommendationsByIds = useCallback(
+    async (ids: string[]) => {
+      if (ids.length === 0) {
+        return;
+      }
+      await batchDeleteRecommendations(ids);
+      await invalidateAll();
+    },
+    [invalidateAll],
+  );
+
   const getRecommendationsByCheckKey = useCallback(
     (serialNumber: string) =>
       recommendations.filter((item) => item.serial_number === serialNumber),
@@ -140,6 +152,7 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
       addRecommendationsForCheck,
       updateRecommendation,
       deleteRecommendation,
+      removeRecommendationsByIds,
       getRecommendationsByCheckKey,
       replaceRecommendationsForCheck,
     }),
@@ -160,6 +173,7 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
       addRecommendationsForCheck,
       updateRecommendation,
       deleteRecommendation,
+      removeRecommendationsByIds,
       getRecommendationsByCheckKey,
       replaceRecommendationsForCheck,
     ],

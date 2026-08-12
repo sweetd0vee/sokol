@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
@@ -193,6 +194,56 @@ class AuthRbacTests(unittest.TestCase):
         response = self.client.delete("/api/v1/checks/1")
         self.assertEqual(response.status_code, 403)
 
+    def test_auditor_can_delete_own_recommendation(self) -> None:
+        async def _auditor() -> CurrentUser:
+            return CurrentUser(
+                username="Важник Д.С.",
+                display_name="Важник Д.С.",
+                role=Role.AUDITOR,
+            )
+
+        app.dependency_overrides[get_current_user] = _auditor
+        recommendation = SimpleNamespace(id=1, check_id=2, auditor="Важник Д.С.")
+        with (
+            patch(
+                "app.services.recommendations_service.get_recommendation",
+                new_callable=AsyncMock,
+                return_value=recommendation,
+            ),
+            patch(
+                "app.services.recommendations_service.attachments_service.delete_attachments_for_entity",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.services.recommendations_service.recommendations_crud.delete_recommendation_row",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.services.recommendations_service.recommendations_crud.renumber_recommendations_for_check",
+                new_callable=AsyncMock,
+            ),
+        ):
+            response = self.client.delete("/api/v1/recommendations/1")
+        self.assertEqual(response.status_code, 204, response.text)
+
+    def test_auditor_cannot_delete_foreign_recommendation(self) -> None:
+        async def _auditor() -> CurrentUser:
+            return CurrentUser(
+                username="Важник Д.С.",
+                display_name="Важник Д.С.",
+                role=Role.AUDITOR,
+            )
+
+        app.dependency_overrides[get_current_user] = _auditor
+        recommendation = SimpleNamespace(id=1, check_id=2, auditor="Иванов И.И.")
+        with patch(
+            "app.services.recommendations_service.get_recommendation",
+            new_callable=AsyncMock,
+            return_value=recommendation,
+        ):
+            response = self.client.delete("/api/v1/recommendations/1")
+        self.assertEqual(response.status_code, 403)
+
     def test_auditor_cannot_mutate_settings(self) -> None:
         async def _auditor() -> CurrentUser:
             return CurrentUser(
@@ -225,6 +276,81 @@ class AuthRbacTests(unittest.TestCase):
             response = self.client.delete("/api/v1/checks/999999")
         # Auth passed; missing entity → 404 from handler.
         self.assertEqual(response.status_code, 404)
+
+    @patch("app.api.v1.endpoints.users.create_auditor", new_callable=AsyncMock)
+    @patch("app.api.v1.endpoints.users.create_user", new_callable=AsyncMock)
+    @patch("app.api.v1.endpoints.users.get_user_by_username", new_callable=AsyncMock)
+    def test_admin_can_create_user(
+        self,
+        mock_get_user: AsyncMock,
+        mock_create_user: AsyncMock,
+        mock_create_auditor: AsyncMock,
+    ) -> None:
+        mock_get_user.return_value = None
+        created = _auditor_user(username="Новиков Н.Н.")
+        mock_create_user.return_value = created
+
+        async def _admin() -> CurrentUser:
+            return CurrentUser(
+                username="Админ А.А.",
+                display_name="Администратор",
+                role=Role.ADMIN,
+            )
+
+        app.dependency_overrides[get_current_user] = _admin
+        response = self.client.post(
+            "/api/v1/users",
+            json={
+                "username": "Новиков Н.Н.",
+                "password": "secret",
+                "role": "auditor",
+            },
+        )
+        self.assertEqual(response.status_code, 201, response.text)
+        self.assertEqual(response.json()["username"], "Новиков Н.Н.")
+        mock_create_user.assert_awaited_once()
+        mock_create_auditor.assert_awaited_once()
+
+    @patch("app.api.v1.endpoints.users.get_user_by_username", new_callable=AsyncMock)
+    def test_create_user_rejects_duplicate(self, mock_get_user: AsyncMock) -> None:
+        mock_get_user.return_value = _auditor_user(username="Новиков Н.Н.")
+
+        async def _admin() -> CurrentUser:
+            return CurrentUser(
+                username="Админ А.А.",
+                display_name="Администратор",
+                role=Role.ADMIN,
+            )
+
+        app.dependency_overrides[get_current_user] = _admin
+        response = self.client.post(
+            "/api/v1/users",
+            json={
+                "username": "Новиков Н.Н.",
+                "password": "secret",
+                "role": "auditor",
+            },
+        )
+        self.assertEqual(response.status_code, 409)
+
+    def test_auditor_cannot_create_user(self) -> None:
+        async def _auditor() -> CurrentUser:
+            return CurrentUser(
+                username="Важник Д.С.",
+                display_name="Важник Д.С.",
+                role=Role.AUDITOR,
+            )
+
+        app.dependency_overrides[get_current_user] = _auditor
+        response = self.client.post(
+            "/api/v1/users",
+            json={
+                "username": "Новиков Н.Н.",
+                "password": "secret",
+                "role": "auditor",
+            },
+        )
+        self.assertEqual(response.status_code, 403)
 
 
 if __name__ == "__main__":

@@ -37,6 +37,7 @@ import { recommendationMatchesCurrentUser } from '../../utils/personMatch';
 import { INDICATOR_ICONS } from '../recommendations/indicatorIcons';
 import {
   LIST_ACTION_BUTTON_CLASS,
+  LIST_ACTION_GROUP_CLASS,
   listFilterClass,
 } from '../../constants/formLayout';
 import {
@@ -403,8 +404,8 @@ export function RecommendationsTab() {
               <col className="w-28" />
               <col className="w-36" />
               <col className="w-[140px]" />
-              <col className="w-40" />
-              <col className="w-52" />
+              <col className="w-[172px]" />
+              <col className="w-[172px]" />
               <col className="w-[174px]" />
             </colgroup>
             <thead>
@@ -494,30 +495,32 @@ export function RecommendationsTab() {
                     inputClassName={listFilterClass(Boolean(manager))}
                   />
                 </th>
-                <th className="px-2 py-2 font-normal">
-                  <Select
-                    value={status}
-                    onChange={setStatus}
-                    options={RECOMMENDATION_STATUS_OPTIONS}
-                    placeholder="Все"
-                    inputClassName={listFilterClass(Boolean(status))}
-                  />
-                </th>
-                <th className="px-2 py-2 font-normal">
-                  <Select
-                    value={additionalStatus}
-                    onChange={setAdditionalStatus}
-                    options={RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS}
-                    placeholder="Все"
-                    inputClassName={listFilterClass(Boolean(additionalStatus))}
-                  />
-                </th>
                 <th className="px-0 py-2 font-normal">
-                  <div className="ml-auto flex w-[160px] items-center justify-end whitespace-nowrap">
+                  <div className="flex w-[160px] items-center">
+                    <Select
+                      value={status}
+                      onChange={setStatus}
+                      options={RECOMMENDATION_STATUS_OPTIONS}
+                      placeholder="Все"
+                      className="w-full"
+                      inputClassName={listFilterClass(Boolean(status))}
+                    />
+                  </div>
+                </th>
+                <th colSpan={2} className="px-0 py-2 font-normal">
+                  <div className={`${LIST_ACTION_GROUP_CLASS} sm:pr-px`}>
+                    <Select
+                      value={additionalStatus}
+                      onChange={setAdditionalStatus}
+                      options={RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS}
+                      placeholder="Все"
+                      className="w-[160px]"
+                      inputClassName={listFilterClass(Boolean(additionalStatus))}
+                    />
                     <button
                       type="button"
                       onClick={handleResetFilters}
-                      className="inline-flex h-[38px] w-full items-center justify-center rounded-lg border border-[#003366] px-2 text-sm font-medium text-[#003366] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white"
+                      className="inline-flex h-[38px] w-[160px] items-center justify-center rounded-lg border border-[#003366] px-2 text-sm font-medium text-[#003366] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white"
                     >
                       Сбросить фильтры
                     </button>
@@ -548,7 +551,16 @@ export function RecommendationsTab() {
                     <span className="whitespace-nowrap">объекта аудита</span>
                   </>,
                 )}
-                {renderSortableHeader('status', 'Статус')}
+                <th className="px-0 py-3 text-center font-medium">
+                  <button
+                    type="button"
+                    onClick={() => handleSort('status')}
+                    className="inline-flex w-full items-center justify-center gap-1 text-white/90 transition hover:text-white"
+                  >
+                    <span className="leading-tight">Статус</span>
+                    {renderSortIcon('status')}
+                  </button>
+                </th>
                 {renderSortableHeader('additional_status', 'Дополнительный статус')}
                 <th className="px-0 py-3 text-center font-medium">Действия</th>
               </tr>

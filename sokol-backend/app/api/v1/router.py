@@ -14,6 +14,7 @@ from app.api.v1.endpoints import (
     health,
     instruments_reports,
     recommendations,
+    users,
 )
 
 
@@ -31,3 +32,4 @@ api_v1_router.include_router(departments.router, dependencies=_auth)
 api_v1_router.include_router(audit_types.router, dependencies=_auth)
 api_v1_router.include_router(check_kinds.router, dependencies=_auth)
 api_v1_router.include_router(effectiveness_ratings.router, dependencies=_auth)
+api_v1_router.include_router(users.router, dependencies=_auth)

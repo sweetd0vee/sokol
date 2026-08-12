@@ -75,6 +75,10 @@ function personFieldMatchesUser(personField: string, userFullName: string) {
   return buildInitialsPatterns(userParts.initials).some((pattern) => fieldLower.includes(pattern));
 }
 
+export function auditorMatchesCurrentUser(auditor: string, userFullName: string) {
+  return personFieldMatchesUser(auditor, userFullName);
+}
+
 export function recommendationMatchesCurrentUser(
   recommendation: { auditor: string; manager: string },
   userFullName: string,

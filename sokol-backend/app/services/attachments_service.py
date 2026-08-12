@@ -4,8 +4,11 @@ from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import CurrentUser
 from app.core.config import settings
+from app.core.recommendation_access import user_can_manage_recommendation
 from app.crud import attachments_crud, checks_crud, recommendations_crud
+from app.models.recommendations import Recommendation
 from app.models.attachments import Attachment
 from app.schemas.attachments import (
     CHECK_ATTACHMENT_SLOTS,
@@ -15,6 +18,7 @@ from app.schemas.attachments import (
     StorageStatusResponse,
 )
 from app.services.crud_errors import (
+    AccessDeniedError,
     AttachmentTooLargeError,
     EmptyAttachmentPayloadError,
     InvalidAttachmentSlotError,
@@ -58,12 +62,12 @@ async def resolve_attachment_target(
     session: AsyncSession,
     entity_type: str,
     entity_id: int,
-) -> tuple[str, int | None]:
+) -> tuple[str, int | None, Recommendation | None]:
     if entity_type == "check":
         check = await checks_crud.get_check(session, entity_id)
         if check is None:
             raise ResourceNotFoundError("Проверка не найдена.")
-        return check.serial_number, None
+        return check.serial_number, None, None
 
     recommendation = await recommendations_crud.get_recommendation(session, entity_id)
     if recommendation is None:
@@ -71,7 +75,7 @@ async def resolve_attachment_target(
     check = await checks_crud.get_check(session, recommendation.check_id)
     if check is None:
         raise ResourceNotFoundError("Проверка для рекомендации не найдена.")
-    return check.serial_number, recommendation.id
+    return check.serial_number, recommendation.id, recommendation
 
 
 async def get_storage_status() -> StorageStatusResponse:
@@ -80,6 +84,15 @@ async def get_storage_status() -> StorageStatusResponse:
     storage = require_storage()
     reachable = await storage.ping()
     return StorageStatusResponse(enabled=True, reachable=reachable)
+
+
+def _ensure_user_can_manage_recommendation(user: CurrentUser, recommendation: Recommendation) -> None:
+    if not user_can_manage_recommendation(
+        role=user.role,
+        username=user.username,
+        auditor=recommendation.auditor,
+    ):
+        raise AccessDeniedError("Недостаточно прав для операции с вложениями этой рекомендации.")
 
 
 async def list_attachments(
@@ -116,12 +129,19 @@ async def upload_attachment(
     original_name: str,
     content_type: str,
     payload: bytes,
+    user: CurrentUser,
 ) -> AttachmentUploadResponse:
     if not settings.minio_enabled:
         raise StorageDisabledError("Файловое хранилище не настроено.")
 
     validate_attachment_slot(entity_type, slot)
-    serial_number, recommendation_id = await resolve_attachment_target(session, entity_type, entity_id)
+    serial_number, recommendation_id, recommendation = await resolve_attachment_target(
+        session,
+        entity_type,
+        entity_id,
+    )
+    if entity_type == "recommendation" and recommendation is not None:
+        _ensure_user_can_manage_recommendation(user, recommendation)
 
     if content_type not in ALLOWED_CONTENT_TYPES:
         raise UnsupportedAttachmentContentTypeError(f"Тип файла не поддерживается: {content_type}.")
@@ -188,13 +208,25 @@ async def download_attachment(
     return attachment, payload, content_type or attachment.content_type
 
 
-async def delete_attachment(session: AsyncSession, attachment_id: int) -> None:
+async def delete_attachment(
+    session: AsyncSession,
+    attachment_id: int,
+    user: CurrentUser,
+) -> None:
     if not settings.minio_enabled:
         raise StorageDisabledError("Файловое хранилище не настроено.")
 
     attachment = await attachments_crud.get_attachment(session, attachment_id)
     if attachment is None:
         raise ResourceNotFoundError("Вложение не найдено.")
+
+    if attachment.entity_type == "recommendation":
+        recommendation = await recommendations_crud.get_recommendation(session, attachment.entity_id)
+        if recommendation is None:
+            raise ResourceNotFoundError("Рекомендация не найдена.")
+        _ensure_user_can_manage_recommendation(user, recommendation)
+    elif not user.is_admin:
+        raise AccessDeniedError("Недостаточно прав для удаления вложения проверки.")
 
     storage = require_storage()
     try:

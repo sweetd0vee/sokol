@@ -97,6 +97,15 @@ export async function deleteRecommendation(id: number | string): Promise<void> {
   await api.delete(`/api/v1/recommendations/${id}`);
 }
 
+export async function batchDeleteRecommendations(ids: Array<number | string>): Promise<void> {
+  if (ids.length === 0) {
+    return;
+  }
+  await api.post('/api/v1/recommendations/batch-delete', {
+    ids: ids.map((id) => Number(id)),
+  });
+}
+
 export async function parseRecommendationsFromDocx(file: File): Promise<ParsedRecommendation[]> {
   const formData = new FormData();
   formData.append('file', file);

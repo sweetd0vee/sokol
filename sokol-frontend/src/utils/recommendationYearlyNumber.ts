@@ -87,3 +87,49 @@ export function getRecommendationYearlySortValue(
 
   return year * 10000 + yearlyNumber;
 }
+
+const DRAFT_RECOMMENDATION_ID = '__draft__';
+
+/** Номер рекомендации внутри календарного года — та же цифра, что в ID после дефиса. */
+export function resolveRecommendationYearlyDisplayNumber(
+  recommendations: Recommendation[],
+  options: {
+    recommendationId?: string | number | null;
+    deadline?: string;
+    fallback?: Recommendation | null;
+  },
+): number | null {
+  const previewDeadline = options.deadline?.trim() || options.fallback?.deadline?.trim() || '';
+  if (!previewDeadline) {
+    return null;
+  }
+
+  const previewId =
+    options.recommendationId != null && String(options.recommendationId)
+      ? String(options.recommendationId)
+      : DRAFT_RECOMMENDATION_ID;
+
+  const previewRecommendation: Recommendation = {
+    ...(options.fallback ?? {
+      id: previewId,
+      serial_number: '',
+      sequence_number: 1,
+      name: '',
+      description: '',
+      indicator: 'не указан',
+      materiality_level: 'средний',
+      audit_object: '',
+      deadline: previewDeadline,
+      auditor: '',
+      manager: '',
+      status: 'unresolved',
+      additional_status: 'on_time',
+    }),
+    id: previewId,
+    deadline: previewDeadline,
+  };
+
+  const others = recommendations.filter((item) => String(item.id) !== previewId);
+  const numbers = buildRecommendationYearlyNumbers([...others, previewRecommendation]);
+  return numbers.get(previewId) ?? null;
+}

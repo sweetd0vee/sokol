@@ -15,6 +15,8 @@ os.environ.setdefault(
 )
 os.environ.setdefault("SOKOL_JWT_SECRET", "test-jwt-secret")
 
+from app.api.deps import CurrentUser
+from app.core.roles import Role
 from app.models.recommendations import (
     Recommendation,
     RecommendationAdditionalStatus,
@@ -40,7 +42,13 @@ def _recommendation_create(name: str = "Рекомендация") -> Recommenda
 class RecommendationsServiceTests(unittest.TestCase):
     def test_delete_recommendation_cleans_attachments_and_renumbers(self) -> None:
         session = AsyncMock()
-        recommendation = Recommendation(id=10, check_id=20, serial_number="26IVP01P1")
+        recommendation = Recommendation(
+            id=10,
+            check_id=20,
+            serial_number="26IVP01P1",
+            auditor="Иванов И.И.",
+        )
+        admin = CurrentUser(username="Админ А.А.", display_name="Администратор", role=Role.ADMIN)
 
         async def run() -> None:
             with (
@@ -62,7 +70,7 @@ class RecommendationsServiceTests(unittest.TestCase):
                     new_callable=AsyncMock,
                 ) as mock_renumber,
             ):
-                await recommendations_service.delete_recommendation(session, recommendation.id)
+                await recommendations_service.delete_recommendation(session, recommendation.id, admin)
 
             mock_cleanup.assert_awaited_once_with(
                 session,
@@ -140,6 +148,41 @@ class RecommendationsServiceTests(unittest.TestCase):
             mock_delete.assert_awaited_once_with(session, existing[0])
             mock_add.assert_awaited_once()
             self.assertEqual(mock_add.await_args.kwargs["sequence_number"], 1)
+            session.commit.assert_awaited_once()
+
+        asyncio.run(run())
+
+    def test_delete_recommendations_batch_cleans_and_renumbers_once(self) -> None:
+        session = AsyncMock()
+        first = Recommendation(id=10, check_id=20, serial_number="26IVP01P1", auditor="Иванов И.И.")
+        second = Recommendation(id=11, check_id=20, serial_number="26IVP01P1", auditor="Иванов И.И.")
+        admin = CurrentUser(username="Админ А.А.", display_name="Администратор", role=Role.ADMIN)
+
+        async def run() -> None:
+            with (
+                patch(
+                    "app.services.recommendations_service.get_recommendation",
+                    new_callable=AsyncMock,
+                    side_effect=[first, second],
+                ),
+                patch(
+                    "app.services.recommendations_service.attachments_service.delete_attachments_for_entity",
+                    new_callable=AsyncMock,
+                ) as mock_cleanup,
+                patch(
+                    "app.services.recommendations_service.recommendations_crud.delete_recommendation_row",
+                    new_callable=AsyncMock,
+                ) as mock_delete,
+                patch(
+                    "app.services.recommendations_service.recommendations_crud.renumber_recommendations_for_check",
+                    new_callable=AsyncMock,
+                ) as mock_renumber,
+            ):
+                await recommendations_service.delete_recommendations_batch(session, [10, 11], admin)
+
+            self.assertEqual(mock_cleanup.await_count, 2)
+            self.assertEqual(mock_delete.await_count, 2)
+            mock_renumber.assert_awaited_once_with(session, 20)
             session.commit.assert_awaited_once()
 
         asyncio.run(run())

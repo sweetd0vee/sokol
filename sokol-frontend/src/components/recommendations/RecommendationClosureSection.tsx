@@ -39,6 +39,7 @@ type RecommendationClosureSectionProps = {
   labelClassName?: string;
   blockTitleClassName?: string;
   stackClassName?: string;
+  canModifyAttachments?: boolean;
 };
 
 const COMMENT_TEXTAREA_CLASS =
@@ -173,6 +174,7 @@ export function RecommendationClosureSection({
   labelClassName = FORM_LABEL_CLASS,
   blockTitleClassName = FORM_SECTION_TITLE_CLASS,
   stackClassName = FORM_SECTION_INNER_STACK_CLASS,
+  canModifyAttachments = true,
 }: RecommendationClosureSectionProps) {
   const [extensionOpen, setExtensionOpen] = useState(true);
   const [removeOpen, setRemoveOpen] = useState(true);
@@ -244,6 +246,7 @@ export function RecommendationClosureSection({
               unavailableMessage="Сохраните рекомендацию, чтобы прикрепить файлы."
               slots={[...RECOMMENDATION_CONTROL_REMOVAL_ATTACHMENT_SLOTS]}
               columnsClassName="grid-cols-1"
+              canModifyAttachments={canModifyAttachments}
             />
           </div>
           <div className={`${FORM_FIELD_WIDE_CLASS} flex flex-col self-stretch`}>

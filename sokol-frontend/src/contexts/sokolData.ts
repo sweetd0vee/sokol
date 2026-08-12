@@ -19,6 +19,7 @@ export type SokolDataContextValue = {
   ) => Promise<Recommendation[]>;
   updateRecommendation: (recommendation: Recommendation) => Promise<Recommendation>;
   deleteRecommendation: (id: string) => Promise<void>;
+  removeRecommendationsByIds: (ids: string[]) => Promise<void>;
   getRecommendationsByCheckKey: (serialNumber: string) => Recommendation[];
   replaceRecommendationsForCheck: (
     serialNumber: string,

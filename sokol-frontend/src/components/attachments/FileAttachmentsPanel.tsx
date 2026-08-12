@@ -32,6 +32,7 @@ type FileAttachmentsPanelProps = {
   compact?: boolean;
   hideSlotLabel?: boolean;
   className?: string;
+  canModifyAttachments?: boolean;
 };
 
 function AttachmentCard({
@@ -87,6 +88,7 @@ function AttachmentFilesModal({
   slotId,
   items,
   canPersist,
+  canModifyAttachments,
   maxUploadBytes,
   maxUploadMb,
   unavailableMessage,
@@ -98,6 +100,7 @@ function AttachmentFilesModal({
   slotId: string;
   items: ReturnType<typeof useEntityAttachments>['filesBySlot'][string];
   canPersist: boolean;
+  canModifyAttachments: boolean;
   maxUploadBytes: number;
   maxUploadMb: number;
   unavailableMessage: string;
@@ -128,7 +131,7 @@ function AttachmentFilesModal({
           <Button
             type="button"
             variant="secondary"
-            disabled={!canPersist}
+            disabled={!canPersist || !canModifyAttachments}
             onClick={() => {
               if (inputRef.current) {
                 inputRef.current.value = '';
@@ -145,7 +148,7 @@ function AttachmentFilesModal({
             ref={inputRef}
             type="file"
             multiple
-            disabled={!canPersist}
+            disabled={!canPersist || !canModifyAttachments}
             className="sr-only"
             onChange={(event) => {
               const picked = Array.from(event.target.files ?? []);
@@ -165,6 +168,7 @@ function AttachmentFilesModal({
         <AttachmentFileList
           items={slotFiles}
           onRemove={(clientId) => onRemoveFile(slotId, clientId)}
+          canRemoveSaved={canModifyAttachments}
           emptyMessage={
             canPersist
               ? 'Файлы не прикреплены.'
@@ -193,6 +197,7 @@ export function FileAttachmentsPanel({
   compact = false,
   hideSlotLabel = false,
   className = '',
+  canModifyAttachments = true,
 }: FileAttachmentsPanelProps) {
   const { filesBySlot, addFiles, removeFile, countForSlot, canPersist } = useEntityAttachments({
     entityType,
@@ -232,6 +237,7 @@ export function FileAttachmentsPanel({
           slotId={openSlot.id}
           items={filesBySlot[openSlot.id]}
           canPersist={canPersist}
+          canModifyAttachments={canModifyAttachments}
           maxUploadBytes={maxUploadBytes}
           maxUploadMb={maxUploadMb}
           unavailableMessage={unavailableMessage}

@@ -21,18 +21,18 @@ type AvatarPreset = {
 const DEFAULT_AVATAR_ID = 'default';
 
 export const AVATAR_PRESETS: AvatarPreset[] = [
-  { id: DEFAULT_AVATAR_ID, label: 'Классический', src: profileAvatarUrl },
-  { id: 'amber', label: 'Теплый', src: avatarAmber },
-  { id: 'sand', label: 'Песочный', src: avatarSand },
-  { id: 'sage', label: 'Оливковый', src: avatarSage },
-  { id: 'aurora', label: 'Аврора', src: avatarAurora },
-  { id: 'ocean', label: 'Океан', src: avatarOcean },
-  { id: 'lilac', label: 'Лиловый', src: avatarLilac },
-  { id: 'graphite', label: 'Графит', src: avatarGraphite },
-  { id: 'bloom', label: 'Цветок', src: avatarBloom },
-  { id: 'honey', label: 'Медовый', src: avatarHoney },
-  { id: 'peach', label: 'Персик', src: avatarPeach },
-  { id: 'violet', label: 'Фиалка', src: avatarViolet },
+  { id: DEFAULT_AVATAR_ID, label: 'Котик', src: profileAvatarUrl },
+  { id: 'amber', label: 'Лисичка', src: avatarAmber },
+  { id: 'sand', label: 'Зайчик', src: avatarSand },
+  { id: 'sage', label: 'Мишка', src: avatarSage },
+  { id: 'aurora', label: 'Панда', src: avatarAurora },
+  { id: 'ocean', label: 'Пингвин', src: avatarOcean },
+  { id: 'lilac', label: 'Сова', src: avatarLilac },
+  { id: 'graphite', label: 'Коала', src: avatarGraphite },
+  { id: 'bloom', label: 'Ёжик', src: avatarBloom },
+  { id: 'honey', label: 'Корги', src: avatarHoney },
+  { id: 'peach', label: 'Красная панда', src: avatarPeach },
+  { id: 'violet', label: 'Тигрёнок', src: avatarViolet },
 ];
 
 const AVATAR_BY_ID = Object.fromEntries(AVATAR_PRESETS.map((preset) => [preset.id, preset]));

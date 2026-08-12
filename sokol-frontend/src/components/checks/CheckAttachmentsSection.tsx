@@ -13,6 +13,7 @@ import {
   filesWord,
 } from '../../utils/checkAttachments';
 import { useEntityAttachments } from '../../hooks/useEntityAttachments';
+import { useAuth } from '../../hooks/useAuth';
 import { fetchCapabilities } from '../../api/capabilities';
 import { AttachmentFileList, AttachmentsUnavailableNotice } from '../attachments/AttachmentFileList';
 import {
@@ -82,6 +83,7 @@ type AttachmentFilesModalProps = {
   onAddFiles: (group: AttachmentFileGroup, newFiles: File[]) => void;
   onRemoveFile: (group: AttachmentFileGroup, clientId: string) => void;
   onClose: () => void;
+  canRemoveSaved: boolean;
 };
 
 function AttachmentFilesModal({
@@ -94,6 +96,7 @@ function AttachmentFilesModal({
   onAddFiles,
   onRemoveFile,
   onClose,
+  canRemoveSaved,
 }: AttachmentFilesModalProps) {
   const inputRefs = useRef<Partial<Record<AttachmentFileGroup, HTMLInputElement | null>>>({});
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -168,6 +171,7 @@ function AttachmentFilesModal({
               <AttachmentFileList
                 items={groupFiles}
                 onRemove={(clientId) => onRemoveFile(group, clientId)}
+                canRemoveSaved={canRemoveSaved}
                 emptyMessage={
                   canPersist
                     ? 'Файлы не прикреплены. Можно загрузить несколько файлов.'
@@ -225,6 +229,7 @@ export function CheckAttachmentsSection({
   az,
   dz,
 }: CheckAttachmentsSectionProps) {
+  const { isAdmin } = useAuth();
   const { filesBySlot, addFiles, removeFile, countForSlot, canPersist } = useEntityAttachments({
     entityType: 'check',
     entityId: checkId,
@@ -307,6 +312,7 @@ export function CheckAttachmentsSection({
             void removeFile(group, clientId);
           }}
           onClose={() => setOpenSlot(null)}
+          canRemoveSaved={isAdmin}
         />
       )}
     </div>

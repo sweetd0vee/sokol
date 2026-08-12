@@ -282,7 +282,7 @@ export function buildEffectivenessMatrixHtmlMarkup(rows: EffectivenessMatrixRow[
         </table>
       </div>
       <div data-effectiveness-matrix-footer style="display:grid;grid-template-columns:14% 34% 13% 13% 13% 13%;align-items:center;border-top:1px solid #e5e7eb;background:#f9fafb">
-        <div style="grid-column:1 / span 2;display:flex;align-items:center;padding:8px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#6b7280">Доля оценок</div>
+        <div style="grid-column:1 / span 2;display:flex;align-items:center;padding:8px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#003366">Доля оценок</div>
         ${footerPies}
       </div>
     </div>

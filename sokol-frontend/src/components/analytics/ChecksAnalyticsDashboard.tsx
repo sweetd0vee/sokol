@@ -192,7 +192,6 @@ export function ChecksAnalyticsDashboard() {
             title="Итого"
             description=""
             dense
-            hideTitle
             exportSectionId="summary"
             exportSelected={exportSections.isSelected('summary')}
             onToggleExport={() => exportSections.toggleSection('summary')}

@@ -23,9 +23,12 @@ import { fetchRecommendation } from '../../api/recommendations';
 import { getErrorMessage } from '../../api/errors';
 import { useSokolData } from '../../contexts/sokolData';
 import { useAuth } from '../../hooks/useAuth';
+import { useCurrentUserName } from '../../hooks/useCurrentUserName';
 import { toNameOptions, useAuditorOptions } from '../../hooks/useReferenceOptions';
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
 import { toInputDate, toIsoDate } from '../../utils/dates';
+import { auditorMatchesCurrentUser } from '../../utils/personMatch';
+import { resolveRecommendationYearlyDisplayNumber } from '../../utils/recommendationYearlyNumber';
 import {
   type CheckFormLocationState,
   type RecommendationFormLocationState,
@@ -73,6 +76,7 @@ export function RecommendationFormPage() {
   const { checks, recommendations, addRecommendation, updateRecommendation, deleteRecommendation, updateCheck } =
     useSokolData();
   const { isAdmin } = useAuth();
+  const myName = useCurrentUserName();
   const isEditMode = Boolean(id);
   const fromCheckForm = Boolean(navigationState.returnTo && navigationState.checkFormDraft);
 
@@ -227,11 +231,24 @@ export function RecommendationFormPage() {
     return recommendations.filter((item) => item.serial_number === serialNumber).length + 1;
   }, [isEditMode, recommendations, serialNumber, source?.sequence_number]);
 
+  const displayYearlyNumber = useMemo(
+    () =>
+      resolveRecommendationYearlyDisplayNumber(recommendations, {
+        recommendationId: isEditMode ? source?.id ?? id : null,
+        deadline: toIsoDate(deadline) ?? source?.deadline,
+        fallback: source ?? null,
+      }),
+    [deadline, id, isEditMode, recommendations, source],
+  );
+
   const { options: auditorOptions } = useAuditorOptions(auditor);
   const { options: leaderOptions } = useAuditorOptions(checkLeader);
   const { options: managerOptions } = useAuditorOptions(manager);
   const { options: auditObjectOptions } = useAuditObjectOptions(auditObject);
   const recommendationId = isEditMode ? (source?.id ?? id ?? null) : null;
+  const recommendationAuditor = source?.auditor ?? auditor;
+  const canManageRecommendation =
+    isAdmin || auditorMatchesCurrentUser(recommendationAuditor, myName);
 
   const requiredFieldErrors = useMemo(() => {
     return getRecommendationRequiredFieldErrors({
@@ -517,7 +534,7 @@ export function RecommendationFormPage() {
           <div className={FORM_ROW_4}>
             <Input
               label="№"
-              value={String(sequenceNumber)}
+              value={displayYearlyNumber !== null ? String(displayYearlyNumber) : '—'}
               onChange={() => undefined}
               readOnly
               className={FORM_FIELD_CLASS}
@@ -704,6 +721,7 @@ export function RecommendationFormPage() {
                     unavailableMessage="Сохраните рекомендацию, чтобы прикрепить файлы."
                     slots={[...RECOMMENDATION_ATTACHMENT_SLOTS]}
                     columnsClassName="grid-cols-1"
+                    canModifyAttachments={canManageRecommendation}
                   />
                 </div>
                 <div className={`${FORM_FIELD_WIDE_CLASS} flex flex-col self-stretch`}>
@@ -734,6 +752,7 @@ export function RecommendationFormPage() {
               recommendationId={recommendationId}
               value={closure}
               onChange={setClosure}
+              canModifyAttachments={canManageRecommendation}
               errorFields={
                 showValidationErrors
                   ? {
@@ -771,7 +790,7 @@ export function RecommendationFormPage() {
                 Создать еще
               </button>
             </div>
-            {isEditMode && recommendationId && isAdmin && (
+            {isEditMode && recommendationId && canManageRecommendation && (
               <button
                 type="button"
                 onClick={() => setDeleteConfirmOpen(true)}

@@ -36,3 +36,7 @@ class AttachmentTooLargeError(CrudServiceError):
 class StorageOperationError(CrudServiceError):
     """Raised when MinIO cannot complete a requested storage operation."""
 
+
+class AccessDeniedError(CrudServiceError):
+    """Raised when the current user lacks permission for the requested operation."""
+

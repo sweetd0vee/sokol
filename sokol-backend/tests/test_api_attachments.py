@@ -63,7 +63,7 @@ class AttachmentsApiTests(unittest.TestCase):
             patch(
                 "app.services.attachments_service.resolve_attachment_target",
                 new_callable=AsyncMock,
-                return_value=("26IVP01P1", None),
+                return_value=("26IVP01P1", None, None),
             ),
             patch(
                 "app.services.attachments_service.attachments_crud.list_attachments",
@@ -115,7 +115,7 @@ class AttachmentsApiTests(unittest.TestCase):
             patch(
                 "app.services.attachments_service.resolve_attachment_target",
                 new_callable=AsyncMock,
-                return_value=("26IVP01P1", None),
+                return_value=("26IVP01P1", None, None),
             ),
         ):
             response = self.client.post(

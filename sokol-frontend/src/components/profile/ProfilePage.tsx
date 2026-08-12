@@ -3,6 +3,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { changePasswordRequest } from '../../api/auth';
 import { getErrorMessage } from '../../api/errors';
+import { AdminUsersSection } from './AdminUsersSection';
 import { AVATAR_PRESETS, readStoredAvatarId, resolveAvatarSrc } from '../../constants/avatars';
 import { Input } from '../ui/Input';
 import { AVATAR_EVENT_NAME, AVATAR_STORAGE_KEY } from '../../constants/storage';
@@ -11,7 +12,7 @@ import { FORM_PAGE_CLASS, FORM_SAVE_BUTTON_CLASS, FORM_SECTION_CLASS, FORM_SECTI
 const MIN_PASSWORD_LENGTH = 4;
 
 export function ProfilePage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const fullName = user?.shortName ?? user?.displayName ?? '—';
   const [avatarId, setAvatarId] = useState(() => readStoredAvatarId());
   const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false);
@@ -201,6 +202,8 @@ export function ProfilePage() {
           </button>
         </div>
       </form>
+
+      {isAdmin && <AdminUsersSection />}
     </div>
   );
 }

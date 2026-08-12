@@ -168,7 +168,7 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
 
         <div className="shrink-0 border-t border-gray-200 bg-gray-50/90">
           <div className="flex w-full items-stretch" data-effectiveness-matrix-footer>
-            <div className="flex w-[48%] shrink-0 items-center px-3 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div className="flex w-[48%] shrink-0 items-center px-3 py-3 text-xs font-semibold uppercase tracking-wide text-sber-dark">
               Доля оценок
             </div>
             {EFFECTIVENESS_MATRIX_COLUMNS.map((column) => (

@@ -169,3 +169,7 @@ class RecommendationBatchRequest(BaseModel):
     serial_number: str = Field(..., min_length=1, max_length=32)
     mode: Literal["append", "replace"] = "append"
     items: list[RecommendationCreate] = Field(..., min_length=1, max_length=200)
+
+
+class RecommendationBatchDeleteRequest(BaseModel):
+    ids: list[int] = Field(..., min_length=1, max_length=200)

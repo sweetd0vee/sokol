@@ -2,6 +2,8 @@ from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import CurrentUser
+from app.core.recommendation_access import user_can_manage_recommendation
 from app.crud import checks_crud, recommendations_crud
 from app.models.recommendations import Recommendation
 from app.schemas.recommendations import (
@@ -11,7 +13,7 @@ from app.schemas.recommendations import (
     RecommendationUpdate,
 )
 from app.services import attachments_service
-from app.services.crud_errors import InvalidReferenceError, ResourceNotFoundError
+from app.services.crud_errors import AccessDeniedError, InvalidReferenceError, ResourceNotFoundError
 from app.services.dictionary_validation import validate_recommendation_dictionary_fields
 
 
@@ -139,8 +141,18 @@ async def update_recommendation(
     )
 
 
-async def delete_recommendation(session: AsyncSession, recommendation_id: int) -> None:
+async def delete_recommendation(
+    session: AsyncSession,
+    recommendation_id: int,
+    user: CurrentUser,
+) -> None:
     recommendation = await get_recommendation(session, recommendation_id)
+    if not user_can_manage_recommendation(
+        role=user.role,
+        username=user.username,
+        auditor=recommendation.auditor,
+    ):
+        raise AccessDeniedError("Недостаточно прав для удаления этой рекомендации.")
     try:
         await attachments_service.delete_attachments_for_entity(
             session,
@@ -149,6 +161,42 @@ async def delete_recommendation(session: AsyncSession, recommendation_id: int) -
         )
         await recommendations_crud.delete_recommendation_row(session, recommendation)
         await recommendations_crud.renumber_recommendations_for_check(session, recommendation.check_id)
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+
+
+async def delete_recommendations_batch(
+    session: AsyncSession,
+    recommendation_ids: list[int],
+    user: CurrentUser,
+) -> None:
+    unique_ids = list(dict.fromkeys(recommendation_ids))
+    recommendations = []
+    for recommendation_id in unique_ids:
+        recommendation = await get_recommendation(session, recommendation_id)
+        if not user_can_manage_recommendation(
+            role=user.role,
+            username=user.username,
+            auditor=recommendation.auditor,
+        ):
+            raise AccessDeniedError("Недостаточно прав для удаления одной из рекомендаций.")
+        recommendations.append(recommendation)
+
+    check_ids: set[int] = set()
+    try:
+        for recommendation in recommendations:
+            await attachments_service.delete_attachments_for_entity(
+                session,
+                entity_type="recommendation",
+                entity_id=recommendation.id,
+            )
+            await recommendations_crud.delete_recommendation_row(session, recommendation)
+            check_ids.add(recommendation.check_id)
+
+        for check_id in check_ids:
+            await recommendations_crud.renumber_recommendations_for_check(session, check_id)
         await session.commit()
     except Exception:
         await session.rollback()
