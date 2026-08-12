@@ -16,6 +16,7 @@ import {
   normalizeRecommendationIndicator,
   normalizeRecommendationStatus,
 } from '../../constants/recommendations';
+import { fetchCheckBySerialNumber } from '../../api/checks';
 import { fetchRecommendation } from '../../api/recommendations';
 import { useSokolData } from '../../contexts/sokolData';
 import { toNameOptions, useAuditorOptions } from '../../hooks/useReferenceOptions';
@@ -162,10 +163,24 @@ export function RecommendationFormPage() {
     location.key,
   ]);
 
-  const linkedCheck = useMemo(
-    () => checks.find((check) => check.serial_number === serialNumber),
-    [checks, serialNumber],
+  const resolvedSerialNumber = serialNumber.trim() || source?.serial_number?.trim() || '';
+
+  const linkedCheckFromContext = useMemo(
+    () =>
+      resolvedSerialNumber
+        ? checks.find((check) => check.serial_number === resolvedSerialNumber)
+        : undefined,
+    [checks, resolvedSerialNumber],
   );
+
+  const { data: fetchedLinkedCheck } = useQuery({
+    queryKey: ['check', 'by-serial', resolvedSerialNumber],
+    queryFn: () => fetchCheckBySerialNumber(resolvedSerialNumber),
+    enabled: Boolean(resolvedSerialNumber) && !linkedCheckFromContext,
+    staleTime: 60_000,
+  });
+
+  const linkedCheck = linkedCheckFromContext ?? fetchedLinkedCheck ?? undefined;
 
   useEffect(() => {
     if (linkedCheck) {
@@ -261,8 +276,7 @@ export function RecommendationFormPage() {
     }
     return 'Создание рекомендации';
   })();
-  const backPath = fromCheckForm ? navigationState.returnTo! : '/recommendations';
-  const backLabel = fromCheckForm ? 'Назад к проверке' : 'Назад к списку';
+  const backToCheckPath = linkedCheck ? `/checks/${linkedCheck.id}/edit` : null;
 
   const withUpdatedCheckLeaderDraft = (draft: NonNullable<RecommendationFormLocationState['checkFormDraft']>) => ({
     ...draft,
@@ -270,15 +284,19 @@ export function RecommendationFormPage() {
   });
 
   const returnToCheckForm = () => {
-    if (!fromCheckForm || !navigationState.checkFormDraft) {
-      navigate(backPath);
+    const returnTo = navigationState.returnTo;
+    if (!fromCheckForm || !returnTo) {
+      return;
+    }
+    if (!navigationState.checkFormDraft) {
+      navigate(returnTo);
       return;
     }
     const returnState: CheckFormLocationState = {
       check: navigationState.checkFormDraft.existingCheck,
       restoredDraft: withUpdatedCheckLeaderDraft(navigationState.checkFormDraft),
     };
-    navigate(backPath, { replace: true, state: returnState });
+    navigate(returnTo, { replace: true, state: returnState });
   };
 
   const buildPayload = (trimmedDescription: string): Recommendation => {
@@ -399,22 +417,32 @@ export function RecommendationFormPage() {
     <div className={`${FORM_PAGE_CLASS} ${FORM_STACK_CLASS}`}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-bold text-sber-dark">{heading}</h2>
-        {fromCheckForm ? (
-          <button
-            type="button"
-            onClick={returnToCheckForm}
-            className={FORM_OUTLINE_BUTTON_CLASS}
-          >
-            {backLabel}
-          </button>
-        ) : (
-          <Link
-            to={backPath}
-            className={FORM_OUTLINE_BUTTON_CLASS}
-          >
-            {backLabel}
-          </Link>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {(fromCheckForm || (isEditMode && backToCheckPath)) && (
+            fromCheckForm ? (
+              <button
+                type="button"
+                onClick={returnToCheckForm}
+                className={FORM_OUTLINE_BUTTON_CLASS}
+              >
+                Назад к проверке
+              </button>
+            ) : (
+              <Link
+                to={backToCheckPath!}
+                state={{ check: linkedCheck } satisfies CheckFormLocationState}
+                className={FORM_OUTLINE_BUTTON_CLASS}
+              >
+                Назад к проверке
+              </Link>
+            )
+          )}
+          {!fromCheckForm && (
+            <Link to="/recommendations" className={FORM_OUTLINE_BUTTON_CLASS}>
+              Назад к списку
+            </Link>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className={FORM_STACK_CLASS}>

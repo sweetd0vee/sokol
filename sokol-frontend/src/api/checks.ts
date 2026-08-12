@@ -23,6 +23,15 @@ export async function fetchChecks(params: FetchChecksParams = {}): Promise<{ ite
   };
 }
 
+export async function fetchCheckBySerialNumber(serialNumber: string): Promise<Check | null> {
+  const normalized = serialNumber.trim();
+  if (!normalized) {
+    return null;
+  }
+  const { items } = await fetchChecks({ search: normalized, limit: 50 });
+  return items.find((check) => check.serial_number === normalized) ?? null;
+}
+
 export async function createCheck(check: Check): Promise<Check> {
   const { data } = await api.post<ApiCheck>('/api/v1/checks', mapCheckToCreate(check));
   return mapCheckFromApi(data);

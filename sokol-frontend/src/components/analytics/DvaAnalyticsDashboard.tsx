@@ -4,10 +4,8 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  ComposedChart,
   LabelList,
   Legend,
-  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -121,7 +119,6 @@ export function DvaAnalyticsDashboard() {
     violationRate: 0,
   };
   const completionShare = data?.completionShare ?? 0;
-  const portfolioSeries = data?.portfolioSeries ?? [];
   const auditorLoad = data?.auditorLoad ?? [];
   const auditorChecksTreemap = data?.auditorChecksTreemap ?? [];
   const auditorRecommendationsTreemap = data?.auditorRecommendationsTreemap ?? [];
@@ -188,19 +185,8 @@ export function DvaAnalyticsDashboard() {
         ),
       },
       {
-        id: 'portfolio',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
-        render: () => (
-          <ChartCard title="Портфель проверок и рекомендаций" description="Общий объём работ по срокам" exportSectionId="portfolio" exportSelected={exportSections.isSelected('portfolio')} onToggleExport={() => exportSections.toggleSection('portfolio')}>
-            {portfolioSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={portfolioSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={CHART_AXIS_TICK} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} /><Bar dataKey="recommendations" name="Рекомендации" fill="#A78BFA" radius={[4, 4, 0, 0]}><LabelList dataKey="recommendations" position="top" fontSize={CHART_VALUE_LABEL_SIZE} /></Bar><Line type="monotone" dataKey="checks" name="Проверки" stroke="#003366" strokeWidth={2.5} /></ComposedChart></ResponsiveContainer></div>
-            )}
-          </ChartCard>
-        ),
-      },
-      {
         id: 'auditorLoad',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 12, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard title="Нагрузка аудиторов" description="Проверки и рекомендации по аудиторам за период" exportSectionId="auditorLoad" exportSelected={exportSections.isSelected('auditorLoad')} onToggleExport={() => exportSections.toggleSection('auditorLoad')}>
             {auditorLoad.length === 0 ? (
@@ -283,7 +269,6 @@ export function DvaAnalyticsDashboard() {
       departmentMap,
       documentReadiness,
       exportSections,
-      portfolioSeries,
       recSummary,
       completionShare,
     ],
