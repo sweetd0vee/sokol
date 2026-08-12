@@ -4,8 +4,6 @@ from collections import defaultdict
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.checks import Check
-from app.models.recommendations import Recommendation
 from app.schemas.analytics import (
     NamedCount,
     PeriodGranularity,
@@ -17,14 +15,16 @@ from app.schemas.analytics import (
 )
 from app.services.analytics.common import (
     build_department_lookup,
-    check_canonical_department_distribution,
-    filter_checks,
-    filter_recommendations,
-    load_checks_with_recommendations,
+    check_canonical_department_distribution_from_links,
     load_department_names,
-    load_recommendations,
     match_audit_object_to_departments,
-    pad_anchor_dates,
+)
+from app.services.analytics.sql_aggregates import (
+    collect_combined_anchor_dates_sql,
+    count_checks,
+    count_recommendations,
+    load_check_serial_numbers,
+    load_recommendation_department_rows,
 )
 
 
@@ -62,28 +62,25 @@ def _build_coverage(
 
 
 def _department_analytics(
-    checks: list[Check],
-    recommendations: list[Recommendation],
-    all_recommendations_for_links: list[Recommendation],
+    check_serials: list[str],
+    recommendation_rows: list[tuple[str, str, str]],
+    all_recommendation_links: list[tuple[str, str, str]],
     all_departments: list[str],
     department_lookup: dict[str, str],
 ) -> list[PlanningDepartmentAnalyticsRow]:
-    check_by_dept = check_canonical_department_distribution(
-        checks,
-        all_recommendations_for_links,
+    check_by_dept = check_canonical_department_distribution_from_links(
+        check_serials,
+        [(serial, audit_object) for serial, audit_object, _materiality in all_recommendation_links],
         all_departments,
     )
     rec_by_dept: dict[str, int] = defaultdict(int)
     high_by_dept: dict[str, int] = defaultdict(int)
-    for item in recommendations:
-        matched = match_audit_object_to_departments(
-            item.audit_object or "",
-            department_lookup,
-        )
+    for _serial, audit_object, materiality_level in recommendation_rows:
+        matched = match_audit_object_to_departments(audit_object, department_lookup)
         targets = matched or {"Без департамента"}
         for name in targets:
             rec_by_dept[name] += 1
-            if item.materiality_level == "высокий":
+            if materiality_level == "высокий":
                 high_by_dept[name] += 1
 
     names = set(check_by_dept) | set(rec_by_dept)
@@ -104,17 +101,14 @@ def _department_analytics(
 
 
 def _high_materiality_by_department(
-    recommendations: list[Recommendation],
+    recommendation_rows: list[tuple[str, str, str]],
     department_lookup: dict[str, str],
 ) -> list[NamedCount]:
     counts: dict[str, int] = defaultdict(int)
-    for item in recommendations:
-        if item.materiality_level != "высокий":
+    for _serial, audit_object, materiality_level in recommendation_rows:
+        if materiality_level != "высокий":
             continue
-        matched = match_audit_object_to_departments(
-            item.audit_object or "",
-            department_lookup,
-        )
+        matched = match_audit_object_to_departments(audit_object, department_lookup)
         targets = matched or {"Без департамента"}
         for name in targets:
             counts[name] += 1
@@ -133,59 +127,49 @@ async def build_planning_analytics(
     months: list[str] | None = None,
     departments: list[str] | None = None,
 ) -> PlanningAnalyticsResponse:
-    checks = await load_checks_with_recommendations(session)
-    recommendations = await load_recommendations(session)
+    filters = {
+        "years": years,
+        "quarters": quarters,
+        "months": months,
+        "departments": departments,
+    }
+    coverage_filters = {
+        "years": years,
+        "quarters": quarters,
+        "months": months,
+        "departments": [],
+    }
     all_departments = await load_department_names(session)
     department_lookup = build_department_lookup(all_departments)
 
-    filtered_checks = filter_checks(
-        checks,
-        departments=departments,
-        years=years,
-        quarters=quarters,
-        months=months,
-    )
-    filtered_checks_for_coverage = filter_checks(
-        checks,
-        departments=[],
-        years=years,
-        quarters=quarters,
-        months=months,
-    )
-    filtered_recommendations = filter_recommendations(
-        recommendations,
-        departments=departments,
-        years=years,
-        quarters=quarters,
-        months=months,
-    )
+    filtered_check_serials = await load_check_serial_numbers(session, **filters)
+    coverage_check_serials = await load_check_serial_numbers(session, **coverage_filters)
+    filtered_recommendation_rows = await load_recommendation_department_rows(session, **filters)
+    all_recommendation_rows = await load_recommendation_department_rows(session)
 
     check_counts = {
         name: count
-        for name, count in check_canonical_department_distribution(
-            filtered_checks_for_coverage,
-            recommendations,
+        for name, count in check_canonical_department_distribution_from_links(
+            coverage_check_serials,
+            [(serial, audit_object) for serial, audit_object, _materiality in all_recommendation_rows],
             all_departments,
         ).items()
         if name != "Без департамента"
     }
     coverage = _build_coverage(all_departments, check_counts)
-    high_ranking = _high_materiality_by_department(
-        filtered_recommendations,
-        department_lookup,
-    )
+    high_ranking = _high_materiality_by_department(filtered_recommendation_rows, department_lookup)
 
     return PlanningAnalyticsResponse(
-        universe_checks_total=len(checks),
-        universe_recommendations_total=len(recommendations),
-        filtered_checks_total=len(filtered_checks),
-        filtered_recommendations_total=len(filtered_recommendations),
+        universe_checks_total=await count_checks(session, filtered=False),
+        universe_recommendations_total=await count_recommendations(session, filtered=False),
+        filtered_checks_total=len(filtered_check_serials),
+        filtered_recommendations_total=len(filtered_recommendation_rows),
         granularity=granularity,
         coverage=coverage,
         department_analytics=_department_analytics(
-            filtered_checks,
-            filtered_recommendations,
-            recommendations,
+            filtered_check_serials,
+            filtered_recommendation_rows,
+            all_recommendation_rows,
             all_departments,
             department_lookup,
         ),
@@ -193,9 +177,6 @@ async def build_planning_analytics(
         high_materiality_total=sum(item.value for item in high_ranking),
         filter_options=PlanningAnalyticsFilterOptions(
             departments=all_departments,
-            anchor_dates=pad_anchor_dates(
-                [check.start_date for check in checks if check.start_date]
-                + [item.deadline for item in recommendations if item.deadline]
-            ),
+            anchor_dates=await collect_combined_anchor_dates_sql(session),
         ),
     )

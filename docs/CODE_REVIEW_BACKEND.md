@@ -1,7 +1,7 @@
 # Код-ревью backend
 
-**Общая оценка:** 8.1 / 10 · Python 3.12, FastAPI, SQLAlchemy async, MinIO  
-**Смысл оценки:** backend уже выглядит как рабочий API для пилота, но промышленная готовность упирается в миграции, оставшийся auth hardening, lifecycle файлов в MinIO и защиту import/seed операций.
+**Общая оценка:** 8.3 / 10 · Python 3.12, FastAPI, SQLAlchemy async, MinIO  
+**Смысл оценки:** backend готов для пилота на больших таблицах по analytics и основному CRUD; промышленная готовность упирается в Alembic, prod guards для import/seed и auth hardening.
 
 ## Архитектура
 
@@ -24,12 +24,12 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 | Checks / ключ проверки | **10 / 10** | `serial_number` генерируется backend-only; PATCH и mass recalc синхронизируют recommendations/attachments и MinIO buckets | Нужен production runbook для ручного mass-recalc |
 | Recommendations | **10 / 10** | Статусы, фильтры, связи с проверками, atomic batch append/replace и cleanup вложений закрывают основной lifecycle | Для больших bulk batches может понадобиться отдельный job/progress UI |
 | Settings / справочники | **8 / 10** | Общий CRUD для словарей, admin-only mutations, validation в доменных create/PATCH | Нет FK на доменные поля, часть связей строковая |
-| Analytics | **7.5 / 10** | Серверные агрегаты по checks/recommendations/monitoring/dva/planning согласованы с UI | In-memory подход нормален для пилота, но не для большого портфеля |
+| Analytics | **8.5 / 10** | Фильтры и агрегаты checks/recommendations/monitoring/dva/planning считаются в PostgreSQL (`GROUP BY`, conditional counts); индексы по датам/статусам/аудиторам | Planning-department matching и effectiveness matrix всё ещё требуют точечной выборки строк |
 | DOCX reports | **8 / 10** | Раздел II, links, memorandum и parser вынесены в services и хорошо тестируются | Нет очереди, streaming upload и golden DOCX CI |
 | Attachments / MinIO | **8 / 10** | Есть metadata model, storage service, upload/list/download/delete API, compensation и serial bucket migration | Нужны policy, backup/restore и общий storage UX |
-| Auth / RBAC | **7 / 10** | JWT Bearer закрывает API; Bearer lookup читает пользователя/роль из БД и проверяет `is_active`; роли `auditor`/`admin` применены на delete/settings | Basic fallback всегда включён; нет OIDC/audit log |
-| БД / миграции / import | **5 / 10** | `create_all`, seed и import позволяют быстро поднять dev/pilot | Нет Alembic baseline; Docker по умолчанию грузит demo data; часть `migrate_*.py` не входит в entrypoint |
-| Tests | **8.5 / 10** | 116 backend unittest/regression tests, auth/attachments/dictionaries/analytics, lifecycle tests и DB-backed checks CRUD integration | Нужны Alembic/import integration и e2e бизнес-сценарии |
+| Auth / RBAC | **7.5 / 10** | JWT Bearer, lookup роли/`is_active` из БД; admin users API; `person_match` для доступа auditor к своим рекомендациям | Basic fallback всегда включён; нет OIDC/audit log |
+| БД / миграции / import | **5 / 10** | `create_all`, seed и import позволяют быстро поднять dev/pilot; analytics indexes в entrypoint | Нет Alembic baseline; Docker по умолчанию грузит demo data; часть `migrate_*.py` не входит в entrypoint |
+| Tests | **9 / 10** | 130 backend unittest/regression tests (+ analytics SQL filters, person_match, auth/users); DB-backed checks CRUD integration | Нужны Alembic/import integration и e2e бизнес-сценарии |
 
 ## Security
 
@@ -46,7 +46,7 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 
 - Pagination checks/recommendations: skip/limit ✅
 - Dictionary validation на create/update ✅
-- Analytics: in-memory по всей БД — OK до ~1k записей
+- Analytics: SQL-side filters/aggregates + analytics indexes; row-level только для matrix/planning mapping
 - Attachments + MinIO ✅
 - Recommendations batch append/replace ✅
 
@@ -67,11 +67,11 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 
 - Схема: `create_all` + `migrate_*.py` — **нет Alembic** (P0).
 - Import `--replace` опасен на prod.
-- Entrypoint: init → migrate → seed → optional demo.
+- Entrypoint: init → migrate (в т.ч. `migrate_analytics_indexes`) → seed → optional demo.
 
 ## Тесты
 
-`py -3.12 -m unittest discover -s tests`: 116 тестов, OK (2 skipped). Новые regression tests покрывают Bearer lookup, recommendation batch API, delete cleanup, serial lifecycle storage migration и устаревший service-layer mock в auth/RBAC. DB-backed integration уже есть для checks CRUD; дальше нужны Alembic/import integration и e2e бизнес-сценарии.
+`py -3.12 -m unittest discover -s tests`: **130 тестов, OK** (2 skipped). Покрытие: Bearer/users RBAC, recommendation batch/delete, serial lifecycle + MinIO, analytics SQL filters, person_match, attachments, dictionaries, DOCX parser. DB-backed integration для checks CRUD; CI использует `sqlalchemy[asyncio]` (greenlet) при `SOKOL_RUN_DB_INTEGRATION_TESTS=1`.
 
 ## Подробные findings
 
@@ -79,7 +79,7 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 
 **Где:** `app/db/init_db.py`, `app/db/migrate_*.py`, `sokol-backend/docker/app/entrypoint.sh`, `tests/test_checks_crud_integration.py`.
 
-**Симптом:** dev/test/Docker bootstrap поднимают схему через `Base.metadata.create_all()`, а изменения накатываются отдельными скриптами `migrate_*.py`. В `entrypoint.sh` вызывается только часть миграций: `migrate_check_effectiveness`, `migrate_attachments`, `migrate_dictionary_uniqueness`, `migrate_recommendation_observation_name`. Остальные `migrate_*.py` могут не попасть на стенд автоматически. В `tests/test_checks_crud_integration.py` схема также создаётся напрямую из metadata.
+**Симптом:** dev/test/Docker bootstrap поднимают схему через `Base.metadata.create_all()`, а изменения накатываются отдельными скриптами `migrate_*.py`. В `entrypoint.sh` вызывается только часть миграций: `migrate_check_effectiveness`, `migrate_attachments`, `migrate_dictionary_uniqueness`, `migrate_recommendation_observation_name`, `migrate_analytics_indexes`. Остальные `migrate_*.py` могут не попасть на стенд автоматически. В `tests/test_checks_crud_integration.py` схема также создаётся напрямую из metadata.
 
 **Риск:** на UAT/prod невозможно надёжно воспроизвести историю схемы, проверить порядок миграций и откатить неудачное изменение. Разные окружения могут иметь разные наборы колонок/индексов, хотя код уже ожидает новые поля.
 
@@ -191,17 +191,15 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 
 **Тесты:** добавить auditor/department/user через API, запустить prod bootstrap sync, запись остаётся; destructive sync работает только с dev/demo flag.
 
-### BE-08 · P2 · Analytics in-memory масштабируется только для пилота
+### BE-08 · P2 · Analytics SQL aggregates — закрыто
 
-**Где:** `app/services/analytics/*`, `app/api/v1/endpoints/analytics.py`.
+**Где:** `app/services/analytics/sql_filters.py`, `app/services/analytics/sql_aggregates.py`, `app/db/migrate_analytics_indexes.py`.
 
-**Симптом:** аналитические сервисы возвращают полезные агрегаты, но значимая часть расчётов держится в Python-слое после выборки данных.
+**Было:** каждый analytics endpoint загружал всю таблицу checks/recommendations в память и агрегировал в Python.
 
-**Риск:** при росте портфеля проверки/рекомендации начнут тормозить dashboards и экспорты; pagination в CRUD не решает analytics.
+**Исправлено:** фильтры перенесены в SQL WHERE; summary, period series, distributions, DVA matrix/load/readiness считаются через `COUNT`/`GROUP BY`. Для effectiveness matrix и planning department mapping остаётся точечная выборка только нужных колонок. Добавлены индексы по `start_date`, `deadline`, `status`, `auditor`, `audit_object`, `materiality_level`.
 
-**Как исправить:** самые тяжёлые агрегаты перенести в SQL `GROUP BY`; добавить индексы по датам, статусам, serial/check_id; для dashboard использовать cache с invalidation после CRUD.
-
-**Тесты:** performance fixture на 5k/20k rows; snapshot агрегатов до/после SQL rewrite.
+**Остаток:** при очень больших объёмах можно добавить materialized views/cache для planning coverage и filter options.
 
 ## Findings
 
@@ -212,6 +210,5 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 | P0 | Demo import off by default в Docker |
 | P1 | HTTP Basic fallback prod flag |
 | P1 | Prod-safe sync dictionaries |
-| P2 | Analytics SQL aggregates при росте данных |
 
 Задачи: [ACTION_PLAN.md](ACTION_PLAN.md)

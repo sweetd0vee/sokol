@@ -262,21 +262,38 @@ def check_canonical_department_distribution(
     recommendations: list[Recommendation],
     all_departments: list[str],
 ) -> dict[str, int]:
+    check_serials = [check.serial_number for check in checks]
+    rec_links = [
+        ((item.serial_number or "").strip(), item.audit_object or "")
+        for item in recommendations
+    ]
+    return check_canonical_department_distribution_from_links(
+        check_serials,
+        rec_links,
+        all_departments,
+    )
+
+
+def check_canonical_department_distribution_from_links(
+    check_serials: list[str],
+    recommendation_links: list[tuple[str, str]],
+    all_departments: list[str],
+) -> dict[str, int]:
     department_by_normalized = build_department_lookup(all_departments)
-    by_serial: dict[str, list[Recommendation]] = defaultdict(list)
-    for item in recommendations:
-        serial = (item.serial_number or "").strip()
+    by_serial: dict[str, list[str]] = defaultdict(list)
+    for serial, audit_object in recommendation_links:
         if serial:
-            by_serial[serial].append(item)
+            by_serial[serial].append(audit_object)
 
     counts: dict[str, int] = {name: 0 for name in all_departments}
     without_department = 0
-    for check in checks:
-        linked = by_serial.get(check.serial_number, [])
+    for serial in check_serials:
+        serial_key = (serial or "").strip()
+        linked = by_serial.get(serial_key, [])
         departments: set[str] = set()
-        for item in linked:
+        for audit_object in linked:
             departments |= match_audit_object_to_departments(
-                item.audit_object or "",
+                audit_object,
                 department_by_normalized,
             )
         if not departments:

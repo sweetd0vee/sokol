@@ -13,6 +13,7 @@ docker/app/.env
 !.secrets/*.env.example
 .venv/
 .venv-ci/
+.venv-tmp/
 venv/
 env/
 

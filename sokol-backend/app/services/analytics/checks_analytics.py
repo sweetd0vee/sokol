@@ -1,33 +1,32 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import Literal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.checks import Check, CheckStatus
+from app.models.checks import Check
 from app.schemas.analytics import (
     ChecksAnalyticsFilterOptions,
     ChecksAnalyticsResponse,
     EffectivenessMatrixRow,
     EffectivenessRatings,
     EffectivenessTones,
-    NamedCount,
-    PeriodCount,
     PeriodGranularity,
 )
-from app.services.analytics.common import (
-    check_department_map,
-    collect_analytics_auditors,
-    collect_audit_objects,
-    completion_share,
-    filter_checks,
-    load_checks_with_recommendations,
-    load_recommendations,
-    pad_anchor_dates,
-    summarize_checks,
+from app.services.analytics.sql_aggregates import (
+    check_period_series_sql,
+    check_type_distribution_sql,
+    check_view_distribution_sql,
+    collect_check_anchor_dates_sql,
+    collect_filter_option_auditors_sql,
+    collect_filter_option_departments_sql,
+    completion_share_from_summary,
+    count_checks,
+    department_map_from_pairs,
+    load_check_department_pairs,
+    load_effectiveness_matrix_rows,
+    summarize_checks_sql,
 )
-from app.services.analytics.period import get_period_bucket
 
 CHECK_TYPE_PLURAL_LABELS = {
     "planned": "Плановые",
@@ -51,66 +50,9 @@ def _resolve_effectiveness_tone(value: str | None) -> Literal["effective", "suff
     return "unset"
 
 
-def _period_series(checks: list[Check], granularity: PeriodGranularity) -> list[PeriodCount]:
-    buckets: dict[str, PeriodCount] = {}
-    for check in checks:
-        period = get_period_bucket(check.start_date, granularity)
-        current = buckets.get(period.key)
-        if current is None:
-            current = PeriodCount(
-                key=period.key,
-                label=period.label,
-                sort_key=period.sort_key,
-                total=0,
-                not_started=0,
-                in_progress=0,
-                completed=0,
-                cumulative=0,
-            )
-            buckets[period.key] = current
-        current.total += 1
-        if check.status == CheckStatus.NOT_STARTED:
-            current.not_started += 1
-        elif check.status == CheckStatus.IN_PROGRESS:
-            current.in_progress += 1
-        else:
-            current.completed += 1
-
-    ordered = sorted(buckets.values(), key=lambda item: item.sort_key)
-    running = 0
-    for item in ordered:
-        running += item.total
-        item.cumulative = running
-    return ordered
-
-
-def _view_distribution(checks: list[Check]) -> list[NamedCount]:
-    counts: dict[str, int] = defaultdict(int)
-    for check in checks:
-        counts[check.check_view] += 1
-    return [
-        NamedCount(name=name, value=value)
-        for name, value in sorted(counts.items(), key=lambda item: (-item[1], item[0]))
-    ]
-
-
-def _type_distribution(checks: list[Check]) -> list[NamedCount]:
-    counts: dict[str, int] = defaultdict(int)
-    for check in checks:
-        counts[check.check_type] += 1
-    return [
-        NamedCount(
-            name=CHECK_TYPE_PLURAL_LABELS.get(check_type, check_type),
-            value=value,
-        )
-        for check_type, value in sorted(counts.items(), key=lambda item: (-item[1], item[0]))
-    ]
-
-
 def _effectiveness_matrix(checks: list[Check]) -> list[EffectivenessMatrixRow]:
-    ordered = sorted(checks, key=lambda item: item.serial_number)
     rows: list[EffectivenessMatrixRow] = []
-    for check in ordered:
+    for check in checks:
         ratings = EffectivenessRatings(
             process=(check.process_effectiveness or "").strip(),
             svk=(check.svk_effectiveness or "").strip(),
@@ -145,34 +87,30 @@ async def build_checks_analytics(
     auditors: list[str] | None = None,
     departments: list[str] | None = None,
 ) -> ChecksAnalyticsResponse:
-    checks = await load_checks_with_recommendations(session)
-    recommendations = await load_recommendations(session)
-
-    filtered = filter_checks(
-        checks,
-        auditors=auditors,
-        departments=departments,
-        years=years,
-        quarters=quarters,
-        months=months,
-    )
-    summary = summarize_checks(filtered)
+    filters = {
+        "years": years,
+        "quarters": quarters,
+        "months": months,
+        "auditors": auditors,
+        "departments": departments,
+    }
+    summary = await summarize_checks_sql(session, **filters)
+    department_pairs = await load_check_department_pairs(session, **filters)
+    matrix_checks = await load_effectiveness_matrix_rows(session, **filters)
     return ChecksAnalyticsResponse(
-        universe_total=len(checks),
-        filtered_total=len(filtered),
+        universe_total=await count_checks(session, filtered=False),
+        filtered_total=summary.total,
         granularity=granularity,
         summary=summary,
-        completion_share=completion_share(summary.total, summary.completed),
-        period_series=_period_series(filtered, granularity),
-        view_distribution=_view_distribution(filtered),
-        type_distribution=_type_distribution(filtered),
-        department_map=check_department_map(filtered),
-        effectiveness_matrix=_effectiveness_matrix(filtered),
+        completion_share=completion_share_from_summary(summary),
+        period_series=await check_period_series_sql(session, granularity, **filters),
+        view_distribution=await check_view_distribution_sql(session, **filters),
+        type_distribution=await check_type_distribution_sql(session, **filters),
+        department_map=department_map_from_pairs(department_pairs),
+        effectiveness_matrix=_effectiveness_matrix(matrix_checks),
         filter_options=ChecksAnalyticsFilterOptions(
-            auditors=collect_analytics_auditors(checks, recommendations),
-            departments=collect_audit_objects(recommendations),
-            anchor_dates=pad_anchor_dates(
-                [check.start_date for check in checks if check.start_date]
-            ),
+            auditors=await collect_filter_option_auditors_sql(session),
+            departments=await collect_filter_option_departments_sql(session),
+            anchor_dates=await collect_check_anchor_dates_sql(session),
         ),
     )

@@ -75,6 +75,7 @@ from sqlalchemy import func, select
 
 from app.db.init_db import init_db
 from app.db.import_seed_data import import_seed_data
+from app.db.migrate_analytics_indexes import migrate as migrate_analytics_indexes
 from app.db.migrate_attachments import migrate as migrate_attachments
 from app.db.migrate_check_effectiveness import migrate as migrate_effectiveness
 from app.db.migrate_dictionary_uniqueness import migrate as migrate_dictionary_uniqueness
@@ -94,6 +95,7 @@ async def bootstrap() -> None:
     await migrate_attachments()
     await migrate_dictionary_uniqueness()
     await migrate_recommendation_observation_name()
+    await migrate_analytics_indexes()
     await seed_audit_types(AUDIT_TYPES)
     await seed_check_kinds(CHECK_KINDS)
     await seed_effectiveness_ratings(EFFECTIVENESS_RATINGS)

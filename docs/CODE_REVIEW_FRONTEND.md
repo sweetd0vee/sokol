@@ -24,12 +24,12 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 | Recommendations workflow | **8 / 10** | CRUD, статусы, вложения, связь с проверкой и atomic batch import/replace покрывают основной процесс | Save errors не показываются в форме |
 | Data layer / context | **7 / 10** | API clients + mappers + React Query дают единый контракт | `SokolDataContext` тянет bulk limits 500/1000 без явного warning |
 | Attachments UI | **7 / 10** | Панели вложений подключены к check/recommendation, upload limits берутся с backend | Нужен общий banner/disabled state при недоступном MinIO |
-| Analytics dashboards | **8 / 10** | Серверные агрегаты, фильтры и визуализации полезны бизнесу | При росте данных нужен drill-down/server pagination |
+| Analytics dashboards | **8 / 10** | Серверные SQL-агрегаты, фильтры и визуализации полезны бизнесу | Drill-down/server pagination для детализации из дашбордов |
 | Exports | **6.5 / 10** | XLSX/PDF/DOCX/HTML дают быстрый value для пользователей | `exports.ts` и DOM capture хрупкие, требуют дробления |
 | Planning | **7 / 10** | Dashboard подключён к backend analytics | Export выключен, модуль надо явно позиционировать как ограниченный |
 | Tools / DOCX UI | **8 / 10** | UI соответствует текущему backend: section-ii, links, memorandum, parse recommendations | Нет очереди/прогресса для долгих jobs |
 | UI kit / forms | **8 / 10** | Есть переиспользуемые controls и `formLayout` constants | Нет Storybook/visual regression |
-| Tests / lint | **8.5 / 10** | 45 Vitest проходят, lint без ошибок/warnings; есть form payload/API tests и Playwright smoke | Нет e2e успешного auth flow, CRUD flow, storage state и truncation cases |
+| Tests / lint | **8.5 / 10** | 48 Vitest проходят, lint без ошибок/warnings; form payload/API tests и Playwright smoke | Нет e2e успешного auth flow, CRUD flow, storage state и truncation cases |
 
 ## Маршруты vs backend
 
@@ -38,6 +38,7 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 | checks, recommendations, analytics, planning, tools, settings | ✅ |
 | kantsler | ❌ stub |
 | profile password change | ✅ `POST /api/v1/auth/change-password` |
+| admin users (profile) | ✅ `GET/POST /api/v1/users` |
 
 ## Tools
 
@@ -56,11 +57,11 @@ Upload limits из `GET /capabilities` (backend).
 
 ## Analytics
 
-Server aggregates ✅. Visual export (xlsx/pdf/docx/html) — DOM capture хрупкий. Planning export отключён.
+Server aggregates в PostgreSQL ✅. Visual export (xlsx/pdf/docx/html) — DOM capture хрупкий. Planning export отключён.
 
 ## Тесты
 
-45 Vitest тестов: filters, checkKey helpers, fileHelpers, reference options, form payload checks и recommendation batch API.
+48 Vitest тестов (10 файлов): filters, checkKey helpers, fileHelpers, reference options, form payload checks, recommendation batch/yearly number API.
 
 Lint: 0 errors, 0 warnings.
 

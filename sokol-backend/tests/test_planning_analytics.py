@@ -86,10 +86,10 @@ class PlanningAnalyticsTests(unittest.TestCase):
     def test_high_materiality_by_department_filters_and_sorts(self) -> None:
         lookup = build_department_lookup(["Финансы", "Риски"])
         recommendations = [
-            _recommendation("SN-1", "Финансы", "высокий"),
-            _recommendation("SN-2", "Финансы", "высокий"),
-            _recommendation("SN-3", "Риски", "средний"),
-            _recommendation("SN-4", None, "высокий"),
+            ("SN-1", "Финансы", "высокий"),
+            ("SN-2", "Финансы", "высокий"),
+            ("SN-3", "Риски", "средний"),
+            ("SN-4", "", "высокий"),
         ]
 
         ranking = planning._high_materiality_by_department(recommendations, lookup)

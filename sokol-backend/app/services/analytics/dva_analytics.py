@@ -1,195 +1,31 @@
 from __future__ import annotations
 
-from collections import defaultdict
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.checks import Check
-from app.models.recommendations import Recommendation
 from app.schemas.analytics import (
     ChecksAnalyticsFilterOptions,
-    DocumentReadinessRow,
     DvaAnalyticsResponse,
-    DvaAuditorLoadRow,
-    DvaAuditorMatrix,
-    DvaAuditorMatrixCell,
-    DvaAuditorMatrixRow,
-    DvaPortfolioPoint,
-    NamedCount,
-    PeriodBucketSchema,
     PeriodGranularity,
 )
-from app.services.analytics.common import (
-    collect_analytics_auditors,
-    collect_audit_objects,
-    completion_share_from_checks,
-    filter_checks,
-    filter_recommendations,
-    load_checks_with_recommendations,
-    load_recommendations,
-    named_counts,
-    pad_anchor_dates,
-    summarize_checks,
+from app.services.analytics.sql_aggregates import (
+    collect_combined_anchor_dates_sql,
+    collect_filter_option_auditors_sql,
+    collect_filter_option_departments_sql,
+    completion_share_from_summary,
+    count_checks,
+    count_recommendations,
+    dva_auditor_load_sql,
+    dva_auditor_matrix_sql,
+    dva_document_readiness_sql,
+    dva_portfolio_series_sql,
+    grouped_named_counts_sql,
+    recommendation_object_distribution_sql,
+    summarize_checks_sql,
+    summarize_recommendations_sql,
 )
-from app.services.analytics.period import get_period_bucket
-from app.services.analytics.recommendations_analytics import summarize_recommendations
-
-
-def _check_period_totals(checks: list[Check], granularity: PeriodGranularity) -> dict[str, DvaPortfolioPoint]:
-    result: dict[str, DvaPortfolioPoint] = {}
-    for check in checks:
-        if check.start_date is None:
-            continue
-        period = get_period_bucket(check.start_date, granularity)
-        current = result.get(period.key)
-        if current is None:
-            current = DvaPortfolioPoint(
-                key=period.key,
-                label=period.label,
-                sort_key=period.sort_key,
-                checks=0,
-                recommendations=0,
-            )
-            result[period.key] = current
-        current.checks += 1
-    return result
-
-
-def _merge_recommendation_periods(
-    base: dict[str, DvaPortfolioPoint],
-    recommendations: list[Recommendation],
-    granularity: PeriodGranularity,
-) -> list[DvaPortfolioPoint]:
-    for item in recommendations:
-        if item.deadline is None:
-            continue
-        period = get_period_bucket(item.deadline, granularity)
-        current = base.get(period.key)
-        if current is None:
-            current = DvaPortfolioPoint(
-                key=period.key,
-                label=period.label,
-                sort_key=period.sort_key,
-                checks=0,
-                recommendations=0,
-            )
-            base[period.key] = current
-        current.recommendations += 1
-    return sorted(base.values(), key=lambda row: row.sort_key)
-
-
-def _check_auditor_distribution(checks: list[Check]) -> dict[str, int]:
-    counts: dict[str, int] = defaultdict(int)
-    for check in checks:
-        name = check.check_leader.strip() or "Без руководителя"
-        counts[name] += 1
-    return counts
-
-
-def _recommendation_auditor_distribution(recommendations: list[Recommendation]) -> dict[str, int]:
-    counts: dict[str, int] = defaultdict(int)
-    for item in recommendations:
-        name = item.auditor.strip() or "Без аудитора"
-        counts[name] += 1
-    return counts
-
-
-def _auditor_load(checks: list[Check], recommendations: list[Recommendation]) -> list[DvaAuditorLoadRow]:
-    check_counts = _check_auditor_distribution(checks)
-    rec_counts = _recommendation_auditor_distribution(recommendations)
-    names = set(check_counts) | set(rec_counts)
-    rows = [
-        DvaAuditorLoadRow(
-            name=name,
-            checks=check_counts.get(name, 0),
-            recommendations=rec_counts.get(name, 0),
-            value=check_counts.get(name, 0) + rec_counts.get(name, 0),
-        )
-        for name in names
-        if check_counts.get(name, 0) > 0 or rec_counts.get(name, 0) > 0
-    ]
-    return sorted(rows, key=lambda row: (-row.value, row.name))
-
-
-def _document_readiness(checks: list[Check]) -> list[DocumentReadinessRow]:
-    docs = [
-        ("Приказ", lambda c: bool(c.order_document_number or c.order_document_date)),
-        ("Программа", lambda c: bool(c.program_document_number or c.program_document_date)),
-        ("АЗ", lambda c: bool(c.az_document_number or c.az_document_date)),
-        ("ДЗ", lambda c: bool(c.dz_document_number or c.dz_document_date)),
-    ]
-    rows: list[DocumentReadinessRow] = []
-    for name, predicate in docs:
-        filled = sum(1 for check in checks if predicate(check))
-        rows.append(
-            DocumentReadinessRow(
-                name=name,
-                filled=filled,
-                empty=max(len(checks) - filled, 0),
-            )
-        )
-    return rows
-
-
-def _auditor_matrix(
-    checks: list[Check],
-    recommendations: list[Recommendation],
-    granularity: PeriodGranularity,
-) -> DvaAuditorMatrix:
-    period_map: dict[str, PeriodBucketSchema] = {}
-    row_map: dict[str, DvaAuditorMatrixRow] = {}
-
-    def touch(auditor_raw: str) -> DvaAuditorMatrixRow:
-        auditor = auditor_raw.strip() or "Не указан"
-        row = row_map.get(auditor)
-        if row is None:
-            row = DvaAuditorMatrixRow(auditor=auditor, total=0, by_period={})
-            row_map[auditor] = row
-        return row
-
-    def add(auditor_raw: str, period: PeriodBucketSchema, field: str) -> None:
-        period_map[period.key] = period
-        row = touch(auditor_raw)
-        cell = row.by_period.get(period.key) or DvaAuditorMatrixCell(checks=0, recommendations=0)
-        if field == "checks":
-            cell.checks += 1
-        else:
-            cell.recommendations += 1
-        row.by_period[period.key] = cell
-        row.total += 1
-
-    for check in checks:
-        if check.start_date is None:
-            continue
-        period = get_period_bucket(check.start_date, granularity)
-        add(
-            check.check_leader,
-            PeriodBucketSchema(key=period.key, label=period.label, sort_key=period.sort_key),
-            "checks",
-        )
-
-    for item in recommendations:
-        if item.deadline is None:
-            continue
-        period = get_period_bucket(item.deadline, granularity)
-        add(
-            item.auditor,
-            PeriodBucketSchema(key=period.key, label=period.label, sort_key=period.sort_key),
-            "recommendations",
-        )
-
-    return DvaAuditorMatrix(
-        periods=sorted(period_map.values(), key=lambda row: row.sort_key),
-        rows=sorted(row_map.values(), key=lambda row: (-row.total, row.auditor)),
-    )
-
-
-def _audit_object_distribution(recommendations: list[Recommendation]) -> list[NamedCount]:
-    counts: dict[str, int] = defaultdict(int)
-    for item in recommendations:
-        name = (item.audit_object or "").strip() or "Без объекта"
-        counts[name] += 1
-    return named_counts(counts, positive_only=True)
+from app.services.analytics.sql_filters import check_filter_conditions, recommendation_filter_conditions
+from app.models.checks import Check
+from app.models.recommendations import Recommendation
 
 
 async def build_dva_analytics(
@@ -202,61 +38,63 @@ async def build_dva_analytics(
     auditors: list[str] | None = None,
     departments: list[str] | None = None,
 ) -> DvaAnalyticsResponse:
-    checks = await load_checks_with_recommendations(session)
-    recommendations = await load_recommendations(session)
-
-    filtered_checks = filter_checks(
-        checks,
-        auditors=auditors,
-        departments=departments,
-        years=years,
-        quarters=quarters,
-        months=months,
+    check_filters = {
+        "years": years,
+        "quarters": quarters,
+        "months": months,
+        "auditors": auditors,
+        "departments": departments,
+    }
+    recommendation_filters = dict(check_filters)
+    check_summary = await summarize_checks_sql(session, **check_filters)
+    rec_summary = await summarize_recommendations_sql(session, **recommendation_filters)
+    auditor_checks = await grouped_named_counts_sql(
+        session,
+        model=Check,
+        column=Check.check_leader,
+        filters=check_filter_conditions(**check_filters),
+        positive_only=True,
     )
-    filtered_recommendations = filter_recommendations(
-        recommendations,
-        auditors=auditors,
-        departments=departments,
-        years=years,
-        quarters=quarters,
-        months=months,
+    auditor_recommendations = await grouped_named_counts_sql(
+        session,
+        model=Recommendation,
+        column=Recommendation.auditor,
+        filters=recommendation_filter_conditions(**recommendation_filters),
+        positive_only=True,
     )
-
-    check_summary = summarize_checks(filtered_checks)
-    rec_summary = summarize_recommendations(filtered_recommendations)
-    portfolio = _merge_recommendation_periods(
-        _check_period_totals(filtered_checks, granularity),
-        filtered_recommendations,
-        granularity,
-    )
-    auditor_load = _auditor_load(filtered_checks, filtered_recommendations)
-    department_map = _audit_object_distribution(filtered_recommendations)
-
     return DvaAnalyticsResponse(
-        universe_checks_total=len(checks),
-        universe_recommendations_total=len(recommendations),
-        filtered_checks_total=len(filtered_checks),
-        filtered_recommendations_total=len(filtered_recommendations),
+        universe_checks_total=await count_checks(session, filtered=False),
+        universe_recommendations_total=await count_recommendations(session, filtered=False),
+        filtered_checks_total=check_summary.total,
+        filtered_recommendations_total=rec_summary.total,
         granularity=granularity,
         check_summary=check_summary,
         recommendation_summary=rec_summary,
-        completion_share=completion_share_from_checks(filtered_checks),
-        portfolio_series=portfolio,
-        auditor_load=auditor_load,
-        auditor_matrix=_auditor_matrix(filtered_checks, filtered_recommendations, granularity),
-        document_readiness=_document_readiness(filtered_checks),
-        auditor_checks_treemap=named_counts(_check_auditor_distribution(filtered_checks), positive_only=True),
-        auditor_recommendations_treemap=named_counts(
-            _recommendation_auditor_distribution(filtered_recommendations),
-            positive_only=True,
+        completion_share=completion_share_from_summary(check_summary),
+        portfolio_series=await dva_portfolio_series_sql(
+            session,
+            granularity,
+            check_filters=check_filters,
+            recommendation_filters=recommendation_filters,
         ),
-        department_map=department_map,
+        auditor_load=await dva_auditor_load_sql(
+            session,
+            check_filters=check_filters,
+            recommendation_filters=recommendation_filters,
+        ),
+        auditor_matrix=await dva_auditor_matrix_sql(
+            session,
+            granularity,
+            check_filters=check_filters,
+            recommendation_filters=recommendation_filters,
+        ),
+        document_readiness=await dva_document_readiness_sql(session, **check_filters),
+        auditor_checks_treemap=auditor_checks,
+        auditor_recommendations_treemap=auditor_recommendations,
+        department_map=await recommendation_object_distribution_sql(session, **recommendation_filters),
         filter_options=ChecksAnalyticsFilterOptions(
-            auditors=collect_analytics_auditors(checks, recommendations),
-            departments=collect_audit_objects(recommendations),
-            anchor_dates=pad_anchor_dates(
-                [check.start_date for check in checks if check.start_date]
-                + [item.deadline for item in recommendations if item.deadline]
-            ),
+            auditors=await collect_filter_option_auditors_sql(session),
+            departments=await collect_filter_option_departments_sql(session),
+            anchor_dates=await collect_combined_anchor_dates_sql(session),
         ),
     )
