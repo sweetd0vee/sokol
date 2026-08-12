@@ -78,7 +78,7 @@ export function ProfilePage() {
             placeholder="Иванов И.О."
             className="w-[288px] max-w-[288px]"
             inputClassName="py-1.5 text-sm bg-gray-50"
-            disabled
+            readOnly
           />
           <p className="w-[288px] max-w-[288px] text-left text-sm text-gray-500">
             Логин и ФИО в профиле совпадают и задаются учётной записью.

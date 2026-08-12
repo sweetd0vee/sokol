@@ -206,7 +206,6 @@ export function ChartCard({
         const card = exportCardRef.current;
         if (capture && card) {
           const captureArea = capture.getBoundingClientRect().width * capture.getBoundingClientRect().height;
-          const cardArea = card.getBoundingClientRect().width * card.getBoundingClientRect().height;
           // Prefer the chart body, but fall back to the whole card if the body collapsed.
           return captureArea >= 64 ? capture : card;
         }

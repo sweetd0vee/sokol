@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   deleteAttachment,
@@ -39,9 +39,12 @@ export function useEntityAttachments({
   entityType: AttachmentEntityType;
   entityId?: number | string | null;
 }) {
-  const canPersist = entityId != null && entityId !== '' && entityId !== '0';
+  const canPersist = entityId !== null && entityId !== undefined && entityId !== '' && entityId !== '0';
   const queryClient = useQueryClient();
-  const queryKey = ['attachments', entityType, String(entityId ?? '')];
+  const queryKey = useMemo(
+    () => ['attachments', entityType, String(entityId ?? '')],
+    [entityType, entityId],
+  );
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey,
@@ -49,11 +52,13 @@ export function useEntityAttachments({
     enabled: canPersist,
   });
 
+  const entityKey = `${entityType}:${String(entityId ?? '')}`;
   const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
-
-  useEffect(() => {
+  const [prevEntityKey, setPrevEntityKey] = useState(entityKey);
+  if (prevEntityKey !== entityKey) {
+    setPrevEntityKey(entityKey);
     setPendingItems([]);
-  }, [entityType, entityId]);
+  }
 
   const savedBySlot = useMemo(() => {
     const grouped = groupBySlot((data?.items ?? []).map(storedToItem));

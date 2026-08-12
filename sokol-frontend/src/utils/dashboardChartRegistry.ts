@@ -122,7 +122,7 @@ function pickPrimarySvg(node: HTMLElement): SVGSVGElement | null {
     const hasPaint =
       candidate.querySelector(
         'path, rect, circle, polygon, polyline, ellipse, line, text, .recharts-sector, .recharts-rectangle',
-      ) != null;
+      ) !== null;
     if (!hasPaint) {
       continue;
     }

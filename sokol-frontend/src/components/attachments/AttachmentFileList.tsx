@@ -46,7 +46,7 @@ export function AttachmentFileList({
                 <Loader2 size={18} className="animate-spin" />
               </span>
             )}
-            {item.status === 'saved' && item.serverId != null && (
+            {item.status === 'saved' && item.serverId !== undefined && item.serverId !== null && (
               <button
                 type="button"
                 onClick={() => {

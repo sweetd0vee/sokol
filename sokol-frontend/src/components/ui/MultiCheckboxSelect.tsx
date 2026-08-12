@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
 
 export type MultiCheckboxOption = {
@@ -40,20 +40,24 @@ export function MultiCheckboxSelect({
   const listId = useId();
   const selectedSet = useMemo(() => new Set(value), [value]);
 
+  const closeDropdown = useCallback(() => {
+    setOpen(false);
+    setSearchQuery('');
+  }, []);
+
   useEffect(() => {
     if (!open) {
-      setSearchQuery('');
       return;
     }
     const handlePointerDown = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (!rootRef.current?.contains(target) && !target.closest('[data-multi-checkbox-select]')) {
-        setOpen(false);
+        closeDropdown();
       }
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setOpen(false);
+        closeDropdown();
       }
     };
     document.addEventListener('mousedown', handlePointerDown);
@@ -62,7 +66,16 @@ export function MultiCheckboxSelect({
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [open]);
+  }, [closeDropdown, open]);
+
+  const toggleOpen = () => {
+    setOpen((prev) => {
+      if (prev) {
+        setSearchQuery('');
+      }
+      return !prev;
+    });
+  };
 
   const filteredOptions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -112,7 +125,7 @@ export function MultiCheckboxSelect({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={toggleOpen}
         className={[
           'flex w-full items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-left text-sm text-gray-900 outline-none transition hover:border-gray-400 focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 ',
           inputClassName,
