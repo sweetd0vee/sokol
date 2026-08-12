@@ -1,10 +1,12 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
-import { ErrorState } from '../ui/StateMessage';
+import { ErrorState, LoadingState } from '../ui/StateMessage';
+import { fetchCheck } from '../../api/checks';
 import { getErrorMessage } from '../../api/errors';
 import { CHECK_TYPE_OPTIONS, CHECK_VIEW_OPTIONS } from '../../constants/checks';
 import { toInputDate, toIsoDate, toStartOfDayMs } from '../../utils/dates';
@@ -47,9 +49,17 @@ export function CheckFormPage() {
   } = useSokolData();
   const existingFromList = checks.find((item) => item.id === id);
   const locationState = location.state as CheckFormLocationState | null;
-  const existing = locationState?.check ?? existingFromList;
   const restoredDraft = locationState?.restoredDraft;
+  const existingFromNavigation = locationState?.check ?? restoredDraft?.existingCheck;
   const isEditMode = Boolean(id);
+  const existingCandidate = existingFromNavigation ?? existingFromList;
+  const checkQuery = useQuery({
+    queryKey: ['check', id],
+    queryFn: () => fetchCheck(id ?? ''),
+    enabled: isEditMode && Boolean(id) && !existingCandidate,
+    retry: false,
+  });
+  const existing = existingCandidate ?? checkQuery.data;
   const existingStartDate = toInputDate(existing?.start_date);
   const [checkName, setCheckName] = useState(restoredDraft?.checkName ?? existing?.check_name ?? '');
   const [shortName, setShortName] = useState(restoredDraft?.shortName ?? existing?.short_name ?? '');
@@ -109,6 +119,7 @@ export function CheckFormPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [hydratedCheckId, setHydratedCheckId] = useState(existing?.id ?? null);
   const { options: leaderOptions } = useAuditorOptions(checkLeader);
   const { options: effectivenessOptions } = useEffectivenessRatingOptions(
     processEffectiveness,
@@ -118,6 +129,32 @@ export function CheckFormPage() {
   );
 
   const checkSaved = Boolean(isEditMode && existing?.id);
+
+  useEffect(() => {
+    if (restoredDraft || !existing?.id || hydratedCheckId === existing.id) {
+      return;
+    }
+    setCheckName(existing.check_name ?? '');
+    setShortName(existing.short_name ?? '');
+    setCheckType(existing.check_type ?? '');
+    setCheckView(existing.check_view ?? '');
+    setCheckLeader(existing.check_leader ?? '');
+    setStartDate(toInputDate(existing.start_date));
+    setEndDate(toInputDate(existing.end_date));
+    setOrderDocumentNumber(existing.order_document_number ?? '');
+    setOrderDocumentDate(toInputDate(existing.order_document_date));
+    setProgramDocumentNumber(existing.program_document_number ?? '');
+    setProgramDocumentDate(toInputDate(existing.program_document_date));
+    setAzDocumentNumber(existing.az_document_number ?? '');
+    setAzDocumentDate(toInputDate(existing.az_document_date));
+    setDzDocumentNumber(existing.dz_document_number ?? '');
+    setDzDocumentDate(toInputDate(existing.dz_document_date));
+    setProcessEffectiveness(existing.process_effectiveness ?? '');
+    setSvkEffectiveness(existing.svk_effectiveness ?? '');
+    setSurEffectiveness(existing.sur_effectiveness ?? '');
+    setSvikEffectiveness(existing.svik_effectiveness ?? '');
+    setHydratedCheckId(existing.id);
+  }, [existing, hydratedCheckId, restoredDraft]);
 
   const heading = isEditMode ? 'Редактирование проверки' : 'Создание проверки';
   const status = (() => {
@@ -234,6 +271,10 @@ export function CheckFormPage() {
     if (requiredFieldErrors.hasErrors) {
       return;
     }
+    if (isEditMode && !existing?.id) {
+      setSaveError('Проверка не загружена. Обновите страницу или вернитесь к списку проверок.');
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -261,7 +302,7 @@ export function CheckFormPage() {
         svikEffectiveness,
       });
 
-      if (isEditMode && existing?.id) {
+      if (isEditMode) {
         await updateCheck(payload);
         navigate('/checks');
         return;
@@ -275,6 +316,37 @@ export function CheckFormPage() {
       setIsSaving(false);
     }
   };
+  if (isEditMode && !existing && checkQuery.isLoading) {
+    return (
+      <div className={`${FORM_PAGE_CLASS} ${FORM_STACK_CLASS}`}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-xl font-bold text-sber-dark">{heading}</h2>
+          <Link to="/checks" className={FORM_OUTLINE_BUTTON_CLASS}>
+            Назад к списку
+          </Link>
+        </div>
+        <LoadingState description="Загружаем проверку для редактирования." />
+      </div>
+    );
+  }
+
+  if (isEditMode && !existing && checkQuery.isError) {
+    return (
+      <div className={`${FORM_PAGE_CLASS} ${FORM_STACK_CLASS}`}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-xl font-bold text-sber-dark">{heading}</h2>
+          <Link to="/checks" className={FORM_OUTLINE_BUTTON_CLASS}>
+            Назад к списку
+          </Link>
+        </div>
+        <ErrorState
+          title="Проверка не загружена"
+          description={getErrorMessage(checkQuery.error, 'Не удалось загрузить проверку для редактирования.')}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={`${FORM_PAGE_CLASS} ${FORM_STACK_CLASS}`}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

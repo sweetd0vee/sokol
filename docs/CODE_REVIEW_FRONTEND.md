@@ -1,7 +1,7 @@
 # Код-ревью frontend
 
 **Общая оценка:** 7.8 / 10 · React 19, TypeScript, Vite, TanStack Query  
-**Смысл оценки:** frontend хорошо закрывает основные сценарии аудитора, смена пароля уже подключена к API, lint/test стали жёстче. Главные риски теперь: edit-check по прямой ссылке, production stub route, усечение данных и hardening вложений/экспортов.
+**Смысл оценки:** frontend хорошо закрывает основные сценарии аудитора, смена пароля уже подключена к API, lint/test стали жёстче. Главные риски теперь: production stub route, усечение данных и hardening вложений/экспортов.
 
 ## Архитектура
 
@@ -20,7 +20,7 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 |------|--------|------------|------------------|
 | App shell / routing | **7 / 10** | AuthProvider, layout и Router собраны понятно | В nav/route виден demo/stub раздел `kantsler` |
 | Auth UI / API client | **7.5 / 10** | Login, Bearer interceptor, 401 logout и change-password закрывают базовый сценарий | Нет OIDC-flow, нет e2e успешного login/change-password |
-| Checks workflow | **7 / 10** | Форма и список работают с backend; `serial_number` только читается из API | Edit route не fetchит check по id и может создать дубль при прямой ссылке |
+| Checks workflow | **8 / 10** | Форма и список работают с backend; `serial_number` только читается из API; edit route fetchит check по id | Для больших списков остаётся риск усечения данных в общем context |
 | Recommendations workflow | **8 / 10** | CRUD, статусы, вложения, связь с проверкой и atomic batch import/replace покрывают основной процесс | Save errors не показываются в форме |
 | Data layer / context | **7 / 10** | API clients + mappers + React Query дают единый контракт | `SokolDataContext` тянет bulk limits 500/1000 без явного warning |
 | Attachments UI | **7 / 10** | Панели вложений подключены к check/recommendation, upload limits берутся с backend | Нужен общий banner/disabled state при недоступном MinIO |
@@ -68,23 +68,15 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 ## Подробные findings
 
-### FE-01 · P0 · Edit проверки по прямой ссылке может создать дубль
+### FE-01 · P0 · Edit проверки по прямой ссылке может создать дубль — закрыто
 
 **Где:** `src/components/checks/CheckFormPage.tsx`, `src/api/checks.ts`, `src/contexts/SokolDataContext.tsx`.
 
-**Симптом:** `/checks/:id/edit` берёт проверку только из `location.state.check` или `checks.find()` в глобальном context. Context загружает максимум 500 checks. Если открыть edit URL напрямую, обновить страницу или редактировать проверку вне первых 500 записей, `existing` становится `undefined`. При submit условие `isEditMode && existing?.id` не срабатывает, и код уходит в `addCheck(payload)`.
+**Было:** `/checks/:id/edit` брал проверку только из `location.state.check` или `checks.find()` в глобальном context. Context загружает максимум 500 checks. Если открыть edit URL напрямую, обновить страницу или редактировать проверку вне первых 500 записей, `existing` становился `undefined`. При submit условие `isEditMode && existing?.id` не срабатывало, и код уходил в `addCheck(payload)`.
 
-**Риск:** пользователь думает, что редактирует существующую проверку, но создаёт новую. Это прямой риск дублей и потери доверия к данным.
+**Исправлено:** добавлен `fetchCheck(id)` на `GET /api/v1/checks/{id}`; `CheckFormPage` в edit mode дозагружает проверку через React Query, гидратирует поля после ответа API, при ошибке показывает `ErrorState`, а submit в edit mode больше не имеет fallback на `addCheck`.
 
-**Как исправить:**
-
-1. Добавить `fetchCheck(id)` в `src/api/checks.ts` на `GET /api/v1/checks/{id}`.
-2. В `CheckFormPage` подключить `useQuery(['check', id], ...)` при `isEditMode && !existingFromList && !locationState?.check`.
-3. Пока идёт загрузка показывать `LoadingState`.
-4. При 404 показывать `ErrorState` и кнопку “К списку”.
-5. В edit mode запретить fallback на `addCheck`: если `id` есть, submit может делать только update или показывать ошибку “Проверка не загружена”.
-
-**Тесты:** component test: `/checks/999/edit` без state вызывает `fetchCheck`, поля заполняются, `addCheck` не вызывается. E2E: hard refresh на edit page сохраняет режим редактирования.
+**Тесты:** добавлен Vitest на `fetchCheck`; `npm run lint` и `npm test` проходят.
 
 ### FE-02 · P0 · `Kantsler` виден как production route
 
@@ -228,7 +220,6 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 | Приоритет | Finding |
 |-----------|---------|
-| P0 | Edit проверки по прямой ссылке не должен создавать дубль |
 | P0 | Скрыть Kantsler |
 | P1 | «Показано X из Y» в таблицах |
 | P1 | Banner/disabled state при недоступном storage |

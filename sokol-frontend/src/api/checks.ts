@@ -23,6 +23,11 @@ export async function fetchChecks(params: FetchChecksParams = {}): Promise<{ ite
   };
 }
 
+export async function fetchCheck(id: number | string): Promise<Check> {
+  const { data } = await api.get<ApiCheck>(`/api/v1/checks/${id}`);
+  return mapCheckFromApi(data);
+}
+
 export async function fetchCheckBySerialNumber(serialNumber: string): Promise<Check | null> {
   const normalized = serialNumber.trim();
   if (!normalized) {

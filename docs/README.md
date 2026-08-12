@@ -14,6 +14,7 @@
 
 | Раздел | Путь |
 |--------|------|
+| Гайд по коду для нового разработчика | [PROJECT_CODE_GUIDE.md](PROJECT_CODE_GUIDE.md) |
 | Быстрый старт | [../README.md](../README.md), [../DOCKER.md](../DOCKER.md) |
 | План развития | [../PLAN.md](../PLAN.md) |
 | Backend | [../sokol-backend/docs/README.md](../sokol-backend/docs/README.md) |

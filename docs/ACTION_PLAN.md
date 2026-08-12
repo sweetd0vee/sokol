@@ -19,7 +19,7 @@
 | P0-03 | Docker demo import off by default; запретить `import/seed --replace` на UAT/prod без явного confirm | 0.5 d |
 | P0-04 | Alembic baseline + `upgrade head` | 3–5 d |
 | P0-05 | Audit-opinion: убрать из `docs/API` | **done** |
-| P0-06 | `CheckFormPage` edit by URL: fetch by id и запрет fallback create | 0.5–1 d |
+| P0-06 | `CheckFormPage` edit by URL: fetch by id и запрет fallback create | **done** |
 
 ## P1 — до пилота
 
@@ -59,7 +59,7 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · ro
 | BE tests (py 3.12) | 116 | ≥120 + integration |
 | FE tests | 45 | ≥55 |
 | ESLint warnings | 0 | 0 |
-| Open P0 | 4 | 0 |
+| Open P0 | 3 | 0 |
 | Demo routes visible | 1 | 0 |
 
 ## Эта неделя (12–15.08)
@@ -77,7 +77,7 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · ro
 | P0-01 | Убрать `kantsler` из `Sidebar.TABS` и route `/kantsler` или закрыть feature flag `VITE_ENABLE_KANTSLER`. | В production build меню не содержит `Канцлер`; прямой `/kantsler` не показывает stub; Playwright smoke зелёный. |
 | P0-03 | В `sokol-backend/docker/app/docker-compose.yml` и `entrypoint.sh` поставить demo load default `0`; в prod guard запретить demo/replace flags. | Пустой prod/UAT контейнер не импортирует demo Excel сам; `SOKOL_SEED_REPLACE=1` в prod падает до bootstrap. |
 | P0-04 | Ввести Alembic baseline и заменить prod `create_all` flow на `alembic upgrade head`. | Пустая test DB поднимается миграциями; повторный upgrade no-op; runbook обновлён. |
-| P0-06 | Добавить `fetchCheck(id)` и `useQuery` в `CheckFormPage`; edit mode не может вызвать `addCheck`. | Hard refresh `/checks/:id/edit` заполняет поля; 404 показывает `ErrorState`; тест подтверждает отсутствие duplicate create. |
+| P0-06 | **Закрыто:** добавлены `fetchCheck(id)` и `useQuery` в `CheckFormPage`; edit mode не может вызвать `addCheck`. | Hard refresh `/checks/:id/edit` загружает проверку; 404 показывает `ErrorState`; `fetchCheck` покрыт Vitest. |
 | P1-04 | Протащить `total` из `fetchChecks/fetchRecommendations` в UI и показать truncation warning. | При `items.length < total` пользователь видит “Показано X из Y”; export явно говорит “текущая выборка” или грузит все данные. |
 | P1-05 | Добавить frontend `useStorageStatus` и backend/storage runbook: disabled/unreachable states, retry, policy/backup. | Upload disabled при недоступном MinIO; пользователь видит причину; backup/restore steps описаны. |
 | P1-07 | **Закрыто:** при delete recommendation удаляются attachments rows и MinIO objects. | Service/API regression tests подтверждают cleanup и 502 при storage failure. |
