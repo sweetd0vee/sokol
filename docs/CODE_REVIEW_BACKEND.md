@@ -1,7 +1,7 @@
 # Код-ревью backend
 
-**Общая оценка:** 8.3 / 10 · Python 3.12, FastAPI, SQLAlchemy async, MinIO  
-**Смысл оценки:** backend готов для пилота на больших таблицах по analytics и основному CRUD; промышленная готовность упирается в Alembic, prod guards для import/seed и auth hardening.
+**Общая оценка:** 8.4 / 10 · Python 3.12, FastAPI, SQLAlchemy async, MinIO  
+**Смысл оценки:** backend готов для пилота на больших таблицах по analytics и основному CRUD; granular RBAC рекомендаций и batch-delete закрывают типовые ошибки импорта; промышленная готовность упирается в Alembic, prod guards для import/seed и auth hardening.
 
 ## Архитектура
 
@@ -22,14 +22,14 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 |------|--------|------------|------------------|
 | API routing / CRUD | **10 / 10** | Роуты разделены по доменам, orchestration вынесен в services, есть pagination, validation, роли и lifecycle tests | Остались только платформенные задачи вне CRUD: миграции/import/prod guards |
 | Checks / ключ проверки | **10 / 10** | `serial_number` генерируется backend-only; PATCH и mass recalc синхронизируют recommendations/attachments и MinIO buckets | Нужен production runbook для ручного mass-recalc |
-| Recommendations | **10 / 10** | Статусы, фильтры, связи с проверками, atomic batch append/replace и cleanup вложений закрывают основной lifecycle | Для больших bulk batches может понадобиться отдельный job/progress UI |
+| Recommendations | **10 / 10** | Статусы, фильтры, связи с проверками, atomic batch append/replace, cleanup вложений, batch-delete для отмены импорта, granular RBAC на delete | Для очень больших bulk batches может понадобиться job/progress UI |
 | Settings / справочники | **8 / 10** | Общий CRUD для словарей, admin-only mutations, validation в доменных create/PATCH | Нет FK на доменные поля, часть связей строковая |
 | Analytics | **8.5 / 10** | Фильтры и агрегаты checks/recommendations/monitoring/dva/planning считаются в PostgreSQL (`GROUP BY`, conditional counts); индексы по датам/статусам/аудиторам | Planning-department matching и effectiveness matrix всё ещё требуют точечной выборки строк |
 | DOCX reports | **8 / 10** | Раздел II, links, memorandum и parser вынесены в services и хорошо тестируются | Нет очереди, streaming upload и golden DOCX CI |
-| Attachments / MinIO | **8 / 10** | Есть metadata model, storage service, upload/list/download/delete API, compensation и serial bucket migration | Нужны policy, backup/restore и общий storage UX |
-| Auth / RBAC | **7.5 / 10** | JWT Bearer, lookup роли/`is_active` из БД; admin users API; `person_match` для доступа auditor к своим рекомендациям | Basic fallback всегда включён; нет OIDC/audit log |
+| Attachments / MinIO | **8.5 / 10** | Metadata model, storage service, upload/list/download/delete API, compensation, serial bucket migration; upload/delete recommendation attachments с проверкой владельца | Check attachments delete — admin only; нужны policy, backup/restore |
+| Auth / RBAC | **8 / 10** | JWT Bearer, lookup роли/`is_active` из БД; admin users API; `person_match` + `recommendation_access` для auditor-owned recommendations и вложений | Basic fallback всегда включён; нет OIDC/audit log |
 | БД / миграции / import | **5 / 10** | `create_all`, seed и import позволяют быстро поднять dev/pilot; analytics indexes в entrypoint | Нет Alembic baseline; Docker по умолчанию грузит demo data; часть `migrate_*.py` не входит в entrypoint |
-| Tests | **9 / 10** | 130 backend unittest/regression tests (+ analytics SQL filters, person_match, auth/users); DB-backed checks CRUD integration | Нужны Alembic/import integration и e2e бизнес-сценарии |
+| Tests | **9 / 10** | 106 test cases (+ person_match, RBAC delete, batch-delete service); DB-backed checks CRUD integration | Нужны Alembic/import integration и e2e бизнес-сценарии |
 
 ## Security
 
@@ -38,6 +38,12 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 | JWT Bearer | ✅ |
 | PBKDF2 пароли | ✅ |
 | DELETE / settings | admin only ✅ |
+| DELETE check | admin only ✅ |
+| DELETE recommendation | admin — любая; auditor — только своя (поле `auditor` ↔ username) ✅ |
+| POST `/recommendations/batch-delete` | та же модель владения; одна transaction + renumber ✅ |
+| Upload attachment (recommendation) | admin — любая; auditor — только своя ✅ |
+| DELETE attachment (recommendation) | admin — любая; auditor — только своя ✅ |
+| DELETE attachment (check) | admin only ✅ |
 | Bearer role из БД + `is_active` | ✅ |
 | Default JWT secret в dev | ⚠️ override на prod |
 | HTTP Basic fallback | ⚠️ отключить/feature-flag на prod |
@@ -49,6 +55,7 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 - Analytics: SQL-side filters/aggregates + analytics indexes; row-level только для matrix/planning mapping
 - Attachments + MinIO ✅
 - Recommendations batch append/replace ✅
+- Recommendations batch-delete (отмена импорта из АЗ) ✅
 
 ### Ключ проверки ✅
 
@@ -71,7 +78,7 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 
 ## Тесты
 
-`py -3.12 -m unittest discover -s tests`: **130 тестов, OK** (2 skipped). Покрытие: Bearer/users RBAC, recommendation batch/delete, serial lifecycle + MinIO, analytics SQL filters, person_match, attachments, dictionaries, DOCX parser. DB-backed integration для checks CRUD; CI использует `sqlalchemy[asyncio]` (greenlet) при `SOKOL_RUN_DB_INTEGRATION_TESTS=1`.
+`py -3.12 -m unittest discover -s tests`: **106** test cases. Покрытие: Bearer/users RBAC, recommendation batch append/delete/batch-delete, serial lifecycle + MinIO, analytics SQL filters, `person_match`, attachments ownership, dictionaries, DOCX parser. DB-backed integration для checks CRUD; CI использует `sqlalchemy[asyncio]` (greenlet) при `SOKOL_RUN_DB_INTEGRATION_TESTS=1`.
 
 ## Подробные findings
 
@@ -200,6 +207,33 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 **Исправлено:** фильтры перенесены в SQL WHERE; summary, period series, distributions, DVA matrix/load/readiness считаются через `COUNT`/`GROUP BY`. Для effectiveness matrix и planning department mapping остаётся точечная выборка только нужных колонок. Добавлены индексы по `start_date`, `deadline`, `status`, `auditor`, `audit_object`, `materiality_level`.
 
 **Остаток:** при очень больших объёмах можно добавить materialized views/cache для planning coverage и filter options.
+
+### BE-09 · P1 · Recommendation RBAC между аудиторами — закрыто
+
+**Где:** `app/core/person_match.py`, `app/core/recommendation_access.py`, `app/services/recommendations_service.py`, `app/services/attachments_service.py`, `app/api/v1/endpoints/recommendations.py`, `app/api/v1/endpoints/attachments.py`, `tests/test_person_match.py`, `tests/test_auth_rbac.py`.
+
+**Было:** DELETE recommendation и DELETE attachment были admin-only; auditor не мог удалить свою рекомендацию и управлять своими вложениями.
+
+**Исправлено:**
+
+- `user_can_manage_recommendation()` сопоставляет `recommendation.auditor` с `CurrentUser.username` через `person_match` (форматы «Иванов А.А.» / «Иванов Александр Александрович»).
+- `DELETE /recommendations/{id}`: admin — любая рекомендация; auditor — только своя.
+- `POST /recommendations/batch-delete`: та же проверка для каждого id; удаление и renumber в одной transaction.
+- `POST /attachments` для `entity_type=recommendation`: только владелец или admin.
+- `DELETE /attachments/{id}`: для recommendation — владелец или admin; для check — по-прежнему admin only.
+- `DELETE /checks/{id}` — без изменений, admin only.
+
+**Тесты:** `test_person_match.py`; `test_auth_rbac.py` (auditor cannot delete check; can delete own recommendation; cannot delete foreign); service test `delete_recommendations_batch`.
+
+### BE-10 · P1 · Параллельный undo импорта из АЗ давал HTTP 500 — закрыто
+
+**Где:** `app/services/recommendations_service.py`, `app/api/v1/endpoints/recommendations.py`, `sokol-frontend/src/contexts/SokolDataContext.tsx`, `sokol-frontend/src/components/checks/CheckRecommendationsBlock.tsx`.
+
+**Было:** frontend отменял импорт 31 рекомендации через `Promise.all` из 31 `DELETE` запросов. На backend каждый delete делал renumber в отдельной transaction → гонки и HTTP 500.
+
+**Исправлено:** добавлен `POST /api/v1/recommendations/batch-delete` с payload `{ ids: number[] }`; frontend `removeRecommendationsByIds()` вызывает один batch endpoint. После успешного импорта из АЗ UI показывает сессию «можно отменить загрузку».
+
+**Тесты:** `test_delete_recommendations_batch_cleans_and_renumbers_once` — cleanup attachments, delete rows, renumber once per check.
 
 ## Findings
 

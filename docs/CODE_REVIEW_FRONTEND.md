@@ -1,7 +1,7 @@
 # Код-ревью frontend
 
-**Общая оценка:** 7.8 / 10 · React 19, TypeScript, Vite, TanStack Query  
-**Смысл оценки:** frontend хорошо закрывает основные сценарии аудитора, смена пароля уже подключена к API, lint/test стали жёстче. Главные риски теперь: production stub route, усечение данных и hardening вложений/экспортов.
+**Общая оценка:** 8.0 / 10 · React 19, TypeScript, Vite, TanStack Query  
+**Смысл оценки:** frontend хорошо закрывает сценарии аудитора: atomic import из АЗ с undo, granular RBAC на delete/attachments, yearly ID в форме. Главные риски: production stub route, усечение данных и hardening storage UX/экспортов.
 
 ## Архитектура
 
@@ -21,14 +21,14 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 | App shell / routing | **7 / 10** | AuthProvider, layout и Router собраны понятно | В nav/route виден demo/stub раздел `kantsler` |
 | Auth UI / API client | **7.5 / 10** | Login, Bearer interceptor, 401 logout и change-password закрывают базовый сценарий | Нет OIDC-flow, нет e2e успешного login/change-password |
 | Checks workflow | **8 / 10** | Форма и список работают с backend; `serial_number` только читается из API; edit route fetchит check по id | Для больших списков остаётся риск усечения данных в общем context |
-| Recommendations workflow | **8 / 10** | CRUD, статусы, вложения, связь с проверкой и atomic batch import/replace покрывают основной процесс | Save errors не показываются в форме |
-| Data layer / context | **7 / 10** | API clients + mappers + React Query дают единый контракт | `SokolDataContext` тянет bulk limits 500/1000 без явного warning |
-| Attachments UI | **7 / 10** | Панели вложений подключены к check/recommendation, upload limits берутся с backend | Нужен общий banner/disabled state при недоступном MinIO |
-| Analytics dashboards | **8 / 10** | Серверные SQL-агрегаты, фильтры и визуализации полезны бизнесу | Drill-down/server pagination для детализации из дашбордов |
+| Recommendations workflow | **8.5 / 10** | CRUD, статусы, вложения, atomic batch import/replace, undo импорта из АЗ, RBAC delete/attachments, yearly № в форме | Save errors не показываются в форме |
+| Data layer / context | **7.5 / 10** | API clients + mappers + React Query; `batch-delete` для undo в одном запросе | Bulk limits 500/1000 без явного warning |
+| Attachments UI | **7.5 / 10** | `canModifyAttachments` / `canRemoveSaved` по ownership; check attachments — admin only | Нужен общий banner/disabled state при недоступном MinIO |
+| Analytics dashboards | **8.5 / 10** | Серверные SQL-агрегаты; единый заголовок KPI «Итого»; на вкладке проверок первая карточка «Всего» | Drill-down/server pagination для детализации |
 | Exports | **6.5 / 10** | XLSX/PDF/DOCX/HTML дают быстрый value для пользователей | `exports.ts` и DOM capture хрупкие, требуют дробления |
 | Planning | **7 / 10** | Dashboard подключён к backend analytics | Export выключен, модуль надо явно позиционировать как ограниченный |
 | Tools / DOCX UI | **8 / 10** | UI соответствует текущему backend: section-ii, links, memorandum, parse recommendations | Нет очереди/прогресса для долгих jobs |
-| UI kit / forms | **8 / 10** | Есть переиспользуемые controls и `formLayout` constants | Нет Storybook/visual regression |
+| UI kit / forms | **8.5 / 10** | Переиспользуемые controls, `formLayout` constants, `LIST_ACTION_GROUP_CLASS` для единых отступов фильтров | Нет Storybook/visual regression |
 | Tests / lint | **8.5 / 10** | 48 Vitest проходят, lint без ошибок/warnings; form payload/API tests и Playwright smoke | Нет e2e успешного auth flow, CRUD flow, storage state и truncation cases |
 
 ## Маршруты vs backend
@@ -57,11 +57,11 @@ Upload limits из `GET /capabilities` (backend).
 
 ## Analytics
 
-Server aggregates в PostgreSQL ✅. Visual export (xlsx/pdf/docx/html) — DOM capture хрупкий. Planning export отключён.
+Server aggregates в PostgreSQL ✅. KPI-блок на всех вкладках analytics с заголовком **«Итого»**; на вкладке проверок первая карточка — **«Всего»** (не «Итого»). Visual export (xlsx/pdf/docx/html) — DOM capture хрупкий. Planning export отключён.
 
 ## Тесты
 
-48 Vitest тестов (10 файлов): filters, checkKey helpers, fileHelpers, reference options, form payload checks, recommendation batch/yearly number API.
+48 Vitest тестов (10 файлов): filters, checkKey helpers, fileHelpers, reference options, form payload checks, recommendation batch/yearly number API, `personMatch`, `recommendationYearlyNumber`.
 
 Lint: 0 errors, 0 warnings.
 
@@ -120,9 +120,9 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 **Было:** `replaceRecommendationsForCheck` удалял старые рекомендации через `Promise.all`, затем создавал новые через `Promise.all`. Импорт рекомендаций из АЗ создавал rows по одной.
 
-**Исправлено:** добавлен `batchRecommendations`; `SokolDataContext` использует backend batch append/replace, а `CheckRecommendationsBlock` отправляет импорт из АЗ одним atomic request.
+**Исправлено:** добавлен `batchRecommendations`; `SokolDataContext` использует backend batch append/replace. Импорт из АЗ — один atomic request. После успешного add UI хранит `recentUpload` и показывает **«Отменить»**; отмена вызывает `POST /recommendations/batch-delete` (не параллельные DELETE).
 
-**Тесты:** Vitest проверяет payload/response mapping batch API.
+**Тесты:** Vitest на batch API payload/response mapping; ручной сценарий undo 30+ рекомендаций.
 
 ### FE-05 · P1 · Нет общего UX для недоступного MinIO
 
@@ -216,6 +216,32 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 **Как исправить:** перейти на `React.lazy` для крупных route components: analytics, planning, tools, settings, form pages. Добавить `Suspense` с existing `LoadingState`.
 
 **Тесты:** smoke route render; bundle analyzer до/после.
+
+### FE-11 · P2 · Поле «№» показывало sequence внутри проверки — закрыто
+
+**Где:** `src/components/recommendations/RecommendationFormPage.tsx`, `src/utils/recommendationYearlyNumber.ts`.
+
+**Было:** в форме редактирования отображался `sequence_number` (порядковый номер внутри проверки), а не yearly ID из колонки списка (`26-4` → `4`).
+
+**Исправлено:** `resolveRecommendationYearlyDisplayNumber()` вычисляет display number из yearly ID; для deadline используется `toIsoDate(deadline) ?? source?.deadline`.
+
+**Тесты:** `recommendationYearlyNumber.test.ts`.
+
+### FE-12 · P2 · UI delete/attachments не учитывал ownership auditor — закрыто
+
+**Где:** `src/components/recommendations/RecommendationFormPage.tsx`, `src/utils/personMatch.ts`, `src/components/attachments/*`.
+
+**Было:** delete recommendation и upload/remove attachments были доступны всем authenticated users с правами admin-only на backend.
+
+**Исправлено:** `auditorMatchesCurrentUser()` + `canManageRecommendation` скрывают delete; `canModifyAttachments` / `canRemoveSaved` блокируют upload и удаление saved files для чужих рекомендаций. Check attachments: `canRemoveSaved={isAdmin}`.
+
+**Тесты:** ручная проверка auditor vs admin; backend `test_auth_rbac.py`.
+
+### FE-13 · P3 · Единые отступы между фильтрами и «Сбросить фильтры» — закрыто
+
+**Где:** `src/constants/formLayout.ts` (`LIST_ACTION_GROUP_CLASS`), `ChecksTab.tsx`, `RecommendationsTab.tsx`.
+
+**Исправлено:** последний фильтр и кнопка сброса сгруппированы с тем же `gap`, что «Мои» / «Создать» на тех же вкладках.
 
 ## Findings
 

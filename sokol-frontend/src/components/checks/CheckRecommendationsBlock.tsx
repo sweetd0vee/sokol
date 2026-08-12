@@ -498,8 +498,8 @@ export function CheckRecommendationsBlock({
           )}
           {parseError && <ErrorState title="Ошибка" description={parseError} />}
           {recentUpload && parsedPreview.length === 0 && !isParsing && (
-            <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="text-sm leading-relaxed text-amber-950">
+            <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-100 px-4 py-3">
+              <p className="text-sm leading-relaxed text-gray-600">
                 В проверку добавлено{' '}
                 <span className="font-semibold">{recentUpload.count}</span>{' '}
                 {pluralRecommendations(recentUpload.count)}

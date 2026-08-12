@@ -16,12 +16,12 @@
 | Analytics / planning API | **8.5 / 10** | Сервер считает агрегаты в PostgreSQL; UI получает те же camelCase-модели | Для planning department matching ещё нужна точечная выборка строк |
 | DOCX tools | **8 / 10** | Раздел II, ссылки, ДЗ и parse recommendations покрыты тестами и отделены в services | Upload/job модель пока синхронная и in-memory |
 | Attachments / MinIO | **8 / 10** | Есть API, metadata в PG, MinIO storage abstraction, compensation и serial bucket migration | Нужны policy, backup/restore и общий storage UX |
-| Auth / RBAC | **7.5 / 10** | Internal JWT, DB-backed lookup/`is_active`, admin users API, person_match для auditor-owned recommendations | Нет OIDC, HTTP Basic fallback и audit log |
+| Auth / RBAC | **8 / 10** | Internal JWT, DB-backed lookup/`is_active`, admin users API, granular ownership для recommendations/attachments через `person_match` | Нет OIDC, HTTP Basic fallback и audit log |
 | БД / миграции / import | **5.5 / 10** | PostgreSQL-схема рабочая, seed/import существуют | Нет Alembic baseline; ad-hoc миграции рискованны для prod |
-| Frontend формы и доменный UX | **8 / 10** | Основные workflows аудитора собраны и связаны с API; edit проверки по прямой ссылке дозагружает запись по id | Есть demo/stub UI, крупные компоненты |
+| Frontend формы и доменный UX | **8.5 / 10** | Workflows аудитора, undo импорта из АЗ, RBAC UI для delete/attachments, yearly ID в форме рекомендации | Есть demo/stub UI, крупные компоненты |
 | Frontend data layer | **7 / 10** | API clients, mappers, React Query и контексты дают понятный поток данных | Bulk-fetch без явного warning при truncation |
 | Frontend analytics/export | **7.5 / 10** | Дашборды и экспорты ценны для пользователя | DOM capture/export хрупкие, planning export выключен |
-| Тесты / CI | **7.5 / 10** | Backend 130 unittest (+ DB integration), frontend 48 Vitest, GitHub Actions (lint/test/build) | Branch protection gate надо включить в GitHub; нет e2e бизнес-сценариев |
+| Тесты / CI | **7.5 / 10** | Backend 106 unit tests (+ DB integration), frontend 48 Vitest, GitHub Actions (lint/test/build) | Branch protection gate надо включить в GitHub; нет e2e бизнес-сценариев |
 | Документация / runbook | **7 / 10** | Основные README/docs покрывают запуск, API, storage, go-live | Часть roadmap/env docs ещё надо синхронизировать с кодом |
 
 **Вердикт:** ограниченный пилот возможен на контролируемом объёме данных. Для промышленного контура сначала закрыть Alembic, CI, prod auth guards, скрытие demo UI и эксплуатацию MinIO.
@@ -29,7 +29,7 @@
 ## Сильные стороны
 
 - HTTP → CRUD → PostgreSQL / API clients → React Query → UI.
-- Server analytics в PostgreSQL (`sql_filters` / `sql_aggregates`), DOCX Раздел II и backend lifecycle regressions (**130** unit-тестов на Python 3.12).
+- Server analytics в PostgreSQL (`sql_filters` / `sql_aggregates`), DOCX Раздел II и backend lifecycle regressions (**106** unit-тестов на Python 3.12).
 - JWT + RBAC с lookup пользователя в БД; `serial_number` генерируется и пересчитывается на backend (create + PATCH, каскад на recommendations/attachments).
 - Экспорт таблиц и дашбордов на frontend.
 
@@ -37,7 +37,7 @@
 
 | Пакет | Результат |
 |-------|-----------|
-| Backend `py -3.12 -m unittest discover -s tests` | **130 тестов, OK** (2 skipped) |
+| Backend `py -3.12 -m unittest discover -s tests` | **106 test cases** (полный suite в CI с deps) |
 | Frontend `npm run lint` | **0 errors, 0 warnings** |
 | Frontend `npm test` | **48 тестов, 10 файлов, OK** |
 | Frontend `npm run test:e2e` | **2 Playwright smoke-теста, OK** |
@@ -68,7 +68,11 @@
 - **Analytics SQL aggregates (BE-08)** — фильтры и агрегаты checks/recommendations/dva/planning/monitoring считаются в PostgreSQL; добавлены analytics indexes.
 - **CI backend** — `sqlalchemy[asyncio]` для DB integration tests (`greenlet`).
 - **Admin users API** — `GET/POST /api/v1/users` (admin-only); frontend `AdminUsersSection` в профиле.
-- **Recommendation RBAC** — `person_match` сопоставляет auditor field с username/aliases пользователя.
+- **Recommendation RBAC** — `person_match` + `recommendation_access`: auditor удаляет/управляет вложениями только своих рекомендаций; admin — все; delete check — admin only.
+- **Batch-delete recommendations** — `POST /recommendations/batch-delete` для отмены импорта из АЗ в одной transaction (fix HTTP 500 от параллельных DELETE).
+- **Analytics KPI «Итого»** — единый заголовок блока KPI на всех вкладках; в карточке проверок label «Всего».
+- **AZ import undo (frontend)** — после «Добавить в проверку» кнопка «Отменить» удаляет только что загруженные рекомендации через batch-delete.
+- **Recommendation form №** — поле показывает yearly номер (часть ID после дефиса), не `sequence_number` внутри проверки.
 
 ## Топ рекомендаций
 
@@ -93,15 +97,19 @@
 | BE-05 | P1 | `sokol-backend/app/crud/checks_crud.py`, `sokol-backend/app/services/storage/minio_storage.py`, `sokol-backend/app/db/recalculate_check_serial_numbers.py` | **Закрыто:** смена serial переносит objects в новый bucket и обновляет `attachments.bucket`. | Single-check PATCH и mass recalc используют общий `copy_check_bucket_objects`; старый bucket удаляется после commit. | Добавлен regression test на storage copy/delete и cascade execution. |
 | BE-06 | P1 | `sokol-backend/app/services/attachments_service.py` | **Закрыто:** upload компенсирует DB failure после успешной загрузки в MinIO. | При исключении в `create_attachment` service удаляет уже загруженный object и логирует cleanup failure отдельно. | Покрыто backend lifecycle regressions. |
 | BE-07 | P1 | `sokol-backend/app/db/import_seed_data.py`, `sokol-backend/app/db/seed_demo_data.py`, `sokol-backend/app/db/bootstrap_presentation_demo.py` | `--replace` делает `TRUNCATE recommendations, checks` без dry-run и без явного env guard. Ошибка пути/файла или запуск не на той БД может стереть рабочие данные. | Добавить dry-run summary, подтверждение `--confirm-prod-replace`, запрет replace при `SOKOL_ENV=prod` без отдельного флага, backup warning. | Тесты на запрет replace в prod; dry-run не меняет БД и показывает количество строк. |
+| BE-09 | P1 | `app/core/person_match.py`, `app/services/recommendations_service.py`, `app/services/attachments_service.py` | **Закрыто:** granular RBAC между аудиторами для delete recommendation и upload/delete recommendation attachments. | `user_can_manage_recommendation()` + `AccessDeniedError` → 403; check delete и check attachment delete остаются admin-only. | `test_person_match.py`, `test_auth_rbac.py`. |
+| BE-10 | P1 | `app/api/v1/endpoints/recommendations.py`, `app/services/recommendations_service.py` | **Закрыто:** undo импорта из АЗ через параллельные DELETE давал HTTP 500. | `POST /recommendations/batch-delete` удаляет ids в одной transaction с одним renumber per check. | `test_delete_recommendations_batch_cleans_and_renumbers_once`. |
 | BE-08 | P2 | `sokol-backend/app/services/analytics/sql_*.py`, `app/db/migrate_analytics_indexes.py` | **Закрыто:** analytics загружал всю таблицу в память. | SQL WHERE + `GROUP BY`/conditional counts; indexes по датам/статусам/аудиторам; row-level только для matrix/planning mapping. | `test_analytics_sql_filters.py`; существующие analytics API tests. |
-| BE-09 | P1 | `sokol-backend/app/db/sync_dictionaries.py`, `sokol-backend/docker/app/entrypoint.sh` | Sync справочников на старте удаляет аудиторов, подразделения и пользователей, которых нет в канонических списках. | В prod делать merge-only без delete или opt-in destructive sync; перед удалением проверять использование в checks/recommendations. | Тест: auditor/department/user, добавленный через API, не удаляется после prod bootstrap. |
+| BE-07a | P1 | `sokol-backend/app/db/sync_dictionaries.py`, `sokol-backend/docker/app/entrypoint.sh` | Sync справочников на старте удаляет аудиторов, подразделения и пользователей, которых нет в канонических списках. | В prod делать merge-only без delete или opt-in destructive sync; перед удалением проверять использование в checks/recommendations. | Тест: auditor/department/user, добавленный через API, не удаляется после prod bootstrap. |
 | FE-01 | P0 | `sokol-frontend/src/components/checks/CheckFormPage.tsx`, `sokol-frontend/src/api/checks.ts` | **Закрыто:** edit `/checks/:id/edit` больше не зависит только от `location.state` или первых 500 checks. | Добавлены `fetchCheck(id)` и `useQuery` в edit mode; пока entity грузится показывается `LoadingState`; при ошибке `ErrorState`; edit mode не fallback-ится на create. | Добавлен Vitest на `fetchCheck`; `npm run lint` и `npm test` проходят. |
 | FE-02 | P0 | `sokol-frontend/src/App.tsx`, `sokol-frontend/src/components/layout/Sidebar.tsx`, `sokol-frontend/src/components/tabs/KantslerTab.tsx` | В production UI виден раздел `Канцлер`, который является заглушкой “В разработке”. Пользователь может принять его за готовый модуль. | Скрыть пункт меню и route за feature flag, либо убрать route до реализации backend/API. Для прямого URL возвращать redirect/404. | E2E: в prod mode меню не содержит `Канцлер`; переход `/kantsler` не показывает stub. |
 | FE-03 | P1 | `sokol-frontend/src/contexts/SokolDataContext.tsx`, `sokol-frontend/src/api/checks.ts`, `sokol-frontend/src/api/recommendations.ts` | Глобальный контекст грузит только `checks limit=500` и `recommendations limit=1000`, но UI не показывает, что данные усечены. Формы, списки и экспорты могут работать не со всем портфелем. | Сохранять `total` в context; показывать banner “Показано N из total”; для списков перейти на server pagination/search; для форм искать check/recommendation по API, а не только в локальном массиве. | Unit: при `total > items.length` показывается warning; e2e/server mock: поиск элемента за пределами первой страницы всё равно работает. |
-| FE-04 | P1 | `sokol-frontend/src/api/recommendations.ts`, `sokol-frontend/src/contexts/SokolDataContext.tsx`, `sokol-frontend/src/components/checks/CheckRecommendationsBlock.tsx` | **Закрыто:** bulk import/replace рекомендаций больше не делает delete-all/create-all на frontend. | Frontend вызывает atomic backend batch endpoint для append/replace; при ошибке batch пользователь видит общий failure без частичного success. | Добавлен Vitest на batch API payload/response mapping. |
+| FE-04 | P1 | `sokol-frontend/src/api/recommendations.ts`, `sokol-frontend/src/contexts/SokolDataContext.tsx`, `sokol-frontend/src/components/checks/CheckRecommendationsBlock.tsx` | **Закрыто:** bulk import/replace атомарен; добавлен undo последней загрузки из АЗ. | Frontend использует batch append/replace и `POST /recommendations/batch-delete` для отмены импорта; после add показывается сессия «Отменить». | Vitest на batch API; ручной сценарий undo 30+ рекомендаций. |
 | FE-05 | P1 | `sokol-frontend/src/components/attachments/*`, `sokol-frontend/src/components/checks/CheckAttachmentsSection.tsx` | Frontend получает upload limits через `/capabilities`, но не использует `/attachments/storage/status` для общего banner/disabled state при недоступном MinIO. Пользователь узнаёт о проблеме только после действия. | Добавить общий `useStorageStatus` query; при `enabled=false`/`reachable=false` показывать amber/red banner и disabled upload controls; сохранить возможность просмотра metadata, если API позволяет. | Component tests: disabled upload при `reachable=false`; текст ошибки понятен; retry обновляет статус. |
 | FE-06 | P1 | `sokol-frontend/src/components/recommendations/RecommendationFormPage.tsx`, `sokol-frontend/src/components/tabs/*` | `RecommendationFormPage.saveRecommendation` не ловит ошибку save; bulk-fetch error state в context не выводится в таблицах. | Добавить `saveError` по образцу `CheckFormPage`; в `ChecksTab`/`RecommendationsTab` показывать `LoadingState`/`ErrorState` и retry. | Component tests: rejected save показывает ошибку и не сбрасывает форму; rejected list query показывает retry UI. |
 | FE-07 | P2 | `sokol-frontend/src/utils/exports.ts`, analytics dashboards | Экспорты дашбордов завязаны на DOM capture. Изменение layout, скрытые элементы или шрифты могут ломать PDF/DOCX/HTML без TypeScript ошибок. | Разделить `exports.ts` по форматам; для табличных отчётов строить data-driven export; DOM capture оставить только для визуальных скриншотов и покрыть smoke. | Unit на форматирование строк; smoke export для dashboard с fixture data. |
+| FE-11 | P2 | `src/components/recommendations/RecommendationFormPage.tsx`, `src/utils/recommendationYearlyNumber.ts` | **Закрыто:** поле «№» показывало `sequence_number` внутри проверки, а не yearly ID. | `resolveRecommendationYearlyDisplayNumber()` синхронизирует UI с колонкой ID (`YY-N`). | Vitest `recommendationYearlyNumber.test.ts`. |
+| FE-12 | P2 | `src/components/recommendations/RecommendationFormPage.tsx`, `src/components/attachments/*` | **Закрыто:** UI delete/attachments не учитывал ownership auditor. | `canManageRecommendation` скрывает delete и блокирует upload/remove saved attachments для чужих рекомендаций. | Ручная проверка auditor vs admin. |
 | OPS-01 | P1 | `.github/workflows/ci.yml`, `docs/CI.md`, GitHub settings | Workflow есть, но обязательность merge gate включается только branch protection/ruleset. Пока required checks не включены в GitHub, красный CI не блокирует merge. | Включить required checks `Backend (Python 3.12)` и `Frontend (Node 22)` для main/master; включить up-to-date branches. | Проверка PR: merge button заблокирован при красном/ожидающем CI. |
 
 ## Как исправлять без регрессий

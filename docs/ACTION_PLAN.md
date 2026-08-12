@@ -36,6 +36,8 @@
 | P1-09 | HTTP Basic fallback: отключить/feature-flag для prod | 0.5 d |
 | P1-10 | ~~Bulk replace recommendations перенести в backend transaction~~ | **done** |
 | P1-11 | ~~Attachment cleanup при upload DB failure и смене serial bucket~~ | **done** |
+| P1-14 | ~~Recommendation RBAC (auditor-owned delete/attachments)~~ | **done** |
+| P1-15 | ~~Batch-delete для undo импорта из АЗ~~ | **done** |
 | P1-12 | Prod-safe `sync_dictionaries`: без destructive delete на старте | 1 d |
 | P1-13 | `RecommendationFormPage` save error + list loading/error UI | 0.5–1 d |
 
@@ -56,8 +58,8 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · ro
 
 | Метрика | Сейчас | Target 01.09 |
 |---------|--------|--------------|
-| BE tests (py 3.12) | 116 | ≥120 + integration |
-| FE tests | 45 | ≥55 |
+| BE tests (py 3.12) | 106 | ≥120 + integration |
+| FE tests | 48 | ≥55 |
 | ESLint warnings | 0 | 0 |
 | Open P0 | 3 | 0 |
 | Demo routes visible | 1 | 0 |

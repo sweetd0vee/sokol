@@ -5,7 +5,21 @@
 Интерактивная документация: `http://127.0.0.1:8802/docs` (порт из `run_dev.ps1`).
 
 Auth: **internal JWT** (Bearer). Публичны только `GET /`, `GET /api/v1/status` и `GET /api/v1/capabilities`.  
-Роли: `auditor` (домен read/write), `admin` (справочники mutate + все DELETE).
+
+**Роли и права:**
+
+| Действие | `auditor` | `admin` |
+|----------|-----------|---------|
+| CRUD checks/recommendations (create/read/update) | ✅ | ✅ |
+| `DELETE /checks/{id}` | ❌ | ✅ |
+| `DELETE /recommendations/{id}` | только своя (`auditor` ↔ username) | ✅ |
+| `POST /recommendations/batch-delete` | только свои ids | ✅ |
+| Upload/delete attachment (recommendation) | только своя рекомендация | ✅ |
+| `DELETE /attachments/{id}` (check) | ❌ | ✅ |
+| Settings CRUD (mutate) | ❌ | ✅ |
+| `GET/POST /users` | ❌ | ✅ |
+
+Сопоставление «своей» рекомендации: поле `auditor` сравнивается с `username` через `person_match` (краткое/полное ФИО).
 
 Логин: `POST /api/v1/auth/login` → `{ access_token, role, username, display_name }`.  
 Профиль: `GET /api/v1/auth/me`.
@@ -34,7 +48,7 @@ Auth: **internal JWT** (Bearer). Публичны только `GET /`, `GET /ap
 | `GET` | `/checks` | список |
 | `GET` | `/checks/{check_id}` | одна запись |
 | `PATCH` | `/checks/{check_id}` | частичное обновление |
-| `DELETE` | `/checks/{check_id}` | 204; cascade на рекомендации |
+| `DELETE` | `/checks/{check_id}` | 204; cascade на рекомендации; **admin only** |
 
 **Query (`GET` list):**
 
@@ -89,9 +103,9 @@ Auth: **internal JWT** (Bearer). Публичны только `GET /`, `GET /ap
 |--------|------|----------|
 | `GET` | `/attachments/storage/status` | доступность хранилища |
 | `GET` | `/attachments` | список (`entity_type`, `entity_id`) |
-| `POST` | `/attachments` | multipart upload |
+| `POST` | `/attachments` | multipart upload; recommendation — владелец или admin; check — любой authenticated |
 | `GET` | `/attachments/{id}/download` | скачивание |
-| `DELETE` | `/attachments/{id}` | удаление object + row |
+| `DELETE` | `/attachments/{id}` | удаление object + row; recommendation — владелец или admin; check — **admin only** |
 
 ---
 
@@ -100,10 +114,12 @@ Auth: **internal JWT** (Bearer). Публичны только `GET /`, `GET /ap
 | Method | Path | Описание |
 |--------|------|----------|
 | `POST` | `/recommendations` | создать (201) |
+| `POST` | `/recommendations/batch` | atomic append/replace для проверки (201, `{ items, total }`) |
+| `POST` | `/recommendations/batch-delete` | удалить несколько ids в одной transaction (204); та же модель владения, что и `DELETE /{id}` |
 | `GET` | `/recommendations` | список |
 | `GET` | `/recommendations/{id}` | одна |
 | `PATCH` | `/recommendations/{id}` | обновление |
-| `DELETE` | `/recommendations/{id}` | 204 |
+| `DELETE` | `/recommendations/{id}` | 204; admin — любая; auditor — только своя |
 
 **Статусы (актуальные enum’ы модели):**
 

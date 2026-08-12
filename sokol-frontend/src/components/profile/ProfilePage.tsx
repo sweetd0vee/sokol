@@ -198,7 +198,7 @@ export function ProfilePage() {
             disabled={passwordSaving}
             aria-busy={passwordSaving}
           >
-            {passwordSaving ? 'Сохранение…' : 'Сохранить пароль'}
+            {passwordSaving ? 'Сохранение…' : 'Сохранить'}
           </button>
         </div>
       </form>

@@ -112,7 +112,7 @@ export function AdminUsersSection() {
             disabled={saving}
             aria-busy={saving}
           >
-            {saving ? 'Сохранение…' : 'Добавить пользователя'}
+            {saving ? 'Сохранение…' : 'Добавить'}
           </button>
         </div>
       </form>

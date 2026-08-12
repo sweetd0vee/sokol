@@ -334,16 +334,19 @@ async function exportRowsDocx(
   filename: string,
   indicatorIcons?: Map<string, Uint8Array>
 ) {
-  const columnWidth = Math.floor(100 / Math.max(headers.length, 1));
+  const columnWidths = getDocxColumnWidths(headers);
   const tableRows = [
     new TableRow({
       tableHeader: true,
-      children: headers.map((header) => createDocxCell(header, true, columnWidth)),
+      children: headers.map((header, index) =>
+        createDocxCell(header, true, columnWidths[index] ?? 8)
+      ),
     }),
     ...rows.map(
       (row) =>
         new TableRow({
-          children: headers.map((header) => {
+          children: headers.map((header, index) => {
+            const columnWidth = columnWidths[index] ?? 8;
             if (isMaterialityHeader(header)) {
               return createDocxMaterialityCell(toCellText(row[header]), columnWidth);
             }
@@ -394,9 +397,39 @@ async function exportRowsDocx(
   downloadBlob(await Packer.toBlob(doc), filename);
 }
 
+const EXPORT_COLUMN_WEIGHTS: Record<string, number> = {
+  ID: 14,
+  Ключ: 12,
+  'Срок исполнения': 10,
+  'Дата начала': 10,
+  Индикатор: 8,
+  'Уровень существенности': 8,
+  Статус: 9,
+  'Дополнительный статус': 10,
+  'Тип проверки': 9,
+  Вид: 9,
+  Аудитор: 10,
+  'Руководитель объекта аудита': 11,
+  'Руководитель проверки': 11,
+};
+
+function getDocxColumnWidths(headers: string[]): number[] {
+  const weights = headers.map((header) => EXPORT_COLUMN_WEIGHTS[header] ?? 8);
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  const widths = weights.map((weight) => Math.floor((weight / total) * 100));
+  let remainder = 100 - widths.reduce((sum, width) => sum + width, 0);
+  let index = 0;
+  while (remainder > 0) {
+    widths[index % widths.length] += 1;
+    remainder -= 1;
+    index += 1;
+  }
+  return widths;
+}
+
 function getPdfColumnWidths(headers: string[]): Array<number | '*'> {
   const widthByHeader: Record<string, number | '*'> = {
-    ID: 18,
+    ID: 28,
     Ключ: 42,
     'Название рекомендации': '*',
     'Название наблюдения': '*',
@@ -492,6 +525,7 @@ function exportRowsPdf(
           text: toCellText(row[header]),
           style: 'tableCell',
           alignment: fill ? 'center' : 'left',
+          ...(header === 'ID' ? { noWrap: true } : {}),
           ...(fill ? { fillColor: `#${fill}` } : {}),
         };
       })
