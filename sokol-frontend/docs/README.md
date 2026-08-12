@@ -1,59 +1,53 @@
-# SOKOL Frontend — документация
+# Frontend — документация
 
-Каталог описывает **актуальное** состояние UI (**11 августа 2026**). **План развития:** [PLAN.md](../../PLAN.md).
+## Документы
 
-## Что читать
+| Файл | Содержание |
+|------|------------|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Структура, state, API-слой |
+| [ANALYTICS.md](ANALYTICS.md) | Дашборды `/analytics` |
+| [PLANNING.md](PLANNING.md) | Раздел `/planning` |
+| [UI_STANDARDS.md](UI_STANDARDS.md) | Сетка форм, цвета |
+| Backend | [API.md](../../sokol-backend/docs/API.md), [REPORTS.md](../../sokol-backend/docs/REPORTS.md) |
+| [PLAN.md](../../PLAN.md) | Roadmap |
 
-| Документ | Содержание |
-|----------|------------|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Структура, провайдеры, API-слой, компоненты, диаграммы |
-| [ANALYTICS.md](ANALYTICS.md) | Дашборды аналитики, бизнес-смысл карточек, фильтры и экспорт |
-| [ANALYTICS_TZ.docx](ANALYTICS_TZ.docx) | ТЗ / описание дашбордов со скриншотами |
-| [PLANNING.md](PLANNING.md) | Дашборды планирования: охват, аналитика департаментов, красные рекомендации |
-| [USER_STORIES.md](USER_STORIES.md) | Пользовательские истории и потоки |
-| [RUNBOOK.md](RUNBOOK.md) | Установка, env, Docker, проверки |
-| [BPMN.md](BPMN.md) | BPMN 2.0 XML основных процессов |
-| [SECTION_II_ALGORITHM.md](SECTION_II_ALGORITHM.md) | Алгоритм парсинга АЗ и генерации Раздела II |
-| [UI_STANDARDS.md](UI_STANDARDS.md) | Размеры, сетка форм, цвета |
-| [ROADMAP.md](ROADMAP.md) | Frontend backlog |
-| [CODE_REVIEW.md](CODE_REVIEW.md) | Замечания по коду и риски |
+## Кратко
 
-Backend: [sokol-backend/docs](../../sokol-backend/docs/README.md), в т.ч. [ALEMBIC_AND_DATA.md](../../sokol-backend/docs/ALEMBIC_AND_DATA.md).
+SPA на React 19 + Vite 7:
 
-## Кратко о приложении
+- **Auth** — JWT, роли `admin`/`auditor`, `AdminGuard` для settings/DELETE.
+- **Данные** — TanStack Query + `SokolDataProvider` (checks/recommendations).
+- **Analytics/planning** — `GET /api/v1/analytics/*`.
+- **Tools** — upload `.docx` → backend.
+- **Наблюдения, Канцлер** — демо/заглушки.
 
-SPA «Сокол» (React 19 + Vite 7):
-
-- **Auth:** JWT login (`POST /api/v1/auth/login`), Bearer interceptor, роли `admin`/`auditor` (`AdminGuard` для Settings/DELETE).
-- CRUD проверок и рекомендаций, справочники, профиль.
-- **Аналитика:** backend API — `GET /api/v1/analytics/{checks|recommendations|monitoring|dva}`.
-- **Планирование:** `GET /api/v1/analytics/planning` (`PlanningAnalyticsDashboard`); экспорт пока отключён.
-- **Вложения:** через backend attachments API + MinIO.
-- DOCX-инструменты: Раздел II, ДЗ, аудиторское мнение (Ollama).
-- Наблюдения — демо-таблица без backend CRUD; канцлер — заглушка.
-
-Общие токены форм: `src/constants/formLayout.ts`.
+Токены форм: `src/constants/formLayout.ts`.
 
 ## Стек
 
-| Пакет | Назначение |
-|-------|------------|
-| React 19 / React Router 7 | UI, маршруты |
-| TanStack Query 5 | серверный кэш |
-| Axios | HTTP (+ Bearer) |
-| Tailwind 3 | стили (`sber` palette) |
-| Recharts | графики аналитики |
-| react-grid-layout | статическая сетка дашбордов |
-| xlsx-js-style / docx / pdfmake / html-to-image | клиентский экспорт |
-| Vitest | unit-тесты (`npm test`) |
+React Router 7 · TanStack Query 5 · Axios · Tailwind · Recharts · xlsx/docx/pdfmake (экспорт) · Vitest
 
-Пересборка `ANALYTICS_TZ.docx` (нужен UI на `:5180`): `npm run docs:analytics-tz:full`.
-
-## Dev-порты
+## Порты
 
 | Режим | UI | API |
-|-------|----|-----|
-| Локальная разработка | **5180** | **8802** (`VITE_DEV_API_PORT`) |
-| Docker (коробка) | **5180** | **8800** (`VITE_API_URL`) |
+|-------|-----|-----|
+| Dev | 5180 | 8802 |
+| Docker | 5180 | 8800 |
 
-Локально: прокси Vite `/api` → `http://127.0.0.1:8802`.
+## Роли
+
+| Роль | Возможности |
+|------|-------------|
+| `auditor` | CRUD домена, analytics, tools, вложения |
+| `admin` | + справочники, DELETE |
+
+Фильтр «Мои» сравнивает руководителя с ФИО из профиля (localStorage), не с server identity.
+
+## Основные потоки
+
+1. **Проверка** — форма → `POST /checks`, вложения, импорт рекомендаций из АЗ (`parse-recommendations`).
+2. **Рекомендация** — форма с контрольной зоной, closure, вложения.
+3. **Инструменты** — `DocxToolPanel` / `AuditOpinionPanel` → `api/tools.ts`.
+4. **Экспорт** — таблицы: XLSX/DOCX/PDF на клиенте; дашборды: visual export (xlsx/pdf/docx/html).
+
+Алгоритм Раздела II — [REPORTS.md](../../sokol-backend/docs/REPORTS.md).

@@ -1,109 +1,76 @@
 # Сокол — фронтенд
 
-Веб-интерфейс для внутреннего продукта «Сокол»: панели рекомендаций, проверок, аналитики, настроек и инструментов, а также профиля пользователя.
+React 19 + TypeScript + Vite 7. Внутренний UI аудита.
 
-## Порты (локальная разработка)
+## Порты
 
 | Сервис | URL |
 |--------|-----|
-| UI (Vite) | http://localhost:5180 |
-| API (бэкенд) | http://localhost:8802 |
+| UI | http://localhost:5180 |
+| API (dev) | http://localhost:8802 |
 
-Порты в `.env.development`. Прокси Vite: `/api` → `http://127.0.0.1:8802`.
-
-В **Docker** API на хосте — **8800** (`VITE_API_URL=http://localhost:8800`); см. корневой [DOCKER.md](../DOCKER.md).
-
-## Возможности
-
-- Авторизация: JWT (`POST /api/v1/auth/login`), Bearer interceptor, роли `admin` / `auditor` (OIDC — следующий шаг).
-- Разделы: Проверки, Рекомендации, Наблюдения (демо без API), Аналитика, Планирование, Канцлер (заглушка), Настройки, Инструменты, Профиль.
-- Формы проверок/рекомендаций: токены в `src/constants/formLayout.ts`.
-- Вложения: через backend `/attachments` + MinIO.
-- Инструменты: Раздел II АЗ (± гиперссылки), ДЗ, раздел I «Аудиторское мнение» (Ollama).
-- Аналитика: `GET /api/v1/analytics/{checks|recommendations|monitoring|dva}`; экспорт XLSX/PDF/DOCX/HTML. Подробно: [docs/ANALYTICS.md](docs/ANALYTICS.md).
-- Планирование: `GET /api/v1/analytics/planning` — [docs/PLANNING.md](docs/PLANNING.md) (экспорт пока выключен).
-- Профиль: ФИО + аватар в localStorage; смена пароля — UI без API.
-- Экспорт таблиц проверок и рекомендаций в XLSX, DOCX и PDF.
-
-## Стек
-
-- React 19 + TypeScript
-- Vite 7
-- TanStack Query, Axios
-- Tailwind CSS
-- Recharts (аналитика), xlsx-js-style / docx / pdfmake / html-to-image (экспорт)
+Прокси Vite: `/api` → `127.0.0.1:8802`. В Docker API на **8800** — [DOCKER.md](../DOCKER.md).
 
 ## Быстрый старт
 
-**1. Запустите бэкенд** (отдельный терминал, см. `sokol-backend/README.md`):
-
 ```powershell
-cd sokol-backend
-.\run_dev.ps1
-```
-
-**2. Запустите фронтенд:**
-
-```bash
+# терминал 1 — backend (sokol-backend/run_dev.ps1)
+# терминал 2:
 cd sokol-frontend
 npm install
 npm run dev
 ```
 
-**3. Откройте:** http://localhost:5180
+http://localhost:5180 · dev-логин: `admin`/`admin` или `auditor`/`auditor`
 
 ## Скрипты
 
-- `npm run dev` — локальная разработка (порт **5180**)
-- `npm run build` — сборка
-- `npm run preview` — предпросмотр сборки
-- `npm run lint` — линтинг
-- `npm test` — Vitest
-- `npm run docs:analytics-tz:full` — пересборка ANALYTICS_TZ.docx (нужен UI)
+| Команда | Назначение |
+|---------|------------|
+| `npm run dev` | разработка (5180) |
+| `npm run build` | сборка |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest |
 
-## Переменные окружения
-
-Файл `.env.development` (в репозитории):
+## Env (`.env.development`)
 
 ```bash
 VITE_DEV_SERVER_PORT=5180
 VITE_DEV_API_PORT=8802
 ```
 
-Опционально в `.env.local`:
+`VITE_API_URL` — только если нужен прямой URL API (обычно не нужен). CORS на backend: `SOKOL_CORS_ORIGINS=http://localhost:5180`.
 
-- `VITE_API_URL` — прямой URL API (минуя proxy). В обычном dev **не нужен**: запросы идут на origin `5180`, `/api` проксируется на бэкенд **8802**.
+## Маршруты
 
-## Структура проекта
-
-- `src/api` — HTTP‑клиент и запросы
-- `src/components` — страницы и UI‑компоненты (`checks`, `recommendations`, `analytics`, `tabs`, …)
-- `src/constants` — статусы, layout-токены форм (`formLayout.ts`)
-- `src/contexts` — контексты (авторизация, данные)
-- `src/data` — локальные демо-данные, пока нет backend API для сущности
-- `src/hooks` — переиспользуемые React hooks
-- `src/utils` — даты, экспорт, скачивание файлов, проверка `.docx`
-
-Документация: [docs/README.md](docs/README.md) · аналитика: [docs/ANALYTICS.md](docs/ANALYTICS.md) · план развития: [PLAN.md](../PLAN.md).
-
-## Актуальные маршруты
-
-| Путь | Назначение |
-|------|------------|
+| Путь | Раздел |
+|------|--------|
 | `/checks`, `/checks/new`, `/checks/:id/edit` | проверки |
-| `/recommendations`, `/recommendations/new`, `/recommendations/:id/edit` | рекомендации |
-| `/observations`, `/observations/new`, `/observations/:id/edit` | наблюдения: демо-таблица + заглушка формы |
-| `/analytics` | аналитика: серверные дашборды checks/recs/monitoring/DVA |
-| `/planning` | планирование: `GET /analytics/planning` |
-| `/tools` | инструменты генерации документов |
-| `/kantsler` | раздел «Канцлер» (заглушка) |
-| `/settings` | справочники |
+| `/recommendations`, `.../new`, `.../:id/edit` | рекомендации |
+| `/observations` | наблюдения (демо, без API) |
+| `/analytics` | аналитика |
+| `/planning` | планирование |
+| `/tools` | DOCX-инструменты |
+| `/settings` | справочники (admin) |
 | `/profile` | профиль |
+| `/kantsler` | заглушка |
 
-Отдельной вкладки `/export` нет: экспорт встроен в таблицы и дашборды.
+## Структура `src/`
+
+`api/` · `components/` · `contexts/` · `constants/` · `hooks/` · `utils/` · `types/`
+
+Документация: [docs/README.md](docs/README.md).
+
+## Возможности
+
+JWT auth · CRUD проверок/рекомендаций · справочники · вложения (MinIO) · server analytics · клиентский экспорт таблиц/дашбордов · DOCX tools · профиль (смена пароля — UI-only).
 
 ## Частые проблемы
 
-**Ошибка 500 / network при генерации документов** — бэкенд не запущен или слушает не **8802**. Проверьте http://localhost:8802/docs
-
-**Порт UI занят** — измените `VITE_DEV_SERVER_PORT` в `.env.development` и `SOKOL_CORS_ORIGINS` в `sokol-backend/.secrets/sokol.env`.
+| Симптом | Действие |
+|---------|----------|
+| 500 / ECONNREFUSED | backend на **8802** |
+| 401 | перелогиниться |
+| CORS | `SOKOL_CORS_ORIGINS` + restart API |
+| Audit-opinion 502 | Ollama на хосте |
+| Порт 5180 занят | сменить `VITE_DEV_SERVER_PORT` |

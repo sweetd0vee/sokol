@@ -69,8 +69,8 @@ def get_leader_initials_code(full_name: str) -> str:
     return "".join(_transliterate_char(part[0]) for part in parts if part)
 
 
-def _same_year_and_month(first: date, second: date) -> bool:
-    return first.year == second.year and first.month == second.month
+def _same_year(first: date, second: date) -> bool:
+    return first.year == second.year
 
 
 def count_matching_check_keys(
@@ -84,7 +84,7 @@ def count_matching_check_keys(
         for item in existing
         if item.leader == leader
         and item.check_type == check_type
-        and _same_year_and_month(item.start_date, start_date)
+        and _same_year(item.start_date, start_date)
     )
 
 

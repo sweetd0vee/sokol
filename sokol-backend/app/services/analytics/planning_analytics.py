@@ -16,12 +16,14 @@ from app.schemas.analytics import (
     PlanningDepartmentAnalyticsRow,
 )
 from app.services.analytics.common import (
-    check_department_distribution,
-    collect_audit_objects,
+    build_department_lookup,
+    check_canonical_department_distribution,
     filter_checks,
     filter_recommendations,
     load_checks_with_recommendations,
+    load_department_names,
     load_recommendations,
+    match_audit_object_to_departments,
     pad_anchor_dates,
 )
 
@@ -63,15 +65,26 @@ def _department_analytics(
     checks: list[Check],
     recommendations: list[Recommendation],
     all_recommendations_for_links: list[Recommendation],
+    all_departments: list[str],
+    department_lookup: dict[str, str],
 ) -> list[PlanningDepartmentAnalyticsRow]:
-    check_by_dept = check_department_distribution(checks, all_recommendations_for_links)
+    check_by_dept = check_canonical_department_distribution(
+        checks,
+        all_recommendations_for_links,
+        all_departments,
+    )
     rec_by_dept: dict[str, int] = defaultdict(int)
     high_by_dept: dict[str, int] = defaultdict(int)
     for item in recommendations:
-        name = (item.audit_object or "").strip() or "Без департамента"
-        rec_by_dept[name] += 1
-        if item.materiality_level == "высокий":
-            high_by_dept[name] += 1
+        matched = match_audit_object_to_departments(
+            item.audit_object or "",
+            department_lookup,
+        )
+        targets = matched or {"Без департамента"}
+        for name in targets:
+            rec_by_dept[name] += 1
+            if item.materiality_level == "высокий":
+                high_by_dept[name] += 1
 
     names = set(check_by_dept) | set(rec_by_dept)
     rows = [
@@ -82,6 +95,7 @@ def _department_analytics(
             high_materiality=high_by_dept.get(name, 0),
         )
         for name in names
+        if name != "Без департамента"
     ]
     return sorted(
         rows,
@@ -89,13 +103,21 @@ def _department_analytics(
     )[:15]
 
 
-def _high_materiality_by_department(recommendations: list[Recommendation]) -> list[NamedCount]:
+def _high_materiality_by_department(
+    recommendations: list[Recommendation],
+    department_lookup: dict[str, str],
+) -> list[NamedCount]:
     counts: dict[str, int] = defaultdict(int)
     for item in recommendations:
         if item.materiality_level != "высокий":
             continue
-        name = (item.audit_object or "").strip() or "Без департамента"
-        counts[name] += 1
+        matched = match_audit_object_to_departments(
+            item.audit_object or "",
+            department_lookup,
+        )
+        targets = matched or {"Без департамента"}
+        for name in targets:
+            counts[name] += 1
     return [
         NamedCount(name=name, value=value)
         for name, value in sorted(counts.items(), key=lambda row: (-row[1], row[0]))[:15]
@@ -113,7 +135,8 @@ async def build_planning_analytics(
 ) -> PlanningAnalyticsResponse:
     checks = await load_checks_with_recommendations(session)
     recommendations = await load_recommendations(session)
-    all_departments = collect_audit_objects(recommendations)
+    all_departments = await load_department_names(session)
+    department_lookup = build_department_lookup(all_departments)
 
     filtered_checks = filter_checks(
         checks,
@@ -139,13 +162,18 @@ async def build_planning_analytics(
 
     check_counts = {
         name: count
-        for name, count in check_department_distribution(
-            filtered_checks_for_coverage, recommendations
+        for name, count in check_canonical_department_distribution(
+            filtered_checks_for_coverage,
+            recommendations,
+            all_departments,
         ).items()
         if name != "Без департамента"
     }
     coverage = _build_coverage(all_departments, check_counts)
-    high_ranking = _high_materiality_by_department(filtered_recommendations)
+    high_ranking = _high_materiality_by_department(
+        filtered_recommendations,
+        department_lookup,
+    )
 
     return PlanningAnalyticsResponse(
         universe_checks_total=len(checks),
@@ -158,6 +186,8 @@ async def build_planning_analytics(
             filtered_checks,
             filtered_recommendations,
             recommendations,
+            all_departments,
+            department_lookup,
         ),
         high_materiality_by_department=high_ranking,
         high_materiality_total=sum(item.value for item in high_ranking),

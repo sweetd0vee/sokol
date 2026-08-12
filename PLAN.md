@@ -6,7 +6,7 @@
 
 **Назначение:** единый план дальнейших действий. Playbooks A–D ниже — технические детали; **календарь и scope freeze** — в разделе [Go-live 01.09.2026](#go-live-01092026--жёсткий-план).
 
-Детальные разборы кода: [sokol-backend/docs/CODE_REVIEW.md](sokol-backend/docs/CODE_REVIEW.md), [sokol-frontend/docs/CODE_REVIEW.md](sokol-frontend/docs/CODE_REVIEW.md).
+Техническая документация: [sokol-backend/docs/](sokol-backend/docs/README.md), [sokol-frontend/docs/](sokol-frontend/docs/README.md).
 
 ---
 
@@ -261,7 +261,7 @@ gantt
 1. **Безопасность и целостность данных** — auth и миграции раньше новых фич.
 2. **Согласованность FE ↔ BE** — один контракт, явные ограничения (вложения, auth).
 3. **Минимальный инкремент** — каждая фаза даёт измеримый результат, без «big bang».
-4. **Документация следует за кодом** — после каждой фазы обновлять README, API.md, USER_STORIES.
+4. **Документация следует за кодом** — после каждой фазы обновлять README и `docs/API.md`.
 
 ---
 
@@ -438,10 +438,10 @@ gantt
 | Изменение в коде | Документы |
 |------------------|-----------|
 | Новый endpoint | `sokol-backend/docs/API.md`, Swagger |
-| Auth | README (все уровни), USER_STORIES, ARCHITECTURE |
-| Alembic | DEVELOPMENT.md, DATA_AND_DB.md |
-| Новый модуль (observations) | USER_STORIES, ARCHITECTURE (FE+BE), корневой README «Текущие возможности» |
-| CI | DEVELOPMENT.md, RUNBOOK.md |
+| Auth | README (все уровни), ARCHITECTURE (FE+BE) |
+| Alembic | ALEMBIC_AND_DATA.md, DATA_AND_DB.md |
+| Новый модуль (observations) | ARCHITECTURE (FE+BE), корневой README |
+| CI | README backend/frontend |
 | Порты/env | README, DOCKER.md, `.env.example` |
 
 ---
@@ -452,10 +452,8 @@ gantt
 |----------|------------|
 | [README.md](README.md) | Быстрый старт, порты, возможности |
 | [DOCKER.md](DOCKER.md) | Коробочный Docker |
-| [sokol-backend/docs/ROADMAP.md](sokol-backend/docs/ROADMAP.md) | Backend-only backlog |
-| [sokol-frontend/docs/ROADMAP.md](sokol-frontend/docs/ROADMAP.md) | Frontend-only backlog |
-| [sokol-backend/docs/CODE_REVIEW.md](sokol-backend/docs/CODE_REVIEW.md) | Findings backend |
-| [sokol-frontend/docs/CODE_REVIEW.md](sokol-frontend/docs/CODE_REVIEW.md) | Findings frontend |
+| [sokol-backend/docs/](sokol-backend/docs/README.md) | Архитектура, API, БД |
+| [sokol-frontend/docs/](sokol-frontend/docs/README.md) | Архитектура, analytics, UI |
 
 ---
 
@@ -707,7 +705,7 @@ docker exec postgres pg_dump -U postgres sokol_db > backup_$(Get-Date -Format yy
 docker compose exec api alembic upgrade head
 ```
 
-Дополнить [DOCKER.md](DOCKER.md) и [sokol-frontend/docs/RUNBOOK.md](sokol-frontend/docs/RUNBOOK.md) ссылкой на этот раздел при реализации.
+Дополнить [DOCKER.md](DOCKER.md) и [sokol-frontend/README.md](sokol-frontend/README.md) ссылкой на этот раздел при реализации.
 
 ---
 
@@ -752,7 +750,7 @@ docker compose exec api alembic upgrade head
 
 ## Оставшиеся доработки по приложению (сводка backlog)
 
-Сгруппировано по ценности для банковского пилота. Детали задач — в фазах 0–5 выше и в `*/docs/ROADMAP.md`.
+Сгруппировано по ценности для банковского пилота. Детали задач — в фазах 0–5 выше.
 
 ### Must-have до пилота с реальными данными
 

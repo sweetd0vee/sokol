@@ -74,8 +74,8 @@ function getMonthCode(date: Date) {
   return String(date.getMonth() + 1).padStart(2, '0');
 }
 
-function isSameYearAndMonth(first: Date, second: Date) {
-  return first.getFullYear() === second.getFullYear() && first.getMonth() === second.getMonth();
+function isSameYear(first: Date, second: Date) {
+  return first.getFullYear() === second.getFullYear();
 }
 
 function countMatchingCheckKeys(
@@ -89,7 +89,7 @@ function countMatchingCheckKeys(
       return false;
     }
     const checkDate = parseIsoDate(check.startDate);
-    return checkDate !== null && isSameYearAndMonth(checkDate, startDate);
+    return checkDate !== null && isSameYear(checkDate, startDate);
   }).length;
 }
 

@@ -6,7 +6,13 @@ import unittest
 from types import SimpleNamespace
 
 from app.services.analytics import planning_analytics as planning
-from app.services.analytics.common import check_department_distribution
+from app.services.analytics.common import (
+    build_department_lookup,
+    check_canonical_department_distribution,
+    check_department_distribution,
+    match_audit_object_to_departments,
+    parse_audit_object_parts,
+)
 
 
 def _check(serial_number: str) -> SimpleNamespace:
@@ -41,6 +47,29 @@ class PlanningAnalyticsTests(unittest.TestCase):
         self.assertEqual(counts["Риски"], 1)
         self.assertEqual(counts["Без департамента"], 1)
 
+    def test_parse_audit_object_parts_splits_combined_values(self) -> None:
+        self.assertEqual(
+            parse_audit_object_parts("Архивный отдел; Департамент ИТ"),
+            ["Архивный отдел", "Департамент ИТ"],
+        )
+
+    def test_check_canonical_department_distribution_uses_dictionary(self) -> None:
+        departments = ["Финансы", "Риски", "ИТ"]
+        lookup = build_department_lookup(departments)
+        checks = [_check("SN-1")]
+        recommendations = [
+            _recommendation("SN-1", "Финансы; Риски"),
+            _recommendation("SN-1", "Финансы"),
+        ]
+
+        matched = match_audit_object_to_departments("Финансы; Риски", lookup)
+        self.assertEqual(matched, {"Финансы", "Риски"})
+
+        counts = check_canonical_department_distribution(checks, recommendations, departments)
+        self.assertEqual(counts["Финансы"], 1)
+        self.assertEqual(counts["Риски"], 1)
+        self.assertEqual(counts["ИТ"], 0)
+
     def test_build_coverage_rates_and_lists(self) -> None:
         coverage = planning._build_coverage(
             all_departments=["А", "Б", "В"],
@@ -55,6 +84,7 @@ class PlanningAnalyticsTests(unittest.TestCase):
         self.assertEqual(coverage.uncovered_departments, ["Б", "В"])
 
     def test_high_materiality_by_department_filters_and_sorts(self) -> None:
+        lookup = build_department_lookup(["Финансы", "Риски"])
         recommendations = [
             _recommendation("SN-1", "Финансы", "высокий"),
             _recommendation("SN-2", "Финансы", "высокий"),
@@ -62,7 +92,7 @@ class PlanningAnalyticsTests(unittest.TestCase):
             _recommendation("SN-4", None, "высокий"),
         ]
 
-        ranking = planning._high_materiality_by_department(recommendations)
+        ranking = planning._high_materiality_by_department(recommendations, lookup)
 
         self.assertEqual(ranking[0].name, "Финансы")
         self.assertEqual(ranking[0].value, 2)

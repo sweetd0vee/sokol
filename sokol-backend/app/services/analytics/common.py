@@ -8,9 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.checks import Check, CheckStatus
+from app.models.departments import Department
 from app.models.recommendations import Recommendation
 from app.schemas.analytics import ChecksSummary, NamedCount
 from app.services.analytics.period import is_date_in_any_selected_periods
+from app.utils.dictionary_text import normalize_dictionary_label
 
 
 async def load_checks_with_recommendations(session: AsyncSession) -> list[Check]:
@@ -156,6 +158,40 @@ def collect_audit_objects(recommendations: list[Recommendation]) -> list[str]:
     )
 
 
+async def load_department_names(session: AsyncSession) -> list[str]:
+    result = await session.execute(select(Department.name).order_by(Department.name.asc()))
+    names = list(result.scalars().all())
+    if names:
+        return names
+    from app.db.department_names import DEPARTMENTS
+
+    return sorted(DEPARTMENTS, key=lambda value: value.casefold())
+
+
+def build_department_lookup(departments: list[str]) -> dict[str, str]:
+    return {normalize_dictionary_label(name): name for name in departments}
+
+
+def parse_audit_object_parts(audit_object: str) -> list[str]:
+    raw = (audit_object or "").strip()
+    if not raw:
+        return []
+    parts = [part.strip() for part in raw.split(";") if part.strip()]
+    return parts or [raw]
+
+
+def match_audit_object_to_departments(
+    audit_object: str,
+    department_by_normalized: dict[str, str],
+) -> set[str]:
+    matched: set[str] = set()
+    for part in parse_audit_object_parts(audit_object):
+        canonical = department_by_normalized.get(normalize_dictionary_label(part))
+        if canonical:
+            matched.add(canonical)
+    return matched
+
+
 def summarize_checks(checks: list[Check]) -> ChecksSummary:
     by_status = {
         CheckStatus.NOT_STARTED: 0,
@@ -218,6 +254,38 @@ def check_department_distribution(
             continue
         for department in departments:
             counts[department] += 1
+    return counts
+
+
+def check_canonical_department_distribution(
+    checks: list[Check],
+    recommendations: list[Recommendation],
+    all_departments: list[str],
+) -> dict[str, int]:
+    department_by_normalized = build_department_lookup(all_departments)
+    by_serial: dict[str, list[Recommendation]] = defaultdict(list)
+    for item in recommendations:
+        serial = (item.serial_number or "").strip()
+        if serial:
+            by_serial[serial].append(item)
+
+    counts: dict[str, int] = {name: 0 for name in all_departments}
+    without_department = 0
+    for check in checks:
+        linked = by_serial.get(check.serial_number, [])
+        departments: set[str] = set()
+        for item in linked:
+            departments |= match_audit_object_to_departments(
+                item.audit_object or "",
+                department_by_normalized,
+            )
+        if not departments:
+            without_department += 1
+            continue
+        for department in departments:
+            counts[department] += 1
+    if without_department:
+        counts["Без департамента"] = without_department
     return counts
 
 
