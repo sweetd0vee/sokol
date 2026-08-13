@@ -4,7 +4,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   LabelList,
   Legend,
   ResponsiveContainer,
@@ -33,8 +32,6 @@ import { PLANNING_HIGH_MATERIALITY_COLOR } from '../../utils/planningAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 import type { PeriodGranularity } from '../../utils/checkAnalytics';
 
-const COVERAGE_ZERO_COLOR = '#CBD5E1';
-const COVERAGE_CHECKS_COLOR = CHECKS_PALETTE[8];
 const EMPTY_COVERAGE = {
   covered: 0,
   uncovered: 0,
@@ -153,47 +150,34 @@ export function PlanningAnalyticsDashboard() {
         id: 'coverage',
         defaultLayout: { x: 0, y: 2, w: 6, h: 5, minW: 3, minH: 3 },
         render: () => {
-          const checksByDepartment = coverage.checksByDepartment;
-          const chartHeight = Math.max(208, checksByDepartment.length * 28);
+          const uncoveredDepartments = coverage.uncoveredDepartments;
           return (
             <ChartCard
               title="Охват департаментов"
-              description="Число проверок по подразделениям за выбранный период (по возрастанию)"
+              description="Неохваченные департаменты за выбранный период"
             >
-              {checksByDepartment.length === 0 ? (
+              {coverage.total === 0 ? (
                 <EmptyChart message="Нет департаментов в данных" />
               ) : (
                 <div className="flex h-full min-h-[13rem] flex-col gap-2">
-                  <div className="min-h-0 flex-1 overflow-auto">
-                    <div style={{ height: chartHeight, minHeight: '100%' }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={checksByDepartment}
-                          layout="vertical"
-                          margin={{ top: 8, right: 36, left: 8, bottom: 0 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                          <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
-                          <YAxis
-                            type="category"
-                            dataKey="name"
-                            width={140}
-                            tick={CHART_CATEGORY_AXIS_TICK}
-                          />
-                          <Tooltip />
-                          <Bar dataKey="value" name="Проверки" radius={[0, 4, 4, 0]}>
-                            {checksByDepartment.map((row) => (
-                              <Cell
-                                key={row.name}
-                                fill={row.value > 0 ? COVERAGE_CHECKS_COLOR : COVERAGE_ZERO_COLOR}
-                              />
-                            ))}
-                            <LabelList dataKey="value" position="right" fontSize={CHART_VALUE_LABEL_SIZE} />
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
+                  {uncoveredDepartments.length === 0 ? (
+                    <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 px-4 text-center text-sm font-semibold text-emerald-700">
+                      Все департаменты охвачены проверками за выбранный период
                     </div>
-                  </div>
+                  ) : (
+                    <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-slate-200 bg-white">
+                      <ol className="divide-y divide-slate-100">
+                        {uncoveredDepartments.map((department, index) => (
+                          <li key={department} className="flex items-start gap-3 px-3 py-2 text-sm text-slate-700">
+                            <span className="mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
+                              {index + 1}
+                            </span>
+                            <span className="leading-snug">{department}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
                   <p className="shrink-0 text-sm font-semibold leading-snug text-sber-dark">
                     Не охвачено: {coverage.uncovered} из {coverage.total} ({coverage.uncoveredRate}%)
                   </p>

@@ -79,6 +79,25 @@ const MATERIALITY_DOT_COLORS: Record<string, string> = {
 };
 const MATERIALITY_DOT_CHAR = '●';
 const INDICATOR_ICON_DISPLAY_PX = 14;
+const RECOMMENDATION_XLSX_DEFAULT_COLUMN_WIDTH = 18;
+const RECOMMENDATION_XLSX_MIN_ROW_HEIGHT = 22;
+const RECOMMENDATION_XLSX_MAX_ROW_HEIGHT = 240;
+const RECOMMENDATION_XLSX_LINE_HEIGHT = 15;
+const RECOMMENDATION_XLSX_COLUMN_WIDTHS: Record<string, number> = {
+  ID: 10,
+  Ключ: 14,
+  'Название проверки': 60,
+  'Название рекомендации': 58,
+  'Название наблюдения': 38,
+  'Объект аудита': 34,
+  Индикатор: 12,
+  'Срок исполнения': 15,
+  'Уровень существенности': 24,
+  Аудитор: 24,
+  'Руководитель объекта аудита': 30,
+  Статус: 17,
+  'Дополнительный статус': 22,
+};
 
 const CHECK_COLUMN_KEYS = [
   'ID',
@@ -155,6 +174,38 @@ function getCellBorderStyle() {
     left: { style: 'thin' as const, color: { rgb: BORDER_GRAY } },
     right: { style: 'thin' as const, color: { rgb: BORDER_GRAY } },
   };
+}
+
+function getRecommendationXlsxColumnWidth(header: string) {
+  return RECOMMENDATION_XLSX_COLUMN_WIDTHS[header] ?? RECOMMENDATION_XLSX_DEFAULT_COLUMN_WIDTH;
+}
+
+function estimateWrappedLineCount(value: unknown, width: number) {
+  const text = toCellText(value).trim();
+  if (!text) {
+    return 1;
+  }
+  const usableWidth = Math.max(width - 2, 8);
+  return text
+    .split(/\r?\n/)
+    .reduce((lines, part) => lines + Math.max(1, Math.ceil(part.length / usableWidth)), 0);
+}
+
+function getRecommendationXlsxRowHeight(row: ExportRow, headers: string[]) {
+  const maxLineCount = headers.reduce((max, header) => {
+    if (isMaterialityHeader(header) || isIndicatorHeader(header)) {
+      return max;
+    }
+    return Math.max(
+      max,
+      estimateWrappedLineCount(row[header], getRecommendationXlsxColumnWidth(header)),
+    );
+  }, 1);
+
+  return Math.min(
+    Math.max(RECOMMENDATION_XLSX_MIN_ROW_HEIGHT, maxLineCount * RECOMMENDATION_XLSX_LINE_HEIGHT + 8),
+    RECOMMENDATION_XLSX_MAX_ROW_HEIGHT,
+  );
 }
 
 function applySheetTableStyle(ws: XLSX.WorkSheet, headers: string[], rows: ExportRow[]) {
@@ -880,7 +931,7 @@ async function exportRecommendationsTableXlsx(
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Рекомендации');
   const headerRow = sheet.addRow(headers);
-  headerRow.height = 22;
+  headerRow.height = 34;
   headerRow.eachCell((cell) => {
     cell.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: `FF${WHITE}` } };
     cell.fill = {
@@ -915,7 +966,7 @@ async function exportRecommendationsTableXlsx(
       return toCellText(row[header]);
     });
     const excelRow = sheet.addRow(values);
-    excelRow.height = 20;
+    excelRow.height = getRecommendationXlsxRowHeight(row, headers);
     excelRow.eachCell((cell, colNumber) => {
       const header = headers[colNumber - 1];
       const rawValue = row[header ?? ''];
@@ -972,15 +1023,7 @@ async function exportRecommendationsTableXlsx(
   });
 
   headers.forEach((header, index) => {
-    if (isMaterialityHeader(header) || isIndicatorHeader(header)) {
-      sheet.getColumn(index + 1).width = 14;
-      return;
-    }
-    const maxLength = Math.max(
-      header.length,
-      ...rows.map((row) => toCellText(row[header]).length)
-    );
-    sheet.getColumn(index + 1).width = Math.min(Math.max(maxLength + 2, 12), 42);
+    sheet.getColumn(index + 1).width = getRecommendationXlsxColumnWidth(header);
   });
 
   const buffer = await workbook.xlsx.writeBuffer();
