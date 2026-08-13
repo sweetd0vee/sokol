@@ -36,7 +36,7 @@ QueryClient → AuthProvider → SokolDataProvider → Router
 | Слой | Данные |
 |------|--------|
 | **AuthContext** | JWT, role, display name → `localStorage` |
-| **SokolDataContext** | checks (500) + recommendations (1000) via React Query, `total` + truncation flags |
+| **SokolDataContext** | checks + recommendations up to 10000 rows via React Query |
 | **React Query** | settings, analytics cache |
 | **Component state** | фильтры, пагинация, файлы форм |
 
@@ -74,7 +74,7 @@ Login → `POST /auth/login` → token в localStorage → Bearer на все з
 
 ## Ограничения
 
-- Таблицы: client-side filter после bulk-fetch; при `total` больше загруженной выборки показывается warning, server pagination пока нет.
+- Таблицы: client-side filter после bulk-fetch до 10000 строк; server pagination пока нет.
 - Канцлер — stub.
 - HTML-экспорт дашбордов зависит от DOM-capture (хрупко при off-screen карточках).
 

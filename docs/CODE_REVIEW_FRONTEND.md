@@ -1,7 +1,7 @@
 # Код-ревью frontend
 
 **Общая оценка:** 8.4 / 10 · React 19, TypeScript, Vite, TanStack Query  
-**Смысл оценки:** frontend хорошо закрывает сценарии аудитора: atomic import из АЗ с undo, granular RBAC на delete/attachments, yearly ID в форме. Главные риски: усечение данных и hardening storage UX/экспортов.
+**Смысл оценки:** frontend хорошо закрывает сценарии аудитора: atomic import из АЗ с undo, granular RBAC на delete/attachments, yearly ID в форме. Главные риски: hardening storage UX/экспортов и масштабирование списков при росте сверх 10000 строк.
 
 ## Архитектура
 
@@ -12,7 +12,7 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 
 **Плюсы:** feature folders, mappers, React Query, единые токены форм.
 
-**Минусы:** god files (`exports.ts`, analytics export); нет route lazy loading; storage/truncation UX ещё требует hardening.
+**Минусы:** god files (`exports.ts`, analytics export); нет route lazy loading; storage UX ещё требует hardening.
 
 ## Оценка по блокам
 
@@ -20,16 +20,16 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 |------|--------|------------|------------------|
 | App shell / routing | **8.5 / 10** | AuthProvider, layout и Router собраны понятно; `kantsler` оставлен как явный roadmap-задел v2 | Нет route lazy loading |
 | Auth UI / API client | **8 / 10** | Login, Bearer interceptor, 401 logout, change-password и e2e успешного auth-flow закрывают базовый сценарий | Нет OIDC-flow |
-| Checks workflow | **8.2 / 10** | Форма и список работают с backend; `serial_number` только читается из API; edit route fetchит check по id; список показывает truncation warning и fetch error | Для больших списков всё ещё нужна server pagination/search |
-| Recommendations workflow | **8.8 / 10** | CRUD, статусы, вложения, atomic batch import/replace, undo импорта из АЗ, RBAC delete/attachments, yearly № в форме; save/list errors показываются в UI | Для больших списков всё ещё нужна server pagination/search |
-| Data layer / context | **7.8 / 10** | API clients + mappers + React Query; `batch-delete` для undo в одном запросе; context сохраняет `total` и признаки truncation | Bulk limits 500/1000 остаются временным ограничением до server pagination |
+| Checks workflow | **8.2 / 10** | Форма и список работают с backend; `serial_number` только читается из API; edit route fetchит check по id; list fetch errors показываются в UI | Для списков больше 10000 нужна server pagination/search |
+| Recommendations workflow | **8.8 / 10** | CRUD, статусы, вложения, atomic batch import/replace, undo импорта из АЗ, RBAC delete/attachments, yearly № в форме; save/list errors показываются в UI | Для списков больше 10000 нужна server pagination/search |
+| Data layer / context | **7.8 / 10** | API clients + mappers + React Query; `batch-delete` для undo в одном запросе; checks/recommendations грузятся до 10000 строк | Bulk load 10000 — осознанное ограничение пилотного объёма |
 | Attachments UI | **7.5 / 10** | `canModifyAttachments` / `canRemoveSaved` по ownership; check attachments — admin only | Нужен общий banner/disabled state при недоступном MinIO |
 | Analytics dashboards | **8.5 / 10** | Серверные SQL-агрегаты; единый заголовок KPI «Итого»; на вкладке проверок первая карточка «Всего» | Drill-down/server pagination для детализации |
 | Exports | **6.5 / 10** | XLSX/PDF/DOCX/HTML дают быстрый value для пользователей | `exports.ts` и DOM capture хрупкие, требуют дробления |
 | Planning | **7 / 10** | Dashboard подключён к backend analytics | Export выключен, модуль надо явно позиционировать как ограниченный |
 | Tools / DOCX UI | **8 / 10** | UI соответствует текущему backend: section-ii, links, memorandum, parse recommendations | Нет очереди/прогресса для долгих jobs |
 | UI kit / forms | **8.5 / 10** | Переиспользуемые controls, `formLayout` constants, `LIST_ACTION_GROUP_CLASS` для единых отступов фильтров | Нет Storybook/visual regression |
-| Tests / lint | **8.8 / 10** | 54 Vitest проходят, lint без ошибок/warnings; form payload/API tests и Playwright auth smoke | Нет e2e CRUD flow, storage state и truncation cases |
+| Tests / lint | **8.8 / 10** | 54 Vitest проходят, lint без ошибок/warnings; form payload/API tests и Playwright auth smoke | Нет e2e CRUD flow и storage state |
 
 ## Маршруты vs backend
 
@@ -49,7 +49,7 @@ Upload limits из `GET /capabilities` (backend).
 
 ## State
 
-`SokolDataContext`: checks limit 500, recommendations 1000. `total` сохранён в context, вкладки показывают warning при truncation и явно пишут, что таблица/экспорт работают по загруженной выборке. Следующий шаг — server pagination/search.
+`SokolDataContext`: checks/recommendations грузятся с limit 10000. Для ожидаемого объёма пилота это полный набор данных без truncation banner; server pagination/search нужен только при росте сверх 10000.
 
 `CheckFormPage`: serial из API, payload не отправляет `serial_number` ✅
 
@@ -73,7 +73,7 @@ E2E: 5 Playwright auth smoke tests: unauthenticated redirect, login validation, 
 
 **Где:** `src/components/checks/CheckFormPage.tsx`, `src/api/checks.ts`, `src/contexts/SokolDataContext.tsx`.
 
-**Было:** `/checks/:id/edit` брал проверку только из `location.state.check` или `checks.find()` в глобальном context. Context загружает максимум 500 checks. Если открыть edit URL напрямую, обновить страницу или редактировать проверку вне первых 500 записей, `existing` становился `undefined`. При submit условие `isEditMode && existing?.id` не срабатывало, и код уходил в `addCheck(payload)`.
+**Было:** `/checks/:id/edit` брал проверку только из `location.state.check` или `checks.find()` в глобальном context. Если открыть edit URL напрямую, обновить страницу или редактировать проверку вне загруженного списка, `existing` становился `undefined`. При submit условие `isEditMode && existing?.id` не срабатывало, и код уходил в `addCheck(payload)`.
 
 **Исправлено:** добавлен `fetchCheck(id)` на `GET /api/v1/checks/{id}`; `CheckFormPage` в edit mode дозагружает проверку через React Query, гидратирует поля после ответа API, при ошибке показывает `ErrorState`, а submit в edit mode больше не имеет fallback на `addCheck`.
 
@@ -91,23 +91,19 @@ E2E: 5 Playwright auth smoke tests: unauthenticated redirect, login validation, 
 
 **Тесты:** `npm run lint`, `npm test`.
 
-### FE-03 · P1 · Глобальные списки могут быть усечены без warning — закрыто частично
+### FE-03 · P1 · Глобальные списки были ограничены 500/1000 — закрыто
 
 **Где:** `src/contexts/SokolDataContext.tsx`, `src/api/checks.ts`, `src/api/recommendations.ts`.
 
-**Было:** context грузил `fetchChecks({ limit: 500 })` и `fetchRecommendations({ limit: 1000 })`. API возвращал `{ items, total }`, но context сохранял только `items`.
+**Было:** context грузил `fetchChecks({ limit: 500 })` и `fetchRecommendations({ limit: 1000 })`, а backend не принимал `limit > 1000`.
 
-**Риск:** если данных больше лимита, UI выглядит нормально, но работает с неполной выборкой. Возможные баги: не все рекомендации попадут в таблицу/экспорт, форма не найдёт связанную проверку, analytics на frontend-side data будут расходиться с backend aggregates.
+**Риск:** если данных больше лимита, UI работает с неполной выборкой. Возможные баги: не все рекомендации попадут в таблицу/экспорт, форма не найдёт связанную проверку.
 
-**Исправлено:** context сохраняет `checksTotal`, `recommendationsTotal`, `isChecksTruncated`, `isRecommendationsTruncated`; `ChecksTab` и `RecommendationsTab` показывают warning “Показано X из Y” и помечают экспорт как работу с текущей загруженной выборкой.
+**Исправлено:** backend list endpoints принимают `limit` до 10000, `SokolDataContext` запрашивает 10000 checks/recommendations. Warning “Показано X из Y” убран: для текущего ожидаемого объёма данные должны загружаться целиком.
 
-**Осталось:**
+**Осталось:** если фактический объём превысит 10000, перейти на server pagination/search и отдельный export-all flow.
 
-1. Для таблиц перейти на server pagination/search, а не один bulk fetch.
-2. Для form lookup использовать endpoint поиска/получения по id/serial, а не только локальный массив.
-3. Для export всех записей добавить отдельный API-flow.
-
-**Нужны тесты:** mock API возвращает `items.length=500`, `total=501`; UI показывает warning. Поиск проверки за пределами первой страницы всё равно может выбрать нужную запись через API.
+**Нужны тесты:** API принимает `limit=10000`; список рекомендаций с 1175 строками отображается без banner “Показано X из Y”.
 
 ### FE-04 · P1 · Bulk операции рекомендаций были неатомарны — закрыто
 

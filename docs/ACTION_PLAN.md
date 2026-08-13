@@ -28,7 +28,7 @@
 | P1-01 | ~~JWT: lookup user в БД + `is_active`~~ | **done** |
 | P1-02 | CI workflow добавлен; включить required checks по [CI.md](CI.md) | 0.5 d |
 | P1-03 | ~~Server serial_number~~ — **выполнено** | — |
-| P1-04 | ~~Таблицы: «Показано X из Y» для текущего bulk-fetch~~; server pagination — P2 | **done** |
+| P1-04 | ~~Таблицы грузят полный пилотный объём до 10000 строк без truncation banner~~ | **done** |
 | P1-05 | MinIO policy + UI banner при недоступном storage | 1–2 d |
 | P1-06 | Import dry-run + reject report | 2 d |
 | P1-07 | ~~Delete recommendation → cleanup MinIO~~ | **done** |
@@ -80,7 +80,7 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · ro
 | P0-03 | В `sokol-backend/docker/app/docker-compose.yml` и `entrypoint.sh` поставить demo load default `0`; в prod guard запретить demo/replace flags. | Пустой prod/UAT контейнер не импортирует demo Excel сам; `SOKOL_SEED_REPLACE=1` в prod падает до bootstrap. |
 | P0-04 | Ввести Alembic baseline и заменить prod `create_all` flow на `alembic upgrade head`. | Пустая test DB поднимается миграциями; повторный upgrade no-op; runbook обновлён. |
 | P0-06 | **Закрыто:** добавлены `fetchCheck(id)` и `useQuery` в `CheckFormPage`; edit mode не может вызвать `addCheck`. | Hard refresh `/checks/:id/edit` загружает проверку; 404 показывает `ErrorState`; `fetchCheck` покрыт Vitest. |
-| P1-04 | **Закрыто:** протащить `total` из `fetchChecks/fetchRecommendations` в UI и показать truncation warning. | При `items.length < total` пользователь видит “Показано X из Y”; таблица и export явно описаны как текущая загруженная выборка. |
+| P1-04 | **Закрыто:** поднять API/frontend limit списков до 10000 и убрать truncation banner. | При текущем ожидаемом объёме база целиком попадает в таблицы и export без сообщения “Показано X из Y”. |
 | P1-05 | Добавить frontend `useStorageStatus` и backend/storage runbook: disabled/unreachable states, retry, policy/backup. | Upload disabled при недоступном MinIO; пользователь видит причину; backup/restore steps описаны. |
 | P1-07 | **Закрыто:** при delete recommendation удаляются attachments rows и MinIO objects. | Service/API regression tests подтверждают cleanup и 502 при storage failure. |
 | P1-09 | Добавить `SOKOL_ENABLE_BASIC_AUTH`; в prod не принимать `_basic`, если flag выключен. | При prod config Basic получает 401; Bearer продолжает работать. |

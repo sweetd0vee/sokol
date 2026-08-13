@@ -29,7 +29,7 @@ async def create_check_endpoint(
 @router.get("", response_model=CheckListResponse)
 async def list_checks_endpoint(
     skip: int = Query(0, ge=0),
-    limit: int = Query(200, ge=1, le=1000),
+    limit: int = Query(200, ge=1, le=10000),
     search: Optional[str] = Query(None, min_length=1),
     status: Optional[CheckStatus] = None,
     check_type: Optional[str] = Query(None, min_length=1),

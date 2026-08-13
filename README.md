@@ -51,6 +51,7 @@ sokol/
 | Раздел | Содержание |
 |--------|------------|
 | [docs/README.md](docs/README.md) | Код-ревью и план действий |
+| [docs/APP_LIMITS_AND_GOTCHAS.md](docs/APP_LIMITS_AND_GOTCHAS.md) | Лимиты, тонкости и типовые проблемы |
 | [docs/CI.md](docs/CI.md) | CI workflow и обязательный GitHub gate |
 | [sokol-backend/README.md](sokol-backend/README.md) | Запуск, env, тесты |
 | [sokol-backend/docs/](sokol-backend/docs/README.md) | Архитектура, API, БД, reports |

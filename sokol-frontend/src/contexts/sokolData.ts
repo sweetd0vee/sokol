@@ -5,10 +5,6 @@ import type { Recommendation } from '../types/recommendation';
 export type SokolDataContextValue = {
   checks: Check[];
   recommendations: Recommendation[];
-  checksTotal: number;
-  recommendationsTotal: number;
-  isChecksTruncated: boolean;
-  isRecommendationsTruncated: boolean;
   isChecksLoading: boolean;
   isRecommendationsLoading: boolean;
   isChecksError: boolean;

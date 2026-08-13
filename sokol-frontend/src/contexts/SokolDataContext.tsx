@@ -18,8 +18,7 @@ interface SokolDataProviderProps {
   children: ReactNode;
 }
 
-const CHECKS_LIST_LIMIT = 500;
-const RECOMMENDATIONS_LIST_LIMIT = 1000;
+const LIST_FETCH_LIMIT = 10000;
 
 export function SokolDataProvider({ children }: SokolDataProviderProps) {
   const queryClient = useQueryClient();
@@ -27,13 +26,13 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
 
   const checksQuery = useQuery({
     queryKey: ['checks'],
-    queryFn: () => fetchChecks({ limit: CHECKS_LIST_LIMIT }),
+    queryFn: () => fetchChecks({ limit: LIST_FETCH_LIMIT }),
     enabled: isAuthenticated,
   });
 
   const recommendationsQuery = useQuery({
     queryKey: ['recommendations'],
-    queryFn: () => fetchRecommendations({ limit: RECOMMENDATIONS_LIST_LIMIT }),
+    queryFn: () => fetchRecommendations({ limit: LIST_FETCH_LIMIT }),
     enabled: isAuthenticated,
   });
 
@@ -42,10 +41,6 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
     () => recommendationsQuery.data?.items ?? [],
     [recommendationsQuery.data?.items],
   );
-  const checksTotal = checksQuery.data?.total ?? checks.length;
-  const recommendationsTotal = recommendationsQuery.data?.total ?? recommendations.length;
-  const isChecksTruncated = checks.length < checksTotal;
-  const isRecommendationsTruncated = recommendations.length < recommendationsTotal;
 
   const invalidateAll = useCallback(async () => {
     await Promise.all([
@@ -148,10 +143,6 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
     () => ({
       checks,
       recommendations,
-      checksTotal,
-      recommendationsTotal,
-      isChecksTruncated,
-      isRecommendationsTruncated,
       isChecksLoading: checksQuery.isLoading,
       isRecommendationsLoading: recommendationsQuery.isLoading,
       isChecksError: checksQuery.isError,
@@ -176,10 +167,6 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
     [
       checks,
       recommendations,
-      checksTotal,
-      recommendationsTotal,
-      isChecksTruncated,
-      isRecommendationsTruncated,
       checksQuery.isLoading,
       checksQuery.isError,
       checksQuery.error,

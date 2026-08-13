@@ -115,8 +115,6 @@ export function ChecksTab() {
 
   const {
     checks,
-    checksTotal,
-    isChecksTruncated,
     isChecksLoading,
     isChecksError,
     checksError,
@@ -315,13 +313,6 @@ export function ChecksTab() {
           </Link>
         </div>
       </div>
-
-      {isChecksTruncated && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Показано {checks.length} из {checksTotal} проверок. Уточните фильтры; таблица и
-          экспорт работают по текущей загруженной выборке.
-        </div>
-      )}
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <>

@@ -73,7 +73,7 @@ async def batch_delete_recommendations_endpoint(
 @router.get("", response_model=RecommendationListResponse)
 async def list_recommendations_endpoint(
     skip: int = Query(0, ge=0),
-    limit: int = Query(200, ge=1, le=1000),
+    limit: int = Query(200, ge=1, le=10000),
     search: Optional[str] = Query(None, min_length=1),
     serial_number: Optional[str] = Query(None, min_length=1),
     session: AsyncSession = Depends(get_db_session),

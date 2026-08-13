@@ -170,8 +170,6 @@ export function RecommendationsTab() {
 
   const {
     recommendations,
-    recommendationsTotal,
-    isRecommendationsTruncated,
     isRecommendationsLoading,
     isRecommendationsError,
     recommendationsError,
@@ -423,13 +421,6 @@ export function RecommendationsTab() {
           </Link>
         </div>
       </div>
-
-      {isRecommendationsTruncated && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Показано {recommendations.length} из {recommendationsTotal} рекомендаций. Уточните
-          фильтры; таблица и экспорт работают по текущей загруженной выборке.
-        </div>
-      )}
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="overflow-x-auto">
