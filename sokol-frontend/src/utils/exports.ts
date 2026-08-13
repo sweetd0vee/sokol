@@ -36,6 +36,7 @@ import {
   indicatorIconBytesToDataUrl,
   preloadIndicatorIcons,
 } from './exportIndicatorIcons';
+import { formatRecommendationAuditObjects } from './auditObjects';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
@@ -825,7 +826,7 @@ function toRecommendationTableRows(
     'Название проверки': checkNameByKey.get(recommendation.serial_number) ?? '',
     'Название рекомендации': recommendation.name,
     'Название наблюдения': recommendation.observation_name ?? '',
-    'Объект аудита': recommendation.audit_object,
+    'Объект аудита': formatRecommendationAuditObjects(recommendation.audit_object),
     Индикатор: getIndicatorLabel(recommendation.indicator),
     'Срок исполнения': formatCheckDate(recommendation.deadline),
     'Уровень существенности': getMaterialityLevelLabel(recommendation.materiality_level),

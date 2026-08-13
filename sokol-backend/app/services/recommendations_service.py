@@ -14,7 +14,10 @@ from app.schemas.recommendations import (
 )
 from app.services import attachments_service
 from app.services.crud_errors import AccessDeniedError, InvalidReferenceError, ResourceNotFoundError
-from app.services.dictionary_validation import validate_recommendation_dictionary_fields
+from app.services.dictionary_validation import (
+    canonicalize_audit_objects,
+    validate_recommendation_dictionary_fields,
+)
 
 
 async def create_recommendation(
@@ -43,6 +46,7 @@ async def batch_recommendations(
     for item in payload.items:
         data = item.model_dump()
         data["serial_number"] = check.serial_number
+        data["audit_object"] = await canonicalize_audit_objects(session, data.get("audit_object"))
         await validate_recommendation_dictionary_fields(
             session,
             {

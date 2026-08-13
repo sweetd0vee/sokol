@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from datetime import date
 
@@ -12,7 +13,7 @@ from app.models.departments import Department
 from app.models.recommendations import Recommendation
 from app.schemas.analytics import ChecksSummary, NamedCount
 from app.services.analytics.period import is_date_in_any_selected_periods
-from app.utils.dictionary_text import normalize_dictionary_label
+from app.utils.dictionary_text import dictionary_match_key
 
 
 async def load_checks_with_recommendations(session: AsyncSession) -> list[Check]:
@@ -34,6 +35,10 @@ def pad_anchor_dates(dates: list[date]) -> list[str]:
     for year in (2025, 2026):
         iso_dates.add(date(year, 1, 1).isoformat())
     return sorted(iso_dates)
+
+
+def _matches_any_audit_object_part(audit_object: str | list[str] | None, department_set: set[str]) -> bool:
+    return any(part in department_set for part in parse_audit_object_parts(audit_object))
 
 
 def filter_checks(
@@ -71,7 +76,10 @@ def filter_checks(
             continue
         if department_set:
             linked = check.recommendations or []
-            if not any(item.audit_object in department_set for item in linked):
+            if not any(
+                _matches_any_audit_object_part(item.audit_object, department_set)
+                for item in linked
+            ):
                 continue
         result.append(check)
     return result
@@ -104,7 +112,7 @@ def filter_recommendations(
             continue
         if auditor_set and item.auditor not in auditor_set:
             continue
-        if department_set and item.audit_object not in department_set:
+        if department_set and not _matches_any_audit_object_part(item.audit_object, department_set):
             continue
         status_value = item.status.value if hasattr(item.status, "value") else str(item.status)
         additional_value = (
@@ -150,9 +158,9 @@ def collect_analytics_auditors(checks: list[Check], recommendations: list[Recomm
 def collect_audit_objects(recommendations: list[Recommendation]) -> list[str]:
     return sorted(
         {
-            item.audit_object.strip()
+            part
             for item in recommendations
-            if item.audit_object and item.audit_object.strip()
+            for part in parse_audit_object_parts(item.audit_object)
         },
         key=lambda value: value.casefold(),
     )
@@ -169,24 +177,30 @@ async def load_department_names(session: AsyncSession) -> list[str]:
 
 
 def build_department_lookup(departments: list[str]) -> dict[str, str]:
-    return {normalize_dictionary_label(name): name for name in departments}
+    return {dictionary_match_key(name): name for name in departments}
 
 
-def parse_audit_object_parts(audit_object: str) -> list[str]:
+def parse_audit_object_parts(audit_object: str | list[str] | None) -> list[str]:
+    if isinstance(audit_object, list):
+        parts: list[str] = []
+        for item in audit_object:
+            parts.extend(parse_audit_object_parts(item))
+        return parts
+
     raw = (audit_object or "").strip()
     if not raw:
         return []
-    parts = [part.strip() for part in raw.split(";") if part.strip()]
+    parts = [part.strip() for part in re.split(r"[;,]", raw) if part.strip()]
     return parts or [raw]
 
 
 def match_audit_object_to_departments(
-    audit_object: str,
+    audit_object: str | list[str] | None,
     department_by_normalized: dict[str, str],
 ) -> set[str]:
     matched: set[str] = set()
     for part in parse_audit_object_parts(audit_object):
-        canonical = department_by_normalized.get(normalize_dictionary_label(part))
+        canonical = department_by_normalized.get(dictionary_match_key(part))
         if canonical:
             matched.add(canonical)
     return matched
@@ -245,9 +259,9 @@ def check_department_distribution(
     for check in checks:
         linked = by_serial.get(check.serial_number, [])
         departments = {
-            (item.audit_object or "").strip()
+            part
             for item in linked
-            if item.audit_object and item.audit_object.strip()
+            for part in parse_audit_object_parts(item.audit_object)
         }
         if not departments:
             counts["Без департамента"] += 1
@@ -276,7 +290,7 @@ def check_canonical_department_distribution(
 
 def check_canonical_department_distribution_from_links(
     check_serials: list[str],
-    recommendation_links: list[tuple[str, str]],
+    recommendation_links: list[tuple[str, str | list[str]]],
     all_departments: list[str],
 ) -> dict[str, int]:
     department_by_normalized = build_department_lookup(all_departments)
@@ -310,9 +324,9 @@ def check_department_map(checks: list[Check]) -> list[NamedCount]:
     counts: dict[str, int] = defaultdict(int)
     for check in checks:
         departments = {
-            item.audit_object.strip()
+            part
             for item in (check.recommendations or [])
-            if item.audit_object and item.audit_object.strip()
+            for part in parse_audit_object_parts(item.audit_object)
         }
         if not departments:
             counts["Без департамента"] += 1

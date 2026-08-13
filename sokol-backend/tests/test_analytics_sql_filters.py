@@ -7,6 +7,7 @@ import unittest
 from sqlalchemy.dialects import postgresql
 
 from app.services.analytics.sql_filters import (
+    audit_object_has_values,
     check_filter_conditions,
     period_or_condition,
     recommendation_filter_conditions,
@@ -52,6 +53,16 @@ class AnalyticsSqlFiltersTests(unittest.TestCase):
         self.assertIn("deadline", combined)
         self.assertIn("status", combined)
         self.assertIn("materiality_level", combined)
+
+    def test_audit_object_has_values_uses_array_cardinality(self) -> None:
+        condition = audit_object_has_values()
+        compiled = str(
+            condition.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True})
+        )
+
+        self.assertIn("audit_object IS NOT NULL", compiled)
+        self.assertIn("cardinality", compiled)
+        self.assertNotIn("!= ''", compiled)
 
 
 if __name__ == "__main__":

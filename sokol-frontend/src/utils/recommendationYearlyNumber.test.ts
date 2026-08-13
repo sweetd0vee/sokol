@@ -16,7 +16,7 @@ function makeRecommendation(id: string, deadline: string): Recommendation {
     description: '',
     indicator: 'не указан',
     materiality_level: 'средний',
-    audit_object: 'Object',
+    audit_object: ['Object'],
     deadline,
     auditor: 'Auditor',
     manager: 'Manager',

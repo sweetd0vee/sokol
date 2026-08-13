@@ -34,7 +34,7 @@ function makeRecommendation(
     description: '',
     indicator: 'не указан',
     materiality_level: 'средний',
-    audit_object: 'Департамент А',
+    audit_object: ['Департамент А'],
     auditor: 'Аудитор 1',
     manager: 'Менеджер 1',
     status: 'in_progress',
@@ -222,21 +222,21 @@ describe('filterRecommendationsForAnalytics — департаменты / ст�
     makeRecommendation({
       id: '1',
       deadline: isoDate(2025),
-      audit_object: 'Финансы',
+      audit_object: ['Финансы'],
       status: 'completed',
       materiality_level: 'высокий',
     }),
     makeRecommendation({
       id: '2',
       deadline: isoDate(2025),
-      audit_object: 'ИТ',
+      audit_object: ['ИТ'],
       status: 'unresolved',
       materiality_level: 'низкий',
     }),
     makeRecommendation({
       id: '3',
       deadline: isoDate(2025),
-      audit_object: 'Финансы',
+      audit_object: ['Финансы'],
       status: 'in_progress',
       materiality_level: 'средний',
     }),
@@ -248,6 +248,31 @@ describe('filterRecommendationsForAnalytics — департаменты / ст�
       departments: ['Финансы'],
     });
     expect(filtered.map((item) => item.id)).toEqual(['1', '3']);
+  });
+
+  it('галочка департамента находит объект среди нескольких через запятую или точку с запятой', () => {
+    const filtered = filterRecommendationsForAnalytics([
+      makeRecommendation({
+        id: 'multi-semicolon',
+        deadline: isoDate(2025),
+        audit_object: ['Финансы', 'ИТ'],
+      }),
+      makeRecommendation({
+        id: 'multi-comma',
+        deadline: isoDate(2025),
+        audit_object: ['Бухгалтерия', 'HR'],
+      }),
+      makeRecommendation({
+        id: 'other',
+        deadline: isoDate(2025),
+        audit_object: ['Юристы'],
+      }),
+    ], {
+      ...emptyRecFilters,
+      departments: ['ИТ', 'HR'],
+    });
+
+    expect(filtered.map((item) => item.id)).toEqual(['multi-semicolon', 'multi-comma']);
   });
 
   it('снятие всех департаментов возвращает полный набор', () => {
@@ -293,6 +318,32 @@ describe('filterChecksForAnalytics — интерактивность дат', (
   it('пустые галочки = все проверки', () => {
     const filtered = filterChecksForAnalytics(checks, emptyCheckFilters);
     expect(filtered).toHaveLength(3);
+  });
+
+  it('фильтр департамента учитывает несколько объектов в связанной рекомендации', () => {
+    const filtered = filterChecksForAnalytics([
+      makeCheck({ id: '1', serial_number: 'CHK-1', start_date: isoDate(2025, 1) }),
+      makeCheck({ id: '2', serial_number: 'CHK-2', start_date: isoDate(2025, 1) }),
+    ], {
+      ...emptyCheckFilters,
+      departments: ['ИТ'],
+      recommendations: [
+        makeRecommendation({
+          id: '1',
+          serial_number: 'CHK-1',
+          deadline: isoDate(2025),
+          audit_object: ['Финансы', 'ИТ'],
+        }),
+        makeRecommendation({
+          id: '2',
+          serial_number: 'CHK-2',
+          deadline: isoDate(2025),
+          audit_object: ['Юристы'],
+        }),
+      ],
+    });
+
+    expect(filtered.map((item) => item.id)).toEqual(['1']);
   });
 });
 

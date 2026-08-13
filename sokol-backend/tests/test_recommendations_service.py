@@ -93,7 +93,7 @@ class RecommendationsServiceTests(unittest.TestCase):
             serial_number="26IVP01P1",
             sequence_number=1,
             name="Новая рекомендация",
-            audit_object="Процесс",
+            audit_object=["Процесс"],
             auditor="Иванов И.И.",
             manager="Петров П.П.",
             status=RecommendationStatus.ON_CONTROL,
@@ -114,6 +114,11 @@ class RecommendationsServiceTests(unittest.TestCase):
                 patch(
                     "app.services.recommendations_service.validate_recommendation_dictionary_fields",
                     new_callable=AsyncMock,
+                ),
+                patch(
+                    "app.services.recommendations_service.canonicalize_audit_objects",
+                    new_callable=AsyncMock,
+                    return_value=["Процесс"],
                 ),
                 patch(
                     "app.services.recommendations_service.recommendations_crud.list_recommendations_for_check",

@@ -6,6 +6,7 @@ import {
   normalizeRecommendationIndicator,
   normalizeRecommendationStatus,
 } from '../constants/recommendations';
+import { getRecommendationAuditObjects } from '../utils/auditObjects';
 
 export type ApiCheck = {
   id: number;
@@ -45,7 +46,7 @@ export type ApiRecommendation = {
   description: string;
   indicator: string;
   materiality_level: string;
-  audit_object: string;
+  audit_object: string[] | string;
   deadline?: string | null;
   auditor: string;
   manager: string;
@@ -141,7 +142,7 @@ export function mapRecommendationFromApi(api: ApiRecommendation): Recommendation
     description: api.description ?? api.name,
     indicator: normalizeRecommendationIndicator(api.indicator),
     materiality_level: normalizeMaterialityLevel(api.materiality_level),
-    audit_object: api.audit_object,
+    audit_object: getRecommendationAuditObjects(api.audit_object),
     deadline: api.deadline ?? '',
     auditor: api.auditor,
     manager: api.manager,

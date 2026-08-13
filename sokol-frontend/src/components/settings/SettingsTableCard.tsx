@@ -36,7 +36,7 @@ export function SettingsTableCard({
   searchPlaceholder = 'Поиск',
 }: SettingsTableCardProps) {
   const showSearch = Boolean(onSearchChange);
-  const actionColumnIndex = columns.length - 1;
+  const actionColumnIndex = columns.findIndex((column) => column === 'Действия');
 
   return (
     <div className="w-full max-w-7xl overflow-hidden rounded-xl border border-gray-200 bg-white">

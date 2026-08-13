@@ -17,7 +17,7 @@ const recommendation: Recommendation = {
   description: 'Рекомендация',
   indicator: 'не указан',
   materiality_level: 'средний',
-  audit_object: 'Процесс',
+  audit_object: ['Процесс'],
   deadline: '',
   auditor: 'Иванов И.И.',
   manager: 'Петров П.П.',

@@ -4,15 +4,10 @@ import { createUser, fetchUsers, type AppUser } from '../../api/users';
 import { getErrorMessage } from '../../api/errors';
 import type { UserRole } from '../../api/auth';
 import { Input } from '../ui/Input';
-import { Select } from '../ui/Select';
 import { FORM_SAVE_BUTTON_CLASS, FORM_SECTION_CLASS, FORM_SECTION_TITLE_CLASS } from '../../constants/formLayout';
 
 const MIN_PASSWORD_LENGTH = 4;
-
-const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
-  { value: 'auditor', label: 'Аудитор' },
-  { value: 'admin', label: 'Администратор' },
-];
+const CREATED_USER_ROLE: UserRole = 'auditor';
 
 function formatRole(role: UserRole) {
   return role === 'admin' ? 'Администратор' : 'Аудитор';
@@ -22,7 +17,6 @@ export function AdminUsersSection() {
   const queryClient = useQueryClient();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('auditor');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
@@ -52,11 +46,10 @@ export function AdminUsersSection() {
       await createUser({
         username: trimmedUsername,
         password,
-        role,
+        role: CREATED_USER_ROLE,
       });
       setUsername('');
       setPassword('');
-      setRole('auditor');
       setSuccess(`Пользователь «${trimmedUsername}» добавлен.`);
       await queryClient.invalidateQueries({ queryKey: ['users'] });
     } catch (submitError) {
@@ -71,7 +64,8 @@ export function AdminUsersSection() {
       <form className={FORM_SECTION_CLASS} onSubmit={handleSubmit}>
         <h3 className={FORM_SECTION_TITLE_CLASS}>Добавление пользователя</h3>
         <p className="text-sm text-gray-500">
-          Логин совпадает с ФИО в формате «Фамилия И.О.». Для аудиторов запись также добавляется в справочник.
+          Логин совпадает с ФИО в формате «Фамилия И.О.». Новые пользователи создаются с ролью
+          «Аудитор» и также добавляются в справочник аудиторов.
         </p>
         <div className="flex max-w-md flex-col gap-3">
           <Input
@@ -87,13 +81,6 @@ export function AdminUsersSection() {
             onChange={setPassword}
             type="password"
             autoComplete="new-password"
-            inputClassName="py-1.5 text-sm"
-          />
-          <Select
-            label="Роль"
-            value={role}
-            onChange={(value) => setRole(value as UserRole)}
-            options={ROLE_OPTIONS}
             inputClassName="py-1.5 text-sm"
           />
           {error && (

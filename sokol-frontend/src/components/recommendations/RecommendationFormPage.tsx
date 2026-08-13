@@ -27,6 +27,7 @@ import { useCurrentUserName } from '../../hooks/useCurrentUserName';
 import { toNameOptions, useAuditorOptions } from '../../hooks/useReferenceOptions';
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
 import { toInputDate, toIsoDate } from '../../utils/dates';
+import { formatRecommendationAuditObjects } from '../../utils/auditObjects';
 import { auditorMatchesCurrentUser } from '../../utils/personMatch';
 import { resolveRecommendationYearlyDisplayNumber } from '../../utils/recommendationYearlyNumber';
 import {
@@ -129,7 +130,7 @@ export function RecommendationFormPage() {
       setSerialNumber(source.serial_number);
       setObservationName(source.observation_name ?? '');
       setDescription(source.description || source.name);
-      setAuditObject(source.audit_object);
+      setAuditObject(formatRecommendationAuditObjects(source.audit_object));
       setDeadline(toInputDate(source.deadline));
       setAuditor(source.auditor);
       setManager(source.manager);

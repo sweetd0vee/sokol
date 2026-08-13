@@ -63,8 +63,8 @@ def _build_coverage(
 
 def _department_analytics(
     check_serials: list[str],
-    recommendation_rows: list[tuple[str, str, str]],
-    all_recommendation_links: list[tuple[str, str, str]],
+    recommendation_rows: list[tuple[str, str | list[str], str]],
+    all_recommendation_links: list[tuple[str, str | list[str], str]],
     all_departments: list[str],
     department_lookup: dict[str, str],
 ) -> list[PlanningDepartmentAnalyticsRow]:
@@ -101,7 +101,7 @@ def _department_analytics(
 
 
 def _high_materiality_by_department(
-    recommendation_rows: list[tuple[str, str, str]],
+    recommendation_rows: list[tuple[str, str | list[str], str]],
     department_lookup: dict[str, str],
 ) -> list[NamedCount]:
     counts: dict[str, int] = defaultdict(int)

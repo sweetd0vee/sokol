@@ -6,11 +6,14 @@ from datetime import date
 from pathlib import Path
 from urllib.parse import quote
 
-from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.db.session import get_db_session
+from app.services.dictionary_validation import DictionaryRefError, canonicalize_audit_objects
 from app.services.reports.memorandum import docx_generator as memorandum_generator
 from app.services.reports.memorandum.parser import parse_az_for_memorandum
 from app.services.reports.section_ii import docx_generator
@@ -86,7 +89,7 @@ def _generate_memorandum_file(input_path: str, output_path: str) -> tuple[str | 
 class ParsedRecommendationItem(BaseModel):
     name: str
     observation_name: str = ""
-    audit_object: str
+    audit_object: list[str]
     manager: str
     deadline: str
 
@@ -123,7 +126,7 @@ def _parse_recommendations_from_docx(input_path: str) -> tuple[list[ParsedRecomm
                 ParsedRecommendationItem(
                     name=name,
                     observation_name=(recommendation.observation_name or "").strip(),
-                    audit_object=((group.name or "").strip() or "Не указан")[:255],
+                    audit_object=[((group.name or "").strip() or "Не указан")[:255]],
                     manager=((group.manager or "").strip() or "Не указан")[:255],
                     deadline=_deadline_to_iso(recommendation.deadline),
                 )
@@ -242,6 +245,7 @@ async def generate_memorandum(
 async def parse_recommendations_from_docx(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    session: AsyncSession = Depends(get_db_session),
 ):
     _validate_docx_upload(file)
     content = await _read_upload(file)
@@ -251,4 +255,9 @@ async def parse_recommendations_from_docx(
     items, error = await asyncio.to_thread(_parse_recommendations_from_docx, str(input_path))
     if error:
         raise HTTPException(status_code=400, detail=error)
+    try:
+        for item in items:
+            item.audit_object = await canonicalize_audit_objects(session, item.audit_object)
+    except DictionaryRefError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return items

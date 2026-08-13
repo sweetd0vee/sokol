@@ -1,6 +1,7 @@
 import type { Check } from '../types/check';
 import type { Recommendation } from '../types/recommendation';
 import { parseDateValue } from './dates';
+import { getRecommendationAuditObjects } from './auditObjects';
 import {
   isDateInAnySelectedPeriods,
   isDateInSelectedPeriods,
@@ -98,7 +99,11 @@ export function filterChecksForAnalytics(checks: Check[], filters: CheckAnalytic
     }
     if (departmentSet.size > 0) {
       const linked = recommendationsByCheck.get(check.serial_number) ?? [];
-      if (!linked.some((item) => departmentSet.has(item.audit_object))) {
+      if (
+        !linked.some((item) =>
+          getRecommendationAuditObjects(item.audit_object).some((department) => departmentSet.has(department)),
+        )
+      ) {
         return false;
       }
     }

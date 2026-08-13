@@ -20,7 +20,7 @@ export interface Recommendation {
   description: string;
   indicator: RecommendationIndicator;
   materiality_level: MaterialityLevel;
-  audit_object: string;
+  audit_object: string[];
   deadline: string;
   auditor: string;
   manager: string;

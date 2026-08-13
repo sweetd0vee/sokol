@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 # Latin letters that look like Cyrillic (and lowercase variants).
 _LATIN_TO_CYRILLIC = str.maketrans(
     {
@@ -34,6 +36,13 @@ _LATIN_TO_CYRILLIC = str.maketrans(
 
 
 def normalize_dictionary_label(value: str) -> str:
-    """Trim, collapse spaces, and map Latin homoglyphs to Cyrillic."""
+    """Trim, collapse spaces, normalize hyphens, and map Latin homoglyphs to Cyrillic."""
     collapsed = " ".join(value.strip().split())
-    return collapsed.translate(_LATIN_TO_CYRILLIC)
+    cyrillic = collapsed.translate(_LATIN_TO_CYRILLIC)
+    normalized_hyphens = re.sub(r"\s*[-‐‑‒–—]\s*", "-", cyrillic)
+    return normalized_hyphens.rstrip(".")
+
+
+def dictionary_match_key(value: str) -> str:
+    """Stable comparison key for dictionary labels."""
+    return normalize_dictionary_label(value).casefold()

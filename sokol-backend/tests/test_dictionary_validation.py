@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from app.services.dictionary_validation import (
     DictionaryRefError,
+    canonicalize_audit_objects,
     validate_check_dictionary_fields,
     validate_recommendation_dictionary_fields,
 )
@@ -41,6 +42,16 @@ def _session_with_hits(hits: dict[str, bool]) -> AsyncMock:
         return result
 
     session.execute.side_effect = execute
+    return session
+
+
+def _session_with_departments(names: list[str]) -> AsyncMock:
+    session = AsyncMock()
+    result = MagicMock()
+    scalars = MagicMock()
+    scalars.all.return_value = names
+    result.scalars.return_value = scalars
+    session.execute.return_value = result
     return session
 
 
@@ -135,6 +146,18 @@ class DictionaryValidationTests(unittest.TestCase):
             )
             # manager must not trigger a second auditors lookup
             self.assertEqual(session.execute.await_count, 1)
+
+        asyncio.run(run())
+
+    def test_canonicalize_audit_objects_maps_spacing_and_hyphen_variants(self) -> None:
+        session = _session_with_departments(["Департамент-1", "Департамент ИТ"])
+
+        async def run() -> None:
+            result = await canonicalize_audit_objects(
+                session,
+                ["департамент - 1", "Департамент ИТ"],
+            )
+            self.assertEqual(result, ["Департамент-1", "Департамент ИТ"])
 
         asyncio.run(run())
 

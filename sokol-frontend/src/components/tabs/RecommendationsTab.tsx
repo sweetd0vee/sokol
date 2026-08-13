@@ -34,6 +34,7 @@ import { useAuditorOptions } from '../../hooks/useReferenceOptions';
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
 import { useSokolData } from '../../contexts/sokolData';
 import { recommendationMatchesCurrentUser } from '../../utils/personMatch';
+import { formatRecommendationAuditObjects, getRecommendationAuditObjects } from '../../utils/auditObjects';
 import { INDICATOR_ICONS } from '../recommendations/indicatorIcons';
 import {
   LIST_ACTION_BUTTON_CLASS,
@@ -72,7 +73,7 @@ const getSortValue = (
     case 'name':
       return `${recommendation.name} ${recommendation.observation_name ?? ''}`;
     case 'audit_object':
-      return recommendation.audit_object;
+      return formatRecommendationAuditObjects(recommendation.audit_object);
     case 'deadline':
       return parseDateValue(recommendation.deadline);
     case 'indicator':
@@ -196,7 +197,7 @@ export function RecommendationsTab() {
       if (additionalStatus && recommendation.additional_status !== additionalStatus) {
         return false;
       }
-      if (auditObject && recommendation.audit_object !== auditObject) {
+      if (auditObject && !getRecommendationAuditObjects(recommendation.audit_object).includes(auditObject)) {
         return false;
       }
       if (indicator && recommendation.indicator !== indicator) {
@@ -585,8 +586,11 @@ export function RecommendationsTab() {
                       ) : null}
                     </div>
                   </td>
-                  <td className="px-4 py-3 truncate" title={recommendation.audit_object}>
-                    {recommendation.audit_object}
+                  <td
+                    className="px-4 py-3 truncate"
+                    title={formatRecommendationAuditObjects(recommendation.audit_object)}
+                  >
+                    {formatRecommendationAuditObjects(recommendation.audit_object)}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {(() => {

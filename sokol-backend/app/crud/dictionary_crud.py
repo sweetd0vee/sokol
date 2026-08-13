@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
 from app.crud.dictionary_errors import DuplicateDictionaryError
-from app.utils.dictionary_text import normalize_dictionary_label
+from app.utils.dictionary_text import dictionary_match_key, normalize_dictionary_label
 
 ModelT = TypeVar("ModelT", bound=DeclarativeBase)
 
@@ -35,13 +35,13 @@ async def find_dictionary_duplicate_by_label(
     *,
     exclude_id: Optional[UUID] = None,
 ) -> Optional[ModelT]:
-    normalized = normalize_dictionary_label(value)
+    normalized = dictionary_match_key(value)
     result = await session.execute(select(model))
     for item in result.scalars():
         if exclude_id is not None and getattr(item, "id") == exclude_id:
             continue
         current = getattr(item, column.key)
-        if normalize_dictionary_label(str(current)) == normalized:
+        if dictionary_match_key(str(current)) == normalized:
             return item
     return None
 

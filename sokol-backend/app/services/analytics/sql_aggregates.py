@@ -10,6 +10,7 @@ from sqlalchemy import case, extract, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.checks import Check, CheckStatus
+from app.models.departments import Department
 from app.models.recommendations import Recommendation
 from app.schemas.analytics import (
     ChecksSummary,
@@ -29,11 +30,17 @@ from app.schemas.analytics import (
     RecommendationsSummaryByMateriality,
     RecommendationsSummaryByStatus,
 )
-from app.services.analytics.common import completion_share, named_counts, pad_anchor_dates
+from app.services.analytics.common import (
+    completion_share,
+    named_counts,
+    pad_anchor_dates,
+    parse_audit_object_parts,
+)
 from app.services.analytics.period import get_period_bucket
 from app.services.analytics.sql_filters import (
     apply_check_filters,
     apply_recommendation_filters,
+    audit_object_has_values,
     check_filter_conditions,
     recommendation_filter_conditions,
 )
@@ -337,17 +344,19 @@ async def recommendation_object_distribution_sql(
     session: AsyncSession,
     **filters: Any,
 ) -> list[NamedCount]:
-    rows = await grouped_named_counts_sql(
-        session,
-        model=Recommendation,
-        column=Recommendation.audit_object,
-        filters=recommendation_filter_conditions(**filters),
+    statement = select(Recommendation.audit_object).where(
+        *recommendation_filter_conditions(**filters),
     )
-    normalized = {
-        (name.strip() if name and name.strip() else "Без объекта"): value
-        for name, value in ((row.name, row.value) for row in rows)
-    }
-    return named_counts(normalized)
+    rows = (await session.execute(statement)).all()
+    counts: dict[str, int] = defaultdict(int)
+    for row in rows:
+        parts = parse_audit_object_parts(row.audit_object)
+        if not parts:
+            counts["Без объекта"] += 1
+            continue
+        for part in parts:
+            counts[part] += 1
+    return named_counts(counts)
 
 
 async def recommendation_check_links_sql(session: AsyncSession, **filters: Any) -> list[NamedCount]:
@@ -376,22 +385,21 @@ async def load_effectiveness_matrix_rows(session: AsyncSession, **filters: Any) 
 async def load_check_department_pairs(
     session: AsyncSession,
     **filters: Any,
-) -> list[tuple[int, str]]:
+) -> list[tuple[int, list[str]]]:
     check_ids_subquery = apply_check_filters(select(Check.id), **filters).subquery()
     statement = (
         select(Recommendation.check_id, Recommendation.audit_object)
         .where(Recommendation.check_id.in_(select(check_ids_subquery.c.id)))
-        .where(Recommendation.audit_object.isnot(None))
-        .where(Recommendation.audit_object != "")
+        .where(audit_object_has_values())
     )
     rows = (await session.execute(statement)).all()
-    return [(int(row.check_id), str(row.audit_object).strip()) for row in rows]
+    return [(int(row.check_id), list(row.audit_object or [])) for row in rows]
 
 
-def department_map_from_pairs(pairs: list[tuple[int, str]]) -> list[NamedCount]:
+def department_map_from_pairs(pairs: list[tuple[int, str | list[str]]]) -> list[NamedCount]:
     by_check: dict[int, set[str]] = defaultdict(set)
     for check_id, audit_object in pairs:
-        by_check[check_id].add(audit_object)
+        by_check[check_id].update(parse_audit_object_parts(audit_object))
     counts: dict[str, int] = defaultdict(int)
     for departments in by_check.values():
         if not departments:
@@ -405,7 +413,7 @@ def department_map_from_pairs(pairs: list[tuple[int, str]]) -> list[NamedCount]:
 async def load_recommendation_department_rows(
     session: AsyncSession,
     **filters: Any,
-) -> list[tuple[str, str, str]]:
+) -> list[tuple[str, list[str], str]]:
     """Return (serial_number, audit_object, materiality_level) for filtered recommendations."""
     statement = apply_recommendation_filters(
         select(
@@ -417,7 +425,7 @@ async def load_recommendation_department_rows(
     )
     rows = (await session.execute(statement)).all()
     return [
-        (str(row.serial_number or "").strip(), str(row.audit_object or ""), str(row.materiality_level))
+        (str(row.serial_number or "").strip(), list(row.audit_object or []), str(row.materiality_level))
         for row in rows
     ]
 
@@ -458,12 +466,16 @@ async def collect_filter_option_recommendation_auditors_sql(session: AsyncSessio
 
 async def collect_filter_option_departments_sql(session: AsyncSession) -> list[str]:
     rows = await session.execute(
-        select(Recommendation.audit_object)
-        .where(Recommendation.audit_object.isnot(None), Recommendation.audit_object != "")
-        .distinct()
+        select(Department.name)
+        .where(Department.name.isnot(None), Department.name != "")
+        .order_by(Department.name.asc())
     )
-    values = {str(row[0]).strip() for row in rows.all() if row[0] and str(row[0]).strip()}
-    return sorted(values, key=lambda value: value.casefold())
+    values = [str(row[0]).strip() for row in rows.all() if row[0] and str(row[0]).strip()]
+    if values:
+        return values
+    from app.db.department_names import DEPARTMENTS
+
+    return sorted(DEPARTMENTS, key=lambda value: value.casefold())
 
 
 async def collect_check_anchor_dates_sql(session: AsyncSession) -> list[str]:

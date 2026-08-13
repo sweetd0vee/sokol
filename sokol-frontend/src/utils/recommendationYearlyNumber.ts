@@ -120,7 +120,7 @@ export function resolveRecommendationYearlyDisplayNumber(
       description: '',
       indicator: 'не указан',
       materiality_level: 'средний',
-      audit_object: '',
+      audit_object: [],
       deadline: previewDeadline,
       auditor: '',
       manager: '',

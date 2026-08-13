@@ -36,6 +36,18 @@ def _normalize_closure_items(value: object) -> object:
     return value
 
 
+def _normalize_audit_object(value: object) -> list[str]:
+    if isinstance(value, list):
+        parts = [str(item).strip() for item in value if str(item).strip()]
+    elif isinstance(value, str):
+        import re
+
+        parts = [part.strip() for part in re.split(r"[;,]", value) if part.strip()]
+    else:
+        parts = []
+    return parts or ["Не указан"]
+
+
 class RecommendationBase(BaseModel):
     serial_number: str = Field(..., min_length=1, max_length=32)
     name: str = Field(..., min_length=1)
@@ -43,7 +55,7 @@ class RecommendationBase(BaseModel):
     description: str = ""
     indicator: str = Field(default="не указан", max_length=32)
     materiality_level: str = Field(default="средний", max_length=32)
-    audit_object: str = Field(..., min_length=1, max_length=255)
+    audit_object: list[str] = Field(..., min_length=1)
     deadline: Optional[date] = None
     auditor: str = Field(..., min_length=1, max_length=255)
     manager: str = Field(..., min_length=1, max_length=255)
@@ -92,6 +104,11 @@ class RecommendationBase(BaseModel):
     def normalize_closure_lists(cls, value: object) -> object:
         return _normalize_closure_items(value)
 
+    @field_validator('audit_object', mode='before')
+    @classmethod
+    def normalize_audit_object(cls, value: object) -> list[str]:
+        return _normalize_audit_object(value)
+
 
 class RecommendationCreate(RecommendationBase):
     pass
@@ -104,7 +121,7 @@ class RecommendationUpdate(BaseModel):
     description: Optional[str] = None
     indicator: Optional[str] = Field(None, max_length=32)
     materiality_level: Optional[str] = Field(None, max_length=32)
-    audit_object: Optional[str] = Field(None, min_length=1, max_length=255)
+    audit_object: Optional[list[str]] = Field(None, min_length=1)
     deadline: Optional[date] = None
     auditor: Optional[str] = Field(None, min_length=1, max_length=255)
     manager: Optional[str] = Field(None, min_length=1, max_length=255)
@@ -150,6 +167,13 @@ class RecommendationUpdate(BaseModel):
     @classmethod
     def normalize_closure_lists(cls, value: object) -> object:
         return _normalize_closure_items(value)
+
+    @field_validator('audit_object', mode='before')
+    @classmethod
+    def normalize_audit_object(cls, value: object) -> list[str] | None:
+        if value is None:
+            return None
+        return _normalize_audit_object(value)
 
 
 class RecommendationRead(RecommendationBase):

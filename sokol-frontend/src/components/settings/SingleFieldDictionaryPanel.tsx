@@ -26,7 +26,8 @@ type SingleFieldDictionaryPanelProps<T> = {
   getValue: (item: T) => string;
   fieldKey: string;
   searchText?: (item: T) => string;
-  onRequestDelete: (key: string, id?: EntityId) => void;
+  onRequestDelete?: (key: string, id?: EntityId) => void;
+  canManage?: boolean;
 };
 
 export function SingleFieldDictionaryPanel<T>({
@@ -43,6 +44,7 @@ export function SingleFieldDictionaryPanel<T>({
   fieldKey,
   searchText,
   onRequestDelete,
+  canManage = true,
 }: SingleFieldDictionaryPanelProps<T>) {
   const dict = useSingleFieldDictionary({
     queryKey,
@@ -53,33 +55,40 @@ export function SingleFieldDictionaryPanel<T>({
     searchText,
   });
 
-  const rows: TableRow[] = dict.items.map((item) => ({
-    key: item.key,
-    cells: [
-      item.value,
-      <ActionButtons
-        key={`${item.key}-actions`}
-        onEdit={() => dict.beginEdit(item)}
-        onDelete={() => onRequestDelete(item.key, item.id)}
-      />,
-    ],
-  }));
+  const rows: TableRow[] = dict.items.map((item) => {
+    const cells: TableRow['cells'] = [item.value];
+
+    if (canManage) {
+      cells.push(
+        <ActionButtons
+          key={`${item.key}-actions`}
+          onEdit={() => dict.beginEdit(item)}
+          onDelete={() => onRequestDelete?.(item.key, item.id)}
+        />,
+      );
+    }
+
+    return {
+      key: item.key,
+      cells,
+    };
+  });
 
   return (
     <>
       <SettingsTableCard
         title={title}
-        columns={[columnLabel, 'Действия']}
+        columns={canManage ? [columnLabel, 'Действия'] : [columnLabel]}
         rows={rows}
         isLoading={dict.isLoading}
         error={dict.error}
-        onAdd={dict.openAdd}
+        onAdd={canManage ? dict.openAdd : undefined}
         searchValue={dict.search}
         onSearchChange={dict.setSearch}
         searchPlaceholder="Поиск"
       />
 
-      {dict.isAddOpen && (
+      {canManage && dict.isAddOpen && (
         <Modal title={addModalTitle}>
           <form onSubmit={dict.handleConfirmAdd} className="mt-4 space-y-4">
             <Input
@@ -96,7 +105,7 @@ export function SingleFieldDictionaryPanel<T>({
         </Modal>
       )}
 
-      {dict.editCandidate && (
+      {canManage && dict.editCandidate && (
         <Modal title={editModalTitle}>
           <form onSubmit={dict.handleConfirmEdit} className="mt-4 space-y-4">
             <Input

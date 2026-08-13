@@ -6,7 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.recommendations import Recommendation
 from app.schemas.recommendations import RecommendationCreate, RecommendationUpdate
-from app.services.dictionary_validation import validate_recommendation_dictionary_fields
+from app.services.dictionary_validation import (
+    canonicalize_audit_objects,
+    validate_recommendation_dictionary_fields,
+)
 
 
 def _apply_filters(
@@ -23,7 +26,7 @@ def _apply_filters(
                 Recommendation.name.ilike(search_term),
                 Recommendation.observation_name.ilike(search_term),
                 Recommendation.description.ilike(search_term),
-                Recommendation.audit_object.ilike(search_term),
+                func.array_to_string(Recommendation.audit_object, "; ").ilike(search_term),
                 Recommendation.auditor.ilike(search_term),
                 Recommendation.manager.ilike(search_term),
                 Recommendation.serial_number.ilike(search_term),
@@ -107,6 +110,7 @@ async def create_recommendation(
     check_id: int,
 ) -> Recommendation:
     data = recommendation_in.model_dump()
+    data["audit_object"] = await canonicalize_audit_objects(session, data.get("audit_object"))
     await validate_recommendation_dictionary_fields(
         session,
         {
@@ -168,6 +172,11 @@ async def update_recommendation(
     check_id: Optional[int] = None,
 ) -> Recommendation:
     update_data = recommendation_in.model_dump(exclude_unset=True)
+    if "audit_object" in update_data:
+        update_data["audit_object"] = await canonicalize_audit_objects(
+            session,
+            update_data.get("audit_object"),
+        )
     await validate_recommendation_dictionary_fields(
         session,
         {

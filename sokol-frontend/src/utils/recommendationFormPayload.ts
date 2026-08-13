@@ -1,5 +1,6 @@
 import { closureToRecommendationFields, type RecommendationClosureForm } from '../constants/recommendationClosure';
 import type { MaterialityLevel, Recommendation, RecommendationIndicator } from '../types/recommendation';
+import { getRecommendationAuditObjects } from './auditObjects';
 import { toIsoDate } from './dates';
 
 export type RecommendationRequiredFieldErrors = {
@@ -106,7 +107,7 @@ export function buildRecommendationPayload({
 }: RecommendationFormPayloadInput): Recommendation {
   const trimmedDescription = description.trim();
   const resolvedAuditor = auditor || checkLeader || navigationAuditor || '';
-  const resolvedAuditObject = auditObject || 'Не указан';
+  const resolvedAuditObject = getRecommendationAuditObjects(auditObject || 'Не указан');
   const resolvedSequenceNumber =
     isEditMode && source?.sequence_number ? source.sequence_number : sequenceNumber;
 

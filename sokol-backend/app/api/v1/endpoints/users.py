@@ -32,6 +32,12 @@ async def create_user_endpoint(
     session: AsyncSession = Depends(get_db_session),
     _: object = Depends(require_admin),
 ) -> UserRead:
+    if payload.role != Role.AUDITOR:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Через приложение можно создавать только пользователей с ролью аудитора.",
+        )
+
     username = payload.username.strip()
     if await get_user_by_username(session, username) is not None:
         raise HTTPException(

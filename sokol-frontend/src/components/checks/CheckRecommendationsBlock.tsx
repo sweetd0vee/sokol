@@ -7,9 +7,14 @@ import { parseRecommendationsFromDocx } from '../../api/recommendations';
 import { getErrorMessage } from '../../api/errors';
 import { normalizeRecommendationDeadline } from '../../utils/recommendationDeadline';
 import { formatRuDate } from '../../utils/dates';
+import { formatRecommendationAuditObjects, getRecommendationAuditObjects } from '../../utils/auditObjects';
 import { ACCEPTED_DOCX, isDocxFile } from '../../utils/docx';
 import { useSokolData } from '../../contexts/sokolData';
-import { FORM_SECTION_CLASS, FORM_SECTION_TITLE_CLASS } from '../../constants/formLayout';
+import {
+  FORM_ACTION_BUTTON_CLASS,
+  FORM_SECTION_CLASS,
+  FORM_SECTION_TITLE_CLASS,
+} from '../../constants/formLayout';
 
 type CheckRecommendationsBlockProps = {
   checkKey: string;
@@ -18,7 +23,22 @@ type CheckRecommendationsBlockProps = {
   onAddManually: () => void;
 };
 
-type ParsedPreviewItem = Recommendation & { previewKey: string };
+type ParsedPreviewItem = Omit<Recommendation, 'audit_object'> & {
+  audit_object: string;
+  previewKey: string;
+};
+
+type ParsedPreviewDraft = Pick<
+  ParsedPreviewItem,
+  | 'name'
+  | 'observation_name'
+  | 'audit_object'
+  | 'deadline'
+  | 'auditor'
+  | 'manager'
+  | 'status'
+  | 'additional_status'
+>;
 
 type RecentUploadSession = {
   ids: string[];
@@ -30,7 +50,9 @@ const actionButtonClass =
   'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-50';
 const blueActionButtonClass =
 `${actionButtonClass} border-2 border-[#6699FF] text-[#6699FF] hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white`;
-const manualActionButtonClass = `${blueActionButtonClass} w-[180px]`;
+const addRecommendationButtonClass = `${blueActionButtonClass} w-[220px]`;
+const formSizedBlueActionButtonClass =
+  `inline-flex items-center gap-2 rounded-lg border-2 border-[#6699FF] px-3 py-1.5 text-sm font-medium text-[#6699FF] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white disabled:cursor-not-allowed disabled:opacity-50 ${FORM_ACTION_BUTTON_CLASS}`;
 const iconToolbarButtonClass =
   'inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark';
 
@@ -44,8 +66,11 @@ function pluralRecommendations(n: number): string {
   return 'рекомендаций';
 }
 
-function toRecommendationPayload({ previewKey: _previewKey, ...payload }: ParsedPreviewItem): Recommendation {
-  return payload;
+function toRecommendationPayload({ previewKey: _previewKey, audit_object, ...payload }: ParsedPreviewItem): Recommendation {
+  return {
+    ...payload,
+    audit_object: getRecommendationAuditObjects(audit_object),
+  };
 }
 
 type EditablePreviewField = 'name' | 'observation_name' | 'audit_object' | 'manager' | 'deadline';
@@ -250,20 +275,7 @@ export function CheckRecommendationsBlock({
     [checkKey, getRecommendationsByCheckKey],
   );
 
-  const buildRecommendation = (
-    draft: Pick<
-      Recommendation,
-      | 'name'
-      | 'observation_name'
-      | 'audit_object'
-      | 'deadline'
-      | 'auditor'
-      | 'manager'
-      | 'status'
-      | 'additional_status'
-    >,
-    index: number,
-  ): ParsedPreviewItem => ({
+  const buildRecommendation = (draft: ParsedPreviewDraft, index: number): ParsedPreviewItem => ({
     previewKey:`preview-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
     id: '0',
     serial_number: checkKey,
@@ -296,7 +308,7 @@ export function CheckRecommendationsBlock({
             {
               name: item.name,
               observation_name: item.observation_name ?? '',
-              audit_object: item.audit_object,
+              audit_object: formatRecommendationAuditObjects(item.audit_object),
               deadline: normalizeRecommendationDeadline(item.deadline),
               auditor: checkLeader,
               manager: item.manager,
@@ -463,21 +475,21 @@ export function CheckRecommendationsBlock({
         </p>
       )}
 
-      <div className="flex flex-wrap gap-x-[2.75rem] gap-y-3">
+      <div className="flex flex-wrap gap-x-4 gap-y-3">
         <button
           type="button"
           onClick={onAddManually}
           disabled={!canAdd}
-          className={manualActionButtonClass}
+          className={addRecommendationButtonClass}
         >
-          <Plus size={16} />
+          <Plus size={16} className="shrink-0" />
           Добавить вручную
         </button>
         <button
           type="button"
           onClick={handleLoadFromAz}
           disabled={!canAdd || isParsing}
-          className={blueActionButtonClass}
+          className={formSizedBlueActionButtonClass}
         >
           <FileUp size={16} />
           Загрузить из АЗ
@@ -519,7 +531,7 @@ export function CheckRecommendationsBlock({
                 type="button"
                 onClick={() => void handleCancel()}
                 disabled={isUndoingUpload}
-                className={manualActionButtonClass}
+                className={formSizedBlueActionButtonClass}
               >
                 {isUndoingUpload ? 'Отмена загрузки...' : 'Отменить'}
               </button>
@@ -566,16 +578,16 @@ export function CheckRecommendationsBlock({
                     type="button"
                     onClick={() => void handleAddParsed()}
                     disabled={!canAdd || isUndoingUpload}
-                    className={blueActionButtonClass}
+                    className={addRecommendationButtonClass}
                   >
-                    <Plus size={16} />
+                    <Plus size={16} className="shrink-0" />
                     Добавить в проверку ({parsedPreview.length})
                   </button>
                   <button
                     type="button"
                     onClick={handleCancel}
                     disabled={!canCancelUpload || isUndoingUpload}
-                    className={blueActionButtonClass}
+                    className={formSizedBlueActionButtonClass}
                   >
                     Отменить
                   </button>
@@ -642,16 +654,16 @@ export function CheckRecommendationsBlock({
                           type="button"
                           onClick={() => void handleAddParsed()}
                           disabled={!canAdd || isUndoingUpload}
-                          className={blueActionButtonClass}
+                          className={addRecommendationButtonClass}
                         >
-                          <Plus size={16} />
+                          <Plus size={16} className="shrink-0" />
                           Добавить в проверку ({parsedPreview.length})
                         </button>
                         <button
                           type="button"
                           onClick={handleCancel}
                           disabled={!canCancelUpload || isUndoingUpload}
-                          className={blueActionButtonClass}
+                          className={formSizedBlueActionButtonClass}
                         >
                           Отменить
                         </button>

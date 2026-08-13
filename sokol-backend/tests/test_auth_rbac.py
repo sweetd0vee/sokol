@@ -311,6 +311,33 @@ class AuthRbacTests(unittest.TestCase):
         mock_create_user.assert_awaited_once()
         mock_create_auditor.assert_awaited_once()
 
+    @patch("app.api.v1.endpoints.users.create_user", new_callable=AsyncMock)
+    @patch("app.api.v1.endpoints.users.get_user_by_username", new_callable=AsyncMock)
+    def test_admin_cannot_create_another_admin(
+        self,
+        mock_get_user: AsyncMock,
+        mock_create_user: AsyncMock,
+    ) -> None:
+        async def _admin() -> CurrentUser:
+            return CurrentUser(
+                username="Админ А.А.",
+                display_name="Администратор",
+                role=Role.ADMIN,
+            )
+
+        app.dependency_overrides[get_current_user] = _admin
+        response = self.client.post(
+            "/api/v1/users",
+            json={
+                "username": "Другой Админ",
+                "password": "secret",
+                "role": "admin",
+            },
+        )
+        self.assertEqual(response.status_code, 400)
+        mock_get_user.assert_not_awaited()
+        mock_create_user.assert_not_awaited()
+
     @patch("app.api.v1.endpoints.users.get_user_by_username", new_callable=AsyncMock)
     def test_create_user_rejects_duplicate(self, mock_get_user: AsyncMock) -> None:
         mock_get_user.return_value = _auditor_user(username="Новиков Н.Н.")

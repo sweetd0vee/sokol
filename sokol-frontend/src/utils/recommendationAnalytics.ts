@@ -12,6 +12,7 @@ import {
   type PeriodBucket,
   type PeriodGranularity,
 } from './analyticsPeriod';
+import { getRecommendationAuditObjects } from './auditObjects';
 
 export type { PeriodGranularity, PeriodBucket };
 
@@ -80,7 +81,10 @@ export function filterRecommendationsForAnalytics(
     if (auditorSet.size > 0 && !auditorSet.has(item.auditor)) {
       return false;
     }
-    if (departmentSet.size > 0 && !departmentSet.has(item.audit_object)) {
+    if (
+      departmentSet.size > 0
+      && !getRecommendationAuditObjects(item.audit_object).some((department) => departmentSet.has(department))
+    ) {
       return false;
     }
     if (statusSet.size > 0 && !statusSet.has(item.status)) {

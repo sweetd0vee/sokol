@@ -23,6 +23,7 @@ import {
   updateDepartment,
   updateEffectivenessRating,
 } from '../../api/settings';
+import { useAuth } from '../../hooks/useAuth';
 import { Input } from '../ui/Input';
 import { Modal, ModalActions } from '../ui/Modal';
 import { PageHeader } from '../ui/PageHeader';
@@ -44,6 +45,7 @@ const getAuditTypeKey = (type: AuditType, index: number) =>
 
 export function SettingsTab() {
   const queryClient = useQueryClient();
+  const { isAdmin } = useAuth();
   const [activeList, setActiveList] = useState<SettingsListKey>('auditors');
   const [deleteCandidate, setDeleteCandidate] = useState<DeleteCandidate | null>(null);
 
@@ -154,11 +156,10 @@ export function SettingsTab() {
   const auditTypeRows: TableRow[] = filteredAuditTypes.map((type, index) => {
     const key = getAuditTypeKey(type, index);
     const identifier = type.id;
-    return {
-      key,
-      cells: [
-        type.code,
-        type.name,
+    const cells: TableRow['cells'] = [type.code, type.name];
+
+    if (isAdmin) {
+      cells.push(
         <ActionButtons
           key={`${key}-actions`}
           onEdit={() => {
@@ -168,7 +169,12 @@ export function SettingsTab() {
           }}
           onDelete={() => handleRequestDelete('auditTypes', key, identifier)}
         />,
-      ],
+      );
+    }
+
+    return {
+      key,
+      cells,
     };
   });
 
@@ -203,6 +209,7 @@ export function SettingsTab() {
             getValue={(item) => item.full_name}
             fieldKey="full_name"
             onRequestDelete={(key, id) => handleRequestDelete('auditors', key, id)}
+            canManage={isAdmin}
           />
         )}
 
@@ -225,6 +232,7 @@ export function SettingsTab() {
             getValue={(item) => item.name}
             fieldKey="name"
             onRequestDelete={(key, id) => handleRequestDelete('departments', key, id)}
+            canManage={isAdmin}
           />
         )}
 
@@ -247,21 +255,26 @@ export function SettingsTab() {
             getValue={(item) => item.label}
             fieldKey="label"
             onRequestDelete={(key, id) => handleRequestDelete('checkKinds', key, id)}
+            canManage={isAdmin}
           />
         )}
 
         {activeList === 'auditTypes' && (
           <SettingsTableCard
             title="Вид аудита"
-            columns={['Код', 'Название', 'Действия']}
+            columns={isAdmin ? ['Код', 'Название', 'Действия'] : ['Код', 'Название']}
             rows={auditTypeRows}
             isLoading={auditTypesLoading}
             error={auditTypesError}
-            onAdd={() => {
-              setNewAuditTypeCode('');
-              setNewAuditTypeName('');
-              setIsAddAuditTypeOpen(true);
-            }}
+            onAdd={
+              isAdmin
+                ? () => {
+                    setNewAuditTypeCode('');
+                    setNewAuditTypeName('');
+                    setIsAddAuditTypeOpen(true);
+                  }
+                : undefined
+            }
             searchValue={auditTypeSearch}
             onSearchChange={setAuditTypeSearch}
             searchPlaceholder="Поиск"
@@ -288,11 +301,12 @@ export function SettingsTab() {
             fieldKey="label"
             searchText={(item) => `${item.code ?? ''} ${item.label}`}
             onRequestDelete={(key, id) => handleRequestDelete('ratings', key, id)}
+            canManage={isAdmin}
           />
         )}
       </div>
 
-      {isAddAuditTypeOpen && (
+      {isAdmin && isAddAuditTypeOpen && (
         <Modal title="Новый вид аудита">
           <form onSubmit={handleConfirmAddAuditType} className="mt-4 space-y-4">
             <Input
@@ -315,7 +329,7 @@ export function SettingsTab() {
         </Modal>
       )}
 
-      {editAuditTypeCandidate && (
+      {isAdmin && editAuditTypeCandidate && (
         <Modal title="Редактирование вида аудита">
           <form onSubmit={handleConfirmEditAuditType} className="mt-4 space-y-4">
             <Input
@@ -338,7 +352,7 @@ export function SettingsTab() {
         </Modal>
       )}
 
-      {deleteCandidate && (
+      {isAdmin && deleteCandidate && (
         <Modal title="Удаление записи">
           <form onSubmit={handleConfirmDelete} className="mt-2 space-y-6">
             <p className="text-sm text-gray-600">

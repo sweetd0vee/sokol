@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Any
 
 from sqlalchemy import Date, Enum as SAEnum, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -33,7 +34,7 @@ class Recommendation(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     indicator: Mapped[str] = mapped_column(String(32), nullable=False, default="не указан")
     materiality_level: Mapped[str] = mapped_column(String(32), nullable=False, default="средний")
-    audit_object: Mapped[str] = mapped_column(String(255), nullable=False)
+    audit_object: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
     deadline: Mapped[date | None] = mapped_column(Date, nullable=True)
     auditor: Mapped[str] = mapped_column(String(255), nullable=False)
     manager: Mapped[str] = mapped_column(String(255), nullable=False)

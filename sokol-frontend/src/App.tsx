@@ -4,7 +4,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import { SokolDataProvider } from './contexts/SokolDataContext';
 import { LoginPage } from './components/auth/LoginPage';
 import { AuthGuard } from './components/auth/AuthGuard';
-import { AdminGuard } from './components/auth/AdminGuard';
 import { AppLayout } from './components/layout/AppLayout';
 import { AuthLayout } from './components/layout/AuthLayout';
 import { ProfilePage } from './components/profile/ProfilePage';
@@ -44,14 +43,7 @@ function AppContent() {
           <Route path="/planning" element={<PlanningTab />} />
           <Route path="/tools" element={<ToolsTab />} />
           <Route path="/kantsler" element={<KantslerTab />} />
-          <Route
-            path="/settings"
-            element={
-              <AdminGuard>
-                <SettingsTab />
-              </AdminGuard>
-            }
-          />
+          <Route path="/settings" element={<SettingsTab />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/checks" replace />} />
         </Route>

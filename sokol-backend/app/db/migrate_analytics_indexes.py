@@ -14,7 +14,7 @@ MIGRATION_STATEMENTS = [
     "CREATE INDEX IF NOT EXISTS ix_checks_status ON checks (status)",
     "CREATE INDEX IF NOT EXISTS ix_recommendations_deadline ON recommendations (deadline)",
     "CREATE INDEX IF NOT EXISTS ix_recommendations_auditor ON recommendations (auditor)",
-    "CREATE INDEX IF NOT EXISTS ix_recommendations_audit_object ON recommendations (audit_object)",
+    "CREATE INDEX IF NOT EXISTS ix_recommendations_audit_object_gin ON recommendations USING GIN (audit_object)",
     "CREATE INDEX IF NOT EXISTS ix_recommendations_status ON recommendations (status)",
     "CREATE INDEX IF NOT EXISTS ix_recommendations_materiality_level ON recommendations (materiality_level)",
     "CREATE INDEX IF NOT EXISTS ix_recommendations_deadline_status ON recommendations (deadline, status)",

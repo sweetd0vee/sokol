@@ -5,11 +5,14 @@ from __future__ import annotations
 from typing import Mapping, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.crud.dictionary_crud import find_dictionary_duplicate_by_label
 from app.models.auditors import Auditor
 from app.models.check_kinds import CheckKind
+from app.models.departments import Department
 from app.models.effectiveness_ratings import EffectivenessRating
+from app.utils.dictionary_text import dictionary_match_key
 
 
 class DictionaryRefError(ValueError):
@@ -62,6 +65,61 @@ async def ensure_effectiveness_rating_label(
         )
 
 
+def _split_audit_object_values(value: object) -> list[str]:
+    import re
+
+    if isinstance(value, list):
+        parts: list[str] = []
+        for item in value:
+            parts.extend(_split_audit_object_values(item))
+        return parts
+    if value is None:
+        return []
+    return [part.strip() for part in re.split(r"[;,]", str(value)) if part.strip()]
+
+
+async def _department_lookup(session: AsyncSession) -> dict[str, str]:
+    result = await session.execute(select(Department.name).order_by(Department.name.asc()))
+    names = [name for name in result.scalars().all() if name and name.strip()]
+    if not names:
+        from app.db.department_names import DEPARTMENTS
+
+        names = list(DEPARTMENTS)
+    return {dictionary_match_key(name): name for name in names}
+
+
+async def canonicalize_audit_objects(session: AsyncSession, value: object) -> list[str]:
+    parts = _split_audit_object_values(value)
+    if not parts:
+        return ["Не указан"]
+
+    lookup = await _department_lookup(session)
+    canonical: list[str] = []
+    unmatched: list[str] = []
+    seen: set[str] = set()
+    for part in parts:
+        if part == "Не указан":
+            if part not in seen:
+                canonical.append(part)
+                seen.add(part)
+            continue
+        matched = lookup.get(dictionary_match_key(part))
+        if matched is None:
+            unmatched.append(part)
+            continue
+        if matched not in seen:
+            canonical.append(matched)
+            seen.add(matched)
+
+    if unmatched:
+        raise DictionaryRefError(
+            field="audit_object",
+            value=", ".join(unmatched),
+            dictionary="departments",
+        )
+    return canonical or ["Не указан"]
+
+
 async def validate_check_dictionary_fields(
     session: AsyncSession,
     fields: Mapping[str, Optional[str]],
@@ -98,3 +156,5 @@ async def validate_recommendation_dictionary_fields(
     """
     if "auditor" in fields and fields["auditor"] is not None:
         await ensure_auditor_name(session, fields["auditor"], field="auditor")
+    if "audit_object" in fields and fields["audit_object"] is not None:
+        await canonicalize_audit_objects(session, fields["audit_object"])

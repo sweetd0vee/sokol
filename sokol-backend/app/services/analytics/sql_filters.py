@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import ColumnElement, and_, exists, extract, or_, select
+from sqlalchemy import ColumnElement, and_, exists, extract, func, or_, select
 from sqlalchemy.sql import Select
 
 from app.models.checks import Check
@@ -11,6 +11,17 @@ from app.models.recommendations import Recommendation
 
 def _strip_values(values: list[str] | None) -> list[str]:
     return [item.strip() for item in (values or []) if item and item.strip()]
+
+
+def _audit_object_matches_any(values: list[str]) -> ColumnElement:
+    return Recommendation.audit_object.overlap(values)
+
+
+def audit_object_has_values() -> ColumnElement:
+    return and_(
+        Recommendation.audit_object.isnot(None),
+        func.cardinality(Recommendation.audit_object) > 0,
+    )
 
 
 def period_or_condition(
@@ -95,7 +106,7 @@ def check_filter_conditions(
         linked_department = exists(
             select(Recommendation.id).where(
                 Recommendation.check_id == Check.id,
-                Recommendation.audit_object.in_(department_values),
+                _audit_object_matches_any(department_values),
             )
         )
         conditions.append(linked_department)
@@ -131,7 +142,7 @@ def recommendation_filter_conditions(
 
     department_values = _strip_values(departments)
     if department_values:
-        conditions.append(Recommendation.audit_object.in_(department_values))
+        conditions.append(_audit_object_matches_any(department_values))
 
     status_values = _strip_values(statuses)
     if status_values:
