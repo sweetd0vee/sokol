@@ -540,14 +540,7 @@ export function RecommendationsTab() {
                 {renderSortableHeader('id', 'ID', 'whitespace-nowrap')}
                 {renderSortableHeader('serial_number', 'Ключ')}
                 {renderSortableHeader('name', 'Название')}
-                {renderSortableHeader(
-                  'audit_object',
-                  <>
-                    Объект
-                    <br />
-                    аудита
-                  </>,
-                )}
+                {renderSortableHeader('audit_object', 'Объект аудита', 'whitespace-nowrap')}
                 {renderSortableHeader('indicator', 'Индикатор')}
                 {renderSortableHeader('deadline', 'Срок исполнения')}
                 {renderSortableHeader('materiality_level', 'Уровень')}
