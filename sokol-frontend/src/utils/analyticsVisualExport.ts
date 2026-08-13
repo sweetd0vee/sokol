@@ -34,6 +34,7 @@ import {
   type DashboardChartCapture,
 } from './dashboardChartRegistry';
 import {
+  buildEffectivenessColumnShares,
   buildEffectivenessMatrixHtmlMarkup,
   EFFECTIVENESS_MATRIX_COLUMNS,
   getEffectivenessToneColor,
@@ -92,6 +93,106 @@ function fitImageSize(
   };
 }
 
+function buildEffectivenessMatrixPdfContent(
+  chart: DashboardChartCapture,
+  rows: EffectivenessMatrixRow[],
+): Content[] {
+  const body = [
+    [
+      { text: 'Ключ', bold: true, color: '#FFFFFF', fillColor: '#003366' },
+      { text: 'Краткое название проверки', bold: true, color: '#FFFFFF', fillColor: '#003366' },
+      ...EFFECTIVENESS_MATRIX_COLUMNS.map((column) => ({
+        text: column.label,
+        bold: true,
+        color: '#FFFFFF',
+        fillColor: '#003366',
+        alignment: 'center' as const,
+      })),
+    ],
+    ...rows.map((row) => [
+      { text: row.key, bold: true, color: '#334155', noWrap: true },
+      { text: row.shortName || row.name || '—', color: '#334155' },
+      ...EFFECTIVENESS_MATRIX_COLUMNS.map((column) => ({
+        text: '',
+        fillColor: getEffectivenessToneColor(row.tones[column.key]),
+        borderColor: ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF'],
+      })),
+    ]),
+  ];
+
+  const shareBody = [
+    [
+      { text: 'Раздел', bold: true, color: '#FFFFFF', fillColor: '#003366' },
+      { text: 'Доля оценок', bold: true, color: '#FFFFFF', fillColor: '#003366' },
+    ],
+    ...EFFECTIVENESS_MATRIX_COLUMNS.map((column) => ({
+      area: column.label,
+      shares: buildEffectivenessColumnShares(rows, column.key),
+    })).map(({ area, shares }) => [
+      { text: area, bold: true, color: '#334155' },
+      {
+        text: shares.map((share) => `${share.label}: ${share.count} (${share.percent}%)`).join('; ') || '—',
+        color: '#334155',
+      },
+    ]),
+  ];
+
+  return [
+    {
+      text: chart.title,
+      fontSize: 15,
+      bold: true,
+      color: '#003366',
+      margin: [0, 0, 0, 4],
+    },
+    {
+      text: `${chart.description} (все строки выборки)`,
+      fontSize: 10,
+      color: '#64748B',
+      margin: [0, 0, 0, 12],
+    },
+    {
+      table: {
+        headerRows: 1,
+        widths: [62, '*', 54, 54, 54, 54],
+        body,
+        dontBreakRows: true,
+      },
+      layout: {
+        hLineColor: () => '#E2E8F0',
+        vLineColor: () => '#E2E8F0',
+        paddingLeft: () => 4,
+        paddingRight: () => 4,
+        paddingTop: () => 3,
+        paddingBottom: () => 3,
+      },
+      margin: [0, 0, 0, 14],
+    } as Content,
+    {
+      text: 'Доля оценок',
+      fontSize: 12,
+      bold: true,
+      color: '#003366',
+      margin: [0, 0, 0, 6],
+    },
+    {
+      table: {
+        headerRows: 1,
+        widths: [120, '*'],
+        body: shareBody,
+      },
+      layout: {
+        hLineColor: () => '#E2E8F0',
+        vLineColor: () => '#E2E8F0',
+        paddingLeft: () => 6,
+        paddingRight: () => 6,
+        paddingTop: () => 4,
+        paddingBottom: () => 4,
+      },
+    } as Content,
+  ];
+}
+
 const DOCX_PAGE_MARGIN_TWIPS = 720;
 const DOCX_CHART_MAX_WIDTH = 980;
 const DOCX_CHART_MAX_HEIGHT = 520;
@@ -114,8 +215,9 @@ async function buildVisualPdf(options: {
   meta: VisualExportMetaRow[];
   charts: DashboardChartCapture[];
   filenamePrefix: string;
+  effectivenessMatrix?: EffectivenessMatrixRow[];
 }) {
-  const { documentTitle, meta, charts, filenamePrefix } = options;
+  const { documentTitle, meta, charts, filenamePrefix, effectivenessMatrix } = options;
   const content: Content[] = [
     {
       text: documentTitle,
@@ -153,6 +255,10 @@ async function buildVisualPdf(options: {
   charts.forEach((chart, index) => {
     if (index > 0) {
       content.push({ text: '', pageBreak: 'before' });
+    }
+    if (chart.id === 'effectivenessMatrix' && effectivenessMatrix?.length) {
+      content.push(...buildEffectivenessMatrixPdfContent(chart, effectivenessMatrix));
+      return;
     }
     const fitted = fitImageSize(chart.width * 2, chart.height * 2, 760, 430);
     content.push({
@@ -1165,6 +1271,7 @@ export async function exportVisualAnalyticsReport(options: {
       meta: options.meta,
       charts: chartsWithPng,
       filenamePrefix: options.filenamePrefix,
+      effectivenessMatrix: options.effectivenessMatrix,
     });
     return;
   }
