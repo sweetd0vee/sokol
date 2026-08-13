@@ -40,7 +40,7 @@
 | Backend `py -3.12 -m unittest discover -s tests` | **106 test cases** (полный suite в CI с deps) |
 | Frontend `npm run lint` | **0 errors, 0 warnings** |
 | Frontend `npm test` | **48 тестов, 10 файлов, OK** |
-| Frontend `npm run test:e2e` | **2 Playwright smoke-теста, OK** |
+| Frontend `npx playwright test e2e/auth.spec.ts` | **5 Playwright auth smoke-тестов, OK** |
 
 > Backend требует **Python 3.12** (union types в моделях).
 

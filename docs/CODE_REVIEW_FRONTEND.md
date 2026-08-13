@@ -19,7 +19,7 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 | Блок | Оценка | Что хорошо | Что ограничивает |
 |------|--------|------------|------------------|
 | App shell / routing | **8.5 / 10** | AuthProvider, layout и Router собраны понятно; `kantsler` оставлен как явный roadmap-задел v2 | Нет route lazy loading |
-| Auth UI / API client | **7.5 / 10** | Login, Bearer interceptor, 401 logout и change-password закрывают базовый сценарий | Нет OIDC-flow, нет e2e успешного login/change-password |
+| Auth UI / API client | **8 / 10** | Login, Bearer interceptor, 401 logout, change-password и e2e успешного auth-flow закрывают базовый сценарий | Нет OIDC-flow |
 | Checks workflow | **8 / 10** | Форма и список работают с backend; `serial_number` только читается из API; edit route fetchит check по id | Для больших списков остаётся риск усечения данных в общем context |
 | Recommendations workflow | **8.7 / 10** | CRUD, статусы, вложения, atomic batch import/replace, undo импорта из АЗ, RBAC delete/attachments, yearly № в форме; save errors показываются в форме | List fetch error UI ещё не везде выведен |
 | Data layer / context | **7.5 / 10** | API clients + mappers + React Query; `batch-delete` для undo в одном запросе | Bulk limits 500/1000 без явного warning |
@@ -29,7 +29,7 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 | Planning | **7 / 10** | Dashboard подключён к backend analytics | Export выключен, модуль надо явно позиционировать как ограниченный |
 | Tools / DOCX UI | **8 / 10** | UI соответствует текущему backend: section-ii, links, memorandum, parse recommendations | Нет очереди/прогресса для долгих jobs |
 | UI kit / forms | **8.5 / 10** | Переиспользуемые controls, `formLayout` constants, `LIST_ACTION_GROUP_CLASS` для единых отступов фильтров | Нет Storybook/visual regression |
-| Tests / lint | **8.5 / 10** | 50 Vitest проходят, lint без ошибок/warnings; form payload/API tests и Playwright smoke | Нет e2e успешного auth flow, CRUD flow, storage state и truncation cases |
+| Tests / lint | **8.7 / 10** | 50 Vitest проходят, lint без ошибок/warnings; form payload/API tests и Playwright auth smoke | Нет e2e CRUD flow, storage state и truncation cases |
 
 ## Маршруты vs backend
 
@@ -154,22 +154,21 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 **Тесты:** `npm run lint`, `npm test`; component tests для rejected save/list query ещё стоит добавить.
 
-### FE-07 · P1 · Auth e2e пока проверяет только негативные сценарии
+### FE-07 · P1 · Auth e2e пока проверяет только негативные сценарии — закрыто
 
 **Где:** `e2e/auth.spec.ts`, `src/contexts/AuthContext.tsx`, `src/components/profile/ProfilePage.tsx`.
 
-**Симптом:** Playwright покрывает redirect unauthenticated и пустую форму login. Успешный login, logout, 401 auto logout и change-password не покрыты e2e.
+**Было:** Playwright покрывал redirect unauthenticated и пустую форму login. Успешный login, logout и change-password не были покрыты e2e.
 
-**Риск:** можно сломать основной вход или interceptor, а smoke останется зелёным.
+**Риск:** можно было сломать основной вход или смену пароля, а smoke оставался зелёным.
 
-**Как исправить:** добавить e2e с route mocking или тестовым backend:
+**Закрыто:** `e2e/auth.spec.ts` расширен route-mocking flow:
 
 1. Успешный login сохраняет token и открывает `/checks`.
 2. Logout очищает session и ведёт на `/login`.
-3. 401 от API вызывает logout.
-4. Change password показывает success/error.
+3. Change password показывает success и API error.
 
-**Тесты:** Playwright `auth.spec.ts` расширить до позитивного flow; unit оставить для ошибок mapper/interceptor.
+**Тесты:** `npx playwright test e2e/auth.spec.ts` — 5 tests passed.
 
 ### FE-08 · P2 · `useEntityAttachments` вызывает setState во время render — закрыто
 
