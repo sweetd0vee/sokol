@@ -9,6 +9,7 @@ import { parseDateValue } from './dates';
 import {
   collectCalendarPeriodOptions,
   isDateInAnySelectedPeriods,
+  labelFromPeriodKey,
   periodKeysFromLabels,
 } from './analyticsPeriod';
 import type { Recommendation } from '../types/recommendation';
@@ -159,6 +160,18 @@ describe('periodKeysFromLabels (галочки UI → ключи фильтра)
     const allLabels = options.map((item) => item.label);
     const without2026 = allLabels.filter((label) => !label.includes('2026'));
     expect(periodKeysFromLabels(anchors, 'year', without2026)).toEqual(['2025', '2027']);
+  });
+
+  it('подпись месяца строится из ключа, а не из порядка выбора', () => {
+    const selectedLabels = ['01.11.2026', '01.01.2025', '01.09.2026'];
+    const keys = periodKeysFromLabels(anchors, 'month', selectedLabels);
+
+    expect(keys).toEqual(['2025-01', '2026-09', '2026-11']);
+    expect(keys.map((key) => labelFromPeriodKey(key, 'month'))).toEqual([
+      '01.01.2025',
+      '01.09.2026',
+      '01.11.2026',
+    ]);
   });
 });
 

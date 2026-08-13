@@ -115,6 +115,7 @@ export function FocusableDonutChart({
   const colors = palette.length > 0 ? palette : PALETTE;
   const resolvedLabelMode =
     showPercentInLabel === undefined ? labelMode : showPercentInLabel ? 'percent' : 'value';
+  const total = data.reduce((sum, entry) => sum + entry.value, 0);
 
   return (
     <div className="h-full min-h-[13rem]">
@@ -163,7 +164,6 @@ export function FocusableDonutChart({
             formatter={(value, name, item) => {
               const numericValue = typeof value === 'number' ? value : Number(value);
               const payload = item?.payload as DonutDatum | undefined;
-              const total = data.reduce((sum, entry) => sum + entry.value, 0);
               const percent = total > 0 ? Math.round((numericValue / total) * 100) : 0;
               const displayValue =`${numericValue} (${percent}%)`;
               return [displayValue, payload?.name ?? name];
@@ -175,6 +175,18 @@ export function FocusableDonutChart({
             align="center"
             iconType="circle"
             iconSize={9}
+            formatter={(value) => {
+              const name = String(value);
+              if (resolvedLabelMode !== 'both') {
+                return name;
+              }
+              const item = data.find((entry) => entry.name === name);
+              if (!item) {
+                return name;
+              }
+              const percent = total > 0 ? Math.round((item.value / total) * 100) : 0;
+              return `${name}: ${item.value} (${percent}%)`;
+            }}
             wrapperStyle={{ ...CHART_LEGEND_STYLE, paddingTop: 4 }}
           />
         </PieChart>

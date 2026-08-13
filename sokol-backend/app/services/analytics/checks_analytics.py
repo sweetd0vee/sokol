@@ -106,7 +106,7 @@ async def build_checks_analytics(
         period_series=await check_period_series_sql(session, granularity, **filters),
         view_distribution=await check_view_distribution_sql(session, **filters),
         type_distribution=await check_type_distribution_sql(session, **filters),
-        department_map=department_map_from_pairs(department_pairs),
+        department_map=department_map_from_pairs(department_pairs, selected_departments=departments),
         effectiveness_matrix=_effectiveness_matrix(matrix_checks),
         filter_options=ChecksAnalyticsFilterOptions(
             auditors=await collect_filter_option_auditors_sql(session),

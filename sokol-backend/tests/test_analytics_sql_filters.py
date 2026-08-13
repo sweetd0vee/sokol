@@ -12,6 +12,7 @@ from app.services.analytics.sql_filters import (
     period_or_condition,
     recommendation_filter_conditions,
 )
+from app.services.analytics.sql_aggregates import department_map_from_pairs
 from app.models.checks import Check
 from app.models.recommendations import Recommendation
 
@@ -63,6 +64,29 @@ class AnalyticsSqlFiltersTests(unittest.TestCase):
         self.assertIn("audit_object IS NOT NULL", compiled)
         self.assertIn("cardinality", compiled)
         self.assertNotIn("!= ''", compiled)
+
+    def test_department_map_respects_selected_departments_and_empty_checks(self) -> None:
+        rows = department_map_from_pairs(
+            [
+                (1, ["ИТ", "Финансы"]),
+                (2, []),
+                (3, ["Юристы"]),
+            ]
+        )
+        self.assertEqual(
+            {item.name: item.value for item in rows},
+            {"Без департамента": 1, "ИТ": 1, "Финансы": 1, "Юристы": 1},
+        )
+
+        selected_rows = department_map_from_pairs(
+            [
+                (1, ["ИТ", "Финансы"]),
+                (2, ["Финансы"]),
+                (3, ["Юристы"]),
+            ],
+            selected_departments=["ИТ"],
+        )
+        self.assertEqual([(item.name, item.value) for item in selected_rows], [("ИТ", 1)])
 
 
 if __name__ == "__main__":

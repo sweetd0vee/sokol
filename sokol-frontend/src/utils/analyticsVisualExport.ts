@@ -216,7 +216,7 @@ function writeEffectivenessMatrixSheet(
     views: [{ showGridLines: false }],
   });
 
-  const headers = ['Ключ', 'Краткое название', ...EFFECTIVENESS_MATRIX_COLUMNS.map((column) => column.label)];
+  const headers = ['Ключ', 'Краткое название проверки', ...EFFECTIVENESS_MATRIX_COLUMNS.map((column) => column.label)];
   sheet.columns = [
     { width: 16 },
     { width: 42 },

@@ -26,12 +26,11 @@ import { exportChecksDashboard, type AnalyticsExportFormat } from '../../utils/a
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
-import { useAuditorOptions } from '../../hooks/useReferenceOptions';
-import { parseDateValue } from '../../utils/dates';
+import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
+import { labelFromPeriodKey } from '../../utils/analyticsPeriod';
 import type { PeriodGranularity } from '../../utils/checkAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 
-const EMPTY_ANCHOR_DATES = [new Date(2025, 0, 1).getTime(), new Date(2026, 11, 1).getTime()];
 const EMPTY_CHECKS_SUMMARY = { total: 0, not_started: 0, in_progress: 0, completed: 0 };
 const EMPTY_FLOW_SERIES: never[] = [];
 const EMPTY_VIEW_DISTRIBUTION: never[] = [];
@@ -55,7 +54,6 @@ function completeSelectedPeriods(
   series: ChecksAnalyticsPeriodPoint[],
   granularity: PeriodGranularity,
   selectedKeys: string[],
-  selectedLabels: string[],
 ) {
   if (selectedKeys.length === 0) {
     return series;
@@ -65,10 +63,10 @@ function completeSelectedPeriods(
   let cumulative = 0;
 
   return selectedKeys
-    .map((key, index) => (
+    .map((key) => (
       byKey.get(key) ?? {
         key,
-        label: selectedLabels[index] ?? key,
+        label: labelFromPeriodKey(key, granularity),
         sortKey: sortKeyFromPeriodKey(key, granularity),
         total: 0,
         not_started: 0,
@@ -108,12 +106,7 @@ export function ChecksAnalyticsDashboard() {
     staleTime: 60_000,
   });
 
-  const anchorDates = useMemo(() => {
-    const fromApi = (bootstrapQuery.data?.filterOptions.anchorDates ?? [])
-      .map((value) => parseDateValue(value))
-      .filter((value): value is number => value !== null);
-    return fromApi.length > 0 ? [...fromApi, ...EMPTY_ANCHOR_DATES] : EMPTY_ANCHOR_DATES;
-  }, [bootstrapQuery.data?.filterOptions.anchorDates]);
+  const anchorDates = useAnalyticsAnchorDates(bootstrapQuery.data?.filterOptions.anchorDates);
 
   const {
     periodSlice,
@@ -137,13 +130,14 @@ export function ChecksAnalyticsDashboard() {
   } = useAnalyticsPeriodFilters(anchorDates);
 
   const granularity: PeriodGranularity = periodSlice;
-  const hasActiveFilters =
-    selectedYearKeys.length > 0
-    || selectedQuarterKeys.length > 0
-    || selectedMonthKeys.length > 0
-    || selectedAuditors.length > 0
-    || selectedDepartments.length > 0
-    || granularity !== 'year';
+  const hasActiveFilters = hasAnalyticsPeriodFilters({
+    yearKeys: selectedYearKeys,
+    quarterKeys: selectedQuarterKeys,
+    monthKeys: selectedMonthKeys,
+    auditors: selectedAuditors,
+    departments: selectedDepartments,
+    granularity,
+  });
 
   const analyticsQuery = useQuery({
     queryKey: [
@@ -170,8 +164,11 @@ export function ChecksAnalyticsDashboard() {
     initialDataUpdatedAt: !hasActiveFilters ? bootstrapQuery.dataUpdatedAt : undefined,
   });
 
-  const data = analyticsQuery.data ?? bootstrapQuery.data;
-  const { options: auditorOptions } = useAuditorOptions();
+  const data = hasActiveFilters ? analyticsQuery.data : (analyticsQuery.data ?? bootstrapQuery.data);
+  const auditorOptions = useMemo(
+    () => toAnalyticsSelectOptions(data?.filterOptions.auditors ?? []),
+    [data?.filterOptions.auditors],
+  );
   const departmentOptions = useMemo(
     () => toAnalyticsSelectOptions(data?.filterOptions.departments ?? []),
     [data?.filterOptions.departments],
@@ -183,8 +180,8 @@ export function ChecksAnalyticsDashboard() {
   const selectedPeriodKeys =
     granularity === 'month' ? selectedMonthKeys : granularity === 'quarter' ? selectedQuarterKeys : selectedYearKeys;
   const flowSeries = useMemo(
-    () => completeSelectedPeriods(rawFlowSeries, granularity, selectedPeriodKeys, activePeriodValues),
-    [activePeriodValues, granularity, rawFlowSeries, selectedPeriodKeys],
+    () => completeSelectedPeriods(rawFlowSeries, granularity, selectedPeriodKeys),
+    [granularity, rawFlowSeries, selectedPeriodKeys],
   );
   const viewDistribution = data?.viewDistribution ?? EMPTY_VIEW_DISTRIBUTION;
   const typeDistribution = data?.typeDistribution ?? EMPTY_TYPE_DISTRIBUTION;
@@ -204,7 +201,7 @@ export function ChecksAnalyticsDashboard() {
   };
 
   const handleExport = async () => {
-    if (filteredTotal === 0 || isExporting || !data) {
+    if (filteredTotal === 0 || isExporting || analyticsQuery.isFetching || !data) {
       return;
     }
     if (exportSections.selectedSections.length === 0) {
@@ -349,7 +346,7 @@ export function ChecksAnalyticsDashboard() {
             {typeDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableDonutChart data={typeDistribution} palette={CHECKS_PALETTE} />
+              <FocusableDonutChart data={typeDistribution} palette={CHECKS_PALETTE} labelMode="both" />
             )}
           </ChartCard>
         ),
@@ -406,7 +403,7 @@ export function ChecksAnalyticsDashboard() {
     ],
   );
 
-  if (bootstrapQuery.isLoading && !data) {
+  if ((bootstrapQuery.isLoading || analyticsQuery.isLoading) && !data) {
     return <LoadingState title="Загрузка аналитики проверок…" />;
   }
 
@@ -444,7 +441,7 @@ export function ChecksAnalyticsDashboard() {
         exportFormat={exportFormat}
         onExportFormatChange={setExportFormat}
         isExporting={isExporting}
-        canExport={filteredTotal > 0}
+        canExport={filteredTotal > 0 && !analyticsQuery.isFetching}
         onExport={handleExport}
         exportSelectedCount={exportSections.selectedCount}
         exportTotalCount={exportSections.totalCount}

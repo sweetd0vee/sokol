@@ -45,6 +45,29 @@ export function getPeriodBucket(dateMs: number, granularity: PeriodGranularity):
   };
 }
 
+export function labelFromPeriodKey(key: string, granularity: PeriodGranularity) {
+  if (granularity === 'year') {
+    const year = Number(key);
+    return Number.isFinite(year) ? formatPeriodFirstDay(year, 0) : key;
+  }
+
+  if (granularity === 'quarter') {
+    const [yearValue, quarterValue] = key.split('-Q');
+    const year = Number(yearValue);
+    const quarter = Number(quarterValue);
+    if (Number.isFinite(year) && Number.isFinite(quarter)) {
+      const quarterStartMonth = (quarter - 1) * 3;
+      return `${formatPeriodFirstDay(year, quarterStartMonth)} (Q${quarter})`;
+    }
+    return key;
+  }
+
+  const [yearValue, monthValue] = key.split('-');
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  return Number.isFinite(year) && Number.isFinite(month) ? formatPeriodFirstDay(year, month - 1) : key;
+}
+
 export function collectPeriodOptions(
   dateMsList: Array<number | null>,
   granularity: PeriodGranularity,

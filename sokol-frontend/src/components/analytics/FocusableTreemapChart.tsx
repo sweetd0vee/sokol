@@ -27,6 +27,42 @@ type TreemapNodeProps = {
   onActivate?: (name: string | null) => void;
 };
 
+function splitLabelToken(token: string, maxChars: number) {
+  if (token.length <= maxChars) {
+    return [token];
+  }
+
+  const chunks: string[] = [];
+  for (let start = 0; start < token.length; start += maxChars) {
+    chunks.push(token.slice(start, start + maxChars));
+  }
+  return chunks;
+}
+
+function wrapTreemapLabel(label: string, maxChars: number) {
+  const words = label.trim().split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let currentLine = '';
+
+  words.flatMap((word) => splitLabelToken(word, maxChars)).forEach((word) => {
+    const nextLine = currentLine ? `${currentLine} ${word}` : word;
+    if (nextLine.length <= maxChars) {
+      currentLine = nextLine;
+      return;
+    }
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+    currentLine = word;
+  });
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines.length > 0 ? lines : [label];
+}
+
 function TreemapContent({
   x = 0,
   y = 0,
@@ -47,12 +83,19 @@ function TreemapContent({
   const showLabel = width >= 42 && height >= 32;
   const textColor = contrastLabelColor(fill, false);
   const labelOpacity = isDimmed ? 0.55 : 1;
+  const labelFontSize = width < 100 ? 11 : 12;
+  const labelLineHeight = labelFontSize + 3;
+  const maxCharsPerLine = Math.max(6, Math.floor((width - 16) / (labelFontSize * 0.58)));
+  const labelLines = wrapTreemapLabel(name, maxCharsPerLine);
+  const firstLabelY = y + 16;
+  const valueY = firstLabelY + labelLines.length * labelLineHeight + 2;
 
   return (
     <g
       onMouseEnter={() => onActivate?.(name)}
       style={{ cursor: 'pointer' }}
     >
+      <title>{`${name}: ${value}`}</title>
       <rect
         x={x}
         y={y}
@@ -76,17 +119,21 @@ function TreemapContent({
         <>
           <text
             x={x + 8}
-            y={y + 18}
+            y={firstLabelY}
             fill={textColor}
-            fontSize={14}
+            fontSize={labelFontSize}
             fontWeight={700}
             style={{ pointerEvents: 'none', opacity: labelOpacity }}
           >
-            {name.length > 20 ?`${name.slice(0, 18)}...` : name}
+            {labelLines.map((line, index) => (
+              <tspan key={`${line}-${index}`} x={x + 8} dy={index === 0 ? 0 : labelLineHeight}>
+                {line}
+              </tspan>
+            ))}
           </text>
           <text
             x={x + 8}
-            y={y + 34}
+            y={valueY}
             fill={textColor}
             fontSize={15}
             style={{ pointerEvents: 'none', opacity: labelOpacity }}

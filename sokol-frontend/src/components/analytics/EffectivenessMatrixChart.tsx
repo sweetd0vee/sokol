@@ -109,7 +109,7 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
                   Ключ
                 </th>
                 <th className="bg-white px-3 py-2 text-left font-semibold text-sber-dark">
-                  Краткое название
+                  Краткое название проверки
                 </th>
                 {EFFECTIVENESS_MATRIX_COLUMNS.map((column) => (
                   <th
@@ -188,11 +188,7 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
           {': '}
           {hoveredRow.name}
         </p>
-      ) : (
-        <p className="shrink-0 text-xs text-gray-400">
-          Наведите на ключ проверки, чтобы увидеть название
-        </p>
-      )}
+      ) : null}
 
       <ul
         className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-gray-600"

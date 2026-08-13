@@ -206,7 +206,7 @@ function buildEffectivenessSharePie(shares: EffectivenessColumnShare[]) {
       (share) =>
         `<li style="display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;line-height:1.15">
           <span style="width:7px;height:7px;border-radius:50%;background:${share.color};flex-shrink:0"></span>
-          <span style="font-weight:600">${share.percent}%</span>
+          <span style="font-weight:600">${share.count} (${share.percent}%)</span>
         </li>`,
     )
     .join('');
@@ -279,7 +279,7 @@ export function buildEffectivenessMatrixHtmlMarkup(rows: EffectivenessMatrixRow[
           <thead>
             <tr style="border-bottom:1px solid #f3f4f6;background:#fff">
               <th style="padding:8px 12px;text-align:left;font-weight:600">Ключ</th>
-              <th style="padding:8px 12px;text-align:left;font-weight:600">Краткое название</th>
+              <th style="padding:8px 12px;text-align:left;font-weight:600">Краткое название проверки</th>
               ${headerCells}
             </tr>
           </thead>

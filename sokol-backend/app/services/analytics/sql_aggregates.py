@@ -40,7 +40,6 @@ from app.services.analytics.period import get_period_bucket
 from app.services.analytics.sql_filters import (
     apply_check_filters,
     apply_recommendation_filters,
-    audit_object_has_values,
     check_filter_conditions,
     recommendation_filter_conditions,
 )
@@ -388,24 +387,36 @@ async def load_check_department_pairs(
 ) -> list[tuple[int, list[str]]]:
     check_ids_subquery = apply_check_filters(select(Check.id), **filters).subquery()
     statement = (
-        select(Recommendation.check_id, Recommendation.audit_object)
-        .where(Recommendation.check_id.in_(select(check_ids_subquery.c.id)))
-        .where(audit_object_has_values())
+        select(check_ids_subquery.c.id.label("check_id"), Recommendation.audit_object)
+        .select_from(
+            check_ids_subquery.outerjoin(
+                Recommendation,
+                Recommendation.check_id == check_ids_subquery.c.id,
+            ),
+        )
     )
     rows = (await session.execute(statement)).all()
-    return [(int(row.check_id), list(row.audit_object or [])) for row in rows]
+    return [(int(row.check_id), list(row.audit_object or [])) for row in rows if row.check_id is not None]
 
 
-def department_map_from_pairs(pairs: list[tuple[int, str | list[str]]]) -> list[NamedCount]:
+def department_map_from_pairs(
+    pairs: list[tuple[int, str | list[str]]],
+    *,
+    selected_departments: list[str] | None = None,
+) -> list[NamedCount]:
+    selected = {item.strip() for item in (selected_departments or []) if item.strip()}
     by_check: dict[int, set[str]] = defaultdict(set)
     for check_id, audit_object in pairs:
         by_check[check_id].update(parse_audit_object_parts(audit_object))
     counts: dict[str, int] = defaultdict(int)
     for departments in by_check.values():
-        if not departments:
+        visible_departments = departments & selected if selected else departments
+        if selected and not visible_departments:
+            continue
+        if not visible_departments:
             counts["Без департамента"] += 1
             continue
-        for department in departments:
+        for department in visible_departments:
             counts[department] += 1
     return named_counts(counts)
 
