@@ -189,10 +189,10 @@ export function ToolsTab() {
 
         {activeTab === 'dz' && (
           <div className={TOOLS_SECTION_CLASS}>
-            <div className={TOOLS_SECTION_TITLE_CLASS}>Генерация</div>
+            <div className={TOOLS_SECTION_TITLE_CLASS}>Парсинг</div>
             <DocxToolPanel
-              title="1. Генерация Докладной Записки"
-              description="Загрузите Аудиторское Заключение в формате .docx с Разделом II, чтобы сгенерировать Докладную Записку."
+              title="1. Парсинг Приложения 2 к ДЗ"
+              description="Загрузите Аудиторское Заключение в формате .docx с Разделом II, чтобы сгенерировать Приложение 2 к Докладной Записке."
               file={dzFile}
               onFileChange={handleDzFileChange}
               onProcess={handleGenerateMemorandum}
