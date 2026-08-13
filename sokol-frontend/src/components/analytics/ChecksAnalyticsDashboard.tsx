@@ -5,6 +5,7 @@ import {
   BarChart,
   CartesianGrid,
   ComposedChart,
+  LabelList,
   Legend,
   Line,
   ResponsiveContainer,
@@ -16,7 +17,7 @@ import { fetchChecksAnalytics } from '../../api/analytics';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
-import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { EffectivenessMatrixChart } from './EffectivenessMatrixChart';
@@ -229,7 +230,15 @@ export function ChecksAnalyticsDashboard() {
                     <Tooltip />
                     <Legend wrapperStyle={CHART_LEGEND_STYLE} />
                     <Bar dataKey="total" name="За период" fill={CHECKS_PALETTE[11]} radius={[4, 4, 0, 0]} />
-                    <Line type="monotone" dataKey="cumulative" name="Всего" stroke={CHECKS_PALETTE[0]} strokeWidth={2.5} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="cumulative" name="Всего" stroke={CHECKS_PALETTE[0]} strokeWidth={2.5} dot={{ r: 3, fill: CHECKS_PALETTE[0] }}>
+                      <LabelList
+                        dataKey="cumulative"
+                        position="top"
+                        fontSize={CHART_VALUE_LABEL_SIZE}
+                        fill={CHECKS_PALETTE[0]}
+                        offset={8}
+                      />
+                    </Line>
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -410,7 +419,7 @@ export function ChecksAnalyticsDashboard() {
         )}
       />
 
-      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col lg:-mt-[84px]">
         {analyticsQuery.isFetching ? (
           <div className="pointer-events-none absolute right-2 top-2 z-10 rounded-md bg-white/90 px-2 py-1 text-xs text-slate-500 shadow-sm">
             Обновление…
