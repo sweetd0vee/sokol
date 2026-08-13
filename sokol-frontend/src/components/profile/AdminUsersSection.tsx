@@ -10,7 +10,13 @@ const MIN_PASSWORD_LENGTH = 4;
 const CREATED_USER_ROLE: UserRole = 'auditor';
 
 function formatRole(role: UserRole) {
-  return role === 'admin' ? 'Администратор' : 'Аудитор';
+  if (role === 'admin') {
+    return 'Администратор';
+  }
+  if (role === 'department_head') {
+    return 'Руководитель департамента';
+  }
+  return 'Аудитор';
 }
 
 export function AdminUsersSection() {

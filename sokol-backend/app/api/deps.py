@@ -7,7 +7,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBasic, HTTPBasicC
 import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.roles import Role
+from app.core.roles import ADMIN_ROLES, Role, is_admin_role
 from app.core.security import decode_access_token, verify_password
 from app.crud.users_crud import get_user_by_username
 from app.db.session import get_db_session
@@ -28,7 +28,7 @@ class CurrentUser:
 
     @property
     def is_admin(self) -> bool:
-        return self.role == Role.ADMIN
+        return is_admin_role(self.role)
 
 
 def _user_from_record(user) -> CurrentUser:
@@ -103,4 +103,4 @@ def require_roles(*roles: Role):
     return _dependency
 
 
-require_admin = require_roles(Role.ADMIN)
+require_admin = require_roles(*ADMIN_ROLES)

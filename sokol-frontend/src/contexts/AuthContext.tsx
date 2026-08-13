@@ -8,12 +8,15 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const ADMIN_ROLES = new Set<UserRole>(['admin', 'department_head']);
+const KNOWN_ROLES = new Set<UserRole>(['admin', 'department_head', 'auditor']);
+
 function parseStoredUser(raw: string): User | null {
   try {
     const parsed = JSON.parse(raw) as Partial<User> & { username?: string };
     const shortName = parsed?.shortName?.trim() || parsed?.username?.trim() || '';
     const accessToken = parsed?.accessToken?.trim() || '';
-    const role = parsed?.role === 'admin' || parsed?.role === 'auditor' ? parsed.role : null;
+    const role = parsed?.role && KNOWN_ROLES.has(parsed.role) ? parsed.role : null;
     if (!shortName || !accessToken || !role) {
       return null;
     }
@@ -91,7 +94,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user,
     isAuthenticated: !!user?.accessToken,
     isLoading,
-    isAdmin: user?.role === 'admin',
+    isAdmin: !!user?.role && ADMIN_ROLES.has(user.role),
     login,
     logout,
   };

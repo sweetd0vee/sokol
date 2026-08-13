@@ -15,6 +15,8 @@ from app.models.auditors import Auditor
 ADMIN_USERNAME = "Админ А.А."
 ADMIN_DISPLAY_NAME = "Администратор"
 ADMIN_ALIASES = ("admin",)
+DEPARTMENT_HEAD_USERNAME = "Ковалев С.С."
+DEPARTMENT_HEAD_DISPLAY_NAME = "Ковалев С.С."
 
 
 async def seed_users(*, only_if_empty: bool = False) -> int:
@@ -33,6 +35,15 @@ async def seed_users(*, only_if_empty: bool = False) -> int:
             role=Role.ADMIN,
             display_name=ADMIN_DISPLAY_NAME,
             aliases=ADMIN_ALIASES,
+        ):
+            inserted += 1
+
+        if await ensure_user(
+            session,
+            username=DEPARTMENT_HEAD_USERNAME,
+            password=settings.sokol_admin_password,
+            role=Role.DEPARTMENT_HEAD,
+            display_name=DEPARTMENT_HEAD_DISPLAY_NAME,
         ):
             inserted += 1
 

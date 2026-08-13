@@ -7,7 +7,7 @@ import asyncio
 from sqlalchemy import select
 
 from app.core.config import settings
-from app.core.roles import Role
+from app.core.roles import ADMIN_ROLES, Role
 from app.core.security import hash_password
 from app.crud.users_crud import ensure_user, get_user_by_username
 from app.db.auditor_names import AUDITORS
@@ -24,6 +24,8 @@ from app.utils.dictionary_text import normalize_dictionary_label
 ADMIN_USERNAME = "Админ А.А."
 ADMIN_DISPLAY_NAME = "Администратор"
 ADMIN_ALIASES = ("admin",)
+DEPARTMENT_HEAD_USERNAME = "Ковалев С.С."
+DEPARTMENT_HEAD_DISPLAY_NAME = "Ковалев С.С."
 
 
 async def sync_auditors() -> tuple[int, int]:
@@ -92,9 +94,19 @@ async def sync_users() -> tuple[int, int]:
             )
             added += 1
 
+        if await get_user_by_username(session, DEPARTMENT_HEAD_USERNAME) is None:
+            await ensure_user(
+                session,
+                username=DEPARTMENT_HEAD_USERNAME,
+                password=settings.sokol_admin_password,
+                role=Role.DEPARTMENT_HEAD,
+                display_name=DEPARTMENT_HEAD_DISPLAY_NAME,
+            )
+            added += 1
+
         users = (await session.execute(select(User))).scalars().all()
         for user in users:
-            if user.role == Role.ADMIN.value:
+            if user.role in {role.value for role in ADMIN_ROLES}:
                 continue
             if normalize_dictionary_label(user.username) not in canonical_auditors:
                 await session.delete(user)

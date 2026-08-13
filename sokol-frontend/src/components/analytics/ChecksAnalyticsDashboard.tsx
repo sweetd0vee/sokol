@@ -336,7 +336,7 @@ export function ChecksAnalyticsDashboard() {
       },
       {
         id: 'types',
-        defaultLayout: { x: 0, y: 6, w: 5, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 6, w: 4, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Типы проверок"
@@ -355,7 +355,7 @@ export function ChecksAnalyticsDashboard() {
       },
       {
         id: 'departmentMap',
-        defaultLayout: { x: 5, y: 6, w: 7, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 4, y: 6, w: 8, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Карта департаментов (ТОП-10)"

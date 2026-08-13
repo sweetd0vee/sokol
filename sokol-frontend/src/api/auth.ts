@@ -1,6 +1,6 @@
 import { api } from './client';
 
-export type UserRole = 'admin' | 'auditor';
+export type UserRole = 'admin' | 'department_head' | 'auditor';
 
 export type LoginResponse = {
   access_token: string;

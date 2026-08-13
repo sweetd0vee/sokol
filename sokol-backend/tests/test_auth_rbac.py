@@ -49,6 +49,18 @@ def _auditor_user(username: str = "Важник Д.С.") -> User:
     )
 
 
+def _department_head_user() -> User:
+    return User(
+        id=uuid4(),
+        username="Ковалев С.С.",
+        password_hash=hash_password("admin"),
+        role=Role.DEPARTMENT_HEAD.value,
+        display_name="Ковалев С.С.",
+        aliases=None,
+        is_active=True,
+    )
+
+
 class AuthRbacTests(unittest.TestCase):
     def setUp(self) -> None:
         async def _fake_session():
@@ -182,6 +194,31 @@ class AuthRbacTests(unittest.TestCase):
         self.assertEqual(login.json()["role"], "admin")
         self.assertEqual(login.json()["username"], "Админ А.А.")
 
+    @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
+    @patch("app.api.v1.endpoints.auth.get_user_by_username", new_callable=AsyncMock)
+    def test_login_and_me_for_department_head(
+        self,
+        mock_login_get_user: AsyncMock,
+        mock_deps_get_user: AsyncMock,
+    ) -> None:
+        user = _department_head_user()
+        mock_login_get_user.return_value = user
+        mock_deps_get_user.return_value = user
+        login = self.client.post(
+            "/api/v1/auth/login",
+            json={"username": "Ковалев С.С.", "password": "admin"},
+        )
+        self.assertEqual(login.status_code, 200, login.text)
+        body = login.json()
+        self.assertEqual(body["role"], "department_head")
+
+        me = self.client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {body['access_token']}"},
+        )
+        self.assertEqual(me.status_code, 200)
+        self.assertEqual(me.json()["role"], "department_head")
+
     def test_auditor_cannot_delete_check(self) -> None:
         async def _auditor() -> CurrentUser:
             return CurrentUser(
@@ -268,6 +305,24 @@ class AuthRbacTests(unittest.TestCase):
             )
 
         app.dependency_overrides[get_current_user] = _admin
+        with patch(
+            "app.services.checks_service.delete_check",
+            new_callable=AsyncMock,
+            side_effect=ResourceNotFoundError("Проверка не найдена."),
+        ):
+            response = self.client.delete("/api/v1/checks/999999")
+        # Auth passed; missing entity → 404 from handler.
+        self.assertEqual(response.status_code, 404)
+
+    def test_department_head_has_admin_access(self) -> None:
+        async def _department_head() -> CurrentUser:
+            return CurrentUser(
+                username="Ковалев С.С.",
+                display_name="Ковалев С.С.",
+                role=Role.DEPARTMENT_HEAD,
+            )
+
+        app.dependency_overrides[get_current_user] = _department_head
         with patch(
             "app.services.checks_service.delete_check",
             new_callable=AsyncMock,

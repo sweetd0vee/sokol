@@ -39,6 +39,15 @@ class PersonMatchTests(unittest.TestCase):
             )
         )
 
+    def test_department_head_can_manage_any_recommendation(self) -> None:
+        self.assertTrue(
+            user_can_manage_recommendation(
+                role=Role.DEPARTMENT_HEAD,
+                username="Ковалев С.С.",
+                auditor="Иванов И.И.",
+            )
+        )
+
     def test_auditor_can_manage_only_own_recommendation(self) -> None:
         self.assertTrue(
             user_can_manage_recommendation(
