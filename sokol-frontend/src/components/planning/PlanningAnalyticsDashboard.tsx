@@ -51,7 +51,7 @@ const EMPTY_HIGH_MATERIALITY_RANKING: never[] = [];
 
 export function PlanningAnalyticsDashboard() {
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('xlsx');
+  const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('html');
 
   const bootstrapQuery = useQuery({
     queryKey: ['analytics', 'planning', 'bootstrap'],

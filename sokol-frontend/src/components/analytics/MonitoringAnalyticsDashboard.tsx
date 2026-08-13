@@ -46,7 +46,7 @@ export function MonitoringAnalyticsDashboard() {
   const [selectedMateriality, setSelectedMateriality] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedAdditionalStatuses, setSelectedAdditionalStatuses] = useState<string[]>([]);
-  const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('xlsx');
+  const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('html');
   const [isExporting, setIsExporting] = useState(false);
 
   const exportSections = useExportSections(

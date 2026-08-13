@@ -46,7 +46,7 @@ const EMPTY_DOCUMENT_READINESS: never[] = [];
 export function DvaAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('xlsx');
+  const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('html');
   const [isExporting, setIsExporting] = useState(false);
 
   const exportSections = useExportSections(DVA_EXPORT_SECTIONS.map((section) => section.id) as DvaExportSectionId[]);

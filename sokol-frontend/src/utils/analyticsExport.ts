@@ -12,10 +12,10 @@ import {
 } from './analyticsVisualExport';
 
 export const ANALYTICS_EXPORT_FORMATS = [
-  { value: 'xlsx', label: 'XLSX' },
+  { value: 'html', label: 'HTML' },
   { value: 'pdf', label: 'PDF' },
   { value: 'docx', label: 'DOCX' },
-  { value: 'html', label: 'HTML' },
+  { value: 'xlsx', label: 'XLSX' },
 ] as const;
 
 export type AnalyticsExportFormat = (typeof ANALYTICS_EXPORT_FORMATS)[number]['value'];

@@ -26,6 +26,7 @@ import { exportChecksDashboard, type AnalyticsExportFormat } from '../../utils/a
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
+import { useAuditorOptions } from '../../hooks/useReferenceOptions';
 import { parseDateValue } from '../../utils/dates';
 import type { PeriodGranularity } from '../../utils/checkAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
@@ -86,7 +87,7 @@ function completeSelectedPeriods(
 export function ChecksAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('xlsx');
+  const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('html');
   const [isExporting, setIsExporting] = useState(false);
 
   const exportSections = useExportSections(
@@ -170,10 +171,7 @@ export function ChecksAnalyticsDashboard() {
   });
 
   const data = analyticsQuery.data ?? bootstrapQuery.data;
-  const auditorOptions = useMemo(
-    () => toAnalyticsSelectOptions(data?.filterOptions.auditors ?? []),
-    [data?.filterOptions.auditors],
-  );
+  const { options: auditorOptions } = useAuditorOptions();
   const departmentOptions = useMemo(
     () => toAnalyticsSelectOptions(data?.filterOptions.departments ?? []),
     [data?.filterOptions.departments],
@@ -191,6 +189,10 @@ export function ChecksAnalyticsDashboard() {
   const viewDistribution = data?.viewDistribution ?? EMPTY_VIEW_DISTRIBUTION;
   const typeDistribution = data?.typeDistribution ?? EMPTY_TYPE_DISTRIBUTION;
   const departmentMap = data?.departmentMap ?? EMPTY_DEPARTMENT_MAP;
+  const departmentMapTop = useMemo(
+    () => [...departmentMap].sort((left, right) => right.value - left.value).slice(0, 10),
+    [departmentMap],
+  );
   const effectivenessMatrix = data?.effectivenessMatrix ?? EMPTY_EFFECTIVENESS_MATRIX;
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
@@ -357,16 +359,16 @@ export function ChecksAnalyticsDashboard() {
         defaultLayout: { x: 5, y: 6, w: 7, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Карта департаментов"
+            title="Карта департаментов (ТОП - 10)"
             description="Количество проверок за период по департаментам"
             exportSectionId="departmentMap"
             exportSelected={exportSections.isSelected('departmentMap')}
             onToggleExport={() => exportSections.toggleSection('departmentMap')}
           >
-            {departmentMap.length === 0 ? (
+            {departmentMapTop.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableTreemapChart data={departmentMap} palette={CHECKS_PALETTE} />
+              <FocusableTreemapChart data={departmentMapTop} palette={CHECKS_PALETTE} />
             )}
           </ChartCard>
         ),
@@ -393,7 +395,7 @@ export function ChecksAnalyticsDashboard() {
     ],
     [
       completionShare,
-      departmentMap,
+      departmentMapTop,
       effectivenessMatrix,
       exportSections,
       flowSeries,
