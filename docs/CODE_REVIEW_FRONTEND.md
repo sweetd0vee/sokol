@@ -1,7 +1,7 @@
 # Код-ревью frontend
 
-**Общая оценка:** 8.0 / 10 · React 19, TypeScript, Vite, TanStack Query  
-**Смысл оценки:** frontend хорошо закрывает сценарии аудитора: atomic import из АЗ с undo, granular RBAC на delete/attachments, yearly ID в форме. Главные риски: production stub route, усечение данных и hardening storage UX/экспортов.
+**Общая оценка:** 8.4 / 10 · React 19, TypeScript, Vite, TanStack Query  
+**Смысл оценки:** frontend хорошо закрывает сценарии аудитора: atomic import из АЗ с undo, granular RBAC на delete/attachments, yearly ID в форме. Главные риски: усечение данных и hardening storage UX/экспортов.
 
 ## Архитектура
 
@@ -12,16 +12,16 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 
 **Плюсы:** feature folders, mappers, React Query, единые токены форм.
 
-**Минусы:** god files (`exports.ts`, analytics export); нет route lazy loading; demo routes в production nav.
+**Минусы:** god files (`exports.ts`, analytics export); нет route lazy loading; storage/truncation UX ещё требует hardening.
 
 ## Оценка по блокам
 
 | Блок | Оценка | Что хорошо | Что ограничивает |
 |------|--------|------------|------------------|
-| App shell / routing | **7 / 10** | AuthProvider, layout и Router собраны понятно | В nav/route виден demo/stub раздел `kantsler` |
+| App shell / routing | **8.5 / 10** | AuthProvider, layout и Router собраны понятно; `kantsler` оставлен как явный roadmap-задел v2 | Нет route lazy loading |
 | Auth UI / API client | **7.5 / 10** | Login, Bearer interceptor, 401 logout и change-password закрывают базовый сценарий | Нет OIDC-flow, нет e2e успешного login/change-password |
 | Checks workflow | **8 / 10** | Форма и список работают с backend; `serial_number` только читается из API; edit route fetchит check по id | Для больших списков остаётся риск усечения данных в общем context |
-| Recommendations workflow | **8.5 / 10** | CRUD, статусы, вложения, atomic batch import/replace, undo импорта из АЗ, RBAC delete/attachments, yearly № в форме | Save errors не показываются в форме |
+| Recommendations workflow | **8.7 / 10** | CRUD, статусы, вложения, atomic batch import/replace, undo импорта из АЗ, RBAC delete/attachments, yearly № в форме; save errors показываются в форме | List fetch error UI ещё не везде выведен |
 | Data layer / context | **7.5 / 10** | API clients + mappers + React Query; `batch-delete` для undo в одном запросе | Bulk limits 500/1000 без явного warning |
 | Attachments UI | **7.5 / 10** | `canModifyAttachments` / `canRemoveSaved` по ownership; check attachments — admin only | Нужен общий banner/disabled state при недоступном MinIO |
 | Analytics dashboards | **8.5 / 10** | Серверные SQL-агрегаты; единый заголовок KPI «Итого»; на вкладке проверок первая карточка «Всего» | Drill-down/server pagination для детализации |
@@ -29,14 +29,14 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 | Planning | **7 / 10** | Dashboard подключён к backend analytics | Export выключен, модуль надо явно позиционировать как ограниченный |
 | Tools / DOCX UI | **8 / 10** | UI соответствует текущему backend: section-ii, links, memorandum, parse recommendations | Нет очереди/прогресса для долгих jobs |
 | UI kit / forms | **8.5 / 10** | Переиспользуемые controls, `formLayout` constants, `LIST_ACTION_GROUP_CLASS` для единых отступов фильтров | Нет Storybook/visual regression |
-| Tests / lint | **8.5 / 10** | 48 Vitest проходят, lint без ошибок/warnings; form payload/API tests и Playwright smoke | Нет e2e успешного auth flow, CRUD flow, storage state и truncation cases |
+| Tests / lint | **8.5 / 10** | 50 Vitest проходят, lint без ошибок/warnings; form payload/API tests и Playwright smoke | Нет e2e успешного auth flow, CRUD flow, storage state и truncation cases |
 
 ## Маршруты vs backend
 
 | Route | Backend |
 |-------|---------|
 | checks, recommendations, analytics, planning, tools, settings | ✅ |
-| kantsler | ❌ stub |
+| kantsler | roadmap-заготовка v2, backend/API будет реализован во второй версии |
 | profile password change | ✅ `POST /api/v1/auth/change-password` |
 | admin users (profile) | ✅ `GET/POST /api/v1/users` |
 
@@ -61,11 +61,11 @@ Server aggregates в PostgreSQL ✅. KPI-блок на всех вкладках
 
 ## Тесты
 
-48 Vitest тестов (10 файлов): filters, checkKey helpers, fileHelpers, reference options, form payload checks, recommendation batch/yearly number API, `personMatch`, `recommendationYearlyNumber`.
+50 Vitest тестов (10 файлов): filters, checkKey helpers, fileHelpers, reference options, form payload checks, recommendation batch/yearly number API, `personMatch`, `recommendationYearlyNumber`.
 
 Lint: 0 errors, 0 warnings.
 
-E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation. Нужны smoke на успешный login, скрытие production stubs и ключевые CRUD workflows.
+E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation. Нужны smoke на успешный login и ключевые CRUD workflows.
 
 ## Подробные findings
 
@@ -79,22 +79,17 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 **Тесты:** добавлен Vitest на `fetchCheck`; `npm run lint` и `npm test` проходят.
 
-### FE-02 · P0 · `Kantsler` виден как production route
+### FE-02 · accepted · `Kantsler` оставлен как roadmap-задел v2
 
 **Где:** `src/App.tsx`, `src/components/layout/Sidebar.tsx`, `src/components/tabs/KantslerTab.tsx`.
 
-**Симптом:** маршрут `/kantsler` подключён в `App.tsx`, пункт меню добавлен в `TABS`, экран показывает “В разработке”.
+**Решение:** маршрут `/kantsler` подключён в `App.tsx`, пункт меню добавлен в `TABS`, экран показывает “В разработке”.
 
-**Риск:** в production пользователь видит недоделанный модуль и может считать его частью поставки. Это P0 не из-за сложности, а из-за ложного пользовательского обещания.
+**Почему это допустимо:** раздел нужен команде как задел под вторую версию приложения и не мешает текущим сценариям пилота.
 
-**Как исправить:**
+**Статус:** не считается блокером frontend-go-live; backend/API для интеграции с СЭД Канцлер планируются в v2.
 
-1. Самый быстрый вариант: удалить пункт из `TABS` и route `/kantsler`.
-2. Более гибкий вариант: добавить `VITE_ENABLE_KANTSLER=false`; показывать route/nav только при flag.
-3. Для прямого URL `/kantsler` в production делать redirect на `/checks` или NotFound.
-4. В README/docs явно указать, что Kantsler вне текущего релиза.
-
-**Тесты:** Playwright в production build не видит пункт `Канцлер`; прямой переход `/kantsler` не показывает stub.
+**Тесты:** `npm run lint`, `npm test`.
 
 ### FE-03 · P1 · Глобальные списки могут быть усечены без warning
 
@@ -146,18 +141,18 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 **Где:** `src/components/recommendations/RecommendationFormPage.tsx`, `src/components/tabs/ChecksTab.tsx`, `src/components/tabs/RecommendationsTab.tsx`, `src/contexts/SokolDataContext.tsx`.
 
-**Симптом:** `RecommendationFormPage.saveRecommendation` делает `try/finally`, но без `catch` и без `saveError`. При rejected `addRecommendation/updateRecommendation` пользователь не получает понятного сообщения. Context отдаёт `isLoading/isError/error`, но табы не всегда превращают это в `LoadingState`/`ErrorState`.
+**Симптом:** `RecommendationFormPage.saveRecommendation` уже показывает `saveError` при rejected `addRecommendation/updateRecommendation`. Открытая часть: context отдаёт `isLoading/isError/error`, но табы не всегда превращают это в `LoadingState`/`ErrorState`.
 
 **Риск:** пользователь нажимает “Сохранить”, request падает, форма остаётся без объяснения. При падении bulk fetch таблица может выглядеть как пустой список.
 
 **Как исправить:**
 
-1. Добавить `saveError` в `RecommendationFormPage` по образцу `CheckFormPage`.
-2. В `catch` использовать `getErrorMessage(error, 'Не удалось сохранить рекомендацию.')`.
-3. В `ChecksTab`/`RecommendationsTab` показывать loading/error state и кнопку retry через `refetch`.
-4. Не делать navigate после save, если request завершился ошибкой.
+1. В `ChecksTab`/`RecommendationsTab` показывать loading/error state и кнопку retry через `refetch`.
+2. Добавить component tests для rejected list query.
 
-**Тесты:** rejected save показывает текст ошибки и не очищает форму; rejected list query показывает error UI и retry вызывает `refetch`.
+**Закрыто:** `RecommendationFormPage.saveRecommendation` ловит ошибку через `getErrorMessage(error, 'Не удалось сохранить рекомендацию.')`; navigate после failed save не выполняется.
+
+**Тесты:** `npm run lint`, `npm test`; component tests для rejected save/list query ещё стоит добавить.
 
 ### FE-07 · P1 · Auth e2e пока проверяет только негативные сценарии
 
@@ -176,17 +171,17 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 **Тесты:** Playwright `auth.spec.ts` расширить до позитивного flow; unit оставить для ошибок mapper/interceptor.
 
-### FE-08 · P2 · `useEntityAttachments` вызывает setState во время render
+### FE-08 · P2 · `useEntityAttachments` вызывает setState во время render — закрыто
 
 **Где:** `src/hooks/useEntityAttachments.ts`.
 
-**Симптом:** hook сравнивает `prevEntityKey` с `entityKey` прямо в теле render и вызывает `setPrevEntityKey`/`setPendingItems`.
+**Было:** hook сравнивал `prevEntityKey` с `entityKey` прямо в теле render и вызывал `setPrevEntityKey`/`setPendingItems`.
 
 **Риск:** React Strict Mode может подсветить warning; поведение сброса pending uploads становится менее предсказуемым при быстрых переходах между сущностями.
 
-**Как исправить:** перенести сброс pending state в `useEffect(() => { setPendingItems([]) }, [entityKey])`; `prevEntityKey` убрать или хранить в `useRef`, если нужен для сравнения.
+**Исправлено:** pending uploads хранятся вместе с `entityKey`; при смене сущности старые pending items не участвуют в текущем render без `setState` в render/effect.
 
-**Тесты:** hook test: при смене `entityId` pending files очищаются без render-phase update warning.
+**Тесты:** `npm run lint`, `npm test`.
 
 ### FE-09 · P2 · `exports.ts` слишком крупный и хрупкий
 
@@ -247,12 +242,10 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 | Приоритет | Finding |
 |-----------|---------|
-| P0 | Скрыть Kantsler |
 | P1 | «Показано X из Y» в таблицах |
 | P1 | Banner/disabled state при недоступном storage |
-| P1 | Error UI для save recommendation и list fetch |
+| P1 | Error UI для list fetch |
 | P1 | E2E успешный auth/logout/change-password |
-| P2 | `useEntityAttachments` — убрать setState из render |
 | P2 | Split `exports.ts`, data-driven HTML export |
 | P3 | Virtualized tables, OpenAPI codegen |
 

@@ -31,6 +31,7 @@ function groupBySlot(items: Array<PersistedAttachmentListItem & { slot: string }
 }
 
 type PendingItem = PersistedAttachmentListItem & { slot: string };
+type PendingState = { entityKey: string; items: PendingItem[] };
 
 export function useEntityAttachments({
   entityType,
@@ -53,12 +54,25 @@ export function useEntityAttachments({
   });
 
   const entityKey = `${entityType}:${String(entityId ?? '')}`;
-  const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
-  const [prevEntityKey, setPrevEntityKey] = useState(entityKey);
-  if (prevEntityKey !== entityKey) {
-    setPrevEntityKey(entityKey);
-    setPendingItems([]);
-  }
+  const [pendingState, setPendingState] = useState<PendingState>(() => ({
+    entityKey,
+    items: [],
+  }));
+
+  const pendingItems = useMemo(
+    () => (pendingState.entityKey === entityKey ? pendingState.items : []),
+    [entityKey, pendingState],
+  );
+  const setPendingItemsForEntity = useCallback(
+    (updater: PendingItem[] | ((current: PendingItem[]) => PendingItem[])) => {
+      setPendingState((current) => {
+        const currentItems = current.entityKey === entityKey ? current.items : [];
+        const items = typeof updater === 'function' ? updater(currentItems) : updater;
+        return { entityKey, items };
+      });
+    },
+    [entityKey],
+  );
 
   const savedBySlot = useMemo(() => {
     const grouped = groupBySlot((data?.items ?? []).map(storedToItem));
@@ -83,7 +97,7 @@ export function useEntityAttachments({
 
       for (const file of files) {
         const clientId = createAttachmentId();
-        setPendingItems((current) => [
+        setPendingItemsForEntity((current) => [
           ...current,
           {
             clientId,
@@ -101,11 +115,11 @@ export function useEntityAttachments({
             slot,
             file,
           });
-          setPendingItems((current) => current.filter((item) => item.clientId !== clientId));
+          setPendingItemsForEntity((current) => current.filter((item) => item.clientId !== clientId));
           await queryClient.invalidateQueries({ queryKey });
         } catch (error) {
           const message = toApiError(error).message;
-          setPendingItems((current) =>
+          setPendingItemsForEntity((current) =>
             current.map((item) =>
               item.clientId === clientId
                 ? { ...item, status: 'error', errorMessage: message }
@@ -115,7 +129,7 @@ export function useEntityAttachments({
         }
       }
     },
-    [canPersist, entityId, entityType, queryClient, queryKey],
+    [canPersist, entityId, entityType, queryClient, queryKey, setPendingItemsForEntity],
   );
 
   const removeFile = useCallback(
@@ -130,14 +144,14 @@ export function useEntityAttachments({
       }
 
       if (!item.serverId) {
-        setPendingItems((current) => current.filter((entry) => entry.clientId !== clientId));
+        setPendingItemsForEntity((current) => current.filter((entry) => entry.clientId !== clientId));
         return;
       }
 
       await deleteAttachment(item.serverId);
       await queryClient.invalidateQueries({ queryKey });
     },
-    [queryClient, queryKey, savedBySlot],
+    [queryClient, queryKey, savedBySlot, setPendingItemsForEntity],
   );
 
   return {

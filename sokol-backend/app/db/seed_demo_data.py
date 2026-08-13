@@ -16,6 +16,7 @@ from app.models.recommendations import (
     RecommendationAdditionalStatus,
     RecommendationStatus,
 )
+from app.services.dictionary_validation import canonicalize_audit_objects
 
 # DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db python -m app.db.seed_demo_data
 
@@ -75,10 +76,11 @@ async def seed_demo_data(count: int = DEMO_COUNT, *, replace: bool = True) -> tu
                     serial_number=serial,
                     sequence_number=row["sequence_number"],
                     name=row["name"],
+                    observation_name=row.get("observation_name"),
                     description=row["description"],
                     indicator=row["indicator"],
                     materiality_level=row["materiality_level"],
-                    audit_object=row["audit_object"],
+                    audit_object=await canonicalize_audit_objects(session, row["audit_object"]),
                     deadline=row.get("deadline"),
                     auditor=row["auditor"],
                     manager=row["manager"],

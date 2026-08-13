@@ -396,6 +396,8 @@ export function RecommendationFormPage() {
       }
 
       navigate('/recommendations');
+    } catch (error) {
+      setSaveError(getErrorMessage(error, 'Не удалось сохранить рекомендацию.'));
     } finally {
       setIsSaving(false);
     }

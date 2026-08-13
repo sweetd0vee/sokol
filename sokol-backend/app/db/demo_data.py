@@ -156,6 +156,15 @@ REC_NAME_TEMPLATES = [
     "Стандартизировать процедуры: {topic}",
 ]
 
+OBSERVATION_NAME_TEMPLATES = [
+    "Недостатки в процессе {topic}",
+    "Неполное документирование процедур по {topic}",
+    "Несвоевременное обновление регламентов {topic}",
+    "Отсутствие регулярного контроля по направлению {topic}",
+    "Недостаточная сверка данных при {topic}",
+    "Нарушение сроков исполнения мероприятий по {topic}",
+]
+
 
 def _add_days(base: date, days: int) -> date:
     return base + timedelta(days=days)
@@ -229,16 +238,19 @@ def build_recommendation_rows(checks: list[dict], count: int = 100) -> list[dict
         additional = REC_ADDITIONAL_STATUSES[index % len(REC_ADDITIONAL_STATUSES)]
         topic = CHECK_TOPICS[index % len(CHECK_TOPICS)]
         name_template = REC_NAME_TEMPLATES[index % len(REC_NAME_TEMPLATES)]
+        observation_template = OBSERVATION_NAME_TEMPLATES[index % len(OBSERVATION_NAME_TEMPLATES)]
         n = index + 1
         created = _add_days(check["start_date"], 3)
         deadline = _add_days(created, 45 + (index % 30))
         name = f"{name_template.format(topic=topic)} №{n}"
+        observation_name = observation_template.format(topic=topic)
         rows.append(
             {
                 "serial_number": serial,
                 "sequence_number": sequence_by_serial[serial],
                 "name": name,
-                "description": name,
+                "observation_name": observation_name,
+                "description": f"{name}. Наблюдение: {observation_name}.",
                 "indicator": STATUS_TO_INDICATOR[status],
                 "materiality_level": MATERIALITY_LEVELS[index % len(MATERIALITY_LEVELS)],
                 "audit_object": AUDIT_OBJECTS[index % len(AUDIT_OBJECTS)],

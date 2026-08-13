@@ -10,6 +10,7 @@ from app.db.init_db import init_db
 from app.db.session import AsyncSessionLocal
 from app.models.checks import Check, CheckStatus
 from app.models.recommendations import Recommendation, RecommendationAdditionalStatus, RecommendationStatus
+from app.services.dictionary_validation import canonicalize_audit_objects
 
 # DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db python -m app.db.import_seed_data --replace
 
@@ -151,10 +152,11 @@ async def import_seed_data(
                 "serial_number": serial,
                 "sequence_number": int(row.get("sequence_number") or 1),
                 "name": str(row["name"]).strip(),
+                "observation_name": _optional_str(row.get("observation_name")),
                 "description": str(row.get("description") or row["name"]).strip(),
                 "indicator": str(row.get("indicator") or "не указан").strip(),
                 "materiality_level": str(row.get("materiality_level") or "средний").strip(),
-                "audit_object": str(row["audit_object"]).strip(),
+                "audit_object": await canonicalize_audit_objects(session, row["audit_object"]),
                 "deadline": _parse_date(row.get("deadline")),
                 "auditor": str(row["auditor"]).strip(),
                 "manager": str(row["manager"]).strip(),

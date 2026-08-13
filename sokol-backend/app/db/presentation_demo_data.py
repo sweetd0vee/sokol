@@ -31,7 +31,7 @@ CHECK_HEADERS = [
 ]
 
 RECOMMENDATION_HEADERS = [
-    "serial_number", "sequence_number", "name", "description", "indicator", "materiality_level",
+    "serial_number", "sequence_number", "name", "observation_name", "description", "indicator", "materiality_level",
     "audit_object", "deadline", "auditor", "manager", "status", "additional_status", "created_at",
     "actual_completion_date", "extension_1_reason", "extension_1_date", "extension_1_comment",
     "extension_2_reason", "extension_2_comment", "remove_from_control_reason",
@@ -79,6 +79,17 @@ REC_TEMPLATES = [
     "Подготовить план корректирующих мероприятий по {topic}",
     "Усилить разграничение полномочий при {topic}",
     "Обеспечить документирование результатов {topic}",
+]
+
+OBSERVATION_TEMPLATES = [
+    "Недостатки в организации процесса {topic}",
+    "Неполное документирование контрольных процедур по направлению {topic}",
+    "Несвоевременное обновление регламентов в части {topic}",
+    "Отсутствие единого владельца процесса {topic}",
+    "Недостаточная автоматизация мониторинга показателей {topic}",
+    "Нарушение сроков проведения контрольных мероприятий по {topic}",
+    "Недостатки разграничения полномочий при {topic}",
+    "Неполная сверка данных и отчётности по {topic}",
 ]
 
 STATUS_TO_INDICATOR = {
@@ -258,6 +269,7 @@ def build_recommendations(checks: list[dict], rng: random.Random, today: date) -
             materiality = rng.choices([m for m, _ in materiality_weights], weights=[w for _, w in materiality_weights], k=1)[0]
             topic = rng.choice(TOPICS)
             template = rng.choice(REC_TEMPLATES)
+            observation_name = rng.choice(OBSERVATION_TEMPLATES).format(topic=topic)
             created = check["start_date"] + timedelta(days=rng.randint(5, 35))
             deadline = created + timedelta(days=rng.choice([45, 60, 75, 90, 120, 150]))
             status, additional_status = _recommendation_status(rng, deadline, today)
@@ -276,8 +288,9 @@ def build_recommendations(checks: list[dict], rng: random.Random, today: date) -
                 "serial_number": check["serial_number"],
                 "sequence_number": sequence,
                 "name": name[:500],
+                "observation_name": observation_name[:500],
                 "description": (
-                    f"{name}. Рекомендация выдана по итогам проверки "
+                    f"{name}. Наблюдение: {observation_name}. Рекомендация выдана по итогам проверки "
                     f"{check['short_name'] or check['check_name'][:80]}."
                 ),
                 "indicator": STATUS_TO_INDICATOR[status],
