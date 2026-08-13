@@ -86,9 +86,9 @@ const RECOMMENDATION_XLSX_LINE_HEIGHT = 15;
 const RECOMMENDATION_XLSX_COLUMN_WIDTHS: Record<string, number> = {
   ID: 10,
   Ключ: 14,
-  'Название проверки': 60,
+  'Название проверки': 110,
   'Название рекомендации': 58,
-  'Название наблюдения': 38,
+  'Название наблюдения': 58,
   'Объект аудита': 34,
   Индикатор: 12,
   'Срок исполнения': 15,
@@ -185,7 +185,7 @@ function estimateWrappedLineCount(value: unknown, width: number) {
   if (!text) {
     return 1;
   }
-  const usableWidth = Math.max(width - 2, 8);
+  const usableWidth = Math.max(Math.floor(width * 0.75), 8);
   return text
     .split(/\r?\n/)
     .reduce((lines, part) => lines + Math.max(1, Math.ceil(part.length / usableWidth)), 0);
