@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AxiosError } from 'axios';
-import { getErrorMessage, toApiError } from './errors';
+import { getBlobErrorMessage, getErrorMessage, toApiError } from './errors';
 
 describe('toApiError', () => {
   it('maps axios validation detail array to readable message', () => {
@@ -62,5 +62,22 @@ describe('getErrorMessage', () => {
   it('uses fallback when api error message is empty', () => {
     const error = { code: 'custom', message: '' };
     expect(getErrorMessage(error, 'fallback')).toBe('fallback');
+  });
+});
+
+describe('getBlobErrorMessage', () => {
+  it('extracts FastAPI detail from blob responses', async () => {
+    const error = new AxiosError('Bad Request');
+    error.response = {
+      status: 400,
+      data: new Blob([JSON.stringify({ detail: 'Раздел II не найден.' })], {
+        type: 'application/json',
+      }),
+      statusText: 'Bad Request',
+      headers: {},
+      config: {} as never,
+    };
+
+    await expect(getBlobErrorMessage(error)).resolves.toBe('Раздел II не найден.');
   });
 });

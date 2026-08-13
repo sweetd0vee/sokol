@@ -7,10 +7,10 @@ import {
   resolveRecommendationYearlyDisplayNumber,
 } from './recommendationYearlyNumber';
 
-function makeRecommendation(id: string, deadline: string): Recommendation {
+function makeRecommendation(id: string, deadline: string, serialNumber = `key-${id}`): Recommendation {
   return {
     id,
-    serial_number: `key-${id}`,
+    serial_number: serialNumber,
     sequence_number: 1,
     name: `Recommendation ${id}`,
     description: '',
@@ -65,6 +65,17 @@ describe('buildRecommendationYearlyNumbers', () => {
     expect(getRecommendationYearlySortValue(recommendations[1], numbers)).toBe(20250001);
     expect(getRecommendationYearlySortValue(recommendations[2], numbers)).toBe(20260001);
   });
+
+  it('берёт год из ключа проверки, если срока исполнения нет', () => {
+    const recommendations = [
+      makeRecommendation('1', '2026-01-01', '26KVS08P1'),
+      makeRecommendation('2', '', '26KVS08P1'),
+    ];
+    const numbers = buildRecommendationYearlyNumbers(recommendations);
+
+    expect(getRecommendationYearlyId(recommendations[0], numbers)).toBe('26-1');
+    expect(getRecommendationYearlyId(recommendations[1], numbers)).toBe('26-2');
+  });
 });
 
 describe('resolveRecommendationYearlyDisplayNumber', () => {
@@ -88,6 +99,16 @@ describe('resolveRecommendationYearlyDisplayNumber', () => {
     expect(
       resolveRecommendationYearlyDisplayNumber(recommendations, {
         deadline: '2026-12-31',
+      }),
+    ).toBe(2);
+  });
+
+  it('прогнозирует номер по ключу проверки без срока исполнения', () => {
+    const recommendations = [makeRecommendation('1', '2026-01-02', '26KVS08P1')];
+
+    expect(
+      resolveRecommendationYearlyDisplayNumber(recommendations, {
+        serialNumber: '26KVS08P1',
       }),
     ).toBe(2);
   });

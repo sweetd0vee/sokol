@@ -1,12 +1,20 @@
 import type { Recommendation } from '../types/recommendation';
 import { parseDateValue } from './dates';
 
-function getRecommendationYear(recommendation: Recommendation): number | null {
-  const deadlineMs = parseDateValue(recommendation.deadline);
-  if (deadlineMs === null) {
+function getYearFromSerialNumber(serialNumber: string): number | null {
+  const match = serialNumber.trim().match(/^(\d{2})/);
+  if (!match) {
     return null;
   }
-  return new Date(deadlineMs).getFullYear();
+  return 2000 + Number(match[1]);
+}
+
+function getRecommendationYear(recommendation: Recommendation): number | null {
+  const deadlineMs = parseDateValue(recommendation.deadline);
+  if (deadlineMs !== null) {
+    return new Date(deadlineMs).getFullYear();
+  }
+  return getYearFromSerialNumber(recommendation.serial_number);
 }
 
 function formatYearlyId(year: number, yearlyNumber: number): string {
@@ -14,8 +22,8 @@ function formatYearlyId(year: number, yearlyNumber: number): string {
 }
 
 function compareRecommendationsForYearlyNumber(a: Recommendation, b: Recommendation) {
-  const dateA = parseDateValue(a.deadline) ?? 0;
-  const dateB = parseDateValue(b.deadline) ?? 0;
+  const dateA = parseDateValue(a.deadline) ?? Number.MAX_SAFE_INTEGER;
+  const dateB = parseDateValue(b.deadline) ?? Number.MAX_SAFE_INTEGER;
   if (dateA !== dateB) {
     return dateA - dateB;
   }
@@ -96,11 +104,14 @@ export function resolveRecommendationYearlyDisplayNumber(
   options: {
     recommendationId?: string | number | null;
     deadline?: string;
+    serialNumber?: string;
     fallback?: Recommendation | null;
   },
 ): number | null {
   const previewDeadline = options.deadline?.trim() || options.fallback?.deadline?.trim() || '';
-  if (!previewDeadline) {
+  const previewSerialNumber =
+    options.serialNumber?.trim() || options.fallback?.serial_number?.trim() || '';
+  if (!previewDeadline && !previewSerialNumber) {
     return null;
   }
 
@@ -128,6 +139,7 @@ export function resolveRecommendationYearlyDisplayNumber(
       additional_status: 'on_time',
     }),
     id: previewId,
+    serial_number: previewSerialNumber,
     deadline: previewDeadline,
   };
 

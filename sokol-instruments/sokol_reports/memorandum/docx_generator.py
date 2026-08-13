@@ -16,8 +16,6 @@ FONT_NAME = "Times New Roman"
 # В шаблоне w:sz=28 → 14 pt
 FONT_SIZE = Pt(14)
 FIRST_LINE_INDENT = Twips(709)
-HEADER_LINE_SPACING = 1.15
-BODY_LINE_SPACING = 1.15
 BODY_ALIGNMENT = WD_ALIGN_PARAGRAPH.JUSTIFY
 DEADLINE_PREFIX = "Срок – "
 
@@ -52,17 +50,16 @@ def _configure_paragraph(
     *,
     alignment=WD_ALIGN_PARAGRAPH.LEFT,
     first_line_indent: bool = True,
-    space_after_pt: int = 0,
     keep_next: bool = False,
 ) -> None:
     fmt = paragraph.paragraph_format
     fmt.alignment = alignment
     if first_line_indent:
         fmt.first_line_indent = FIRST_LINE_INDENT
-    if space_after_pt:
-        fmt.space_after = Pt(space_after_pt)
-    fmt.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
-    fmt.line_spacing = HEADER_LINE_SPACING if keep_next else BODY_LINE_SPACING
+    fmt.space_before = Pt(0)
+    fmt.space_after = Pt(0)
+    fmt.line_spacing_rule = WD_LINE_SPACING.SINGLE
+    fmt.line_spacing = 1
     if keep_next:
         paragraph.paragraph_format.keep_with_next = True
 
@@ -74,7 +71,6 @@ def _add_text_paragraph(
     bold: bool = False,
     alignment=BODY_ALIGNMENT,
     first_line_indent: bool = True,
-    space_after_pt: int = 0,
     keep_next: bool = False,
 ) -> None:
     paragraph = doc.add_paragraph()
@@ -82,7 +78,6 @@ def _add_text_paragraph(
         paragraph,
         alignment=alignment,
         first_line_indent=first_line_indent,
-        space_after_pt=space_after_pt,
         keep_next=keep_next,
     )
     run = paragraph.add_run(text)
@@ -129,6 +124,10 @@ def generate_memorandum(source: MemorandumSource, output_path: str) -> Tuple[Opt
         normal_style = doc.styles["Normal"]
         normal_style.font.name = FONT_NAME
         normal_style.font.size = FONT_SIZE
+        normal_style.paragraph_format.space_before = Pt(0)
+        normal_style.paragraph_format.space_after = Pt(0)
+        normal_style.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
+        normal_style.paragraph_format.line_spacing = 1
 
         # «Приложение 2» — по правому краю, без жирного (как в шаблоне)
         _add_text_paragraph(
@@ -149,10 +148,10 @@ def generate_memorandum(source: MemorandumSource, output_path: str) -> Tuple[Opt
             "Перечень аудиторских рекомендаций.",
             bold=True,
             alignment=WD_ALIGN_PARAGRAPH.LEFT,
-            space_after_pt=6,
         )
 
-        doc.add_paragraph()
+        spacer = doc.add_paragraph()
+        _configure_paragraph(spacer, alignment=WD_ALIGN_PARAGRAPH.LEFT)
 
         recommendation_number = 1
         for group_index, group in enumerate(source.groups, start=1):

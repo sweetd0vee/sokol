@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getErrorMessage } from '../../api/errors';
 import { filterBySearch } from './settingsHelpers';
 
 type EntityId = string | number;
@@ -44,6 +45,8 @@ export function useSingleFieldDictionary<T>({
     value: string;
   } | null>(null);
   const [editedValue, setEditedValue] = useState('');
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: [...queryKey],
@@ -64,37 +67,49 @@ export function useSingleFieldDictionary<T>({
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: [...queryKey] });
 
+  const hasValidId = (id: EntityId | undefined | null): id is EntityId =>
+    id !== undefined && id !== null && id !== '';
+
   const handleConfirmAdd = async (event?: FormEvent) => {
     event?.preventDefault();
     const trimmed = newValue.trim();
     if (!trimmed) {
       return;
     }
+    setIsSaving(true);
+    setSaveError(null);
     try {
       const created = await api.create({ [fieldKey]: trimmed });
       queryClient.setQueryData<T[]>([...queryKey], (current = []) => [...current, created]);
       setNewValue('');
       setIsAddOpen(false);
-    } catch {
-      // keep modal open; user can retry
+    } catch (error) {
+      setSaveError(getErrorMessage(error, 'Не удалось сохранить запись.'));
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleConfirmEdit = async (event?: FormEvent) => {
     event?.preventDefault();
-    if (!editCandidate?.id) {
+    const candidateId = editCandidate?.id;
+    if (!hasValidId(candidateId)) {
       return;
     }
     const trimmed = editedValue.trim();
     if (!trimmed) {
       return;
     }
+    setIsSaving(true);
+    setSaveError(null);
     try {
-      await api.update(editCandidate.id, { [fieldKey]: trimmed });
+      await api.update(candidateId, { [fieldKey]: trimmed });
       await invalidate();
       setEditCandidate(null);
-    } catch {
-      // keep modal open; user can retry
+    } catch (error) {
+      setSaveError(getErrorMessage(error, 'Не удалось сохранить запись.'));
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -104,22 +119,38 @@ export function useSingleFieldDictionary<T>({
     isLoading,
     error,
     isAddOpen,
-    setIsAddOpen,
+    setIsAddOpen: (isOpen: boolean) => {
+      setSaveError(null);
+      setIsAddOpen(isOpen);
+    },
     newValue,
-    setNewValue,
+    setNewValue: (value: string) => {
+      setSaveError(null);
+      setNewValue(value);
+    },
     editCandidate,
-    setEditCandidate,
+    setEditCandidate: (candidate: typeof editCandidate) => {
+      setSaveError(null);
+      setEditCandidate(candidate);
+    },
     editedValue,
-    setEditedValue,
+    setEditedValue: (value: string) => {
+      setSaveError(null);
+      setEditedValue(value);
+    },
+    saveError,
+    isSaving,
     items,
     handleConfirmAdd,
     handleConfirmEdit,
     openAdd: () => {
       setNewValue('');
+      setSaveError(null);
       setIsAddOpen(true);
     },
     beginEdit: (item: SingleFieldDictionaryItem) => {
       setEditedValue(item.value);
+      setSaveError(null);
       setEditCandidate({ key: item.key, id: item.id, value: item.value });
     },
   };

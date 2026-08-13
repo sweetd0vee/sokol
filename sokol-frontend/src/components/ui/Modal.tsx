@@ -61,9 +61,13 @@ export function ModalActions({
 }: ModalActionsProps) {
   return (
     <div className="flex items-center justify-center gap-3">
-      <Button type="submit" variant="primary" disabled={submitDisabled}>
+      <button
+        type="submit"
+        className="inline-flex items-center justify-center rounded-lg border border-transparent bg-[#90EE90] px-6 py-2 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={submitDisabled}
+      >
         {submitLabel}
-      </Button>
+      </button>
       <Button type="button" variant="secondary" onClick={onCancel}>
         {cancelLabel}
       </Button>

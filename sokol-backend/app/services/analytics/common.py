@@ -13,7 +13,7 @@ from app.models.departments import Department
 from app.models.recommendations import Recommendation
 from app.schemas.analytics import ChecksSummary, NamedCount
 from app.services.analytics.period import is_date_in_any_selected_periods
-from app.utils.dictionary_text import dictionary_match_key
+from app.utils.dictionary_text import dictionary_match_key, find_dictionary_label_match
 
 
 async def load_checks_with_recommendations(session: AsyncSession) -> list[Check]:
@@ -199,8 +199,11 @@ def match_audit_object_to_departments(
     department_by_normalized: dict[str, str],
 ) -> set[str]:
     matched: set[str] = set()
+    candidates = list(dict.fromkeys(department_by_normalized.values()))
     for part in parse_audit_object_parts(audit_object):
         canonical = department_by_normalized.get(dictionary_match_key(part))
+        if canonical is None:
+            canonical = find_dictionary_label_match(part, candidates)
         if canonical:
             matched.add(canonical)
     return matched

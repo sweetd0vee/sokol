@@ -70,6 +70,14 @@ class PlanningAnalyticsTests(unittest.TestCase):
         self.assertEqual(counts["Риски"], 1)
         self.assertEqual(counts["ИТ"], 0)
 
+    def test_match_audit_object_allows_extra_symbols_and_typos(self) -> None:
+        lookup = build_department_lookup(["Отдел закупок"])
+
+        self.assertEqual(
+            match_audit_object_to_departments("Отдел закупок.; Оттдел закупок", lookup),
+            {"Отдел закупок"},
+        )
+
     def test_build_coverage_rates_and_lists(self) -> None:
         coverage = planning._build_coverage(
             all_departments=["А", "Б", "В"],

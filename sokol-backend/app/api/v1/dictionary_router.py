@@ -6,8 +6,9 @@ from dataclasses import dataclass
 from typing import Any, Optional, TypeVar
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response, status
+from fastapi.exceptions import RequestValidationError
+from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_admin
@@ -45,12 +46,15 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
 
     @router.post("", response_model=read_schema, status_code=status.HTTP_201_CREATED)
     async def create_endpoint(
-        payload: create_schema,  # type: ignore[valid-type]
+        payload: dict[str, Any] = Body(...),
         session: AsyncSession = Depends(get_db_session),
         _: object = Depends(require_admin),
     ) -> Any:
         try:
-            return await service.create(session, payload)
+            validated_payload = create_schema.model_validate(payload)
+            return await service.create(session, validated_payload)
+        except ValidationError as exc:
+            raise RequestValidationError(exc.errors()) from exc
         except DuplicateDictionaryError as exc:
             if config.handle_duplicates:
                 raise HTTPException(status_code=409, detail=str(exc)) from exc
@@ -79,12 +83,15 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
     @router.patch("/{item_id}", response_model=read_schema)
     async def update_endpoint(
         item_id: UUID,
-        payload: update_schema,  # type: ignore[valid-type]
+        payload: dict[str, Any] = Body(...),
         session: AsyncSession = Depends(get_db_session),
         _: object = Depends(require_admin),
     ) -> Any:
         try:
-            return await service.update(session, item_id, payload)
+            validated_payload = update_schema.model_validate(payload)
+            return await service.update(session, item_id, validated_payload)
+        except ValidationError as exc:
+            raise RequestValidationError(exc.errors()) from exc
         except ResourceNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except DuplicateDictionaryError as exc:

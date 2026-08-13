@@ -237,9 +237,10 @@ export function RecommendationFormPage() {
       resolveRecommendationYearlyDisplayNumber(recommendations, {
         recommendationId: isEditMode ? source?.id ?? id : null,
         deadline: toIsoDate(deadline) ?? source?.deadline,
+        serialNumber,
         fallback: source ?? null,
       }),
-    [deadline, id, isEditMode, recommendations, source],
+    [deadline, id, isEditMode, recommendations, serialNumber, source],
   );
 
   const { options: auditorOptions } = useAuditorOptions(auditor);

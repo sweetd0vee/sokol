@@ -42,6 +42,14 @@ function formatErrorDetail(detail: unknown): string | undefined {
   return messages.length > 0 ? messages.join('; ') : undefined;
 }
 
+function formatPayloadMessage(data: ErrorPayload): string | undefined {
+  const detailMessage = formatErrorDetail(data.detail);
+  if (typeof data.message === 'string' && data.message.trim()) {
+    return data.message;
+  }
+  return detailMessage;
+}
+
 function isApiError(error: unknown): error is ApiError {
   return (
     typeof error === 'object' &&
@@ -61,7 +69,7 @@ export function toApiError(error: unknown): ApiError {
     const status = error.response?.status;
     const data = (error.response?.data ?? {}) as ErrorPayload;
     const code = data.code ?? (status ? `http_${status}` : 'network_error');
-    const detailMessage = formatErrorDetail(data.detail);
+    const payloadMessage = formatPayloadMessage(data);
     if (error.code === 'ECONNABORTED') {
       return {
         code: 'timeout',
@@ -76,8 +84,7 @@ export function toApiError(error: unknown): ApiError {
       };
     }
     const message =
-      data.message ??
-      detailMessage ??
+      payloadMessage ??
       (status ? `HTTP ${status}` : 'Ошибка сети. Проверьте подключение.');
     return {
       code,
@@ -114,13 +121,9 @@ async function readResponseBody(data: unknown): Promise<string> {
     return data;
   }
   if (data && typeof data === 'object') {
-    const payload = data as { detail?: unknown; message?: unknown };
-    if (typeof payload.detail === 'string') {
-      return payload.detail;
-    }
-    if (typeof payload.message === 'string') {
-      return payload.message;
-    }
+    const payload = data as ErrorPayload;
+    const payloadMessage = formatPayloadMessage(payload);
+    if (payloadMessage) {return payloadMessage;}
     return JSON.stringify(data);
   }
   return '';
@@ -148,13 +151,9 @@ export async function getBlobErrorMessage(error: unknown): Promise<string | null
   }
 
   try {
-    const payload = JSON.parse(text) as { detail?: unknown; message?: unknown };
-    if (typeof payload.detail === 'string') {
-      return payload.detail;
-    }
-    if (typeof payload.message === 'string') {
-      return payload.message;
-    }
+    const payload = JSON.parse(text) as ErrorPayload;
+    const payloadMessage = formatPayloadMessage(payload);
+    if (payloadMessage) {return payloadMessage;}
   } catch {
     return text;
   }

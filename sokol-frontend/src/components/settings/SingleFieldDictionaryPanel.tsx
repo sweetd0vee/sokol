@@ -97,8 +97,13 @@ export function SingleFieldDictionaryPanel<T>({
               onChange={dict.setNewValue}
               placeholder={placeholder}
             />
+            {dict.saveError && (
+              <p className="text-sm text-red-600" role="alert">
+                {dict.saveError}
+              </p>
+            )}
             <ModalActions
-              submitDisabled={!dict.newValue.trim()}
+              submitDisabled={!dict.newValue.trim() || dict.isSaving}
               onCancel={() => dict.setIsAddOpen(false)}
             />
           </form>
@@ -114,8 +119,13 @@ export function SingleFieldDictionaryPanel<T>({
               onChange={dict.setEditedValue}
               placeholder={placeholder}
             />
+            {dict.saveError && (
+              <p className="text-sm text-red-600" role="alert">
+                {dict.saveError}
+              </p>
+            )}
             <ModalActions
-              submitDisabled={!dict.editedValue.trim()}
+              submitDisabled={!dict.editedValue.trim() || dict.isSaving}
               onCancel={() => dict.setEditCandidate(null)}
             />
           </form>

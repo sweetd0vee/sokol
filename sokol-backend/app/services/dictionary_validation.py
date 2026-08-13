@@ -12,7 +12,7 @@ from app.models.auditors import Auditor
 from app.models.check_kinds import CheckKind
 from app.models.departments import Department
 from app.models.effectiveness_ratings import EffectivenessRating
-from app.utils.dictionary_text import dictionary_match_key
+from app.utils.dictionary_text import find_dictionary_label_match
 
 
 class DictionaryRefError(ValueError):
@@ -78,14 +78,14 @@ def _split_audit_object_values(value: object) -> list[str]:
     return [part.strip() for part in re.split(r"[;,]", str(value)) if part.strip()]
 
 
-async def _department_lookup(session: AsyncSession) -> dict[str, str]:
+async def _department_names(session: AsyncSession) -> list[str]:
     result = await session.execute(select(Department.name).order_by(Department.name.asc()))
     names = [name for name in result.scalars().all() if name and name.strip()]
     if not names:
         from app.db.department_names import DEPARTMENTS
 
         names = list(DEPARTMENTS)
-    return {dictionary_match_key(name): name for name in names}
+    return names
 
 
 async def canonicalize_audit_objects(session: AsyncSession, value: object) -> list[str]:
@@ -93,7 +93,7 @@ async def canonicalize_audit_objects(session: AsyncSession, value: object) -> li
     if not parts:
         return ["Не указан"]
 
-    lookup = await _department_lookup(session)
+    department_names = await _department_names(session)
     canonical: list[str] = []
     unmatched: list[str] = []
     seen: set[str] = set()
@@ -103,7 +103,7 @@ async def canonicalize_audit_objects(session: AsyncSession, value: object) -> li
                 canonical.append(part)
                 seen.add(part)
             continue
-        matched = lookup.get(dictionary_match_key(part))
+        matched = find_dictionary_label_match(part, department_names)
         if matched is None:
             unmatched.append(part)
             continue

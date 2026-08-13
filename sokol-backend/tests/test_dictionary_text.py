@@ -2,7 +2,11 @@
 
 import unittest
 
-from app.utils.dictionary_text import normalize_dictionary_label
+from app.utils.dictionary_text import (
+    dictionary_loose_match_key,
+    find_dictionary_label_match,
+    normalize_dictionary_label,
+)
 
 
 class DictionaryTextTests(unittest.TestCase):
@@ -26,6 +30,18 @@ class DictionaryTextTests(unittest.TestCase):
         self.assertEqual(
             normalize_dictionary_label("Харитонов А.И."),
             "Харитонов А.И.",
+        )
+
+    def test_loose_key_ignores_extra_symbols(self) -> None:
+        self.assertEqual(
+            dictionary_loose_match_key("Отдел закупок.!?"),
+            dictionary_loose_match_key("Отдел закупок"),
+        )
+
+    def test_find_match_allows_small_typo(self) -> None:
+        self.assertEqual(
+            find_dictionary_label_match("Оттдел закупок", ["Отдел закупок"]),
+            "Отдел закупок",
         )
 
 

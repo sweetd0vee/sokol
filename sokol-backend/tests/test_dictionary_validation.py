@@ -161,6 +161,18 @@ class DictionaryValidationTests(unittest.TestCase):
 
         asyncio.run(run())
 
+    def test_canonicalize_audit_objects_allows_extra_symbols_and_typos(self) -> None:
+        session = _session_with_departments(["Отдел закупок", "Департамент ИТ"])
+
+        async def run() -> None:
+            result = await canonicalize_audit_objects(
+                session,
+                ["Отдел закупок.", "Оттдел закупок"],
+            )
+            self.assertEqual(result, ["Отдел закупок"])
+
+        asyncio.run(run())
+
 
 if __name__ == "__main__":
     unittest.main()

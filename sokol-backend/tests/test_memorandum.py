@@ -5,7 +5,8 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 from docx import Document
-from docx.enum.text import WD_BREAK
+from docx.enum.text import WD_BREAK, WD_LINE_SPACING
+from docx.shared import Pt
 
 from app.api.v1.endpoints.instruments_reports import _canonicalize_memorandum_source
 from app.services.reports.memorandum.docx_generator import generate_memorandum
@@ -133,6 +134,11 @@ class MemorandumGeneratorTest(unittest.TestCase):
             self.assertIn("I. Департамент розничных продуктов (Ванагель У.П.):", text)
             self.assertIn("1.\u00a0Внести изменения в Положение о Комиссии.", text)
             self.assertIn("Срок – 01.07.2026", text)
+            for paragraph in doc.paragraphs:
+                fmt = paragraph.paragraph_format
+                self.assertEqual(fmt.space_before, Pt(0))
+                self.assertEqual(fmt.space_after, Pt(0))
+                self.assertEqual(fmt.line_spacing_rule, WD_LINE_SPACING.SINGLE)
 
     def test_canonicalize_memorandum_source_merges_department_typos(self):
         source = MemorandumSource(
