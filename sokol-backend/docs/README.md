@@ -7,6 +7,7 @@
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, модули, потоки |
 | [API.md](API.md) | HTTP `/api/v1`, контракты |
 | [DATA_AND_DB.md](DATA_AND_DB.md) | Модели, enum'ы, seed |
+| [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) | Подробная схема БД, таблицы, типы, связи, диаграммы |
 | [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md) | БД: init, migrate, import, бэкапы |
 | [STORAGE.md](STORAGE.md) | MinIO, вложения |
 | [REPORTS.md](REPORTS.md) | Раздел II, ДЗ |

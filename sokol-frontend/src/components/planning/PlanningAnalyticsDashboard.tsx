@@ -28,9 +28,10 @@ import { CHECKS_PALETTE, RECOMMENDATIONS_PALETTE } from '../analytics/analyticsP
 import type { AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
-import { PLANNING_HIGH_MATERIALITY_COLOR } from '../../utils/planningAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 import type { PeriodGranularity } from '../../utils/checkAnalytics';
+
+const PLANNING_HIGH_MATERIALITY_COLOR = '#FF4347';
 
 const EMPTY_COVERAGE = {
   covered: 0,

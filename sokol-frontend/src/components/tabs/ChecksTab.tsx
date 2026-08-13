@@ -4,7 +4,7 @@ import { ArrowDown, ArrowUp, ChevronsUpDown, ChevronLeft, ChevronRight, PencilLi
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
-import { EmptyState } from '../ui/StateMessage';
+import { EmptyState, ErrorState, LoadingState } from '../ui/StateMessage';
 import type { Check } from '../../types/check';
 import {
   CHECK_STATUS_OPTIONS,
@@ -29,6 +29,7 @@ import {
   getCheckYearlyId,
   getCheckYearlySortValue,
 } from '../../utils/checkYearlyNumber';
+import { getErrorMessage } from '../../api/errors';
 
 type SortKey =
   | 'id'
@@ -112,7 +113,15 @@ export function ChecksTab() {
   const normalizedMyName = useMemo(() => myName.trim().toLowerCase(), [myName]);
   const { options: leaderOptions } = useAuditorOptions();
 
-  const { checks } = useSokolData();
+  const {
+    checks,
+    checksTotal,
+    isChecksTruncated,
+    isChecksLoading,
+    isChecksError,
+    checksError,
+    refetch,
+  } = useSokolData();
   const yearlyNumbers = useMemo(() => buildCheckYearlyNumbers(checks), [checks]);
 
   const filteredChecks = useMemo(() => {
@@ -267,6 +276,20 @@ export function ChecksTab() {
       : <ArrowDown size={14} className="text-white" />;
   };
 
+  if (isChecksLoading) {
+    return <LoadingState title="Загрузка проверок..." />;
+  }
+
+  if (isChecksError) {
+    return (
+      <ErrorState
+        title="Не удалось загрузить проверки"
+        description={getErrorMessage(checksError, 'Проверьте подключение к API и повторите попытку.')}
+        action={{ label: 'Повторить', onClick: () => void refetch() }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -292,6 +315,13 @@ export function ChecksTab() {
           </Link>
         </div>
       </div>
+
+      {isChecksTruncated && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Показано {checks.length} из {checksTotal} проверок. Уточните фильтры; таблица и
+          экспорт работают по текущей загруженной выборке.
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <>

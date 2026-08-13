@@ -19,9 +19,9 @@
 | Auth / RBAC | **8 / 10** | Internal JWT, DB-backed lookup/`is_active`, admin users API, granular ownership для recommendations/attachments через `person_match` | Нет OIDC, HTTP Basic fallback и audit log |
 | БД / миграции / import | **5.5 / 10** | PostgreSQL-схема рабочая, seed/import существуют | Нет Alembic baseline; ad-hoc миграции рискованны для prod |
 | Frontend формы и доменный UX | **8.5 / 10** | Workflows аудитора, undo импорта из АЗ, RBAC UI для delete/attachments, yearly ID в форме рекомендации | Есть demo/stub UI, крупные компоненты |
-| Frontend data layer | **7 / 10** | API clients, mappers, React Query и контексты дают понятный поток данных | Bulk-fetch без явного warning при truncation |
+| Frontend data layer | **7.5 / 10** | API clients, mappers, React Query и контексты дают понятный поток данных; bulk-fetch показывает truncation warning | До роста объёма нужна server-side pagination/search |
 | Frontend analytics/export | **7.5 / 10** | Дашборды и экспорты ценны для пользователя | DOM capture/export хрупкие, planning export выключен |
-| Тесты / CI | **7.5 / 10** | Backend 106 unit tests (+ DB integration), frontend 48 Vitest, GitHub Actions (lint/test/build) | Branch protection gate надо включить в GitHub; нет e2e бизнес-сценариев |
+| Тесты / CI | **8 / 10** | Backend 139 unit tests (+ DB integration), frontend 54 Vitest, GitHub Actions (lint/test/build) | Branch protection gate надо включить в GitHub; нет e2e бизнес-сценариев |
 | Документация / runbook | **7 / 10** | Основные README/docs покрывают запуск, API, storage, go-live | Часть roadmap/env docs ещё надо синхронизировать с кодом |
 
 **Вердикт:** ограниченный пилот возможен на контролируемом объёме данных. Для промышленного контура сначала закрыть Alembic, CI, prod auth guards, скрытие demo UI и эксплуатацию MinIO.
@@ -29,7 +29,7 @@
 ## Сильные стороны
 
 - HTTP → CRUD → PostgreSQL / API clients → React Query → UI.
-- Server analytics в PostgreSQL (`sql_filters` / `sql_aggregates`), DOCX Раздел II и backend lifecycle regressions (**106** unit-тестов на Python 3.12).
+- Server analytics в PostgreSQL (`sql_filters` / `sql_aggregates`), DOCX Раздел II и backend lifecycle regressions (**139** unit-тестов на Python 3.12).
 - JWT + RBAC с lookup пользователя в БД; `serial_number` генерируется и пересчитывается на backend (create + PATCH, каскад на recommendations/attachments).
 - Экспорт таблиц и дашбордов на frontend.
 
@@ -37,9 +37,9 @@
 
 | Пакет | Результат |
 |-------|-----------|
-| Backend `py -3.12 -m unittest discover -s tests` | **106 test cases** (полный suite в CI с deps) |
+| Backend `py -3.12 -m unittest discover -s tests` | **139 test cases** (полный suite в CI с deps; 2 skipped) |
 | Frontend `npm run lint` | **0 errors, 0 warnings** |
-| Frontend `npm test` | **48 тестов, 10 файлов, OK** |
+| Frontend `npm test` | **54 теста, 10 файлов, OK** |
 | Frontend `npx playwright test e2e/auth.spec.ts` | **5 Playwright auth smoke-тестов, OK** |
 
 > Backend требует **Python 3.12** (union types в моделях).
@@ -74,17 +74,18 @@
 - **AZ import undo (frontend)** — после «Добавить в проверку» кнопка «Отменить» удаляет только что загруженные рекомендации через batch-delete.
 - **Recommendation form №** — поле показывает yearly номер (часть ID после дефиса), не `sequence_number` внутри проверки.
 - **Frontend Kantsler stub** — оставлен в nav/route как осознанный roadmap-задел под v2; не считается блокером пилота.
-- **Recommendation save errors** — форма рекомендации показывает понятную ошибку при failed save и не выполняет navigate.
+- **Recommendation save/list errors** — форма рекомендации показывает понятную ошибку при failed save и не выполняет navigate; списки проверок/рекомендаций показывают loading/error state с retry.
+- **Frontend list truncation warning** — context сохраняет `total`, а таблицы показывают “Показано X из Y” при bulk-limit 500/1000.
 - **Attachments hook** — `useEntityAttachments` больше не вызывает `setState` во время render.
 
 ## Топ рекомендаций
 
 1. Alembic baseline (P0)
-2. «Показано N из total» в таблицах (P1)
+2. Server-side pagination/search для таблиц (P2)
 3. CI: включить required checks по [CI.md](CI.md) (P1)
 4. HTTP Basic fallback: отключить/feature-flag для prod (P1)
-5. Error UI для list fetch на frontend (P1)
-6. MinIO policy + backup/restore runbook (P1)
+5. MinIO policy + backup/restore runbook (P1)
+6. Split frontend exports / data-driven export smoke (P2)
 
 ## Подробный backlog исправлений
 
@@ -106,10 +107,10 @@
 | BE-07a | P1 | `sokol-backend/app/db/sync_dictionaries.py`, `sokol-backend/docker/app/entrypoint.sh` | Sync справочников на старте удаляет аудиторов, подразделения и пользователей, которых нет в канонических списках. | В prod делать merge-only без delete или opt-in destructive sync; перед удалением проверять использование в checks/recommendations. | Тест: auditor/department/user, добавленный через API, не удаляется после prod bootstrap. |
 | FE-01 | P0 | `sokol-frontend/src/components/checks/CheckFormPage.tsx`, `sokol-frontend/src/api/checks.ts` | **Закрыто:** edit `/checks/:id/edit` больше не зависит только от `location.state` или первых 500 checks. | Добавлены `fetchCheck(id)` и `useQuery` в edit mode; пока entity грузится показывается `LoadingState`; при ошибке `ErrorState`; edit mode не fallback-ится на create. | Добавлен Vitest на `fetchCheck`; `npm run lint` и `npm test` проходят. |
 | FE-02 | accepted | `sokol-frontend/src/App.tsx`, `sokol-frontend/src/components/layout/Sidebar.tsx`, `sokol-frontend/src/components/tabs/KantslerTab.tsx` | `Канцлер` оставлен в production UI как roadmap-задел под вторую версию приложения. | Backend/API интеграции с СЭД Канцлер реализовать в v2; текущий экран “В разработке” не блокирует пилот. | `npm run lint`, `npm test` проходят. |
-| FE-03 | P1 | `sokol-frontend/src/contexts/SokolDataContext.tsx`, `sokol-frontend/src/api/checks.ts`, `sokol-frontend/src/api/recommendations.ts` | Глобальный контекст грузит только `checks limit=500` и `recommendations limit=1000`, но UI не показывает, что данные усечены. Формы, списки и экспорты могут работать не со всем портфелем. | Сохранять `total` в context; показывать banner “Показано N из total”; для списков перейти на server pagination/search; для форм искать check/recommendation по API, а не только в локальном массиве. | Unit: при `total > items.length` показывается warning; e2e/server mock: поиск элемента за пределами первой страницы всё равно работает. |
+| FE-03 | P1/P2 | `sokol-frontend/src/contexts/SokolDataContext.tsx`, `sokol-frontend/src/components/tabs/ChecksTab.tsx`, `sokol-frontend/src/components/tabs/RecommendationsTab.tsx` | **P1 закрыто:** context сохраняет `total`, таблицы показывают warning “Показано X из Y” при bulk-limit 500/1000 и поясняют, что export работает по загруженной выборке. Остаётся P2: формы/списки всё ещё завязаны на bulk-fetch. | Для списков перейти на server pagination/search; для form lookup использовать endpoint поиска/получения по id/serial, а не только локальный массив. | Unit/component: при `total > items.length` показывается warning; e2e/server mock: поиск элемента за пределами первой страницы всё равно работает. |
 | FE-04 | P1 | `sokol-frontend/src/api/recommendations.ts`, `sokol-frontend/src/contexts/SokolDataContext.tsx`, `sokol-frontend/src/components/checks/CheckRecommendationsBlock.tsx` | **Закрыто:** bulk import/replace атомарен; добавлен undo последней загрузки из АЗ. | Frontend использует batch append/replace и `POST /recommendations/batch-delete` для отмены импорта; после add показывается сессия «Отменить». | Vitest на batch API; ручной сценарий undo 30+ рекомендаций. |
 | FE-05 | P1 | `sokol-frontend/src/components/attachments/*`, `sokol-frontend/src/components/checks/CheckAttachmentsSection.tsx` | Frontend получает upload limits через `/capabilities`, но не использует `/attachments/storage/status` для общего banner/disabled state при недоступном MinIO. Пользователь узнаёт о проблеме только после действия. | Добавить общий `useStorageStatus` query; при `enabled=false`/`reachable=false` показывать amber/red banner и disabled upload controls; сохранить возможность просмотра metadata, если API позволяет. | Component tests: disabled upload при `reachable=false`; текст ошибки понятен; retry обновляет статус. |
-| FE-06 | P1 | `sokol-frontend/src/components/recommendations/RecommendationFormPage.tsx`, `sokol-frontend/src/components/tabs/*` | Частично закрыто: `RecommendationFormPage.saveRecommendation` ловит ошибку save; bulk-fetch error state в context ещё не везде выводится в таблицах. | В `ChecksTab`/`RecommendationsTab` показывать `LoadingState`/`ErrorState` и retry. | Component tests: rejected save показывает ошибку; rejected list query показывает retry UI. |
+| FE-06 | P1 | `sokol-frontend/src/components/recommendations/RecommendationFormPage.tsx`, `sokol-frontend/src/components/tabs/*` | **Закрыто:** `RecommendationFormPage.saveRecommendation` ловит ошибку save; `ChecksTab`/`RecommendationsTab` показывают `LoadingState`/`ErrorState` и retry для failed list fetch. | Добавить component tests для rejected list query. | Component tests: rejected save показывает ошибку; rejected list query показывает retry UI. |
 | FE-07 | P2 | `sokol-frontend/src/utils/exports.ts`, analytics dashboards | Экспорты дашбордов завязаны на DOM capture. Изменение layout, скрытые элементы или шрифты могут ломать PDF/DOCX/HTML без TypeScript ошибок. | Разделить `exports.ts` по форматам; для табличных отчётов строить data-driven export; DOM capture оставить только для визуальных скриншотов и покрыть smoke. | Unit на форматирование строк; smoke export для dashboard с fixture data. |
 | FE-11 | P2 | `src/components/recommendations/RecommendationFormPage.tsx`, `src/utils/recommendationYearlyNumber.ts` | **Закрыто:** поле «№» показывало `sequence_number` внутри проверки, а не yearly ID. | `resolveRecommendationYearlyDisplayNumber()` синхронизирует UI с колонкой ID (`YY-N`). | Vitest `recommendationYearlyNumber.test.ts`. |
 | FE-12 | P2 | `src/components/recommendations/RecommendationFormPage.tsx`, `src/components/attachments/*` | **Закрыто:** UI delete/attachments не учитывал ownership auditor. | `canManageRecommendation` скрывает delete и блокирует upload/remove saved attachments для чужих рекомендаций. | Ручная проверка auditor vs admin. |

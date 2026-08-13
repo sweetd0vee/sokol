@@ -15,8 +15,6 @@ type FocusableDonutChartProps = {
   palette?: readonly string[];
   /** What to show on segment labels. Defaults to percent; absolute values appear in the tooltip. */
   labelMode?: 'value' | 'percent' | 'both';
-  /** @deprecated Use labelMode instead. */
-  showPercentInLabel?: boolean;
   /** When false, values appear only in the hover tooltip. */
   showValueLabels?: boolean;
 };
@@ -108,13 +106,10 @@ export function FocusableDonutChart({
   data,
   palette = PALETTE,
   labelMode = 'percent',
-  showPercentInLabel,
   showValueLabels = true,
 }: FocusableDonutChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const colors = palette.length > 0 ? palette : PALETTE;
-  const resolvedLabelMode =
-    showPercentInLabel === undefined ? labelMode : showPercentInLabel ? 'percent' : 'value';
   const total = data.reduce((sum, entry) => sum + entry.value, 0);
 
   return (
@@ -132,7 +127,7 @@ export function FocusableDonutChart({
             stroke="none"
             label={
               showValueLabels
-                ? (props) => <PieValueLabel {...props} labelMode={resolvedLabelMode} />
+                ? (props) => <PieValueLabel {...props} labelMode={labelMode} />
                 : false
             }
             labelLine={false}
@@ -177,7 +172,7 @@ export function FocusableDonutChart({
             iconSize={9}
             formatter={(value) => {
               const name = String(value);
-              if (resolvedLabelMode !== 'both') {
+              if (labelMode !== 'both') {
                 return name;
               }
               const item = data.find((entry) => entry.name === name);

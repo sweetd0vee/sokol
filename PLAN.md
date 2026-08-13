@@ -107,7 +107,7 @@ gantt
 | **14.08 EOD** | DEV | Решение auth: **путь A** OIDC (если IdP готов) / **путь B** internal JWT + users table/env | записано в PLAN/README |
 | **15.08 EOD** | OPS | UAT: docker compose up (API+UI+Postgres); HTTPS proxy черновик | `https://…` открывает login |
 | **18.08 EOD** | DEV | Auth на API (Bearer обязательно кроме `/status`); FE login + interceptor; stub выключен в UAT | нельзя вызвать CRUD без токена |
-| **18.08 EOD** | DEV | Убрать/disabled fake «смена пароля»; скрыть Планирование/Канцлер из nav | UI без ложных обещаний |
+| **18.08 EOD** | DEV | ✅ Смена пароля подключена к API; решение по видимости Планирования/Канцлера зафиксировать отдельно | UI без ложных обещаний |
 | **19.08 EOD** | DATA | Нормализованный Excel + dry-run: reject rate **&lt; 5%** или список ручных правок | `normalized.xlsx` + `reject_report.csv` |
 | **20.08 EOD** | DATA+DEV | На UAT загружен **пилот 10–20 проверок**; сверка глазами 3 карточек | чеклист DATA sign-off |
 
@@ -244,7 +244,7 @@ gantt
 | **Инструменты DOCX** | Раздел II (± ссылки), ДЗ, парсинг, раздел I (Ollama) | Upload in-memory; нет очереди |
 | **Аналитика** | `GET /analytics/{checks,recommendations,monitoring,dva}` — серверные агрегаты; экспорт xlsx/pdf/docx/html | Нет SQL-оптимизаций/кэша при росте портфеля; drill-down API нет |
 | **Планирование** | `GET /analytics/planning` + UI дашборды охвата | Экспорт отключён |
-| **Auth** | Internal JWT + RBAC (`auditor`/`admin`); FE login + Bearer interceptor | Нет OIDC/Keycloak; fake «смена пароля» в профиле |
+| **Auth** | Internal JWT + RBAC (`auditor`/`admin`); FE login + Bearer interceptor; смена пароля через API | Нет OIDC/Keycloak |
 | **БД** | PostgreSQL + `create_all` + ad-hoc `migrate_*.py` | Нет Alembic — см. [ALEMBIC_AND_DATA.md](sokol-backend/docs/ALEMBIC_AND_DATA.md) |
 | **Файлы** | Attachments API + MinIO; DOCX tools temp cleanup | Нужна настройка MinIO на стенде; бэкап файлов отдельно от PG |
 | **CI/CD** | Ручные unittest / npm lint+test | Нет обязательного GitHub Actions |
@@ -325,10 +325,10 @@ gantt
 |---|--------|-------------------|
 | 2.4 | **Keycloak / OIDC** | ✅ JWT login + Axios Bearer; OIDC — когда выдадут IdP |
 | 2.5 | **AuthGuard** | ✅ Токен в localStorage; 401 → logout |
-| 2.6 | **Профиль** | Убрать fake «смена пароля» **или** disabled + текст «через SSO» |
+| 2.6 | **Профиль** | ✅ Смена пароля подключена к `POST /api/v1/auth/change-password`; при OIDC сценарий пересмотреть |
 | 2.7 | **«Мои» проверки** | Привязка к server-side identity (subject/displayName), не только localStorage ФИО |
 
-**Выход фазы:** ✅ API недоступен без токена. Осталось: OIDC, audit log, fake password, «Мои» по server identity.
+**Выход фазы:** ✅ API недоступен без токена. Осталось: OIDC, audit log, «Мои» по server identity.
 
 ---
 
@@ -757,7 +757,7 @@ docker compose exec api alembic upgrade head
 | # | Доработка | Зачем | Статус |
 |---|-----------|-------|--------|
 | 1 | Alembic + запрет create_all в prod | безопасные обновления схемы | открыто |
-| 2 | Auth (OIDC/JWT) + убрать fake password | требование ИБ | JWT+RBAC ✅; fake password / OIDC открыто |
+| 2 | Auth (OIDC/JWT) + профиль | требование ИБ | JWT+RBAC и смена пароля ✅; OIDC открыто |
 | 3 | CI lint/test/build | не ломать стенд регрессиями | открыто |
 | 4 | MinIO attachments **или** disclaimer | не терять доверие пользователей | MinIO API ✅; стенд настроить |
 | 5 | Import dry-run + отчёт ошибок | загрузка реальных проверок | открыто |
@@ -800,7 +800,7 @@ docker compose exec api alembic upgrade head
 С учётом банковского контура и MinIO:
 
 1. **Спринт F1:** Alembic baseline + CI (фаза 1.x).  
-2. **Спринт F2:** OIDC поверх JWT (если IdP) + CORS/TLS на UAT (playbook C) + убрать fake password.  
+2. **Спринт F2:** OIDC поверх JWT (если IdP) + CORS/TLS на UAT (playbook C).  
 3. **Спринт F3:** Import dry-run + загрузка пилотных реальных проверок (playbook D) на UAT.  
 4. **Спринт F4:** Harden MinIO на банковском стенде (backup тома, ACL) + wire «Виды проверок» в формы.  
 5. **Спринт F5:** DOCX streaming/semaphore.  

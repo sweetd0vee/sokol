@@ -5,6 +5,16 @@ import type { Recommendation } from '../types/recommendation';
 export type SokolDataContextValue = {
   checks: Check[];
   recommendations: Recommendation[];
+  checksTotal: number;
+  recommendationsTotal: number;
+  isChecksTruncated: boolean;
+  isRecommendationsTruncated: boolean;
+  isChecksLoading: boolean;
+  isRecommendationsLoading: boolean;
+  isChecksError: boolean;
+  isRecommendationsError: boolean;
+  checksError: Error | null;
+  recommendationsError: Error | null;
   isLoading: boolean;
   isError: boolean;
   error: Error | null;
@@ -24,7 +34,6 @@ export type SokolDataContextValue = {
   replaceRecommendationsForCheck: (
     serialNumber: string,
     items: Recommendation[],
-    previousSerialNumber?: string,
   ) => Promise<void>;
 };
 

@@ -20,16 +20,16 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 |------|--------|------------|------------------|
 | App shell / routing | **8.5 / 10** | AuthProvider, layout и Router собраны понятно; `kantsler` оставлен как явный roadmap-задел v2 | Нет route lazy loading |
 | Auth UI / API client | **8 / 10** | Login, Bearer interceptor, 401 logout, change-password и e2e успешного auth-flow закрывают базовый сценарий | Нет OIDC-flow |
-| Checks workflow | **8 / 10** | Форма и список работают с backend; `serial_number` только читается из API; edit route fetchит check по id | Для больших списков остаётся риск усечения данных в общем context |
-| Recommendations workflow | **8.7 / 10** | CRUD, статусы, вложения, atomic batch import/replace, undo импорта из АЗ, RBAC delete/attachments, yearly № в форме; save errors показываются в форме | List fetch error UI ещё не везде выведен |
-| Data layer / context | **7.5 / 10** | API clients + mappers + React Query; `batch-delete` для undo в одном запросе | Bulk limits 500/1000 без явного warning |
+| Checks workflow | **8.2 / 10** | Форма и список работают с backend; `serial_number` только читается из API; edit route fetchит check по id; список показывает truncation warning и fetch error | Для больших списков всё ещё нужна server pagination/search |
+| Recommendations workflow | **8.8 / 10** | CRUD, статусы, вложения, atomic batch import/replace, undo импорта из АЗ, RBAC delete/attachments, yearly № в форме; save/list errors показываются в UI | Для больших списков всё ещё нужна server pagination/search |
+| Data layer / context | **7.8 / 10** | API clients + mappers + React Query; `batch-delete` для undo в одном запросе; context сохраняет `total` и признаки truncation | Bulk limits 500/1000 остаются временным ограничением до server pagination |
 | Attachments UI | **7.5 / 10** | `canModifyAttachments` / `canRemoveSaved` по ownership; check attachments — admin only | Нужен общий banner/disabled state при недоступном MinIO |
 | Analytics dashboards | **8.5 / 10** | Серверные SQL-агрегаты; единый заголовок KPI «Итого»; на вкладке проверок первая карточка «Всего» | Drill-down/server pagination для детализации |
 | Exports | **6.5 / 10** | XLSX/PDF/DOCX/HTML дают быстрый value для пользователей | `exports.ts` и DOM capture хрупкие, требуют дробления |
 | Planning | **7 / 10** | Dashboard подключён к backend analytics | Export выключен, модуль надо явно позиционировать как ограниченный |
 | Tools / DOCX UI | **8 / 10** | UI соответствует текущему backend: section-ii, links, memorandum, parse recommendations | Нет очереди/прогресса для долгих jobs |
 | UI kit / forms | **8.5 / 10** | Переиспользуемые controls, `formLayout` constants, `LIST_ACTION_GROUP_CLASS` для единых отступов фильтров | Нет Storybook/visual regression |
-| Tests / lint | **8.7 / 10** | 50 Vitest проходят, lint без ошибок/warnings; form payload/API tests и Playwright auth smoke | Нет e2e CRUD flow, storage state и truncation cases |
+| Tests / lint | **8.8 / 10** | 54 Vitest проходят, lint без ошибок/warnings; form payload/API tests и Playwright auth smoke | Нет e2e CRUD flow, storage state и truncation cases |
 
 ## Маршруты vs backend
 
@@ -49,7 +49,7 @@ Upload limits из `GET /capabilities` (backend).
 
 ## State
 
-`SokolDataContext`: checks limit 500, recommendations 1000 — **нет warning при truncation** (P1).
+`SokolDataContext`: checks limit 500, recommendations 1000. `total` сохранён в context, вкладки показывают warning при truncation и явно пишут, что таблица/экспорт работают по загруженной выборке. Следующий шаг — server pagination/search.
 
 `CheckFormPage`: serial из API, payload не отправляет `serial_number` ✅
 
@@ -61,11 +61,11 @@ Server aggregates в PostgreSQL ✅. KPI-блок на всех вкладках
 
 ## Тесты
 
-50 Vitest тестов (10 файлов): filters, checkKey helpers, fileHelpers, reference options, form payload checks, recommendation batch/yearly number API, `personMatch`, `recommendationYearlyNumber`.
+54 Vitest теста (10 файлов): filters, checkKey helpers, fileHelpers, reference options, form payload checks, recommendation batch/yearly number API, person matching coverage, `recommendationYearlyNumber`.
 
 Lint: 0 errors, 0 warnings.
 
-E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation. Нужны smoke на успешный login и ключевые CRUD workflows.
+E2E: 5 Playwright auth smoke tests: unauthenticated redirect, login validation, successful login, logout, change-password success/error. Нужны smoke на ключевые CRUD workflows.
 
 ## Подробные findings
 
@@ -91,23 +91,23 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 **Тесты:** `npm run lint`, `npm test`.
 
-### FE-03 · P1 · Глобальные списки могут быть усечены без warning
+### FE-03 · P1 · Глобальные списки могут быть усечены без warning — закрыто частично
 
 **Где:** `src/contexts/SokolDataContext.tsx`, `src/api/checks.ts`, `src/api/recommendations.ts`.
 
-**Симптом:** context грузит `fetchChecks({ limit: 500 })` и `fetchRecommendations({ limit: 1000 })`. API возвращает `{ items, total }`, но context сохраняет только `items`.
+**Было:** context грузил `fetchChecks({ limit: 500 })` и `fetchRecommendations({ limit: 1000 })`. API возвращал `{ items, total }`, но context сохранял только `items`.
 
 **Риск:** если данных больше лимита, UI выглядит нормально, но работает с неполной выборкой. Возможные баги: не все рекомендации попадут в таблицу/экспорт, форма не найдёт связанную проверку, analytics на frontend-side data будут расходиться с backend aggregates.
 
-**Как исправить:**
+**Исправлено:** context сохраняет `checksTotal`, `recommendationsTotal`, `isChecksTruncated`, `isRecommendationsTruncated`; `ChecksTab` и `RecommendationsTab` показывают warning “Показано X из Y” и помечают экспорт как работу с текущей загруженной выборкой.
 
-1. Добавить в context `checksTotal`, `recommendationsTotal`, `isChecksTruncated`, `isRecommendationsTruncated`.
-2. Показывать banner в `ChecksTab`/`RecommendationsTab`: “Показано 500 из 734. Уточните фильтр или включите пагинацию”.
-3. Для таблиц перейти на server pagination/search, а не один bulk fetch.
-4. Для form lookup использовать endpoint поиска/получения по id/serial, а не только локальный массив.
-5. Для export явно выбирать: экспорт текущей страницы или всех записей через отдельный API.
+**Осталось:**
 
-**Тесты:** mock API возвращает `items.length=500`, `total=501`; UI показывает warning. Поиск проверки за пределами первой страницы всё равно может выбрать нужную запись через API.
+1. Для таблиц перейти на server pagination/search, а не один bulk fetch.
+2. Для form lookup использовать endpoint поиска/получения по id/serial, а не только локальный массив.
+3. Для export всех записей добавить отдельный API-flow.
+
+**Нужны тесты:** mock API возвращает `items.length=500`, `total=501`; UI показывает warning. Поиск проверки за пределами первой страницы всё равно может выбрать нужную запись через API.
 
 ### FE-04 · P1 · Bulk операции рекомендаций были неатомарны — закрыто
 
@@ -137,22 +137,17 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 **Тесты:** component test для `FileAttachmentsPanel` при disabled/unreachable; retry вызывает refetch; кнопка upload disabled.
 
-### FE-06 · P1 · Ошибки сохранения рекомендаций и загрузки списков видны не везде
+### FE-06 · P1 · Ошибки сохранения рекомендаций и загрузки списков видны не везде — закрыто
 
 **Где:** `src/components/recommendations/RecommendationFormPage.tsx`, `src/components/tabs/ChecksTab.tsx`, `src/components/tabs/RecommendationsTab.tsx`, `src/contexts/SokolDataContext.tsx`.
 
-**Симптом:** `RecommendationFormPage.saveRecommendation` уже показывает `saveError` при rejected `addRecommendation/updateRecommendation`. Открытая часть: context отдаёт `isLoading/isError/error`, но табы не всегда превращают это в `LoadingState`/`ErrorState`.
+**Было:** `RecommendationFormPage.saveRecommendation` уже показывал `saveError` при rejected `addRecommendation/updateRecommendation`. Открытая часть: context отдавал `isLoading/isError/error`, но табы не превращали это в `LoadingState`/`ErrorState`.
 
 **Риск:** пользователь нажимает “Сохранить”, request падает, форма остаётся без объяснения. При падении bulk fetch таблица может выглядеть как пустой список.
 
-**Как исправить:**
+**Закрыто:** `RecommendationFormPage.saveRecommendation` ловит ошибку через `getErrorMessage(error, 'Не удалось сохранить рекомендацию.')`; navigate после failed save не выполняется. `ChecksTab` и `RecommendationsTab` показывают loading/error state и retry через `refetch`.
 
-1. В `ChecksTab`/`RecommendationsTab` показывать loading/error state и кнопку retry через `refetch`.
-2. Добавить component tests для rejected list query.
-
-**Закрыто:** `RecommendationFormPage.saveRecommendation` ловит ошибку через `getErrorMessage(error, 'Не удалось сохранить рекомендацию.')`; navigate после failed save не выполняется.
-
-**Тесты:** `npm run lint`, `npm test`; component tests для rejected save/list query ещё стоит добавить.
+**Тесты:** `npm run lint`, `npm test`; component tests для rejected list query ещё стоит добавить.
 
 ### FE-07 · P1 · Auth e2e пока проверяет только негативные сценарии — закрыто
 
@@ -241,10 +236,9 @@ E2E: 2 Playwright smoke tests на unauthenticated redirect и login validation.
 
 | Приоритет | Finding |
 |-----------|---------|
-| P1 | «Показано X из Y» в таблицах |
+| P2 | Server pagination/search вместо bulk-fetch списков |
 | P1 | Banner/disabled state при недоступном storage |
-| P1 | Error UI для list fetch |
-| P1 | E2E успешный auth/logout/change-password |
+| P1 | CRUD smoke в Playwright |
 | P2 | Split `exports.ts`, data-driven HTML export |
 | P3 | Virtualized tables, OpenAPI codegen |
 

@@ -12,7 +12,7 @@ import {
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
-import { EmptyState } from '../ui/StateMessage';
+import { EmptyState, ErrorState, LoadingState } from '../ui/StateMessage';
 import type { Recommendation } from '../../types/recommendation';
 import {
   INDICATOR_OPTIONS,
@@ -46,6 +46,7 @@ import {
   getRecommendationYearlyId,
   getRecommendationYearlySortValue,
 } from '../../utils/recommendationYearlyNumber';
+import { getErrorMessage } from '../../api/errors';
 
 type SortKey =
   | 'id'
@@ -167,7 +168,16 @@ export function RecommendationsTab() {
   const { options: managerOptions } = useAuditorOptions();
   const { options: auditObjectOptions } = useAuditObjectOptions();
 
-  const { recommendations, checks } = useSokolData();
+  const {
+    recommendations,
+    recommendationsTotal,
+    isRecommendationsTruncated,
+    isRecommendationsLoading,
+    isRecommendationsError,
+    recommendationsError,
+    checks,
+    refetch,
+  } = useSokolData();
   const recommendationYearlyNumbers = useMemo(
     () => buildRecommendationYearlyNumbers(recommendations),
     [recommendations],
@@ -374,6 +384,20 @@ export function RecommendationsTab() {
     </th>
   );
 
+  if (isRecommendationsLoading) {
+    return <LoadingState title="Загрузка рекомендаций..." />;
+  }
+
+  if (isRecommendationsError) {
+    return (
+      <ErrorState
+        title="Не удалось загрузить рекомендации"
+        description={getErrorMessage(recommendationsError, 'Проверьте подключение к API и повторите попытку.')}
+        action={{ label: 'Повторить', onClick: () => void refetch() }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -399,6 +423,13 @@ export function RecommendationsTab() {
           </Link>
         </div>
       </div>
+
+      {isRecommendationsTruncated && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Показано {recommendations.length} из {recommendationsTotal} рекомендаций. Уточните
+          фильтры; таблица и экспорт работают по текущей загруженной выборке.
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="overflow-x-auto">

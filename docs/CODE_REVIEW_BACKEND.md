@@ -29,7 +29,7 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 | Attachments / MinIO | **8.5 / 10** | Metadata model, storage service, upload/list/download/delete API, compensation, serial bucket migration; upload/delete recommendation attachments с проверкой владельца | Check attachments delete — admin only; нужны policy, backup/restore |
 | Auth / RBAC | **8 / 10** | JWT Bearer, lookup роли/`is_active` из БД; admin users API; `person_match` + `recommendation_access` для auditor-owned recommendations и вложений | Basic fallback всегда включён; нет OIDC/audit log |
 | БД / миграции / import | **5 / 10** | `create_all`, seed и import позволяют быстро поднять dev/pilot; analytics indexes в entrypoint | Нет Alembic baseline; Docker по умолчанию грузит demo data; часть `migrate_*.py` не входит в entrypoint |
-| Tests | **9 / 10** | 106 test cases (+ person_match, RBAC delete, batch-delete service); DB-backed checks CRUD integration | Нужны Alembic/import integration и e2e бизнес-сценарии |
+| Tests | **9 / 10** | 139 test cases (+ person_match, RBAC delete, batch-delete service); DB-backed checks CRUD integration | Нужны Alembic/import integration и e2e бизнес-сценарии |
 
 ## Security
 
@@ -78,7 +78,7 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 
 ## Тесты
 
-`py -3.12 -m unittest discover -s tests`: **106** test cases. Покрытие: Bearer/users RBAC, recommendation batch append/delete/batch-delete, serial lifecycle + MinIO, analytics SQL filters, `person_match`, attachments ownership, dictionaries, DOCX parser. DB-backed integration для checks CRUD; CI использует `sqlalchemy[asyncio]` (greenlet) при `SOKOL_RUN_DB_INTEGRATION_TESTS=1`.
+`py -3.12 -m unittest discover -s tests`: **139** test cases (2 skipped). Покрытие: Bearer/users RBAC, recommendation batch append/delete/batch-delete, serial lifecycle + MinIO, analytics SQL filters, `person_match`, attachments ownership, dictionaries, DOCX parser. DB-backed integration для checks CRUD; CI использует `sqlalchemy[asyncio]` (greenlet) при `SOKOL_RUN_DB_INTEGRATION_TESTS=1`.
 
 ## Подробные findings
 

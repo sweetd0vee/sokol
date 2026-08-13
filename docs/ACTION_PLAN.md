@@ -28,7 +28,7 @@
 | P1-01 | ~~JWT: lookup user в БД + `is_active`~~ | **done** |
 | P1-02 | CI workflow добавлен; включить required checks по [CI.md](CI.md) | 0.5 d |
 | P1-03 | ~~Server serial_number~~ — **выполнено** | — |
-| P1-04 | Таблицы: «Показано X из Y» | 1 d |
+| P1-04 | ~~Таблицы: «Показано X из Y» для текущего bulk-fetch~~; server pagination — P2 | **done** |
 | P1-05 | MinIO policy + UI banner при недоступном storage | 1–2 d |
 | P1-06 | Import dry-run + reject report | 2 d |
 | P1-07 | ~~Delete recommendation → cleanup MinIO~~ | **done** |
@@ -39,7 +39,7 @@
 | P1-14 | ~~Recommendation RBAC (auditor-owned delete/attachments)~~ | **done** |
 | P1-15 | ~~Batch-delete для undo импорта из АЗ~~ | **done** |
 | P1-12 | Prod-safe `sync_dictionaries`: без destructive delete на старте | 1 d |
-| P1-13 | `RecommendationFormPage` save error + list loading/error UI | 0.5–1 d |
+| P1-13 | ~~`RecommendationFormPage` save error + list loading/error UI~~ | **done** |
 
 ## P2 — после go-live / параллельно
 
@@ -58,8 +58,8 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · ro
 
 | Метрика | Сейчас | Target 01.09 |
 |---------|--------|--------------|
-| BE tests (py 3.12) | 106 | ≥120 + integration |
-| FE tests | 48 | ≥55 |
+| BE tests (py 3.12) | 139 | ≥140 + integration |
+| FE tests | 54 | ≥55 |
 | ESLint warnings | 0 | 0 |
 | Open P0 | 3 | 0 |
 | Demo routes visible | 1 | 0 |
@@ -80,11 +80,11 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · ro
 | P0-03 | В `sokol-backend/docker/app/docker-compose.yml` и `entrypoint.sh` поставить demo load default `0`; в prod guard запретить demo/replace flags. | Пустой prod/UAT контейнер не импортирует demo Excel сам; `SOKOL_SEED_REPLACE=1` в prod падает до bootstrap. |
 | P0-04 | Ввести Alembic baseline и заменить prod `create_all` flow на `alembic upgrade head`. | Пустая test DB поднимается миграциями; повторный upgrade no-op; runbook обновлён. |
 | P0-06 | **Закрыто:** добавлены `fetchCheck(id)` и `useQuery` в `CheckFormPage`; edit mode не может вызвать `addCheck`. | Hard refresh `/checks/:id/edit` загружает проверку; 404 показывает `ErrorState`; `fetchCheck` покрыт Vitest. |
-| P1-04 | Протащить `total` из `fetchChecks/fetchRecommendations` в UI и показать truncation warning. | При `items.length < total` пользователь видит “Показано X из Y”; export явно говорит “текущая выборка” или грузит все данные. |
+| P1-04 | **Закрыто:** протащить `total` из `fetchChecks/fetchRecommendations` в UI и показать truncation warning. | При `items.length < total` пользователь видит “Показано X из Y”; таблица и export явно описаны как текущая загруженная выборка. |
 | P1-05 | Добавить frontend `useStorageStatus` и backend/storage runbook: disabled/unreachable states, retry, policy/backup. | Upload disabled при недоступном MinIO; пользователь видит причину; backup/restore steps описаны. |
 | P1-07 | **Закрыто:** при delete recommendation удаляются attachments rows и MinIO objects. | Service/API regression tests подтверждают cleanup и 502 при storage failure. |
 | P1-09 | Добавить `SOKOL_ENABLE_BASIC_AUTH`; в prod не принимать `_basic`, если flag выключен. | При prod config Basic получает 401; Bearer продолжает работать. |
 | P1-10 | **Закрыто:** добавлен backend batch endpoint для append/replace recommendations; frontend переведён с delete-all/create-all. | Batch append/replace атомарны; frontend import из АЗ отправляет один request. |
 | P1-11 | **Закрыто:** добавлен compensation при upload failure и bucket migration при смене serial. | Ошибка DB после upload удаляет MinIO object; PATCH serial переносит objects и обновляет `attachments.bucket`. |
 | P1-12 | Изменить `sync_dictionaries`: prod merge-only, destructive sync только с dev/demo flag. | Пользовательские auditors/departments/users не удаляются после restart; delete проверяет использование. |
-| P1-13 | Добавить `saveError` в `RecommendationFormPage`; в списках показывать `LoadingState`/`ErrorState` и retry. | Rejected save виден пользователю и не очищает форму; failed fetch не выглядит как пустая таблица. |
+| P1-13 | **Закрыто:** добавить `saveError` в `RecommendationFormPage`; в списках показывать `LoadingState`/`ErrorState` и retry. | Rejected save виден пользователю и не очищает форму; failed fetch не выглядит как пустая таблица. |
