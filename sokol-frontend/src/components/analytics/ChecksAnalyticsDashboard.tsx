@@ -165,13 +165,15 @@ export function ChecksAnalyticsDashboard() {
   });
 
   const data = hasActiveFilters ? analyticsQuery.data : (analyticsQuery.data ?? bootstrapQuery.data);
+  const filterOptionsData = data ?? bootstrapQuery.data;
+  const isWaitingForFilteredData = hasActiveFilters && analyticsQuery.isFetching && !analyticsQuery.data;
   const auditorOptions = useMemo(
-    () => toAnalyticsSelectOptions(data?.filterOptions.auditors ?? []),
-    [data?.filterOptions.auditors],
+    () => toAnalyticsSelectOptions(filterOptionsData?.filterOptions.auditors ?? []),
+    [filterOptionsData?.filterOptions.auditors],
   );
   const departmentOptions = useMemo(
-    () => toAnalyticsSelectOptions(data?.filterOptions.departments ?? []),
-    [data?.filterOptions.departments],
+    () => toAnalyticsSelectOptions(filterOptionsData?.filterOptions.departments ?? []),
+    [filterOptionsData?.filterOptions.departments],
   );
 
   const summary = data?.summary ?? EMPTY_CHECKS_SUMMARY;
@@ -403,7 +405,7 @@ export function ChecksAnalyticsDashboard() {
     ],
   );
 
-  if ((bootstrapQuery.isLoading || analyticsQuery.isLoading) && !data) {
+  if (bootstrapQuery.isLoading && !data) {
     return <LoadingState title="Загрузка аналитики проверок…" />;
   }
 
@@ -482,7 +484,11 @@ export function ChecksAnalyticsDashboard() {
             Обновление…
           </div>
         ) : null}
-        <AnalyticsDashboardGrid cards={cards} />
+        {isWaitingForFilteredData ? (
+          <LoadingState title="Загрузка аналитики проверок…" />
+        ) : (
+          <AnalyticsDashboardGrid cards={cards} />
+        )}
       </main>
     </div>
   );
