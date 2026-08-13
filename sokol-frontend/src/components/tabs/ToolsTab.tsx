@@ -15,7 +15,6 @@ import { isDocxFile } from '../../utils/docx';
 import {
   DEFAULT_MAX_UPLOAD_BYTES,
   DEFAULT_MAX_UPLOAD_MB,
-  formatUploadLimit,
   isFileWithinUploadLimit,
   uploadLimitError,
 } from '../../utils/uploadLimits';
@@ -55,7 +54,6 @@ export function ToolsTab() {
   });
   const maxUploadMb = capabilitiesQuery.data?.max_upload_mb ?? DEFAULT_MAX_UPLOAD_MB;
   const maxUploadBytes = capabilitiesQuery.data?.max_upload_bytes ?? DEFAULT_MAX_UPLOAD_BYTES;
-  const uploadLimitLabel = formatUploadLimit(maxUploadMb);
 
   const validateDocxFile = (file: File | null) => {
     if (!file) {
@@ -175,7 +173,6 @@ export function ToolsTab() {
                 onProcess={handleGenerateSectionII}
                 isProcessing={isAzProcessing}
                 error={azError}
-                uploadLimitLabel={uploadLimitLabel}
               />
               <DocxToolPanel
                 title="2. Парсинг Раздела II Аудиторского Заключения (с гиперссылками)"
@@ -185,7 +182,6 @@ export function ToolsTab() {
                 onProcess={handleGenerateSectionIIWithLinks}
                 isProcessing={isAzLinksProcessing}
                 error={azLinksError}
-                uploadLimitLabel={uploadLimitLabel}
               />
             </div>
           </div>
@@ -202,7 +198,6 @@ export function ToolsTab() {
               onProcess={handleGenerateMemorandum}
               isProcessing={isDzProcessing}
               error={dzError}
-              uploadLimitLabel={uploadLimitLabel}
             />
           </div>
         )}

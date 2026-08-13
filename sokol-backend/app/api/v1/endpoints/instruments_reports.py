@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.db.session import get_db_session
 from app.services.dictionary_validation import DictionaryRefError, canonicalize_audit_objects
+from app.services.reports.memorandum.models import MemorandumAuditObject, MemorandumSource
 from app.services.reports.memorandum import docx_generator as memorandum_generator
 from app.services.reports.memorandum.parser import parse_az_for_memorandum
 from app.services.reports.section_ii import docx_generator
@@ -76,14 +77,30 @@ def _build_memorandum_output_path(input_path: Path) -> Path:
     return input_path.with_suffix("").with_name(f"{input_path.stem}_dz{DOCX_EXT}")
 
 
-def _generate_memorandum_file(input_path: str, output_path: str) -> tuple[str | None, str | None]:
-    source, parse_error = parse_az_for_memorandum(input_path)
-    if parse_error:
-        return None, parse_error
-    result_path, error = memorandum_generator.generate_memorandum(source, output_path)
-    if error:
-        return None, error
-    return result_path, None
+async def _canonicalize_memorandum_source(
+    session: AsyncSession,
+    source: MemorandumSource,
+) -> MemorandumSource:
+    groups: list[MemorandumAuditObject] = []
+    group_index: dict[tuple[str, str], int] = {}
+
+    for group in source.groups:
+        canonical_names = await canonicalize_audit_objects(session, group.name)
+        canonical_name = "; ".join(sorted(canonical_names, key=str.casefold))
+        manager = group.manager.strip()
+        key = (canonical_name.casefold(), manager.casefold())
+        if key not in group_index:
+            group_index[key] = len(groups)
+            groups.append(
+                MemorandumAuditObject(
+                    name=canonical_name,
+                    manager=manager,
+                    recommendations=[],
+                )
+            )
+        groups[group_index[key]].recommendations.extend(group.recommendations)
+
+    return MemorandumSource(groups=groups)
 
 
 class ParsedRecommendationItem(BaseModel):
@@ -212,6 +229,7 @@ async def generate_section_ii_with_links(
 async def generate_memorandum(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    session: AsyncSession = Depends(get_db_session),
 ):
     _validate_docx_upload(file)
     original_name = (file.filename or "").strip()
@@ -221,9 +239,22 @@ async def generate_memorandum(
     input_path = _write_temp_docx(content)
     output_path = _build_memorandum_output_path(input_path)
 
+    source, error = await asyncio.to_thread(parse_az_for_memorandum, str(input_path))
+    if error:
+        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
+        raise HTTPException(status_code=400, detail=error)
+    if source is None:
+        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
+        raise HTTPException(status_code=400, detail="Не удалось разобрать рекомендации из аудиторского заключения.")
+    try:
+        source = await _canonicalize_memorandum_source(session, source)
+    except DictionaryRefError as exc:
+        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     result_path, error = await asyncio.to_thread(
-        _generate_memorandum_file,
-        str(input_path),
+        memorandum_generator.generate_memorandum,
+        source,
         str(output_path),
     )
     if error:

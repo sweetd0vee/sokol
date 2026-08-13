@@ -1,10 +1,13 @@
+import asyncio
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock
 
 from docx import Document
 from docx.enum.text import WD_BREAK
 
+from app.api.v1.endpoints.instruments_reports import _canonicalize_memorandum_source
 from app.services.reports.memorandum.docx_generator import generate_memorandum
 from app.services.reports.memorandum.models import (
     MemorandumAuditObject,
@@ -17,6 +20,16 @@ from app.services.reports.memorandum.section_ii_table_parser import (
     parse_section_ii_for_memorandum,
 )
 from app.services.reports.section_ii.docx_generator import process_document
+
+
+def _session_with_departments(names: list[str]) -> AsyncMock:
+    session = AsyncMock()
+    result = MagicMock()
+    scalars = MagicMock()
+    scalars.all.return_value = names
+    result.scalars.return_value = scalars
+    session.execute.return_value = result
+    return session
 
 
 def _build_az_without_section_ii(path: Path) -> None:
@@ -120,6 +133,31 @@ class MemorandumGeneratorTest(unittest.TestCase):
             self.assertIn("I. Департамент розничных продуктов (Ванагель У.П.):", text)
             self.assertIn("1.\u00a0Внести изменения в Положение о Комиссии.", text)
             self.assertIn("Срок – 01.07.2026", text)
+
+    def test_canonicalize_memorandum_source_merges_department_typos(self):
+        source = MemorandumSource(
+            groups=[
+                MemorandumAuditObject(
+                    name="Департамент - 1",
+                    manager="Иванов И.И.",
+                    recommendations=[MemorandumRecommendation(paragraphs=["Первая"])],
+                ),
+                MemorandumAuditObject(
+                    name="департамент-1",
+                    manager="Иванов И.И.",
+                    recommendations=[MemorandumRecommendation(paragraphs=["Вторая"])],
+                ),
+            ]
+        )
+        session = _session_with_departments(["Департамент-1"])
+
+        async def run() -> None:
+            result = await _canonicalize_memorandum_source(session, source)
+            self.assertEqual(len(result.groups), 1)
+            self.assertEqual(result.groups[0].name, "Департамент-1")
+            self.assertEqual(len(result.groups[0].recommendations), 2)
+
+        asyncio.run(run())
 
     def test_generate_memorandum_from_az_with_section_ii(self):
         with tempfile.TemporaryDirectory() as tmp:
