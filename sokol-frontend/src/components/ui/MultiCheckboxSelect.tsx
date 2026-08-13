@@ -153,7 +153,7 @@ export function MultiCheckboxSelect({
           id={listId}
           role="listbox"
           aria-multiselectable
-          className="absolute left-0 top-full z-50 mt-1 max-h-56 w-full max-w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg"
+          className="absolute left-0 top-full z-50 mt-1 max-h-56 min-w-full w-max max-w-[min(20rem,calc(100vw-2rem))] overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg"
         >
           <div className="sticky top-0 space-y-1.5 border-b border-gray-100 bg-white px-2 py-1.5">
             <input

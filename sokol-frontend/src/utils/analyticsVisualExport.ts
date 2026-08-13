@@ -576,15 +576,15 @@ function resolveHtmlChartBody(chart: DashboardChartCapture, index: number): stri
   if (prefersHtml && chart.htmlMarkup) {
     return chart.htmlMarkup;
   }
-  if (chartHasPngPayload(chart.dataUrl)) {
-    return `<img class="chart-img" src="${chart.dataUrl}" alt="${escapeHtml(chart.title)}" width="${chart.width}" height="${chart.height}" />`;
-  }
   if (isUsefulSvgMarkup(chart.svgMarkup)) {
     const namespacedSvg = namespaceSvgMarkupForEmbed(chart.svgMarkup, `chart-${index}-${chart.id}`);
     return `<div class="chart-svg" data-chart-index="${index}">${namespacedSvg}</div>`;
   }
   if (chart.htmlMarkup) {
     return chart.htmlMarkup;
+  }
+  if (chartHasPngPayload(chart.dataUrl)) {
+    return `<img class="chart-img" src="${chart.dataUrl}" alt="${escapeHtml(chart.title)}" width="${chart.width}" height="${chart.height}" />`;
   }
   return '<p class="chart-empty" style="margin:0;padding:18px 0;text-align:center;color:#64748b;font-size:0.9rem">Не удалось отобразить график</p>';
 }
