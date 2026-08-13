@@ -30,6 +30,7 @@ const actionButtonClass =
   'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-50';
 const blueActionButtonClass =
 `${actionButtonClass} border-2 border-[#6699FF] text-[#6699FF] hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white`;
+const manualActionButtonClass = `${blueActionButtonClass} w-[180px]`;
 const iconToolbarButtonClass =
   'inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark';
 
@@ -467,7 +468,7 @@ export function CheckRecommendationsBlock({
           type="button"
           onClick={onAddManually}
           disabled={!canAdd}
-          className={blueActionButtonClass}
+          className={manualActionButtonClass}
         >
           <Plus size={16} />
           Добавить вручную
@@ -498,25 +499,27 @@ export function CheckRecommendationsBlock({
           )}
           {parseError && <ErrorState title="Ошибка" description={parseError} />}
           {recentUpload && parsedPreview.length === 0 && !isParsing && (
-            <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-100 px-4 py-3">
-              <p className="text-sm leading-relaxed text-gray-600">
-                В проверку добавлено{' '}
-                <span className="font-semibold">{recentUpload.count}</span>{' '}
-                {pluralRecommendations(recentUpload.count)}
-                {recentUpload.fileName ? (
-                  <>
-                    {' '}
-                    из файла <span className="font-medium">{recentUpload.fileName}</span>
-                  </>
-                ) : null}
-                . Если это произошло по ошибке, можно отменить загрузку — рекомендации будут удалены
-                из базы.
-              </p>
+            <div className="space-y-3">
+              <div className="rounded-xl border border-gray-200 bg-gray-100 px-4 py-3">
+                <p className="text-sm leading-relaxed text-gray-600">
+                  В проверку добавлено{' '}
+                  <span className="font-semibold">{recentUpload.count}</span>{' '}
+                  {pluralRecommendations(recentUpload.count)}
+                  {recentUpload.fileName ? (
+                    <>
+                      {' '}
+                      из файла <span className="font-medium">{recentUpload.fileName}</span>
+                    </>
+                  ) : null}
+                  . Если это произошло по ошибке, можно отменить загрузку — рекомендации будут удалены
+                  из базы.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => void handleCancel()}
                 disabled={isUndoingUpload}
-                className={blueActionButtonClass}
+                className={manualActionButtonClass}
               >
                 {isUndoingUpload ? 'Отмена загрузки...' : 'Отменить'}
               </button>
