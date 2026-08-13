@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowUp, ChevronsUpDown, ChevronLeft, ChevronRight, PencilLine, User } from 'lucide-react';
-import { Select } from '../ui/Select';
+import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
 import { EmptyState } from '../ui/StateMessage';
@@ -86,15 +86,18 @@ const compareValues = (a: string | number | null, b: string | number | null) => 
   return String(a).localeCompare(String(b), 'ru', { numeric: true, sensitivity: 'base' });
 };
 
+const matchesSelected = (selected: string[], value: string) =>
+  selected.length === 0 || selected.includes(value);
+
 export function ChecksTab() {
   const myName = useCurrentUserName();
   const [idFilter, setIdFilter] = useState('');
   const [keyFilter, setKeyFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
-  const [checkType, setCheckType] = useState('');
-  const [checkView, setCheckView] = useState('');
-  const [status, setStatus] = useState('');
-  const [checkLeader, setCheckLeader] = useState('');
+  const [checkTypes, setCheckTypes] = useState<string[]>([]);
+  const [checkViews, setCheckViews] = useState<string[]>([]);
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [checkLeaders, setCheckLeaders] = useState<string[]>([]);
   const [showOnlyMe, setShowOnlyMe] = useState(false);
   const [startDateFrom, setStartDateFrom] = useState<Date | null>(null);
   const [startDateTo, setStartDateTo] = useState<Date | null>(null);
@@ -107,7 +110,7 @@ export function ChecksTab() {
     direction: 'asc',
   });
   const normalizedMyName = useMemo(() => myName.trim().toLowerCase(), [myName]);
-  const { options: leaderOptions } = useAuditorOptions(checkLeader);
+  const { options: leaderOptions } = useAuditorOptions();
 
   const { checks } = useSokolData();
   const yearlyNumbers = useMemo(() => buildCheckYearlyNumbers(checks), [checks]);
@@ -126,16 +129,16 @@ export function ChecksTab() {
       if (nameFilter && !check.check_name.toLowerCase().includes(nameFilter.trim().toLowerCase())) {
         return false;
       }
-      if (checkType && check.check_type !== checkType) {
+      if (!matchesSelected(checkTypes, check.check_type)) {
         return false;
       }
-      if (checkView && check.check_view !== checkView) {
+      if (!matchesSelected(checkViews, check.check_view)) {
         return false;
       }
-      if (status && check.status !== status) {
+      if (!matchesSelected(statuses, check.status)) {
         return false;
       }
-      if (checkLeader && check.check_leader !== checkLeader) {
+      if (!matchesSelected(checkLeaders, check.check_leader)) {
         return false;
       }
       if (showOnlyMe) {
@@ -166,10 +169,10 @@ export function ChecksTab() {
     idFilter,
     keyFilter,
     nameFilter,
-    checkType,
-    checkView,
-    status,
-    checkLeader,
+    checkTypes,
+    checkViews,
+    statuses,
+    checkLeaders,
     startDateFrom,
     startDateTo,
     showOnlyMe,
@@ -203,10 +206,10 @@ export function ChecksTab() {
     idFilter,
     keyFilter,
     nameFilter,
-    checkType,
-    checkView,
-    status,
-    checkLeader,
+    checkTypes,
+    checkViews,
+    statuses,
+    checkLeaders,
     startDateFrom,
     startDateTo,
     pageSize,
@@ -222,10 +225,10 @@ export function ChecksTab() {
     setIdFilter('');
     setKeyFilter('');
     setNameFilter('');
-    setCheckType('');
-    setCheckView('');
-    setStatus('');
-    setCheckLeader('');
+    setCheckTypes([]);
+    setCheckViews([]);
+    setStatuses([]);
+    setCheckLeaders([]);
     setStartDateFrom(null);
     setStartDateTo(null);
     setShowOnlyMe(false);
@@ -332,21 +335,21 @@ export function ChecksTab() {
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
-                    <Select
-                      value={checkType}
-                      onChange={setCheckType}
+                    <MultiCheckboxSelect
+                      value={checkTypes}
+                      onChange={setCheckTypes}
                       options={CHECK_TYPE_OPTIONS}
                       placeholder="Все"
-                      inputClassName={listFilterClass(Boolean(checkType))}
+                      inputClassName={listFilterClass(checkTypes.length > 0)}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
-                    <Select
-                      value={checkView}
-                      onChange={setCheckView}
+                    <MultiCheckboxSelect
+                      value={checkViews}
+                      onChange={setCheckViews}
                       options={CHECK_VIEW_OPTIONS}
                       placeholder="Все"
-                      inputClassName={listFilterClass(Boolean(checkView))}
+                      inputClassName={listFilterClass(checkViews.length > 0)}
                     />
                   </th>
                   <th className="px-2 py-2 font-normal">
@@ -366,23 +369,23 @@ export function ChecksTab() {
                     </div>
                   </th>
                   <th className="px-2 py-2 font-normal">
-                    <Select
-                      value={checkLeader}
-                      onChange={setCheckLeader}
+                    <MultiCheckboxSelect
+                      value={checkLeaders}
+                      onChange={setCheckLeaders}
                       options={leaderOptions}
                       placeholder="Все"
-                      inputClassName={listFilterClass(Boolean(checkLeader))}
+                      inputClassName={listFilterClass(checkLeaders.length > 0)}
                     />
                   </th>
                   <th colSpan={2} className="px-0 py-2 font-normal">
                     <div className={`${LIST_ACTION_GROUP_CLASS} sm:pr-px`}>
-                      <Select
-                        value={status}
-                        onChange={setStatus}
+                      <MultiCheckboxSelect
+                        value={statuses}
+                        onChange={setStatuses}
                         options={CHECK_STATUS_OPTIONS}
                         placeholder="Все"
                         className="w-[160px]"
-                        inputClassName={listFilterClass(Boolean(status))}
+                        inputClassName={listFilterClass(statuses.length > 0)}
                       />
                       <button
                         type="button"

@@ -51,7 +51,7 @@ export function MultiCheckboxSelect({
     }
     const handlePointerDown = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!rootRef.current?.contains(target) && !target.closest('[data-multi-checkbox-select]')) {
+      if (!rootRef.current?.contains(target)) {
         closeDropdown();
       }
     };
@@ -102,12 +102,14 @@ export function MultiCheckboxSelect({
   };
 
   const triggerLabel =
-    options.length === 0
+    value.length === 0 || options.length === 0
       ? placeholder
-      :`Выбрано: ${value.length} из ${options.length}`;
+      : value.length === 1
+        ? options.find((option) => option.value === value[0])?.label ?? value[0]
+        : `Выбрано: ${value.length}`;
 
   return (
-    <div className={className} ref={rootRef} data-multi-checkbox-select>
+    <div className={`relative ${className}`.trim()} ref={rootRef} data-multi-checkbox-select>
       {label ? (
         <label
           className={[
@@ -151,7 +153,7 @@ export function MultiCheckboxSelect({
           id={listId}
           role="listbox"
           aria-multiselectable
-          className="relative z-20 mt-1 max-h-56 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg"
+          className="absolute left-0 top-full z-50 mt-1 max-h-56 min-w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg"
         >
           <div className="sticky top-0 space-y-1.5 border-b border-gray-100 bg-white px-2 py-1.5">
             <input

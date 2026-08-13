@@ -9,7 +9,7 @@ import {
   PencilLine,
   User,
 } from 'lucide-react';
-import { Select } from '../ui/Select';
+import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
 import { EmptyState } from '../ui/StateMessage';
@@ -136,18 +136,21 @@ const compareValues = (a: string | number | null, b: string | number | null) => 
   return String(a).localeCompare(String(b), 'ru', { numeric: true, sensitivity: 'base' });
 };
 
+const matchesSelected = (selected: string[], value: string) =>
+  selected.length === 0 || selected.includes(value);
+
 export function RecommendationsTab() {
   const myName = useCurrentUserName();
   const [idFilter, setIdFilter] = useState('');
   const [keyFilter, setKeyFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
-  const [status, setStatus] = useState('');
-  const [additionalStatus, setAdditionalStatus] = useState('');
-  const [auditObject, setAuditObject] = useState('');
-  const [indicator, setIndicator] = useState('');
-  const [materialityLevel, setMaterialityLevel] = useState('');
-  const [auditor, setAuditor] = useState('');
-  const [manager, setManager] = useState('');
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [additionalStatuses, setAdditionalStatuses] = useState<string[]>([]);
+  const [auditObjects, setAuditObjects] = useState<string[]>([]);
+  const [indicators, setIndicators] = useState<string[]>([]);
+  const [materialityLevels, setMaterialityLevels] = useState<string[]>([]);
+  const [auditors, setAuditors] = useState<string[]>([]);
+  const [managers, setManagers] = useState<string[]>([]);
   const [showOnlyMe, setShowOnlyMe] = useState(false);
   const [deadlineFrom, setDeadlineFrom] = useState<Date | null>(null);
   const [deadlineTo, setDeadlineTo] = useState<Date | null>(null);
@@ -160,9 +163,9 @@ export function RecommendationsTab() {
     direction: 'asc',
   });
   const trimmedMyName = useMemo(() => myName.trim(), [myName]);
-  const { options: auditorOptions } = useAuditorOptions(auditor);
-  const { options: managerOptions } = useAuditorOptions(manager);
-  const { options: auditObjectOptions } = useAuditObjectOptions(auditObject);
+  const { options: auditorOptions } = useAuditorOptions();
+  const { options: managerOptions } = useAuditorOptions();
+  const { options: auditObjectOptions } = useAuditObjectOptions();
 
   const { recommendations, checks } = useSokolData();
   const recommendationYearlyNumbers = useMemo(
@@ -191,25 +194,30 @@ export function RecommendationsTab() {
           return false;
         }
       }
-      if (status && recommendation.status !== status) {
+      if (!matchesSelected(statuses, recommendation.status)) {
         return false;
       }
-      if (additionalStatus && recommendation.additional_status !== additionalStatus) {
+      if (!matchesSelected(additionalStatuses, recommendation.additional_status)) {
         return false;
       }
-      if (auditObject && !getRecommendationAuditObjects(recommendation.audit_object).includes(auditObject)) {
+      if (
+        auditObjects.length > 0 &&
+        !getRecommendationAuditObjects(recommendation.audit_object).some((item) =>
+          auditObjects.includes(item),
+        )
+      ) {
         return false;
       }
-      if (indicator && recommendation.indicator !== indicator) {
+      if (!matchesSelected(indicators, recommendation.indicator)) {
         return false;
       }
-      if (materialityLevel && recommendation.materiality_level !== materialityLevel) {
+      if (!matchesSelected(materialityLevels, recommendation.materiality_level)) {
         return false;
       }
-      if (auditor && recommendation.auditor !== auditor) {
+      if (!matchesSelected(auditors, recommendation.auditor)) {
         return false;
       }
-      if (manager && recommendation.manager !== manager) {
+      if (!matchesSelected(managers, recommendation.manager)) {
         return false;
       }
       if (showOnlyMe) {
@@ -240,13 +248,13 @@ export function RecommendationsTab() {
     idFilter,
     keyFilter,
     nameFilter,
-    status,
-    additionalStatus,
-    auditObject,
-    indicator,
-    materialityLevel,
-    auditor,
-    manager,
+    statuses,
+    additionalStatuses,
+    auditObjects,
+    indicators,
+    materialityLevels,
+    auditors,
+    managers,
     deadlineFrom,
     deadlineTo,
     showOnlyMe,
@@ -280,13 +288,13 @@ export function RecommendationsTab() {
     idFilter,
     keyFilter,
     nameFilter,
-    status,
-    additionalStatus,
-    auditObject,
-    indicator,
-    materialityLevel,
-    auditor,
-    manager,
+    statuses,
+    additionalStatuses,
+    auditObjects,
+    indicators,
+    materialityLevels,
+    auditors,
+    managers,
     deadlineFrom,
     deadlineTo,
     pageSize,
@@ -302,13 +310,13 @@ export function RecommendationsTab() {
     setIdFilter('');
     setKeyFilter('');
     setNameFilter('');
-    setStatus('');
-    setAdditionalStatus('');
-    setAuditObject('');
-    setIndicator('');
-    setMaterialityLevel('');
-    setAuditor('');
-    setManager('');
+    setStatuses([]);
+    setAdditionalStatuses([]);
+    setAuditObjects([]);
+    setIndicators([]);
+    setMaterialityLevels([]);
+    setAuditors([]);
+    setManagers([]);
     setDeadlineFrom(null);
     setDeadlineTo(null);
     setShowOnlyMe(false);
@@ -436,21 +444,21 @@ export function RecommendationsTab() {
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
-                  <Select
-                    value={auditObject}
-                    onChange={setAuditObject}
+                  <MultiCheckboxSelect
+                    value={auditObjects}
+                    onChange={setAuditObjects}
                     options={auditObjectOptions}
                     placeholder="Все"
-                    inputClassName={listFilterClass(Boolean(auditObject))}
+                    inputClassName={listFilterClass(auditObjects.length > 0)}
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
-                  <Select
-                    value={indicator}
-                    onChange={setIndicator}
+                  <MultiCheckboxSelect
+                    value={indicators}
+                    onChange={setIndicators}
                     options={INDICATOR_OPTIONS}
                     placeholder="Все"
-                    inputClassName={listFilterClass(Boolean(indicator))}
+                    inputClassName={listFilterClass(indicators.length > 0)}
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
@@ -470,53 +478,53 @@ export function RecommendationsTab() {
                   </div>
                 </th>
                 <th className="px-2 py-2 font-normal">
-                  <Select
-                    value={materialityLevel}
-                    onChange={setMaterialityLevel}
+                  <MultiCheckboxSelect
+                    value={materialityLevels}
+                    onChange={setMaterialityLevels}
                     options={MATERIALITY_LEVEL_OPTIONS}
                     placeholder="Все"
-                    inputClassName={listFilterClass(Boolean(materialityLevel))}
+                    inputClassName={listFilterClass(materialityLevels.length > 0)}
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
-                  <Select
-                    value={auditor}
-                    onChange={setAuditor}
+                  <MultiCheckboxSelect
+                    value={auditors}
+                    onChange={setAuditors}
                     options={auditorOptions}
                     placeholder="Все"
-                    inputClassName={listFilterClass(Boolean(auditor))}
+                    inputClassName={listFilterClass(auditors.length > 0)}
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
-                  <Select
-                    value={manager}
-                    onChange={setManager}
+                  <MultiCheckboxSelect
+                    value={managers}
+                    onChange={setManagers}
                     options={managerOptions}
                     placeholder="Все"
-                    inputClassName={listFilterClass(Boolean(manager))}
+                    inputClassName={listFilterClass(managers.length > 0)}
                   />
                 </th>
                 <th className="px-0 py-2 font-normal">
                   <div className="flex w-[160px] items-center">
-                    <Select
-                      value={status}
-                      onChange={setStatus}
+                    <MultiCheckboxSelect
+                      value={statuses}
+                      onChange={setStatuses}
                       options={RECOMMENDATION_STATUS_OPTIONS}
                       placeholder="Все"
                       className="w-full"
-                      inputClassName={listFilterClass(Boolean(status))}
+                      inputClassName={listFilterClass(statuses.length > 0)}
                     />
                   </div>
                 </th>
                 <th colSpan={2} className="px-0 py-2 font-normal">
                   <div className={`${LIST_ACTION_GROUP_CLASS} sm:pr-px`}>
-                    <Select
-                      value={additionalStatus}
-                      onChange={setAdditionalStatus}
+                    <MultiCheckboxSelect
+                      value={additionalStatuses}
+                      onChange={setAdditionalStatuses}
                       options={RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS}
                       placeholder="Все"
                       className="w-[160px]"
-                      inputClassName={listFilterClass(Boolean(additionalStatus))}
+                      inputClassName={listFilterClass(additionalStatuses.length > 0)}
                     />
                     <button
                       type="button"
