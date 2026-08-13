@@ -13,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { fetchChecksAnalytics } from '../../api/analytics';
+import { fetchChecksAnalytics, type ChecksAnalyticsPeriodPoint } from '../../api/analytics';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
@@ -37,6 +37,51 @@ const EMPTY_VIEW_DISTRIBUTION: never[] = [];
 const EMPTY_TYPE_DISTRIBUTION: never[] = [];
 const EMPTY_DEPARTMENT_MAP: never[] = [];
 const EMPTY_EFFECTIVENESS_MATRIX: never[] = [];
+
+function sortKeyFromPeriodKey(key: string, granularity: PeriodGranularity) {
+  if (granularity === 'year') {
+    return Number(key);
+  }
+  if (granularity === 'quarter') {
+    const [year, quarter] = key.split('-Q');
+    return Number(year) * 10 + Number(quarter);
+  }
+  const [year, month] = key.split('-');
+  return Number(year) * 100 + Number(month);
+}
+
+function completeSelectedPeriods(
+  series: ChecksAnalyticsPeriodPoint[],
+  granularity: PeriodGranularity,
+  selectedKeys: string[],
+  selectedLabels: string[],
+) {
+  if (selectedKeys.length === 0) {
+    return series;
+  }
+
+  const byKey = new Map(series.map((item) => [item.key, item]));
+  let cumulative = 0;
+
+  return selectedKeys
+    .map((key, index) => (
+      byKey.get(key) ?? {
+        key,
+        label: selectedLabels[index] ?? key,
+        sortKey: sortKeyFromPeriodKey(key, granularity),
+        total: 0,
+        not_started: 0,
+        in_progress: 0,
+        completed: 0,
+        cumulative: 0,
+      }
+    ))
+    .sort((a, b) => a.sortKey - b.sortKey)
+    .map((item) => {
+      cumulative += item.total;
+      return { ...item, cumulative };
+    });
+}
 
 export function ChecksAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
@@ -136,7 +181,13 @@ export function ChecksAnalyticsDashboard() {
 
   const summary = data?.summary ?? EMPTY_CHECKS_SUMMARY;
   const completionShare = data?.completionShare ?? 0;
-  const flowSeries = data?.periodSeries ?? EMPTY_FLOW_SERIES;
+  const rawFlowSeries = data?.periodSeries ?? EMPTY_FLOW_SERIES;
+  const selectedPeriodKeys =
+    granularity === 'month' ? selectedMonthKeys : granularity === 'quarter' ? selectedQuarterKeys : selectedYearKeys;
+  const flowSeries = useMemo(
+    () => completeSelectedPeriods(rawFlowSeries, granularity, selectedPeriodKeys, activePeriodValues),
+    [activePeriodValues, granularity, rawFlowSeries, selectedPeriodKeys],
+  );
   const viewDistribution = data?.viewDistribution ?? EMPTY_VIEW_DISTRIBUTION;
   const typeDistribution = data?.typeDistribution ?? EMPTY_TYPE_DISTRIBUTION;
   const departmentMap = data?.departmentMap ?? EMPTY_DEPARTMENT_MAP;
@@ -198,11 +249,11 @@ export function ChecksAnalyticsDashboard() {
             onToggleExport={() => exportSections.toggleSection('summary')}
           >
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
-              <KpiCard label="Всего" value={summary.total} hint={`из ${universeTotal}`} tone="violet" />
+              <KpiCard label="Всего" value={summary.total} hint={`из ${universeTotal}`} tone="blue" />
               <KpiCard label="Запланировано" value={summary.not_started} tone="slate" />
               <KpiCard label="В процессе" value={summary.in_progress} tone="amber" />
               <KpiCard label="Завершено" value={summary.completed} tone="green" />
-              <KpiCard label="Доля завершённых" value={completionShare} suffix="%" tone="blue" />
+              <KpiCard label="Доля завершённых" value={completionShare} suffix="%" tone="red" />
             </div>
           </ChartCard>
         ),
@@ -262,12 +313,19 @@ export function ChecksAnalyticsDashboard() {
             ) : (
               <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={viewDistribution} layout="vertical" margin={{ top: 8, right: 24, left: 16, bottom: 0 }}>
+                  <BarChart data={viewDistribution} layout="vertical" margin={{ top: 8, right: 40, left: 16, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
                     <YAxis dataKey="name" type="category" width={92} tick={CHART_AXIS_TICK} />
                     <Tooltip />
-                    <Bar dataKey="value" name="Проверки" fill={CHECKS_PALETTE[8]} radius={[0, 6, 6, 0]} />
+                    <Bar dataKey="value" name="Проверки" fill={CHECKS_PALETTE[8]} radius={[0, 6, 6, 0]}>
+                      <LabelList
+                        dataKey="value"
+                        position="right"
+                        fontSize={CHART_VALUE_LABEL_SIZE}
+                        fill={CHECKS_PALETTE[0]}
+                      />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>

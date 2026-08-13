@@ -93,7 +93,6 @@ function fitImageSize(
 }
 
 const DOCX_PAGE_MARGIN_TWIPS = 720;
-const DOCX_CHART_RENDER_SCALE = 3;
 const DOCX_CHART_MAX_WIDTH = 980;
 const DOCX_CHART_MAX_HEIGHT = 520;
 const DOCX_FRAME_BORDER = { style: BorderStyle.SINGLE, size: 1, color: 'D7DEE7' };
@@ -452,8 +451,8 @@ async function buildVisualDocx(options: {
 
   const chartSections = charts.map((chart) => {
     const fitted = fitImageSize(
-      chart.width * DOCX_CHART_RENDER_SCALE,
-      chart.height * DOCX_CHART_RENDER_SCALE,
+      chart.width,
+      chart.height,
       DOCX_CHART_MAX_WIDTH,
       DOCX_CHART_MAX_HEIGHT,
     );

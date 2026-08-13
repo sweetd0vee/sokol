@@ -1,6 +1,6 @@
 import { toPng } from 'html-to-image';
 
-const EXPORT_PNG_PIXEL_RATIO = 3;
+const EXPORT_PNG_PIXEL_RATIO = 4;
 
 export type DashboardChartCapture = {
   id: string;

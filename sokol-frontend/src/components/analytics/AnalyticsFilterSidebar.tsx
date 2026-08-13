@@ -91,7 +91,7 @@ export function AnalyticsFilterSidebar({
 }: AnalyticsFilterSidebarProps) {
   return (
     <aside className="w-full shrink-0 space-y-5 lg:sticky lg:top-4 lg:w-80">
-      <section className="overflow-hidden rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed">
+      <section className="overflow-visible rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed">
         <div className="mb-3 flex items-center gap-2">
           <div>
             <h3 className="text-base font-semibold text-gray-900">Метрики</h3>

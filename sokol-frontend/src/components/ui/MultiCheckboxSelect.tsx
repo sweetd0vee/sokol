@@ -153,7 +153,7 @@ export function MultiCheckboxSelect({
           id={listId}
           role="listbox"
           aria-multiselectable
-          className="absolute left-0 top-full z-50 mt-1 max-h-56 min-w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg"
+          className="absolute left-0 top-full z-50 mt-1 max-h-56 w-full max-w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg"
         >
           <div className="sticky top-0 space-y-1.5 border-b border-gray-100 bg-white px-2 py-1.5">
             <input
@@ -197,7 +197,7 @@ export function MultiCheckboxSelect({
                       role="option"
                       aria-selected={checked}
                       onClick={() => toggle(option.value)}
-                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-800 transition hover:bg-gray-50"
+                      className="flex w-full min-w-0 items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-800 transition hover:bg-gray-50"
                     >
                       <span
                         className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
@@ -213,7 +213,7 @@ export function MultiCheckboxSelect({
                           className={`h-3 w-3 shrink-0 rounded-full border border-gray-200 ${option.dotClassName}`}
                         />
                       ) : null}
-                      <span className="truncate">{option.label}</span>
+                      <span className="min-w-0 truncate">{option.label}</span>
                     </button>
                   </li>
                 );

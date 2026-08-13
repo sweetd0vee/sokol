@@ -67,7 +67,9 @@ function ColumnSharePie({ shares }: { shares: EffectivenessColumnShare[] }) {
               style={{ backgroundColor: share.color }}
               aria-hidden
             />
-            <span className="font-semibold tabular-nums">{share.percent}%</span>
+            <span className="font-semibold tabular-nums">
+              {share.count} ({share.percent}%)
+            </span>
           </li>
         ))}
       </ul>
