@@ -162,7 +162,7 @@ export function MonitoringAnalyticsDashboard() {
       await exportGenericAnalyticsDashboard(
         {
           kind: 'monitoring',
-          documentTitle: 'Мониторинг рекомендаций',
+          documentTitle: 'Мониторинг',
           filenamePrefix: 'analytics-monitoring',
           selectedSections: exportSections.selectedSections,
           meta: [
@@ -234,7 +234,7 @@ export function MonitoringAnalyticsDashboard() {
         defaultLayout: { x: 4, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Срок исполнения"
+            title="Дополнительные статусы"
             description="Распределение дополнительных статусов за период"
             exportSectionId="additionalStatuses"
             exportSelected={exportSections.isSelected('additionalStatuses')}
@@ -253,13 +253,13 @@ export function MonitoringAnalyticsDashboard() {
   );
 
   if (bootstrapQuery.isLoading && !data) {
-    return <LoadingState title="Загрузка аналитики мониторинга…" />;
+    return <LoadingState title="Загрузка мониторинга…" />;
   }
   if ((bootstrapQuery.isError || analyticsQuery.isError) && !data) {
     const error = analyticsQuery.error ?? bootstrapQuery.error;
     return (
       <ErrorState
-        title="Не удалось загрузить аналитику мониторинга"
+        title="Не удалось загрузить мониторинг"
         description={error instanceof Error ? error.message : 'неизвестная ошибка'}
       />
     );
