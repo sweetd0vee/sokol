@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AuditType } from '../../api/settings';
 import {
-  createAuditor,
   createAuditType,
   createCheckKind,
   createDepartment,
@@ -12,12 +11,10 @@ import {
   deleteCheckKind,
   deleteDepartment,
   deleteEffectivenessRating,
-  fetchAuditors,
   fetchAuditTypes,
   fetchCheckKinds,
   fetchDepartments,
   fetchEffectivenessRatings,
-  updateAuditor,
   updateAuditType,
   updateCheckKind,
   updateDepartment,
@@ -29,6 +26,7 @@ import { Modal, ModalActions } from '../ui/Modal';
 import { PageHeader } from '../ui/PageHeader';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { ActionButtons } from '../settings/ActionButtons';
+import { AuditorDictionaryPanel } from '../settings/AuditorDictionaryPanel';
 import { SingleFieldDictionaryPanel } from '../settings/SingleFieldDictionaryPanel';
 import { SettingsTableCard, type TableRow } from '../settings/SettingsTableCard';
 import {
@@ -191,25 +189,9 @@ export function SettingsTab() {
 
       <div className="grid grid-cols-1 gap-6">
         {activeList === 'auditors' && (
-          <SingleFieldDictionaryPanel
-            title="Аудиторы"
-            columnLabel="ФИО"
-            fieldLabel="ФИО аудитора"
-            addModalTitle="Новый аудитор"
-            editModalTitle="Редактирование аудитора"
-            placeholder="Введите ФИО"
-            queryKey={['settings', 'auditors']}
-            api={{
-              fetchAll: fetchAuditors,
-              create: (payload) => createAuditor({ full_name: payload.full_name }),
-              update: (id, payload) => updateAuditor(id, { full_name: payload.full_name }),
-              remove: deleteAuditor,
-            }}
-            getId={(item) => item.id}
-            getValue={(item) => item.full_name}
-            fieldKey="full_name"
-            onRequestDelete={(key, id) => handleRequestDelete('auditors', key, id)}
+          <AuditorDictionaryPanel
             canManage={isAdmin}
+            onRequestDelete={(key, id) => handleRequestDelete('auditors', key, id)}
           />
         )}
 

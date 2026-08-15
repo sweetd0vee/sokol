@@ -46,7 +46,15 @@ export function SettingsTableCard({
             {columns.map((column, index) => (
               <col
                 key={column}
-                className={index === actionColumnIndex ? 'w-[300px]' : column === '№' ? 'w-16' : undefined}
+                className={
+                  index === actionColumnIndex
+                    ? 'w-[300px]'
+                    : column === '№'
+                      ? 'w-16'
+                      : column === 'Код'
+                        ? 'w-[180px]'
+                        : undefined
+                }
               />
             ))}
           </colgroup>

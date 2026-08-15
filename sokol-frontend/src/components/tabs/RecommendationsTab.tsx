@@ -156,7 +156,7 @@ export function RecommendationsTab() {
   const [deadlineFrom, setDeadlineFrom] = useState<Date | null>(null);
   const [deadlineTo, setDeadlineTo] = useState<Date | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(50);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('xlsx');
   const [isExporting, setIsExporting] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: SortKey | null; direction: 'asc' | 'desc' }>({

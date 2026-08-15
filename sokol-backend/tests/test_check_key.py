@@ -43,6 +43,34 @@ class CheckKeyTests(unittest.TestCase):
 
         self.assertEqual(serial, "26GAO01P1")
 
+    def test_uses_persistent_auditor_code(self) -> None:
+        serial = generate_check_serial_number(
+            date(2026, 7, 26),
+            "Голубицкая А.О.",
+            "planned",
+            [],
+            leader_code="XYZ",
+        )
+
+        self.assertEqual(serial, "26XYZ07P1")
+
+    def test_simplifies_multiletter_transliteration_to_three_letter_code(self) -> None:
+        kharitonov = generate_check_serial_number(
+            date(2026, 1, 1),
+            "Харитонов А.И.",
+            "planned",
+            [],
+        )
+        yakubovich = generate_check_serial_number(
+            date(2026, 1, 1),
+            "Якубович В.В.",
+            "planned",
+            [],
+        )
+
+        self.assertEqual(kharitonov, "26KAI01P1")
+        self.assertEqual(yakubovich, "26YVV01P1")
+
     def test_ignores_other_leader_or_type(self) -> None:
         existing = [
             CheckKeySeed(

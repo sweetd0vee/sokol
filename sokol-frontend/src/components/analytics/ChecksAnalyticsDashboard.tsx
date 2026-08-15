@@ -409,6 +409,7 @@ export function ChecksAnalyticsDashboard() {
       effectivenessMatrix,
       exportSections,
       flowSeries,
+      granularity,
       summary,
       typeDistribution,
       universeTotal,

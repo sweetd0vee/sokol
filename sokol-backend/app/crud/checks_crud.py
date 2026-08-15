@@ -7,12 +7,13 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.crud import auditors_crud
 from app.crud.attachments_crud import list_attachments_by_serial
 from app.models.attachments import Attachment
 from app.models.checks import Check, CheckStatus
 from app.models.recommendations import Recommendation
 from app.schemas.checks import CheckCreate, CheckUpdate
-from app.services.dictionary_validation import validate_check_dictionary_fields
+from app.services.dictionary_validation import DictionaryRefError, validate_check_dictionary_fields
 from app.services.storage.minio_storage import check_bucket_name, get_storage
 from app.utils.check_key import CheckKeySeed, generate_check_serial_number
 
@@ -77,12 +78,31 @@ async def _generate_unique_check_serial_number(
     check_type: str,
     exclude_check_id: int | None = None,
 ) -> str:
+    auditor = await auditors_crud.get_auditor_by_full_name(session, check_leader)
+    if auditor is None or not auditor.code:
+        raise DictionaryRefError(
+            field="check_leader",
+            value=check_leader,
+            dictionary="auditors",
+        )
     seeds = await _existing_key_seeds(session, exclude_check_id=exclude_check_id)
     existing_serials = await _existing_serial_numbers(session, exclude_check_id=exclude_check_id)
-    serial = generate_check_serial_number(start_date, check_leader, check_type, seeds)
+    serial = generate_check_serial_number(
+        start_date,
+        check_leader,
+        check_type,
+        seeds,
+        leader_code=auditor.code,
+    )
     while serial in existing_serials:
         seeds.append(CheckKeySeed(check_leader, start_date, check_type))
-        serial = generate_check_serial_number(start_date, check_leader, check_type, seeds)
+        serial = generate_check_serial_number(
+            start_date,
+            check_leader,
+            check_type,
+            seeds,
+            leader_code=auditor.code,
+        )
     return serial
 
 

@@ -103,7 +103,7 @@ export function ChecksTab() {
   const [startDateFrom, setStartDateFrom] = useState<Date | null>(null);
   const [startDateTo, setStartDateTo] = useState<Date | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(50);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('xlsx');
   const [isExporting, setIsExporting] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: SortKey | null; direction: 'asc' | 'desc' }>({

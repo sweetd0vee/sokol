@@ -9,6 +9,7 @@ from app.crud.users_crud import create_user, get_user_by_username, list_users
 from app.db.session import get_db_session
 from app.schemas.auditors import AuditorCreate
 from app.schemas.users import UserCreate, UserListResponse, UserRead
+from app.utils.check_key import get_leader_initials_code
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -56,7 +57,13 @@ async def create_user_endpoint(
 
     if payload.role == Role.AUDITOR:
         try:
-            await create_auditor(session, AuditorCreate(full_name=username))
+            await create_auditor(
+                session,
+                AuditorCreate(
+                    full_name=username,
+                    code=get_leader_initials_code(username),
+                ),
+            )
         except DuplicateDictionaryError:
             pass
 

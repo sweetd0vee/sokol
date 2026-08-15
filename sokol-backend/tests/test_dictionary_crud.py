@@ -16,7 +16,7 @@ from app.models.auditors import Auditor
 
 
 def _auditor(full_name: str) -> Auditor:
-    item = Auditor(full_name=full_name)
+    item = Auditor(full_name=full_name, code="TEST")
     item.id = uuid4()
     return item
 
@@ -59,7 +59,7 @@ class DictionaryCrudTests(unittest.TestCase):
                 await create_dictionary_item(
                     session,
                     Auditor,
-                    {"full_name": "Важник Д.С."},
+                    {"full_name": "Важник Д.С.", "code": "VDS"},
                     label_field="full_name",
                     dictionary_name="auditors",
                 )
@@ -74,7 +74,7 @@ class DictionaryCrudTests(unittest.TestCase):
             await create_dictionary_item(
                 session,
                 Auditor,
-                {"full_name": "  Каракосова   E.Д.  "},
+                {"full_name": "  Каракосова   E.Д.  ", "code": "KED"},
                 label_field="full_name",
                 dictionary_name="auditors",
             )

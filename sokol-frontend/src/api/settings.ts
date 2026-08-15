@@ -3,6 +3,7 @@ import { api } from './client';
 export type Auditor = {
   id?: string | number;
   full_name: string;
+  code: string;
 };
 
 export type AuditType = {
@@ -72,7 +73,7 @@ function makeSettingsCrud<T, TCreate>(
   };
 }
 
-const auditorsCrud = makeSettingsCrud<Auditor, Pick<Auditor, 'full_name'>>(
+const auditorsCrud = makeSettingsCrud<Auditor, Pick<Auditor, 'full_name' | 'code'>>(
   '/api/v1/settings/auditors',
   { encodeId: false },
 );

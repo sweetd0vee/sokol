@@ -10,7 +10,7 @@ from app.core.config import settings
 from app.core.roles import ADMIN_ROLES, Role
 from app.core.security import hash_password
 from app.crud.users_crud import ensure_user, get_user_by_username
-from app.db.auditor_names import AUDITORS
+from app.db.auditor_names import AUDITORS, AUDITOR_CODES
 from app.db.department_names import DEPARTMENTS
 from app.db.init_db import init_db
 from app.db.session import AsyncSessionLocal
@@ -35,9 +35,12 @@ async def sync_auditors() -> tuple[int, int]:
     async with AsyncSessionLocal() as session:
         rows = (await session.execute(select(Auditor))).scalars().all()
         for row in rows:
-            if normalize_dictionary_label(row.full_name) not in canonical:
+            canonical_name = canonical.get(normalize_dictionary_label(row.full_name))
+            if canonical_name is None:
                 await session.delete(row)
                 removed += 1
+            else:
+                row.code = AUDITOR_CODES[canonical_name]
         await session.commit()
 
         existing = {
@@ -47,7 +50,7 @@ async def sync_auditors() -> tuple[int, int]:
         for name in AUDITORS:
             if normalize_dictionary_label(name) in existing:
                 continue
-            session.add(Auditor(full_name=name))
+            session.add(Auditor(full_name=name, code=AUDITOR_CODES[name]))
             added += 1
         await session.commit()
     return added, removed

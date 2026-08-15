@@ -61,7 +61,7 @@ class CheckKeySeed:
 
 def _transliterate_char(char: str) -> str:
     mapped = TRANSLIT_MAP.get(char.lower(), char)
-    return mapped.upper() if mapped else ""
+    return mapped[:1].upper() if mapped else ""
 
 
 def get_leader_initials_code(full_name: str) -> str:
@@ -93,13 +93,25 @@ def generate_check_serial_number(
     check_leader: str,
     check_type: str,
     existing: Iterable[CheckKeySeed],
+    *,
+    leader_code: str | None = None,
 ) -> str:
     year_code = str(start_date.year)[-2:]
-    leader_code = get_leader_initials_code(check_leader)
+    resolved_leader_code = (
+        leader_code.strip().upper()
+        if leader_code is not None
+        else get_leader_initials_code(check_leader)
+    )
+    if (
+        len(resolved_leader_code) != 3
+        or not resolved_leader_code.isascii()
+        or not resolved_leader_code.isalpha()
+    ):
+        raise ValueError("Auditor code must contain exactly 3 Latin letters.")
     month_code = f"{start_date.month:02d}"
     type_code = CHECK_TYPE_KEY_CODES.get(check_type, "")
     next_number = count_matching_check_keys(check_leader, start_date, check_type, existing) + 1
-    return f"{year_code}{leader_code}{month_code}{type_code}{next_number}"
+    return f"{year_code}{resolved_leader_code}{month_code}{type_code}{next_number}"
 
 
 def assign_serial_numbers(
@@ -116,6 +128,7 @@ def assign_serial_numbers(
             check["check_leader"],
             check["check_type"],
             assigned,
+            leader_code=check.get("check_leader_code"),
         )
         assigned.append(CheckKeySeed(check["check_leader"], start, check["check_type"]))
         result.append({**check, "serial_number": serial})

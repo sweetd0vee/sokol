@@ -3,11 +3,12 @@ from collections.abc import Sequence
 
 from sqlalchemy import func, select
 
-from app.db.auditor_names import AUDITORS
+from app.db.auditor_names import AUDITORS, AUDITOR_CODES
 from app.db.init_db import init_db
 from app.db.session import AsyncSessionLocal
 from app.models.auditors import Auditor
 from app.utils.dictionary_text import normalize_dictionary_label
+from app.utils.check_key import get_leader_initials_code
 
 # DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db python -m app.db.seed_auditors
 
@@ -36,7 +37,12 @@ async def seed_auditors(
             normalized = normalize_dictionary_label(name)
             if not normalized or normalized in existing_normalized:
                 continue
-            session.add(Auditor(full_name=normalized))
+            session.add(
+                Auditor(
+                    full_name=normalized,
+                    code=AUDITOR_CODES.get(name, get_leader_initials_code(normalized)),
+                )
+            )
             existing_normalized.add(normalized)
             inserted += 1
         await session.commit()

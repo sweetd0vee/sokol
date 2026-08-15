@@ -17,3 +17,4 @@ class Auditor(Base):
         index=True,
     )
     full_name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    code: Mapped[str] = mapped_column(String(3), nullable=False, unique=True)

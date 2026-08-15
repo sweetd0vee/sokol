@@ -11,6 +11,7 @@ from sqlalchemy import select, update
 from app.core.config import settings
 from app.db.session import AsyncSessionLocal
 from app.models.attachments import Attachment
+from app.models.auditors import Auditor
 from app.models.checks import Check
 from app.models.recommendations import Recommendation
 from app.services.storage.minio_storage import check_bucket_name, get_storage
@@ -35,12 +36,16 @@ async def _load_checks(session) -> list[Check]:
     return list(result.scalars().all())
 
 
-def _build_serial_assignments(checks: list[Check]) -> tuple[dict[int, str], list[SerialChange]]:
+def _build_serial_assignments(
+    checks: list[Check],
+    auditor_codes: dict[str, str],
+) -> tuple[dict[int, str], list[SerialChange]]:
     payload = [
         {
             "id": check.id,
             "start_date": check.start_date,
             "check_leader": check.check_leader,
+            "check_leader_code": auditor_codes[check.check_leader],
             "check_type": check.check_type,
         }
         for check in checks
@@ -72,7 +77,17 @@ async def _copy_bucket_objects(old_serial: str, new_serial: str) -> int:
 async def recalculate_check_serial_numbers(*, apply: bool) -> int:
     async with AsyncSessionLocal() as session:
         checks = await _load_checks(session)
-        final_by_id, changes = _build_serial_assignments(checks)
+        auditor_codes = dict(
+            (await session.execute(select(Auditor.full_name, Auditor.code))).all()
+        )
+        missing_leaders = sorted(
+            {check.check_leader for check in checks if check.check_leader not in auditor_codes}
+        )
+        if missing_leaders:
+            raise RuntimeError(
+                "В справочнике аудиторов отсутствуют: " + ", ".join(missing_leaders)
+            )
+        final_by_id, changes = _build_serial_assignments(checks, auditor_codes)
 
         if not changes:
             print("Все ключи уже соответствуют правилам — изменений нет.")

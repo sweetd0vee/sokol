@@ -62,8 +62,8 @@ async def _seed_required_dictionaries() -> None:
     async with _TestSessionLocal() as session:
         session.add_all(
             [
-                Auditor(full_name="Иванов И.И."),
-                Auditor(full_name="Петров П.П."),
+                Auditor(full_name="Иванов И.И.", code="III"),
+                Auditor(full_name="Петров П.П.", code="PPP"),
                 CheckKind(label="Комплексная проверка"),
                 EffectivenessRating(label="Эффективно"),
             ]
