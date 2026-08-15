@@ -13,6 +13,7 @@ export type AnalyticsPeriodSlice = 'year' | 'quarter' | 'month';
 export type AnalyticsFilterSidebarProps = {
   periodSlice: AnalyticsPeriodSlice;
   onPeriodSliceChange: (next: AnalyticsPeriodSlice) => void;
+  availablePeriodSlices?: AnalyticsPeriodSlice[];
   yearOptions: MultiCheckboxOption[];
   quarterOptions: MultiCheckboxOption[];
   monthOptions: MultiCheckboxOption[];
@@ -65,6 +66,7 @@ const PERIOD_SLICE_OPTIONS: { value: AnalyticsPeriodSlice; label: string }[] = [
 export function AnalyticsFilterSidebar({
   periodSlice,
   onPeriodSliceChange,
+  availablePeriodSlices = PERIOD_SLICE_OPTIONS.map((option) => option.value),
   yearOptions,
   quarterOptions,
   monthOptions,
@@ -89,6 +91,10 @@ export function AnalyticsFilterSidebar({
   canExport,
   onExport,
 }: AnalyticsFilterSidebarProps) {
+  const periodSliceOptions = PERIOD_SLICE_OPTIONS.filter((option) =>
+    availablePeriodSlices.includes(option.value),
+  );
+
   return (
     <aside className="w-full shrink-0 space-y-5 lg:sticky lg:top-4 lg:w-80">
       <section className="overflow-visible rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed">
@@ -101,8 +107,11 @@ export function AnalyticsFilterSidebar({
         <div className="space-y-6">
           <SidebarSection title="Период">
             <div>
-              <div className="grid grid-cols-3 gap-1.5">
-                {PERIOD_SLICE_OPTIONS.map((option) => {
+              <div
+                className="grid gap-1.5"
+                style={{ gridTemplateColumns: `repeat(${periodSliceOptions.length}, minmax(0, 1fr))` }}
+              >
+                {periodSliceOptions.map((option) => {
                   const isActive = option.value === periodSlice;
 
                   return (

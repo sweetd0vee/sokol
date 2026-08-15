@@ -17,6 +17,8 @@ type FocusableDonutChartProps = {
   labelMode?: 'value' | 'percent' | 'both';
   /** When false, values appear only in the hover tooltip. */
   showValueLabels?: boolean;
+  legendFontSize?: number;
+  legendFontWeight?: number;
 };
 
 type LabelProps = {
@@ -107,6 +109,8 @@ export function FocusableDonutChart({
   palette = PALETTE,
   labelMode = 'percent',
   showValueLabels = true,
+  legendFontSize = CHART_LEGEND_STYLE.fontSize,
+  legendFontWeight = 400,
 }: FocusableDonutChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const colors = palette.length > 0 ? palette : PALETTE;
@@ -182,7 +186,12 @@ export function FocusableDonutChart({
               const percent = total > 0 ? Math.round((item.value / total) * 100) : 0;
               return `${name}: ${item.value} (${percent}%)`;
             }}
-            wrapperStyle={{ ...CHART_LEGEND_STYLE, paddingTop: 4 }}
+            wrapperStyle={{
+              ...CHART_LEGEND_STYLE,
+              fontSize: legendFontSize,
+              fontWeight: legendFontWeight,
+              paddingTop: 4,
+            }}
           />
         </PieChart>
       </ResponsiveContainer>

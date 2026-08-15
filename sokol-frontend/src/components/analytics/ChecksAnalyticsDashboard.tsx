@@ -4,10 +4,8 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  ComposedChart,
   LabelList,
   Legend,
-  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -254,18 +252,18 @@ export function ChecksAnalyticsDashboard() {
               <KpiCard label="Запланировано" value={summary.not_started} tone="slate" />
               <KpiCard label="В процессе" value={summary.in_progress} tone="amber" />
               <KpiCard label="Завершено" value={summary.completed} tone="green" />
-              <KpiCard label="Доля завершённых" value={completionShare} suffix="%" tone="red" />
+              <KpiCard label="Доля завершённых" value={completionShare} suffix="%" tone="green" />
             </div>
           </ChartCard>
         ),
       },
       {
         id: 'dynamics',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 4, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 8, h: 4, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Количество проверок"
-            description="Динамика и накопительный итог"
+            description="Динамика количества проверок"
             exportSectionId="dynamics"
             exportSelected={exportSections.isSelected('dynamics')}
             onToggleExport={() => exportSections.toggleSection('dynamics')}
@@ -275,23 +273,30 @@ export function ChecksAnalyticsDashboard() {
             ) : (
               <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={flowSeries} margin={{ top: 22, right: 12, left: -10, bottom: 0 }}>
+                  <BarChart data={flowSeries} margin={{ top: 22, right: 12, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="label" tick={CHART_AXIS_TICK} />
+                    <XAxis
+                      dataKey="label"
+                      tick={CHART_AXIS_TICK}
+                      interval={0}
+                      minTickGap={0}
+                      angle={granularity === 'quarter' ? -20 : 0}
+                      textAnchor={granularity === 'quarter' ? 'end' : 'middle'}
+                      height={granularity === 'quarter' ? 58 : 30}
+                    />
                     <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
                     <Tooltip />
-                    <Legend wrapperStyle={CHART_LEGEND_STYLE} />
-                    <Bar dataKey="total" name="За период" fill={CHECKS_PALETTE[11]} radius={[4, 4, 0, 0]} />
-                    <Line type="monotone" dataKey="cumulative" name="Всего" stroke={CHECKS_PALETTE[0]} strokeWidth={2.5} dot={{ r: 3, fill: CHECKS_PALETTE[0] }}>
+                    <Legend wrapperStyle={{ ...CHART_LEGEND_STYLE, fontSize: 18, fontWeight: 600 }} />
+                    <Bar dataKey="total" name="За период" fill={CHECKS_PALETTE[11]} radius={[4, 4, 0, 0]}>
                       <LabelList
-                        dataKey="cumulative"
+                        dataKey="total"
                         position="top"
                         fontSize={CHART_VALUE_LABEL_SIZE}
                         fill={CHECKS_PALETTE[0]}
                         offset={8}
                       />
-                    </Line>
-                  </ComposedChart>
+                    </Bar>
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             )}
@@ -300,7 +305,7 @@ export function ChecksAnalyticsDashboard() {
       },
       {
         id: 'views',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 4, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 6, w: 4, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Виды проверок"
@@ -336,7 +341,7 @@ export function ChecksAnalyticsDashboard() {
       },
       {
         id: 'types',
-        defaultLayout: { x: 0, y: 6, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 8, y: 2, w: 4, h: 4, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Типы проверок"
@@ -348,7 +353,13 @@ export function ChecksAnalyticsDashboard() {
             {typeDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableDonutChart data={typeDistribution} palette={CHECKS_PALETTE} labelMode="both" />
+              <FocusableDonutChart
+                data={typeDistribution}
+                palette={CHECKS_PALETTE}
+                labelMode="both"
+                legendFontSize={18}
+                legendFontWeight={600}
+              />
             )}
           </ChartCard>
         ),
@@ -424,6 +435,7 @@ export function ChecksAnalyticsDashboard() {
       <AnalyticsFilterSidebar
         periodSlice={periodSlice}
         onPeriodSliceChange={handlePeriodSliceChange}
+        availablePeriodSlices={['year', 'quarter']}
         yearOptions={yearOptions}
         quarterOptions={quarterOptions}
         monthOptions={monthOptions}
