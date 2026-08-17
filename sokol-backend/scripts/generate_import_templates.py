@@ -41,6 +41,7 @@ CHECK_HEADERS = [
     "short_name",
     "check_type",
     "check_view",
+    "check_quarter",
     "start_date",
     "end_date",
     "check_leader",
@@ -94,11 +95,12 @@ HINT_FILL = PatternFill("solid", fgColor="D6EAF8")
 REQUIRED_FILL = PatternFill("solid", fgColor="FCE4D6")
 
 CHECK_COLUMN_META: list[tuple[str, bool, str]] = [
-    ("serial_number", True, "Ключ проверки (уникальный). Пример: 24IAA03P1 = год+инициалы+месяц+тип+номер"),
+    ("serial_number", True, "Ключ проверки (уникальный). Пример: 24IAA3P1 = год+код аудитора+квартал+тип+номер"),
     ("check_name", True, "Полное наименование проверки (до 255 символов)"),
     ("short_name", False, "Краткое имя для таблиц/аналитики"),
     ("check_type", True, "planned | unscheduled | thematic"),
     ("check_view", True, "Вид из справочника (см. лист «справочники»)"),
+    ("check_quarter", True, "Квартал проверки: 1 | 2 | 3 | 4"),
     ("start_date", True, "Дата начала YYYY-MM-DD"),
     ("end_date", False, "Дата окончания YYYY-MM-DD"),
     ("check_leader", True, "ФИО руководителя проверки"),

@@ -4,6 +4,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   LabelList,
   Legend,
   ResponsiveContainer,
@@ -19,7 +20,7 @@ import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE,
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { EffectivenessMatrixChart } from './EffectivenessMatrixChart';
-import { CHECKS_PALETTE } from './analyticsPalette';
+import { CHECKS_PALETTE, getValueBasedColors, VALUE_BLUE_SCALE } from './analyticsPalette';
 import { exportChecksDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
@@ -183,7 +184,15 @@ export function ChecksAnalyticsDashboard() {
     () => completeSelectedPeriods(rawFlowSeries, granularity, selectedPeriodKeys),
     [granularity, rawFlowSeries, selectedPeriodKeys],
   );
+  const flowColors = useMemo(
+    () => getValueBasedColors(flowSeries.map((item) => item.total)),
+    [flowSeries],
+  );
   const viewDistribution = data?.viewDistribution ?? EMPTY_VIEW_DISTRIBUTION;
+  const viewColors = useMemo(
+    () => getValueBasedColors(viewDistribution.map((item) => item.value)),
+    [viewDistribution],
+  );
   const typeDistribution = data?.typeDistribution ?? EMPTY_TYPE_DISTRIBUTION;
   const departmentMap = data?.departmentMap ?? EMPTY_DEPARTMENT_MAP;
   const departmentMapTop = useMemo(
@@ -288,6 +297,9 @@ export function ChecksAnalyticsDashboard() {
                     <Tooltip />
                     <Legend wrapperStyle={{ ...CHART_LEGEND_STYLE, fontSize: 18, fontWeight: 600 }} />
                     <Bar dataKey="total" name="За период" fill={CHECKS_PALETTE[11]} radius={[4, 4, 0, 0]}>
+                      {flowSeries.map((item, index) => (
+                        <Cell key={item.key} fill={flowColors[index]} />
+                      ))}
                       <LabelList
                         dataKey="total"
                         position="top"
@@ -325,6 +337,9 @@ export function ChecksAnalyticsDashboard() {
                     <YAxis dataKey="name" type="category" width={92} tick={CHART_AXIS_TICK} />
                     <Tooltip />
                     <Bar dataKey="value" name="Проверки" fill={CHECKS_PALETTE[8]} radius={[0, 6, 6, 0]}>
+                      {viewDistribution.map((item, index) => (
+                        <Cell key={item.name} fill={viewColors[index]} />
+                      ))}
                       <LabelList
                         dataKey="value"
                         position="right"
@@ -355,7 +370,8 @@ export function ChecksAnalyticsDashboard() {
             ) : (
               <FocusableDonutChart
                 data={typeDistribution}
-                palette={CHECKS_PALETTE}
+                palette={VALUE_BLUE_SCALE}
+                colorByValue
                 labelMode="both"
                 legendFontSize={18}
                 legendFontWeight={600}
@@ -378,7 +394,11 @@ export function ChecksAnalyticsDashboard() {
             {departmentMapTop.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableTreemapChart data={departmentMapTop} palette={CHECKS_PALETTE} />
+              <FocusableTreemapChart
+                data={departmentMapTop}
+                palette={VALUE_BLUE_SCALE}
+                colorByValue
+              />
             )}
           </ChartCard>
         ),
@@ -408,11 +428,13 @@ export function ChecksAnalyticsDashboard() {
       departmentMapTop,
       effectivenessMatrix,
       exportSections,
+      flowColors,
       flowSeries,
       granularity,
       summary,
       typeDistribution,
       universeTotal,
+      viewColors,
       viewDistribution,
     ],
   );

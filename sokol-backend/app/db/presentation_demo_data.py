@@ -22,7 +22,7 @@ PRESENTATION_TODAY = date(2026, 8, 12)
 
 CHECK_HEADERS = [
     "serial_number", "check_name", "short_name", "check_type", "check_view",
-    "start_date", "end_date", "check_leader", "status", "created_at", "description",
+    "check_quarter", "start_date", "end_date", "check_leader", "status", "created_at", "description",
     "order_document_number", "order_document_date",
     "program_document_number", "program_document_date",
     "az_document_number", "az_document_date",
@@ -212,6 +212,7 @@ def build_checks(
                 "short_name": _short_name(check_type, topic, index),
                 "check_type": check_type,
                 "check_view": check_view,
+                "check_quarter": (start.month - 1) // 3 + 1,
                 "start_date": start,
                 "end_date": end,
                 "check_leader": leader,

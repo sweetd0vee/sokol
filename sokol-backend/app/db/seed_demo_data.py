@@ -43,6 +43,7 @@ async def seed_demo_data(count: int = DEMO_COUNT, *, replace: bool = True) -> tu
                 short_name=row.get("short_name"),
                 check_type=row["check_type"],
                 check_view=row["check_view"],
+                check_quarter=row["check_quarter"],
                 start_date=row["start_date"],
                 end_date=row.get("end_date"),
                 check_leader=row["check_leader"],

@@ -157,6 +157,7 @@ class ChecksCrudIntegrationTests(unittest.TestCase):
                 "check_name": "Интеграционная проверка",
                 "check_type": "internal",
                 "check_view": "Комплексная проверка",
+                "check_quarter": 1,
                 "start_date": "2026-01-15",
                 "end_date": "2026-02-15",
                 "check_leader": "Иванов И.И.",

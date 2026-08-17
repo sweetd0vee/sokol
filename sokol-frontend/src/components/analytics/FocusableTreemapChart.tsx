@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ResponsiveContainer, Tooltip, Treemap } from 'recharts';
-import { PALETTE } from './analyticsPalette';
+import { getValueBasedColors, PALETTE } from './analyticsPalette';
 import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { contrastLabelColor } from './chartContrast';
 
@@ -13,6 +13,8 @@ export type TreemapDatum = {
 type FocusableTreemapChartProps = {
   data: TreemapDatum[];
   palette?: readonly string[];
+  /** Map smaller values to lighter shades and larger values to darker shades. */
+  colorByValue?: boolean;
 };
 
 type TreemapNodeProps = {
@@ -146,12 +148,17 @@ function TreemapContent({
   );
 }
 
-export function FocusableTreemapChart({ data, palette = PALETTE }: FocusableTreemapChartProps) {
+export function FocusableTreemapChart({
+  data,
+  palette = PALETTE,
+  colorByValue = false,
+}: FocusableTreemapChartProps) {
   const [activeName, setActiveName] = useState<string | null>(null);
   const colors = palette.length > 0 ? palette : PALETTE;
+  const valueColors = colorByValue ? getValueBasedColors(data.map((item) => item.value), colors) : [];
   const chartData = data.map((item, index) => ({
     ...item,
-    fill: item.fill ?? colors[index % colors.length],
+    fill: item.fill ?? (colorByValue ? valueColors[index] : colors[index % colors.length]),
   }));
 
   return (

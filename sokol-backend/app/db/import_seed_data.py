@@ -87,12 +87,22 @@ async def import_seed_data(
                 serial_to_id[serial] = check.id
                 continue
 
+            start_date = _parse_date(row["start_date"])
+            if start_date is None:
+                raise ValueError("start_date обязателен для каждой проверки.")
+            check_quarter = int(
+                row.get("check_quarter") or ((start_date.month - 1) // 3 + 1)
+            )
+            if check_quarter not in {1, 2, 3, 4}:
+                raise ValueError("check_quarter должен быть числом от 1 до 4.")
+
             check_kwargs = {
                 "serial_number": serial,
                 "check_name": str(row["check_name"]).strip(),
                 "check_type": str(row["check_type"]).strip(),
                 "check_view": str(row["check_view"]).strip(),
-                "start_date": _parse_date(row["start_date"]),
+                "check_quarter": check_quarter,
+                "start_date": start_date,
                 "end_date": _parse_date(row.get("end_date")),
                 "check_leader": str(row["check_leader"]).strip(),
                 "status": CheckStatus(str(row["status"]).strip()),

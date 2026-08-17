@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
-import { PALETTE } from './analyticsPalette';
+import { getValueBasedColors, PALETTE } from './analyticsPalette';
 import { CHART_LEGEND_STYLE, CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { contrastLabelColor } from './chartContrast';
 
@@ -13,6 +13,8 @@ export type DonutDatum = {
 type FocusableDonutChartProps = {
   data: DonutDatum[];
   palette?: readonly string[];
+  /** Map smaller values to lighter shades and larger values to darker shades. */
+  colorByValue?: boolean;
   /** What to show on segment labels. Defaults to percent; absolute values appear in the tooltip. */
   labelMode?: 'value' | 'percent' | 'both';
   /** When false, values appear only in the hover tooltip. */
@@ -107,6 +109,7 @@ function PieValueLabel({
 export function FocusableDonutChart({
   data,
   palette = PALETTE,
+  colorByValue = false,
   labelMode = 'percent',
   showValueLabels = true,
   legendFontSize = CHART_LEGEND_STYLE.fontSize,
@@ -114,14 +117,19 @@ export function FocusableDonutChart({
 }: FocusableDonutChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const colors = palette.length > 0 ? palette : PALETTE;
-  const total = data.reduce((sum, entry) => sum + entry.value, 0);
+  const valueColors = colorByValue ? getValueBasedColors(data.map((entry) => entry.value), colors) : [];
+  const chartData = data.map((entry, index) => ({
+    ...entry,
+    color: entry.color ?? (colorByValue ? valueColors[index] : colors[index % colors.length]),
+  }));
+  const total = chartData.reduce((sum, entry) => sum + entry.value, 0);
 
   return (
     <div className="h-full min-h-[13rem]">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
           <Pie
-            data={data}
+            data={chartData}
             dataKey="value"
             nameKey="name"
             cx="50%"
@@ -139,13 +147,13 @@ export function FocusableDonutChart({
             onMouseEnter={(_, index) => setActiveIndex(index)}
             onMouseLeave={() => setActiveIndex(null)}
           >
-            {data.map((entry, index) => {
+            {chartData.map((entry, index) => {
               const isDimmed = activeIndex !== null && activeIndex !== index;
               const isActive = activeIndex === index;
               return (
                 <Cell
                   key={entry.name}
-                  fill={entry.color ?? colors[index % colors.length]}
+                  fill={entry.color}
                   fillOpacity={isDimmed ? 0.32 : 1}
                   stroke={isActive ? '#0f172a' : 'none'}
                   strokeWidth={isActive ? 2 : 0}

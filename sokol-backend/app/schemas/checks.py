@@ -11,6 +11,7 @@ class CheckBase(BaseModel):
     short_name: Optional[str] = Field(None, max_length=255)
     check_type: str = Field(..., min_length=1, max_length=32)
     check_view: str = Field(..., min_length=1, max_length=64)
+    check_quarter: int = Field(..., ge=1, le=4)
     start_date: date
     end_date: Optional[date] = None
     check_leader: str = Field(..., min_length=1, max_length=255)
@@ -40,6 +41,7 @@ class CheckUpdate(BaseModel):
     short_name: Optional[str] = Field(None, max_length=255)
     check_type: Optional[str] = Field(None, min_length=1, max_length=32)
     check_view: Optional[str] = Field(None, min_length=1, max_length=64)
+    check_quarter: Optional[int] = Field(None, ge=1, le=4)
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     check_leader: Optional[str] = Field(None, min_length=1, max_length=255)

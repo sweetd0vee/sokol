@@ -39,6 +39,68 @@ export const CHECKS_PALETTE = [
 ];
 
 /**
+ * Sequential scale for quantitative charts.
+ * Values must move from light to dark so color intensity communicates magnitude.
+ */
+export const VALUE_BLUE_SCALE = [
+  '#93C5FD',
+  '#60A5FA',
+  '#3B82F6',
+  '#0E7490',
+  '#075985',
+  '#002B55',
+] as const;
+
+function hexToRgb(color: string) {
+  const hex = color.replace('#', '');
+  return {
+    red: Number.parseInt(hex.slice(0, 2), 16),
+    green: Number.parseInt(hex.slice(2, 4), 16),
+    blue: Number.parseInt(hex.slice(4, 6), 16),
+  };
+}
+
+function channelToHex(value: number) {
+  return Math.round(value).toString(16).padStart(2, '0');
+}
+
+function interpolateColor(from: string, to: string, ratio: number) {
+  const start = hexToRgb(from);
+  const end = hexToRgb(to);
+  const mix = (left: number, right: number) => left + (right - left) * ratio;
+  return `#${channelToHex(mix(start.red, end.red))}${channelToHex(mix(start.green, end.green))}${channelToHex(mix(start.blue, end.blue))}`;
+}
+
+export function getValueBasedColors(
+  values: number[],
+  scale: readonly string[] = VALUE_BLUE_SCALE,
+) {
+  if (values.length === 0 || scale.length === 0) {
+    return [];
+  }
+  if (scale.length === 1) {
+    return values.map(() => scale[0]);
+  }
+
+  const finiteValues = values.filter(Number.isFinite);
+  const min = finiteValues.length > 0 ? Math.min(...finiteValues) : 0;
+  const max = finiteValues.length > 0 ? Math.max(...finiteValues) : 0;
+
+  if (min === max) {
+    const middleColor = scale[Math.floor(scale.length / 2)];
+    return values.map(() => middleColor);
+  }
+
+  return values.map((value) => {
+    const normalized = Number.isFinite(value) ? (value - min) / (max - min) : 0;
+    const position = Math.max(0, Math.min(1, normalized)) * (scale.length - 1);
+    const startIndex = Math.floor(position);
+    const endIndex = Math.min(startIndex + 1, scale.length - 1);
+    return interpolateColor(scale[startIndex], scale[endIndex], position - startIndex);
+  });
+}
+
+/**
  * Violet / lilac scale for the Recommendations analytics tab.
  * Ordered to alternate dark ↔ light ↔ mid so neighbouring segments stay distinct.
  */

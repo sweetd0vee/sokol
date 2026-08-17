@@ -18,7 +18,7 @@ from app.services.storage.minio_storage import check_bucket_name, get_storage
 from app.utils.check_key import CheckKeySeed, generate_check_serial_number
 
 logger = logging.getLogger(__name__)
-CHECK_SERIAL_SOURCE_FIELDS = {"check_leader", "start_date", "check_type"}
+CHECK_SERIAL_SOURCE_FIELDS = {"check_leader", "start_date", "check_quarter", "check_type"}
 
 
 def _apply_filters(
@@ -74,6 +74,7 @@ async def _generate_unique_check_serial_number(
     session: AsyncSession,
     *,
     start_date: date,
+    check_quarter: int,
     check_leader: str,
     check_type: str,
     exclude_check_id: int | None = None,
@@ -89,6 +90,7 @@ async def _generate_unique_check_serial_number(
     existing_serials = await _existing_serial_numbers(session, exclude_check_id=exclude_check_id)
     serial = generate_check_serial_number(
         start_date,
+        check_quarter,
         check_leader,
         check_type,
         seeds,
@@ -98,6 +100,7 @@ async def _generate_unique_check_serial_number(
         seeds.append(CheckKeySeed(check_leader, start_date, check_type))
         serial = generate_check_serial_number(
             start_date,
+            check_quarter,
             check_leader,
             check_type,
             seeds,
@@ -118,6 +121,7 @@ async def create_check(session: AsyncSession, check_in: CheckCreate) -> Check:
         data["serial_number"] = await _generate_unique_check_serial_number(
             session,
             start_date=data["start_date"],
+            check_quarter=data["check_quarter"],
             check_leader=data["check_leader"],
             check_type=data["check_type"],
         )
@@ -199,6 +203,7 @@ async def update_check(
         check.serial_number = await _generate_unique_check_serial_number(
             session,
             start_date=check.start_date,
+            check_quarter=check.check_quarter,
             check_leader=check.check_leader,
             check_type=check.check_type,
             exclude_check_id=check.id,

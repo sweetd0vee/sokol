@@ -79,6 +79,7 @@ from app.db.migrate_auditor_codes import migrate as migrate_auditor_codes
 from app.db.migrate_analytics_indexes import migrate as migrate_analytics_indexes
 from app.db.migrate_attachments import migrate as migrate_attachments
 from app.db.migrate_check_effectiveness import migrate as migrate_effectiveness
+from app.db.migrate_check_quarter import migrate as migrate_check_quarter
 from app.db.migrate_dictionary_uniqueness import migrate as migrate_dictionary_uniqueness
 from app.db.migrate_recommendation_observation_name import migrate as migrate_recommendation_observation_name
 from app.db.seed_audit_types import AUDIT_TYPES, seed_audit_types
@@ -93,6 +94,7 @@ from app.models.checks import Check
 async def bootstrap() -> None:
     await init_db()
     await migrate_auditor_codes()
+    await migrate_check_quarter()
     await migrate_effectiveness()
     await migrate_attachments()
     await migrate_dictionary_uniqueness()

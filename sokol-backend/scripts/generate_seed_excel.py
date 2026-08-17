@@ -36,6 +36,7 @@ def main() -> None:
         "short_name",
         "check_type",
         "check_view",
+        "check_quarter",
         "start_date",
         "end_date",
         "check_leader",

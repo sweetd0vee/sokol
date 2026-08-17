@@ -199,6 +199,7 @@ def build_check_rows(count: int = 100) -> list[dict]:
                 "short_name": _build_check_short_name(check_type, topic, n),
                 "check_type": check_type,
                 "check_view": check_view,
+                "check_quarter": (start.month - 1) // 3 + 1,
                 "start_date": start,
                 "end_date": end_date,
                 "check_leader": leader,

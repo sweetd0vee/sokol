@@ -90,6 +90,7 @@ def count_matching_check_keys(
 
 def generate_check_serial_number(
     start_date: date,
+    check_quarter: int,
     check_leader: str,
     check_type: str,
     existing: Iterable[CheckKeySeed],
@@ -108,10 +109,11 @@ def generate_check_serial_number(
         or not resolved_leader_code.isalpha()
     ):
         raise ValueError("Auditor code must contain exactly 3 Latin letters.")
-    month_code = f"{start_date.month:02d}"
+    if check_quarter not in {1, 2, 3, 4}:
+        raise ValueError("Check quarter must be between 1 and 4.")
     type_code = CHECK_TYPE_KEY_CODES.get(check_type, "")
     next_number = count_matching_check_keys(check_leader, start_date, check_type, existing) + 1
-    return f"{year_code}{resolved_leader_code}{month_code}{type_code}{next_number}"
+    return f"{year_code}{resolved_leader_code}{check_quarter}{type_code}{next_number}"
 
 
 def assign_serial_numbers(
@@ -125,6 +127,7 @@ def assign_serial_numbers(
             start = date.fromisoformat(start)
         serial = generate_check_serial_number(
             start,
+            int(check["check_quarter"]),
             check["check_leader"],
             check["check_type"],
             assigned,

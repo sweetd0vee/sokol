@@ -22,6 +22,7 @@ class Check(Base):
     short_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     check_type: Mapped[str] = mapped_column(String(32), nullable=False)
     check_view: Mapped[str] = mapped_column(String(64), nullable=False)
+    check_quarter: Mapped[int] = mapped_column(Integer, nullable=False)
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     check_leader: Mapped[str] = mapped_column(String(255), nullable=False)

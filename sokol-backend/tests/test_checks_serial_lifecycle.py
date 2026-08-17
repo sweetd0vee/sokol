@@ -29,12 +29,13 @@ class ChecksSerialLifecycleTests(unittest.TestCase):
             check_name="Проверка",
             check_type="planned",
             check_view="Комплексная проверка",
+            check_quarter=1,
             start_date=date(2026, 1, 15),
             end_date=None,
             check_leader="Иванов И.И.",
             status=CheckStatus.NOT_STARTED,
             created_at=date(2026, 1, 10),
-            serial_number="26IVP01P1",
+            serial_number="26IVP1P1",
         )
 
         async def run() -> None:
@@ -46,7 +47,7 @@ class ChecksSerialLifecycleTests(unittest.TestCase):
                 patch(
                     "app.crud.checks_crud._generate_unique_check_serial_number",
                     new_callable=AsyncMock,
-                    return_value="26PPP01P1",
+                    return_value="26PPP1P1",
                 ),
                 patch("app.crud.checks_crud.get_storage", return_value=storage),
             ):
@@ -56,9 +57,9 @@ class ChecksSerialLifecycleTests(unittest.TestCase):
                     CheckUpdate(check_leader="Петров П.П."),
                 )
 
-            self.assertEqual(updated.serial_number, "26PPP01P1")
-            storage.copy_check_bucket_objects.assert_awaited_once_with("26IVP01P1", "26PPP01P1")
-            storage.delete_check_bucket.assert_awaited_once_with("26IVP01P1")
+            self.assertEqual(updated.serial_number, "26PPP1P1")
+            storage.copy_check_bucket_objects.assert_awaited_once_with("26IVP1P1", "26PPP1P1")
+            storage.delete_check_bucket.assert_awaited_once_with("26IVP1P1")
             self.assertEqual(session.execute.await_count, 2)
             session.commit.assert_awaited_once()
             session.refresh.assert_awaited_once_with(check)

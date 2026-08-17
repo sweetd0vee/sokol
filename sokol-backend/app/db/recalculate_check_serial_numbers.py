@@ -44,6 +44,7 @@ def _build_serial_assignments(
         {
             "id": check.id,
             "start_date": check.start_date,
+            "check_quarter": check.check_quarter,
             "check_leader": check.check_leader,
             "check_leader_code": auditor_codes[check.check_leader],
             "check_type": check.check_type,
