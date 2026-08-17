@@ -294,9 +294,15 @@ export function ChecksAnalyticsDashboard() {
                       height={granularity === 'quarter' ? 58 : 30}
                     />
                     <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
-                    <Tooltip />
-                    <Legend wrapperStyle={{ ...CHART_LEGEND_STYLE, fontSize: 18, fontWeight: 600 }} />
-                    <Bar dataKey="total" name="За период" fill={CHECKS_PALETTE[11]} radius={[4, 4, 0, 0]}>
+                    <Tooltip itemStyle={{ color: '#003366' }} />
+                    <Legend
+                      wrapperStyle={{ ...CHART_LEGEND_STYLE, fontSize: 18, fontWeight: 600 }}
+                      labelStyle={{ color: '#003366' }}
+                      formatter={(value) => (
+                        <span className="text-sber-dark hover:text-sber-dark">{value}</span>
+                      )}
+                    />
+                    <Bar dataKey="total" name="За период" fill="#003366" radius={[4, 4, 0, 0]}>
                       {flowSeries.map((item, index) => (
                         <Cell key={item.key} fill={flowColors[index]} />
                       ))}

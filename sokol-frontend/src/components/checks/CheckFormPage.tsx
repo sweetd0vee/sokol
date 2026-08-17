@@ -471,21 +471,6 @@ export function CheckFormPage() {
             />
           </div>
           <div className={FORM_ROW_4}>
-            <Select
-              label="Квартал проверки"
-              value={checkQuarter}
-              onChange={setCheckQuarter}
-              options={CHECK_QUARTER_OPTIONS}
-              placeholder="Выберите квартал"
-              className={FORM_FIELD_CLASS}
-              labelClassName={FORM_LABEL_CLASS}
-              inputClassName={[
-                FORM_INPUT_CLASS,
-                showValidationErrors && requiredFieldErrors.checkQuarter ? FORM_FIELD_ERROR_CLASS : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            />
             <DatePicker
               label="Начало"
               selected={startDate}
@@ -507,6 +492,21 @@ export function CheckFormPage() {
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
               inputClassName={FORM_INPUT_CLASS}
+            />
+            <Select
+              label="Квартал проверки"
+              value={checkQuarter}
+              onChange={setCheckQuarter}
+              options={CHECK_QUARTER_OPTIONS}
+              placeholder="Выберите квартал"
+              className={FORM_FIELD_CLASS}
+              labelClassName={FORM_LABEL_CLASS}
+              inputClassName={[
+                FORM_INPUT_CLASS,
+                showValidationErrors && requiredFieldErrors.checkQuarter ? FORM_FIELD_ERROR_CLASS : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             />
             <div className={FORM_FIELD_CLASS}>
               <Input
