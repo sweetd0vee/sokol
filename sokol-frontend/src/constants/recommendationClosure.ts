@@ -105,6 +105,25 @@ function toStoredItems(rows: ClosureDateCommentRow[]): ClosureListItem[] {
     .filter((item) => item.date || item.comment);
 }
 
+/** Comments from «Срок исполнения» and «Снять с контроля» — информация о выполнении. */
+export function getRecommendationExecutionInfo(
+  source?: Parameters<typeof closureFromRecommendation>[0],
+): string {
+  const closure = closureFromRecommendation(source);
+  const parts: string[] = [];
+  const closureInformation = closure.closureInformation.trim();
+  if (closureInformation) {
+    parts.push(closureInformation);
+  }
+  closure.removals.forEach((row) => {
+    const comment = row.comment.trim();
+    if (comment && !parts.includes(comment)) {
+      parts.push(comment);
+    }
+  });
+  return parts.join('\n\n');
+}
+
 export function closureFromRecommendation(
   source?: Partial<{
     closure_information?: string;

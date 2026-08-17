@@ -39,6 +39,7 @@ import {
   preloadIndicatorIcons,
 } from './exportIndicatorIcons';
 import { formatRecommendationAuditObjects } from './auditObjects';
+import { getRecommendationExecutionInfo } from '../constants/recommendationClosure';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
@@ -96,6 +97,7 @@ const RECOMMENDATION_XLSX_COLUMN_WIDTHS: Record<string, number> = {
   'Название проверки': 110,
   'Название рекомендации': 58,
   'Название наблюдения': 58,
+  'Информация о выполнении': 58,
   'Объект аудита': 34,
   Индикатор: 12,
   'Срок исполнения': 15,
@@ -124,6 +126,7 @@ const RECOMMENDATION_TABLE_COLUMN_KEYS = [
   'Название проверки',
   'Название рекомендации',
   'Название наблюдения',
+  'Информация о выполнении',
   'Объект аудита',
   'Индикатор',
   'Срок исполнения',
@@ -322,20 +325,22 @@ function createDocxCell(
   options: DocxTableOptions,
   fillColor?: string
 ) {
+  const lines = text.length ? text.split(/\r?\n/) : [''];
   return new TableCell({
-    children: [
-      new Paragraph({
-        alignment: isHeader || fillColor ? AlignmentType.CENTER : AlignmentType.LEFT,
-        children: [
-          new TextRun({
-            text,
-            bold: isHeader,
-            color: isHeader ? WHITE : '111827',
-            size: options.fontSize,
-          }),
-        ],
-      }),
-    ],
+    children: lines.map(
+      (line) =>
+        new Paragraph({
+          alignment: isHeader || fillColor ? AlignmentType.CENTER : AlignmentType.LEFT,
+          children: [
+            new TextRun({
+              text: line.length ? line : ' ',
+              bold: isHeader,
+              color: isHeader ? WHITE : '111827',
+              size: options.fontSize,
+            }),
+          ],
+        }),
+    ),
     shading:
       isHeader || fillColor
         ? {
@@ -523,6 +528,7 @@ const DOCX_RECOMMENDATION_COLUMN_WEIGHTS: Record<string, number> = {
   'Название проверки': 21,
   'Название рекомендации': 26,
   'Название наблюдения': 18,
+  'Информация о выполнении': 20,
   'Объект аудита': 12,
   Индикатор: 5,
   'Срок исполнения': 7,
@@ -557,6 +563,7 @@ function getPdfColumnWidths(headers: string[]): Array<number | '*'> {
     Ключ: 42,
     'Название рекомендации': '*',
     'Название наблюдения': '*',
+    'Информация о выполнении': '*',
     'Объект аудита': '*',
     'Срок исполнения': 48,
     Индикатор: 28,
@@ -752,7 +759,7 @@ function buildHtmlCellContent(
     }
     return '';
   }
-  return escapeHtml(toCellText(value));
+  return escapeHtml(toCellText(value)).replace(/\r?\n/g, '<br>');
 }
 
 function buildHtmlCellStyle(header: string, value: unknown) {
@@ -951,6 +958,7 @@ function toRecommendationTableRows(
     'Название проверки': checkNameByKey.get(recommendation.serial_number) ?? '',
     'Название рекомендации': recommendation.name,
     'Название наблюдения': recommendation.observation_name ?? '',
+    'Информация о выполнении': getRecommendationExecutionInfo(recommendation),
     'Объект аудита': formatRecommendationAuditObjects(recommendation.audit_object),
     Индикатор: getIndicatorLabel(recommendation.indicator),
     'Срок исполнения': formatCheckDate(recommendation.deadline),

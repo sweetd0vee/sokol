@@ -89,6 +89,16 @@ async def seed_demo_data(count: int = DEMO_COUNT, *, replace: bool = True) -> tu
                     additional_status=RecommendationAdditionalStatus(row["additional_status"]),
                     created_at=row["created_at"],
                     actual_completion_date=row.get("actual_completion_date"),
+                    extension_1_reason=row.get("extension_1_reason"),
+                    extension_1_date=row.get("extension_1_date"),
+                    extension_1_comment=row.get("extension_1_comment"),
+                    extension_2_reason=row.get("extension_2_reason"),
+                    extension_2_comment=row.get("extension_2_comment"),
+                    remove_from_control_reason=row.get("remove_from_control_reason"),
+                    remove_from_control_date=row.get("remove_from_control_date"),
+                    remove_from_control_comment=row.get("remove_from_control_comment"),
+                    deadline_extensions=row.get("deadline_extensions") or None,
+                    control_removals=row.get("control_removals") or None,
                     closure_information=row.get("closure_information"),
                 )
             )

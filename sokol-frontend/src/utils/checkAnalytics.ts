@@ -167,6 +167,10 @@ export function getEffectivenessToneColor(tone: EffectivenessTone): string {
   return EFFECTIVENESS_LEGEND.find((item) => item.tone === tone)?.color ?? '#94A3B8';
 }
 
+export function getEffectivenessShareLabelColor(tone: EffectivenessTone): string {
+  return tone === 'sufficient' || tone === 'unset' ? '#1e293b' : '#ffffff';
+}
+
 export type EffectivenessColumnKey = (typeof EFFECTIVENESS_MATRIX_COLUMNS)[number]['key'];
 
 export type EffectivenessColumnShare = {
@@ -185,37 +189,27 @@ function escapeEffectivenessHtml(value: string) {
     .replace(/"/g, '&quot;');
 }
 
-const EFFECTIVENESS_EXPORT_PIE_SIZE_PX = 76;
+const EFFECTIVENESS_EXPORT_SQUARE_SIZE_PX = 56;
 
-function buildEffectivenessSharePie(shares: EffectivenessColumnShare[]) {
+function buildEffectivenessShareSquares(shares: EffectivenessColumnShare[]) {
   if (shares.length === 0) {
     return '<span style="color:#94a3b8;font-size:12px">—</span>';
   }
 
-  let cursor = 0;
-  const gradientStops = shares
+  const size = EFFECTIVENESS_EXPORT_SQUARE_SIZE_PX;
+  const squares = shares
     .map((share) => {
-      const start = cursor;
-      cursor += share.percent;
-      return `${share.color} ${start}% ${cursor}%`;
+      const labelColor = getEffectivenessShareLabelColor(share.tone);
+      return `<li>
+        <span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:6px;background:${share.color};border:1px solid rgba(0,0,0,0.1);color:${labelColor};text-align:center;line-height:1.15" title="${escapeEffectivenessHtml(`${share.label}: ${share.count} (${share.percent}%)`)}">
+          <span style="font-size:14px;font-weight:600">${share.count}</span>
+          <span style="font-size:11px;font-weight:500">(${share.percent}%)</span>
+        </span>
+      </li>`;
     })
-    .join(', ');
-
-  const legend = shares
-    .map(
-      (share) =>
-        `<li style="display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;line-height:1.15">
-          <span style="width:7px;height:7px;border-radius:50%;background:${share.color};flex-shrink:0"></span>
-          <span style="font-weight:600">${share.count} (${share.percent}%)</span>
-        </li>`,
-    )
     .join('');
 
-  const size = EFFECTIVENESS_EXPORT_PIE_SIZE_PX;
-  return `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;max-width:100%">
-    <div style="width:${size}px;height:${size}px;border-radius:50%;background:conic-gradient(${gradientStops});flex-shrink:0"></div>
-    <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px">${legend}</ul>
-  </div>`;
+  return `<ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;align-items:center;gap:6px">${squares}</ul>`;
 }
 
 /** Self-contained HTML for effectiveness matrix export (no Tailwind / Recharts required). */
@@ -254,9 +248,9 @@ export function buildEffectivenessMatrixHtmlMarkup(rows: EffectivenessMatrixRow[
     })
     .join('');
 
-  const footerPies = EFFECTIVENESS_MATRIX_COLUMNS.map(
+  const footerShares = EFFECTIVENESS_MATRIX_COLUMNS.map(
     (column) =>
-      `<div style="display:flex;align-items:center;justify-content:center;padding:8px 2px;min-width:0">${buildEffectivenessSharePie(columnShares[column.key])}</div>`,
+      `<div style="display:flex;align-items:flex-start;justify-content:center;padding:8px 2px;min-width:0">${buildEffectivenessShareSquares(columnShares[column.key])}</div>`,
   ).join('');
 
   const legend = EFFECTIVENESS_LEGEND.map(
@@ -286,9 +280,9 @@ export function buildEffectivenessMatrixHtmlMarkup(rows: EffectivenessMatrixRow[
           <tbody>${bodyRows}</tbody>
         </table>
       </div>
-      <div data-effectiveness-matrix-footer style="display:grid;grid-template-columns:14% 34% 13% 13% 13% 13%;align-items:center;border-top:1px solid #e5e7eb;background:#f9fafb">
-        <div style="grid-column:1 / span 2;display:flex;align-items:center;padding:8px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#003366">Доля оценок</div>
-        ${footerPies}
+      <div data-effectiveness-matrix-footer style="display:grid;grid-template-columns:14% 34% 13% 13% 13% 13%;align-items:start;border-top:1px solid #e5e7eb;background:#f9fafb">
+        <div style="grid-column:1 / span 2;display:flex;align-items:flex-start;padding:8px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#003366">Доля оценок</div>
+        ${footerShares}
       </div>
     </div>
     <ul data-effectiveness-matrix-legend style="display:flex;flex-wrap:wrap;gap:8px 12px;list-style:none;padding:0;margin:0;font-size:12px;color:#4b5563">${legend}</ul>

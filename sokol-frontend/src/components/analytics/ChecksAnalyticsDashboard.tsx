@@ -36,6 +36,7 @@ const EMPTY_VIEW_DISTRIBUTION: never[] = [];
 const EMPTY_TYPE_DISTRIBUTION: never[] = [];
 const EMPTY_DEPARTMENT_MAP: never[] = [];
 const EMPTY_EFFECTIVENESS_MATRIX: never[] = [];
+const QUARTER_AXIS_TICK = { fontSize: 12 } as const;
 
 function sortKeyFromPeriodKey(key: string, granularity: PeriodGranularity) {
   if (granularity === 'year') {
@@ -268,7 +269,7 @@ export function ChecksAnalyticsDashboard() {
       },
       {
         id: 'dynamics',
-        defaultLayout: { x: 0, y: 2, w: 8, h: 4, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 9, h: 4, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
             title="Количество проверок"
@@ -282,16 +283,23 @@ export function ChecksAnalyticsDashboard() {
             ) : (
               <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={flowSeries} margin={{ top: 22, right: 12, left: -10, bottom: 0 }}>
+                  <BarChart
+                    data={flowSeries}
+                    margin={{
+                      top: 22,
+                      right: granularity === 'quarter' ? 20 : 12,
+                      left: granularity === 'quarter' ? 8 : -10,
+                      bottom: 0,
+                    }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis
                       dataKey="label"
-                      tick={CHART_AXIS_TICK}
+                      tick={granularity === 'quarter' ? QUARTER_AXIS_TICK : CHART_AXIS_TICK}
                       interval={0}
                       minTickGap={0}
-                      angle={granularity === 'quarter' ? -20 : 0}
-                      textAnchor={granularity === 'quarter' ? 'end' : 'middle'}
-                      height={granularity === 'quarter' ? 58 : 30}
+                      height={granularity === 'quarter' ? 36 : 30}
+                      padding={granularity === 'quarter' ? { left: 10, right: 10 } : undefined}
                     />
                     <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
                     <Tooltip itemStyle={{ color: '#003366' }} />
@@ -362,7 +370,7 @@ export function ChecksAnalyticsDashboard() {
       },
       {
         id: 'types',
-        defaultLayout: { x: 8, y: 2, w: 4, h: 4, minW: 3, minH: 2 },
+        defaultLayout: { x: 9, y: 2, w: 3, h: 4, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Типы проверок"
@@ -411,7 +419,7 @@ export function ChecksAnalyticsDashboard() {
       },
       {
         id: 'effectivenessMatrix',
-        defaultLayout: { x: 0, y: 9, w: 12, h: 6, minW: 6, minH: 4 },
+        defaultLayout: { x: 0, y: 9, w: 12, h: 8, minW: 6, minH: 6 },
         render: () => (
           <ChartCard
             title="Оценка эффективности"

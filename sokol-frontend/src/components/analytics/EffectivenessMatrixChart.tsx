@@ -1,79 +1,42 @@
 import { useMemo, useState } from 'react';
-import { Cell, Pie, PieChart, Tooltip } from 'recharts';
 import {
   EFFECTIVENESS_LEGEND,
   EFFECTIVENESS_MATRIX_COLUMNS,
   buildEffectivenessColumnShares,
+  getEffectivenessShareLabelColor,
   getEffectivenessToneColor,
   type EffectivenessColumnShare,
   type EffectivenessMatrixRow,
 } from '../../utils/checkAnalytics';
 
-const SHARE_PIE_SIZE = 128;
-const SHARE_PIE_OUTER_RADIUS = 56;
-
 type EffectivenessMatrixChartProps = {
   rows: EffectivenessMatrixRow[];
 };
 
-function ColumnSharePie({ shares }: { shares: EffectivenessColumnShare[] }) {
-  const data = shares.map((share) => ({
-    name: share.label,
-    value: share.count,
-    color: share.color,
-    percent: share.percent,
-  }));
-
-  if (data.length === 0) {
+function ColumnShareSquares({ shares }: { shares: EffectivenessColumnShare[] }) {
+  if (shares.length === 0) {
     return <span className="text-xs text-gray-400">—</span>;
   }
 
   return (
-    <div className="flex flex-col items-center gap-2.5">
-      <PieChart width={SHARE_PIE_SIZE} height={SHARE_PIE_SIZE}>
-        <Pie
-          data={data}
-          dataKey="value"
-          nameKey="name"
-          cx="50%"
-          cy="50%"
-          outerRadius={SHARE_PIE_OUTER_RADIUS}
-          innerRadius={0}
-          stroke="none"
-          isAnimationActive={false}
-        >
-            {data.map((entry) => (
-              <Cell key={entry.name} fill={entry.color} />
-            ))}
-          </Pie>
-          <Tooltip
-            formatter={(value, name, item) => {
-              const percent = (item?.payload as { percent?: number } | undefined)?.percent ?? 0;
-              return [`${value} (${percent}%)`, name];
+    <ul className="flex flex-col items-center gap-1.5">
+      {shares.map((share) => (
+        <li key={share.tone}>
+          <span
+            className="inline-flex h-16 w-16 flex-col items-center justify-center rounded-md border border-black/10 text-center leading-tight"
+            style={{
+              backgroundColor: share.color,
+              color: getEffectivenessShareLabelColor(share.tone),
             }}
-            contentStyle={{
-              borderRadius: 8,
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 6px 16px rgba(15, 23, 42, 0.08)',
-              fontSize: 14,
-            }}
-          />
-        </PieChart>
-      <ul className="flex max-w-[8rem] flex-col gap-1 text-xs leading-tight text-gray-600">
-        {shares.map((share) => (
-          <li key={share.tone} className="inline-flex items-center justify-center gap-1.5">
-            <span
-              className="inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/5"
-              style={{ backgroundColor: share.color }}
-              aria-hidden
-            />
-            <span className="font-semibold tabular-nums">
-              {share.count} ({share.percent}%)
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
+            title={`${share.label}: ${share.count} (${share.percent}%)`}
+            aria-label={`${share.label}: ${share.count} (${share.percent}%)`}
+          >
+            <span className="text-sm font-semibold tabular-nums">{share.count}</span>
+            <span className="text-[11px] font-medium tabular-nums">({share.percent}%)</span>
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -168,14 +131,14 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
           </table>
         </div>
 
-        <div className="shrink-0 border-t border-gray-200 bg-gray-50/90">
-          <div className="flex w-full items-stretch" data-effectiveness-matrix-footer>
-            <div className="flex w-[48%] shrink-0 items-center px-3 py-3 text-xs font-semibold uppercase tracking-wide text-sber-dark">
+        <div className="max-h-[55%] shrink-0 overflow-auto border-t border-gray-200 bg-gray-50/90">
+          <div className="flex w-full items-start" data-effectiveness-matrix-footer>
+            <div className="flex w-[48%] shrink-0 items-start px-3 py-3 text-xs font-semibold uppercase tracking-wide text-sber-dark">
               Доля оценок
             </div>
             {EFFECTIVENESS_MATRIX_COLUMNS.map((column) => (
-              <div key={column.key} className="flex w-[13%] items-center justify-center px-1 py-5">
-                <ColumnSharePie shares={columnShares[column.key]} />
+              <div key={column.key} className="flex w-[13%] items-start justify-center px-1 py-3">
+                <ColumnShareSquares shares={columnShares[column.key]} />
               </div>
             ))}
           </div>

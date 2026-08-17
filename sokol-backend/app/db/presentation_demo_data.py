@@ -13,6 +13,7 @@ from openpyxl.styles import Font, PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.db.auditor_names import AUDITORS
+from app.db.demo_data import build_recommendation_closure_fields
 from app.db.department_names import DEPARTMENTS
 from app.db.seed_check_kinds import CHECK_KINDS
 from app.utils.check_key import assign_serial_numbers
@@ -274,15 +275,15 @@ def build_recommendations(checks: list[dict], rng: random.Random, today: date) -
             created = check["start_date"] + timedelta(days=rng.randint(5, 35))
             deadline = created + timedelta(days=rng.choice([45, 60, 75, 90, 120, 150]))
             status, additional_status = _recommendation_status(rng, deadline, today)
-
-            completion_date = None
-            closure_information = None
-            if status == "completed":
-                offset = rng.randint(-20, 25)
-                completion_date = deadline + timedelta(days=offset)
-                closure_information = "Представлены подтверждающие материалы и акт проверки исполнения."
-                if completion_date > deadline:
-                    additional_status = "deadline_violated"
+            closure = build_recommendation_closure_fields(
+                status=status,
+                created=created,
+                deadline=deadline,
+                index=len(rows) + 1,
+                rng=rng,
+            )
+            if status == "completed" and closure["actual_completion_date"] and closure["actual_completion_date"] > deadline:
+                additional_status = "deadline_violated"
 
             name = f"{template.format(topic=topic)} (п.{sequence})"
             rows.append({
@@ -303,8 +304,7 @@ def build_recommendations(checks: list[dict], rng: random.Random, today: date) -
                 "status": status,
                 "additional_status": additional_status,
                 "created_at": created,
-                "actual_completion_date": completion_date,
-                "closure_information": closure_information,
+                **closure,
             })
     return rows
 

@@ -36,6 +36,7 @@ import { useSokolData } from '../../contexts/sokolData';
 import { recommendationMatchesCurrentUser } from '../../utils/personMatch';
 import { formatRecommendationAuditObjects, getRecommendationAuditObjects } from '../../utils/auditObjects';
 import { INDICATOR_ICONS } from '../recommendations/indicatorIcons';
+import { RecommendationNameHoverCard } from '../recommendations/RecommendationNameHoverCard';
 import {
   LIST_ACTION_BUTTON_CLASS,
   LIST_ACTION_GROUP_CLASS,
@@ -596,19 +597,7 @@ export function RecommendationsTab() {
                     {getRecommendationYearlyId(recommendation, recommendationYearlyNumbers) ?? '—'}
                   </td>
                   <td className="px-4 py-3">{recommendation.serial_number}</td>
-                  <td
-                    className="px-4 py-3"
-                    title={`Название рекомендации: ${recommendation.name}\nНазвание наблюдения: ${recommendation.observation_name ?? ''}`}
-                  >
-                    <div className="min-w-0 space-y-1">
-                      <div className="truncate">{recommendation.name}</div>
-                      {recommendation.observation_name ? (
-                        <div className="truncate text-sm leading-snug text-gray-500">
-                          {recommendation.observation_name}
-                        </div>
-                      ) : null}
-                    </div>
-                  </td>
+                  <RecommendationNameHoverCard recommendation={recommendation} />
                   <td
                     className="px-4 py-3 truncate"
                     title={formatRecommendationAuditObjects(recommendation.audit_object)}

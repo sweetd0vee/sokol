@@ -529,7 +529,7 @@ export function CheckFormPage() {
                 </p>
               )}
               {keySourceChanged && (
-                <p className="mt-1 text-xs text-amber-700">
+                <p className="mt-1 text-xs text-gray-500">
                   При сохранении сервер пересчитает ключ и обновит связанные рекомендации.
                 </p>
               )}
