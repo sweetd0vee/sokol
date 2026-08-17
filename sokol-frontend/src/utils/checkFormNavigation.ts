@@ -8,6 +8,7 @@ export type CheckFormDraft = {
   checkType: string;
   checkView: string;
   checkLeader: string;
+  checkQuarter: string;
   startDate: string | null;
   endDate: string | null;
   orderDocumentNumber: string;

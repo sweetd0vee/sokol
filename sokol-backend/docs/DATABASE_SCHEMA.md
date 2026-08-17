@@ -126,7 +126,7 @@ flowchart LR
 |-----|----------------|
 | Создание проверки | API валидирует руководителя и вид проверки по справочникам, генерирует `serial_number`, создаёт строку `checks`, при включённом MinIO создаёт bucket проверки |
 | Создание рекомендации | API ищет проверку по `serial_number`, записывает реальный `check_id`, назначает `sequence_number`, канонизирует `audit_object` по `departments` |
-| Обновление ключа проверки | При изменении `check_leader`, `start_date` или `check_type` backend пересчитывает `checks.serial_number` и синхронизирует `recommendations.serial_number` и `attachments.check_serial_number` |
+| Обновление ключа проверки | При изменении `check_leader`, `start_date`, `check_quarter` или `check_type` backend пересчитывает `checks.serial_number` и синхронизирует `recommendations.serial_number` и `attachments.check_serial_number` |
 | Загрузка вложения | Файл пишется в MinIO, metadata пишется в `attachments`; при ошибке записи metadata backend удаляет уже загруженный объект |
 | Удаление проверки | Удаляются вложения проверки и рекомендаций, затем `checks`; рекомендации удаляются каскадно через FK |
 | Аналитика | Backend агрегирует PostgreSQL-данные по датам, статусам, аудиторам, объектам аудита, уровню существенности и срокам |
@@ -143,7 +143,8 @@ flowchart LR
 | `short_name` | `VARCHAR(255)` | да | - | Краткое название для UI и отчётов |
 | `check_type` | `VARCHAR(32)` | нет | filter field | Тип ключа: `planned`, `unscheduled`, `thematic` |
 | `check_view` | `VARCHAR(64)` | нет | logical ref to `check_kinds.label` | Вид проверки из справочника |
-| `start_date` | `DATE` | нет | `ix_checks_start_date` | Дата начала, участвует в ключе и аналитике |
+| `check_quarter` | `INTEGER` | нет | CHECK 1–4 | Квартал проверки, участвует в ключе |
+| `start_date` | `DATE` | нет | `ix_checks_start_date` | Дата начала; год участвует в ключе и аналитике |
 | `end_date` | `DATE` | да | - | Дата окончания |
 | `check_leader` | `VARCHAR(255)` | нет | `ix_checks_check_leader`, logical ref to `auditors.full_name` | Руководитель проверки |
 | `status` | `check_status` enum | нет | `ix_checks_status` | Статус проверки |
@@ -172,18 +173,18 @@ flowchart LR
 
 ### Генерация `serial_number`
 
-Ключ проверки строится из года, инициалов руководителя, месяца начала, типа проверки и порядкового номера среди проверок того же руководителя/типа/года.
+Ключ проверки строится из года начала, постоянного кода руководителя из справочника аудиторов, квартала проверки, типа и порядкового номера среди проверок того же руководителя/типа/года.
 
 ```mermaid
 flowchart LR
     YEAR[start_date.year last 2 digits] --> KEY[serial_number]
-    LEADER[check_leader initials transliterated] --> KEY
-    MONTH[start_date.month 2 digits] --> KEY
+    LEADER[auditors.code] --> KEY
+    QUARTER[check_quarter 1-4] --> KEY
     TYPE[check_type code: P/V/K] --> KEY
     N[next sequence within leader + type + year] --> KEY
 ```
 
-Пример структуры: `26IAA08P1`, где `26` - год, `IAA` - код руководителя, `08` - месяц, `P` - плановая проверка, `1` - номер.
+Пример структуры: `26KVS3P1`, где `26` - год, `KVS` - код руководителя, `3` - квартал, `P` - плановая проверка, `1` - номер.
 
 ## 5. Таблица `recommendations`
 

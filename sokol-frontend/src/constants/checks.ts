@@ -6,6 +6,13 @@ export const CHECK_TYPE_OPTIONS: { value: CheckType; label: string }[] = [
   { value: 'thematic', label: 'Контрольная' },
 ];
 
+export const CHECK_QUARTER_OPTIONS = [
+  { value: '1', label: '1 квартал' },
+  { value: '2', label: '2 квартал' },
+  { value: '3', label: '3 квартал' },
+  { value: '4', label: '4 квартал' },
+];
+
 export const CHECK_TYPE_PLURAL_LABELS: Record<CheckType, string> = {
   planned: 'Плановые',
   unscheduled: 'Внеплановые',

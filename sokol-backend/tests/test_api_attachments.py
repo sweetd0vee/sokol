@@ -51,7 +51,7 @@ class AttachmentsApiTests(unittest.TestCase):
             entity_type="check",
             entity_id=10,
             slot="az",
-            check_serial_number="26IVP01P1",
+            check_serial_number="26IVP1P1",
             bucket="check-26ivp01p1",
             object_key="az/uuid_file.pdf",
             original_name="file.pdf",
@@ -63,7 +63,7 @@ class AttachmentsApiTests(unittest.TestCase):
             patch(
                 "app.services.attachments_service.resolve_attachment_target",
                 new_callable=AsyncMock,
-                return_value=("26IVP01P1", None, None),
+                return_value=("26IVP1P1", None, None),
             ),
             patch(
                 "app.services.attachments_service.attachments_crud.list_attachments",
@@ -115,7 +115,7 @@ class AttachmentsApiTests(unittest.TestCase):
             patch(
                 "app.services.attachments_service.resolve_attachment_target",
                 new_callable=AsyncMock,
-                return_value=("26IVP01P1", None, None),
+                return_value=("26IVP1P1", None, None),
             ),
         ):
             response = self.client.post(

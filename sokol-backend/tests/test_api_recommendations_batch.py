@@ -26,7 +26,7 @@ from tests.auth_test_utils import override_current_user
 def _recommendation_read() -> RecommendationRead:
     return RecommendationRead(
         id=1,
-        serial_number="26IVP01P1",
+        serial_number="26IVP1P1",
         sequence_number=1,
         name="Рекомендация",
         observation_name="Наблюдение",
@@ -63,11 +63,11 @@ class RecommendationsBatchApiTests(unittest.TestCase):
         response = self.client.post(
             "/api/v1/recommendations/batch",
             json={
-                "serial_number": "26IVP01P1",
+                "serial_number": "26IVP1P1",
                 "mode": "append",
                 "items": [
                     {
-                        "serial_number": "26IVP01P1",
+                        "serial_number": "26IVP1P1",
                         "name": "Рекомендация",
                         "audit_object": "Процесс",
                         "auditor": "Иванов И.И.",

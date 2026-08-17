@@ -10,7 +10,7 @@ import { ErrorState, LoadingState } from '../ui/StateMessage';
 import { ConfirmDialog } from '../ui/Modal';
 import { fetchCheck } from '../../api/checks';
 import { getErrorMessage } from '../../api/errors';
-import { CHECK_TYPE_OPTIONS, CHECK_VIEW_OPTIONS } from '../../constants/checks';
+import { CHECK_QUARTER_OPTIONS, CHECK_TYPE_OPTIONS, CHECK_VIEW_OPTIONS } from '../../constants/checks';
 import { toInputDate, toIsoDate, toStartOfDayMs } from '../../utils/dates';
 import { useSokolData } from '../../contexts/sokolData';
 import { useAuth } from '../../hooks/useAuth';
@@ -71,6 +71,9 @@ export function CheckFormPage() {
   const [checkType, setCheckType] = useState(restoredDraft?.checkType ?? existing?.check_type ?? '');
   const [checkView, setCheckView] = useState(restoredDraft?.checkView ?? existing?.check_view ?? '');
   const [checkLeader, setCheckLeader] = useState(restoredDraft?.checkLeader ?? existing?.check_leader ?? '');
+  const [checkQuarter, setCheckQuarter] = useState(
+    restoredDraft?.checkQuarter ?? String(existing?.check_quarter ?? ''),
+  );
   const [startDate, setStartDate] = useState<Date | null>(
     restoredDraft ? (restoredDraft.startDate ? toInputDate(restoredDraft.startDate) : null) : existingStartDate,
   );
@@ -146,6 +149,7 @@ export function CheckFormPage() {
     setCheckType(existing.check_type ?? '');
     setCheckView(existing.check_view ?? '');
     setCheckLeader(existing.check_leader ?? '');
+    setCheckQuarter(String(existing.check_quarter ?? ''));
     setStartDate(toInputDate(existing.start_date));
     setEndDate(toInputDate(existing.end_date));
     setOrderDocumentNumber(existing.order_document_number ?? '');
@@ -189,12 +193,14 @@ export function CheckFormPage() {
       checkType,
       checkView,
       checkLeader,
+      checkQuarter,
       startDate,
     });
-  }, [checkName, checkType, checkView, checkLeader, startDate]);
+  }, [checkName, checkType, checkView, checkLeader, checkQuarter, startDate]);
 
   const missingKeyFields = [
     !startDate ? 'дату начала' : '',
+    !checkQuarter ? 'квартал проверки' : '',
     !checkLeader ? 'руководителя' : '',
     !checkType ? 'тип' : '',
   ].filter(Boolean);
@@ -205,6 +211,7 @@ export function CheckFormPage() {
     && (
       checkType !== existing.check_type
       || checkLeader !== existing.check_leader
+      || checkQuarter !== String(existing.check_quarter)
       || (startDate && existingStartDate && toIsoDate(startDate) !== toIsoDate(existingStartDate))
     ),
   );
@@ -216,6 +223,7 @@ export function CheckFormPage() {
     checkType,
     checkView,
     checkLeader,
+    checkQuarter,
     startDate: startDate ? (toIsoDate(startDate) ?? null) : null,
     endDate: endDate ? (toIsoDate(endDate) ?? null) : null,
     orderDocumentNumber,
@@ -237,6 +245,7 @@ export function CheckFormPage() {
     checkType,
     checkView,
     checkLeader,
+    checkQuarter,
     startDate,
     endDate,
     orderDocumentNumber,
@@ -292,6 +301,7 @@ export function CheckFormPage() {
         checkType,
         checkView,
         checkLeader,
+        checkQuarter,
         startDate,
         endDate,
         status,
@@ -460,7 +470,22 @@ export function CheckFormPage() {
                 .join(' ')}
             />
           </div>
-          <div className={FORM_ROW_3}>
+          <div className={FORM_ROW_4}>
+            <Select
+              label="Квартал проверки"
+              value={checkQuarter}
+              onChange={setCheckQuarter}
+              options={CHECK_QUARTER_OPTIONS}
+              placeholder="Выберите квартал"
+              className={FORM_FIELD_CLASS}
+              labelClassName={FORM_LABEL_CLASS}
+              inputClassName={[
+                FORM_INPUT_CLASS,
+                showValidationErrors && requiredFieldErrors.checkQuarter ? FORM_FIELD_ERROR_CLASS : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            />
             <DatePicker
               label="Начало"
               selected={startDate}

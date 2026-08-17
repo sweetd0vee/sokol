@@ -39,7 +39,7 @@ describe('batchRecommendations', () => {
           {
             ...recommendation,
             id: 7,
-            serial_number: '26IVP01P1',
+            serial_number: '26IVP1P1',
             deadline: null,
             observation_name: null,
             actual_completion_date: null,
@@ -48,15 +48,15 @@ describe('batchRecommendations', () => {
       },
     });
 
-    const result = await batchRecommendations('26IVP01P1', [recommendation], 'replace');
+    const result = await batchRecommendations('26IVP1P1', [recommendation], 'replace');
 
     expect(api.post).toHaveBeenCalledWith('/api/v1/recommendations/batch', {
-      serial_number: '26IVP01P1',
+      serial_number: '26IVP1P1',
       mode: 'replace',
-      items: [expect.objectContaining({ serial_number: '26IVP01P1', name: 'Рекомендация' })],
+      items: [expect.objectContaining({ serial_number: '26IVP1P1', name: 'Рекомендация' })],
     });
     expect(result.total).toBe(1);
     expect(result.items[0].id).toBe('7');
-    expect(result.items[0].serial_number).toBe('26IVP01P1');
+    expect(result.items[0].serial_number).toBe('26IVP1P1');
   });
 });

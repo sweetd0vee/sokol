@@ -20,6 +20,7 @@ export type CheckView =
   | (string & {});
 
 export type CheckStatus = 'not_started' | 'in_progress' | 'completed';
+export type CheckQuarter = 1 | 2 | 3 | 4;
 
 export interface Check {
   id: string;
@@ -28,6 +29,7 @@ export interface Check {
   short_name?: string;
   check_type: CheckType;
   check_view: CheckView;
+  check_quarter: CheckQuarter;
   start_date: string;
   end_date?: string;
   check_leader: string;

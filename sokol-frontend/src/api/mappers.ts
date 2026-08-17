@@ -1,4 +1,4 @@
-import type { Check, CheckStatus, CheckType, CheckView } from '../types/check';
+import type { Check, CheckQuarter, CheckStatus, CheckType, CheckView } from '../types/check';
 import type { Recommendation, RecommendationAdditionalStatus, RecommendationStatus } from '../types/recommendation';
 import {
   normalizeMaterialityLevel,
@@ -15,6 +15,7 @@ export type ApiCheck = {
   short_name?: string | null;
   check_type: string;
   check_view: string;
+  check_quarter: number;
   start_date: string;
   end_date?: string | null;
   check_leader: string;
@@ -80,6 +81,7 @@ export function mapCheckFromApi(api: ApiCheck): Check {
     short_name: api.short_name ?? undefined,
     check_type: api.check_type as CheckType,
     check_view: api.check_view as CheckView,
+    check_quarter: api.check_quarter as CheckQuarter,
     start_date: api.start_date,
     end_date: optionalDate(api.end_date),
     check_leader: api.check_leader,
@@ -107,6 +109,7 @@ export function mapCheckToCreate(check: Check): ApiCheckWrite {
     short_name: check.short_name ?? null,
     check_type: check.check_type,
     check_view: check.check_view,
+    check_quarter: check.check_quarter,
     start_date: check.start_date,
     end_date: check.end_date ?? null,
     check_leader: check.check_leader,

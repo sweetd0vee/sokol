@@ -17,11 +17,12 @@ describe('checks api', () => {
     vi.mocked(api.get).mockResolvedValue({
       data: {
         id: 42,
-        serial_number: '26IVP01P1',
+        serial_number: '26IVP3P1',
         check_name: 'Проверка ИТ',
         short_name: null,
         check_type: 'planned',
         check_view: 'ИТ',
+        check_quarter: 3,
         start_date: '2026-08-12',
         end_date: null,
         check_leader: 'Иванов И.И.',
@@ -48,7 +49,7 @@ describe('checks api', () => {
     expect(api.get).toHaveBeenCalledWith('/api/v1/checks/42');
     expect(result).toMatchObject({
       id: '42',
-      serial_number: '26IVP01P1',
+      serial_number: '26IVP3P1',
       check_name: 'Проверка ИТ',
     });
   });

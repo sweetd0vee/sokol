@@ -36,7 +36,7 @@ Import/seed обходят validation.
 
 ## Ключ проверки
 
-`serial_number` — уникален, генерируется и пересчитывается на backend (`check_key.py`). Frontend не отправляет ключ в create/update payload, а показывает значение из ответа API. При смене даты начала, руководителя или типа проверки backend обновляет ключ и синхронизирует `recommendations.serial_number` / `attachments.check_serial_number`.
+`serial_number` — уникален, генерируется и пересчитывается на backend (`check_key.py`) из года начала, кода аудитора, квартала, типа и порядкового номера. Frontend не отправляет ключ в create/update payload, а показывает значение из ответа API. При смене даты начала, квартала, руководителя или типа проверки backend обновляет ключ и синхронизирует `recommendations.serial_number` / `attachments.check_serial_number`.
 
 ## Seed и import
 

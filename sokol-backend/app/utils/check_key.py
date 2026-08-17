@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Генерация ключа проверки — те же правила, что в sokol-frontend/src/utils/checkKey.ts."""
+"""Генерация серверного ключа проверки по году, аудитору, кварталу и типу."""
 
 from __future__ import annotations
 

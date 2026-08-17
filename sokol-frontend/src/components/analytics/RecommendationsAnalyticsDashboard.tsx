@@ -4,10 +4,8 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  ComposedChart,
   LabelList,
   Legend,
-  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -22,7 +20,6 @@ import { ChartCard, CHART_AXIS_TICK, CHART_CATEGORY_AXIS_TICK, CHART_LEGEND_STYL
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
-  RECOMMENDATIONS_CUMULATIVE_LINE_COLOR,
   RECOMMENDATIONS_PALETTE,
   RECOMMENDATIONS_PERIOD_BAR_COLOR,
 } from './analyticsPalette';
@@ -239,7 +236,7 @@ export function RecommendationsAnalyticsDashboard() {
         render: () => (
           <ChartCard
             title="Количество рекомендаций"
-            description="Динамика и накопительный итог"
+            description="Динамика по периодам"
             exportSectionId="cumulative"
             exportSelected={exportSections.isSelected('cumulative')}
             onToggleExport={() => exportSections.toggleSection('cumulative')}
@@ -249,7 +246,7 @@ export function RecommendationsAnalyticsDashboard() {
             ) : (
               <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={cumulativeSeries} margin={{ top: 22, right: 12, left: -10, bottom: 0 }}>
+                  <BarChart data={cumulativeSeries} margin={{ top: 22, right: 12, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis dataKey="label" tick={CHART_AXIS_TICK} />
                     <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
@@ -258,23 +255,7 @@ export function RecommendationsAnalyticsDashboard() {
                     <Bar dataKey="total" name="За период" fill={RECOMMENDATIONS_PERIOD_BAR_COLOR} radius={[4, 4, 0, 0]}>
                       <LabelList dataKey="total" position="top" fontSize={CHART_VALUE_LABEL_SIZE} />
                     </Bar>
-                    <Line
-                      type="monotone"
-                      dataKey="cumulative"
-                      name="Всего"
-                      stroke={RECOMMENDATIONS_CUMULATIVE_LINE_COLOR}
-                      strokeWidth={2.5}
-                      dot={{ r: 3, fill: RECOMMENDATIONS_CUMULATIVE_LINE_COLOR }}
-                    >
-                      <LabelList
-                        dataKey="cumulative"
-                        position="top"
-                        fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill={RECOMMENDATIONS_CUMULATIVE_LINE_COLOR}
-                        offset={8}
-                      />
-                    </Line>
-                  </ComposedChart>
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             )}

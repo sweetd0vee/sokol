@@ -28,7 +28,7 @@ from app.services import recommendations_service
 
 def _recommendation_create(name: str = "Рекомендация") -> RecommendationCreate:
     return RecommendationCreate(
-        serial_number="26IVP01P1",
+        serial_number="26IVP1P1",
         name=name,
         audit_object="Процесс",
         auditor="Иванов И.И.",
@@ -45,7 +45,7 @@ class RecommendationsServiceTests(unittest.TestCase):
         recommendation = Recommendation(
             id=10,
             check_id=20,
-            serial_number="26IVP01P1",
+            serial_number="26IVP1P1",
             auditor="Иванов И.И.",
         )
         admin = CurrentUser(username="Админ А.А.", display_name="Администратор", role=Role.ADMIN)
@@ -85,12 +85,12 @@ class RecommendationsServiceTests(unittest.TestCase):
 
     def test_batch_replace_deletes_old_rows_and_creates_new_rows_once(self) -> None:
         session = AsyncMock()
-        check = SimpleNamespace(id=20, serial_number="26IVP01P1")
-        existing = [Recommendation(id=10, check_id=20, serial_number="26IVP01P1")]
+        check = SimpleNamespace(id=20, serial_number="26IVP1P1")
+        existing = [Recommendation(id=10, check_id=20, serial_number="26IVP1P1")]
         created = Recommendation(
             id=11,
             check_id=20,
-            serial_number="26IVP01P1",
+            serial_number="26IVP1P1",
             sequence_number=1,
             name="Новая рекомендация",
             audit_object=["Процесс"],
@@ -142,7 +142,7 @@ class RecommendationsServiceTests(unittest.TestCase):
                 result = await recommendations_service.batch_recommendations(
                     session,
                     RecommendationBatchRequest(
-                        serial_number="26IVP01P1",
+                        serial_number="26IVP1P1",
                         mode="replace",
                         items=[_recommendation_create("Новая рекомендация")],
                     ),
@@ -159,8 +159,8 @@ class RecommendationsServiceTests(unittest.TestCase):
 
     def test_delete_recommendations_batch_cleans_and_renumbers_once(self) -> None:
         session = AsyncMock()
-        first = Recommendation(id=10, check_id=20, serial_number="26IVP01P1", auditor="Иванов И.И.")
-        second = Recommendation(id=11, check_id=20, serial_number="26IVP01P1", auditor="Иванов И.И.")
+        first = Recommendation(id=10, check_id=20, serial_number="26IVP1P1", auditor="Иванов И.И.")
+        second = Recommendation(id=11, check_id=20, serial_number="26IVP1P1", auditor="Иванов И.И.")
         admin = CurrentUser(username="Админ А.А.", display_name="Администратор", role=Role.ADMIN)
 
         async def run() -> None:

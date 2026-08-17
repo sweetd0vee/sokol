@@ -1,4 +1,4 @@
-import type { Check, CheckStatus, CheckType } from '../types/check';
+import type { Check, CheckQuarter, CheckStatus, CheckType } from '../types/check';
 import { toIsoDate } from './dates';
 
 export type CheckRequiredFieldErrors = {
@@ -6,6 +6,7 @@ export type CheckRequiredFieldErrors = {
   checkType: boolean;
   checkView: boolean;
   checkLeader: boolean;
+  checkQuarter: boolean;
   startDate: boolean;
   hasErrors: boolean;
 };
@@ -17,6 +18,7 @@ export type CheckFormPayloadInput = {
   checkType: string;
   checkView: string;
   checkLeader: string;
+  checkQuarter: string;
   startDate: Date | null;
   endDate: Date | null;
   status: string;
@@ -40,13 +42,15 @@ export function getCheckRequiredFieldErrors({
   checkType,
   checkView,
   checkLeader,
+  checkQuarter,
   startDate,
-}: Pick<CheckFormPayloadInput, 'checkName' | 'checkType' | 'checkView' | 'checkLeader' | 'startDate'>): CheckRequiredFieldErrors {
+}: Pick<CheckFormPayloadInput, 'checkName' | 'checkType' | 'checkView' | 'checkLeader' | 'checkQuarter' | 'startDate'>): CheckRequiredFieldErrors {
   const errors = {
     checkName: !checkName.trim(),
     checkType: !checkType,
     checkView: !checkView,
     checkLeader: !checkLeader,
+    checkQuarter: !['1', '2', '3', '4'].includes(checkQuarter),
     startDate: !startDate,
   };
   return {
@@ -62,6 +66,7 @@ export function buildCheckPayload({
   checkType,
   checkView,
   checkLeader,
+  checkQuarter,
   startDate,
   endDate,
   status,
@@ -86,6 +91,7 @@ export function buildCheckPayload({
     short_name: shortName.trim() || undefined,
     check_type: checkType as CheckType,
     check_view: checkView as Check['check_view'],
+    check_quarter: Number(checkQuarter) as CheckQuarter,
     start_date: toIsoDate(startDate) ?? '',
     end_date: toIsoDate(endDate),
     check_leader: checkLeader,

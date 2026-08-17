@@ -68,8 +68,8 @@ describe('buildRecommendationYearlyNumbers', () => {
 
   it('берёт год из ключа проверки, если срока исполнения нет', () => {
     const recommendations = [
-      makeRecommendation('1', '2026-01-01', '26KVS08P1'),
-      makeRecommendation('2', '', '26KVS08P1'),
+      makeRecommendation('1', '2026-01-01', '26KVS3P1'),
+      makeRecommendation('2', '', '26KVS3P1'),
     ];
     const numbers = buildRecommendationYearlyNumbers(recommendations);
 
@@ -104,11 +104,11 @@ describe('resolveRecommendationYearlyDisplayNumber', () => {
   });
 
   it('прогнозирует номер по ключу проверки без срока исполнения', () => {
-    const recommendations = [makeRecommendation('1', '2026-01-02', '26KVS08P1')];
+    const recommendations = [makeRecommendation('1', '2026-01-02', '26KVS3P1')];
 
     expect(
       resolveRecommendationYearlyDisplayNumber(recommendations, {
-        serialNumber: '26KVS08P1',
+        serialNumber: '26KVS3P1',
       }),
     ).toBe(2);
   });
