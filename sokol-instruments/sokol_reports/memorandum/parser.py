@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Парсинг АЗ с Разделом II для генерации докладной записки."""
 
+from __future__ import annotations
+
 from typing import Optional, Tuple
 
 from sokol_reports.dictionaries.validation import DictionaryRefError
@@ -48,7 +50,11 @@ def document_has_section_ii(file_path: str) -> bool:
     return False
 
 
-def parse_az_for_memorandum(file_path: str) -> Tuple[Optional[MemorandumSource], Optional[str]]:
+def parse_az_for_memorandum(
+    file_path: str,
+    *,
+    department_names: list[str] | None = None,
+) -> Tuple[Optional[MemorandumSource], Optional[str]]:
     if not document_has_section_ii(file_path):
         return (
             None,
@@ -58,7 +64,7 @@ def parse_az_for_memorandum(file_path: str) -> Tuple[Optional[MemorandumSource],
     if error or source is None:
         return source, error
     try:
-        return canonicalize_memorandum_source(source), None
+        return canonicalize_memorandum_source(source, department_names=department_names), None
     except DictionaryRefError as exc:
         return None, str(exc)
 

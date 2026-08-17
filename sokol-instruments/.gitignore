@@ -20,3 +20,6 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local dictionary overrides
+data/departments.json

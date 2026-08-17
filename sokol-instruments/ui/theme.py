@@ -278,6 +278,24 @@ SOKOL_CSS = """
         border-top-color: var(--sber-dark) !important;
     }
 
+    .dictionary-hint {
+        margin: 0 0 1.25rem;
+    }
+
+    .dictionary-hint code {
+        font-size: 0.875rem;
+        color: var(--gray-700);
+        background: var(--gray-100);
+        padding: 0.1rem 0.35rem;
+        border-radius: 0.25rem;
+    }
+
+    div[data-testid="stDataEditor"] {
+        border: 1px solid var(--section-border);
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
     .mode-switch-spacer {
         height: 0.75rem;
     }
