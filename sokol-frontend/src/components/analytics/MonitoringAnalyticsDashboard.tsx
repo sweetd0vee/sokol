@@ -1,21 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import { fetchMonitoringAnalytics } from '../../api/analytics';
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
-import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
@@ -23,7 +13,7 @@ import { MATERIALITY_LEVEL_OPTIONS, RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS, RE
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
-import { STATUS_COLORS, type PeriodGranularity } from '../../utils/recommendationAnalytics';
+import type { PeriodGranularity } from '../../utils/recommendationAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 
 const EMPTY_RECOMMENDATION_SUMMARY = {
@@ -36,7 +26,6 @@ const EMPTY_RECOMMENDATION_SUMMARY = {
   completionRate: 0,
   violationRate: 0,
 };
-const EMPTY_PERIOD_SERIES: never[] = [];
 const EMPTY_STATUS_DISTRIBUTION: never[] = [];
 const EMPTY_ADDITIONAL_STATUS_DISTRIBUTION: never[] = [];
 
@@ -131,7 +120,6 @@ export function MonitoringAnalyticsDashboard() {
   );
 
   const summary = data?.summary ?? EMPTY_RECOMMENDATION_SUMMARY;
-  const periodSeries = data?.periodSeries ?? EMPTY_PERIOD_SERIES;
   const statusDistribution = data?.statusDistribution ?? EMPTY_STATUS_DISTRIBUTION;
   const additionalStatusDistribution = data?.additionalStatusDistribution ?? EMPTY_ADDITIONAL_STATUS_DISTRIBUTION;
   const universeTotal = data?.universeTotal ?? 0;
@@ -195,19 +183,8 @@ export function MonitoringAnalyticsDashboard() {
         ),
       },
       {
-        id: 'deadlineDynamics',
-        defaultLayout: { x: 0, y: 2, w: 12, h: 3, minW: 3, minH: 2 },
-        render: () => (
-          <ChartCard title="Динамика сроков исполнения" description="Статусы рекомендаций по срокам" exportSectionId="deadlineDynamics" exportSelected={exportSections.isSelected('deadlineDynamics')} onToggleExport={() => exportSections.toggleSection('deadlineDynamics')}>
-            {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={CHART_AXIS_TICK} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]} />)}</BarChart></ResponsiveContainer></div>
-            )}
-          </ChartCard>
-        ),
-      },
-      {
         id: 'statuses',
-        defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
             title="Статусы"
@@ -226,7 +203,7 @@ export function MonitoringAnalyticsDashboard() {
       },
       {
         id: 'additionalStatuses',
-        defaultLayout: { x: 4, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
             title="Дополнительные статусы"
@@ -244,7 +221,7 @@ export function MonitoringAnalyticsDashboard() {
         ),
       },
     ],
-    [additionalStatusDistribution, exportSections, periodSeries, statusDistribution, summary],
+    [additionalStatusDistribution, exportSections, statusDistribution, summary],
   );
 
   if (bootstrapQuery.isLoading && !data) {

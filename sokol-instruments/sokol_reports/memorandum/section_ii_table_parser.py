@@ -44,6 +44,22 @@ def _cell_texts(tr) -> List[str]:
     return texts
 
 
+def _parse_all_audit_object_pairs(raw_text: str) -> List[Tuple[str, str]]:
+    text = re.sub(r"\s+", " ", (raw_text or "").strip())
+    pairs: List[Tuple[str, str]] = []
+    pattern = re.compile(
+        rf"Объект\s+аудита:\s*(.+?)\s*Руководитель\s+объекта\s+аудита:\s*"
+        rf"({PERSON_INITIALS_RE}(?:\s*,\s*{PERSON_INITIALS_RE})*)",
+        re.IGNORECASE | re.DOTALL,
+    )
+    for match in pattern.finditer(text):
+        audit_object = re.sub(r"\s+", " ", match.group(1).strip())
+        manager = re.sub(r"\s+", " ", match.group(2).strip().rstrip("."))
+        if audit_object or manager:
+            pairs.append((audit_object, manager))
+    return pairs
+
+
 def _find_section_ii_table(body) -> Optional[object]:
     for btype, el in xml_utils.get_blocks_from_xml(body):
         if btype != "tbl":

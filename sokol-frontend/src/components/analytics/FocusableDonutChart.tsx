@@ -15,7 +15,7 @@ type FocusableDonutChartProps = {
   palette?: readonly string[];
   /** Map smaller values to lighter shades and larger values to darker shades. */
   colorByValue?: boolean;
-  /** What to show on segment labels. Defaults to percent; absolute values appear in the tooltip. */
+  /** What to show on segment labels. Defaults to absolute value and percent together. */
   labelMode?: 'value' | 'percent' | 'both';
   /** When false, values appear only in the hover tooltip. */
   showValueLabels?: boolean;
@@ -110,7 +110,7 @@ export function FocusableDonutChart({
   data,
   palette = PALETTE,
   colorByValue = false,
-  labelMode = 'percent',
+  labelMode = 'both',
   showValueLabels = true,
   legendFontSize = CHART_LEGEND_STYLE.fontSize,
   legendFontWeight = 400,

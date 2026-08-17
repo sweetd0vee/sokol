@@ -22,7 +22,6 @@ export const RECOMMENDATION_EXPORT_SECTIONS = [
 
 export const MONITORING_EXPORT_SECTIONS = [
   { id: 'summary', label: 'Сводка KPI', sheetName: 'Сводка', headerFill: '312E81' },
-  { id: 'deadlineDynamics', label: 'Динамика сроков', sheetName: 'Динамика сроков', headerFill: '7C3AED' },
   { id: 'statuses', label: 'Статусы', sheetName: 'Статусы', headerFill: 'CA8A04' },
   { id: 'additionalStatuses', label: 'Срок исполнения', sheetName: 'Срок исполнения', headerFill: 'DB2777' },
 ] as const;
