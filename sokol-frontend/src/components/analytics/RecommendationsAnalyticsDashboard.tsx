@@ -313,6 +313,7 @@ export function RecommendationsAnalyticsDashboard() {
               <FocusableDonutChart
                 data={materialityDistribution}
                 palette={RECOMMENDATIONS_PALETTE}
+                labelMode="both"
               />
             )}
           </ChartCard>
