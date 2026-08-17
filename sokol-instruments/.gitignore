@@ -1,0 +1,22 @@
+# Virtual env (created by start.bat)
+venv/
+.venv/
+
+# Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Streamlit (secrets only; config.toml may be committed)
+.streamlit/secrets.toml
+
+# Test / tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db

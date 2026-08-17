@@ -62,16 +62,12 @@ export function PlanningAnalyticsDashboard() {
     periodSlice,
     selectedYears,
     selectedQuarters,
-    selectedMonths,
     setSelectedYears,
     setSelectedQuarters,
-    setSelectedMonths,
     yearOptions,
     quarterOptions,
-    monthOptions,
     selectedYearKeys,
     selectedQuarterKeys,
-    selectedMonthKeys,
     periodSliceLabel,
     activePeriodValues,
     handlePeriodSliceChange,
@@ -83,7 +79,7 @@ export function PlanningAnalyticsDashboard() {
   const hasActiveFilters = hasAnalyticsPeriodFilters({
     yearKeys: selectedYearKeys,
     quarterKeys: selectedQuarterKeys,
-    monthKeys: selectedMonthKeys,
+    monthKeys: [],
     departments: selectedDepartments,
     granularity,
   });
@@ -95,7 +91,6 @@ export function PlanningAnalyticsDashboard() {
       granularity,
       selectedYearKeys,
       selectedQuarterKeys,
-      selectedMonthKeys,
       selectedDepartments,
     ],
     queryFn: () =>
@@ -103,7 +98,7 @@ export function PlanningAnalyticsDashboard() {
         granularity,
         years: selectedYearKeys,
         quarters: selectedQuarterKeys,
-        months: selectedMonthKeys,
+        months: [],
         departments: selectedDepartments,
       }),
     enabled: bootstrapQuery.isSuccess,
@@ -296,13 +291,10 @@ export function PlanningAnalyticsDashboard() {
         onPeriodSliceChange={handlePeriodSliceChange}
         yearOptions={yearOptions}
         quarterOptions={quarterOptions}
-        monthOptions={monthOptions}
         selectedYears={selectedYears}
         selectedQuarters={selectedQuarters}
-        selectedMonths={selectedMonths}
         onYearsChange={setSelectedYears}
         onQuartersChange={setSelectedQuarters}
-        onMonthsChange={setSelectedMonths}
         departmentOptions={departmentOptions}
         selectedDepartments={selectedDepartments}
         onDepartmentsChange={setSelectedDepartments}

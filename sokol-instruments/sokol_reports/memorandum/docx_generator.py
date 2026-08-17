@@ -56,12 +56,24 @@ def _configure_paragraph(
     fmt.alignment = alignment
     if first_line_indent:
         fmt.first_line_indent = FIRST_LINE_INDENT
+    else:
+        fmt.first_line_indent = Pt(0)
     fmt.space_before = Pt(0)
     fmt.space_after = Pt(0)
     fmt.line_spacing_rule = WD_LINE_SPACING.SINGLE
     fmt.line_spacing = 1
     if keep_next:
         paragraph.paragraph_format.keep_with_next = True
+
+
+def _add_spacer_paragraph(doc: Document, *, keep_next: bool = False) -> None:
+    spacer = doc.add_paragraph()
+    _configure_paragraph(
+        spacer,
+        alignment=WD_ALIGN_PARAGRAPH.LEFT,
+        first_line_indent=False,
+        keep_next=keep_next,
+    )
 
 
 def _add_text_paragraph(
@@ -139,8 +151,7 @@ def generate_memorandum(source: MemorandumSource, output_path: str) -> Tuple[Opt
         )
 
         # Пустая строка между заголовками
-        spacer = doc.add_paragraph()
-        _configure_paragraph(spacer, alignment=WD_ALIGN_PARAGRAPH.LEFT, keep_next=True)
+        _add_spacer_paragraph(doc, keep_next=True)
 
         # «Перечень аудиторских рекомендаций.» — слева, жирный
         _add_text_paragraph(
@@ -150,8 +161,7 @@ def generate_memorandum(source: MemorandumSource, output_path: str) -> Tuple[Opt
             alignment=WD_ALIGN_PARAGRAPH.LEFT,
         )
 
-        spacer = doc.add_paragraph()
-        _configure_paragraph(spacer, alignment=WD_ALIGN_PARAGRAPH.LEFT)
+        _add_spacer_paragraph(doc)
 
         recommendation_number = 1
         for group_index, group in enumerate(source.groups, start=1):
@@ -161,10 +171,12 @@ def generate_memorandum(source: MemorandumSource, output_path: str) -> Tuple[Opt
                 bold=True,
                 alignment=BODY_ALIGNMENT,
             )
+            _add_spacer_paragraph(doc)
 
             for recommendation in group.recommendations:
                 _add_numbered_recommendation(doc, recommendation_number, recommendation)
                 recommendation_number += 1
+                _add_spacer_paragraph(doc)
 
         doc.save(output_path)
         return output_path, None

@@ -8,7 +8,7 @@ import {
   FORM_SAVE_BUTTON_CLASS,
 } from '../../constants/formLayout';
 
-export type AnalyticsPeriodSlice = 'year' | 'quarter' | 'month';
+export type AnalyticsPeriodSlice = 'year' | 'quarter';
 
 export type AnalyticsFilterSidebarProps = {
   periodSlice: AnalyticsPeriodSlice;
@@ -16,13 +16,10 @@ export type AnalyticsFilterSidebarProps = {
   availablePeriodSlices?: AnalyticsPeriodSlice[];
   yearOptions: MultiCheckboxOption[];
   quarterOptions: MultiCheckboxOption[];
-  monthOptions: MultiCheckboxOption[];
   selectedYears: string[];
   selectedQuarters: string[];
-  selectedMonths: string[];
   onYearsChange: (next: string[]) => void;
   onQuartersChange: (next: string[]) => void;
-  onMonthsChange: (next: string[]) => void;
   auditorOptions?: MultiCheckboxOption[];
   selectedAuditors?: string[];
   onAuditorsChange?: (next: string[]) => void;
@@ -60,7 +57,6 @@ const FILTER_LABEL_CLASS = FORM_LABEL_CLASS;
 const PERIOD_SLICE_OPTIONS: { value: AnalyticsPeriodSlice; label: string }[] = [
   { value: 'year', label: 'Год' },
   { value: 'quarter', label: 'Квартал' },
-  { value: 'month', label: 'Месяц' },
 ];
 
 export function AnalyticsFilterSidebar({
@@ -69,13 +65,10 @@ export function AnalyticsFilterSidebar({
   availablePeriodSlices = PERIOD_SLICE_OPTIONS.map((option) => option.value),
   yearOptions,
   quarterOptions,
-  monthOptions,
   selectedYears,
   selectedQuarters,
-  selectedMonths,
   onYearsChange,
   onQuartersChange,
-  onMonthsChange,
   auditorOptions = [],
   selectedAuditors = [],
   onAuditorsChange,
@@ -153,19 +146,6 @@ export function AnalyticsFilterSidebar({
                 onChange={onQuartersChange}
                 placeholder="Поиск"
                 emptyMessage="Нет кварталов"
-                inputClassName={FILTER_SELECT_CLASS}
-                labelClassName={FILTER_LABEL_CLASS}
-              />
-            ) : null}
-
-            {periodSlice === 'month' ? (
-              <MultiCheckboxSelect
-                label="Даты"
-                options={monthOptions}
-                value={selectedMonths}
-                onChange={onMonthsChange}
-                placeholder="Поиск"
-                emptyMessage="Нет месяцев"
                 inputClassName={FILTER_SELECT_CLASS}
                 labelClassName={FILTER_LABEL_CLASS}
               />

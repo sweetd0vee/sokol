@@ -3,6 +3,8 @@
 
 from typing import Optional, Tuple
 
+from sokol_reports.dictionaries.validation import DictionaryRefError
+from sokol_reports.memorandum.canonicalize import canonicalize_memorandum_source
 from sokol_reports.memorandum.models import MemorandumSource
 from sokol_reports.memorandum.section_ii_table_parser import (
     SECTION2_TABLE_HEADER,
@@ -52,7 +54,13 @@ def parse_az_for_memorandum(file_path: str) -> Tuple[Optional[MemorandumSource],
             None,
             "В документе не найден Раздел II. Загрузите АЗ с заполненным Разделом II.",
         )
-    return parse_section_ii_for_memorandum(file_path)
+    source, error = parse_section_ii_for_memorandum(file_path)
+    if error or source is None:
+        return source, error
+    try:
+        return canonicalize_memorandum_source(source), None
+    except DictionaryRefError as exc:
+        return None, str(exc)
 
 
 def parse_recommendations_from_az(file_path: str) -> Tuple[Optional[MemorandumSource], Optional[str]]:

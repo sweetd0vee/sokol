@@ -83,11 +83,8 @@ export function RecommendationNameHoverCard({ recommendation }: { recommendation
       onMouseEnter={open}
       onMouseLeave={close}
     >
-      <div className="min-w-0 space-y-1">
-        <div className="truncate">{recommendation.name}</div>
-        {recommendation.observation_name ? (
-          <div className="truncate text-sm leading-snug text-gray-500">{recommendation.observation_name}</div>
-        ) : null}
+      <div className="min-w-0 truncate" title={recommendation.name}>
+        {recommendation.name}
       </div>
       {position
         ? createPortal(

@@ -112,16 +112,12 @@ export function ChecksAnalyticsDashboard() {
     periodSlice,
     selectedYears,
     selectedQuarters,
-    selectedMonths,
     setSelectedYears,
     setSelectedQuarters,
-    setSelectedMonths,
     yearOptions,
     quarterOptions,
-    monthOptions,
     selectedYearKeys,
     selectedQuarterKeys,
-    selectedMonthKeys,
     periodSliceLabel,
     activePeriodValues,
     handlePeriodSliceChange,
@@ -133,7 +129,7 @@ export function ChecksAnalyticsDashboard() {
   const hasActiveFilters = hasAnalyticsPeriodFilters({
     yearKeys: selectedYearKeys,
     quarterKeys: selectedQuarterKeys,
-    monthKeys: selectedMonthKeys,
+    monthKeys: [],
     auditors: selectedAuditors,
     departments: selectedDepartments,
     granularity,
@@ -146,7 +142,6 @@ export function ChecksAnalyticsDashboard() {
       granularity,
       selectedYearKeys,
       selectedQuarterKeys,
-      selectedMonthKeys,
       selectedAuditors,
       selectedDepartments,
     ],
@@ -155,7 +150,7 @@ export function ChecksAnalyticsDashboard() {
         granularity,
         years: selectedYearKeys,
         quarters: selectedQuarterKeys,
-        months: selectedMonthKeys,
+        months: [],
         auditors: selectedAuditors,
         departments: selectedDepartments,
       }),
@@ -179,8 +174,7 @@ export function ChecksAnalyticsDashboard() {
   const summary = data?.summary ?? EMPTY_CHECKS_SUMMARY;
   const completionShare = data?.completionShare ?? 0;
   const rawFlowSeries = data?.periodSeries ?? EMPTY_FLOW_SERIES;
-  const selectedPeriodKeys =
-    granularity === 'month' ? selectedMonthKeys : granularity === 'quarter' ? selectedQuarterKeys : selectedYearKeys;
+  const selectedPeriodKeys = granularity === 'quarter' ? selectedQuarterKeys : selectedYearKeys;
   const flowSeries = useMemo(
     () => completeSelectedPeriods(rawFlowSeries, granularity, selectedPeriodKeys),
     [granularity, rawFlowSeries, selectedPeriodKeys],
@@ -472,16 +466,12 @@ export function ChecksAnalyticsDashboard() {
       <AnalyticsFilterSidebar
         periodSlice={periodSlice}
         onPeriodSliceChange={handlePeriodSliceChange}
-        availablePeriodSlices={['year', 'quarter']}
         yearOptions={yearOptions}
         quarterOptions={quarterOptions}
-        monthOptions={monthOptions}
         selectedYears={selectedYears}
         selectedQuarters={selectedQuarters}
-        selectedMonths={selectedMonths}
         onYearsChange={setSelectedYears}
         onQuartersChange={setSelectedQuarters}
-        onMonthsChange={setSelectedMonths}
         auditorOptions={auditorOptions}
         selectedAuditors={selectedAuditors}
         onAuditorsChange={setSelectedAuditors}

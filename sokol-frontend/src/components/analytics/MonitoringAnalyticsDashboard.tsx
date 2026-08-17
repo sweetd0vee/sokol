@@ -64,16 +64,12 @@ export function MonitoringAnalyticsDashboard() {
     periodSlice,
     selectedYears,
     selectedQuarters,
-    selectedMonths,
     setSelectedYears,
     setSelectedQuarters,
-    setSelectedMonths,
     yearOptions,
     quarterOptions,
-    monthOptions,
     selectedYearKeys,
     selectedQuarterKeys,
-    selectedMonthKeys,
     periodSliceLabel,
     activePeriodValues,
     handlePeriodSliceChange,
@@ -85,7 +81,7 @@ export function MonitoringAnalyticsDashboard() {
   const hasActiveFilters = hasAnalyticsPeriodFilters({
     yearKeys: selectedYearKeys,
     quarterKeys: selectedQuarterKeys,
-    monthKeys: selectedMonthKeys,
+    monthKeys: [],
     auditors: selectedAuditors,
     departments: selectedDepartments,
     statuses: selectedStatuses,
@@ -101,7 +97,6 @@ export function MonitoringAnalyticsDashboard() {
       granularity,
       selectedYearKeys,
       selectedQuarterKeys,
-      selectedMonthKeys,
       selectedAuditors,
       selectedDepartments,
       selectedStatuses,
@@ -113,7 +108,7 @@ export function MonitoringAnalyticsDashboard() {
         granularity,
         years: selectedYearKeys,
         quarters: selectedQuarterKeys,
-        months: selectedMonthKeys,
+        months: [],
         auditors: selectedAuditors,
         departments: selectedDepartments,
         statuses: selectedStatuses,
@@ -272,13 +267,10 @@ export function MonitoringAnalyticsDashboard() {
         onPeriodSliceChange={handlePeriodSliceChange}
         yearOptions={yearOptions}
         quarterOptions={quarterOptions}
-        monthOptions={monthOptions}
         selectedYears={selectedYears}
         selectedQuarters={selectedQuarters}
-        selectedMonths={selectedMonths}
         onYearsChange={setSelectedYears}
         onQuartersChange={setSelectedQuarters}
-        onMonthsChange={setSelectedMonths}
         auditorOptions={auditorOptions}
         selectedAuditors={selectedAuditors}
         onAuditorsChange={setSelectedAuditors}

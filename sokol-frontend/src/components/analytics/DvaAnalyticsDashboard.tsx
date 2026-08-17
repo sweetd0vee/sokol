@@ -62,16 +62,12 @@ export function DvaAnalyticsDashboard() {
     periodSlice,
     selectedYears,
     selectedQuarters,
-    selectedMonths,
     setSelectedYears,
     setSelectedQuarters,
-    setSelectedMonths,
     yearOptions,
     quarterOptions,
-    monthOptions,
     selectedYearKeys,
     selectedQuarterKeys,
-    selectedMonthKeys,
     periodSliceLabel,
     activePeriodValues,
     handlePeriodSliceChange,
@@ -83,7 +79,7 @@ export function DvaAnalyticsDashboard() {
   const hasActiveFilters = hasAnalyticsPeriodFilters({
     yearKeys: selectedYearKeys,
     quarterKeys: selectedQuarterKeys,
-    monthKeys: selectedMonthKeys,
+    monthKeys: [],
     auditors: selectedAuditors,
     departments: selectedDepartments,
     granularity,
@@ -96,7 +92,6 @@ export function DvaAnalyticsDashboard() {
       granularity,
       selectedYearKeys,
       selectedQuarterKeys,
-      selectedMonthKeys,
       selectedAuditors,
       selectedDepartments,
     ],
@@ -105,7 +100,7 @@ export function DvaAnalyticsDashboard() {
         granularity,
         years: selectedYearKeys,
         quarters: selectedQuarterKeys,
-        months: selectedMonthKeys,
+        months: [],
         auditors: selectedAuditors,
         departments: selectedDepartments,
       }),
@@ -302,13 +297,10 @@ export function DvaAnalyticsDashboard() {
         onPeriodSliceChange={handlePeriodSliceChange}
         yearOptions={yearOptions}
         quarterOptions={quarterOptions}
-        monthOptions={monthOptions}
         selectedYears={selectedYears}
         selectedQuarters={selectedQuarters}
-        selectedMonths={selectedMonths}
         onYearsChange={setSelectedYears}
         onQuartersChange={setSelectedQuarters}
-        onMonthsChange={setSelectedMonths}
         auditorOptions={auditorOptions}
         selectedAuditors={selectedAuditors}
         onAuditorsChange={setSelectedAuditors}
