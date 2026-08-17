@@ -2,11 +2,13 @@ import base64
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Optional
 
 import streamlit as st
 
 APP_DIR = Path(__file__).resolve().parent
 FAVICON_PATH = APP_DIR / "images" / "sberbank.png"
+CONTROL_FILE_HEADER_TEMPLATE = APP_DIR / "data" / "файл контроля шаблон (шапка).xlsx"
 import streamlit.components.v1 as components
 
 from sokol_reports.control_file.generator import generate_control_file_template
@@ -98,6 +100,7 @@ def render_tool(
     generate,
     output_format: str = "docx",
     success_message: str = "Документ готов. Скачивание началось.",
+    template_file: Optional[Path] = None,
 ) -> None:
     st.markdown(
         f"""
@@ -108,6 +111,18 @@ def render_tool(
         """,
         unsafe_allow_html=True,
     )
+
+    if template_file is not None:
+        if not template_file.is_file():
+            st.error(f"Шаблон не найден: {template_file.name}")
+        else:
+            st.download_button(
+                "Скачать шаблон",
+                data=template_file.read_bytes(),
+                file_name=template_file.name,
+                mime=OUTPUT_MIME["xlsx"],
+                key=f"{key_prefix}_template_download",
+            )
 
     uploaded_file = st.file_uploader(
         "Выберите файл .docx",
@@ -210,6 +225,7 @@ else:
                 generate=make_control_file,
                 output_format="xlsx",
                 success_message="Файл контроля готов. Скачивание xlsx началось.",
+                template_file=CONTROL_FILE_HEADER_TEMPLATE,
             )
         elif mode == "ДЗ":
             render_tool(

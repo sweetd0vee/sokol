@@ -244,6 +244,34 @@ SOKOL_CSS = """
         transition: background-color 0.15s ease, opacity 0.15s ease;
     }
 
+    .stDownloadButton > button {
+        width: 100%;
+        max-width: 100%;
+        min-height: 2.75rem;
+        margin-top: 0;
+        margin-bottom: 1rem;
+        padding: 0.625rem 1.25rem;
+        border: 1px solid var(--gray-300);
+        border-radius: 0.5rem;
+        background: #ffffff;
+        color: var(--sber-dark);
+        font-size: 0.875rem;
+        font-weight: 500;
+        box-shadow: none;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .stDownloadButton > button:hover:not(:disabled) {
+        border-color: var(--sber-dark);
+        background: var(--gray-50);
+        color: var(--sber-dark);
+    }
+
+    .stDownloadButton {
+        display: flex;
+        justify-content: flex-start;
+    }
+
     .stButton > button:hover:not(:disabled) {
         border: 0;
         color: #ffffff;
