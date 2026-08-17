@@ -333,7 +333,11 @@ export function RecommendationsAnalyticsDashboard() {
             {indicatorDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableDonutChart data={indicatorDistribution} palette={RECOMMENDATIONS_PALETTE} />
+              <FocusableDonutChart
+                data={indicatorDistribution}
+                palette={RECOMMENDATIONS_PALETTE}
+                labelMode="both"
+              />
             )}
           </ChartCard>
         ),
