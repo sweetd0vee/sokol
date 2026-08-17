@@ -24,6 +24,8 @@ OUTPUT_MIME = {
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 }
 
+TOOL_BUTTON_WIDTH = 288
+
 
 def save_uploaded_file(uploaded_file, folder: Path) -> Path:
     input_path = folder / uploaded_file.name
@@ -116,13 +118,17 @@ def render_tool(
         if not template_file.is_file():
             st.error(f"Шаблон не найден: {template_file.name}")
         else:
-            st.download_button(
+            if st.button(
                 "Скачать шаблон",
-                data=template_file.read_bytes(),
-                file_name=template_file.name,
-                mime=OUTPUT_MIME["xlsx"],
                 key=f"{key_prefix}_template_download",
-            )
+                type="secondary",
+                width=TOOL_BUTTON_WIDTH,
+            ):
+                start_download(
+                    template_file.name,
+                    template_file.read_bytes(),
+                    output_format="xlsx",
+                )
 
     uploaded_file = st.file_uploader(
         "Выберите файл .docx",
@@ -144,6 +150,8 @@ def render_tool(
     if st.button(
         "Сгенерировать и скачать",
         key=f"{key_prefix}_button",
+        type="primary",
+        width=TOOL_BUTTON_WIDTH,
         disabled=uploaded_file is None,
     ):
         with st.spinner("Файл обрабатывается..."):

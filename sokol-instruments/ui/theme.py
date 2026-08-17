@@ -228,54 +228,47 @@ SOKOL_CSS = """
         color: var(--gray-500);
     }
 
-    .stButton > button {
-        width: 100%;
-        max-width: 100%;
-        min-height: 2.75rem;
-        margin-top: 1rem;
-        padding: 0.625rem 1.25rem;
-        border: 0;
-        border-radius: 0.5rem;
-        background: var(--sber-dark);
-        color: #ffffff;
-        font-size: 0.875rem;
-        font-weight: 500;
-        box-shadow: none;
-        transition: background-color 0.15s ease, opacity 0.15s ease;
-    }
-
-    .stDownloadButton > button {
-        width: 100%;
-        max-width: 100%;
-        min-height: 2.75rem;
-        margin-top: 0;
-        margin-bottom: 1rem;
-        padding: 0.625rem 1.25rem;
-        border: 1px solid var(--gray-300);
-        border-radius: 0.5rem;
-        background: #ffffff;
-        color: var(--sber-dark);
-        font-size: 0.875rem;
-        font-weight: 500;
-        box-shadow: none;
-        transition: background-color 0.15s ease, border-color 0.15s ease;
-    }
-
-    .stDownloadButton > button:hover:not(:disabled) {
-        border-color: var(--sber-dark);
-        background: var(--gray-50);
-        color: var(--sber-dark);
-    }
-
-    .stDownloadButton {
+    .stButton {
         display: flex;
         justify-content: flex-start;
     }
 
-    .stButton > button:hover:not(:disabled) {
+    .stButton > button {
+        min-height: 2.75rem;
+        margin-top: 1rem;
+        padding: 0.625rem 1.25rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        box-shadow: none;
+    }
+
+    .stButton > button[kind="primary"] {
+        border: 0;
+        background: var(--sber-dark);
+        color: #ffffff;
+        transition: background-color 0.15s ease, opacity 0.15s ease;
+    }
+
+    .stButton > button[kind="secondary"] {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        border: 1px solid var(--gray-300);
+        background: #ffffff;
+        color: var(--sber-dark);
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .stButton > button[kind="primary"]:hover:not(:disabled) {
         border: 0;
         color: #ffffff;
         background: var(--sber-muted);
+    }
+
+    .stButton > button[kind="secondary"]:hover:not(:disabled) {
+        border-color: var(--sber-dark);
+        background: var(--gray-50);
+        color: var(--sber-dark);
     }
 
     .stButton > button:disabled {
@@ -283,11 +276,6 @@ SOKOL_CSS = """
         cursor: not-allowed;
         background: var(--sber-dark);
         color: #ffffff;
-    }
-
-    .stButton {
-        display: flex;
-        justify-content: flex-start;
     }
 
     div[data-testid="stAlert"] {
