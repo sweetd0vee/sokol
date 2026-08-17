@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date as Date
 from typing import Literal
 from typing import Optional
 
@@ -8,7 +8,7 @@ from app.models.recommendations import RecommendationAdditionalStatus, Recommend
 
 
 class ClosureDateCommentItem(BaseModel):
-    date: Optional[date] = None
+    date: Optional[Date] = None
     comment: Optional[str] = None
 
     @field_validator('date', mode='before')
@@ -21,10 +21,9 @@ class ClosureDateCommentItem(BaseModel):
             if not cleaned:
                 return None
             try:
-                date.fromisoformat(cleaned[:10])
+                return Date.fromisoformat(cleaned[:10])
             except ValueError:
                 return None
-            return cleaned[:10]
         return value
 
 
@@ -56,20 +55,20 @@ class RecommendationBase(BaseModel):
     indicator: str = Field(default="не указан", max_length=32)
     materiality_level: str = Field(default="средний", max_length=32)
     audit_object: list[str] = Field(..., min_length=1)
-    deadline: Optional[date] = None
+    deadline: Optional[Date] = None
     auditor: str = Field(..., min_length=1, max_length=255)
     manager: str = Field(..., min_length=1, max_length=255)
     status: RecommendationStatus
     additional_status: RecommendationAdditionalStatus
-    created_at: Optional[date] = None
-    actual_completion_date: Optional[date] = None
+    created_at: Optional[Date] = None
+    actual_completion_date: Optional[Date] = None
     extension_1_reason: Optional[str] = Field(None, max_length=64)
-    extension_1_date: Optional[date] = None
+    extension_1_date: Optional[Date] = None
     extension_1_comment: Optional[str] = None
     extension_2_reason: Optional[str] = Field(None, max_length=64)
     extension_2_comment: Optional[str] = None
     remove_from_control_reason: Optional[str] = Field(None, max_length=64)
-    remove_from_control_date: Optional[date] = None
+    remove_from_control_date: Optional[Date] = None
     remove_from_control_comment: Optional[str] = None
     deadline_extensions: Optional[list[ClosureDateCommentItem]] = None
     control_removals: Optional[list[ClosureDateCommentItem]] = None
@@ -93,7 +92,7 @@ class RecommendationBase(BaseModel):
             if not cleaned:
                 return None
             try:
-                date.fromisoformat(cleaned[:10])
+                Date.fromisoformat(cleaned[:10])
             except ValueError:
                 return None
             return cleaned[:10]
@@ -122,19 +121,19 @@ class RecommendationUpdate(BaseModel):
     indicator: Optional[str] = Field(None, max_length=32)
     materiality_level: Optional[str] = Field(None, max_length=32)
     audit_object: Optional[list[str]] = Field(None, min_length=1)
-    deadline: Optional[date] = None
+    deadline: Optional[Date] = None
     auditor: Optional[str] = Field(None, min_length=1, max_length=255)
     manager: Optional[str] = Field(None, min_length=1, max_length=255)
     status: Optional[RecommendationStatus] = None
     additional_status: Optional[RecommendationAdditionalStatus] = None
-    actual_completion_date: Optional[date] = None
+    actual_completion_date: Optional[Date] = None
     extension_1_reason: Optional[str] = Field(None, max_length=64)
-    extension_1_date: Optional[date] = None
+    extension_1_date: Optional[Date] = None
     extension_1_comment: Optional[str] = None
     extension_2_reason: Optional[str] = Field(None, max_length=64)
     extension_2_comment: Optional[str] = None
     remove_from_control_reason: Optional[str] = Field(None, max_length=64)
-    remove_from_control_date: Optional[date] = None
+    remove_from_control_date: Optional[Date] = None
     remove_from_control_comment: Optional[str] = None
     deadline_extensions: Optional[list[ClosureDateCommentItem]] = None
     control_removals: Optional[list[ClosureDateCommentItem]] = None
@@ -157,7 +156,7 @@ class RecommendationUpdate(BaseModel):
             if not cleaned:
                 return None
             try:
-                date.fromisoformat(cleaned[:10])
+                Date.fromisoformat(cleaned[:10])
             except ValueError:
                 return None
             return cleaned[:10]
@@ -179,7 +178,7 @@ class RecommendationUpdate(BaseModel):
 class RecommendationRead(RecommendationBase):
     id: int
     sequence_number: int
-    created_at: date
+    created_at: Date
 
     model_config = ConfigDict(from_attributes=True)
 

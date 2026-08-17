@@ -19,11 +19,11 @@ function ColumnShareSquares({ shares }: { shares: EffectivenessColumnShare[] }) 
   }
 
   return (
-    <ul className="flex flex-col items-center gap-1.5">
+    <ul className="mx-auto flex w-full flex-col items-center gap-1">
       {shares.map((share) => (
         <li key={share.tone}>
           <span
-            className="inline-flex h-16 w-16 flex-col items-center justify-center rounded-md border border-black/10 text-center leading-tight"
+            className="inline-flex h-11 w-11 flex-col items-center justify-center rounded-md border border-black/10 text-center leading-tight"
             style={{
               backgroundColor: share.color,
               color: getEffectivenessShareLabelColor(share.tone),
@@ -31,8 +31,8 @@ function ColumnShareSquares({ shares }: { shares: EffectivenessColumnShare[] }) 
             title={`${share.label}: ${share.count} (${share.percent}%)`}
             aria-label={`${share.label}: ${share.count} (${share.percent}%)`}
           >
-            <span className="text-sm font-semibold tabular-nums">{share.count}</span>
-            <span className="text-[11px] font-medium tabular-nums">({share.percent}%)</span>
+            <span className="text-xs font-semibold tabular-nums">{share.count}</span>
+            <span className="text-[10px] font-medium tabular-nums">({share.percent}%)</span>
           </span>
         </li>
       ))}
@@ -141,9 +141,7 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
                 </th>
                 {EFFECTIVENESS_MATRIX_COLUMNS.map((column) => (
                   <td key={column.key} className="px-1 py-3 text-center align-top">
-                    <div className="flex justify-center">
-                      <ColumnShareSquares shares={columnShares[column.key]} />
-                    </div>
+                    <ColumnShareSquares shares={columnShares[column.key]} />
                   </td>
                 ))}
               </tr>

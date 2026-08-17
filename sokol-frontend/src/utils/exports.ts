@@ -82,6 +82,9 @@ const MATERIALITY_DOT_COLORS: Record<string, string> = {
 };
 const MATERIALITY_DOT_CHAR = '●';
 const INDICATOR_ICON_DISPLAY_PX = 14;
+/** PDF marker size: materiality dots are a 10pt circle; indicator icons match that. */
+const PDF_MATERIALITY_DOT_RADIUS = 5;
+const PDF_INDICATOR_ICON_SIZE = PDF_MATERIALITY_DOT_RADIUS * 2;
 const RECOMMENDATION_XLSX_DEFAULT_COLUMN_WIDTH = 18;
 const RECOMMENDATION_XLSX_MIN_ROW_HEIGHT = 22;
 const RECOMMENDATION_XLSX_MAX_ROW_HEIGHT = 240;
@@ -615,8 +618,8 @@ function exportRowsPdf(
       headers.map((header) => {
         if (isMaterialityHeader(header)) {
           const color = getMaterialityDotColor(row[header]) ?? '9CA3AF';
-          const radius = 5;
-          const diameter = radius * 2;
+          const radius = PDF_MATERIALITY_DOT_RADIUS;
+          const diameter = PDF_INDICATOR_ICON_SIZE;
           return {
             columns: [
               { width: '*', text: '' },
@@ -643,10 +646,15 @@ function exportRowsPdf(
           const imageKey = `indicator_${label}`;
           if (pdfImages[imageKey]) {
             return {
-              image: imageKey,
-              width: INDICATOR_ICON_DISPLAY_PX,
-              height: INDICATOR_ICON_DISPLAY_PX,
-              alignment: 'center',
+              columns: [
+                { width: '*', text: '' },
+                {
+                  width: PDF_INDICATOR_ICON_SIZE,
+                  image: imageKey,
+                  fit: [PDF_INDICATOR_ICON_SIZE, PDF_INDICATOR_ICON_SIZE],
+                },
+                { width: '*', text: '' },
+              ],
               margin: [0, 1, 0, 1],
             };
           }

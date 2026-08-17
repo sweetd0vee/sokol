@@ -189,7 +189,7 @@ function escapeEffectivenessHtml(value: string) {
     .replace(/"/g, '&quot;');
 }
 
-const EFFECTIVENESS_EXPORT_SQUARE_SIZE_PX = 56;
+const EFFECTIVENESS_EXPORT_SQUARE_SIZE_PX = 44;
 
 function buildEffectivenessShareSquares(shares: EffectivenessColumnShare[]) {
   if (shares.length === 0) {
@@ -202,8 +202,8 @@ function buildEffectivenessShareSquares(shares: EffectivenessColumnShare[]) {
       const labelColor = getEffectivenessShareLabelColor(share.tone);
       return `<li>
         <span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:6px;background:${share.color};border:1px solid rgba(0,0,0,0.1);color:${labelColor};text-align:center;line-height:1.15" title="${escapeEffectivenessHtml(`${share.label}: ${share.count} (${share.percent}%)`)}">
-          <span style="font-size:14px;font-weight:600">${share.count}</span>
-          <span style="font-size:11px;font-weight:500">(${share.percent}%)</span>
+          <span style="font-size:12px;font-weight:600">${share.count}</span>
+          <span style="font-size:10px;font-weight:500">(${share.percent}%)</span>
         </span>
       </li>`;
     })
