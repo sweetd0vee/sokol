@@ -28,11 +28,6 @@ class ControlFileRow:
     responsible: str
 
 
-def _format_responsible_pairs(pairs: List[tuple[str, str]], *, format_pair) -> str:
-    formatted = [format_pair(obj, mgr) for obj, mgr in pairs if obj or mgr]
-    return ", ".join(formatted)
-
-
 def _recommendation_to_text(recommendation: MemorandumRecommendation) -> str:
     parts = [part.strip() for part in recommendation.paragraphs if part.strip()]
     return " ".join(parts)
@@ -41,7 +36,7 @@ def _recommendation_to_text(recommendation: MemorandumRecommendation) -> str:
 def parse_section_ii_for_control_file(
     file_path: str,
     *,
-    format_responsible,
+    format_responsible_from_pairs,
 ) -> Tuple[Optional[List[ControlFileRow]], Optional[str]]:
     root = load_document_xml(file_path)
     body = root.find(f".//{{{W_NS}}}body")
@@ -74,10 +69,11 @@ def parse_section_ii_for_control_file(
             continue
 
         pairs = _parse_all_audit_object_pairs(raw_recommendation)
-        responsible = _format_responsible_pairs(pairs, format_pair=format_responsible)
-        if not responsible:
+        if pairs:
+            responsible = format_responsible_from_pairs(pairs)
+        else:
             audit_object, manager, _ = _parse_audit_object_header(raw_recommendation)
-            responsible = format_responsible(audit_object, manager)
+            responsible = format_responsible_from_pairs([(audit_object, manager)])
 
         _, _, body_text = _parse_audit_object_header(raw_recommendation)
         recommendations = _split_body_into_recommendations(body_text)

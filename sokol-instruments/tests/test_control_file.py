@@ -71,6 +71,65 @@ def _build_az_without_section_ii(path: Path, *, title: str) -> None:
 
 
 class ControlFileGeneratorTest(unittest.TestCase):
+    def test_parse_title_removes_duplicated_glued_title_and_footer(self):
+        check_title = (
+            "Тематическая проверка Аудит процессов У.3.36 «Управление объектами недвижимости "
+            "(покупка, расходная аренда)», О.2.9 «Девелопмент, строительство, реконструкция и "
+            "капитальный ремонт объектов недвижимости»"
+        )
+        glued = check_title + check_title + "Минск 2026Минск"
+        with tempfile.TemporaryDirectory() as tmp:
+            az_path = Path(tmp) / "az.docx"
+            doc = Document()
+            doc.add_paragraph("Аудиторское заключение")
+            doc.add_paragraph(glued)
+            doc.add_paragraph("Минск 2026").add_run().add_break(WD_BREAK.PAGE)
+            doc.save(az_path)
+
+            title, error = parse_az_title_from_docx(str(az_path))
+            self.assertIsNone(error)
+            self.assertEqual(title, check_title)
+
+    def test_parse_title_skips_header_and_footer_lines(self):
+        check_title = (
+            "Тематическая проверка Аудит процессов У.3.36 «Управление объектами недвижимости "
+            "(покупка, расходная аренда)», О.2.9 «Девелопмент, строительство, реконструкция и "
+            "капитальный ремонт объектов недвижимости»"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            az_path = Path(tmp) / "az.docx"
+            doc = Document()
+            doc.add_paragraph("Аудиторское")
+            doc.add_paragraph("заключение")
+            doc.add_paragraph("Тематическая проверка")
+            doc.add_paragraph(
+                "Аудит процессов У.3.36 «Управление объектами недвижимости (покупка, расходная аренда)», "
+                "О.2.9 «Девелопмент, строительство, реконструкция и капитальный ремонт объектов недвижимости»"
+            )
+            doc.add_paragraph("Департамент внутреннего")
+            footer = doc.add_paragraph("аудита")
+            footer.add_run().add_break(WD_BREAK.PAGE)
+            doc.save(az_path)
+
+            title, error = parse_az_title_from_docx(str(az_path))
+            self.assertIsNone(error)
+            self.assertEqual(title, check_title)
+
+    def test_parse_title_strips_word_style_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            az_path = Path(tmp) / "az.docx"
+            doc = Document()
+            doc.add_paragraph("АУДИТОРСКОЕ ЗАКЛЮЧЕНИЕ")
+            title_paragraph = doc.add_paragraph(
+                "Комплексный аудит административно-хозяйственных процессовcenter3594735"
+            )
+            title_paragraph.add_run().add_break(WD_BREAK.PAGE)
+            doc.save(az_path)
+
+            title, error = parse_az_title_from_docx(str(az_path))
+            self.assertIsNone(error)
+            self.assertEqual(title, "Комплексный аудит административно-хозяйственных процессов")
+
     def test_parse_title_from_title_page(self):
         with tempfile.TemporaryDirectory() as tmp:
             az_path = Path(tmp) / "az.docx"
@@ -172,9 +231,25 @@ class ControlFileGeneratorTest(unittest.TestCase):
 
             workbook = load_workbook(output_path)
             responsible = workbook.active.cell(row=2, column=COL_RESPONSIBLE).value
-            self.assertIn("Департамент A (Иванов И.И.)", responsible)
-            self.assertIn("Департамент B (Петров П.П.)", responsible)
-            self.assertIn(", ", responsible)
+            self.assertEqual(
+                responsible,
+                "Департамент A, Департамент B (Иванов И.И., Петров П.П.)",
+            )
+
+    def test_format_responsible_comma_separated_objects_and_managers(self):
+        from sokol_reports.control_file.generator import format_responsible_from_pairs
+
+        responsible = format_responsible_from_pairs([
+            (
+                "Административно - хозяйственный департамент, Отдел закупок.",
+                "Ярмошевич И.Н., Лавренюк Р. А.",
+            )
+        ])
+        self.assertEqual(
+            responsible,
+            "Административно - хозяйственный департамент, Отдел закупок "
+            "(Ярмошевич И.Н., Лавренюк Р. А.)",
+        )
 
 
 if __name__ == "__main__":
