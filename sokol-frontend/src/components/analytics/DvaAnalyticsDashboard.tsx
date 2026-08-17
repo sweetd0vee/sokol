@@ -17,7 +17,7 @@ import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, CHART_AXIS_TICK, CHART_CATEGORY_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
-import { CHECKS_PALETTE, RECOMMENDATIONS_PALETTE } from './analyticsPalette';
+import { RECOMMENDATIONS_PALETTE, VALUE_BLUE_SCALE } from './analyticsPalette';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { DVA_EXPORT_SECTIONS, type DvaExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
@@ -239,7 +239,11 @@ export function DvaAnalyticsDashboard() {
             {auditorChecksTreemap.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableTreemapChart data={auditorChecksTreemap} palette={CHECKS_PALETTE} />
+              <FocusableTreemapChart
+                data={auditorChecksTreemap}
+                palette={VALUE_BLUE_SCALE}
+                colorByValue
+              />
             )}
           </ChartCard>
         ),
