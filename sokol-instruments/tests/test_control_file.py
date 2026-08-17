@@ -186,6 +186,12 @@ class ControlFileGeneratorTest(unittest.TestCase):
             self.assertEqual(worksheet.cell(row=second_row, column=COL_DEADLINE).value, "15.10.2026")
             self.assertIsNone(worksheet.cell(row=4, column=COL_CHECK_NAME).value)
 
+            recommendation_cell = worksheet.cell(row=first_row, column=COL_RECOMMENDATION)
+            self.assertTrue(recommendation_cell.alignment.wrap_text)
+            self.assertEqual(recommendation_cell.alignment.vertical, "top")
+            self.assertGreater(worksheet.column_dimensions["F"].width or 0, 60)
+            self.assertGreaterEqual(worksheet.row_dimensions[first_row].height or 0, 31.5)
+
     def test_rejects_az_without_section_ii(self):
         with tempfile.TemporaryDirectory() as tmp:
             az_path = Path(tmp) / "az.docx"
@@ -233,7 +239,7 @@ class ControlFileGeneratorTest(unittest.TestCase):
             responsible = workbook.active.cell(row=2, column=COL_RESPONSIBLE).value
             self.assertEqual(
                 responsible,
-                "Департамент A, Департамент B (Иванов И.И., Петров П.П.)",
+                "Департамент A (Иванов И.И.), Департамент B (Петров П.П.)",
             )
 
     def test_format_responsible_comma_separated_objects_and_managers(self):
@@ -247,8 +253,8 @@ class ControlFileGeneratorTest(unittest.TestCase):
         ])
         self.assertEqual(
             responsible,
-            "Административно - хозяйственный департамент, Отдел закупок "
-            "(Ярмошевич И.Н., Лавренюк Р. А.)",
+            "Административно - хозяйственный департамент (Ярмошевич И.Н.), "
+            "Отдел закупок (Лавренюк Р. А.)",
         )
 
 

@@ -7,6 +7,8 @@ import shutil
 from typing import List, Optional, Tuple
 
 from openpyxl import load_workbook
+from openpyxl.styles import Alignment
+from openpyxl.utils import get_column_letter
 
 from sokol_reports.control_file.parser import parse_section_ii_for_control_file
 from sokol_reports.control_file.title_parser import parse_az_title_from_docx
@@ -23,6 +25,16 @@ DATA_START_ROW = 2
 _MANAGER_INITIALS_RE = re.compile(
     r"^[А-ЯЁA-Z][а-яёa-z]+\s+[А-ЯЁA-Z]\.\s*[А-ЯЁA-Z]\.?$"
 )
+_WRAPPED_TEXT_ALIGNMENT = Alignment(wrap_text=True, vertical="top")
+_COLUMN_WIDTHS = {
+    COL_CHECK_NAME: 45,
+    COL_CHECK_LEADER: 22,
+    COL_RECOMMENDATION: 80,
+    COL_DEADLINE: 18,
+    COL_RESPONSIBLE: 50,
+}
+_MIN_DATA_ROW_HEIGHT = 31.5
+_LINE_HEIGHT = 15
 
 
 def _normalize_manager(manager: str) -> str:
@@ -49,36 +61,83 @@ def _split_managers(value: str) -> List[str]:
     return managers
 
 
-def _unique_preserve(values: List[str]) -> List[str]:
-    seen: set[str] = set()
-    result: List[str] = []
-    for value in values:
-        key = value.casefold()
-        if key in seen:
-            continue
-        seen.add(key)
-        result.append(value)
-    return result
+def _format_single_responsible(audit_object: str, manager: str) -> str:
+    name = re.sub(r"\s+", " ", (audit_object or "").strip()).rstrip(".")
+    mgr = _normalize_manager(manager)
+    if name and mgr:
+        return f"{name} ({mgr})"
+    return name or mgr
 
 
 def format_responsible_from_pairs(pairs: List[Tuple[str, str]]) -> str:
-    """Сформировать «Ответственные»: департаменты через запятую, затем ФИО в скобках."""
-    objects: List[str] = []
-    managers: List[str] = []
-    for audit_object, manager in pairs:
-        objects.extend(_split_audit_objects(audit_object))
-        managers.extend(_split_managers(manager))
-
-    objects = _unique_preserve(objects)
-    managers = _unique_preserve(managers)
-
-    if not objects and not managers:
+    """Сформировать «Ответственные»: департамент (руководитель) для каждого объекта аудита."""
+    if not pairs:
         return ""
-    if not managers:
-        return ", ".join(objects)
-    if not objects:
-        return ", ".join(managers)
-    return f"{', '.join(objects)} ({', '.join(managers)})"
+
+    if len(pairs) > 1:
+        formatted = [_format_single_responsible(obj, mgr) for obj, mgr in pairs if obj or mgr]
+        return ", ".join(formatted)
+
+    audit_object, manager = pairs[0]
+    objects = _split_audit_objects(audit_object)
+    managers = _split_managers(manager)
+
+    if len(objects) > 1 and len(managers) > 1:
+        limit = min(len(objects), len(managers))
+        formatted = [
+            _format_single_responsible(objects[index], managers[index])
+            for index in range(limit)
+        ]
+        for extra_object in objects[limit:]:
+            formatted.append(_format_single_responsible(extra_object, ""))
+        for extra_manager in managers[limit:]:
+            formatted.append(_format_single_responsible("", extra_manager))
+        return ", ".join(part for part in formatted if part)
+
+    return _format_single_responsible(
+        objects[0] if objects else audit_object,
+        managers[0] if managers else manager,
+    )
+
+
+def _estimate_wrapped_lines(text: str, column_width: float) -> int:
+    if not text:
+        return 1
+
+    chars_per_line = max(24, int(column_width * 1.05))
+    lines = 0
+    for paragraph in re.split(r"[\n\r]+", text):
+        normalized = paragraph.strip()
+        if not normalized:
+            continue
+        lines += max(1, (len(normalized) + chars_per_line - 1) // chars_per_line)
+    return max(1, lines)
+
+
+def _row_height_for_texts(texts_with_widths: List[Tuple[str, float]]) -> float:
+    line_count = max(_estimate_wrapped_lines(text, width) for text, width in texts_with_widths)
+    return min(409, max(_MIN_DATA_ROW_HEIGHT, line_count * _LINE_HEIGHT))
+
+
+def _apply_worksheet_formatting(worksheet, *, last_row: int) -> None:
+    for column, width in _COLUMN_WIDTHS.items():
+        worksheet.column_dimensions[get_column_letter(column)].width = width
+
+    for row in range(DATA_START_ROW, last_row + 1):
+        check_name = worksheet.cell(row=row, column=COL_CHECK_NAME).value or ""
+        recommendation = worksheet.cell(row=row, column=COL_RECOMMENDATION).value or ""
+        responsible = worksheet.cell(row=row, column=COL_RESPONSIBLE).value or ""
+
+        worksheet.row_dimensions[row].height = _row_height_for_texts([
+            (str(check_name), _COLUMN_WIDTHS[COL_CHECK_NAME]),
+            (str(recommendation), _COLUMN_WIDTHS[COL_RECOMMENDATION]),
+            (str(responsible), _COLUMN_WIDTHS[COL_RESPONSIBLE]),
+        ])
+
+        for column in (COL_CHECK_NAME, COL_CHECK_LEADER, COL_RECOMMENDATION, COL_DEADLINE, COL_RESPONSIBLE):
+            cell = worksheet.cell(row=row, column=column)
+            if cell.value not in (None, ""):
+                cell.alignment = _WRAPPED_TEXT_ALIGNMENT
 
 
 def generate_control_file_template(input_path: str, output_path: str) -> Tuple[Optional[str], Optional[str]]:
@@ -121,6 +180,10 @@ def generate_control_file_template(input_path: str, output_path: str) -> Tuple[O
         worksheet.cell(row=row, column=COL_RECOMMENDATION, value=item.recommendation_text)
         worksheet.cell(row=row, column=COL_DEADLINE, value=item.deadline)
         worksheet.cell(row=row, column=COL_RESPONSIBLE, value=item.responsible)
+
+    last_row = DATA_START_ROW + len(rows) - 1
+    if rows:
+        _apply_worksheet_formatting(worksheet, last_row=last_row)
 
     workbook.save(output_path)
     return output_path, None

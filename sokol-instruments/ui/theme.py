@@ -279,7 +279,8 @@ SOKOL_CSS = """
     }
 
     div[data-testid="stAlert"] {
-        max-width: 36rem;
+        width: 100%;
+        max-width: 100%;
         border-radius: 0.75rem;
         font-size: 0.875rem;
     }
