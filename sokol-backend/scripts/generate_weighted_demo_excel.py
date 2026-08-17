@@ -30,6 +30,7 @@ ROOT = BACKEND_ROOT.parent
 sys.path.insert(0, str(BACKEND_ROOT))
 
 from app.db.auditor_names import AUDITORS as AUDITOR_NAMES  # noqa: E402
+from app.db.demo_data import build_recommendation_closure_fields  # noqa: E402
 from app.db.department_names import DEPARTMENTS as DEPARTMENT_NAMES  # noqa: E402
 from app.utils.check_key import assign_serial_numbers  # noqa: E402
 
@@ -309,14 +310,20 @@ def build_recommendations(checks: list[dict], target_count: int) -> list[dict]:
                 if status == "completed"
                 else "on_control"
             )
-            completion_date = None
-            if status == "completed":
-                completion_date = deadline + timedelta(days=random.randint(-12, 18))
-                additional_status = "deadline_violated" if completion_date > deadline else "on_time"
 
             action = random.choice(REC_ACTIONS)
             number = len(rows) + 1
             name = f"{action}: {topic} №{number}"
+            closure = build_recommendation_closure_fields(
+                status=status,
+                created=created,
+                deadline=deadline,
+                index=number,
+            )
+            if status == "completed" and closure["actual_completion_date"] and closure["actual_completion_date"] > deadline:
+                additional_status = "deadline_violated"
+            elif status == "completed":
+                additional_status = "on_time"
             rows.append(
                 {
                     "serial_number": check["serial_number"],
@@ -335,12 +342,7 @@ def build_recommendations(checks: list[dict], target_count: int) -> list[dict]:
                     "status": status,
                     "additional_status": additional_status,
                     "created_at": created,
-                    "actual_completion_date": completion_date,
-                    "closure_information": (
-                        f"Представлены подтверждающие материалы по рекомендации №{number}."
-                        if completion_date
-                        else None
-                    ),
+                    **closure,
                 }
             )
 

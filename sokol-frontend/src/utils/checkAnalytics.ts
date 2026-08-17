@@ -248,9 +248,9 @@ export function buildEffectivenessMatrixHtmlMarkup(rows: EffectivenessMatrixRow[
     })
     .join('');
 
-  const footerShares = EFFECTIVENESS_MATRIX_COLUMNS.map(
+  const footerShareCells = EFFECTIVENESS_MATRIX_COLUMNS.map(
     (column) =>
-      `<div style="display:flex;align-items:flex-start;justify-content:center;padding:8px 2px;min-width:0">${buildEffectivenessShareSquares(columnShares[column.key])}</div>`,
+      `<td style="padding:12px 4px;text-align:center;vertical-align:top">${buildEffectivenessShareSquares(columnShares[column.key])}</td>`,
   ).join('');
 
   const legend = EFFECTIVENESS_LEGEND.map(
@@ -278,11 +278,13 @@ export function buildEffectivenessMatrixHtmlMarkup(rows: EffectivenessMatrixRow[
             </tr>
           </thead>
           <tbody>${bodyRows}</tbody>
+          <tfoot data-effectiveness-matrix-footer>
+            <tr style="border-top:1px solid #e5e7eb;background:#f9fafb">
+              <th colspan="2" style="padding:12px;text-align:left;vertical-align:top;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#003366">Доля оценок</th>
+              ${footerShareCells}
+            </tr>
+          </tfoot>
         </table>
-      </div>
-      <div data-effectiveness-matrix-footer style="display:grid;grid-template-columns:14% 34% 13% 13% 13% 13%;align-items:start;border-top:1px solid #e5e7eb;background:#f9fafb">
-        <div style="grid-column:1 / span 2;display:flex;align-items:flex-start;padding:8px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#003366">Доля оценок</div>
-        ${footerShares}
       </div>
     </div>
     <ul data-effectiveness-matrix-legend style="display:flex;flex-wrap:wrap;gap:8px 12px;list-style:none;padding:0;margin:0;font-size:12px;color:#4b5563">${legend}</ul>

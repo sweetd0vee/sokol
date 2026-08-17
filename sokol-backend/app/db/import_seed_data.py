@@ -35,6 +35,41 @@ def _optional_str(value) -> str | None:
     return str(value).strip()
 
 
+def _optional_date_str(value) -> str | None:
+    parsed = _parse_date(value) if value not in (None, "") else None
+    if parsed:
+        return parsed.isoformat()
+    return _optional_str(value)
+
+
+def _closure_lists_from_legacy(fields: dict) -> tuple[list[dict], list[dict]]:
+    extensions: list[dict] = []
+    if fields.get("extension_1_date") or fields.get("extension_1_comment"):
+        extensions.append(
+            {
+                "date": fields["extension_1_date"].isoformat() if fields.get("extension_1_date") else None,
+                "comment": fields.get("extension_1_comment"),
+            }
+        )
+    second_date = _parse_date(fields.get("extension_2_reason"))
+    if second_date or fields.get("extension_2_comment"):
+        extensions.append(
+            {
+                "date": second_date.isoformat() if second_date else None,
+                "comment": fields.get("extension_2_comment"),
+            }
+        )
+    removals: list[dict] = []
+    if fields.get("remove_from_control_date") or fields.get("remove_from_control_comment"):
+        removals.append(
+            {
+                "date": fields["remove_from_control_date"].isoformat() if fields.get("remove_from_control_date") else None,
+                "comment": fields.get("remove_from_control_comment"),
+            }
+        )
+    return extensions, removals
+
+
 def _read_rows(path: Path, sheet_name: str) -> list[dict]:
     workbook = load_workbook(path, read_only=True, data_only=True)
     sheet = workbook[sheet_name]
@@ -179,7 +214,7 @@ async def import_seed_data(
                 "extension_1_reason": _optional_str(row.get("extension_1_reason")),
                 "extension_1_date": _parse_date(row.get("extension_1_date")),
                 "extension_1_comment": _optional_str(row.get("extension_1_comment")),
-                "extension_2_reason": _optional_str(row.get("extension_2_reason")),
+                "extension_2_reason": _optional_date_str(row.get("extension_2_reason")),
                 "extension_2_comment": _optional_str(row.get("extension_2_comment")),
                 "remove_from_control_reason": _optional_str(row.get("remove_from_control_reason")),
                 "remove_from_control_date": _parse_date(row.get("remove_from_control_date")),
@@ -187,6 +222,11 @@ async def import_seed_data(
                 "closure_verification_status": _optional_str(row.get("closure_verification_status")),
                 "closure_information": _optional_str(row.get("closure_information")),
             }
+            extensions, removals = _closure_lists_from_legacy(optional_recommendation_fields)
+            if extensions:
+                optional_recommendation_fields["deadline_extensions"] = extensions
+            if removals:
+                optional_recommendation_fields["control_removals"] = removals
             recommendation_kwargs.update(
                 {
                     field: value

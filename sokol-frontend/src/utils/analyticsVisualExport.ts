@@ -929,32 +929,16 @@ async function buildVisualHtml(options: {
       gap: 8px;
     }
     .chart-html [data-effectiveness-matrix-footer] {
-      display: grid;
-      grid-template-columns: 16% 40% 11% 11% 11% 11%;
-      align-items: center;
-      border-top: 1px solid var(--line);
       background: #f8fafc;
     }
-    .chart-html [data-effectiveness-matrix-footer] > div:first-child {
-      grid-column: 1 / span 2;
-      display: flex;
-      align-items: center;
-      padding: 8px 12px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--muted);
+    .chart-html [data-effectiveness-matrix-footer] th,
+    .chart-html [data-effectiveness-matrix-footer] td {
+      border-top: 1px solid var(--line);
+      vertical-align: top;
+      background: #f8fafc;
     }
-    .chart-html [data-effectiveness-matrix-footer] > div:not(:first-child) {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 8px 2px;
-      min-width: 0;
-    }
-    .chart-html [data-effectiveness-matrix-footer] > div:not(:first-child) > div {
-      max-width: 100%;
+    .chart-html [data-effectiveness-matrix-footer] td {
+      text-align: center;
     }
     .chart-html [data-effectiveness-matrix-legend] {
       display: flex;

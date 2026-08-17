@@ -30,7 +30,7 @@ import {
 import { EXPORT_FORMATS, type ExportFormat, exportRecommendationsTable } from '../../utils/exports';
 import { formatRuDate, parseDateValue, toEndOfDayMs, toStartOfDayMs } from '../../utils/dates';
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
-import { useAuditorOptions } from '../../hooks/useReferenceOptions';
+import { toNameOptions, useAuditorOptions } from '../../hooks/useReferenceOptions';
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
 import { useSokolData } from '../../contexts/sokolData';
 import { recommendationMatchesCurrentUser } from '../../utils/personMatch';
@@ -166,7 +166,6 @@ export function RecommendationsTab() {
   });
   const trimmedMyName = useMemo(() => myName.trim(), [myName]);
   const { options: auditorOptions } = useAuditorOptions();
-  const { options: managerOptions } = useAuditorOptions();
   const { options: auditObjectOptions } = useAuditObjectOptions();
 
   const {
@@ -179,6 +178,10 @@ export function RecommendationsTab() {
   } = useSokolData();
   const recommendationYearlyNumbers = useMemo(
     () => buildRecommendationYearlyNumbers(recommendations),
+    [recommendations],
+  );
+  const managerOptions = useMemo(
+    () => toNameOptions(recommendations.map((recommendation) => recommendation.manager)),
     [recommendations],
   );
 

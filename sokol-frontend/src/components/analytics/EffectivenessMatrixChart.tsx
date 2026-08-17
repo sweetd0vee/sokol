@@ -128,20 +128,27 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
                 </tr>
               ))}
             </tbody>
+            <tfoot
+              className="sticky bottom-0 z-[1] bg-gray-50/95"
+              data-effectiveness-matrix-footer
+            >
+              <tr className="border-t border-gray-200">
+                <th
+                  colSpan={2}
+                  className="sticky left-0 bg-gray-50/95 px-3 py-3 text-left align-top text-xs font-semibold uppercase tracking-wide text-sber-dark"
+                >
+                  Доля оценок
+                </th>
+                {EFFECTIVENESS_MATRIX_COLUMNS.map((column) => (
+                  <td key={column.key} className="px-1 py-3 text-center align-top">
+                    <div className="flex justify-center">
+                      <ColumnShareSquares shares={columnShares[column.key]} />
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            </tfoot>
           </table>
-        </div>
-
-        <div className="max-h-[55%] shrink-0 overflow-auto border-t border-gray-200 bg-gray-50/90">
-          <div className="flex w-full items-start" data-effectiveness-matrix-footer>
-            <div className="flex w-[48%] shrink-0 items-start px-3 py-3 text-xs font-semibold uppercase tracking-wide text-sber-dark">
-              Доля оценок
-            </div>
-            {EFFECTIVENESS_MATRIX_COLUMNS.map((column) => (
-              <div key={column.key} className="flex w-[13%] items-start justify-center px-1 py-3">
-                <ColumnShareSquares shares={columnShares[column.key]} />
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
