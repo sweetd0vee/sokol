@@ -15,6 +15,12 @@ import {
   getCheckViewLabel,
 } from '../../constants/checks';
 import { EXPORT_FORMATS, type ExportFormat, exportChecks } from '../../utils/exports';
+import { exportCheckAttachments } from '../../utils/exportCheckAttachments';
+import {
+  ATTACHMENT_EXPORT_FOLDER_LABELS,
+  CHECK_ATTACHMENT_EXPORT_GROUPS,
+  type AttachmentFileGroup,
+} from '../../utils/checkAttachments';
 import { formatRuDate, parseDateValue, toEndOfDayMs, toStartOfDayMs } from '../../utils/dates';
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
 import { useAuditorOptions } from '../../hooks/useReferenceOptions';
@@ -106,6 +112,10 @@ export function ChecksTab() {
   const [pageSize, setPageSize] = useState(50);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('xlsx');
   const [isExporting, setIsExporting] = useState(false);
+  const [attachmentExportGroups, setAttachmentExportGroups] = useState<string[]>([
+    ...CHECK_ATTACHMENT_EXPORT_GROUPS,
+  ]);
+  const [isExportingAttachments, setIsExportingAttachments] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: SortKey | null; direction: 'asc' | 'desc' }>({
     key: null,
     direction: 'asc',
@@ -253,6 +263,41 @@ export function ChecksTab() {
     }
   };
 
+  const handleExportAttachments = async () => {
+    if (sortedChecks.length === 0) {
+      return;
+    }
+    if (attachmentExportGroups.length === 0) {
+      window.alert('Выберите хотя бы один тип вложений для экспорта');
+      return;
+    }
+    setIsExportingAttachments(true);
+    try {
+      const { filesAdded } = await exportCheckAttachments(
+        sortedChecks,
+        attachmentExportGroups as AttachmentFileGroup[],
+      );
+      if (filesAdded === 0) {
+        window.alert('Для выбранных проверок и типов вложений файлы не найдены');
+      }
+    } catch (error) {
+      window.alert(
+        `Не удалось экспортировать вложения: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`,
+      );
+    } finally {
+      setIsExportingAttachments(false);
+    }
+  };
+
+  const attachmentExportOptions = useMemo(
+    () =>
+      CHECK_ATTACHMENT_EXPORT_GROUPS.map((group) => ({
+        value: group,
+        label: ATTACHMENT_EXPORT_FOLDER_LABELS[group],
+      })),
+    [],
+  );
+
   const handleSort = (key: SortKey) => {
     setSortConfig((prev) => {
       if (prev.key !== key) {
@@ -314,7 +359,7 @@ export function ChecksTab() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div className="rounded-xl border border-gray-200 bg-white">
         <>
           <div className="overflow-x-auto">
             <table className="w-full text-base table-fixed min-w-[1600px]">
@@ -553,26 +598,51 @@ export function ChecksTab() {
           </div>
           <div className="flex flex-col gap-3 border-t border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleExport}
-                  disabled={isExporting || sortedChecks.length === 0}
-                  className="inline-flex w-[160px] items-center justify-center whitespace-nowrap rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isExporting ? 'Экспорт...' : 'Экспорт'}
-                </button>
-                <select
-                  value={exportFormat}
-                  onChange={(event) => setExportFormat(event.target.value as ExportFormat)}
-                  className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
-                >
-                  {EXPORT_FORMATS.map((format) => (
-                    <option key={format.value} value={format.value}>
-                      {format.label}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleExport}
+                    disabled={isExporting || sortedChecks.length === 0}
+                    className="inline-flex w-[160px] items-center justify-center whitespace-nowrap rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isExporting ? 'Экспорт...' : 'Экспорт'}
+                  </button>
+                  <select
+                    value={exportFormat}
+                    onChange={(event) => setExportFormat(event.target.value as ExportFormat)}
+                    className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
+                  >
+                    {EXPORT_FORMATS.map((format) => (
+                      <option key={format.value} value={format.value}>
+                        {format.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleExportAttachments}
+                    disabled={
+                      isExportingAttachments
+                      || sortedChecks.length === 0
+                      || attachmentExportGroups.length === 0
+                    }
+                    className="inline-flex w-[160px] items-center justify-center whitespace-nowrap rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isExportingAttachments ? 'Экспорт...' : 'Экспорт файлов'}
+                  </button>
+                  <MultiCheckboxSelect
+                    options={attachmentExportOptions}
+                    value={attachmentExportGroups}
+                    onChange={setAttachmentExportGroups}
+                    placeholder="Типы вложений"
+                    inputClassName="w-[220px]"
+                    emptyMessage="Нет типов вложений"
+                    menuPlacement="top"
+                  />
+                </div>
               </div>
               <span className="whitespace-nowrap">
                 Отработка фильтра: {filteredChecks.length} записей

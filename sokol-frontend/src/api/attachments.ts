@@ -56,6 +56,13 @@ export async function uploadAttachment(params: {
   return data.attachment;
 }
 
+export async function fetchAttachmentBlob(attachmentId: number | string): Promise<Blob> {
+  const { data } = await api.get<Blob>(`/api/v1/attachments/${attachmentId}/download`, {
+    responseType: 'blob',
+  });
+  return data;
+}
+
 export async function downloadAttachment(attachmentId: number | string): Promise<void> {
   const { data, headers } = await api.get<Blob>(`/api/v1/attachments/${attachmentId}/download`, {
     responseType: 'blob',

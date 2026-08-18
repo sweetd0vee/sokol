@@ -19,4 +19,21 @@ export const ATTACHMENT_GROUP_LABELS: Record<AttachmentFileGroup, string> = {
   dz_appendix: 'Приложение к ДЗ',
 };
 
+/** Имена папок при массовом экспорте вложений проверок. */
+export const ATTACHMENT_EXPORT_FOLDER_LABELS: Record<AttachmentFileGroup, string> = {
+  order: 'Приказ',
+  program: 'Программа',
+  az: 'АЗ',
+  dz: 'ДЗ',
+  dz_appendix: 'Приложение к ДЗ',
+};
+
+export const CHECK_ATTACHMENT_EXPORT_GROUPS: AttachmentFileGroup[] = [
+  'order',
+  'program',
+  'az',
+  'dz',
+  'dz_appendix',
+];
+
 export { filesWord };
