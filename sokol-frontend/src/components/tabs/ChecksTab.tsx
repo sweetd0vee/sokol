@@ -17,9 +17,9 @@ import {
 import { EXPORT_FORMATS, type ExportFormat, exportChecks } from '../../utils/exports';
 import { exportCheckAttachments } from '../../utils/exportCheckAttachments';
 import {
-  ATTACHMENT_EXPORT_FOLDER_LABELS,
-  CHECK_ATTACHMENT_EXPORT_GROUPS,
-  type AttachmentFileGroup,
+  ATTACHMENT_SLOT_LABELS,
+  CHECK_ATTACHMENT_EXPORT_SLOTS,
+  type AttachmentSlot,
 } from '../../utils/checkAttachments';
 import { formatRuDate, parseDateValue, toEndOfDayMs, toStartOfDayMs } from '../../utils/dates';
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
@@ -113,7 +113,7 @@ export function ChecksTab() {
   const [exportFormat, setExportFormat] = useState<ExportFormat>('xlsx');
   const [isExporting, setIsExporting] = useState(false);
   const [attachmentExportGroups, setAttachmentExportGroups] = useState<string[]>([
-    ...CHECK_ATTACHMENT_EXPORT_GROUPS,
+    ...CHECK_ATTACHMENT_EXPORT_SLOTS,
   ]);
   const [isExportingAttachments, setIsExportingAttachments] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: SortKey | null; direction: 'asc' | 'desc' }>({
@@ -275,7 +275,7 @@ export function ChecksTab() {
     try {
       const { filesAdded } = await exportCheckAttachments(
         sortedChecks,
-        attachmentExportGroups as AttachmentFileGroup[],
+        attachmentExportGroups as AttachmentSlot[],
       );
       if (filesAdded === 0) {
         window.alert('Для выбранных проверок и типов вложений файлы не найдены');
@@ -291,9 +291,9 @@ export function ChecksTab() {
 
   const attachmentExportOptions = useMemo(
     () =>
-      CHECK_ATTACHMENT_EXPORT_GROUPS.map((group) => ({
-        value: group,
-        label: ATTACHMENT_EXPORT_FOLDER_LABELS[group],
+      CHECK_ATTACHMENT_EXPORT_SLOTS.map((slot) => ({
+        value: slot,
+        label: ATTACHMENT_SLOT_LABELS[slot],
       })),
     [],
   );
@@ -611,7 +611,7 @@ export function ChecksTab() {
                   <select
                     value={exportFormat}
                     onChange={(event) => setExportFormat(event.target.value as ExportFormat)}
-                    className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
+                    className="w-[160px] rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
                   >
                     {EXPORT_FORMATS.map((format) => (
                       <option key={format.value} value={format.value}>
@@ -638,7 +638,7 @@ export function ChecksTab() {
                     value={attachmentExportGroups}
                     onChange={setAttachmentExportGroups}
                     placeholder="Типы вложений"
-                    inputClassName="w-[220px]"
+                    className="w-[160px]"
                     emptyMessage="Нет типов вложений"
                     menuPlacement="top"
                   />

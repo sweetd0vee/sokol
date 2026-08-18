@@ -2,8 +2,9 @@ import JSZip from 'jszip';
 import type { Check } from '../types/check';
 import { fetchAttachmentBlob, fetchAttachments } from '../api/attachments';
 import {
-  ATTACHMENT_EXPORT_FOLDER_LABELS,
-  type AttachmentFileGroup,
+  getExportFolderName,
+  shouldExportStorageSlot,
+  type AttachmentSlot,
 } from './checkAttachments';
 import { downloadBlob } from './download';
 
@@ -47,9 +48,9 @@ function buildArchiveFilename(): string {
 
 export async function exportCheckAttachments(
   checks: Check[],
-  selectedGroups: AttachmentFileGroup[],
+  selectedSlots: AttachmentSlot[],
 ): Promise<{ filesAdded: number }> {
-  if (checks.length === 0 || selectedGroups.length === 0) {
+  if (checks.length === 0 || selectedSlots.length === 0) {
     return { filesAdded: 0 };
   }
 
@@ -59,27 +60,33 @@ export async function exportCheckAttachments(
 
   for (const check of checks) {
     const checkFolder = uniqueName(buildCheckFolderName(check), usedCheckFolders);
+    const { items } = await fetchAttachments({
+      entity_type: 'check',
+      entity_id: check.id,
+    });
 
-    for (const group of selectedGroups) {
-      const { items } = await fetchAttachments({
-        entity_type: 'check',
-        entity_id: check.id,
-        slot: group,
-      });
-      if (items.length === 0) {
+    const attachmentsToExport = items.filter((attachment) =>
+      shouldExportStorageSlot(attachment.slot, selectedSlots),
+    );
+    if (attachmentsToExport.length === 0) {
+      continue;
+    }
+
+    const usedFilenamesByFolder = new Map<string, Set<string>>();
+
+    for (const attachment of attachmentsToExport) {
+      const groupFolder = getExportFolderName(attachment.slot);
+      if (!groupFolder) {
         continue;
       }
 
-      const groupFolder = ATTACHMENT_EXPORT_FOLDER_LABELS[group];
-      const usedFilenames = new Set<string>();
-
-      for (const attachment of items) {
-        const blob = await fetchAttachmentBlob(attachment.id);
-        const baseName = sanitizePathSegment(attachment.original_name) || `file-${attachment.id}`;
-        const filename = uniqueName(baseName, usedFilenames);
-        zip.file(`${checkFolder}/${groupFolder}/${filename}`, blob);
-        filesAdded += 1;
-      }
+      const blob = await fetchAttachmentBlob(attachment.id);
+      const baseName = sanitizePathSegment(attachment.original_name) || `file-${attachment.id}`;
+      const usedFilenames = usedFilenamesByFolder.get(groupFolder) ?? new Set<string>();
+      const filename = uniqueName(baseName, usedFilenames);
+      usedFilenamesByFolder.set(groupFolder, usedFilenames);
+      zip.file(`${checkFolder}/${groupFolder}/${filename}`, blob);
+      filesAdded += 1;
     }
   }
 

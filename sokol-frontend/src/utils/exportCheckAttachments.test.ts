@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { Check } from '../types/check';
+import {
+  getExportFolderName,
+  getStorageSlotsForExportSlot,
+  shouldExportStorageSlot,
+} from './checkAttachments';
 import { buildCheckFolderName, sanitizePathSegment } from './exportCheckAttachments';
 
 const baseCheck: Check = {
@@ -33,5 +38,20 @@ describe('buildCheckFolderName', () => {
 
   it('uses only key when short name is missing', () => {
     expect(buildCheckFolderName({ ...baseCheck, short_name: undefined })).toBe('26KVS3P1');
+  });
+});
+
+describe('check attachment export mapping', () => {
+  it('maps dz export slot to both storage slots', () => {
+    expect(getStorageSlotsForExportSlot('dz')).toEqual(['dz', 'dz_appendix']);
+  });
+
+  it('exports appendix files into the dz folder', () => {
+    expect(getExportFolderName('dz_appendix')).toBe('ДЗ');
+  });
+
+  it('includes appendix files when dz is selected', () => {
+    expect(shouldExportStorageSlot('dz_appendix', ['dz'])).toBe(true);
+    expect(shouldExportStorageSlot('dz_appendix', ['az'])).toBe(false);
   });
 });
