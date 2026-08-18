@@ -608,7 +608,7 @@ export function ChecksTab() {
                   <select
                     value={exportFormat}
                     onChange={(event) => setExportFormat(event.target.value as ExportFormat)}
-                    className="w-[110px] rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
+                    className="w-[140px] rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
                   >
                     {EXPORT_FORMATS.map((format) => (
                       <option key={format.value} value={format.value}>
