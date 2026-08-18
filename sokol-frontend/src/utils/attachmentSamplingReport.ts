@@ -110,8 +110,8 @@ export function buildAttachmentSamplingReportXlsx(report: AttachmentSamplingRepo
 
   let currentRow = 0;
   setStyledCell(ws, currentRow, 0, 'Отчет о выборке вложений', {
-    ...CELL_STYLE,
-    font: { ...CELL_STYLE.font, bold: true },
+    ...HEADER_STYLE,
+    alignment: CELL_STYLE.alignment,
   });
   currentRow += 1;
   setStyledCell(ws, currentRow, 0, `Дата экспорта: ${formatExportDate(exportedAt)}`, CELL_STYLE);
@@ -156,7 +156,7 @@ export function buildAttachmentSamplingReportXlsx(report: AttachmentSamplingRepo
     s: { r: 0, c: 0 },
     e: { r: lastRow, c: lastCol },
   });
-  ws['!cols'] = headers.map((header, index) => ({
+  ws['!cols'] = headers.map((_header, index) => ({
     wch: index === 1 ? 28 : index === headers.length - 1 ? 24 : 14,
   }));
 
