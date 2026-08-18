@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import type { Check } from '../types/check';
 import { fetchAttachmentBlob, fetchAttachments } from '../api/attachments';
 import {
+  ATTACHMENT_SLOT_LABELS,
   getExportFolderName,
   shouldExportStorageSlot,
   type AttachmentSlot,
@@ -60,6 +61,11 @@ export async function exportCheckAttachments(
 
   for (const check of checks) {
     const checkFolder = uniqueName(buildCheckFolderName(check), usedCheckFolders);
+
+    for (const slot of selectedSlots) {
+      zip.folder(`${checkFolder}/${ATTACHMENT_SLOT_LABELS[slot]}`);
+    }
+
     const { items } = await fetchAttachments({
       entity_type: 'check',
       entity_id: check.id,
@@ -68,9 +74,6 @@ export async function exportCheckAttachments(
     const attachmentsToExport = items.filter((attachment) =>
       shouldExportStorageSlot(attachment.slot, selectedSlots),
     );
-    if (attachmentsToExport.length === 0) {
-      continue;
-    }
 
     const usedFilenamesByFolder = new Map<string, Set<string>>();
 
@@ -88,10 +91,6 @@ export async function exportCheckAttachments(
       zip.file(`${checkFolder}/${groupFolder}/${filename}`, blob);
       filesAdded += 1;
     }
-  }
-
-  if (filesAdded === 0) {
-    return { filesAdded: 0 };
   }
 
   const archive = await zip.generateAsync({ type: 'blob' });

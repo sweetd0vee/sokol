@@ -273,13 +273,10 @@ export function ChecksTab() {
     }
     setIsExportingAttachments(true);
     try {
-      const { filesAdded } = await exportCheckAttachments(
+      await exportCheckAttachments(
         sortedChecks,
         attachmentExportGroups as AttachmentSlot[],
       );
-      if (filesAdded === 0) {
-        window.alert('Для выбранных проверок и типов вложений файлы не найдены');
-      }
     } catch (error) {
       window.alert(
         `Не удалось экспортировать вложения: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`,
@@ -611,7 +608,7 @@ export function ChecksTab() {
                   <select
                     value={exportFormat}
                     onChange={(event) => setExportFormat(event.target.value as ExportFormat)}
-                    className="w-[160px] rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
+                    className="w-[110px] rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
                   >
                     {EXPORT_FORMATS.map((format) => (
                       <option key={format.value} value={format.value}>
@@ -638,7 +635,7 @@ export function ChecksTab() {
                     value={attachmentExportGroups}
                     onChange={setAttachmentExportGroups}
                     placeholder="Типы вложений"
-                    className="w-[160px]"
+                    className="w-[140px]"
                     emptyMessage="Нет типов вложений"
                     menuPlacement="top"
                   />
