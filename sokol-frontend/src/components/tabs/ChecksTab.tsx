@@ -273,10 +273,24 @@ export function ChecksTab() {
     }
     setIsExportingAttachments(true);
     try {
-      await exportCheckAttachments(
+      const { filesAdded, emptyFolders } = await exportCheckAttachments(
         sortedChecks,
         attachmentExportGroups as AttachmentSlot[],
       );
+      if (emptyFolders.length > 0) {
+        const preview = emptyFolders
+          .slice(0, 5)
+          .map((entry) => `${entry.serialNumber}: ${entry.emptySlots.join(', ')}`)
+          .join('\n');
+        const suffix = emptyFolders.length > 5
+          ? `\n... и ещё ${emptyFolders.length - 5} проверок`
+          : '';
+        window.alert(
+          `Экспорт завершён (${filesAdded} файлов).\n`
+          + `В отчёте о выборке отмечены пустые папки (${emptyFolders.length} проверок):\n`
+          + `${preview}${suffix}`,
+        );
+      }
     } catch (error) {
       window.alert(
         `Не удалось экспортировать вложения: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`,
