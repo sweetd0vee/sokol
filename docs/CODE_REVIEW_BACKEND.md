@@ -35,38 +35,11 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 
 | Аспект | Статус |
 |--------|--------|
-| JWT Bearer | ✅ |
-| PBKDF2 пароли | ✅ |
-| DELETE / settings | admin only ✅ |
-| DELETE check | admin only ✅ |
-| DELETE recommendation | admin — любая; auditor — только своя (поле `auditor` ↔ username) ✅ |
-| POST `/recommendations/batch-delete` | та же модель владения; одна transaction + renumber ✅ |
-| Upload attachment (recommendation) | admin — любая; auditor — только своя ✅ |
-| DELETE attachment (recommendation) | admin — любая; auditor — только своя ✅ |
-| DELETE attachment (check) | admin only ✅ |
-| Bearer role из БД + `is_active` | ✅ |
 | Default JWT secret в dev | ⚠️ override на prod |
 | HTTP Basic fallback | ⚠️ отключить/feature-flag на prod |
 
-## API
-
-- Pagination checks/recommendations: skip/limit ✅
-- Dictionary validation на create/update ✅
-- Analytics: SQL-side filters/aggregates + analytics indexes; row-level только для matrix/planning mapping
-- Attachments + MinIO ✅
-- Recommendations batch append/replace ✅
-- Recommendations batch-delete (отмена импорта из АЗ) ✅
-
-### Ключ проверки ✅
-
-`checks_crud.py`: create генерирует unique serial; PATCH пересчитывает при смене `start_date` / `check_leader` / `check_type`; каскад на `recommendations.serial_number`, `attachments.check_serial_number`, `attachments.bucket`; MinIO objects переносятся в bucket нового serial.
-
 ## DOCX tools
-
-| Tool | Статус |
-|------|--------|
-| Раздел II (+ links) | ✅ реализовано, ~70+ parser tests |
-| Докладная / parse-recommendations | ✅ |
+Раздел II (+ links) и докладная/parse-recommendations используются в DOCX-инструментах.
 
 `audit-opinion` не считается частью текущего API: endpoint/routes отсутствуют и уже не описаны в `docs/API.md`. Оставшиеся `SOKOL_OLLAMA_*` — backlog/env-хвост, не готовая функция.
 
@@ -75,10 +48,6 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 - Схема: `create_all` + `migrate_*.py` — **нет Alembic** (P0).
 - Import `--replace` опасен на prod.
 - Entrypoint: init → migrate (в т.ч. `migrate_analytics_indexes`) → seed → optional demo.
-
-## Тесты
-
-`py -3.12 -m unittest discover -s tests`: **139** test cases (2 skipped). Покрытие: Bearer/users RBAC, recommendation batch append/delete/batch-delete, serial lifecycle + MinIO, analytics SQL filters, `person_match`, attachments ownership, dictionaries, DOCX parser. DB-backed integration для checks CRUD; CI использует `sqlalchemy[asyncio]` (greenlet) при `SOKOL_RUN_DB_INTEGRATION_TESTS=1`.
 
 ## Подробные findings
 

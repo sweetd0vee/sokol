@@ -62,8 +62,8 @@ function PieValueLabel({
   const radius = innerRadius + (outerRadius - innerRadius) * 0.62;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  // Keep consistent readability for dashboard charts.
-  const labelColor = '#ffffff';
+  // Keep consistent typography for dashboard charts.
+  const labelColor = '#111827';
   const percentLabel =`${Math.round(percent * 100)}%`;
 
   if (labelMode === 'both') {
