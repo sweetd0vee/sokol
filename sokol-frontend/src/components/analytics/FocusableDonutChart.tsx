@@ -14,6 +14,8 @@ type FocusableDonutChartProps = {
   palette?: readonly string[];
   /** Allows overriding outer container sizing in composed cards. */
   containerClassName?: string;
+  /** When false, hides the legend under the chart. */
+  showLegend?: boolean;
   /** Map smaller values to lighter shades and larger values to darker shades. */
   colorByValue?: boolean;
   /** What to show on segment labels. Defaults to absolute value and percent together. */
@@ -112,6 +114,7 @@ export function FocusableDonutChart({
   data,
   palette = PALETTE,
   containerClassName = 'h-full min-h-[13rem]',
+  showLegend = true,
   colorByValue = false,
   labelMode = 'both',
   legendLabelMode,
@@ -183,32 +186,34 @@ export function FocusableDonutChart({
             }}
             contentStyle={CHART_TOOLTIP_STYLE}
           />
-          <Legend
-            verticalAlign="bottom"
-            align="center"
-            iconType="circle"
-            iconSize={9}
-            formatter={(value) => {
-              const name = String(value);
-              if (resolvedLegendLabelMode !== 'both') {
-                return name;
-              }
-              const item = data.find((entry) => entry.name === name);
-              if (!item) {
-                return name;
-              }
-              const percent = total > 0 ? Math.round((item.value / total) * 100) : 0;
-              return legendPercentFirst
-                ? `${name}: ${percent}% (${item.value})`
-                : `${name}: ${item.value} (${percent}%)`;
-            }}
-            wrapperStyle={{
-              ...CHART_LEGEND_STYLE,
-              fontSize: legendFontSize,
-              fontWeight: legendFontWeight,
-              paddingTop: 4,
-            }}
-          />
+          {showLegend ? (
+            <Legend
+              verticalAlign="bottom"
+              align="center"
+              iconType="circle"
+              iconSize={9}
+              formatter={(value) => {
+                const name = String(value);
+                if (resolvedLegendLabelMode !== 'both') {
+                  return name;
+                }
+                const item = data.find((entry) => entry.name === name);
+                if (!item) {
+                  return name;
+                }
+                const percent = total > 0 ? Math.round((item.value / total) * 100) : 0;
+                return legendPercentFirst
+                  ? `${name}: ${percent}% (${item.value})`
+                  : `${name}: ${item.value} (${percent}%)`;
+              }}
+              wrapperStyle={{
+                ...CHART_LEGEND_STYLE,
+                fontSize: legendFontSize,
+                fontWeight: legendFontWeight,
+                paddingTop: 4,
+              }}
+            />
+          ) : null}
         </PieChart>
       </ResponsiveContainer>
     </div>

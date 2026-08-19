@@ -411,7 +411,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'statusByPeriod',
-        defaultLayout: { x: 0, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 8, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Статусы по периодам"
@@ -428,7 +428,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'materialityCombined',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 6, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 5, w: 12, h: 3, minW: 6, minH: 2 },
         render: () => (
           <ChartCard
             title="Существенность"
@@ -436,33 +436,14 @@ export function RecommendationsAnalyticsDashboard() {
             exportSelected={isMaterialityExportSelected}
             onToggleExport={toggleMaterialityExport}
           >
-            <div className="flex h-full min-h-0 flex-col gap-2">
-              <div
-                ref={materialityCaptureRef}
-                data-analytics-export-capture-id="materiality"
-                data-analytics-export-title="Существенность"
-                data-analytics-export-description="Распределение уровней существенности за период"
-                className="flex-1 min-h-0"
-              >
-                {materialityDistribution.length === 0 ? (
-                  <EmptyChart message="Нет данных" heightClass="h-full" />
-                ) : (
-                  <FocusableDonutChart
-                    data={materialityDistribution}
-                    palette={RECOMMENDATIONS_PALETTE}
-                    labelMode="both"
-                    legendLabelMode="name"
-                    containerClassName="h-full min-h-0"
-                  />
-                )}
-              </div>
-
+            <div className="flex h-full min-h-0 flex-row gap-2">
               <div
                 ref={materialityByPeriodCaptureRef}
+                style={{ flex: 3 }}
                 data-analytics-export-capture-id="materialityByPeriod"
                 data-analytics-export-title="Существенность по периодам"
                 data-analytics-export-description="Распределение уровней существенности внутри периода"
-                className="flex-1 min-h-0"
+                className="flex-1 min-h-0 min-w-0"
               >
                 {completedPeriodSeries.length === 0 ? (
                   <EmptyChart message="Нет данных" heightClass="h-full" />
@@ -496,13 +477,35 @@ export function RecommendationsAnalyticsDashboard() {
                   </div>
                 )}
               </div>
+
+              <div
+                ref={materialityCaptureRef}
+                style={{ flex: 1 }}
+                data-analytics-export-capture-id="materiality"
+                data-analytics-export-title="Существенность"
+                data-analytics-export-description="Распределение уровней существенности за период"
+                className="flex-1 min-h-0 min-w-0"
+              >
+                {materialityDistribution.length === 0 ? (
+                  <EmptyChart message="Нет данных" heightClass="h-full" />
+                ) : (
+                  <FocusableDonutChart
+                    data={materialityDistribution}
+                    palette={RECOMMENDATIONS_PALETTE}
+                    labelMode="both"
+                    legendLabelMode="name"
+                    showLegend={false}
+                    containerClassName="h-full min-h-0"
+                  />
+                )}
+              </div>
             </div>
           </ChartCard>
         ),
       },
       {
         id: 'indicators',
-        defaultLayout: { x: 0, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 9, y: 2, w: 3, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Индикаторы"
@@ -525,7 +528,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'objects',
-        defaultLayout: { x: 4, y: 8, w: 8, h: 3, minW: 6, minH: 3 },
+        defaultLayout: { x: 6, y: 8, w: 6, h: 3, minW: 6, minH: 3 },
         render: () => (
           <ChartCard
             title="Карта департаментов (ТОП-10)"
