@@ -22,6 +22,7 @@ import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE,
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
+import { MaterialityMatrixChart } from './MaterialityMatrixChart';
 import {
   getValueBasedColors,
   RECOMMENDATIONS_PALETTE,
@@ -69,6 +70,7 @@ const EMPTY_CUMULATIVE_SERIES: RecommendationPeriodPoint[] = [];
 const EMPTY_MATERIALITY_DISTRIBUTION: never[] = [];
 const EMPTY_INDICATOR_DISTRIBUTION: never[] = [];
 const EMPTY_OBJECT_DISTRIBUTION: never[] = [];
+const EMPTY_MATERIALITY_MATRIX: never[] = [];
 
 function sortKeyFromQuarterKey(key: string) {
   const [year, quarter] = key.split('-Q');
@@ -137,225 +139,152 @@ function getPeriodXAxisProps(granularity: PeriodGranularity) {
   return {};
 }
 
-function StatusSegmentValueLabel({
-  x,
-  y,
-  width,
-  height,
-  value,
-  // Recharts passes the bar's `dataKey` to the custom label renderer.
-  dataKey,
-}: {
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  value?: number;
-  dataKey?: string;
-}) {
-  const numericValue = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(numericValue) || numericValue <= 0 || x === undefined || y === undefined) {
-    return null;
-  }
+const STACKED_LABEL_MIN_INSIDE_HEIGHT = 14;
+const STACKED_LABEL_CHAR_WIDTH = 0.62;
+const STACKED_NOTE_FONT_SIZE = 11;
+const STACKED_NOTE_PAD_X = 6;
+const STACKED_NOTE_PAD_Y = 3;
+const STACKED_NOTE_BOX_HEIGHT = STACKED_NOTE_FONT_SIZE + STACKED_NOTE_PAD_Y * 2;
+const STACKED_NOTE_ROW_GAP = 6;
+const STACKED_NOTE_ROW_HEIGHT = STACKED_NOTE_BOX_HEIGHT + STACKED_NOTE_ROW_GAP;
+const STACKED_NOTE_ANCHOR_GAP = 16;
+const STACKED_NOTE_SIDE_GAP = 8;
+const STACKED_PERIOD_CHART_TOP_MARGIN = 56;
+const STACKED_PERIOD_CHART_SIDE_MARGIN = 28;
 
-  const rounded = Math.round(numericValue);
-  const roundedStr = String(rounded);
-  const h = height ?? 0;
-  const w = width ?? 0;
-  // For stacked bars Recharts often provides x/y as the top-left corner of the segment.
-  // We center the label within the segment rectangle explicitly.
-  const cx = x + w / 2;
-  const cy = y + h / 2;
+type StackedSegmentLabelView = {
+  x?: number | string;
+  y?: number | string;
+  width?: number | string;
+  height?: number | string;
+  value?: number | string;
+  dataKey?: string | number;
+  fill?: string;
+  payload?: Record<string, unknown>;
+  viewBox?: {
+    x?: number | string;
+    y?: number | string;
+    width?: number | string;
+    height?: number | string;
+  };
+};
 
-  function hexToRgb(color: string) {
-    const normalized = color.trim().replace('#', '');
-    if (normalized.length !== 6) {
-      return { red: 0, green: 0, blue: 0 };
-    }
-    return {
-      red: Number.parseInt(normalized.slice(0, 2), 16),
-      green: Number.parseInt(normalized.slice(2, 4), 16),
-      blue: Number.parseInt(normalized.slice(4, 6), 16),
-    };
-  }
+const STATUS_STACK_KEYS = RECOMMENDATION_STATUS_OPTIONS.map((status) => status.value);
+const MATERIALITY_STACK_KEYS = ['low', 'medium', 'high'] as const;
 
-  function getContrastingTextColor(backgroundFill: string) {
-    const { red, green, blue } = hexToRgb(backgroundFill);
-    // Relative luminance (sRGB)
-    const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
-    return luminance < 0.6 ? '#FFFFFF' : '#111827';
-  }
-
-  const segmentColor = dataKey && dataKey in STATUS_COLORS ? STATUS_COLORS[dataKey as keyof typeof STATUS_COLORS] : '#e5e7eb';
-  const insideTextColor = getContrastingTextColor(segmentColor);
-
-  const outsideTextColor = '#111827';
-  const minInsideHeight = 14;
-  const approxCharWidthFactor = 0.62;
-
-  // Decide whether the number fits inside the colored segment.
-  // Recharts doesn't give text-measurement, so we approximate width by font size and char count.
-  const insideFontSizeBase = h >= 20 ? 13 : 12;
-  const maxFontSizeByWidth = w > 0 ? Math.floor((w - 6) / (roundedStr.length * approxCharWidthFactor)) : 0;
-  const insideFontSize = Math.max(9, Math.min(insideFontSizeBase, maxFontSizeByWidth));
-  const estimatedTextWidth = roundedStr.length * insideFontSize * approxCharWidthFactor;
-  const canPlaceInside = h >= minInsideHeight && w >= estimatedTextWidth + 4 && insideFontSize >= 9;
-
-  if (canPlaceInside) {
-    return (
-      <text
-        x={cx}
-        y={cy}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontSize={insideFontSize}
-        fontWeight={700}
-        fill={insideTextColor}
-        style={{ pointerEvents: 'none' }}
-      >
-        {roundedStr}
-      </text>
-    );
-  }
-
-  // Vertical stacking for "outside" labels to avoid overlap on tiny segments.
-  // Stack order matches `RECOMMENDATION_STATUS_OPTIONS` (completed -> unresolved -> on_control -> in_progress).
-  const statusOutsideIndex =
-    dataKey === 'completed' ? 0
-    : dataKey === 'unresolved' ? 1
-    : dataKey === 'on_control' ? 2
-    : dataKey === 'in_progress' ? 3
-    : 0;
-
-  const outsideY = y - 4 - statusOutsideIndex * 12;
-  // Keep labels within the visible SVG area: clamp to a minimum Y that still preserves stack spacing.
-  // (At the same time, don't push the note too far below the segment top.)
-  const minNoteCenterY = 10 + statusOutsideIndex * 3;
-  const maxNoteCenterY = y - 2;
-  const noteCenterY = Math.min(Math.max(minNoteCenterY, outsideY), maxNoteCenterY);
-
-  const noteFontSize = 11;
-  const boxPaddingX = 6;
-  const boxPaddingY = 2;
-  const boxWidth = roundedStr.length * noteFontSize * approxCharWidthFactor + boxPaddingX * 2;
-  const boxHeight = noteFontSize + boxPaddingY * 2;
-  const boxX = cx - boxWidth / 2;
-  const boxY = noteCenterY - boxHeight / 2;
-  const noteBoxBottomY = noteCenterY + boxHeight / 2;
-
-  return (
-    <>
-      <line
-        x1={cx}
-        y1={y}
-        x2={cx}
-        y2={noteBoxBottomY}
-        stroke={segmentColor}
-        strokeWidth={1}
-        opacity={0.75}
-      />
-
-      {/* Small arrow to visually connect segment -> note */}
-      <polygon
-        points={`${cx - 3},${noteBoxBottomY} ${cx + 3},${noteBoxBottomY} ${cx},${noteBoxBottomY - 6}`}
-        fill={segmentColor}
-        opacity={0.75}
-      />
-
-      <rect
-        x={boxX}
-        y={boxY}
-        width={boxWidth}
-        height={boxHeight}
-        rx={6}
-        fill="#ffffff"
-        stroke="#e5e7eb"
-      />
-      <text
-        x={cx}
-        y={noteCenterY}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontSize={noteFontSize}
-        fontWeight={700}
-        fill={outsideTextColor}
-        style={{ pointerEvents: 'none' }}
-      >
-        {roundedStr}
-      </text>
-    </>
-  );
+function getStatusSegmentColor(key: string) {
+  return STATUS_COLORS[key as keyof typeof STATUS_COLORS] ?? '#e5e7eb';
 }
 
-function MaterialitySegmentValueLabel({
-  x,
-  y,
-  width,
-  height,
-  value,
-  // Recharts passes the bar's `dataKey` to the custom label renderer.
+function getMaterialitySegmentColor(key: string) {
+  if (key === 'low') {
+    return MATERIALITY_COLORS.низкий;
+  }
+  if (key === 'medium') {
+    return MATERIALITY_COLORS.средний;
+  }
+  if (key === 'high') {
+    return MATERIALITY_COLORS.высокий;
+  }
+  return '#e5e7eb';
+}
+
+function toFiniteNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string' && value !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+}
+
+function readLabelValue(value: unknown): number | undefined {
+  if (Array.isArray(value)) {
+    const start = toFiniteNumber(value[0]) ?? 0;
+    const end = toFiniteNumber(value[value.length - 1]);
+    if (end === undefined) {
+      return undefined;
+    }
+    return Math.abs(end - start) || end;
+  }
+  return toFiniteNumber(value);
+}
+
+function readLabelGeometry(view: StackedSegmentLabelView) {
+  const box = view.viewBox;
+  return {
+    x: toFiniteNumber(box?.x) ?? toFiniteNumber(view.x),
+    y: toFiniteNumber(box?.y) ?? toFiniteNumber(view.y),
+    width: toFiniteNumber(box?.width) ?? toFiniteNumber(view.width) ?? 0,
+    height: toFiniteNumber(box?.height) ?? toFiniteNumber(view.height) ?? 0,
+  };
+}
+
+function readStackValue(view: StackedSegmentLabelView, key: string): number {
+  const sources: Array<Record<string, unknown> | undefined> = [
+    view.payload,
+    view as Record<string, unknown>,
+    view.payload?.payload as Record<string, unknown> | undefined,
+  ];
+  for (const source of sources) {
+    if (!source) {
+      continue;
+    }
+    const parsed = toFiniteNumber(source[key]);
+    if (parsed !== undefined) {
+      return Math.max(0, parsed);
+    }
+  }
+  return 0;
+}
+
+function segmentFitsInsideLabel(segmentHeight: number, segmentWidth: number, value: number) {
+  if (segmentHeight < STACKED_LABEL_MIN_INSIDE_HEIGHT || value <= 0) {
+    return false;
+  }
+  const roundedStr = String(Math.round(value));
+  const fontSizeBase = segmentHeight >= 20 ? 13 : 12;
+  const maxFontSizeByWidth =
+    segmentWidth > 0 ? Math.floor((segmentWidth - 6) / (roundedStr.length * STACKED_LABEL_CHAR_WIDTH)) : 0;
+  const fontSize = Math.max(9, Math.min(fontSizeBase, maxFontSizeByWidth));
+  const estimatedTextWidth = roundedStr.length * fontSize * STACKED_LABEL_CHAR_WIDTH;
+  return segmentWidth >= estimatedTextWidth + 4 && fontSize >= 9;
+}
+
+function StackedBarSegmentValueLabel({
+  stackKeys,
+  getColor,
   dataKey,
-}: {
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  value?: number;
-  dataKey?: string;
+  ...view
+}: StackedSegmentLabelView & {
+  stackKeys: readonly string[];
+  getColor: (key: string) => string;
 }) {
-  const numericValue = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(numericValue) || numericValue <= 0 || x === undefined || y === undefined) {
+  const { x, y, width: w, height: h } = readLabelGeometry(view);
+  const key = dataKey != null ? String(dataKey) : '';
+  const numericValue = readLabelValue(view.value) ?? (key ? readStackValue(view, key) : undefined);
+  if (numericValue === undefined || numericValue <= 0 || x === undefined || y === undefined) {
     return null;
   }
 
   const rounded = Math.round(numericValue);
   const roundedStr = String(rounded);
-  const h = height ?? 0;
-  const w = width ?? 0;
-  // For stacked bars Recharts often provides x/y as the top-left corner of the segment.
-  // We center the label within the segment rectangle explicitly.
   const cx = x + w / 2;
   const cy = y + h / 2;
-
-  function hexToRgb(color: string) {
-    const normalized = color.trim().replace('#', '');
-    if (normalized.length !== 6) {
-      return { red: 0, green: 0, blue: 0 };
-    }
-    return {
-      red: Number.parseInt(normalized.slice(0, 2), 16),
-      green: Number.parseInt(normalized.slice(2, 4), 16),
-      blue: Number.parseInt(normalized.slice(4, 6), 16),
-    };
-  }
-
-  function getContrastingTextColor(backgroundFill: string) {
-    const { red, green, blue } = hexToRgb(backgroundFill);
-    // Relative luminance (sRGB)
-    const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
-    return luminance < 0.6 ? '#FFFFFF' : '#111827';
-  }
-
-  const materialityColor =
-    dataKey === 'low'
-      ? MATERIALITY_COLORS.низкий
-      : dataKey === 'medium'
-        ? MATERIALITY_COLORS.средний
-        : dataKey === 'high'
-          ? MATERIALITY_COLORS.высокий
-          : '#e5e7eb';
-
-  const insideTextColor = getContrastingTextColor(materialityColor);
-  const outsideTextColor = '#111827';
-
-  const minInsideHeight = 14;
-  const approxCharWidthFactor = 0.62;
-
-  const insideFontSizeBase = h >= 20 ? 13 : 12;
-  const maxFontSizeByWidth = w > 0 ? Math.floor((w - 6) / (roundedStr.length * approxCharWidthFactor)) : 0;
-  const insideFontSize = Math.max(9, Math.min(insideFontSizeBase, maxFontSizeByWidth));
-  const estimatedTextWidth = roundedStr.length * insideFontSize * approxCharWidthFactor;
-  const canPlaceInside = h >= minInsideHeight && w >= estimatedTextWidth + 4 && insideFontSize >= 9;
+  const segmentColor = (key ? getColor(key) : undefined) || view.fill || '#e5e7eb';
+  const stackIndex = Math.max(0, stackKeys.indexOf(key));
+  const stackValues = stackKeys.map((stackKey) => readStackValue(view, stackKey));
+  const hasPayloadValues = stackValues.some((stackValue) => stackValue > 0);
+  const pxPerUnit = h > 0 ? h / numericValue : 0;
+  const valueAbove = hasPayloadValues
+    ? stackValues.slice(stackIndex + 1).reduce((sum, stackValue) => sum + stackValue, 0)
+    : 0;
+  const barTopY = pxPerUnit > 0 ? y - valueAbove * pxPerUnit : y;
+  const canPlaceInside = segmentFitsInsideLabel(h, w, numericValue);
 
   if (canPlaceInside) {
     return (
@@ -364,9 +293,9 @@ function MaterialitySegmentValueLabel({
         y={cy}
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize={insideFontSize}
+        fontSize={h >= 20 ? 13 : 12}
         fontWeight={700}
-        fill={insideTextColor}
+        fill="#111827"
         style={{ pointerEvents: 'none' }}
       >
         {roundedStr}
@@ -374,64 +303,63 @@ function MaterialitySegmentValueLabel({
     );
   }
 
-  // Vertical stacking for "outside" labels to avoid overlap on tiny segments.
-  // Stack order matches the stacked bars (low -> medium -> high).
-  const statusOutsideIndex = dataKey === 'low' ? 0 : dataKey === 'medium' ? 1 : dataKey === 'high' ? 2 : 0;
-
-  const outsideY = y - 4 - statusOutsideIndex * 12;
-  const minNoteCenterY = 10 + statusOutsideIndex * 3;
-  const maxNoteCenterY = y - 2;
-  const noteCenterY = Math.min(Math.max(minNoteCenterY, outsideY), maxNoteCenterY);
-
-  const noteFontSize = 11;
-  const boxPaddingX = 6;
-  const boxPaddingY = 2;
-  const boxWidth = roundedStr.length * noteFontSize * approxCharWidthFactor + boxPaddingX * 2;
-  const boxHeight = noteFontSize + boxPaddingY * 2;
-  const boxX = cx - boxWidth / 2;
-  const boxY = noteCenterY - boxHeight / 2;
-  const noteBoxBottomY = noteCenterY + boxHeight / 2;
+  const outsideKeys = hasPayloadValues
+    ? stackKeys.filter((stackKey, index) => {
+        const stackValue = stackValues[index];
+        if (stackValue <= 0) {
+          return false;
+        }
+        const segmentHeight = pxPerUnit > 0 ? stackValue * pxPerUnit : stackKey === key ? h : 0;
+        return !segmentFitsInsideLabel(segmentHeight, w, stackValue);
+      })
+    : stackKeys.filter((stackKey) => stackKey === key);
+  const matchedOutsideIndex = outsideKeys.indexOf(key);
+  const outsideIndex = hasPayloadValues && matchedOutsideIndex !== -1
+    ? matchedOutsideIndex
+    : stackIndex;
+  const boxWidth = roundedStr.length * STACKED_NOTE_FONT_SIZE * STACKED_LABEL_CHAR_WIDTH + STACKED_NOTE_PAD_X * 2;
+  const side = outsideIndex % 2 === 0 ? -1 : 1;
+  const row = Math.floor(outsideIndex / 2);
+  const labelCx = cx + side * (w / 2 + STACKED_NOTE_SIDE_GAP + boxWidth / 2);
+  const boxBottomY = barTopY - STACKED_NOTE_ANCHOR_GAP - row * STACKED_NOTE_ROW_HEIGHT;
+  const noteBoxBottomY = Math.max(STACKED_NOTE_BOX_HEIGHT + 4, boxBottomY);
+  const noteCenterY = noteBoxBottomY - STACKED_NOTE_BOX_HEIGHT / 2;
+  const boxX = labelCx - boxWidth / 2;
+  const boxY = noteCenterY - STACKED_NOTE_BOX_HEIGHT / 2;
+  const lineStartX = side < 0 ? boxX + boxWidth : boxX;
 
   return (
-    <>
+    <g style={{ pointerEvents: 'none' }}>
       <line
-        x1={cx}
-        y1={y}
+        x1={lineStartX}
+        y1={noteCenterY}
         x2={cx}
-        y2={noteBoxBottomY}
-        stroke={materialityColor}
-        strokeWidth={1}
-        opacity={0.75}
+        y2={cy}
+        stroke={segmentColor}
+        strokeWidth={1.25}
       />
-
-      <polygon
-        points={`${cx - 3},${noteBoxBottomY} ${cx + 3},${noteBoxBottomY} ${cx},${noteBoxBottomY - 6}`}
-        fill={materialityColor}
-        opacity={0.75}
-      />
-
       <rect
         x={boxX}
         y={boxY}
         width={boxWidth}
-        height={boxHeight}
+        height={STACKED_NOTE_BOX_HEIGHT}
         rx={6}
         fill="#ffffff"
-        stroke="#e5e7eb"
+        stroke={segmentColor}
+        strokeWidth={1.25}
       />
       <text
-        x={cx}
+        x={labelCx}
         y={noteCenterY}
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize={noteFontSize}
+        fontSize={STACKED_NOTE_FONT_SIZE}
         fontWeight={700}
-        fill={outsideTextColor}
-        style={{ pointerEvents: 'none' }}
+        fill="#111827"
       >
         {roundedStr}
       </text>
-    </>
+    </g>
   );
 }
 
@@ -575,6 +503,7 @@ export function RecommendationsAnalyticsDashboard() {
   );
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
+  const materialityMatrix = data?.materialityMatrix ?? EMPTY_MATERIALITY_MATRIX;
   const periodXAxisProps = useMemo(() => getPeriodXAxisProps(granularity), [granularity]);
 
   // Export needs two separate capture nodes, even though UI now renders them as one card.
@@ -653,6 +582,7 @@ export function RecommendationsAnalyticsDashboard() {
           departments: selectedDepartments,
           materialityLevels: selectedMateriality as MaterialityLevel[],
           selectedSections: exportSections.selectedSections,
+          materialityMatrixOverride: materialityMatrix,
         },
         exportFormat,
       );
@@ -733,7 +663,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'statusByPeriod',
-        defaultLayout: { x: 0, y: 8, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 16, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Статусы по периодам"
@@ -745,7 +675,7 @@ export function RecommendationsAnalyticsDashboard() {
             {completedPeriodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
               <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={completedPeriodSeries} margin={{ top: 30, right: 12, left: -10, bottom: 0 }}>
+                  <BarChart data={completedPeriodSeries} margin={{ top: STACKED_PERIOD_CHART_TOP_MARGIN, right: STACKED_PERIOD_CHART_SIDE_MARGIN, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
                     <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
@@ -759,7 +689,17 @@ export function RecommendationsAnalyticsDashboard() {
                         stackId="status"
                         fill={STATUS_COLORS[status.value]}
                       >
-                        <LabelList dataKey={status.value} content={StatusSegmentValueLabel} />
+                        <LabelList
+                          dataKey={status.value}
+                          content={(props) => (
+                            <StackedBarSegmentValueLabel
+                              {...props}
+                              dataKey={status.value}
+                              stackKeys={STATUS_STACK_KEYS}
+                              getColor={getStatusSegmentColor}
+                            />
+                          )}
+                        />
                       </Bar>
                     ))}
                   </BarChart>
@@ -816,14 +756,24 @@ export function RecommendationsAnalyticsDashboard() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={completedPeriodSeries}
-                        margin={{ top: 30, right: 12, left: -10, bottom: 0 }}
+                        margin={{ top: STACKED_PERIOD_CHART_TOP_MARGIN, right: STACKED_PERIOD_CHART_SIDE_MARGIN, left: -10, bottom: 0 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                         <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
                         <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
                         <Tooltip />
                         <Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий}>
-                          <LabelList dataKey="low" content={MaterialitySegmentValueLabel} />
+                          <LabelList
+                            dataKey="low"
+                            content={(props) => (
+                              <StackedBarSegmentValueLabel
+                                {...props}
+                                dataKey="low"
+                                stackKeys={MATERIALITY_STACK_KEYS}
+                                getColor={getMaterialitySegmentColor}
+                              />
+                            )}
+                          />
                         </Bar>
                         <Bar
                           dataKey="medium"
@@ -831,7 +781,17 @@ export function RecommendationsAnalyticsDashboard() {
                           stackId="mat"
                           fill={MATERIALITY_COLORS.средний}
                         >
-                          <LabelList dataKey="medium" content={MaterialitySegmentValueLabel} />
+                          <LabelList
+                            dataKey="medium"
+                            content={(props) => (
+                              <StackedBarSegmentValueLabel
+                                {...props}
+                                dataKey="medium"
+                                stackKeys={MATERIALITY_STACK_KEYS}
+                                getColor={getMaterialitySegmentColor}
+                              />
+                            )}
+                          />
                         </Bar>
                         <Bar
                           dataKey="high"
@@ -839,7 +799,17 @@ export function RecommendationsAnalyticsDashboard() {
                           stackId="mat"
                           fill={MATERIALITY_COLORS.высокий}
                         >
-                          <LabelList dataKey="high" content={MaterialitySegmentValueLabel} />
+                          <LabelList
+                            dataKey="high"
+                            content={(props) => (
+                              <StackedBarSegmentValueLabel
+                                {...props}
+                                dataKey="high"
+                                stackKeys={MATERIALITY_STACK_KEYS}
+                                getColor={getMaterialitySegmentColor}
+                              />
+                            )}
+                          />
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
@@ -876,6 +846,25 @@ export function RecommendationsAnalyticsDashboard() {
         ),
       },
       {
+        id: 'materialityMatrix',
+        defaultLayout: { x: 0, y: 8, w: 12, h: 8, minW: 6, minH: 6 },
+        render: () => (
+          <ChartCard
+            title="Существенность"
+            description="Матрица уровней существенности по проверкам за период"
+            exportSectionId="materialityMatrix"
+            exportSelected={exportSections.isSelected('materialityMatrix')}
+            onToggleExport={() => exportSections.toggleSection('materialityMatrix')}
+          >
+            {materialityMatrix.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <MaterialityMatrixChart rows={materialityMatrix} />
+            )}
+          </ChartCard>
+        ),
+      },
+      {
         id: 'indicators',
         defaultLayout: { x: 9, y: 2, w: 3, h: 3, minW: 3, minH: 2 },
         render: () => (
@@ -899,7 +888,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'objects',
-        defaultLayout: { x: 6, y: 8, w: 6, h: 3, minW: 6, minH: 3 },
+        defaultLayout: { x: 6, y: 16, w: 6, h: 3, minW: 6, minH: 3 },
         render: () => (
           <ChartCard
             title="Карта департаментов (ТОП-10)"
@@ -930,6 +919,7 @@ export function RecommendationsAnalyticsDashboard() {
       coloredMaterialityDistribution,
       indicatorDistribution,
       materialityDistribution,
+      materialityMatrix,
       objectDistributionTop,
       periodXAxisProps,
       completedPeriodSeries,

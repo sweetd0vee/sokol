@@ -1,5 +1,6 @@
 import { api } from './client';
 import type { EffectivenessMatrixRow, NamedCount, PeriodGranularity } from '../utils/checkAnalytics';
+import type { MaterialityMatrixRow } from '../utils/materialityMatrix';
 
 export type ChecksAnalyticsSummary = {
   total: number;
@@ -100,6 +101,7 @@ export type RecommendationsAnalyticsResponse = {
   indicatorDistribution: NamedCount[];
   checkLinks: NamedCount[];
   objectDistribution: RecommendationObjectDistributionItem[];
+  materialityMatrix: MaterialityMatrixRow[];
   statusDistribution: NamedCount[];
   additionalStatusDistribution: NamedCount[];
   filterOptions: AnalyticsFilterOptions & { auditors: string[] };

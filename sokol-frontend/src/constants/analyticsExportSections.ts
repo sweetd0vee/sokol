@@ -17,6 +17,7 @@ export const RECOMMENDATION_EXPORT_SECTIONS = [
   { id: 'materiality', label: 'Существенность', sheetName: 'Существенность', headerFill: '16A34A' },
   { id: 'indicators', label: 'Индикаторы', sheetName: 'Индикаторы', headerFill: '0891B2' },
   { id: 'objects', label: 'Карта департаментов', sheetName: 'Карта департаментов', headerFill: '0E7490' },
+  { id: 'materialityMatrix', label: 'Матрица существенности', sheetName: 'Матрица существенности', headerFill: 'BE123C' },
 ] as const;
 
 export const MONITORING_EXPORT_SECTIONS = [

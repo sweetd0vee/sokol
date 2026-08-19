@@ -20,6 +20,7 @@ from app.schemas.analytics import (
     DvaAuditorMatrixCell,
     DvaAuditorMatrixRow,
     DvaPortfolioPoint,
+    MaterialityMatrixRow,
     NamedCount,
     PeriodBucketSchema,
     PeriodCount,
@@ -372,6 +373,51 @@ async def recommendation_object_distribution_sql(
         )
         for name, value in sorted(totals.items(), key=lambda item: (-item[1], item[0]))
     ]
+    return result
+
+
+async def recommendation_materiality_matrix_sql(
+    session: AsyncSession, **filters: Any
+) -> list[MaterialityMatrixRow]:
+    statement = apply_recommendation_filters(
+        select(
+            Recommendation.serial_number,
+            Check.id.label("check_id"),
+            Check.short_name,
+            Check.check_name,
+            func.count().filter(Recommendation.materiality_level == "высокий").label("high"),
+            func.count().filter(Recommendation.materiality_level == "средний").label("medium"),
+            func.count().filter(Recommendation.materiality_level == "низкий").label("low"),
+            func.count().label("total"),
+        )
+        .select_from(Recommendation)
+        .outerjoin(Check, Check.id == Recommendation.check_id)
+        .group_by(Recommendation.serial_number, Check.id, Check.short_name, Check.check_name)
+        .order_by(Recommendation.serial_number.asc()),
+        **filters,
+    )
+    rows = (await session.execute(statement)).all()
+    result: list[MaterialityMatrixRow] = []
+    for row in rows:
+        serial = str(row.serial_number or "").strip() or "Без проверки"
+        check_id = row.check_id
+        high = int(row.high or 0)
+        medium = int(row.medium or 0)
+        low = int(row.low or 0)
+        result.append(
+            MaterialityMatrixRow(
+                id=str(check_id) if check_id is not None else serial,
+                key=serial,
+                short_name=str(row.short_name or "").strip(),
+                name=str(row.check_name or "").strip() or serial,
+                counts=RecommendationMaterialityCounts(
+                    низкий=low,
+                    средний=medium,
+                    высокий=high,
+                ),
+                total=int(row.total or 0),
+            )
+        )
     return result
 
 

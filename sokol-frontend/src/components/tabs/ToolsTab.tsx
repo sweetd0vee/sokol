@@ -269,18 +269,18 @@ export function ToolsTab() {
                 onProcess={handleGenerateControlFile}
                 isProcessing={isAzControlProcessing}
                 isProcessDisabled={!azControlLeader || !azControlDate}
-                extraFieldsClassName="w-full max-w-[288px]"
+                extraFieldsClassName="w-full"
                 hideTemplateButton
                 error={azControlError}
               >
-                <div className="flex flex-wrap items-end gap-4">
+                <div className="flex items-end gap-4">
                   <Select
                     label="Руководитель проверки"
                     value={azControlLeader}
                     onChange={setAzControlLeader}
                     options={controlLeaderOptions}
                     placeholder="Выберите руководителя"
-                    className="min-w-0 w-full"
+                    className="w-[288px] shrink-0"
                     labelClassName={FORM_LABEL_CLASS}
                     inputClassName={FORM_INPUT_CLASS}
                   />
@@ -288,7 +288,7 @@ export function ToolsTab() {
                     label="Дата проверки"
                     selected={azControlDate}
                     onChange={setAzControlDate}
-                    className="min-w-0 w-full"
+                    className="w-[288px] shrink-0"
                     labelClassName={FORM_LABEL_CLASS}
                     inputClassName={FORM_INPUT_CLASS}
                   />
@@ -296,7 +296,7 @@ export function ToolsTab() {
                     type="button"
                     onClick={handleDownloadControlTemplate}
                     disabled={isControlTemplateDownloading}
-                    className="inline-flex h-[38px] w-full items-center justify-center gap-2 rounded-lg border border-sber-light px-5 py-2.5 text-sm font-medium text-sber-light transition hover:bg-sber-light hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-[38px] w-[288px] shrink-0 items-center justify-center gap-2 rounded-lg border border-sber-light px-5 py-2.5 text-sm font-medium text-sber-light transition hover:bg-sber-light hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Download size={18} />
                     {isControlTemplateDownloading ? 'Скачивание...' : 'Скачать шаблон'}

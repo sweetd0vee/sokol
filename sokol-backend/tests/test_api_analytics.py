@@ -78,6 +78,7 @@ def _empty_recommendations_payload() -> RecommendationsAnalyticsResponse:
         materiality_distribution=[],
         indicator_distribution=[],
         check_links=[],
+        materiality_matrix=[],
         object_distribution=[],
         status_distribution=[],
         additional_status_distribution=[],
@@ -146,6 +147,7 @@ class AnalyticsApiTests(unittest.TestCase):
         body = response.json()
         self.assertEqual(body["filteredTotal"], 0)
         self.assertIn("byStatus", body["summary"])
+        self.assertIn("materialityMatrix", body)
         mocked.assert_awaited_once()
         self.assertEqual(mocked.await_args.kwargs["materiality_levels"], ["высокий"])
 

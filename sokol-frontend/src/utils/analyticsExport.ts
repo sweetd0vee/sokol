@@ -5,6 +5,7 @@ import {
   buildEffectivenessMatrix,
   type PeriodGranularity,
 } from './checkAnalytics';
+import type { MaterialityMatrixRow } from './materialityMatrix';
 import {
   exportVisualAnalyticsReport,
   type VisualAnalyticsKind,
@@ -44,6 +45,7 @@ export type RecommendationsDashboardExportInput = {
   departments?: string[];
   materialityLevels: MaterialityLevel[];
   selectedSections: string[];
+  materialityMatrixOverride?: MaterialityMatrixRow[];
 };
 
 export type GenericAnalyticsDashboardExportInput = {
@@ -126,12 +128,16 @@ export async function exportRecommendationsDashboard(
     materialityLevels,
     selectedSections,
   } = input;
+  const materialityMatrix = selectedSections.includes('materialityMatrix')
+    ? input.materialityMatrixOverride
+    : undefined;
   await exportVisualAnalyticsReport({
     format,
     kind: 'recommendations',
     documentTitle: 'Аналитика рекомендаций',
     filenamePrefix: 'analytics-recommendations',
     selectedSections,
+    materialityMatrix,
     meta: [
       ['Группировка', granularityLabel(granularity)],
       ['Срок с', formatFilterDate(dateFrom)],

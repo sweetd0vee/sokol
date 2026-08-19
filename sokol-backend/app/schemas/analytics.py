@@ -70,6 +70,17 @@ class EffectivenessMatrixRow(BaseModel):
     tones: EffectivenessTones
 
 
+class MaterialityMatrixRow(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    key: str
+    short_name: str = Field(serialization_alias="shortName")
+    name: str
+    counts: RecommendationMaterialityCounts
+    total: int = 0
+
+
 class ChecksAnalyticsFilterOptions(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -162,6 +173,7 @@ class RecommendationsAnalyticsResponse(BaseModel):
     materiality_distribution: list[NamedCount] = Field(serialization_alias="materialityDistribution")
     indicator_distribution: list[NamedCount] = Field(serialization_alias="indicatorDistribution")
     check_links: list[NamedCount] = Field(serialization_alias="checkLinks")
+    materiality_matrix: list[MaterialityMatrixRow] = Field(serialization_alias="materialityMatrix")
     object_distribution: list[RecommendationObjectCount] = Field(serialization_alias="objectDistribution")
     status_distribution: list[NamedCount] = Field(serialization_alias="statusDistribution")
     additional_status_distribution: list[NamedCount] = Field(
