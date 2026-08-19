@@ -72,14 +72,32 @@ export function FocusableSquareCirclesChart({
   }, [slices, total]);
 
   // Keep generous breathing room so circles never touch the card edges.
-  // Slightly larger than before to better match the visual design.
   const maxRadius = 17.5;
-  const centers: Array<{ x: number; y: number }> = [
-    { x: 31, y: 29 }, // top-left
-    { x: 76, y: 32 }, // top-right
-    { x: 31, y: 74 }, // bottom-left
-    { x: 67, y: 66 }, // bottom-right
+
+  // Target positions by size rank (largest -> smallest).
+  // TL: top-left, BL: bottom-left, TR: top-right, BR: bottom-right.
+  const targetCenters: Array<{ x: number; y: number }> = [
+    { x: 31, y: 29 }, // TL (largest)
+    { x: 31, y: 74 }, // BL (2nd largest)
+    { x: 76, y: 32 }, // TR (3rd largest)
+    { x: 67, y: 66 }, // BR (smallest)
   ];
+
+  // Compute per-slice placement by descending value.
+  const centersByIndex = useMemo(() => {
+    const indexed = slices.map((slice, i) => ({ i, v: slice.value }));
+    // Stable sort: if values are equal, preserve original index order.
+    indexed.sort((a, b) => (b.v - a.v) || (a.i - b.i));
+
+    const byIndex = new Map<number, { x: number; y: number }>();
+    indexed.forEach((entry, rank) => {
+      const center = targetCenters[rank];
+      if (center) {
+        byIndex.set(entry.i, center);
+      }
+    });
+    return byIndex;
+  }, [slices, targetCenters]);
 
   const colors = useMemo(() => {
     return slices.map((item, index) => item.color ?? palette[index % palette.length]);
@@ -93,10 +111,10 @@ export function FocusableSquareCirclesChart({
           viewBox="0 0 100 100"
           preserveAspectRatio="xMidYMid meet"
           role="img"
-          aria-label="Квадратная визуализация распределения"
+        aria-label="Квадратная визуализация распределения"
         >
           {slices.map((item, index) => {
-            const center = centers[index] ?? centers[0];
+            const center = centersByIndex.get(index) ?? targetCenters[0];
             const percent = total > 0 ? (item.value / total) * 100 : 0;
             const share = total > 0 ? item.value / total : 0;
 

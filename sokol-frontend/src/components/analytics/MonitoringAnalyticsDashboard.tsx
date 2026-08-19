@@ -129,31 +129,51 @@ export function MonitoringAnalyticsDashboard() {
 
   const coloredStatusDistribution = useMemo(
     () =>
-      statusDistribution.map((item) => {
-        const statusKey =
-          RECOMMENDATION_STATUS_OPTIONS.find((option) => option.label === item.name)?.value ?? null;
-        return {
-          ...item,
-          // Donut chart supports per-segment color; we override it so Monitoring matches
-          // the same visual language as Recommendations charts.
-          color: statusKey ? getRecommendationStatusColor(statusKey) : '#e5e7eb',
-        };
-      }),
+      statusDistribution
+        .map((item) => {
+          const statusKey =
+            RECOMMENDATION_STATUS_OPTIONS.find((option) => option.label === item.name)?.value ?? null;
+          return {
+            ...item,
+            // Donut chart supports per-segment color; we override it so Monitoring matches
+            // the same visual language as Recommendations charts.
+            color: statusKey ? getRecommendationStatusColor(statusKey) : '#e5e7eb',
+            statusKey,
+          };
+        })
+        .sort((a, b) => {
+          const order: Record<string, number> = {
+            on_control: 0,
+            in_progress: 1,
+            completed: 2,
+            unresolved: 3,
+          };
+          return (order[a.statusKey ?? ''] ?? 999) - (order[b.statusKey ?? ''] ?? 999);
+        }),
     [statusDistribution],
   );
 
   const coloredAdditionalStatusDistribution = useMemo(
     () =>
-      additionalStatusDistribution.map((item) => {
-        const additionalStatusKey =
-          RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.find((option) => option.label === item.name)?.value ?? null;
-        return {
-          ...item,
-          color: additionalStatusKey
-            ? getRecommendationAdditionalStatusColor(additionalStatusKey)
-            : '#e5e7eb',
-        };
-      }),
+      additionalStatusDistribution
+        .map((item) => {
+          const additionalStatusKey =
+            RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.find((option) => option.label === item.name)?.value ??
+            null;
+          return {
+            ...item,
+            color: additionalStatusKey ? getRecommendationAdditionalStatusColor(additionalStatusKey) : '#e5e7eb',
+            additionalStatusKey,
+          };
+        })
+        .sort((a, b) => {
+          const order: Record<string, number> = {
+            on_control: 0,
+            deadline_violated: 1,
+            on_time: 2,
+          };
+          return (order[a.additionalStatusKey ?? ''] ?? 999) - (order[b.additionalStatusKey ?? ''] ?? 999);
+        }),
     [additionalStatusDistribution],
   );
 
@@ -206,10 +226,10 @@ export function MonitoringAnalyticsDashboard() {
           <ChartCard title="Итого" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')}>
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
               <KpiCard label="На контроле" value={summary.byStatus.on_control} tone="slate" />
-              <KpiCard label="Срок нарушен" value={summary.byAdditional.deadline_violated} tone="red" />
-              <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
               <KpiCard label="В работе" value={summary.byStatus.in_progress} tone="amber" />
-              <KpiCard label="Просрочка" value={summary.violationRate} suffix="%" tone="red" />
+              <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
+              <KpiCard label="Срок нарушен" value={summary.byAdditional.deadline_violated} tone="red" />
+              <KpiCard label="Доля просроченных" value={summary.violationRate} suffix="%" tone="red" />
             </div>
           </ChartCard>
         ),

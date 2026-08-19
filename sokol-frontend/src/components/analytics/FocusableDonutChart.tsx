@@ -191,6 +191,7 @@ export function FocusableDonutChart({
           />
           {showLegend ? (
             <Legend
+              layout="vertical"
               verticalAlign="bottom"
               align="center"
               iconType="circle"

@@ -137,6 +137,68 @@ function getPeriodXAxisProps(granularity: PeriodGranularity) {
   return {};
 }
 
+function StatusSegmentValueLabel({
+  x,
+  y,
+  height,
+  value,
+}: {
+  x?: number;
+  y?: number;
+  height?: number;
+  value?: number;
+}) {
+  const numericValue = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0 || x === undefined || y === undefined) {
+    return null;
+  }
+
+  const rounded = Math.round(numericValue);
+  const h = height ?? 0;
+
+  // Rough fit heuristic: if there's enough segment height for the text, draw it inside.
+  // Otherwise, draw it just above the segment.
+  const fitsInside = h >= 16;
+  const fontSize = 12;
+
+  if (fitsInside) {
+    return (
+      <text
+        x={x}
+        y={y + h / 2}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={fontSize}
+        fontWeight={700}
+        fill="#ffffff"
+        style={{ pointerEvents: 'none' }}
+      >
+        {rounded}
+      </text>
+    );
+  }
+
+  const outsideY = y - 4;
+  if (outsideY < 0) {
+    return null;
+  }
+
+  return (
+    <text
+      x={x}
+      y={outsideY}
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={fontSize}
+      fontWeight={700}
+      fill="#111827"
+      style={{ pointerEvents: 'none' }}
+    >
+      {rounded}
+    </text>
+  );
+}
+
 export function RecommendationsAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
@@ -439,13 +501,34 @@ export function RecommendationsAnalyticsDashboard() {
         render: () => (
           <ChartCard
             title="Статусы по периодам"
-            description="Распределение статусов внутри периода"
+            description="Распределение статусов по периодам"
             exportSectionId="statusByPeriod"
             exportSelected={exportSections.isSelected('statusByPeriod')}
             onToggleExport={() => exportSections.toggleSection('statusByPeriod')}
           >
             {completedPeriodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={completedPeriodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]} />)}</BarChart></ResponsiveContainer></div>
+              <div className="h-full min-h-[13rem]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={completedPeriodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
+                    <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
+                    <Tooltip />
+                    <Legend wrapperStyle={CHART_LEGEND_STYLE} />
+                    {RECOMMENDATION_STATUS_OPTIONS.map((status) => (
+                      <Bar
+                        key={status.value}
+                        dataKey={status.value}
+                        name={status.label}
+                        stackId="status"
+                        fill={STATUS_COLORS[status.value]}
+                      >
+                        <LabelList dataKey={status.value} content={StatusSegmentValueLabel} />
+                      </Bar>
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </ChartCard>
         ),
@@ -456,11 +539,11 @@ export function RecommendationsAnalyticsDashboard() {
         render: () => (
           <ChartCard
             title="Существенность"
-            description="Распределение уровней существенности: за период и по период"
+            description="Распределение уровней существенности: за период и по периодам"
             exportSelected={isMaterialityExportSelected}
             onToggleExport={toggleMaterialityExport}
           >
-            <div className="flex h-full min-h-0 flex-row gap-2">
+            <div className="relative flex h-full min-h-0 flex-row gap-2">
               <div
                 ref={materialityCaptureRef}
                 style={{ flex: 1 }}
@@ -493,7 +576,7 @@ export function RecommendationsAnalyticsDashboard() {
                 {completedPeriodSeries.length === 0 ? (
                   <EmptyChart message="Нет данных" heightClass="h-full" />
                 ) : (
-                  <div className="h-full min-h-0">
+                  <div className="h-full min-h-0 pb-6">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={completedPeriodSeries}
@@ -503,7 +586,6 @@ export function RecommendationsAnalyticsDashboard() {
                         <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
                         <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
                         <Tooltip />
-                        <Legend wrapperStyle={CHART_LEGEND_STYLE} />
                         <Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий} />
                         <Bar
                           dataKey="medium"
@@ -519,6 +601,31 @@ export function RecommendationsAnalyticsDashboard() {
                         />
                       </BarChart>
                     </ResponsiveContainer>
+
+                    {/* Custom legend centered across the whole card */}
+                    <div className="pointer-events-none absolute bottom-1 left-1/2 flex -translate-x-1/2 flex-row items-center justify-center gap-6">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span
+                          className="inline-block h-3.5 w-3.5 rounded-sm"
+                          style={{ backgroundColor: MATERIALITY_COLORS.высокий }}
+                        />
+                        Высокий
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span
+                          className="inline-block h-3.5 w-3.5 rounded-sm"
+                          style={{ backgroundColor: MATERIALITY_COLORS.низкий }}
+                        />
+                        Низкий
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span
+                          className="inline-block h-3.5 w-3.5 rounded-sm"
+                          style={{ backgroundColor: MATERIALITY_COLORS.средний }}
+                        />
+                        Средний
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
