@@ -5,10 +5,12 @@
 Интерактивная документация: `http://127.0.0.1:8802/docs` (порт из `run_dev.ps1`).
 
 Auth: **internal JWT** (Bearer). Публичны только `GET /`, `GET /api/v1/status` и `GET /api/v1/capabilities`.  
+HTTP Basic принимается в `development` (и если `SOKOL_ENABLE_BASIC_AUTH=true`); в `SOKOL_ENV=prod` по умолчанию выключен. Деактивированные пользователи не проходят ни Bearer, ни Basic. 
 
 **Роли и права:**
 
-| Действие | `auditor` | `admin` |
+| Действие | `auditor` | `admin` / `department_head` |
+|----------|-----------|---------|
 |----------|-----------|---------|
 | CRUD checks/recommendations (create/read/update) | ✅ | ✅ |
 | `DELETE /checks/{id}` | ❌ | ✅ |
@@ -24,7 +26,9 @@ Auth: **internal JWT** (Bearer). Публичны только `GET /`, `GET /ap
 Логин: `POST /api/v1/auth/login` → `{ access_token, role, username, display_name }`.  
 Профиль: `GET /api/v1/auth/me`.
 
-Пользователи: env `SOKOL_AUTH_USERS` (JSON) или локальные defaults `Админ А.А.`/`admin`, `Аудитор А.А.`/`auditor`.
+Пользователи: таблица `users` (seed/sync из канонического списка аудиторов).  
+`POST /api/v1/auth/change-password` — смена своего пароля.  
+`GET/POST /api/v1/users` — admin-only.
 
 Общий формат списков: `{ "items": [...], "total": N }`.
 
@@ -65,7 +69,7 @@ Auth: **internal JWT** (Bearer). Публичны только `GET /`, `GET /ap
 
 **Read:** `CheckRead` дополнительно возвращает `id`, `serial_number`, `created_at`.
 
-**Валидация справочников (create/PATCH):** `check_leader` ∈ auditors, `check_view` ∈ check_kinds, непустые `*_effectiveness` ∈ effectiveness_ratings; иначе **400**.
+**Валидация справочников (create/PATCH):** `check_leader` ∈ auditors, `check_view` ∈ check_kinds, непустые `*_effectiveness` ∈ effectiveness_ratings; иначе **400**. Физические FK не дают записать неизвестные labels. Физические FK не дают записать неизвестные labels.
 
 ---
 
@@ -155,7 +159,22 @@ CRUD по UUID. Тело: `{ "label": "..." }`. Справочник «Виды 
 
 CRUD по UUID. Тело: `{ "label": "..." }`.
 
-Паттерн везде: `POST`, `GET` (list + total), `GET/{id}`, `PATCH/{id}`, `DELETE/{id}`.
+Паттерн везде: `POST`, `GET` (list + total), `GET/{id}`, `PATCH/{id}`, `DELETE/{id}`.  
+Мутации — **admin only**. Дубликаты labels → **409**.  
+Удаление значения, которое используется в checks/recommendations → **409**.  
+Системный департамент «Не указан» нельзя удалить или переименовать → **409**.  
+Переименование аудитора/вида/оценки/департамента каскадно обновляет FK (`ON UPDATE CASCADE`); массив `recommendations.audit_object` синхронизируется отдельно.
+
+### Departments — `/api/v1/settings/departments`
+
+CRUD по UUID. Тело: `{ "name": "..." }`.
+
+### Users — `/api/v1/users`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| `GET` | `/users` | список (admin) |
+| `POST` | `/users` | создать auditor-пользователя (admin); роль `admin` через API создать нельзя |
 
 ---
 
@@ -197,7 +216,6 @@ MIME: OOXML DOCX или `application/octet-stream`.
 - WebSocket, batch-import Excel через HTTP API (import — CLI `app.db.import_seed_data`).
 - CRUD наблюдений.
 - Drill-down / сохранённые серверные отчёты аналитики.
-- Смена пароля / управление пользователями через API (пользователи из env).
 
 ---
 

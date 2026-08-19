@@ -6,9 +6,9 @@ FastAPI-сервис с async PostgreSQL. DOCX обрабатывается в `
 
 ```
 app/
-├── main.py              # FastAPI, CORS, роутеры
+├── main.py              # FastAPI, CORS, роутеры, prod guards
 ├── api/v1/endpoints/    # health, auth, checks, recommendations, analytics, attachments, settings, tools
-├── core/                # config, JWT, roles
+├── core/                # config, JWT, roles, startup_validation
 ├── crud/                # async CRUD-функции
 ├── db/                  # session, init_db, seed, migrate_*.py
 ├── models/              # SQLAlchemy ORM
@@ -17,6 +17,7 @@ app/
 │   ├── reports/         # section_ii, memorandum
 │   ├── analytics/
 │   ├── dictionary_validation.py
+│   ├── dictionary_integrity.py
 │   └── storage/         # MinIO
 └── utils/
 ```
@@ -24,12 +25,12 @@ app/
 ## Слои
 
 ```
-HTTP (endpoints) → schemas + crud → PostgreSQL
+HTTP (endpoints) → services → crud → PostgreSQL
                  → services/reports (DOCX)
                  → storage (MinIO)
 ```
 
-CRUD идёт напрямую endpoint → crud (без отдельного service-слоя).
+Endpoints вызывают доменные services (`checks_service`, `recommendations_service`, `dictionary_service`); CRUD остаётся слоем доступа к БД.
 
 ## API-модули
 
@@ -43,12 +44,14 @@ CRUD идёт напрямую endpoint → crud (без отдельного se
 | `/settings/*` | справочники |
 | `/tools` | DOCX |
 
-Auth: `Depends(get_current_user)` на всех роутерах кроме health и login.
+Auth: `Depends(get_current_user)` на всех роутерах кроме health, capabilities и login. HTTP Basic выключен при `SOKOL_ENV=prod`, если не задан `SOKOL_ENABLE_BASIC_AUTH=true`.
 
 ## Доменные сущности
 
 - `Check` ↔ `Recommendation` (FK, cascade delete)
-- Справочники: `Auditor`, `AuditType`, `CheckKind`, `EffectivenessRating` (UUID PK)
+- Справочники: `Auditor`, `AuditType`, `CheckKind`, `EffectivenessRating`, `Department` (UUID PK)
+- Доменные строки с FK на labels: `check_leader`, `check_view`, `*_effectiveness`, `auditor`
+- `RecommendationAuditObject` — junction `recommendation` ↔ `departments.name`; массив `audit_object` дублируется для аналитики
 - `Attachment` — логическая связь entity + bucket `check-{serial}`
 
 Enum'ы и поля: [DATA_AND_DB.md](DATA_AND_DB.md).

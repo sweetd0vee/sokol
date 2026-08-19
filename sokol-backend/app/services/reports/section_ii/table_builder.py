@@ -459,7 +459,7 @@ def create_heading_paragraph_xml(
         copy_paragraph_properties,
     )
 
-    template = style_reference or source_paragraph
+    template = style_reference if style_reference is not None else source_paragraph
     if template is not None:
         return build_section_heading_paragraph(
             template,

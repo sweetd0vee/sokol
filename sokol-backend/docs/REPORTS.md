@@ -9,8 +9,6 @@ HTTP: `app/api/v1/endpoints/instruments_reports.py`. Логика: `app/services
 
 ## Раздел II ✅
 
-## Раздел II ✅
-
 **Endpoints:** `POST /tools/section-ii`, `POST /tools/section-ii-links`
 
 OOXML (ZIP/XML): парсинг Раздела III → таблица после Раздела I. Модули: `section_ii/docx_parser`, `table_builder`, `bookmark_utils`, …
@@ -20,9 +18,9 @@ OOXML (ZIP/XML): парсинг Раздела III → таблица после
 **Endpoint:** `POST /tools/memorandum`  
 **Связанный:** `POST /tools/parse-recommendations` — JSON для импорта на форме проверки.
 
-## Audit opinion (Ollama) — backlog ❌
+## Audit opinion — backlog ❌
 
-Контракт `POST /tools/audit-opinion` не входит в текущий `API.md`: **код не реализован** (`app/services/reports/audit_opinion/` отсутствует), routes и UI отсутствуют. Env `SOKOL_OLLAMA_*` остаётся техническим хвостом/backlog для возможного Раздела I.
+Контракт `POST /tools/audit-opinion` не входит в текущий `API.md`: код, routes и UI отсутствуют. LLM/Ollama не подключены.
 
 До реализации — не документировать как рабочий endpoint.
 

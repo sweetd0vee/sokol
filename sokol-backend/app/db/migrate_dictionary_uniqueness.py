@@ -8,8 +8,8 @@ from sqlalchemy import select, text
 from app.db.session import AsyncSessionLocal, engine
 from app.models.auditors import Auditor
 from app.models.departments import Department
-from app.utils.dictionary_text import normalize_dictionary_label
 from app.services.dictionary_integrity import replace_recommendation_audit_object_label
+from app.utils.dictionary_text import normalize_dictionary_label
 
 # python -m app.db.migrate_dictionary_uniqueness
 

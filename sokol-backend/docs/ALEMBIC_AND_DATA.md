@@ -28,6 +28,8 @@ python -m app.db.seed_effectiveness_ratings
 ```powershell
 python -m app.db.migrate_check_effectiveness
 python -m app.db.migrate_check_short_name
+python -m app.db.migrate_dictionary_uniqueness
+python -m app.db.migrate_dictionary_foreign_keys
 python -m app.db.migrate_attachments
 # полный список — DATA_AND_DB.md
 ```
@@ -43,13 +45,16 @@ Docker entrypoint делает init + ключевые migrate + seed автом
 ```powershell
 python -m app.db.import_seed_data              # добавить новые serial_number
 python -m app.db.import_seed_data --replace    # TRUNCATE — только с бэкапом!
+# при SOKOL_ENV=prod нужен ещё --confirm-prod-replace
 ```
 
 После импорта при MinIO: `python -m app.db.sync_check_buckets`.
 
 **Демо без Excel:** `python -m app.db.seed_demo_data`
 
-**Docker demo:** `SOKOL_LOAD_DEMO_DATA=1`, опасно `SOKOL_SEED_REPLACE=1`.
+**Docker demo:** `SOKOL_LOAD_DEMO_DATA=1` (default в compose для development).  
+При `SOKOL_ENV=prod` demo load и `SOKOL_SEED_REPLACE=1` падают до bootstrap.  
+`sync_dictionaries` в prod — merge-only (не удаляет пользовательские auditors/departments/users).
 
 ## Порядок на новом стенде
 

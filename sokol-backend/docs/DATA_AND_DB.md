@@ -10,19 +10,22 @@ PostgreSQL 16 · SQLAlchemy 2 async · `asyncpg` · порт хоста **5433**
 |---------|-----|-------|
 | `checks` | int | → recommendations (cascade) |
 | `recommendations` | int | FK `check_id` |
-| `auditors`, `audit_types`, `check_kinds`, `effectiveness_ratings` | UUID | справочники (без FK на домен) |
+| `auditors`, `departments`, `check_kinds`, `effectiveness_ratings`, `audit_types` | UUID | справочники; labels/code уникальны |
+| `recommendation_audit_objects` | `(recommendation_id, department_name)` | FK на recommendations и departments |
 | `attachments` | int | entity + bucket `check-{serial}` |
 
-Справочники хранят допустимые значения; в checks/recommendations — строки (ФИО, вид проверки и т.д.).
+Справочники хранят допустимые значения. В checks/recommendations те же строки, но с физическими FK на unique labels (`ON UPDATE CASCADE`, `ON DELETE RESTRICT` / `SET NULL` для оценок).
 
-**Validation на API** (`dictionary_validation.py`):
+**Validation на API** (`dictionary_validation.py` + FK):
 
 - `check_leader`, `auditor` ∈ `auditors.full_name`
 - `check_view` ∈ `check_kinds.label`
-- `*_effectiveness` ∈ `effectiveness_ratings.label`
+- `*_effectiveness` ∈ `effectiveness_ratings.label` (пустое → `NULL`)
+- `audit_object` канонизируется по `departments`; пишется массив и junction
 - `manager` — свободный текст
+- удаление in-use значения и «Не указан» → ошибка справочника (**409**)
 
-Import/seed обходят validation.
+Import/seed сначала `ensure_*` недостающие labels, затем вставляет строки и junction.
 
 ## Enum'ы
 
@@ -51,10 +54,10 @@ Import/seed обходят validation.
 
 ## Migrate-скрипты
 
-`migrate_recommendation_*`, `migrate_check_*`, `migrate_attachments`, `migrate_materiality_required` — запуск вручную или из Docker entrypoint при обновлении живой БД.
+`migrate_recommendation_*`, `migrate_check_*`, `migrate_attachments`, `migrate_dictionary_uniqueness`, `migrate_dictionary_foreign_keys` — запуск вручную или из Docker entrypoint при обновлении живой БД.
 
 ## Ограничения
 
-Нет soft-delete и audit log. Analytics грузит все записи в память процесса. Enum ALTER на prod — только с бэкапом.
+Нет soft-delete и audit log. `check_type` (`planned`/`unscheduled`/`thematic`) — код ключа проверки, не FK на `audit_types` (КП/ВП/ПП). Enum ALTER на prod — только с бэкапом.
 
 Вложения: [STORAGE.md](STORAGE.md).

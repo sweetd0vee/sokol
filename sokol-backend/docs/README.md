@@ -18,8 +18,8 @@
 
 FastAPI + PostgreSQL (async SQLAlchemy):
 
-- **Auth** — JWT + RBAC (`auditor` / `admin`); публичны health и login.
-- **CRUD** — проверки, рекомендации, справочники; validation справочников на create/update.
+- **Auth** — JWT + RBAC (`auditor` / `department_head` / `admin`); публичны health, capabilities и login. HTTP Basic — только dev, если не задан `SOKOL_ENABLE_BASIC_AUTH`.
+- **CRUD** — проверки, рекомендации, справочники; validation справочников на create/update; FK на labels.
 - **Analytics** — `GET /api/v1/analytics/{checks|recommendations|monitoring|dva|planning}`.
 - **Attachments** — Postgres + MinIO.
 - **Tools** — Раздел II, ДЗ, parse-recommendations.

@@ -34,11 +34,9 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8802
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db
 SOKOL_CORS_ORIGINS=http://localhost:5180
 SOKOL_JWT_SECRET=sokol-dev-jwt-secret-change-me
-SOKOL_OLLAMA_URL=http://localhost:11434
-SOKOL_OLLAMA_MODEL=qwen3.5:35b
 ```
 
-Dev-пользователи (если `SOKOL_AUTH_USERS` пуст): `Админ А.А.`/`admin`, `Аудитор А.А.`/`auditor`.
+Dev-пользователи (если таблица `users` пуста и срабатывает seed): `Админ А.А.`/`admin`, `Аудитор А.А.`/`auditor`.
 
 ## Docker
 
@@ -50,11 +48,13 @@ Dev-пользователи (если `SOKOL_AUTH_USERS` пуст): `Админ
 |------------|------------|
 | `DATABASE_URL` | async SQLAlchemy URL (обязателен) |
 | `SOKOL_CORS_ORIGINS` | origins фронта через запятую |
-| `SOKOL_ENV` | `development` (default) или `prod` — в prod weak/default JWT secret блокирует старт |
+| `SOKOL_ENV` | `development` (default) или `prod` — в prod weak/default JWT secret, demo load и seed `--replace` блокируют старт |
 | `SOKOL_JWT_SECRET` / `SOKOL_JWT_EXPIRE_MINUTES` | JWT (default TTL 480 мин) |
+| `SOKOL_ENABLE_BASIC_AUTH` | HTTP Basic: в development включён по умолчанию, в prod выключен; явный `true`/`false` перекрывает default |
 | `SOKOL_AUTH_USERS` | JSON-пользователи; пусто → dev defaults |
 | `SOKOL_MAX_UPLOAD_MB` | лимит upload `.docx` (default 100) |
-| `SOKOL_OLLAMA_*` | URL, модель, timeout LLM |
+| `SOKOL_LOAD_DEMO_DATA` / `SOKOL_SEED_REPLACE` | Docker bootstrap: demo Excel и TRUNCATE; в `SOKOL_ENV=prod` запрещены |
+| `SOKOL_DESTRUCTIVE_DICTIONARY_SYNC` | в development удаляет лишние справочники/users при sync (default on); в prod всегда merge-only |
 | `SOKOL_MINIO_*` | MinIO — [docs/STORAGE.md](docs/STORAGE.md) |
 
 ## Инициализация БД
@@ -88,7 +88,7 @@ Seed/import/бэкапы: [docs/ALEMBIC_AND_DATA.md](docs/ALEMBIC_AND_DATA.md).
 
 ```bash
 python -m compileall app tests
-py -3.12 -m unittest discover -s tests   # требуется Python 3.12
+python -m unittest discover -s tests   # Python 3.12+
 ```
 
 Нужен `httpx` для `TestClient`.
