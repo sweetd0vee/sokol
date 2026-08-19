@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
@@ -46,6 +46,7 @@ import {
   STATUS_COLORS,
   type PeriodGranularity,
 } from '../../utils/recommendationAnalytics';
+import { registerDashboardChart } from '../../utils/dashboardChartRegistry';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 import type { MaterialityLevel } from '../../types/recommendation';
 
@@ -254,6 +255,54 @@ export function RecommendationsAnalyticsDashboard() {
   const filteredTotal = data?.filteredTotal ?? 0;
   const periodXAxisProps = useMemo(() => getPeriodXAxisProps(granularity), [granularity]);
 
+  // Export needs two separate capture nodes, even though UI now renders them as one card.
+  const materialityByPeriodCaptureRef = useRef<HTMLDivElement>(null);
+  const materialityCaptureRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const cleanupByPeriod = registerDashboardChart({
+      id: 'materialityByPeriod',
+      title: 'Существенность по периодам',
+      description: 'Распределение уровней существенности внутри периода',
+      getNode: () => materialityByPeriodCaptureRef.current,
+    });
+    const cleanupMateriality = registerDashboardChart({
+      id: 'materiality',
+      title: 'Существенность',
+      description: 'Распределение уровней существенности за период',
+      getNode: () => materialityCaptureRef.current,
+    });
+
+    return () => {
+      cleanupByPeriod();
+      cleanupMateriality();
+    };
+  }, []);
+
+  const isMaterialityExportSelected =
+    exportSections.isSelected('materialityByPeriod') && exportSections.isSelected('materiality');
+
+  const toggleMaterialityExport = () => {
+    const shouldEnable = !isMaterialityExportSelected;
+
+    if (shouldEnable) {
+      if (!exportSections.isSelected('materialityByPeriod')) {
+        exportSections.toggleSection('materialityByPeriod');
+      }
+      if (!exportSections.isSelected('materiality')) {
+        exportSections.toggleSection('materiality');
+      }
+      return;
+    }
+
+    if (exportSections.isSelected('materialityByPeriod')) {
+      exportSections.toggleSection('materialityByPeriod');
+    }
+    if (exportSections.isSelected('materiality')) {
+      exportSections.toggleSection('materiality');
+    }
+  };
+
   const resetFilters = () => {
     resetPeriodSelections();
     setSelectedAuditors([]);
@@ -378,43 +427,76 @@ export function RecommendationsAnalyticsDashboard() {
         ),
       },
       {
-        id: 'materialityByPeriod',
-        defaultLayout: { x: 6, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
-        render: () => (
-          <ChartCard
-            title="Существенность по периодам"
-            description="Распределение уровней существенности внутри периода"
-            exportSectionId="materialityByPeriod"
-            exportSelected={exportSections.isSelected('materialityByPeriod')}
-            onToggleExport={() => exportSections.toggleSection('materialityByPeriod')}
-          >
-            {completedPeriodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={completedPeriodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} /><Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий} /><Bar dataKey="medium" name="Средний" stackId="mat" fill={MATERIALITY_COLORS.средний} /><Bar dataKey="high" name="Высокий" stackId="mat" fill={MATERIALITY_COLORS.высокий} /></BarChart></ResponsiveContainer></div>
-            )}
-          </ChartCard>
-        ),
-      },
-      {
-        id: 'materiality',
-        defaultLayout: { x: 9, y: 2, w: 3, h: 3, minW: 3, minH: 2 },
+        id: 'materialityCombined',
+        defaultLayout: { x: 6, y: 2, w: 6, h: 6, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Существенность"
-            description="Распределение уровней существенности за период"
-            exportSectionId="materiality"
-            exportSelected={exportSections.isSelected('materiality')}
-            onToggleExport={() => exportSections.toggleSection('materiality')}
+            description="Распределение уровней существенности: по периодам и за период"
+            exportSelected={isMaterialityExportSelected}
+            onToggleExport={toggleMaterialityExport}
           >
-            {materialityDistribution.length === 0 ? (
-              <EmptyChart message="Нет данных" />
-            ) : (
-              <FocusableDonutChart
-                data={materialityDistribution}
-                palette={RECOMMENDATIONS_PALETTE}
-                labelMode="both"
-                legendPercentFirst
-              />
-            )}
+            <div className="flex h-full min-h-0 flex-col gap-2">
+              <div
+                ref={materialityCaptureRef}
+                data-analytics-export-capture-id="materiality"
+                data-analytics-export-title="Существенность"
+                data-analytics-export-description="Распределение уровней существенности за период"
+                className="flex-1 min-h-0"
+              >
+                {materialityDistribution.length === 0 ? (
+                  <EmptyChart message="Нет данных" heightClass="h-full" />
+                ) : (
+                  <FocusableDonutChart
+                    data={materialityDistribution}
+                    palette={RECOMMENDATIONS_PALETTE}
+                    labelMode="both"
+                    legendLabelMode="name"
+                    containerClassName="h-full min-h-0"
+                  />
+                )}
+              </div>
+
+              <div
+                ref={materialityByPeriodCaptureRef}
+                data-analytics-export-capture-id="materialityByPeriod"
+                data-analytics-export-title="Существенность по периодам"
+                data-analytics-export-description="Распределение уровней существенности внутри периода"
+                className="flex-1 min-h-0"
+              >
+                {completedPeriodSeries.length === 0 ? (
+                  <EmptyChart message="Нет данных" heightClass="h-full" />
+                ) : (
+                  <div className="h-full min-h-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={completedPeriodSeries}
+                        margin={{ top: 18, right: 12, left: -10, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                        <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
+                        <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
+                        <Tooltip />
+                        <Legend wrapperStyle={CHART_LEGEND_STYLE} />
+                        <Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий} />
+                        <Bar
+                          dataKey="medium"
+                          name="Средний"
+                          stackId="mat"
+                          fill={MATERIALITY_COLORS.средний}
+                        />
+                        <Bar
+                          dataKey="high"
+                          name="Высокий"
+                          stackId="mat"
+                          fill={MATERIALITY_COLORS.высокий}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            </div>
           </ChartCard>
         ),
       },
@@ -424,7 +506,7 @@ export function RecommendationsAnalyticsDashboard() {
         render: () => (
           <ChartCard
             title="Индикаторы"
-            description="Распределение выбранной выборки"
+            description="Распределение индикаторов за период"
             exportSectionId="indicators"
             exportSelected={exportSections.isSelected('indicators')}
             onToggleExport={() => exportSections.toggleSection('indicators')}
@@ -469,11 +551,13 @@ export function RecommendationsAnalyticsDashboard() {
       cumulativeColors,
       completedCumulativeSeries,
       exportSections,
+      isMaterialityExportSelected,
       indicatorDistribution,
       materialityDistribution,
       objectDistributionTop,
       periodXAxisProps,
       completedPeriodSeries,
+      toggleMaterialityExport,
       universeTotal,
       summary,
     ],

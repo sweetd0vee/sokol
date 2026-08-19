@@ -183,8 +183,15 @@ function directChildTexts(group: Element): string[] {
   return [...group.children]
     .filter((child) => {
       const tag = child.tagName.toLowerCase();
-      return tag === 'text' || tag === 'title';
+      return tag === 'text';
     })
+    .map((child) => (child.textContent || '').trim())
+    .filter(Boolean);
+}
+
+function directChildTitles(group: Element): string[] {
+  return [...group.children]
+    .filter((child) => (child.tagName.toLowerCase() === 'title'))
     .map((child) => (child.textContent || '').trim())
     .filter(Boolean);
 }
@@ -218,6 +225,15 @@ function annotateInteractiveLabels(clone: SVGSVGElement) {
         if (!group) {
           return;
         }
+        // Prefer <title> when present: for many Recharts custom contents (e.g. Treemap)
+        // <title> already contains the full label (name + value). Concatenating it
+        // with <text> leads to duplicated names in HTML export tooltips.
+        const titles = directChildTitles(group);
+        if (titles.length > 0) {
+          element.setAttribute('data-label', titles.join(' · '));
+          return;
+        }
+
         const texts = directChildTexts(group);
         if (texts.length > 0) {
           element.setAttribute('data-label', texts.join(' · '));

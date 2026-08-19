@@ -12,10 +12,14 @@ export type DonutDatum = {
 type FocusableDonutChartProps = {
   data: DonutDatum[];
   palette?: readonly string[];
+  /** Allows overriding outer container sizing in composed cards. */
+  containerClassName?: string;
   /** Map smaller values to lighter shades and larger values to darker shades. */
   colorByValue?: boolean;
   /** What to show on segment labels. Defaults to absolute value and percent together. */
   labelMode?: 'value' | 'percent' | 'both';
+  /** Controls what the legend shows. Defaults to detailed legend when `labelMode="both"`. */
+  legendLabelMode?: 'value' | 'percent' | 'both' | 'name';
   /** When false, values appear only in the hover tooltip. */
   showValueLabels?: boolean;
   legendFontSize?: number;
@@ -107,13 +111,16 @@ function PieValueLabel({
 export function FocusableDonutChart({
   data,
   palette = PALETTE,
+  containerClassName = 'h-full min-h-[13rem]',
   colorByValue = false,
   labelMode = 'both',
+  legendLabelMode,
   showValueLabels = true,
   legendFontSize = CHART_LEGEND_STYLE.fontSize,
   legendFontWeight = 400,
   legendPercentFirst = false,
 }: FocusableDonutChartProps) {
+  const resolvedLegendLabelMode = legendLabelMode ?? labelMode;
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const colors = palette.length > 0 ? palette : PALETTE;
   const valueColors = colorByValue ? getValueBasedColors(data.map((entry) => entry.value), colors) : [];
@@ -124,7 +131,7 @@ export function FocusableDonutChart({
   const total = chartData.reduce((sum, entry) => sum + entry.value, 0);
 
   return (
-    <div className="h-full min-h-[13rem]">
+    <div className={containerClassName}>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
           <Pie
@@ -183,7 +190,7 @@ export function FocusableDonutChart({
             iconSize={9}
             formatter={(value) => {
               const name = String(value);
-              if (labelMode !== 'both') {
+              if (resolvedLegendLabelMode !== 'both') {
                 return name;
               }
               const item = data.find((entry) => entry.name === name);

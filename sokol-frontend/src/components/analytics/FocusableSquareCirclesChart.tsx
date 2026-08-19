@@ -73,7 +73,8 @@ export function FocusableSquareCirclesChart({
   }, [slices, total]);
 
   // Keep generous breathing room so circles never touch the card edges.
-  const maxRadius = 16;
+  // Slightly larger than before to better match the visual design.
+  const maxRadius = 17.5;
   const centers: Array<{ x: number; y: number }> = [
     { x: 31, y: 29 }, // top-left
     { x: 76, y: 32 }, // top-right
@@ -170,7 +171,7 @@ export function FocusableSquareCirclesChart({
           return (
             <div key={`${item.name}-${index}`} className="inline-flex items-center gap-2">
               <span
-                className="inline-block h-2.5 w-2.5 rounded-full"
+                className="inline-block h-3.5 w-3.5 rounded-full"
                 style={{
                   backgroundColor: fill,
                 }}

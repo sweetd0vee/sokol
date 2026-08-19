@@ -14,6 +14,7 @@ import {
   Table,
   TableCell,
   TableRow,
+  ShadingType,
   TextRun,
   WidthType,
 } from 'docx';
@@ -372,9 +373,11 @@ function writeEffectivenessMatrixSheet(
   });
 
   const headers = ['Ключ', 'Краткое название проверки', ...EFFECTIVENESS_MATRIX_COLUMNS.map((column) => column.label)];
+  const keyColumnWidth = 18;
+  const shortNameColumnWidth = 80;
   sheet.columns = [
-    { width: 16 },
-    { width: 42 },
+    { width: keyColumnWidth },
+    { width: shortNameColumnWidth },
     ...EFFECTIVENESS_MATRIX_COLUMNS.map(() => ({ width: 14 })),
   ];
 
@@ -412,9 +415,17 @@ function writeEffectivenessMatrixSheet(
     keyCell.alignment = { horizontal: 'left', vertical: 'middle' };
 
     const shortNameCell = excelRow.getCell(2);
-    shortNameCell.value = row.shortName || '—';
+    const shortNameValue = row.shortName || '—';
+    shortNameCell.value = shortNameValue;
     shortNameCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF111827' } };
     shortNameCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+
+    // ExcelJS doesn't auto-resize row height for wrapped cells; estimate based on character count.
+    const usableWidth = Math.max(Math.floor(shortNameColumnWidth * 0.75), 8);
+    const wrappedLineCount = shortNameValue
+      .toString()
+      .split(/\r?\n/)
+      .reduce((sum, part) => sum + Math.max(1, Math.ceil(part.length / usableWidth)), 0);
 
     EFFECTIVENESS_MATRIX_COLUMNS.forEach((column, columnIndex) => {
       const cell = excelRow.getCell(columnIndex + 3);
@@ -439,7 +450,8 @@ function writeEffectivenessMatrixSheet(
         right: { style: 'thin', color: { argb: 'FFE5E7EB' } },
       };
     });
-    excelRow.height = 18;
+    const baseRowHeight = 18;
+    excelRow.height = Math.min(72, Math.max(baseRowHeight, baseRowHeight * wrappedLineCount + 2));
   });
 
   const shareStartRow = 5 + rows.length + 2;
@@ -656,13 +668,222 @@ async function buildVisualXlsx(options: {
   URL.revokeObjectURL(url);
 }
 
+function toDocxHexColor(hex: string) {
+  return hex.replace(/^#/, '').toUpperCase();
+}
+
+function createEffectivenessMatrixDocxTable(rows: EffectivenessMatrixRow[]): Table {
+  const cellMargin = 70;
+  const headerFill = '003366';
+  const headerTextColor = 'FFFFFF';
+  const bodyTextColor = '334155';
+
+  // Key + short name + 4 effectiveness tones
+  const columnWidths = [16, 26, 15, 14, 14, 14];
+
+  const headerRow = new TableRow({
+    children: [
+      ...['Ключ', 'Краткое название проверки', ...EFFECTIVENESS_MATRIX_COLUMNS.map((c) => c.label)].map(
+        (text, index) => {
+          const width = columnWidths[index] ?? 14;
+          return new TableCell({
+            width: { size: width, type: WidthType.PERCENTAGE },
+            margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+            shading: { type: ShadingType.CLEAR, fill: headerFill, color: 'auto' },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [new TextRun({ text, bold: true, color: headerTextColor, size: 20 })],
+              }),
+            ],
+          });
+        },
+      ),
+    ],
+  });
+
+  const bodyRows = rows.map((row) => {
+    const keyCell = new TableCell({
+      width: { size: columnWidths[0], type: WidthType.PERCENTAGE },
+      margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.LEFT,
+          children: [new TextRun({ text: row.key, bold: true, color: bodyTextColor, size: 20 })],
+        }),
+      ],
+    });
+
+    const shortNameCell = new TableCell({
+      width: { size: columnWidths[1], type: WidthType.PERCENTAGE },
+      margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.LEFT,
+          children: [
+            new TextRun({
+              text: row.shortName || row.name || '—',
+              color: bodyTextColor,
+              size: 20,
+            }),
+          ],
+        }),
+      ],
+    });
+
+    const toneCells = EFFECTIVENESS_MATRIX_COLUMNS.map((column, index) => {
+      const tone = row.tones[column.key];
+      const fill = toDocxHexColor(getEffectivenessToneColor(tone));
+      const width = columnWidths[index + 2] ?? 14;
+
+      return new TableCell({
+        width: { size: width, type: WidthType.PERCENTAGE },
+        margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+        shading: { type: ShadingType.CLEAR, fill, color: 'auto' },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: ' ', size: 20 })],
+          }),
+        ],
+      });
+    });
+
+    return new TableRow({ children: [keyCell, shortNameCell, ...toneCells] });
+  });
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: DOCX_FRAME_BORDER,
+      bottom: DOCX_FRAME_BORDER,
+      left: DOCX_FRAME_BORDER,
+      right: DOCX_FRAME_BORDER,
+      insideHorizontal: DOCX_FRAME_BORDER,
+      insideVertical: DOCX_FRAME_BORDER,
+    },
+    rows: [headerRow, ...bodyRows],
+  });
+}
+
+function createEffectivenessShareDocxTable(rows: EffectivenessMatrixRow[]): Table {
+  const cellMargin = 70;
+  const headerFill = '003366';
+  const headerTextColor = 'FFFFFF';
+  const bodyTextColor = '334155';
+
+  const headerRow = new TableRow({
+    children: [
+      new TableCell({
+        width: { size: 24, type: WidthType.PERCENTAGE },
+        margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+        shading: { type: ShadingType.CLEAR, fill: headerFill, color: 'auto' },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.LEFT,
+            children: [new TextRun({ text: 'Раздел', bold: true, color: headerTextColor, size: 20 })],
+          }),
+        ],
+      }),
+      new TableCell({
+        width: { size: 76, type: WidthType.PERCENTAGE },
+        margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+        shading: { type: ShadingType.CLEAR, fill: headerFill, color: 'auto' },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.LEFT,
+            children: [new TextRun({ text: 'Доля оценок', bold: true, color: headerTextColor, size: 20 })],
+          }),
+        ],
+      }),
+    ],
+  });
+
+  const bodyRows = EFFECTIVENESS_MATRIX_COLUMNS.map((column) => {
+    const shares = buildEffectivenessColumnShares(rows, column.key);
+    const text =
+      shares.map((share) => `${share.label}: ${share.percent}% (${share.count})`).join('; ') || '—';
+
+    return new TableRow({
+      children: [
+        new TableCell({
+          width: { size: 24, type: WidthType.PERCENTAGE },
+          margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.LEFT,
+              children: [new TextRun({ text: column.label, bold: true, color: bodyTextColor, size: 20 })],
+            }),
+          ],
+        }),
+        new TableCell({
+          width: { size: 76, type: WidthType.PERCENTAGE },
+          margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.LEFT,
+              children: [new TextRun({ text, color: bodyTextColor, size: 18 })],
+            }),
+          ],
+        }),
+      ],
+    });
+  });
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: DOCX_FRAME_BORDER,
+      bottom: DOCX_FRAME_BORDER,
+      left: DOCX_FRAME_BORDER,
+      right: DOCX_FRAME_BORDER,
+      insideHorizontal: DOCX_FRAME_BORDER,
+      insideVertical: DOCX_FRAME_BORDER,
+    },
+    rows: [headerRow, ...bodyRows],
+  });
+}
+
+function createEffectivenessLegendDocxTable(): Table {
+  const cellMargin = 70;
+
+  const legendRows = EFFECTIVENESS_LEGEND.map((item) => {
+    return new TableRow({
+      children: [
+        new TableCell({
+          width: { size: 8, type: WidthType.PERCENTAGE },
+          margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+          shading: { type: ShadingType.CLEAR, fill: toDocxHexColor(item.color), color: 'auto' },
+          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: ' ', size: 18 })] })],
+        }),
+        new TableCell({
+          width: { size: 92, type: WidthType.PERCENTAGE },
+          margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.LEFT,
+              children: [new TextRun({ text: item.label, color: '334155', size: 18 })],
+            }),
+          ],
+        }),
+      ],
+    });
+  });
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: legendRows,
+  });
+}
+
 async function buildVisualDocx(options: {
   documentTitle: string;
   meta: VisualExportMetaRow[];
   charts: DashboardChartCapture[];
   filenamePrefix: string;
+  effectivenessMatrix?: EffectivenessMatrixRow[];
 }) {
-  const { documentTitle, meta, charts, filenamePrefix } = options;
+  const { documentTitle, meta, charts, filenamePrefix, effectivenessMatrix } = options;
   const metaTable = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     rows: meta.map(
@@ -686,6 +907,53 @@ async function buildVisualDocx(options: {
   });
 
   const chartSections = charts.map((chart) => {
+    const canRenderEffectivenessMatrix =
+      chart.id === 'effectivenessMatrix' && Boolean(effectivenessMatrix?.length);
+    if (canRenderEffectivenessMatrix) {
+      const baseDescription = chart.description || 'Матрица оценок по проверкам за период';
+      const fullDescription = baseDescription.includes('(все строки выборки)')
+        ? baseDescription
+        : `${baseDescription} (все строки выборки)`;
+
+      return {
+        properties: {
+          page: DOCX_LANDSCAPE_PAGE,
+        },
+        children: [
+          new Paragraph({
+            text: chart.title,
+            heading: HeadingLevel.HEADING_2,
+            spacing: { after: 80 },
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: fullDescription, color: '64748B', size: 20 })],
+            spacing: { after: 40 },
+          }),
+          createEffectivenessMatrixDocxTable(effectivenessMatrix!),
+          new Paragraph({
+            children: [new TextRun({ text: 'Доля оценок', bold: true, color: '003366', size: 22 })],
+            spacing: { after: 20 },
+          }),
+          createEffectivenessShareDocxTable(effectivenessMatrix!),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `Итого: ${formatEffectivenessChecksCount(effectivenessMatrix!.length)}`,
+                color: '64748B',
+                size: 18,
+              }),
+            ],
+            spacing: { after: 10 },
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: 'Легенда', bold: true, color: '003366', size: 20 })],
+            spacing: { after: 10 },
+          }),
+          createEffectivenessLegendDocxTable(),
+        ],
+      };
+    }
+
     const fitted = fitImageSize(
       chart.width,
       chart.height,
@@ -1391,14 +1659,24 @@ export async function exportVisualAnalyticsReport(options: {
   }
 
   if (options.format === 'docx') {
-    if (chartsWithPng.length === 0) {
-      throw new Error('Не удалось снять изображения дашбордов для Word. Обновите страницу и попробуйте снова.');
+    const canRenderEffectivenessMatrixTable =
+      Boolean(options.effectivenessMatrix?.length) && options.selectedSections.includes('effectivenessMatrix');
+    const chartsForDocx = charts.filter(
+      (chart) =>
+        chartHasPngPayload(chart.dataUrl)
+        || (canRenderEffectivenessMatrixTable && chart.id === 'effectivenessMatrix'),
+    );
+    if (chartsForDocx.length === 0) {
+      throw new Error(
+        'Не удалось снять изображения дашбордов для Word. Обновите страницу и попробуйте снова.',
+      );
     }
     await buildVisualDocx({
       documentTitle: options.documentTitle,
       meta: options.meta,
-      charts: chartsWithPng,
+      charts: chartsForDocx,
       filenamePrefix: options.filenamePrefix,
+      effectivenessMatrix: options.effectivenessMatrix,
     });
     return;
   }
