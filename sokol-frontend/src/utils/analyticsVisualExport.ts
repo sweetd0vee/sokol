@@ -282,7 +282,7 @@ function buildMaterialityMatrixPdfContent(
           text: String(count),
           alignment: 'center' as const,
           bold: true,
-          color: column.level === 'высокий' ? '#FFFFFF' : '#1E293B',
+          color: '#1E293B',
           fillColor: fill,
         };
       }),
@@ -766,7 +766,7 @@ function writeMaterialityMatrixSheet(
         name: 'Calibri',
         size: 11,
         bold: true,
-        color: { argb: column.level === 'высокий' ? 'FFFFFFFF' : 'FF1E293B' },
+        color: { argb: 'FF1E293B' },
       };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: hexToArgb(color) } };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };

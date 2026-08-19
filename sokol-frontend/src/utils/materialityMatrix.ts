@@ -110,7 +110,7 @@ function escapeHtml(value: string) {
 
 function countBadgeMarkup(count: number, level: MaterialityLevel) {
   const color = getMaterialityLevelColor(level);
-  const textColor = level === 'высокий' ? '#ffffff' : '#1e293b';
+  const textColor = '#1e293b';
   return `<span style="display:inline-flex;min-width:32px;height:32px;align-items:center;justify-content:center;border-radius:2px;background:${color};color:${textColor};font-size:12px;font-weight:700;font-variant-numeric:tabular-nums">${count}</span>`;
 }
 

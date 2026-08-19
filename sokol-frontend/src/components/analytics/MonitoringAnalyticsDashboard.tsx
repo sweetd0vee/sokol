@@ -248,7 +248,7 @@ export function MonitoringAnalyticsDashboard() {
             {statusDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableDonutChart data={coloredStatusDistribution} />
+              <FocusableDonutChart data={coloredStatusDistribution} legendPercentFirst />
             )}
           </ChartCard>
         ),
@@ -267,7 +267,7 @@ export function MonitoringAnalyticsDashboard() {
             {additionalStatusDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableDonutChart data={coloredAdditionalStatusDistribution} />
+              <FocusableDonutChart data={coloredAdditionalStatusDistribution} legendPercentFirst />
             )}
           </ChartCard>
         ),

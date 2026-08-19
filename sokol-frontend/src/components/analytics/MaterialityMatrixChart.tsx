@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
-import { contrastLabelColor } from './chartContrast';
 import { getMaterialityLevelColor } from '../../utils/recommendationAnalytics';
 import type { SortDirection } from '../../utils/listTable';
 import {
@@ -181,7 +180,7 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
                           className="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-sm px-1.5 text-xs font-bold tabular-nums"
                           style={{
                             backgroundColor: color,
-                            color: contrastLabelColor(color),
+                            color: '#1e293b',
                             opacity: count === 0 ? 0.45 : 1,
                           }}
                         >
