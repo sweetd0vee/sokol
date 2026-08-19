@@ -8,6 +8,7 @@ import {
   type PeriodBucket,
   type PeriodGranularity,
 } from './analyticsPeriod';
+import { MATERIALITY_COLORS } from './recommendationAnalytics';
 
 export type { PeriodGranularity, PeriodBucket };
 
@@ -127,11 +128,11 @@ export const EFFECTIVENESS_MATRIX_COLUMNS = [
 export type EffectivenessTone = 'effective' | 'sufficient' | 'insufficient' | 'ineffective' | 'unset';
 
 export const EFFECTIVENESS_LEGEND: Array<{ tone: EffectivenessTone; label: string; color: string }> = [
-  { tone: 'effective', label: 'Эффективно', color: '#22C55E' },
-  { tone: 'sufficient', label: 'Достаточно эффективно', color: '#EAB308' },
-  { tone: 'insufficient', label: 'Недостаточно эффективно', color: '#EF4444' },
+  { tone: 'effective', label: 'Эффективно', color: MATERIALITY_COLORS.низкий },
+  { tone: 'sufficient', label: 'Достаточно эффективно', color: MATERIALITY_COLORS.средний },
+  { tone: 'insufficient', label: 'Недостаточно эффективно', color: MATERIALITY_COLORS.высокий },
   { tone: 'ineffective', label: 'Неэффективно', color: '#111827' },
-  { tone: 'unset', label: 'Не оценивалось', color: '#94A3B8' },
+  { tone: 'unset', label: 'Не оценивалось', color: '#64748B' },
 ];
 
 export type EffectivenessMatrixRow = {
@@ -164,7 +165,7 @@ function resolveEffectivenessTone(value: string | null | undefined): Effectivene
 }
 
 export function getEffectivenessToneColor(tone: EffectivenessTone): string {
-  return EFFECTIVENESS_LEGEND.find((item) => item.tone === tone)?.color ?? '#94A3B8';
+  return EFFECTIVENESS_LEGEND.find((item) => item.tone === tone)?.color ?? '#64748B';
 }
 
 export function formatEffectivenessChecksCount(count: number): string {

@@ -183,7 +183,7 @@ export function DvaAnalyticsDashboard() {
               <KpiCard label="Аудиторы" value={auditorLoad.length} tone="slate" />
               <KpiCard label="Объекты аудита" value={departmentMap.length} tone="amber" />
               <KpiCard label="Завершённость" value={completionShare} suffix="%" tone="green" />
-              <KpiCard label="Исполнение рек." value={recSummary.completionRate} suffix="%" tone="green" />
+              <KpiCard label="Исполнение рекомендаций" value={recSummary.completionRate} suffix="%" tone="green" />
             </div>
           </ChartCard>
         ),
