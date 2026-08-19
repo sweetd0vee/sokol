@@ -34,11 +34,10 @@ import {
   type RecommendationExportSectionId,
 } from '../../constants/analyticsExportSections';
 import {
+  INDICATOR_OPTIONS,
   MATERIALITY_LEVEL_OPTIONS,
   RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS,
   RECOMMENDATION_STATUS_OPTIONS,
-  normalizeMaterialityLevel,
-  normalizeRecommendationIndicator,
 } from '../../constants/recommendations';
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
@@ -51,6 +50,7 @@ import {
   getMaterialityLevelColor,
   type PeriodGranularity,
 } from '../../utils/recommendationAnalytics';
+import { completeNamedDistribution, distributionHasValues } from '../../utils/analyticsDistribution';
 import { registerDashboardChart } from '../../utils/dashboardChartRegistry';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 import type { MaterialityLevel } from '../../types/recommendation';
@@ -485,19 +485,21 @@ export function RecommendationsAnalyticsDashboard() {
   // Colorize chart segments by the same tones used in the recommendations table.
   const coloredMaterialityDistribution = useMemo(
     () =>
-      materialityDistribution.map((item) => ({
-        ...item,
-        color: getMaterialityLevelColor(normalizeMaterialityLevel(item.name)),
-      })),
+      completeNamedDistribution(
+        materialityDistribution,
+        MATERIALITY_LEVEL_OPTIONS,
+        getMaterialityLevelColor,
+      ),
     [materialityDistribution],
   );
 
   const coloredIndicatorDistribution = useMemo(
     () =>
-      indicatorDistribution.map((item) => ({
-        ...item,
-        color: getIndicatorColor(normalizeRecommendationIndicator(item.name)),
-      })),
+      completeNamedDistribution(
+        indicatorDistribution,
+        INDICATOR_OPTIONS,
+        getIndicatorColor,
+      ),
     [indicatorDistribution],
   );
 
@@ -742,9 +744,7 @@ export function RecommendationsAnalyticsDashboard() {
                 data-analytics-export-description="Распределение уровней существенности за период"
                 className="flex-1 min-h-0 min-w-0"
               >
-                {materialityDistribution.length === 0 ? (
-                  <EmptyChart message="Нет данных" heightClass="h-full" />
-                ) : (
+                {distributionHasValues(coloredMaterialityDistribution) ? (
                   <FocusableDonutChart
                     data={coloredMaterialityDistribution}
                     labelMode="both"
@@ -752,6 +752,8 @@ export function RecommendationsAnalyticsDashboard() {
                     showLegend={false}
                     containerClassName="h-full min-h-0"
                   />
+                ) : (
+                  <EmptyChart message="Нет данных" heightClass="h-full" />
                 )}
               </div>
 
@@ -892,13 +894,13 @@ export function RecommendationsAnalyticsDashboard() {
             exportSelected={exportSections.isSelected('indicators')}
             onToggleExport={() => exportSections.toggleSection('indicators')}
           >
-            {indicatorDistribution.length === 0 ? (
-              <EmptyChart message="Нет данных" />
-            ) : (
+            {distributionHasValues(coloredIndicatorDistribution) ? (
               <FocusableSquareCirclesChart
                 data={coloredIndicatorDistribution}
                 labelMode="both"
               />
+            ) : (
+              <EmptyChart message="Нет данных" />
             )}
           </ChartCard>
         ),

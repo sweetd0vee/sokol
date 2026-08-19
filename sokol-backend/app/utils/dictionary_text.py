@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
+UNSPECIFIED_AUDIT_OBJECT = "Не указан"
+
 # Latin letters that look like Cyrillic (and lowercase variants).
 _LATIN_TO_CYRILLIC = str.maketrans(
     {

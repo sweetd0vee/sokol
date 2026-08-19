@@ -61,9 +61,12 @@ export function FocusableSquareCirclesChart({
 }: SquareCirclesChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-  const slices = useMemo(() => data.slice(0, 4), [data]);
+  const slices = useMemo(
+    () => data.filter((item) => item.value > 0).slice(0, 4),
+    [data],
+  );
 
-  const total = useMemo(() => slices.reduce((sum, item) => sum + item.value, 0), [slices]);
+  const total = useMemo(() => data.reduce((sum, item) => sum + item.value, 0), [data]);
   const maxShare = useMemo(() => {
     if (total <= 0) {
       return 0;
@@ -99,22 +102,18 @@ export function FocusableSquareCirclesChart({
     return byIndex;
   }, [slices, targetCenters]);
 
-  const legendOrderIndices = useMemo(() => {
-    const indexed = slices.map((slice, i) => ({ i, v: slice.value }));
-    // Stable sort: if values are equal, preserve original index order.
-    indexed.sort((a, b) => (b.v - a.v) || (a.i - b.i));
-    const ranked = indexed.map((entry) => entry.i);
-
-    // Legend as a 2x2 grid to mirror circle placement:
-    // Row 1: TL (rank0), TR (rank2)
-    // Row 2: BL (rank1), BR (rank3)
-    const candidates = [ranked[0], ranked[2], ranked[1], ranked[3]];
-    return candidates.filter((idx): idx is number => typeof idx === 'number');
-  }, [slices]);
-
   const colors = useMemo(() => {
     return slices.map((item, index) => item.color ?? palette[index % palette.length]);
   }, [palette, slices]);
+
+  const legendItems = useMemo(
+    () =>
+      data.map((item, index) => ({
+        ...item,
+        color: item.color ?? palette[index % palette.length],
+      })),
+    [data, palette],
+  );
 
   return (
     <div className="flex h-full min-h-[13rem] flex-col overflow-hidden">
@@ -196,9 +195,7 @@ export function FocusableSquareCirclesChart({
           paddingTop: 4,
         }}
       >
-        {legendOrderIndices.map((index) => {
-          const item = slices[index];
-          const fill = colors[index] ?? palette[index % palette.length];
+        {legendItems.map((item, index) => {
           return (
             <div
               key={`${item.name}-${index}`}
@@ -207,7 +204,7 @@ export function FocusableSquareCirclesChart({
               <span
                 className="inline-block h-3.5 w-3.5 rounded-full"
                 style={{
-                  backgroundColor: fill,
+                  backgroundColor: item.color,
                 }}
                 aria-hidden
               />

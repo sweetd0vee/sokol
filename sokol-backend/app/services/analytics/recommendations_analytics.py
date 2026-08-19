@@ -73,8 +73,6 @@ INDICATOR_COLORS = {
 def _named_from_map(counts: dict[str, int], labels: dict[str, str], colors: dict[str, str] | None = None) -> list[NamedCount]:
     result: list[NamedCount] = []
     for key, value in counts.items():
-        if value <= 0:
-            continue
         result.append(
             NamedCount(
                 name=labels.get(key, key),

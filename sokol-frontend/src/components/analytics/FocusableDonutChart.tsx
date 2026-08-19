@@ -134,14 +134,25 @@ export function FocusableDonutChart({
     ...entry,
     color: entry.color ?? (colorByValue ? valueColors[index] : colors[index % colors.length]),
   }));
+  const pieData = chartData.filter((entry) => entry.value > 0);
   const total = chartData.reduce((sum, entry) => sum + entry.value, 0);
+
+  const formatLegendText = (item: DonutDatum) => {
+    if (resolvedLegendLabelMode !== 'both') {
+      return item.name;
+    }
+    const percent = total > 0 ? Math.round((item.value / total) * 100) : 0;
+    return legendPercentFirst
+      ? `${item.name}: ${percent}% (${item.value})`
+      : `${item.name}: ${item.value} (${percent}%)`;
+  };
 
   return (
     <div className={containerClassName}>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
           <Pie
-            data={chartData}
+            data={pieData}
             dataKey="value"
             nameKey="name"
             cx="50%"
@@ -159,7 +170,7 @@ export function FocusableDonutChart({
             onMouseEnter={(_, index) => setActiveIndex(index)}
             onMouseLeave={() => setActiveIndex(null)}
           >
-            {chartData.map((entry, index) => {
+            {pieData.map((entry, index) => {
               const isDimmed = activeIndex !== null && activeIndex !== index;
               const isActive = activeIndex === index;
               return (
@@ -194,28 +205,52 @@ export function FocusableDonutChart({
               layout="vertical"
               verticalAlign="bottom"
               align="center"
-              iconType="circle"
-              iconSize={9}
-              formatter={(value) => {
-                const name = String(value);
-                if (resolvedLegendLabelMode !== 'both') {
-                  return name;
-                }
-                const item = data.find((entry) => entry.name === name);
-                if (!item) {
-                  return name;
-                }
-                const percent = total > 0 ? Math.round((item.value / total) * 100) : 0;
-                return legendPercentFirst
-                  ? `${name}: ${percent}% (${item.value})`
-                  : `${name}: ${item.value} (${percent}%)`;
-              }}
               wrapperStyle={{
                 ...CHART_LEGEND_STYLE,
                 fontSize: legendFontSize,
                 fontWeight: legendFontWeight,
                 paddingTop: 4,
               }}
+              content={() => (
+                <ul
+                  className="recharts-default-legend"
+                  style={{
+                    padding: 0,
+                    margin: 0,
+                    textAlign: 'center',
+                    fontSize: legendFontSize,
+                    fontWeight: legendFontWeight,
+                  }}
+                >
+                  {chartData.map((item) => (
+                    <li
+                      key={item.name}
+                      className="recharts-legend-item"
+                      style={{
+                        display: 'block',
+                        marginRight: 0,
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span
+                        className="recharts-legend-icon"
+                        style={{
+                          display: 'inline-block',
+                          width: 9,
+                          height: 9,
+                          marginRight: 6,
+                          borderRadius: 9,
+                          backgroundColor: item.color,
+                          verticalAlign: 'middle',
+                        }}
+                      />
+                      <span className="recharts-legend-item-text" style={{ color: item.color }}>
+                        {formatLegendText(item)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             />
           ) : null}
         </PieChart>

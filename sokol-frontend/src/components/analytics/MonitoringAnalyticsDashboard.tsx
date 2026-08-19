@@ -17,6 +17,7 @@ import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/
 import type { PeriodGranularity } from '../../utils/recommendationAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 import { getRecommendationAdditionalStatusColor, getRecommendationStatusColor } from '../../utils/recommendationAnalytics';
+import { completeNamedDistribution, distributionHasValues } from '../../utils/analyticsDistribution';
 
 const EMPTY_RECOMMENDATION_SUMMARY = {
   total: 0,
@@ -129,51 +130,30 @@ export function MonitoringAnalyticsDashboard() {
 
   const coloredStatusDistribution = useMemo(
     () =>
-      statusDistribution
-        .map((item) => {
-          const statusKey =
-            RECOMMENDATION_STATUS_OPTIONS.find((option) => option.label === item.name)?.value ?? null;
-          return {
-            ...item,
-            // Donut chart supports per-segment color; we override it so Monitoring matches
-            // the same visual language as Recommendations charts.
-            color: statusKey ? getRecommendationStatusColor(statusKey) : '#e5e7eb',
-            statusKey,
-          };
-        })
-        .sort((a, b) => {
-          const order: Record<string, number> = {
-            on_control: 0,
-            in_progress: 1,
-            completed: 2,
-            unresolved: 3,
-          };
-          return (order[a.statusKey ?? ''] ?? 999) - (order[b.statusKey ?? ''] ?? 999);
-        }),
+      completeNamedDistribution(
+        statusDistribution,
+        [
+          { value: 'on_control', label: 'На контроле' },
+          { value: 'in_progress', label: 'В процессе' },
+          { value: 'completed', label: 'Исполнено' },
+          { value: 'unresolved', label: 'Не решено' },
+        ],
+        getRecommendationStatusColor,
+      ),
     [statusDistribution],
   );
 
   const coloredAdditionalStatusDistribution = useMemo(
     () =>
-      additionalStatusDistribution
-        .map((item) => {
-          const additionalStatusKey =
-            RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.find((option) => option.label === item.name)?.value ??
-            null;
-          return {
-            ...item,
-            color: additionalStatusKey ? getRecommendationAdditionalStatusColor(additionalStatusKey) : '#e5e7eb',
-            additionalStatusKey,
-          };
-        })
-        .sort((a, b) => {
-          const order: Record<string, number> = {
-            on_control: 0,
-            deadline_violated: 1,
-            on_time: 2,
-          };
-          return (order[a.additionalStatusKey ?? ''] ?? 999) - (order[b.additionalStatusKey ?? ''] ?? 999);
-        }),
+      completeNamedDistribution(
+        additionalStatusDistribution,
+        [
+          { value: 'on_control', label: 'На контроле' },
+          { value: 'deadline_violated', label: 'Срок нарушен' },
+          { value: 'on_time', label: 'В срок' },
+        ],
+        getRecommendationAdditionalStatusColor,
+      ),
     [additionalStatusDistribution],
   );
 
@@ -245,10 +225,10 @@ export function MonitoringAnalyticsDashboard() {
             exportSelected={exportSections.isSelected('statuses')}
             onToggleExport={() => exportSections.toggleSection('statuses')}
           >
-            {statusDistribution.length === 0 ? (
-              <EmptyChart message="Нет данных" />
-            ) : (
+            {distributionHasValues(coloredStatusDistribution) ? (
               <FocusableDonutChart data={coloredStatusDistribution} legendPercentFirst />
+            ) : (
+              <EmptyChart message="Нет данных" />
             )}
           </ChartCard>
         ),
@@ -264,10 +244,10 @@ export function MonitoringAnalyticsDashboard() {
             exportSelected={exportSections.isSelected('additionalStatuses')}
             onToggleExport={() => exportSections.toggleSection('additionalStatuses')}
           >
-            {additionalStatusDistribution.length === 0 ? (
-              <EmptyChart message="Нет данных" />
-            ) : (
+            {distributionHasValues(coloredAdditionalStatusDistribution) ? (
               <FocusableDonutChart data={coloredAdditionalStatusDistribution} legendPercentFirst />
+            ) : (
+              <EmptyChart message="Нет данных" />
             )}
           </ChartCard>
         ),

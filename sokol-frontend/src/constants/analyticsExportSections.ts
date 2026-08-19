@@ -32,13 +32,13 @@ export const DVA_EXPORT_SECTIONS = [
   { id: 'documentsClosure', label: 'Документы и закрытие', sheetName: 'Документы закрытие', headerFill: '065F46' },
   {
     id: 'auditorChecksTreemap',
-    label: 'Tree Map аудиторов по проверкам',
+    label: 'Карта аудиторов по количеству проверок',
     sheetName: 'Аудиторы проверки',
     headerFill: '003366',
   },
   {
     id: 'auditorRecommendationsTreemap',
-    label: 'Tree Map аудиторов по рекомендациям',
+    label: 'Карта аудиторов по количеству рекомендаций',
     sheetName: 'Аудиторы рекомендации',
     headerFill: '7C3AED',
   },

@@ -7,7 +7,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,7 +30,7 @@ DOCX_EXT = ".docx"
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 XLSX_EXT = ".xlsx"
 ALLOWED_MIME = {DOCX_MIME, "application/octet-stream"}
-MAX_UPLOAD_MB = float(settings.sokol_max_upload_mb)
+UPLOAD_CHUNK_SIZE = 256 * 1024
 
 
 def _cleanup_files(*paths: str) -> None:
@@ -55,24 +55,52 @@ def _validate_docx_upload(file: UploadFile) -> None:
         raise HTTPException(status_code=400, detail="Неверный MIME-тип файла.")
 
 
-async def _read_upload(file: UploadFile) -> bytes:
+async def _save_upload_to_temp(file: UploadFile) -> Path:
+    """Stream the upload to disk so large .docx files do not sit in worker RAM twice."""
+    max_bytes = settings.max_upload_bytes
+    tmp_path: Path | None = None
+    written = 0
     try:
-        content = await file.read()
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Не удалось прочитать файл: {exc}") from exc
-    max_bytes = int(MAX_UPLOAD_MB * 1024 * 1024)
-    if len(content) > max_bytes:
-        raise HTTPException(
-            status_code=413,
-            detail=f"Файл слишком большой. Лимит {MAX_UPLOAD_MB} MB.",
-        )
-    return content
+        with tempfile.NamedTemporaryFile(delete=False, suffix=DOCX_EXT) as tmp:
+            tmp_path = Path(tmp.name)
+            while True:
+                try:
+                    chunk = await file.read(UPLOAD_CHUNK_SIZE)
+                except Exception as exc:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Не удалось прочитать файл: {exc}",
+                    ) from exc
+                if not chunk:
+                    break
+                written += len(chunk)
+                if written > max_bytes:
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"Файл слишком большой. Лимит {settings.sokol_max_upload_mb} MB.",
+                    )
+                tmp.write(chunk)
+        return tmp_path
+    except Exception:
+        if tmp_path is not None:
+            _cleanup_files(str(tmp_path))
+        raise
 
 
-def _write_temp_docx(content: bytes) -> Path:
-    with tempfile.NamedTemporaryFile(delete=False, suffix=DOCX_EXT) as tmp_input:
-        tmp_input.write(content)
-        return Path(tmp_input.name)
+def _stream_result_file(
+    background_tasks: BackgroundTasks,
+    input_path: Path,
+    output_path: Path,
+    *,
+    media_type: str,
+    download_name: str,
+) -> FileResponse:
+    background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
+    return FileResponse(
+        path=output_path,
+        media_type=media_type,
+        headers={"Content-Disposition": _attachment_header(download_name)},
+    )
 
 
 def _build_section_ii_output_path(input_path: Path) -> Path:
@@ -189,62 +217,40 @@ def _parse_recommendations_from_docx(input_path: str) -> tuple[list[ParsedRecomm
     return items, None
 
 
-async def _read_result_docx(
-    background_tasks: BackgroundTasks,
-    input_path: Path,
-    output_path: Path,
-) -> bytes:
-    try:
-        return await asyncio.to_thread(output_path.read_bytes)
-    finally:
-        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
-
-
-async def _read_result_xlsx(
-    background_tasks: BackgroundTasks,
-    input_path: Path,
-    output_path: Path,
-) -> bytes:
-    try:
-        return await asyncio.to_thread(output_path.read_bytes)
-    finally:
-        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
-
-
 async def _generate_section_ii_response(
     background_tasks: BackgroundTasks,
     file: UploadFile,
     *,
     with_hyperlinks: bool,
-) -> Response:
+) -> FileResponse:
     _validate_docx_upload(file)
     original_name = (file.filename or "").strip()
     original_stem = Path(original_name).stem if original_name else ""
     suffix = "_section_ii_links" if with_hyperlinks else "_section_ii"
     download_name = f"{original_stem}{suffix}{DOCX_EXT}" if original_stem else f"{suffix.lstrip('_')}{DOCX_EXT}"
-    content = await _read_upload(file)
-    input_path = _write_temp_docx(content)
+    input_path = await _save_upload_to_temp(file)
     output_path = _build_section_ii_output_path(input_path)
-
-    result_path, _observations, error = await asyncio.to_thread(
-        docx_generator.process_document,
-        str(input_path),
-        str(output_path),
-        with_hyperlinks,
-    )
-    if error:
-        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
-        raise HTTPException(status_code=400, detail=error)
-    if not result_path or not output_path.is_file():
-        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
-        raise HTTPException(status_code=500, detail="Файл результата не создан.")
-
-    result_bytes = await _read_result_docx(background_tasks, input_path, output_path)
-    return Response(
-        content=result_bytes,
-        media_type=DOCX_MIME,
-        headers={"Content-Disposition": _attachment_header(download_name)},
-    )
+    try:
+        result_path, _observations, error = await asyncio.to_thread(
+            docx_generator.process_document,
+            str(input_path),
+            str(output_path),
+            with_hyperlinks,
+        )
+        if error:
+            raise HTTPException(status_code=400, detail=error)
+        if not result_path or not output_path.is_file():
+            raise HTTPException(status_code=500, detail="Файл результата не создан.")
+        return _stream_result_file(
+            background_tasks,
+            input_path,
+            output_path,
+            media_type=DOCX_MIME,
+            download_name=download_name,
+        )
+    except Exception:
+        _cleanup_files(str(input_path), str(output_path))
+        raise
 
 
 @router.post("/section-ii")
@@ -298,30 +304,30 @@ async def generate_control_file(
     download_name = (
         f"{original_stem}_control{XLSX_EXT}" if original_stem else f"control{XLSX_EXT}"
     )
-    content = await _read_upload(file)
-    input_path = _write_temp_docx(content)
+    input_path = await _save_upload_to_temp(file)
     output_path = _build_control_file_output_path(input_path)
-
-    result_path, error = await asyncio.to_thread(
-        generate_control_file_template,
-        str(input_path),
-        str(output_path),
-        check_leader=normalized_check_leader,
-        check_date=normalized_check_date,
-    )
-    if error:
-        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
-        raise HTTPException(status_code=400, detail=error)
-    if not result_path or not output_path.is_file():
-        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
-        raise HTTPException(status_code=500, detail="Файл контроля не создан.")
-
-    result_bytes = await _read_result_xlsx(background_tasks, input_path, output_path)
-    return Response(
-        content=result_bytes,
-        media_type=XLSX_MIME,
-        headers={"Content-Disposition": _attachment_header(download_name)},
-    )
+    try:
+        result_path, error = await asyncio.to_thread(
+            generate_control_file_template,
+            str(input_path),
+            str(output_path),
+            check_leader=normalized_check_leader,
+            check_date=normalized_check_date,
+        )
+        if error:
+            raise HTTPException(status_code=400, detail=error)
+        if not result_path or not output_path.is_file():
+            raise HTTPException(status_code=500, detail="Файл контроля не создан.")
+        return _stream_result_file(
+            background_tasks,
+            input_path,
+            output_path,
+            media_type=XLSX_MIME,
+            download_name=download_name,
+        )
+    except Exception:
+        _cleanup_files(str(input_path), str(output_path))
+        raise
 
 
 @router.post("/memorandum")
@@ -334,60 +340,59 @@ async def generate_memorandum(
     original_name = (file.filename or "").strip()
     original_stem = Path(original_name).stem if original_name else ""
     download_name = f"{original_stem}_dz{DOCX_EXT}" if original_stem else "dz.docx"
-    content = await _read_upload(file)
-    input_path = _write_temp_docx(content)
+    input_path = await _save_upload_to_temp(file)
     output_path = _build_memorandum_output_path(input_path)
-
-    source, error = await asyncio.to_thread(parse_az_for_memorandum, str(input_path))
-    if error:
-        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
-        raise HTTPException(status_code=400, detail=error)
-    if source is None:
-        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
-        raise HTTPException(status_code=400, detail="Не удалось разобрать рекомендации из аудиторского заключения.")
     try:
-        source = await _canonicalize_memorandum_source(session, source)
-    except DictionaryRefError as exc:
-        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        source, error = await asyncio.to_thread(parse_az_for_memorandum, str(input_path))
+        if error:
+            raise HTTPException(status_code=400, detail=error)
+        if source is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Не удалось разобрать рекомендации из аудиторского заключения.",
+            )
+        try:
+            source = await _canonicalize_memorandum_source(session, source)
+        except DictionaryRefError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    result_path, error = await asyncio.to_thread(
-        memorandum_generator.generate_memorandum,
-        source,
-        str(output_path),
-    )
-    if error:
-        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
-        raise HTTPException(status_code=400, detail=error)
-    if not result_path or not output_path.is_file():
-        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
-        raise HTTPException(status_code=500, detail="Файл докладной записки не создан.")
-
-    result_bytes = await _read_result_docx(background_tasks, input_path, output_path)
-    return Response(
-        content=result_bytes,
-        media_type=DOCX_MIME,
-        headers={"Content-Disposition": _attachment_header(download_name)},
-    )
+        result_path, error = await asyncio.to_thread(
+            memorandum_generator.generate_memorandum,
+            source,
+            str(output_path),
+        )
+        if error:
+            raise HTTPException(status_code=400, detail=error)
+        if not result_path or not output_path.is_file():
+            raise HTTPException(status_code=500, detail="Файл докладной записки не создан.")
+        return _stream_result_file(
+            background_tasks,
+            input_path,
+            output_path,
+            media_type=DOCX_MIME,
+            download_name=download_name,
+        )
+    except Exception:
+        _cleanup_files(str(input_path), str(output_path))
+        raise
 
 
 @router.post("/parse-recommendations", response_model=list[ParsedRecommendationItem])
 async def parse_recommendations_from_docx(
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_db_session),
 ):
     _validate_docx_upload(file)
-    content = await _read_upload(file)
-    input_path = _write_temp_docx(content)
-    background_tasks.add_task(_cleanup_files, str(input_path))
-
-    items, error = await asyncio.to_thread(_parse_recommendations_from_docx, str(input_path))
-    if error:
-        raise HTTPException(status_code=400, detail=error)
+    input_path = await _save_upload_to_temp(file)
     try:
-        for item in items:
-            item.audit_object = await canonicalize_audit_objects(session, item.audit_object)
-    except DictionaryRefError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return items
+        items, error = await asyncio.to_thread(_parse_recommendations_from_docx, str(input_path))
+        if error:
+            raise HTTPException(status_code=400, detail=error)
+        try:
+            for item in items:
+                item.audit_object = await canonicalize_audit_objects(session, item.audit_object)
+        except DictionaryRefError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return items
+    finally:
+        _cleanup_files(str(input_path))

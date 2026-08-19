@@ -235,13 +235,13 @@ const DASHBOARDS = {
       purpose: 'Готовность документов проверок и закрытие рекомендаций.',
     },
     {
-      title: 'Tree Map аудиторов по проверкам',
+      title: 'Карта аудиторов по количеству проверок',
       id: 'auditorChecksTreemap',
       type: 'Tree Map',
       purpose: 'Перекосы нагрузки по проверкам.',
     },
     {
-      title: 'Tree Map аудиторов по рекомендациям',
+      title: 'Карта аудиторов по количеству рекомендаций',
       id: 'auditorRecommendationsTreemap',
       type: 'Tree Map',
       purpose: 'Перекосы нагрузки по рекомендациям.',

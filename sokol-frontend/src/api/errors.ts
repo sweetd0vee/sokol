@@ -73,7 +73,7 @@ export function toApiError(error: unknown): ApiError {
     if (error.code === 'ECONNABORTED') {
       return {
         code: 'timeout',
-        message: 'Превышено время ожидания ответа от сервера. Перезапустите бэкенд и попробуйте снова.',
+        message: 'Превышено время ожидания ответа от сервера. Попробуйте ещё раз.',
         status,
       };
     }
@@ -134,7 +134,7 @@ export async function getBlobErrorMessage(error: unknown): Promise<string | null
     return null;
   }
   if (error.code === 'ECONNABORTED') {
-    return 'Превышено время ожидания ответа от сервера. Перезапустите бэкенд и попробуйте снова.';
+    return 'Превышено время ожидания ответа от сервера. Попробуйте ещё раз.';
   }
   if (!error.response) {
     return API_UNAVAILABLE_HINT;

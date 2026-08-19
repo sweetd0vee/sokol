@@ -1,9 +1,12 @@
 import { api } from './client';
-import { getBlobErrorMessage } from './errors';
+import { getBlobErrorMessage, toApiError } from './errors';
 
-const DOCX_TOOL_TIMEOUT_MS = 120_000;
+export const DOCX_TOOL_TIMEOUT_MS = 600_000;
 
 type DocxToolExtraFields = Record<string, string>;
+
+const DOCX_TIMEOUT_MESSAGE =
+  'Обработка документа заняла слишком много времени. Попробуйте ещё раз; большие файлы могут обрабатываться несколько минут.';
 
 async function postDocxTool(file: File, endpoint: string, extraFields?: DocxToolExtraFields): Promise<Blob> {
   const formData = new FormData();
@@ -19,6 +22,9 @@ async function postDocxTool(file: File, endpoint: string, extraFields?: DocxTool
     });
     return response.data;
   } catch (error) {
+    if (toApiError(error).code === 'timeout') {
+      throw new Error(DOCX_TIMEOUT_MESSAGE);
+    }
     const message = await getBlobErrorMessage(error);
     if (message) {
       throw new Error(message);

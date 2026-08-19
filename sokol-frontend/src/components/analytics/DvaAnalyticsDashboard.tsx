@@ -231,8 +231,8 @@ export function DvaAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 8, w: 6, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
-            title="Tree Map аудиторов по количеству проверок"
-            description="Площадь блока пропорциональна числу проверок аудитора за период"
+            title="Карта аудиторов по количеству проверок"
+            description="Количество проверок за период по аудиторам"
             exportSectionId="auditorChecksTreemap"
             exportSelected={exportSections.isSelected('auditorChecksTreemap')}
             onToggleExport={() => exportSections.toggleSection('auditorChecksTreemap')}
@@ -254,8 +254,8 @@ export function DvaAnalyticsDashboard() {
         defaultLayout: { x: 6, y: 8, w: 6, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
-            title="Tree Map аудиторов по количеству рекомендаций"
-            description="Площадь блока пропорциональна числу рекомендаций аудитора за период"
+            title="Карта аудиторов по количеству рекомендаций"
+            description="Количество рекомендаций за период по аудиторам"
             exportSectionId="auditorRecommendationsTreemap"
             exportSelected={exportSections.isSelected('auditorRecommendationsTreemap')}
             onToggleExport={() => exportSections.toggleSection('auditorRecommendationsTreemap')}

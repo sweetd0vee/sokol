@@ -47,7 +47,7 @@ function ColumnShareSquare({
       >
         <span className="text-xs font-semibold tabular-nums">{percent}%</span>
       </span>
-      <span className="text-xs tabular-nums text-gray-600">{count}</span>
+      <span className="text-sm font-medium tabular-nums text-gray-700">{count}</span>
     </div>
   );
 }

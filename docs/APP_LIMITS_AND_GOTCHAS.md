@@ -9,7 +9,7 @@
 | Списки проверок и рекомендаций | До **10000** строк за один запрос | Для ожидаемого объёма пилота это полный набор данных. Если станет больше 10000, нужна server pagination/search. |
 | Пользователи и справочники | До **200** строк через API endpoint | Для справочников нормально; при росте справочников надо расширять limit или добавлять поиск. |
 | Загрузка файлов | `SOKOL_MAX_UPLOAD_MB`, default **100 МБ** | Лимит общий для DOCX tools и вложений; frontend берёт его из `/api/v1/capabilities`. |
-| DOCX tools | Frontend ждёт ответ **120 секунд** | Большие/нестандартные `.docx` могут упереться в timeout или в память worker. |
+| DOCX tools | Frontend ждёт ответ **10 минут** | Upload и результат стримятся через диск, без второй копии файла в RAM worker. Очень нестандартная вёрстка АЗ всё ещё может падать на парсинге. |
 | Ollama / audit opinion | Backend timeout default **600 секунд** | UI audit-opinion сейчас не является частью текущего frontend tools flow. |
 | JWT session | `SOKOL_JWT_EXPIRE_MINUTES`, default **480 минут** | При 401 frontend очищает localStorage и разлогинивает пользователя. |
 | Analytics cache | React Query `staleTime` обычно **60 секунд** | После изменения данных аналитика может обновиться не мгновенно. |
@@ -94,10 +94,11 @@ DOCX tools принимают только `.docx`:
 
 Тонкости:
 
-- frontend timeout для DOCX tools: 120 секунд;
-- backend читает upload в память, проверяет размер и пишет временный `.docx`;
+- frontend timeout для DOCX tools: 10 минут;
+- Vite dev proxy и Node request timeout для `/api` тоже рассчитаны на длинные DOCX-запросы;
+- backend стримит upload в temp-файл чанками и отдаёт результат через `FileResponse`, не держа обе копии в RAM;
 - результат не сохраняется в MinIO, а сразу возвращается пользователю;
-- очень большой или нестандартно размеченный `.docx` может обрабатываться долго или падать с ошибкой парсинга.
+- очень нестандартно размеченный `.docx` может обрабатываться долго или падать с ошибкой парсинга.
 
 ### Вложения
 
@@ -219,7 +220,7 @@ Backend валидирует ряд строковых полей по спра�
 | 401 после работы в UI | Истёк/сброшен JWT | Перелогиниться |
 | 413 при upload | Файл больше `SOKOL_MAX_UPLOAD_MB` | `/api/v1/capabilities`, размер файла |
 | 502/503 при вложениях | MinIO недоступен или не настроен | `SOKOL_MINIO_*`, backend logs, `/attachments/storage/status` |
-| DOCX tool висит/падает | Большой файл, сложная структура, backend timeout/memory | Размер, формат `.docx`, backend logs |
+| DOCX tool висит/падает | Большой файл, сложная структура, ошибка парсинга | Размер, формат `.docx`, backend logs |
 | CORS error | Origin UI не разрешён backend | `SOKOL_CORS_ORIGINS`, restart API |
 | В таблице нет новой записи | React Query cache или ошибка refetch | Обновить страницу, проверить network/API |
 | Build warning про chunk | Большой frontend bundle | Это известный P2 backlog, не runtime-ошибка |

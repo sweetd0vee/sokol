@@ -5,7 +5,9 @@ HTTP: `app/api/v1/endpoints/instruments_reports.py`. Логика: `app/services
 ## Общие правила
 
 - Только `.docx`, лимит `SOKOL_MAX_UPLOAD_MB` (default 100).
-- Файл в память → temp → `asyncio.to_thread` → cleanup.
+- Upload стримится в temp чанками → `asyncio.to_thread` → `FileResponse` + cleanup.
+
+## Раздел II ✅
 
 ## Раздел II ✅
 
@@ -26,4 +28,4 @@ OOXML (ZIP/XML): парсинг Раздела III → таблица после
 
 ## Ограничения
 
-CPU-bound на worker · upload в RAM · результаты не в storage · хрупкость к нестандартной вёрстке АЗ.
+CPU-bound в thread pool · XML всё ещё в RAM во время парсинга · результаты не в storage · хрупкость к нестандартной вёрстке АЗ.

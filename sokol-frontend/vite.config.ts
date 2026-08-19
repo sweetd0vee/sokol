@@ -10,7 +10,25 @@ export default defineConfig(({ mode }) => {
   const devPort = Number(env.VITE_DEV_SERVER_PORT || 5180)
 
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      {
+        name: 'long-running-docx-proxy',
+        configureServer(server) {
+          const apply = () => {
+            const httpServer = server.httpServer
+            if (!httpServer) {
+              return
+            }
+            httpServer.requestTimeout = 0
+            httpServer.headersTimeout = 0
+            httpServer.timeout = 0
+          }
+          apply()
+          server.httpServer?.on('listening', apply)
+        },
+      },
+    ],
     test: {
       environment: 'node',
       include: ['src/**/*.test.ts'],
@@ -21,6 +39,8 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: `http://${apiHost}:${apiPort}`,
           changeOrigin: true,
+          timeout: 600_000,
+          proxyTimeout: 600_000,
         },
       },
     },

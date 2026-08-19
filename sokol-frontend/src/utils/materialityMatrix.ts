@@ -152,7 +152,7 @@ export function buildMaterialityMatrixHtmlMarkup(rows: MaterialityMatrixRow[]): 
           <span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:44px;height:44px;border-radius:2px;background:#fff;border:4px solid ${column.level === 'высокий' ? MATERIALITY_COLORS.высокий : column.level === 'средний' ? MATERIALITY_COLORS.средний : MATERIALITY_COLORS.низкий};color:#111827;text-align:center;line-height:1.15" title="${escapeHtml(`${column.label}: ${percent}% (${count})`)}">
             <span style="font-size:12px;font-weight:600">${percent}%</span>
           </span>
-          <span style="font-size:12px;color:#4b5563;font-variant-numeric:tabular-nums">${count}</span>
+          <span style="font-size:14px;font-weight:500;color:#374151;font-variant-numeric:tabular-nums">${count}</span>
         </div>
       </td>`;
   }).join('');

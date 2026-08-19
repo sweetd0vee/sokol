@@ -88,7 +88,12 @@ export function DocxToolPanel({
       </div>
 
       {error && <ErrorState title="Ошибка обработки" description={error} />}
-      {isProcessing && <LoadingState title="Файл обрабатывается" description="Подождите немного..." />}
+      {isProcessing && (
+        <LoadingState
+          title="Файл обрабатывается"
+          description="Большие документы могут обрабатываться несколько минут."
+        />
+      )}
     </div>
   );
 }

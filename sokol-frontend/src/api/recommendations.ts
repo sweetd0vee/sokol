@@ -1,5 +1,6 @@
 import { api } from './client';
 import { getErrorMessage } from './errors';
+import { DOCX_TOOL_TIMEOUT_MS } from './tools';
 import {
   mapRecommendationFromApi,
   mapRecommendationToCreate,
@@ -113,7 +114,10 @@ export async function parseRecommendationsFromDocx(file: File): Promise<ParsedRe
     const response = await api.post<ParsedRecommendation[]>(
       '/api/v1/tools/parse-recommendations',
       formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } },
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: DOCX_TOOL_TIMEOUT_MS,
+      },
     );
     return response.data;
   } catch (error) {

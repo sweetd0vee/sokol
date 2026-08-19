@@ -329,17 +329,18 @@ async def recommendation_indicator_distribution_sql(
         column=Recommendation.indicator,
         filters=recommendation_filter_conditions(**filters),
     )
-    result: list[NamedCount] = []
+    counts = {key: 0 for key in INDICATOR_LABELS}
     for row in rows:
         key = row.name or "не указан"
-        result.append(
-            NamedCount(
-                name=INDICATOR_LABELS.get(key, key),
-                value=row.value,
-                color=INDICATOR_COLORS.get(key),
-            )
+        counts[key] = counts.get(key, 0) + int(row.value)
+    return [
+        NamedCount(
+            name=INDICATOR_LABELS.get(key, key),
+            value=value,
+            color=INDICATOR_COLORS.get(key),
         )
-    return sorted(result, key=lambda item: (-item.value, item.name))
+        for key, value in counts.items()
+    ]
 
 
 async def recommendation_object_distribution_sql(

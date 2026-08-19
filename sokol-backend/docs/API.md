@@ -165,7 +165,7 @@ CRUD по UUID. Тело: `{ "label": "..." }`.
 
 Лимит размера: `SOKOL_MAX_UPLOAD_MB` (default **100**).  
 MIME: OOXML DOCX или `application/octet-stream`.  
-Тяжёлая работа: `asyncio.to_thread`. Временные файлы чистятся через `BackgroundTasks`.
+Тяжёлая работа: `asyncio.to_thread`. Upload пишется на диск чанками; результат отдаётся `FileResponse`. Временные файлы чистятся после ответа.
 
 | Method | Path | Ответ | Поведение |
 |--------|------|-------|-----------|
