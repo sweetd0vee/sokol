@@ -26,22 +26,14 @@ export function KantslerTab() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <h4 className="mb-2 font-medium text-gray-900">Планируемый функционал</h4>
-          <ul className="list-inside list-disc space-y-1 text-sm text-gray-600">
-            <li>Подключение к API СЭД Канцлер</li>
-            <li>Импорт поручений из Канцлер</li>
-            <li>Экспорт рекомендаций в Канцлер</li>
-            <li>Синхронизация статусов документов</li>
-          </ul>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <h4 className="mb-2 font-medium text-gray-900">Настройки подключения</h4>
-          <p className="text-sm text-gray-500">
-            URL сервера Канцлер, учётные данные и параметры интеграции будут настраиваться здесь после реализации.
-          </p>
-        </div>
+      <div className="rounded-xl border border-gray-200 bg-white p-4">
+        <h4 className="mb-2 font-medium text-gray-900">Планируемый функционал</h4>
+        <ul className="list-inside list-disc space-y-1 text-sm text-gray-600">
+          <li>Подключение к API СЭД Канцлер</li>
+          <li>Импорт поручений из Канцлер</li>
+          <li>Экспорт рекомендаций в Канцлер</li>
+          <li>Синхронизация статусов документов</li>
+        </ul>
       </div>
     </div>
   );
