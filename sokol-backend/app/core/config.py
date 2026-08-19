@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.core.startup_validation import is_production_env
+
 
 class Settings(BaseSettings):
     app_name: str = "SOKOL API"
@@ -8,17 +10,13 @@ class Settings(BaseSettings):
     sokol_max_upload_mb: int = 100
     sokol_cors_origins: str = ""
 
-    # Auth (JWT + HTTP Basic; users in PostgreSQL `users` table)
+    # Auth (JWT; optional HTTP Basic for local/tools; users in PostgreSQL `users` table)
     sokol_env: str = "development"
     sokol_jwt_secret: str = "sokol-dev-jwt-secret-change-me"
     sokol_jwt_expire_minutes: int = 480
+    sokol_enable_basic_auth: bool | None = None
     sokol_admin_password: str = "admin"
     sokol_default_user_password: str = "auditor"
-
-    # Ollama (audit-opinion / раздел I)
-    sokol_ollama_url: str = "http://localhost:11434"
-    sokol_ollama_model: str = "qwen3.5:35b"
-    sokol_ollama_timeout_s: int = 600
 
     # MinIO / S3-compatible object storage
     sokol_minio_endpoint: str = ""
@@ -64,6 +62,13 @@ class Settings(BaseSettings):
     @property
     def max_upload_bytes(self) -> int:
         return max(1, self.sokol_max_upload_mb) * 1024 * 1024
+
+    @property
+    def basic_auth_enabled(self) -> bool:
+        """HTTP Basic is on in development unless explicitly disabled; off in prod by default."""
+        if self.sokol_enable_basic_auth is not None:
+            return self.sokol_enable_basic_auth
+        return not is_production_env(self.sokol_env)
 
     @property
     def cors_origins(self) -> list[str]:

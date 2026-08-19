@@ -1,6 +1,6 @@
 # Код-ревью backend
 
-**Общая оценка:** 8.4 / 10 · Python 3.12, FastAPI, SQLAlchemy async, MinIO  
+**Общая оценка:** 8.6 / 10 · Python 3.12, FastAPI, SQLAlchemy async, MinIO  
 **Смысл оценки:** backend готов для пилота на больших таблицах по analytics и основному CRUD; granular RBAC рекомендаций и batch-delete закрывают типовые ошибки импорта; промышленная готовность упирается в Alembic, prod guards для import/seed и auth hardening.
 
 ## Архитектура
@@ -23,7 +23,7 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 | API routing / CRUD | **10 / 10** | Роуты разделены по доменам, orchestration вынесен в services, есть pagination, validation, роли и lifecycle tests | Остались только платформенные задачи вне CRUD: миграции/import/prod guards |
 | Checks / ключ проверки | **10 / 10** | `serial_number` генерируется backend-only; PATCH и mass recalc синхронизируют recommendations/attachments и MinIO buckets | Нужен production runbook для ручного mass-recalc |
 | Recommendations | **10 / 10** | Статусы, фильтры, связи с проверками, atomic batch append/replace, cleanup вложений, batch-delete для отмены импорта, granular RBAC на delete | Для очень больших bulk batches может понадобиться job/progress UI |
-| Settings / справочники | **8 / 10** | Общий CRUD для словарей, admin-only mutations, validation в доменных create/PATCH | Нет FK на доменные поля, часть связей строковая |
+| Settings / справочники | **10 / 10** | Общий CRUD для словарей, admin-only mutations, validation в доменных create/PATCH, FK на labels и junction для `audit_object` | Переименование каскадирует строки; удаление in-use даёт 409 |
 | Analytics | **8.5 / 10** | Фильтры и агрегаты checks/recommendations/monitoring/dva/planning считаются в PostgreSQL (`GROUP BY`, conditional counts); индексы по датам/статусам/аудиторам | Planning-department matching и effectiveness matrix всё ещё требуют точечной выборки строк |
 | DOCX reports | **8 / 10** | Раздел II, links, memorandum и parser вынесены в services и хорошо тестируются | Нет очереди, streaming upload и golden DOCX CI |
 | Attachments / MinIO | **8.5 / 10** | Metadata model, storage service, upload/list/download/delete API, compensation, serial bucket migration; upload/delete recommendation attachments с проверкой владельца | Check attachments delete — admin only; нужны policy, backup/restore |

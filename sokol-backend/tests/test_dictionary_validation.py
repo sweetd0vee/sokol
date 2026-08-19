@@ -12,6 +12,7 @@ from app.services.dictionary_validation import (
     validate_check_dictionary_fields,
     validate_recommendation_dictionary_fields,
 )
+from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT
 
 
 def _table_name(statement) -> str:  # noqa: ANN001
@@ -170,6 +171,25 @@ class DictionaryValidationTests(unittest.TestCase):
                 ["Отдел закупок.", "Оттдел закупок"],
             )
             self.assertEqual(result, ["Отдел закупок"])
+
+        asyncio.run(run())
+
+    def test_canonicalize_empty_value_uses_unspecified(self) -> None:
+        session = _session_with_departments([])
+
+        async def run() -> None:
+            result = await canonicalize_audit_objects(session, [])
+            self.assertEqual(result, [UNSPECIFIED_AUDIT_OBJECT])
+
+        asyncio.run(run())
+
+    def test_canonicalize_rejects_unknown_when_dictionary_is_empty(self) -> None:
+        session = _session_with_departments([])
+
+        async def run() -> None:
+            with self.assertRaises(DictionaryRefError) as ctx:
+                await canonicalize_audit_objects(session, ["Департамент ИТ"])
+            self.assertEqual(ctx.exception.dictionary, "departments")
 
         asyncio.run(run())
 

@@ -49,10 +49,7 @@ async def batch_recommendations(
         data["audit_object"] = await canonicalize_audit_objects(session, data.get("audit_object"))
         await validate_recommendation_dictionary_fields(
             session,
-            {
-                "auditor": data.get("auditor"),
-                "manager": data.get("manager"),
-            },
+            {"auditor": data.get("auditor")},
         )
         normalized_items.append(data)
 

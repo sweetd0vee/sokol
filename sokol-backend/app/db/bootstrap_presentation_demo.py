@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 
+from app.core.config import settings
+from app.core.startup_validation import assert_seed_replace_safe_for_env
 from app.db.import_seed_data import import_seed_data
 from app.db.init_db import init_db
 from app.db.presentation_demo_data import generate_presentation_dataset
@@ -15,6 +17,7 @@ from app.utils.paths import get_repo_data_dir
 
 
 async def bootstrap_presentation_demo(*, replace_data: bool = True) -> None:
+    assert_seed_replace_safe_for_env(env=settings.sokol_env, replace=replace_data)
     await init_db()
     await seed_audit_types(AUDIT_TYPES)
     await seed_check_kinds(CHECK_KINDS)

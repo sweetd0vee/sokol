@@ -1,6 +1,6 @@
 import { api } from './client';
 import { getErrorMessage } from './errors';
-import { DOCX_TOOL_TIMEOUT_MS } from './tools';
+import { DOCX_TOOL_TIMEOUT_MS } from '../utils/docx';
 import {
   mapRecommendationFromApi,
   mapRecommendationToCreate,

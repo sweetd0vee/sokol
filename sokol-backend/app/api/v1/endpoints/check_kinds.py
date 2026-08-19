@@ -17,5 +17,6 @@ router = make_dictionary_router(
         read_schema=CheckKindRead,
         list_schema=CheckKindListResponse,
         not_found="Вид проверки не найден.",
+        handle_duplicates=True,
     )
 )

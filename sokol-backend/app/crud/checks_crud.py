@@ -13,6 +13,10 @@ from app.models.attachments import Attachment
 from app.models.checks import Check, CheckStatus
 from app.models.recommendations import Recommendation
 from app.schemas.checks import CheckCreate, CheckUpdate
+from app.services.dictionary_integrity import (
+    EFFECTIVENESS_FIELDS,
+    normalize_optional_dictionary_label,
+)
 from app.services.dictionary_validation import DictionaryRefError, validate_check_dictionary_fields
 from app.services.storage.minio_storage import check_bucket_name, get_storage
 from app.utils.check_key import CheckKeySeed, generate_check_serial_number
@@ -112,6 +116,9 @@ async def _generate_unique_check_serial_number(
 async def create_check(session: AsyncSession, check_in: CheckCreate) -> Check:
     data = check_in.model_dump()
     data.pop("serial_number", None)
+    for field in EFFECTIVENESS_FIELDS:
+        if field in data:
+            data[field] = normalize_optional_dictionary_label(data[field])
     await validate_check_dictionary_fields(session, data)
     if not data.get("created_at"):
         data["created_at"] = date.today()
@@ -191,6 +198,9 @@ async def update_check(
 ) -> Check:
     update_data = check_in.model_dump(exclude_unset=True)
     update_data.pop("serial_number", None)
+    for field in EFFECTIVENESS_FIELDS:
+        if field in update_data:
+            update_data[field] = normalize_optional_dictionary_label(update_data[field])
     await validate_check_dictionary_fields(session, update_data)
     old_serial_number = check.serial_number
     should_regenerate_serial = any(

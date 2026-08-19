@@ -73,6 +73,12 @@ import os
 
 from sqlalchemy import func, select
 
+from app.core.config import settings
+from app.core.startup_validation import (
+    assert_demo_data_safe_for_env,
+    assert_seed_replace_safe_for_env,
+    env_flag_enabled,
+)
 from app.db.init_db import init_db
 from app.db.import_seed_data import import_seed_data
 from app.db.migrate_auditor_codes import migrate as migrate_auditor_codes
@@ -81,6 +87,7 @@ from app.db.migrate_attachments import migrate as migrate_attachments
 from app.db.migrate_check_effectiveness import migrate as migrate_effectiveness
 from app.db.migrate_check_quarter import migrate as migrate_check_quarter
 from app.db.migrate_dictionary_uniqueness import migrate as migrate_dictionary_uniqueness
+from app.db.migrate_dictionary_foreign_keys import migrate as migrate_dictionary_foreign_keys
 from app.db.migrate_recommendation_observation_name import migrate as migrate_recommendation_observation_name
 from app.db.seed_audit_types import AUDIT_TYPES, seed_audit_types
 from app.db.seed_check_kinds import CHECK_KINDS, seed_check_kinds
@@ -98,6 +105,7 @@ async def bootstrap() -> None:
     await migrate_effectiveness()
     await migrate_attachments()
     await migrate_dictionary_uniqueness()
+    await migrate_dictionary_foreign_keys()
     await migrate_recommendation_observation_name()
     await migrate_analytics_indexes()
     await seed_audit_types(AUDIT_TYPES)
@@ -113,12 +121,14 @@ async def bootstrap() -> None:
     )
     await sync_check_buckets()
 
-    load_demo = os.getenv("SOKOL_LOAD_DEMO_DATA", "1").strip().lower() not in {"0", "false", "no"}
+    load_demo = env_flag_enabled(os.getenv("SOKOL_LOAD_DEMO_DATA"), default=True)
+    force_replace = env_flag_enabled(os.getenv("SOKOL_SEED_REPLACE"), default=False)
+    assert_demo_data_safe_for_env(env=settings.sokol_env, load_demo=load_demo)
+    assert_seed_replace_safe_for_env(env=settings.sokol_env, replace=force_replace)
     if not load_demo:
         print("SOKOL_LOAD_DEMO_DATA disabled — skip demo import.")
         return
 
-    force_replace = os.getenv("SOKOL_SEED_REPLACE", "0").strip().lower() in {"1", "true", "yes"}
     async with AsyncSessionLocal() as session:
         count = int(await session.scalar(select(func.count()).select_from(Check)) or 0)
     if force_replace or count == 0:

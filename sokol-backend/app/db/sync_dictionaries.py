@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import os
 
 from sqlalchemy import select
 
 from app.core.config import settings
 from app.core.roles import ADMIN_ROLES, Role
 from app.core.security import hash_password
+from app.core.startup_validation import destructive_dictionary_sync_enabled
 from app.crud.users_crud import ensure_user, get_user_by_username
 from app.db.auditor_names import AUDITORS, AUDITOR_CODES
 from app.db.department_names import DEPARTMENTS
@@ -17,7 +19,8 @@ from app.db.session import AsyncSessionLocal
 from app.models.auditors import Auditor
 from app.models.departments import Department
 from app.models.users import User
-from app.utils.dictionary_text import normalize_dictionary_label
+from app.services.dictionary_integrity import auditor_label_in_use, department_label_in_use
+from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT, normalize_dictionary_label
 
 # DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db python -m app.db.sync_dictionaries
 
@@ -26,6 +29,13 @@ ADMIN_DISPLAY_NAME = "Администратор"
 ADMIN_ALIASES = ("admin",)
 DEPARTMENT_HEAD_USERNAME = "Ковалев С.С."
 DEPARTMENT_HEAD_DISPLAY_NAME = "Ковалев С.С."
+
+
+def _allow_destructive_sync() -> bool:
+    return destructive_dictionary_sync_enabled(
+        env=settings.sokol_env,
+        flag=os.getenv("SOKOL_DESTRUCTIVE_DICTIONARY_SYNC"),
+    )
 
 
 async def sync_auditors() -> tuple[int, int]:
@@ -37,6 +47,10 @@ async def sync_auditors() -> tuple[int, int]:
         for row in rows:
             canonical_name = canonical.get(normalize_dictionary_label(row.full_name))
             if canonical_name is None:
+                if not _allow_destructive_sync():
+                    continue
+                if await auditor_label_in_use(session, row.full_name):
+                    continue
                 await session.delete(row)
                 removed += 1
             else:
@@ -64,6 +78,12 @@ async def sync_departments() -> tuple[int, int]:
         rows = (await session.execute(select(Department))).scalars().all()
         for row in rows:
             if normalize_dictionary_label(row.name) not in canonical:
+                if (
+                    not _allow_destructive_sync()
+                    or row.name == UNSPECIFIED_AUDIT_OBJECT
+                    or await department_label_in_use(session, row.name)
+                ):
+                    continue
                 await session.delete(row)
                 removed += 1
         await session.commit()
@@ -112,6 +132,8 @@ async def sync_users() -> tuple[int, int]:
             if user.role in {role.value for role in ADMIN_ROLES}:
                 continue
             if normalize_dictionary_label(user.username) not in canonical_auditors:
+                if not _allow_destructive_sync():
+                    continue
                 await session.delete(user)
                 removed += 1
         await session.commit()

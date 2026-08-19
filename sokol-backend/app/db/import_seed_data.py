@@ -1,20 +1,32 @@
-import asyncio
 import argparse
+import asyncio
 from datetime import date, datetime
 from pathlib import Path
 
 from openpyxl import load_workbook
 from sqlalchemy import select, text
 
+from app.core.config import settings
+from app.core.startup_validation import assert_seed_replace_safe_for_env
+from app.db.ensure_dictionary_refs import (
+    ensure_auditor_names,
+    ensure_check_kind_labels,
+    ensure_department_names,
+    ensure_effectiveness_labels,
+)
 from app.db.init_db import init_db
 from app.db.session import AsyncSessionLocal
 from app.models.checks import Check, CheckStatus
 from app.models.recommendations import Recommendation, RecommendationAdditionalStatus, RecommendationStatus
+from app.services.analytics.common import parse_audit_object_parts
+from app.services.dictionary_integrity import (
+    EFFECTIVENESS_FIELDS,
+    sync_recommendation_audit_objects,
+)
 from app.services.dictionary_validation import canonicalize_audit_objects
+from app.utils.paths import get_repo_data_dir
 
 # DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db python -m app.db.import_seed_data --replace
-
-from app.utils.paths import get_repo_data_dir
 
 DATA_DIR = get_repo_data_dir()
 
@@ -89,9 +101,15 @@ def _read_rows(path: Path, sheet_name: str) -> list[dict]:
 async def import_seed_data(
     *,
     replace: bool = False,
+    confirm_prod_replace: bool = False,
     checks_path: Path | None = None,
     recommendations_path: Path | None = None,
 ) -> None:
+    assert_seed_replace_safe_for_env(
+        env=settings.sokol_env,
+        replace=replace,
+        confirm_prod_replace=confirm_prod_replace,
+    )
     checks_path = checks_path or (DATA_DIR / "checks.xlsx")
     recommendations_path = recommendations_path or (DATA_DIR / "recommendations.xlsx")
     if not checks_path.is_file():
@@ -106,8 +124,42 @@ async def import_seed_data(
 
     async with AsyncSessionLocal() as session:
         if replace:
-            await session.execute(text("TRUNCATE TABLE recommendations, checks RESTART IDENTITY CASCADE"))
+            await session.execute(
+                text(
+                    "TRUNCATE TABLE recommendation_audit_objects, recommendations, checks "
+                    "RESTART IDENTITY CASCADE"
+                )
+            )
             await session.commit()
+
+        await ensure_auditor_names(
+            session,
+            [
+                *(str(row.get("check_leader") or "").strip() for row in check_rows),
+                *(str(row.get("auditor") or "").strip() for row in recommendation_rows),
+            ],
+        )
+        await ensure_check_kind_labels(
+            session,
+            (str(row.get("check_view") or "").strip() for row in check_rows),
+        )
+        await ensure_effectiveness_labels(
+            session,
+            (
+                str(row.get(field) or "").strip()
+                for row in check_rows
+                for field in EFFECTIVENESS_FIELDS
+            ),
+        )
+        await ensure_department_names(
+            session,
+            (
+                part
+                for row in recommendation_rows
+                for part in parse_audit_object_parts(row.get("audit_object"))
+            ),
+        )
+        await session.commit()
 
         existing_checks = await session.execute(select(Check.serial_number))
         existing_serials = {row[0] for row in existing_checks.all()}
@@ -236,6 +288,12 @@ async def import_seed_data(
             )
             recommendation = Recommendation(**recommendation_kwargs)
             session.add(recommendation)
+            await session.flush()
+            await sync_recommendation_audit_objects(
+                session,
+                recommendation.id,
+                recommendation.audit_object,
+            )
             inserted_recommendations += 1
 
         await session.commit()
@@ -249,6 +307,11 @@ def parse_args() -> argparse.Namespace:
         "--replace",
         action="store_true",
         help="Очистить recommendations и checks перед импортом XLSX.",
+    )
+    parser.add_argument(
+        "--confirm-prod-replace",
+        action="store_true",
+        help="Разрешить --replace при SOKOL_ENV=prod (break-glass).",
     )
     parser.add_argument(
         "--checks",
@@ -270,6 +333,7 @@ def main() -> None:
     asyncio.run(
         import_seed_data(
             replace=args.replace,
+            confirm_prod_replace=args.confirm_prod_replace,
             checks_path=args.checks,
             recommendations_path=args.recommendations,
         )

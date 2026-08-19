@@ -4,9 +4,16 @@ from typing import Optional, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.crud.dictionary_errors import DictionaryInUseError, DictionaryProtectedError
 from app.services.crud_errors import ResourceNotFoundError
+from app.services.dictionary_integrity import (
+    dictionary_identity,
+    dictionary_item_in_use,
+)
+from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT
 
 CreateT = TypeVar("CreateT", bound=BaseModel)
 UpdateT = TypeVar("UpdateT", bound=BaseModel)
@@ -59,5 +66,21 @@ class DictionaryService:
 
     async def delete(self, session: AsyncSession, item_id: UUID) -> None:
         item = await self.get(session, item_id)
-        await self.crud.delete(session, item)
+        identity = dictionary_identity(item)
+        if identity is not None:
+            dictionary, label = identity
+            if dictionary == "departments" and label == UNSPECIFIED_AUDIT_OBJECT:
+                raise DictionaryProtectedError(
+                    dictionary=dictionary,
+                    label=label,
+                    action="удалить",
+                )
+            if await dictionary_item_in_use(session, item):
+                raise DictionaryInUseError(dictionary=dictionary, label=label)
+        try:
+            await self.crud.delete(session, item)
+        except IntegrityError as exc:
+            await session.rollback()
+            dictionary, label = identity or ("dictionary", str(item_id))
+            raise DictionaryInUseError(dictionary=dictionary, label=label) from exc
 

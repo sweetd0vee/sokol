@@ -22,7 +22,7 @@ from typing import Iterable, Optional
 import sys
 
 from openpyxl import load_workbook
-from sqlalchemy import text
+from sqlalchemy import func, select, text
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND_ROOT))
@@ -34,8 +34,10 @@ from app.db.department_names import DEPARTMENTS
 from app.models.auditors import Auditor
 from app.models.audit_types import AuditType
 from app.models.check_kinds import CheckKind
+from app.models.checks import Check
 from app.models.departments import Department
 from app.models.effectiveness_ratings import EffectivenessRating
+from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT
 
 
 @dataclass(frozen=True)
@@ -187,13 +189,19 @@ async def import_catalog(catalog_path: Path) -> None:
 
     await init_db()
     async with AsyncSessionLocal() as session:
-        # Полный пересоз данных справочников.
-        # Справочники используются как текстовые справочные значения (без внешних FK),
-        # поэтому перезапись безопасна.
+        existing_checks = int(
+            await session.scalar(select(func.count()).select_from(Check)) or 0
+        )
+        if existing_checks:
+            raise RuntimeError(
+                "Нельзя перезаписать справочники: в БД уже есть проверки. "
+                "FK на аудиторов/виды проверок/подразделения удалили бы доменные данные."
+            )
         await session.execute(
             text(
                 """
             TRUNCATE TABLE
+              recommendation_audit_objects,
               effectiveness_ratings,
               check_kinds,
               audit_types,
@@ -204,6 +212,9 @@ async def import_catalog(catalog_path: Path) -> None:
             ),
         )
         await session.commit()
+
+        if UNSPECIFIED_AUDIT_OBJECT not in departments:
+            departments = [UNSPECIFIED_AUDIT_OBJECT, *departments]
 
         session.add_all([Auditor(full_name=n, code=c) for n, c in auditors])
         session.add_all([Department(name=n) for n in departments])

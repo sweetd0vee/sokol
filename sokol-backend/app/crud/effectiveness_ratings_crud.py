@@ -23,7 +23,11 @@ async def create_effectiveness_rating(
     session: AsyncSession, rating_in: EffectivenessRatingCreate
 ) -> EffectivenessRating:
     return await create_dictionary_item(
-        session, EffectivenessRating, rating_in.model_dump()
+        session,
+        EffectivenessRating,
+        rating_in.model_dump(),
+        label_field="label",
+        dictionary_name="effectiveness_ratings",
     )
 
 
@@ -67,7 +71,11 @@ async def update_effectiveness_rating(
     rating_in: EffectivenessRatingUpdate,
 ) -> EffectivenessRating:
     return await update_dictionary_item(
-        session, rating, rating_in.model_dump(exclude_unset=True)
+        session,
+        rating,
+        rating_in.model_dump(exclude_unset=True),
+        label_field="label",
+        dictionary_name="effectiveness_ratings",
     )
 
 

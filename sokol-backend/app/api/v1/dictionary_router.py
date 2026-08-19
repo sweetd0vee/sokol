@@ -12,7 +12,11 @@ from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_admin
-from app.crud.dictionary_errors import DuplicateDictionaryError
+from app.crud.dictionary_errors import (
+    DictionaryInUseError,
+    DictionaryProtectedError,
+    DuplicateDictionaryError,
+)
 from app.db.session import get_db_session
 from app.services.crud_errors import ResourceNotFoundError
 from app.services.dictionary_service import DictionaryCrud, DictionaryService
@@ -98,6 +102,8 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
             if config.handle_duplicates:
                 raise HTTPException(status_code=409, detail=str(exc)) from exc
             raise
+        except (DictionaryInUseError, DictionaryProtectedError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     @router.delete(
         "/{item_id}",
@@ -113,6 +119,8 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
             await service.delete(session, item_id)
         except ResourceNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except (DictionaryInUseError, DictionaryProtectedError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     return router

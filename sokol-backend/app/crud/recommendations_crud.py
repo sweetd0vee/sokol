@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.recommendations import Recommendation
 from app.schemas.recommendations import RecommendationCreate, RecommendationUpdate
+from app.services.dictionary_integrity import sync_recommendation_audit_objects
 from app.services.dictionary_validation import (
     canonicalize_audit_objects,
     validate_recommendation_dictionary_fields,
@@ -93,6 +94,11 @@ async def add_recommendation_row(
     )
     session.add(recommendation)
     await session.flush()
+    await sync_recommendation_audit_objects(
+        session,
+        recommendation.id,
+        recommendation.audit_object,
+    )
     return recommendation
 
 
@@ -113,10 +119,7 @@ async def create_recommendation(
     data["audit_object"] = await canonicalize_audit_objects(session, data.get("audit_object"))
     await validate_recommendation_dictionary_fields(
         session,
-        {
-            "auditor": data.get("auditor"),
-            "manager": data.get("manager"),
-        },
+        {"auditor": data.get("auditor")},
     )
     recommendation = await add_recommendation_row(
         session,
@@ -179,11 +182,7 @@ async def update_recommendation(
         )
     await validate_recommendation_dictionary_fields(
         session,
-        {
-            key: update_data[key]
-            for key in ("auditor", "manager")
-            if key in update_data
-        },
+        {key: update_data[key] for key in ("auditor",) if key in update_data},
     )
     previous_check_id = recommendation.check_id
 
@@ -194,6 +193,12 @@ async def update_recommendation(
 
     session.add(recommendation)
     await session.flush()
+    if "audit_object" in update_data:
+        await sync_recommendation_audit_objects(
+            session,
+            recommendation.id,
+            recommendation.audit_object,
+        )
 
     if check_id is not None and check_id != previous_check_id:
         await _renumber_recommendations_for_check(session, previous_check_id)

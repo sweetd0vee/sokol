@@ -7,6 +7,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBasic, HTTPBasicC
 import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.roles import ADMIN_ROLES, Role, is_admin_role
 from app.core.security import decode_access_token, verify_password
 from app.crud.users_crud import get_user_by_username
@@ -39,6 +40,14 @@ def _user_from_record(user) -> CurrentUser:
     )
 
 
+def _unauthorized(detail: str, *, scheme: str) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=detail,
+        headers={"WWW-Authenticate": scheme},
+    )
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
     basic_credentials: HTTPBasicCredentials | None = Depends(_basic),
@@ -48,45 +57,39 @@ async def get_current_user(
         try:
             payload = decode_access_token(credentials.credentials)
         except jwt.PyJWTError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Недействительный или просроченный токен.",
-                headers={"WWW-Authenticate": "Bearer"},
+            raise _unauthorized(
+                "Недействительный или просроченный токен.",
+                scheme="Bearer",
             ) from exc
 
         username = str(payload.get("sub") or "").strip()
         if not username:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Недействительный токен.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            raise _unauthorized("Недействительный токен.", scheme="Bearer")
 
         user = await get_user_by_username(session, username)
         if user is None or not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Пользователь не найден или деактивирован.",
-                headers={"WWW-Authenticate": "Bearer"},
+            raise _unauthorized(
+                "Пользователь не найден или деактивирован.",
+                scheme="Bearer",
             )
 
         return _user_from_record(user)
 
-    if basic_credentials is not None and basic_credentials.username:
+    if (
+        settings.basic_auth_enabled
+        and basic_credentials is not None
+        and basic_credentials.username
+    ):
         user = await get_user_by_username(session, basic_credentials.username)
-        if user is None or not verify_password(basic_credentials.password, user.password_hash):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Неверный логин или пароль.",
-                headers={"WWW-Authenticate": "Basic"},
-            )
+        if (
+            user is None
+            or not user.is_active
+            or not verify_password(basic_credentials.password, user.password_hash)
+        ):
+            raise _unauthorized("Неверный логин или пароль.", scheme="Basic")
         return _user_from_record(user)
 
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Требуется авторизация.",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    raise _unauthorized("Требуется авторизация.", scheme="Bearer")
 
 
 def require_roles(*roles: Role):

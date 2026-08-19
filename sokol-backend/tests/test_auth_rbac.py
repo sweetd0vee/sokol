@@ -108,6 +108,38 @@ class AuthRbacTests(unittest.TestCase):
         self.assertEqual(me.json()["role"], "admin")
 
     @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
+    def test_basic_auth_allows_active_user(self, mock_get_user: AsyncMock) -> None:
+        mock_get_user.return_value = _admin_user()
+        with patch(
+            "app.services.checks_service.list_checks",
+            new_callable=AsyncMock,
+            return_value=SimpleNamespace(items=[], total=0),
+        ):
+            response = self.client.get("/api/v1/checks", auth=("Админ А.А.", "admin"))
+        self.assertEqual(response.status_code, 200, response.text)
+
+    @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
+    def test_basic_auth_rejects_deactivated_user(self, mock_get_user: AsyncMock) -> None:
+        user = _admin_user()
+        user.is_active = False
+        mock_get_user.return_value = user
+        response = self.client.get("/api/v1/checks", auth=("Админ А.А.", "admin"))
+        self.assertEqual(response.status_code, 401)
+
+    @patch("app.api.deps.settings")
+    @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
+    def test_basic_auth_can_be_disabled(
+        self,
+        mock_get_user: AsyncMock,
+        mock_settings,
+    ) -> None:
+        mock_settings.basic_auth_enabled = False
+        mock_get_user.return_value = _admin_user()
+        response = self.client.get("/api/v1/checks", auth=("Админ А.А.", "admin"))
+        self.assertEqual(response.status_code, 401)
+        mock_get_user.assert_not_awaited()
+
+    @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
     def test_bearer_rejects_deactivated_user(self, mock_get_user: AsyncMock) -> None:
         user = _admin_user()
         user.is_active = False

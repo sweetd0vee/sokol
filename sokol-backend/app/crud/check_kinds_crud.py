@@ -20,7 +20,11 @@ async def create_check_kind(
     session: AsyncSession, kind_in: CheckKindCreate
 ) -> CheckKind:
     return await create_dictionary_item(
-        session, CheckKind, kind_in.model_dump()
+        session,
+        CheckKind,
+        kind_in.model_dump(),
+        label_field="label",
+        dictionary_name="check_kinds",
     )
 
 
@@ -64,7 +68,11 @@ async def update_check_kind(
     kind_in: CheckKindUpdate,
 ) -> CheckKind:
     return await update_dictionary_item(
-        session, kind, kind_in.model_dump(exclude_unset=True)
+        session,
+        kind,
+        kind_in.model_dump(exclude_unset=True),
+        label_field="label",
+        dictionary_name="check_kinds",
     )
 
 

@@ -9,6 +9,7 @@ from app.db.session import AsyncSessionLocal, engine
 from app.models.auditors import Auditor
 from app.models.departments import Department
 from app.utils.dictionary_text import normalize_dictionary_label
+from app.services.dictionary_integrity import replace_recommendation_audit_object_label
 
 # python -m app.db.migrate_dictionary_uniqueness
 
@@ -50,8 +51,8 @@ async def _dedupe_labels(
     label_attr: str,
     *,
     reference_updates: list[tuple[str, str]],
-) -> tuple[int, int, int]:
-    """Return (renamed_labels, updated_references, removed_duplicates)."""
+) -> tuple[int, int, int, dict[str, str]]:
+    """Return (renamed_labels, updated_references, removed_duplicates, renames)."""
     result = await session.execute(
         select(model).order_by(getattr(model, label_attr).asc(), model.id.asc())
     )
@@ -85,28 +86,38 @@ async def _dedupe_labels(
             await session.delete(duplicate)
             removed += 1
 
-    return len(renames), updated_refs, removed
+    return len(renames), updated_refs, removed, renames
+
+
+async def _apply_department_array_renames(session, renames: dict[str, str]) -> int:
+    updated = 0
+    for old, new in renames.items():
+        if old == new:
+            continue
+        updated += await replace_recommendation_audit_object_label(session, old, new)
+    return updated
 
 
 async def migrate() -> None:
     async with AsyncSessionLocal() as session:
-        auditor_renamed, auditor_refs, auditor_removed = await _dedupe_labels(
+        auditor_renamed, auditor_refs, auditor_removed, _ = await _dedupe_labels(
             session,
             Auditor,
             "full_name",
             reference_updates=AUDITOR_REFERENCE_UPDATES,
         )
-        dept_renamed, _, dept_removed = await _dedupe_labels(
+        dept_renamed, _, dept_removed, dept_renames = await _dedupe_labels(
             session,
             Department,
             "name",
             reference_updates=[],
         )
+        dept_refs = await _apply_department_array_renames(session, dept_renames)
         await session.commit()
         print(
             "Dictionary dedupe: "
             f"auditors renamed={auditor_renamed}, refs={auditor_refs}, removed={auditor_removed}; "
-            f"departments renamed={dept_renamed}, removed={dept_removed}."
+            f"departments renamed={dept_renamed}, refs={dept_refs}, removed={dept_removed}."
         )
 
     async with engine.begin() as conn:

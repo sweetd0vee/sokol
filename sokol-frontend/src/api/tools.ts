@@ -1,7 +1,8 @@
 import { api } from './client';
 import { getBlobErrorMessage, toApiError } from './errors';
+import { DOCX_TOOL_TIMEOUT_MS } from '../utils/docx';
 
-export const DOCX_TOOL_TIMEOUT_MS = 600_000;
+export { DOCX_TOOL_TIMEOUT_MS };
 
 type DocxToolExtraFields = Record<string, string>;
 

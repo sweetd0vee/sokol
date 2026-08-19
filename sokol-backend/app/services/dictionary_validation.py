@@ -1,4 +1,4 @@
-"""Validate domain string fields against settings dictionaries (no FK)."""
+"""Validate domain string fields against settings dictionaries and keep FKs satisfied."""
 
 from __future__ import annotations
 
@@ -12,7 +12,8 @@ from app.models.auditors import Auditor
 from app.models.check_kinds import CheckKind
 from app.models.departments import Department
 from app.models.effectiveness_ratings import EffectivenessRating
-from app.utils.dictionary_text import find_dictionary_label_match
+from app.services.dictionary_integrity import EFFECTIVENESS_FIELDS
+from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT, find_dictionary_label_match
 
 
 class DictionaryRefError(ValueError):
@@ -27,21 +28,23 @@ class DictionaryRefError(ValueError):
         )
 
 
-async def _value_exists(
+async def _label_exists(
     session: AsyncSession,
     model: type,
     column,
     value: str,
 ) -> bool:
-    duplicate = await find_dictionary_duplicate_by_label(session, model, column, value)
-    return duplicate is not None
+    return (
+        await find_dictionary_duplicate_by_label(session, model, column, value)
+        is not None
+    )
 
 
 async def ensure_auditor_name(
     session: AsyncSession, value: str, *, field: str
 ) -> None:
     normalized = value.strip()
-    if not await _value_exists(session, Auditor, Auditor.full_name, normalized):
+    if not await _label_exists(session, Auditor, Auditor.full_name, normalized):
         raise DictionaryRefError(field=field, value=normalized, dictionary="auditors")
 
 
@@ -49,7 +52,7 @@ async def ensure_check_kind_label(
     session: AsyncSession, value: str, *, field: str = "check_view"
 ) -> None:
     normalized = value.strip()
-    if not await _value_exists(session, CheckKind, CheckKind.label, normalized):
+    if not await _label_exists(session, CheckKind, CheckKind.label, normalized):
         raise DictionaryRefError(field=field, value=normalized, dictionary="check_kinds")
 
 
@@ -57,7 +60,7 @@ async def ensure_effectiveness_rating_label(
     session: AsyncSession, value: str, *, field: str
 ) -> None:
     normalized = value.strip()
-    if not await _value_exists(
+    if not await _label_exists(
         session, EffectivenessRating, EffectivenessRating.label, normalized
     ):
         raise DictionaryRefError(
@@ -80,25 +83,20 @@ def _split_audit_object_values(value: object) -> list[str]:
 
 async def _department_names(session: AsyncSession) -> list[str]:
     result = await session.execute(select(Department.name).order_by(Department.name.asc()))
-    names = [name for name in result.scalars().all() if name and name.strip()]
-    if not names:
-        from app.db.department_names import DEPARTMENTS
-
-        names = list(DEPARTMENTS)
-    return names
+    return [name for name in result.scalars().all() if name and name.strip()]
 
 
 async def canonicalize_audit_objects(session: AsyncSession, value: object) -> list[str]:
     parts = _split_audit_object_values(value)
     if not parts:
-        return ["Не указан"]
+        return [UNSPECIFIED_AUDIT_OBJECT]
 
     department_names = await _department_names(session)
     canonical: list[str] = []
     unmatched: list[str] = []
     seen: set[str] = set()
     for part in parts:
-        if part == "Не указан":
+        if part == UNSPECIFIED_AUDIT_OBJECT:
             if part not in seen:
                 canonical.append(part)
                 seen.add(part)
@@ -117,7 +115,7 @@ async def canonicalize_audit_objects(session: AsyncSession, value: object) -> li
             value=", ".join(unmatched),
             dictionary="departments",
         )
-    return canonical or ["Не указан"]
+    return canonical or [UNSPECIFIED_AUDIT_OBJECT]
 
 
 async def validate_check_dictionary_fields(
@@ -132,12 +130,7 @@ async def validate_check_dictionary_fields(
     if "check_view" in fields and fields["check_view"] is not None:
         await ensure_check_kind_label(session, fields["check_view"])
 
-    for field in (
-        "process_effectiveness",
-        "svk_effectiveness",
-        "sur_effectiveness",
-        "svik_effectiveness",
-    ):
+    for field in EFFECTIVENESS_FIELDS:
         if field not in fields:
             continue
         value = fields[field]

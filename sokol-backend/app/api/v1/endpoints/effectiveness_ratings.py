@@ -17,5 +17,6 @@ router = make_dictionary_router(
         read_schema=EffectivenessRatingRead,
         list_schema=EffectivenessRatingListResponse,
         not_found="Оценка эффективности не найдена.",
+        handle_duplicates=True,
     )
 )

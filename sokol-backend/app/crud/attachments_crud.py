@@ -74,18 +74,6 @@ async def delete_attachment(
         await session.flush()
 
 
-async def delete_attachments_for_check(session: AsyncSession, check_id: int) -> None:
-    result = await session.execute(
-        select(Attachment).where(
-            Attachment.entity_type == "check",
-            Attachment.entity_id == check_id,
-        )
-    )
-    for attachment in result.scalars().all():
-        await session.delete(attachment)
-    await session.commit()
-
-
 async def list_attachments_by_serial(session: AsyncSession, serial_number: str) -> Sequence[Attachment]:
     result = await session.execute(
         select(Attachment)

@@ -16,4 +16,4 @@ class EffectivenessRating(Base):
         default=uuid4,
         index=True,
     )
-    label: Mapped[str] = mapped_column(String(255), nullable=False)
+    label: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)

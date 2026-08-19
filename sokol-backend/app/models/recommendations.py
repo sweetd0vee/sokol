@@ -36,7 +36,17 @@ class Recommendation(Base):
     materiality_level: Mapped[str] = mapped_column(String(32), nullable=False, default="средний")
     audit_object: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
     deadline: Mapped[date | None] = mapped_column(Date, nullable=True)
-    auditor: Mapped[str] = mapped_column(String(255), nullable=False)
+    auditor: Mapped[str] = mapped_column(
+        String(255),
+        ForeignKey(
+            "auditors.full_name",
+            name="fk_recommendations_auditor",
+            onupdate="CASCADE",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+        index=True,
+    )
     manager: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[RecommendationStatus] = mapped_column(
         SAEnum(
@@ -70,3 +80,33 @@ class Recommendation(Base):
     closure_information: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     check: Mapped["Check"] = relationship("Check", back_populates="recommendations")
+    audit_object_rows: Mapped[list["RecommendationAuditObject"]] = relationship(
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+
+class RecommendationAuditObject(Base):
+    """FK-backed link between a recommendation and departments from the dictionary."""
+
+    __tablename__ = "recommendation_audit_objects"
+
+    recommendation_id: Mapped[int] = mapped_column(
+        ForeignKey(
+            "recommendations.id",
+            name="fk_recommendation_audit_objects_recommendation",
+            ondelete="CASCADE",
+        ),
+        primary_key=True,
+    )
+    department_name: Mapped[str] = mapped_column(
+        String(255),
+        ForeignKey(
+            "departments.name",
+            name="fk_recommendation_audit_objects_department",
+            onupdate="CASCADE",
+            ondelete="RESTRICT",
+        ),
+        primary_key=True,
+        index=True,
+    )

@@ -150,6 +150,53 @@ class ChecksCrudIntegrationTests(unittest.TestCase):
         missing_response = self.client.get(f"/api/v1/checks/{check_id}")
         self.assertEqual(missing_response.status_code, 404)
 
+    def test_cannot_delete_auditor_used_as_check_leader(self) -> None:
+        created = self._create_check()
+        auditors = self.client.get("/api/v1/settings/auditors").json()["items"]
+        leader = next(item for item in auditors if item["full_name"] == "Иванов И.И.")
+
+        blocked = self.client.delete(f"/api/v1/settings/auditors/{leader['id']}")
+        self.assertEqual(blocked.status_code, 409)
+        self.assertIn("используется", blocked.json()["detail"])
+
+        unused = self.client.post(
+            "/api/v1/settings/auditors",
+            json={"full_name": "Сидоров С.С.", "code": "SSS"},
+        )
+        self.assertEqual(unused.status_code, 201)
+        allowed = self.client.delete(f"/api/v1/settings/auditors/{unused.json()['id']}")
+        self.assertEqual(allowed.status_code, 204)
+
+        self.client.delete(f"/api/v1/checks/{created['id']}")
+        after_release = self.client.delete(f"/api/v1/settings/auditors/{leader['id']}")
+        self.assertEqual(after_release.status_code, 204)
+        restored = self.client.post(
+            "/api/v1/settings/auditors",
+            json={"full_name": "Иванов И.И.", "code": "III"},
+        )
+        self.assertEqual(restored.status_code, 201)
+
+    def test_renaming_auditor_cascades_to_check_leader(self) -> None:
+        created = self._create_check()
+        auditors = self.client.get("/api/v1/settings/auditors").json()["items"]
+        leader = next(item for item in auditors if item["full_name"] == "Иванов И.И.")
+
+        renamed = self.client.patch(
+            f"/api/v1/settings/auditors/{leader['id']}",
+            json={"full_name": "Иванов И.И. (обновлён)"},
+        )
+        self.assertEqual(renamed.status_code, 200)
+
+        updated_check = self.client.get(f"/api/v1/checks/{created['id']}")
+        self.assertEqual(updated_check.status_code, 200)
+        self.assertEqual(updated_check.json()["check_leader"], "Иванов И.И. (обновлён)")
+
+        self.client.delete(f"/api/v1/checks/{created['id']}")
+        self.client.patch(
+            f"/api/v1/settings/auditors/{leader['id']}",
+            json={"full_name": "Иванов И.И."},
+        )
+
     def _create_check(self) -> dict[str, Any]:
         response = self.client.post(
             "/api/v1/checks",

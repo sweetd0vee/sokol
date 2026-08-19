@@ -1,0 +1,116 @@
+"""Insert missing dictionary rows so domain FKs can be applied."""
+
+from __future__ import annotations
+
+import string
+from collections.abc import Iterable
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.crud.dictionary_crud import find_dictionary_duplicate_by_label
+from app.models.auditors import Auditor
+from app.models.check_kinds import CheckKind
+from app.models.departments import Department
+from app.models.effectiveness_ratings import EffectivenessRating
+from app.services.dictionary_integrity import ensure_unspecified_department
+from app.utils.check_key import get_leader_initials_code
+from app.utils.dictionary_text import normalize_dictionary_label
+
+
+def allocate_auditor_code(full_name: str, used: set[str]) -> str:
+    initials = "".join(
+        ch
+        for ch in get_leader_initials_code(full_name).upper()
+        if ch.isascii() and ch.isalpha()
+    )
+    if len(initials) >= 3:
+        candidate = initials[:3]
+        if candidate not in used:
+            return candidate
+    padded = (initials + "XXX")[:3]
+    if len(padded) == 3 and padded.isalpha() and padded not in used:
+        return padded
+    for first in string.ascii_uppercase:
+        for second in string.ascii_uppercase:
+            for third in string.ascii_uppercase:
+                code = f"{first}{second}{third}"
+                if code not in used:
+                    return code
+    raise RuntimeError("No free auditor codes left.")
+
+
+async def ensure_department_names(session: AsyncSession, names: Iterable[str]) -> int:
+    inserted = 0
+    await ensure_unspecified_department(session)
+    for raw in names:
+        name = normalize_dictionary_label(str(raw or "").strip())
+        if not name:
+            continue
+        existing = await find_dictionary_duplicate_by_label(
+            session, Department, Department.name, name
+        )
+        if existing is not None:
+            continue
+        session.add(Department(name=name))
+        inserted += 1
+        await session.flush()
+    return inserted
+
+
+async def ensure_check_kind_labels(session: AsyncSession, labels: Iterable[str]) -> int:
+    inserted = 0
+    for raw in labels:
+        label = normalize_dictionary_label(str(raw or "").strip())
+        if not label:
+            continue
+        existing = await find_dictionary_duplicate_by_label(
+            session, CheckKind, CheckKind.label, label
+        )
+        if existing is not None:
+            continue
+        session.add(CheckKind(label=label))
+        inserted += 1
+        await session.flush()
+    return inserted
+
+
+async def ensure_effectiveness_labels(session: AsyncSession, labels: Iterable[str]) -> int:
+    inserted = 0
+    for raw in labels:
+        label = normalize_dictionary_label(str(raw or "").strip())
+        if not label:
+            continue
+        existing = await find_dictionary_duplicate_by_label(
+            session, EffectivenessRating, EffectivenessRating.label, label
+        )
+        if existing is not None:
+            continue
+        session.add(EffectivenessRating(label=label))
+        inserted += 1
+        await session.flush()
+    return inserted
+
+
+async def ensure_auditor_names(session: AsyncSession, names: Iterable[str]) -> int:
+    inserted = 0
+    used_codes = {
+        str(code).upper()
+        for code in (await session.execute(select(Auditor.code))).scalars().all()
+        if code
+    }
+    for raw in names:
+        full_name = normalize_dictionary_label(str(raw or "").strip())
+        if not full_name:
+            continue
+        existing = await find_dictionary_duplicate_by_label(
+            session, Auditor, Auditor.full_name, full_name
+        )
+        if existing is not None:
+            continue
+        code = allocate_auditor_code(full_name, used_codes)
+        used_codes.add(code)
+        session.add(Auditor(full_name=full_name, code=code))
+        inserted += 1
+        await session.flush()
+    return inserted

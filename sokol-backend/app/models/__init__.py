@@ -9,6 +9,7 @@ from app.models.effectiveness_ratings import EffectivenessRating
 from app.models.recommendations import (
     Recommendation,
     RecommendationAdditionalStatus,
+    RecommendationAuditObject,
     RecommendationStatus,
 )
 from app.models.users import User
@@ -25,6 +26,7 @@ __all__ = [
     "EffectivenessRating",
     "Recommendation",
     "RecommendationAdditionalStatus",
+    "RecommendationAuditObject",
     "RecommendationStatus",
     "User",
 ]

@@ -16,7 +16,7 @@ SOKOL хранит данные службы внутреннего аудита
 | Справочники | Допустимые аудиторы, подразделения, виды проверок, шкалы эффективности | `auditors`, `departments`, `check_kinds`, `effectiveness_ratings`, `audit_types` |
 | Пользователи | Локальная авторизация, роли, отображаемые имена и алиасы | `users` |
 
-Система намеренно хранит часть доменных ссылок как строки, а не как внешние ключи. Например, `checks.check_leader` содержит ФИО аудитора, а `recommendations.audit_object` содержит названия подразделений. Целостность этих полей поддерживается API-валидацией по справочникам, а не FK-ограничениями. Это упрощает импорт исторических Excel-данных, но требует аккуратной нормализации справочников.
+Система хранит доменные ссылки на справочники как канонические строки с физическими `FOREIGN KEY` на уникальные labels. Например, `checks.check_leader` ссылается на `auditors.full_name` (`ON UPDATE CASCADE ON DELETE RESTRICT`). Массив `recommendations.audit_object` остаётся денормализацией для аналитики, а целостность обеспечивается таблицей связи `recommendation_audit_objects`. API-валидация по-прежнему канонизирует ввод до записи.
 
 ## 2. Общая ER-диаграмма
 
@@ -26,11 +26,12 @@ erDiagram
     CHECKS ||..o{ ATTACHMENTS : "entity_type=check, entity_id"
     RECOMMENDATIONS ||..o{ ATTACHMENTS : "entity_type=recommendation, entity_id"
 
-    AUDITORS ||..o{ CHECKS : "check_leader by text"
-    AUDITORS ||..o{ RECOMMENDATIONS : "auditor by text"
-    CHECK_KINDS ||..o{ CHECKS : "check_view by text"
-    DEPARTMENTS ||..o{ RECOMMENDATIONS : "audit_object text[]"
-    EFFECTIVENESS_RATINGS ||..o{ CHECKS : "effectiveness fields by text"
+    AUDITORS ||--o{ CHECKS : "check_leader FK"
+    AUDITORS ||--o{ RECOMMENDATIONS : "auditor FK"
+    CHECK_KINDS ||--o{ CHECKS : "check_view FK"
+    DEPARTMENTS ||--o{ RECOMMENDATION_AUDIT_OBJECTS : "department_name FK"
+    RECOMMENDATIONS ||--o{ RECOMMENDATION_AUDIT_OBJECTS : "recommendation_id FK"
+    EFFECTIVENESS_RATINGS ||--o{ CHECKS : "effectiveness fields FK"
 
     CHECKS {
         int id PK
@@ -92,7 +93,7 @@ erDiagram
     }
 ```
 
-Обозначение пунктирных связей: логическая связь через текстовое значение и API-валидацию, без физического `FOREIGN KEY`.
+Обозначение сплошных связей: физический `FOREIGN KEY`. Массив `recommendations.audit_object` синхронизируется с `recommendation_audit_objects` при записи.
 
 ## 3. Поток данных
 
@@ -142,11 +143,11 @@ flowchart LR
 | `check_name` | `VARCHAR(255)` | нет | - | Полное название проверки |
 | `short_name` | `VARCHAR(255)` | да | - | Краткое название для UI и отчётов |
 | `check_type` | `VARCHAR(32)` | нет | filter field | Тип ключа: `planned`, `unscheduled`, `thematic` |
-| `check_view` | `VARCHAR(64)` | нет | logical ref to `check_kinds.label` | Вид проверки из справочника |
+| `check_view` | `VARCHAR(255)` | нет | FK `check_kinds.label ON UPDATE CASCADE ON DELETE RESTRICT` | Вид проверки из справочника |
 | `check_quarter` | `INTEGER` | нет | CHECK 1–4 | Квартал проверки, участвует в ключе |
 | `start_date` | `DATE` | нет | `ix_checks_start_date` | Дата начала; год участвует в ключе и аналитике |
 | `end_date` | `DATE` | да | - | Дата окончания |
-| `check_leader` | `VARCHAR(255)` | нет | `ix_checks_check_leader`, logical ref to `auditors.full_name` | Руководитель проверки |
+| `check_leader` | `VARCHAR(255)` | нет | `ix_checks_check_leader`, FK `auditors.full_name ON UPDATE CASCADE ON DELETE RESTRICT` | Руководитель проверки |
 | `status` | `check_status` enum | нет | `ix_checks_status` | Статус проверки |
 | `created_at` | `DATE` | нет | - | Дата создания карточки |
 | `description` | `TEXT` | да | - | Описание проверки |
@@ -201,9 +202,9 @@ flowchart LR
 | `description` | `TEXT` | нет | default `''` | Подробное описание / формулировка |
 | `indicator` | `VARCHAR(32)` | нет | default `не указан` | Смысловой индикатор: исполнено, ожидает, не решено, в процессе и т.п. |
 | `materiality_level` | `VARCHAR(32)` | нет | `ix_recommendations_materiality_level`, default `средний` | Уровень существенности |
-| `audit_object` | `TEXT[]` | нет | GIN `ix_recommendations_audit_object_gin` | Один или несколько объектов аудита, канонизируются по `departments.name` |
+| `audit_object` | `TEXT[]` | нет | GIN `ix_recommendations_audit_object_gin` | Денормализованный список объектов аудита; FK-целостность в `recommendation_audit_objects` |
 | `deadline` | `DATE` | да | `ix_recommendations_deadline`, composite `ix_recommendations_deadline_status` | Срок исполнения |
-| `auditor` | `VARCHAR(255)` | нет | `ix_recommendations_auditor`, logical ref to `auditors.full_name` | Ответственный аудитор |
+| `auditor` | `VARCHAR(255)` | нет | `ix_recommendations_auditor`, FK `auditors.full_name ON UPDATE CASCADE ON DELETE RESTRICT` | Ответственный аудитор |
 | `manager` | `VARCHAR(255)` | нет | - | Руководитель / ответственный со стороны объекта аудита, свободный текст |
 | `status` | `recommendation_status` enum | нет | `ix_recommendations_status` | Основной статус исполнения |
 | `additional_status` | `recommendation_additional_status` enum | нет | - | Дополнительный статус контроля |
@@ -256,7 +257,7 @@ stateDiagram-v2
 
 ### `audit_object`
 
-`audit_object` хранится массивом `TEXT[]`, потому что одна рекомендация может относиться к нескольким подразделениям. Входные значения из UI/import могут приходить строкой с разделителями `,` или `;`; backend нормализует их в список и канонизирует по справочнику `departments`.
+`audit_object` хранится массивом `TEXT[]` для фильтров и аналитики. Целостность обеспечивает таблица `recommendation_audit_objects` с FK на `departments.name`. Входные значения из UI/import могут приходить строкой с разделителями `,` или `;`; backend нормализует их в список, канонизирует по справочнику `departments` и пишет обе структуры. Системное значение `Не указан` нельзя удалить или переименовать.
 
 Если значение пустое, используется `Не указан`. Если подразделение не найдено в справочнике при API create/update, backend возвращает ошибку валидации.
 
@@ -338,14 +339,21 @@ PostgreSQL dump не включает содержимое MinIO. Для пол�
 | `id` | `UUID` | нет | PK, index | Технический идентификатор |
 | `name` | `VARCHAR(255)` | нет | unique | Название подразделения / объекта аудита |
 
-Используется для канонизации `recommendations.audit_object`.
+Используется для канонизации `recommendations.audit_object` и как FK-цель `recommendation_audit_objects.department_name`.
+
+### `recommendation_audit_objects`
+
+| Поле | Тип PostgreSQL | Null | Индекс / ограничение | Назначение |
+|------|----------------|------|----------------------|------------|
+| `recommendation_id` | `INTEGER` | нет | PK part, FK `recommendations.id ON DELETE CASCADE` | Рекомендация |
+| `department_name` | `VARCHAR(255)` | нет | PK part, FK `departments.name ON UPDATE CASCADE ON DELETE RESTRICT` | Объект аудита из справочника |
 
 ### `check_kinds`
 
 | Поле | Тип PostgreSQL | Null | Индекс / ограничение | Назначение |
 |------|----------------|------|----------------------|------------|
 | `id` | `UUID` | нет | PK, index | Технический идентификатор |
-| `label` | `VARCHAR(255)` | нет | - | Вид проверки |
+| `label` | `VARCHAR(255)` | нет | unique | Вид проверки |
 
 Используется для `checks.check_view`.
 
@@ -354,7 +362,7 @@ PostgreSQL dump не включает содержимое MinIO. Для пол�
 | Поле | Тип PostgreSQL | Null | Индекс / ограничение | Назначение |
 |------|----------------|------|----------------------|------------|
 | `id` | `UUID` | нет | PK, index | Технический идентификатор |
-| `label` | `VARCHAR(255)` | нет | - | Допустимое значение оценки эффективности |
+| `label` | `VARCHAR(255)` | нет | unique | Допустимое значение оценки эффективности |
 
 Используется для `checks.process_effectiveness`, `checks.svk_effectiveness`, `checks.sur_effectiveness`, `checks.svik_effectiveness`.
 
@@ -373,22 +381,27 @@ PostgreSQL dump не включает содержимое MinIO. Для пол�
 | Связь | Тип | Где задана | Поведение |
 |-------|-----|------------|-----------|
 | `recommendations.check_id -> checks.id` | FK | SQLAlchemy model | `ON DELETE CASCADE`; при удалении проверки рекомендации удаляются |
+| `checks.check_leader -> auditors.full_name` | FK | SQLAlchemy model | `ON UPDATE CASCADE ON DELETE RESTRICT`; переименование аудитора обновляет проверки |
+| `recommendations.auditor -> auditors.full_name` | FK | SQLAlchemy model | `ON UPDATE CASCADE ON DELETE RESTRICT` |
+| `checks.check_view -> check_kinds.label` | FK | SQLAlchemy model | `ON UPDATE CASCADE ON DELETE RESTRICT` |
+| `checks.*_effectiveness -> effectiveness_ratings.label` | FK | SQLAlchemy model | `ON UPDATE CASCADE ON DELETE SET NULL` |
+| `recommendation_audit_objects.recommendation_id -> recommendations.id` | FK | SQLAlchemy model | `ON DELETE CASCADE` |
+| `recommendation_audit_objects.department_name -> departments.name` | FK | SQLAlchemy model | `ON UPDATE CASCADE ON DELETE RESTRICT`; массив `audit_object` синхронизируется при записи и при переименовании |
 | `checks.serial_number -> recommendations.serial_number` | Денормализация | Service layer | При изменении ключа проверки backend обновляет рекомендации |
 | `checks.serial_number -> attachments.check_serial_number` | Денормализация | Service layer | Нужна для bucket naming, массового удаления и миграции bucket |
 | `attachments.entity_type/entity_id -> checks/recommendations.id` | Полиморфная логическая связь | Service layer | Перед upload/list/delete backend проверяет существование владельца |
-| `auditors.full_name -> checks.check_leader` | Логическая связь | API validation | Значение должно быть в справочнике |
-| `auditors.full_name -> recommendations.auditor` | Логическая связь | API validation | Значение должно быть в справочнике |
-| `departments.name -> recommendations.audit_object[]` | Логическая связь | API validation + canonicalization | Все элементы массива должны матчиться со справочником или быть `Не указан` |
-| `check_kinds.label -> checks.check_view` | Логическая связь | API validation | Значение должно быть в справочнике |
-| `effectiveness_ratings.label -> checks.*_effectiveness` | Логическая связь | API validation | Непустое значение должно быть в справочнике |
 
 ```mermaid
 flowchart TB
     CHECK["checks.id"] -->|FK cascade| REC["recommendations.check_id"]
+    AUD["auditors.full_name"] -->|FK cascade update| CHECK_LEADER["checks.check_leader"]
+    AUD -->|FK cascade update| REC_AUD["recommendations.auditor"]
+    KIND["check_kinds.label"] -->|FK| CHECK_VIEW["checks.check_view"]
+    DEPT["departments.name"] -->|FK| RAO["recommendation_audit_objects"]
+    REC -->|FK cascade| RAO
     CHECK_SERIAL["checks.serial_number"] -.sync.-> REC_SERIAL["recommendations.serial_number"]
     CHECK_SERIAL -.sync.-> ATT_SERIAL["attachments.check_serial_number"]
     ATT_OWNER["attachments.entity_type + entity_id"] -.service validation.-> CHECK_OR_REC["checks.id / recommendations.id"]
-    DICT["dictionary tables"] -.API validation.-> DOMAIN["string fields in checks/recommendations"]
 ```
 
 ## 10. Индексы и ограничения
@@ -414,11 +427,14 @@ flowchart TB
 | `attachments` | `ix_attachments_entity_id` | Фильтрация по ID владельца |
 | `attachments` | `ix_attachments_entity_lookup` | Быстрый список файлов сущности |
 | `attachments` | `ix_attachments_check_serial_number` | Массовые операции по проверке |
-| `auditors` | unique `full_name` | Стабильная валидация ФИО |
-| `departments` | unique `name` | Стабильная канонизация объекта аудита |
+| `auditors` | unique `full_name` | FK-цель для `checks.check_leader` и `recommendations.auditor` |
+| `departments` | unique `name` | FK-цель для `recommendation_audit_objects` |
+| `check_kinds` | unique `label` | FK-цель для `checks.check_view` |
+| `effectiveness_ratings` | unique `label` | FK-цель для оценок эффективности |
+| `recommendation_audit_objects` | PK `(recommendation_id, department_name)` | FK-backed объекты аудита |
 | `users` | unique/index `username` | Логин |
 
-Часть индексов создаётся не из SQLAlchemy-моделей, а миграционными скриптами. На живой БД важно выполнять `migrate_analytics_indexes`, `migrate_attachments`, `migrate_dictionary_uniqueness`.
+Часть индексов создаётся не из SQLAlchemy-моделей, а миграционными скриптами. На живой БД важно выполнять `migrate_analytics_indexes`, `migrate_attachments`, `migrate_dictionary_uniqueness`, `migrate_dictionary_foreign_keys`.
 
 ## 11. Что использует аналитика
 
@@ -459,6 +475,7 @@ flowchart TD
 | `migrate_recommendation_closure_lists.py` | Добавляет JSON-списки переносов и снятий |
 | `migrate_attachments.py` | Создаёт `attachments` и индексы |
 | `migrate_dictionary_uniqueness.py` | Нормализует справочники и добавляет unique indexes |
+| `migrate_dictionary_foreign_keys.py` | Unique labels, junction `recommendation_audit_objects`, FK на доменные поля справочников |
 | `migrate_analytics_indexes.py` | Добавляет индексы для фильтров и агрегатов |
 | `import_seed_data.py` | Загружает реальные Excel-данные checks/recommendations |
 | `seed_demo_data.py` | Загружает синтетические демо-данные |
@@ -471,8 +488,7 @@ flowchart TD
 | Ограничение | Последствие | Что учитывать |
 |-------------|-------------|---------------|
 | Нет Alembic history | Нельзя штатно понять, какие изменения схемы применены на конкретном стенде | Вести runbook применённых `migrate_*`, перед prod-изменениями делать dump |
-| Много логических связей без FK | Возможны расхождения при прямых SQL-правках или bypass API | Справочники менять через API/seed/sync, не массовым SQL без нормализации |
-| `attachments` без FK | DB сама не защитит от orphan metadata | Использовать сервисные операции удаления; после restore сверять MinIO |
+| Много логических связей без FK у `attachments` | DB сама не защитит от orphan metadata | Использовать сервисные операции удаления; после restore сверять MinIO |
 | `serial_number` денормализован | Нужно синхронизировать проверки, рекомендации и вложения | Не менять `checks.serial_number` напрямую SQL-командой |
 | Нет soft-delete и audit log | Удаление физическое, история изменений не хранится | Перед массовыми операциями обязателен бэкап |
 | JSON/JSONB для closure lists зависит от пути создания схемы | На чистой БД через `create_all` и на мигрированной БД тип может отличаться | При переходе на Alembic зафиксировать единый тип, предпочтительно `JSONB` |
@@ -481,10 +497,8 @@ flowchart TD
 
 1. Ввести Alembic baseline текущей схемы и перевести новые изменения только в revisions.
 2. Зафиксировать единый тип `JSONB` для `deadline_extensions` и `control_removals`.
-3. Добавить уникальность для `check_kinds.label` и `effectiveness_ratings.label`, если справочники должны быть строго без дублей.
-4. Рассмотреть FK или отдельную таблицу связи для `attachments`, если полиморфная модель начнёт мешать целостности.
-5. Рассмотреть отдельную таблицу истории статусов рекомендаций, если понадобится audit trail по переносам, снятиям и закрытию.
-6. Для больших объёмов данных перейти от bulk-загрузок UI к server pagination/search и отдельным export jobs.
+3. Рассмотреть FK или отдельную таблицу связи для `attachments`, если полиморфная модель начнёт мешать целостности.
+4. Для больших объёмов данных перейти от bulk-загрузок UI к server pagination/search и отдельным export jobs.
 
 ## 15. Быстрая памятка
 
@@ -492,10 +506,10 @@ flowchart TD
 |--------|-------|
 | Главная бизнес-сущность | `checks` |
 | Главная дочерняя сущность | `recommendations` |
-| Единственный настоящий FK домена | `recommendations.check_id -> checks.id` |
+| Доменные FK справочников | `checks.check_leader/check_view/*_effectiveness`, `recommendations.auditor`, `recommendation_audit_objects` |
 | Где файлы | MinIO/S3 |
 | Где metadata файлов | `attachments` |
-| Как связаны справочники | Строками + API-валидацией |
+| Как связаны справочники | FK на уникальные labels + API-валидация/канонизация |
 | Чем связаны рекомендации с проверкой для UI | `serial_number` |
 | Чем связаны рекомендации с проверкой для DB | `check_id` |
 | Что нельзя менять прямым SQL без синхронизации | `checks.serial_number`, справочные значения, `attachments.bucket/object_key` |
