@@ -198,7 +198,6 @@ export function FocusableSquareCirclesChart({
       >
         {legendOrderIndices.map((index) => {
           const item = slices[index];
-          const percent = total > 0 ? Math.round((item.value / total) * 100) : 0;
           const fill = colors[index] ?? palette[index % palette.length];
           return (
             <div
@@ -213,13 +212,7 @@ export function FocusableSquareCirclesChart({
                 aria-hidden
               />
               <span className="text-left text-slate-900" style={{ fontWeight: legendFontWeight }}>
-                {formatLegendLabel({
-                  name: item.name,
-                  value: item.value,
-                  percent,
-                  labelMode,
-                  legendPercentFirst,
-                })}
+                {labelMode === 'both' ? `${item.name}: ${item.value}` : item.name}
               </span>
             </div>
           );
