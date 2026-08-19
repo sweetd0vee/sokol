@@ -99,6 +99,19 @@ export function FocusableSquareCirclesChart({
     return byIndex;
   }, [slices, targetCenters]);
 
+  const legendOrderIndices = useMemo(() => {
+    const indexed = slices.map((slice, i) => ({ i, v: slice.value }));
+    // Stable sort: if values are equal, preserve original index order.
+    indexed.sort((a, b) => (b.v - a.v) || (a.i - b.i));
+    const ranked = indexed.map((entry) => entry.i);
+
+    // Legend as a 2x2 grid to mirror circle placement:
+    // Row 1: TL (rank0), TR (rank2)
+    // Row 2: BL (rank1), BR (rank3)
+    const candidates = [ranked[0], ranked[2], ranked[1], ranked[3]];
+    return candidates.filter((idx): idx is number => typeof idx === 'number');
+  }, [slices]);
+
   const colors = useMemo(() => {
     return slices.map((item, index) => item.color ?? palette[index % palette.length]);
   }, [palette, slices]);
@@ -176,14 +189,15 @@ export function FocusableSquareCirclesChart({
       </div>
 
       <div
-        className="flex shrink-0 flex-wrap items-center justify-center gap-x-3 gap-y-1 px-1.5 pb-1 pt-0.5"
+        className="grid shrink-0 grid-cols-2 items-start justify-items-center gap-x-8 gap-y-1 px-1.5 pb-1 pt-0.5"
         style={{
           fontSize: legendFontSize,
           fontWeight: legendFontWeight,
           paddingTop: 4,
         }}
       >
-        {slices.map((item, index) => {
+        {legendOrderIndices.map((index) => {
+          const item = slices[index];
           const percent = total > 0 ? Math.round((item.value / total) * 100) : 0;
           const fill = colors[index] ?? palette[index % palette.length];
           return (
@@ -195,7 +209,7 @@ export function FocusableSquareCirclesChart({
                 }}
                 aria-hidden
               />
-                  <span className="text-slate-900" style={{ fontWeight: legendFontWeight }}>
+              <span className="text-slate-900" style={{ fontWeight: legendFontWeight }}>
                 {formatLegendLabel({
                   name: item.name,
                   value: item.value,
