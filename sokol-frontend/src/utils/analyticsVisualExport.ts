@@ -1248,7 +1248,7 @@ async function buildVisualHtml(options: {
       border-radius: 10px;
       background: #fafbfc;
       padding: 10px 12px;
-      overflow: hidden;
+      overflow: visible;
     }
     .chart-svg, .chart-img {
       display: block;
@@ -1270,7 +1270,7 @@ async function buildVisualHtml(options: {
     }
     .chart-svg svg {
       cursor: crosshair;
-      overflow: hidden;
+      overflow: visible;
     }
     .chart-svg svg text {
       font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
