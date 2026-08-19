@@ -131,7 +131,7 @@ function buildEffectivenessMatrixPdfContent(
     })).map(({ area, shares }) => [
       { text: area, bold: true, color: '#334155' },
       {
-        text: shares.map((share) => `${share.label}: ${share.count} (${share.percent}%)`).join('; ') || '—',
+        text: shares.map((share) => `${share.label}: ${share.percent}% (${share.count})`).join('; ') || '—',
         color: '#334155',
       },
     ]),

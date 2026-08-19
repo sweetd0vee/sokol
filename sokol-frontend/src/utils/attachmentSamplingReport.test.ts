@@ -62,7 +62,7 @@ describe('attachment sampling report', () => {
     expect(grid[4]).toEqual(['Ключ', 'Проверка', 'Приказ', 'Программа', 'АЗ', 'ДЗ', 'Пустые папки']);
     expect(grid[5]).toEqual([
       '26KVS3P1',
-      '26KVS3P1 ИТ',
+      'ИТ',
       1,
       NO_ATTACHMENTS_LABEL,
       2,
@@ -71,7 +71,7 @@ describe('attachment sampling report', () => {
     ]);
     expect(grid[6]).toEqual([
       '26KVS3P2',
-      '26KVS3P2 Кадры',
+      'Кадры',
       NO_ATTACHMENTS_LABEL,
       3,
       NO_ATTACHMENTS_LABEL,

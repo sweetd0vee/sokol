@@ -167,8 +167,14 @@ export function getEffectivenessToneColor(tone: EffectivenessTone): string {
   return EFFECTIVENESS_LEGEND.find((item) => item.tone === tone)?.color ?? '#94A3B8';
 }
 
-export function getEffectivenessShareLabelColor(tone: EffectivenessTone): string {
-  return tone === 'sufficient' || tone === 'unset' ? '#1e293b' : '#ffffff';
+export function formatEffectivenessChecksCount(count: number): string {
+  if (count % 10 === 1 && count % 100 !== 11) {
+    return `${count} проверка`;
+  }
+  if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) {
+    return `${count} проверки`;
+  }
+  return `${count} проверок`;
 }
 
 export type EffectivenessColumnKey = (typeof EFFECTIVENESS_MATRIX_COLUMNS)[number]['key'];
@@ -199,11 +205,9 @@ function buildEffectivenessShareSquares(shares: EffectivenessColumnShare[]) {
   const size = EFFECTIVENESS_EXPORT_SQUARE_SIZE_PX;
   const squares = shares
     .map((share) => {
-      const labelColor = getEffectivenessShareLabelColor(share.tone);
-      return `<li>
-        <span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:6px;background:${share.color};border:1px solid rgba(0,0,0,0.1);color:${labelColor};text-align:center;line-height:1.15" title="${escapeEffectivenessHtml(`${share.label}: ${share.count} (${share.percent}%)`)}">
-          <span style="font-size:12px;font-weight:600">${share.count}</span>
-          <span style="font-size:10px;font-weight:500">(${share.percent}%)</span>
+      return `<li style="display:inline-flex;align-items:center;gap:2px">
+        <span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:2px;background:#fff;border:4px solid ${share.color};color:#111827;text-align:center;line-height:1.15" title="${escapeEffectivenessHtml(`${share.label}: ${share.percent}% (${share.count})`)}">
+          <span style="font-size:12px;font-weight:600">${share.percent}%</span>
         </span>
       </li>`;
     })
@@ -287,7 +291,12 @@ export function buildEffectivenessMatrixHtmlMarkup(rows: EffectivenessMatrixRow[
         </table>
       </div>
     </div>
-    <ul data-effectiveness-matrix-legend style="display:flex;flex-wrap:wrap;gap:8px 12px;list-style:none;padding:0;margin:0;font-size:12px;color:#4b5563">${legend}</ul>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px">
+      <p data-effectiveness-matrix-total style="margin:0;font-size:12px;color:#4b5563">
+        <span style="font-weight:600;color:#003366">Итого:</span> ${escapeEffectivenessHtml(formatEffectivenessChecksCount(rows.length))}
+      </p>
+      <ul data-effectiveness-matrix-legend style="display:flex;flex-wrap:wrap;gap:8px 12px;list-style:none;padding:0;margin:0;font-size:12px;color:#4b5563">${legend}</ul>
+    </div>
   </div></div>`;
 }
 
@@ -313,7 +322,7 @@ export function buildEffectivenessColumnShares(
       count,
       percent: total === 0 ? 0 : Math.round((count / total) * 100),
     };
-  }).filter((item) => item.count > 0);
+  });
 }
 
 export function buildEffectivenessMatrix(checks: Check[]): EffectivenessMatrixRow[] {

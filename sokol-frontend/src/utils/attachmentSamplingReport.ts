@@ -30,6 +30,14 @@ function formatCountValue(count: number): string | number {
   return count > 0 ? count : NO_ATTACHMENTS_LABEL;
 }
 
+function getCheckShortDisplayName(check: Check): string {
+  const shortName = check.short_name?.trim();
+  if (shortName) {
+    return shortName;
+  }
+  return check.check_name?.trim() || '—';
+}
+
 function getEmptySlots(row: CheckFolderCounts, selectedSlots: AttachmentSlot[]): string[] {
   return selectedSlots
     .filter((slot) => row.countsBySlot[slot] === 0)
@@ -126,7 +134,7 @@ export function buildAttachmentSamplingReportXlsx(report: AttachmentSamplingRepo
   rows.forEach((row, rowIndex) => {
     const sheetRow = currentRow + 1 + rowIndex;
     setStyledCell(ws, sheetRow, 0, row.check.serial_number, CELL_STYLE);
-    setStyledCell(ws, sheetRow, 1, row.folderName, CELL_STYLE);
+    setStyledCell(ws, sheetRow, 1, getCheckShortDisplayName(row.check), CELL_STYLE);
 
     selectedSlots.forEach((slot, slotIndex) => {
       const count = row.countsBySlot[slot];

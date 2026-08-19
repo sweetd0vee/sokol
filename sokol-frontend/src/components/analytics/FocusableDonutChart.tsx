@@ -71,7 +71,7 @@ function PieValueLabel({
           fontSize={15}
           fontWeight={700}
         >
-          {value}
+          {percentLabel}
         </text>
         <text
           x={x}
@@ -83,7 +83,7 @@ function PieValueLabel({
           fontWeight={600}
           opacity={0.92}
         >
-          {percentLabel}
+          {value}
         </text>
       </g>
     );

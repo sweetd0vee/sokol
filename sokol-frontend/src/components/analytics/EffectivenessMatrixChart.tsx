@@ -3,7 +3,7 @@ import {
   EFFECTIVENESS_LEGEND,
   EFFECTIVENESS_MATRIX_COLUMNS,
   buildEffectivenessColumnShares,
-  getEffectivenessShareLabelColor,
+  formatEffectivenessChecksCount,
   getEffectivenessToneColor,
   type EffectivenessColumnShare,
   type EffectivenessMatrixRow,
@@ -21,18 +21,16 @@ function ColumnShareSquares({ shares }: { shares: EffectivenessColumnShare[] }) 
   return (
     <ul className="mx-auto flex w-full flex-col items-center gap-1">
       {shares.map((share) => (
-        <li key={share.tone}>
+        <li key={share.tone} className="h-11 w-11">
           <span
-            className="inline-flex h-11 w-11 flex-col items-center justify-center rounded-md border border-black/10 text-center leading-tight"
+            className="inline-flex h-11 w-11 flex-col items-center justify-center rounded-sm border-4 bg-white text-center leading-tight text-black"
             style={{
-              backgroundColor: share.color,
-              color: getEffectivenessShareLabelColor(share.tone),
+              borderColor: share.color,
             }}
-            title={`${share.label}: ${share.count} (${share.percent}%)`}
-            aria-label={`${share.label}: ${share.count} (${share.percent}%)`}
+            title={`${share.label}: ${share.percent}% (${share.count})`}
+            aria-label={`${share.label}: ${share.percent}% (${share.count})`}
           >
-            <span className="text-xs font-semibold tabular-nums">{share.count}</span>
-            <span className="text-[10px] font-medium tabular-nums">({share.percent}%)</span>
+            <span className="text-xs font-semibold tabular-nums">{share.percent}%</span>
           </span>
         </li>
       ))}
@@ -158,21 +156,28 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
         </p>
       ) : null}
 
-      <ul
-        className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-gray-600"
-        data-effectiveness-matrix-legend
-      >
-        {EFFECTIVENESS_LEGEND.map((item) => (
-          <li key={item.tone} className="inline-flex items-center gap-1.5">
-            <span
-              className="inline-block h-3 w-3 rounded-sm border border-black/10"
-              style={{ backgroundColor: item.color }}
-              aria-hidden
-            />
-            <span>{item.label}</span>
-          </li>
-        ))}
-      </ul>
+      <div className="flex shrink-0 flex-wrap items-end justify-between gap-x-4 gap-y-1.5">
+        <p className="text-xs text-gray-600" data-effectiveness-matrix-total>
+          <span className="font-semibold text-sber-dark">Итого:</span>{' '}
+          {formatEffectivenessChecksCount(rows.length)}
+        </p>
+
+        <ul
+          className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-gray-600"
+          data-effectiveness-matrix-legend
+        >
+          {EFFECTIVENESS_LEGEND.map((item) => (
+            <li key={item.tone} className="inline-flex items-center gap-1.5">
+              <span
+                className="inline-block h-3 w-3 rounded-sm border border-black/10"
+                style={{ backgroundColor: item.color }}
+                aria-hidden
+              />
+              <span>{item.label}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
