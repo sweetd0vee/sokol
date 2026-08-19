@@ -6,7 +6,6 @@ import {
   CartesianGrid,
   Cell,
   LabelList,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -16,7 +15,7 @@ import { fetchChecksAnalytics, type ChecksAnalyticsPeriodPoint } from '../../api
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
-import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { ChartCard, CHART_AXIS_TICK, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { EffectivenessMatrixChart } from './EffectivenessMatrixChart';
@@ -297,13 +296,6 @@ export function ChecksAnalyticsDashboard() {
                     />
                     <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
                     <Tooltip itemStyle={{ color: '#003366' }} />
-                    <Legend
-                      wrapperStyle={{ ...CHART_LEGEND_STYLE, fontSize: 18, fontWeight: 600 }}
-                      labelStyle={{ color: '#003366' }}
-                      formatter={(value) => (
-                        <span className="text-sber-dark hover:text-sber-dark">{value}</span>
-                      )}
-                    />
                     <Bar dataKey="total" name="За период" fill="#003366" radius={[4, 4, 0, 0]}>
                       {flowSeries.map((item, index) => (
                         <Cell key={item.key} fill={flowColors[index]} />
