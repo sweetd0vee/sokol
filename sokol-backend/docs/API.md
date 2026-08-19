@@ -10,8 +10,7 @@ HTTP Basic принимается в `development` (и если `SOKOL_ENABLE_BA
 **Роли и права:**
 
 | Действие | `auditor` | `admin` / `department_head` |
-|----------|-----------|---------|
-|----------|-----------|---------|
+|----------|-----------|-----------------------------|
 | CRUD checks/recommendations (create/read/update) | ✅ | ✅ |
 | `DELETE /checks/{id}` | ❌ | ✅ |
 | `DELETE /recommendations/{id}` | только своя (`auditor` ↔ username) | ✅ |

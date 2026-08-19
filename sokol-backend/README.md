@@ -51,7 +51,6 @@ Dev-пользователи (если таблица `users` пуста и ср
 | `SOKOL_ENV` | `development` (default) или `prod` — в prod weak/default JWT secret, demo load и seed `--replace` блокируют старт |
 | `SOKOL_JWT_SECRET` / `SOKOL_JWT_EXPIRE_MINUTES` | JWT (default TTL 480 мин) |
 | `SOKOL_ENABLE_BASIC_AUTH` | HTTP Basic: в development включён по умолчанию, в prod выключен; явный `true`/`false` перекрывает default |
-| `SOKOL_AUTH_USERS` | JSON-пользователи; пусто → dev defaults |
 | `SOKOL_MAX_UPLOAD_MB` | лимит upload `.docx` (default 100) |
 | `SOKOL_LOAD_DEMO_DATA` / `SOKOL_SEED_REPLACE` | Docker bootstrap: demo Excel и TRUNCATE; в `SOKOL_ENV=prod` запрещены |
 | `SOKOL_DESTRUCTIVE_DICTIONARY_SYNC` | в development удаляет лишние справочники/users при sync (default on); в prod всегда merge-only |
