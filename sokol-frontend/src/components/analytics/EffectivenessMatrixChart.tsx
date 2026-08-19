@@ -139,7 +139,10 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
                 </th>
                 {EFFECTIVENESS_MATRIX_COLUMNS.map((column) => (
                   <td key={column.key} className="px-1 py-3 text-center align-top">
-                    <ColumnShareSquares shares={columnShares[column.key]} />
+                    <div className="flex flex-col items-center gap-1.5">
+                      <span className="text-sm font-semibold text-sber-dark">{column.label}</span>
+                      <ColumnShareSquares shares={columnShares[column.key]} />
+                    </div>
                   </td>
                 ))}
               </tr>

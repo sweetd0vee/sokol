@@ -254,7 +254,12 @@ export function buildEffectivenessMatrixHtmlMarkup(rows: EffectivenessMatrixRow[
 
   const footerShareCells = EFFECTIVENESS_MATRIX_COLUMNS.map(
     (column) =>
-      `<td style="padding:12px 4px;text-align:center;vertical-align:top">${buildEffectivenessShareSquares(columnShares[column.key])}</td>`,
+      `<td style="padding:12px 4px;text-align:center;vertical-align:top">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+          <span style="font-size:14px;font-weight:600;color:#003366">${escapeEffectivenessHtml(column.label)}</span>
+          ${buildEffectivenessShareSquares(columnShares[column.key])}
+        </div>
+      </td>`,
   ).join('');
 
   const legend = EFFECTIVENESS_LEGEND.map(
