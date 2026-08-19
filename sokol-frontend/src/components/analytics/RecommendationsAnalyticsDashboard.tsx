@@ -140,13 +140,18 @@ function getPeriodXAxisProps(granularity: PeriodGranularity) {
 function StatusSegmentValueLabel({
   x,
   y,
+  width,
   height,
   value,
+  // Recharts passes the bar's `dataKey` to the custom label renderer.
+  dataKey,
 }: {
   x?: number;
   y?: number;
+  width?: number;
   height?: number;
   value?: number;
+  dataKey?: string;
 }) {
   const numericValue = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(numericValue) || numericValue <= 0 || x === undefined || y === undefined) {
@@ -155,22 +160,48 @@ function StatusSegmentValueLabel({
 
   const rounded = Math.round(numericValue);
   const h = height ?? 0;
+  const w = width ?? 0;
+  // For stacked bars Recharts often provides x/y as the top-left corner of the segment.
+  // We center the label within the segment rectangle explicitly.
+  const cx = x + w / 2;
+  const cy = y + h / 2;
 
-  // Rough fit heuristic: if there's enough segment height for the text, draw it inside.
-  // Otherwise, draw it just above the segment.
-  const fitsInside = h >= 16;
-  const fontSize = 12;
+  function hexToRgb(color: string) {
+    const normalized = color.trim().replace('#', '');
+    if (normalized.length !== 6) {
+      return { red: 0, green: 0, blue: 0 };
+    }
+    return {
+      red: Number.parseInt(normalized.slice(0, 2), 16),
+      green: Number.parseInt(normalized.slice(2, 4), 16),
+      blue: Number.parseInt(normalized.slice(4, 6), 16),
+    };
+  }
 
-  if (fitsInside) {
+  function getContrastingTextColor(backgroundFill: string) {
+    const { red, green, blue } = hexToRgb(backgroundFill);
+    // Relative luminance (sRGB)
+    const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
+    return luminance < 0.6 ? '#FFFFFF' : '#111827';
+  }
+
+  const segmentColor = dataKey && dataKey in STATUS_COLORS ? STATUS_COLORS[dataKey as keyof typeof STATUS_COLORS] : '#e5e7eb';
+  const insideTextColor = getContrastingTextColor(segmentColor);
+
+  const outsideTextColor = '#111827';
+  const minInsideHeight = 14;
+  const canPlaceInside = h >= minInsideHeight;
+
+  if (canPlaceInside) {
     return (
       <text
-        x={x}
-        y={y + h / 2}
+        x={cx}
+        y={cy}
         textAnchor="middle"
-        dominantBaseline="central"
-        fontSize={fontSize}
+        dominantBaseline="middle"
+        fontSize={h >= 20 ? 13 : 12}
         fontWeight={700}
-        fill="#ffffff"
+        fill={insideTextColor}
         style={{ pointerEvents: 'none' }}
       >
         {rounded}
@@ -178,24 +209,158 @@ function StatusSegmentValueLabel({
     );
   }
 
-  const outsideY = y - 4;
-  if (outsideY < 0) {
+  // Vertical stacking for "outside" labels to avoid overlap on tiny segments.
+  // Stack order matches `RECOMMENDATION_STATUS_OPTIONS` (completed -> unresolved -> on_control -> in_progress).
+  const statusOutsideIndex =
+    dataKey === 'completed' ? 0
+    : dataKey === 'unresolved' ? 1
+    : dataKey === 'on_control' ? 2
+    : dataKey === 'in_progress' ? 3
+    : 0;
+
+  const outsideY = y - 4 - statusOutsideIndex * 12;
+  // If outside label would be clipped near the top, fall back to segment center.
+  const clampedOutsideY = outsideY < 6 ? cy : outsideY;
+
+  return (
+    <>
+      <line
+        x1={cx}
+        y1={y}
+        x2={cx}
+        y2={clampedOutsideY + 3}
+        stroke={segmentColor}
+        strokeWidth={1}
+        opacity={0.75}
+      />
+      <text
+        x={cx}
+        y={clampedOutsideY}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={11}
+        fontWeight={700}
+        fill={outsideTextColor}
+        style={{ pointerEvents: 'none' }}
+      >
+        {rounded}
+      </text>
+    </>
+  );
+}
+
+function MaterialitySegmentValueLabel({
+  x,
+  y,
+  width,
+  height,
+  value,
+  // Recharts passes the bar's `dataKey` to the custom label renderer.
+  dataKey,
+}: {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  value?: number;
+  dataKey?: string;
+}) {
+  const numericValue = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0 || x === undefined || y === undefined) {
     return null;
   }
 
+  const rounded = Math.round(numericValue);
+  const h = height ?? 0;
+  const w = width ?? 0;
+  // For stacked bars Recharts often provides x/y as the top-left corner of the segment.
+  // We center the label within the segment rectangle explicitly.
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+
+  function hexToRgb(color: string) {
+    const normalized = color.trim().replace('#', '');
+    if (normalized.length !== 6) {
+      return { red: 0, green: 0, blue: 0 };
+    }
+    return {
+      red: Number.parseInt(normalized.slice(0, 2), 16),
+      green: Number.parseInt(normalized.slice(2, 4), 16),
+      blue: Number.parseInt(normalized.slice(4, 6), 16),
+    };
+  }
+
+  function getContrastingTextColor(backgroundFill: string) {
+    const { red, green, blue } = hexToRgb(backgroundFill);
+    // Relative luminance (sRGB)
+    const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
+    return luminance < 0.6 ? '#FFFFFF' : '#111827';
+  }
+
+  const materialityColor =
+    dataKey === 'low'
+      ? MATERIALITY_COLORS.низкий
+      : dataKey === 'medium'
+        ? MATERIALITY_COLORS.средний
+        : dataKey === 'high'
+          ? MATERIALITY_COLORS.высокий
+          : '#e5e7eb';
+
+  const insideTextColor = getContrastingTextColor(materialityColor);
+  const outsideTextColor = '#111827';
+
+  const minInsideHeight = 14;
+  const canPlaceInside = h >= minInsideHeight;
+
+  if (canPlaceInside) {
+    return (
+      <text
+        x={cx}
+        y={cy}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={h >= 20 ? 13 : 12}
+        fontWeight={700}
+        fill={insideTextColor}
+        style={{ pointerEvents: 'none' }}
+      >
+        {rounded}
+      </text>
+    );
+  }
+
+  // Vertical stacking for "outside" labels to avoid overlap on tiny segments.
+  // Stack order matches the stacked bars (low -> medium -> high).
+  const statusOutsideIndex = dataKey === 'low' ? 0 : dataKey === 'medium' ? 1 : dataKey === 'high' ? 2 : 0;
+
+  const outsideY = y - 4 - statusOutsideIndex * 12;
+  // If outside label would be clipped near the top, fall back to segment center.
+  const clampedOutsideY = outsideY < 6 ? cy : outsideY;
+
   return (
-    <text
-      x={x}
-      y={outsideY}
-      textAnchor="middle"
-      dominantBaseline="central"
-      fontSize={fontSize}
-      fontWeight={700}
-      fill="#111827"
-      style={{ pointerEvents: 'none' }}
-    >
-      {rounded}
-    </text>
+    <>
+      <line
+        x1={cx}
+        y1={y}
+        x2={cx}
+        y2={clampedOutsideY + 3}
+        stroke={materialityColor}
+        strokeWidth={1}
+        opacity={0.75}
+      />
+      <text
+        x={cx}
+        y={clampedOutsideY}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={11}
+        fontWeight={700}
+        fill={outsideTextColor}
+        style={{ pointerEvents: 'none' }}
+      >
+        {rounded}
+      </text>
+    </>
   );
 }
 
@@ -586,19 +751,25 @@ export function RecommendationsAnalyticsDashboard() {
                         <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
                         <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
                         <Tooltip />
-                        <Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий} />
+                        <Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий}>
+                          <LabelList dataKey="low" content={MaterialitySegmentValueLabel} />
+                        </Bar>
                         <Bar
                           dataKey="medium"
                           name="Средний"
                           stackId="mat"
                           fill={MATERIALITY_COLORS.средний}
-                        />
+                        >
+                          <LabelList dataKey="medium" content={MaterialitySegmentValueLabel} />
+                        </Bar>
                         <Bar
                           dataKey="high"
                           name="Высокий"
                           stackId="mat"
                           fill={MATERIALITY_COLORS.высокий}
-                        />
+                        >
+                          <LabelList dataKey="high" content={MaterialitySegmentValueLabel} />
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
 
