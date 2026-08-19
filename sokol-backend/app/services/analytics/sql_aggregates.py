@@ -24,6 +24,8 @@ from app.schemas.analytics import (
     PeriodBucketSchema,
     PeriodCount,
     PeriodGranularity,
+    RecommendationMaterialityCounts,
+    RecommendationObjectCount,
     RecommendationPeriodCount,
     RecommendationsSummary,
     RecommendationsSummaryByAdditional,
@@ -342,20 +344,35 @@ async def recommendation_indicator_distribution_sql(
 async def recommendation_object_distribution_sql(
     session: AsyncSession,
     **filters: Any,
-) -> list[NamedCount]:
-    statement = select(Recommendation.audit_object).where(
+) -> list[RecommendationObjectCount]:
+    statement = select(Recommendation.audit_object, Recommendation.materiality_level).where(
         *recommendation_filter_conditions(**filters),
     )
     rows = (await session.execute(statement)).all()
-    counts: dict[str, int] = defaultdict(int)
+    totals: dict[str, int] = defaultdict(int)
+    materiality_counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     for row in rows:
         parts = parse_audit_object_parts(row.audit_object)
-        if not parts:
-            counts["Без объекта"] += 1
-            continue
-        for part in parts:
-            counts[part] += 1
-    return named_counts(counts)
+        departments = parts if parts else ["Без объекта"]
+        materiality_level = str(row.materiality_level or "").strip().casefold() or "средний"
+        if materiality_level not in {"низкий", "средний", "высокий"}:
+            materiality_level = "средний"
+        for department in departments:
+            totals[department] += 1
+            materiality_counts[department][materiality_level] += 1
+    result = [
+        RecommendationObjectCount(
+            name=name,
+            value=value,
+            materiality=RecommendationMaterialityCounts(
+                низкий=materiality_counts[name].get("низкий", 0),
+                средний=materiality_counts[name].get("средний", 0),
+                высокий=materiality_counts[name].get("высокий", 0),
+            ),
+        )
+        for name, value in sorted(totals.items(), key=lambda item: (-item[1], item[0]))
+    ]
+    return result
 
 
 async def recommendation_check_links_sql(session: AsyncSession, **filters: Any) -> list[NamedCount]:

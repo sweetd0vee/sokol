@@ -159,6 +159,7 @@ function StatusSegmentValueLabel({
   }
 
   const rounded = Math.round(numericValue);
+  const roundedStr = String(rounded);
   const h = height ?? 0;
   const w = width ?? 0;
   // For stacked bars Recharts often provides x/y as the top-left corner of the segment.
@@ -190,7 +191,15 @@ function StatusSegmentValueLabel({
 
   const outsideTextColor = '#111827';
   const minInsideHeight = 14;
-  const canPlaceInside = h >= minInsideHeight;
+  const approxCharWidthFactor = 0.62;
+
+  // Decide whether the number fits inside the colored segment.
+  // Recharts doesn't give text-measurement, so we approximate width by font size and char count.
+  const insideFontSizeBase = h >= 20 ? 13 : 12;
+  const maxFontSizeByWidth = w > 0 ? Math.floor((w - 6) / (roundedStr.length * approxCharWidthFactor)) : 0;
+  const insideFontSize = Math.max(9, Math.min(insideFontSizeBase, maxFontSizeByWidth));
+  const estimatedTextWidth = roundedStr.length * insideFontSize * approxCharWidthFactor;
+  const canPlaceInside = h >= minInsideHeight && w >= estimatedTextWidth + 4 && insideFontSize >= 9;
 
   if (canPlaceInside) {
     return (
@@ -199,12 +208,12 @@ function StatusSegmentValueLabel({
         y={cy}
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize={h >= 20 ? 13 : 12}
+        fontSize={insideFontSize}
         fontWeight={700}
         fill={insideTextColor}
         style={{ pointerEvents: 'none' }}
       >
-        {rounded}
+        {roundedStr}
       </text>
     );
   }
@@ -219,8 +228,20 @@ function StatusSegmentValueLabel({
     : 0;
 
   const outsideY = y - 4 - statusOutsideIndex * 12;
-  // If outside label would be clipped near the top, fall back to segment center.
-  const clampedOutsideY = outsideY < 6 ? cy : outsideY;
+  // Keep labels within the visible SVG area: clamp to a minimum Y that still preserves stack spacing.
+  // (At the same time, don't push the note too far below the segment top.)
+  const minNoteCenterY = 10 + statusOutsideIndex * 3;
+  const maxNoteCenterY = y - 2;
+  const noteCenterY = Math.min(Math.max(minNoteCenterY, outsideY), maxNoteCenterY);
+
+  const noteFontSize = 11;
+  const boxPaddingX = 6;
+  const boxPaddingY = 2;
+  const boxWidth = roundedStr.length * noteFontSize * approxCharWidthFactor + boxPaddingX * 2;
+  const boxHeight = noteFontSize + boxPaddingY * 2;
+  const boxX = cx - boxWidth / 2;
+  const boxY = noteCenterY - boxHeight / 2;
+  const noteBoxBottomY = noteCenterY + boxHeight / 2;
 
   return (
     <>
@@ -228,22 +249,39 @@ function StatusSegmentValueLabel({
         x1={cx}
         y1={y}
         x2={cx}
-        y2={clampedOutsideY + 3}
+        y2={noteBoxBottomY}
         stroke={segmentColor}
         strokeWidth={1}
         opacity={0.75}
       />
+
+      {/* Small arrow to visually connect segment -> note */}
+      <polygon
+        points={`${cx - 3},${noteBoxBottomY} ${cx + 3},${noteBoxBottomY} ${cx},${noteBoxBottomY - 6}`}
+        fill={segmentColor}
+        opacity={0.75}
+      />
+
+      <rect
+        x={boxX}
+        y={boxY}
+        width={boxWidth}
+        height={boxHeight}
+        rx={6}
+        fill="#ffffff"
+        stroke="#e5e7eb"
+      />
       <text
         x={cx}
-        y={clampedOutsideY}
+        y={noteCenterY}
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize={11}
+        fontSize={noteFontSize}
         fontWeight={700}
         fill={outsideTextColor}
         style={{ pointerEvents: 'none' }}
       >
-        {rounded}
+        {roundedStr}
       </text>
     </>
   );
@@ -271,6 +309,7 @@ function MaterialitySegmentValueLabel({
   }
 
   const rounded = Math.round(numericValue);
+  const roundedStr = String(rounded);
   const h = height ?? 0;
   const w = width ?? 0;
   // For stacked bars Recharts often provides x/y as the top-left corner of the segment.
@@ -310,7 +349,13 @@ function MaterialitySegmentValueLabel({
   const outsideTextColor = '#111827';
 
   const minInsideHeight = 14;
-  const canPlaceInside = h >= minInsideHeight;
+  const approxCharWidthFactor = 0.62;
+
+  const insideFontSizeBase = h >= 20 ? 13 : 12;
+  const maxFontSizeByWidth = w > 0 ? Math.floor((w - 6) / (roundedStr.length * approxCharWidthFactor)) : 0;
+  const insideFontSize = Math.max(9, Math.min(insideFontSizeBase, maxFontSizeByWidth));
+  const estimatedTextWidth = roundedStr.length * insideFontSize * approxCharWidthFactor;
+  const canPlaceInside = h >= minInsideHeight && w >= estimatedTextWidth + 4 && insideFontSize >= 9;
 
   if (canPlaceInside) {
     return (
@@ -319,12 +364,12 @@ function MaterialitySegmentValueLabel({
         y={cy}
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize={h >= 20 ? 13 : 12}
+        fontSize={insideFontSize}
         fontWeight={700}
         fill={insideTextColor}
         style={{ pointerEvents: 'none' }}
       >
-        {rounded}
+        {roundedStr}
       </text>
     );
   }
@@ -334,8 +379,18 @@ function MaterialitySegmentValueLabel({
   const statusOutsideIndex = dataKey === 'low' ? 0 : dataKey === 'medium' ? 1 : dataKey === 'high' ? 2 : 0;
 
   const outsideY = y - 4 - statusOutsideIndex * 12;
-  // If outside label would be clipped near the top, fall back to segment center.
-  const clampedOutsideY = outsideY < 6 ? cy : outsideY;
+  const minNoteCenterY = 10 + statusOutsideIndex * 3;
+  const maxNoteCenterY = y - 2;
+  const noteCenterY = Math.min(Math.max(minNoteCenterY, outsideY), maxNoteCenterY);
+
+  const noteFontSize = 11;
+  const boxPaddingX = 6;
+  const boxPaddingY = 2;
+  const boxWidth = roundedStr.length * noteFontSize * approxCharWidthFactor + boxPaddingX * 2;
+  const boxHeight = noteFontSize + boxPaddingY * 2;
+  const boxX = cx - boxWidth / 2;
+  const boxY = noteCenterY - boxHeight / 2;
+  const noteBoxBottomY = noteCenterY + boxHeight / 2;
 
   return (
     <>
@@ -343,22 +398,38 @@ function MaterialitySegmentValueLabel({
         x1={cx}
         y1={y}
         x2={cx}
-        y2={clampedOutsideY + 3}
+        y2={noteBoxBottomY}
         stroke={materialityColor}
         strokeWidth={1}
         opacity={0.75}
       />
+
+      <polygon
+        points={`${cx - 3},${noteBoxBottomY} ${cx + 3},${noteBoxBottomY} ${cx},${noteBoxBottomY - 6}`}
+        fill={materialityColor}
+        opacity={0.75}
+      />
+
+      <rect
+        x={boxX}
+        y={boxY}
+        width={boxWidth}
+        height={boxHeight}
+        rx={6}
+        fill="#ffffff"
+        stroke="#e5e7eb"
+      />
       <text
         x={cx}
-        y={clampedOutsideY}
+        y={noteCenterY}
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize={11}
+        fontSize={noteFontSize}
         fontWeight={700}
         fill={outsideTextColor}
         style={{ pointerEvents: 'none' }}
       >
-        {rounded}
+        {roundedStr}
       </text>
     </>
   );
@@ -674,7 +745,7 @@ export function RecommendationsAnalyticsDashboard() {
             {completedPeriodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
               <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={completedPeriodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}>
+                  <BarChart data={completedPeriodSeries} margin={{ top: 30, right: 12, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
                     <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
@@ -745,7 +816,7 @@ export function RecommendationsAnalyticsDashboard() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={completedPeriodSeries}
-                        margin={{ top: 18, right: 12, left: -10, bottom: 0 }}
+                        margin={{ top: 30, right: 12, left: -10, bottom: 0 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                         <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
@@ -785,16 +856,16 @@ export function RecommendationsAnalyticsDashboard() {
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span
                           className="inline-block h-3.5 w-3.5 rounded-sm"
-                          style={{ backgroundColor: MATERIALITY_COLORS.низкий }}
+                          style={{ backgroundColor: MATERIALITY_COLORS.средний }}
                         />
-                        Низкий
+                        Средний
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span
                           className="inline-block h-3.5 w-3.5 rounded-sm"
-                          style={{ backgroundColor: MATERIALITY_COLORS.средний }}
+                          style={{ backgroundColor: MATERIALITY_COLORS.низкий }}
                         />
-                        Средний
+                        Низкий
                       </div>
                     </div>
                   </div>

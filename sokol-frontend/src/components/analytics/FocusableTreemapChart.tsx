@@ -2,11 +2,17 @@ import { useState } from 'react';
 import { ResponsiveContainer, Tooltip, Treemap } from 'recharts';
 import { getValueBasedColors, PALETTE } from './analyticsPalette';
 import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
+import { MATERIALITY_COLORS } from '../../utils/recommendationAnalytics';
 
 export type TreemapDatum = {
   name: string;
   value: number;
   fill?: string;
+  materiality?: {
+    низкий: number;
+    средний: number;
+    высокий: number;
+  };
 };
 
 type FocusableTreemapChartProps = {
@@ -180,6 +186,30 @@ export function FocusableTreemapChart({
     ...item,
     fill: item.fill ?? (colorByValue ? valueColors[index] : colors[index % colors.length]),
   }));
+  const tooltipFormatter = (value: number | string, _name: string, props?: { payload?: TreemapDatum }) => {
+    const payload = props?.payload;
+    const materiality = payload?.materiality;
+    const numericValue = typeof value === 'number' ? value : Number(value);
+    const total = Number.isFinite(numericValue) ? numericValue : payload?.value ?? 0;
+    if (!materiality) {
+      return [total, 'Количество рекомендаций'];
+    }
+    return [
+      <>
+        <div className="font-semibold text-gray-900">Всего: {total}</div>
+        <div className="mt-1 font-medium" style={{ color: MATERIALITY_COLORS.высокий }}>
+          Высокий: {materiality.высокий}
+        </div>
+        <div className="font-medium" style={{ color: MATERIALITY_COLORS.средний }}>
+          Средний: {materiality.средний}
+        </div>
+        <div className="font-medium" style={{ color: MATERIALITY_COLORS.низкий }}>
+          Низкий: {materiality.низкий}
+        </div>
+      </>,
+      'Рекомендации',
+    ];
+  };
 
   return (
     <div
@@ -195,7 +225,8 @@ export function FocusableTreemapChart({
           content={<TreemapContent activeName={activeName} onActivate={setActiveName} />}
         >
           <Tooltip
-            formatter={(value, name) => [value, name]}
+            formatter={tooltipFormatter}
+            labelFormatter={(label) => `Департамент: ${label}`}
             contentStyle={CHART_TOOLTIP_STYLE}
           />
         </Treemap>

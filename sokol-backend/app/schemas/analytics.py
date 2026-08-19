@@ -13,6 +13,18 @@ class NamedCount(BaseModel):
     color: str | None = None
 
 
+class RecommendationMaterialityCounts(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    низкий: int = 0
+    средний: int = 0
+    высокий: int = 0
+
+
+class RecommendationObjectCount(NamedCount):
+    materiality: RecommendationMaterialityCounts
+
+
 class ChecksSummary(BaseModel):
     total: int
     not_started: int
@@ -150,7 +162,7 @@ class RecommendationsAnalyticsResponse(BaseModel):
     materiality_distribution: list[NamedCount] = Field(serialization_alias="materialityDistribution")
     indicator_distribution: list[NamedCount] = Field(serialization_alias="indicatorDistribution")
     check_links: list[NamedCount] = Field(serialization_alias="checkLinks")
-    object_distribution: list[NamedCount] = Field(serialization_alias="objectDistribution")
+    object_distribution: list[RecommendationObjectCount] = Field(serialization_alias="objectDistribution")
     status_distribution: list[NamedCount] = Field(serialization_alias="statusDistribution")
     additional_status_distribution: list[NamedCount] = Field(
         serialization_alias="additionalStatusDistribution"

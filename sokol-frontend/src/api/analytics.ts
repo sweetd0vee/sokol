@@ -79,6 +79,16 @@ export type RecommendationPeriodPoint = {
   cumulativeCompleted: number;
 };
 
+export type RecommendationMaterialityBreakdown = {
+  низкий: number;
+  средний: number;
+  высокий: number;
+};
+
+export type RecommendationObjectDistributionItem = NamedCount & {
+  materiality: RecommendationMaterialityBreakdown;
+};
+
 export type RecommendationsAnalyticsResponse = {
   universeTotal: number;
   filteredTotal: number;
@@ -89,7 +99,7 @@ export type RecommendationsAnalyticsResponse = {
   materialityDistribution: NamedCount[];
   indicatorDistribution: NamedCount[];
   checkLinks: NamedCount[];
-  objectDistribution: NamedCount[];
+  objectDistribution: RecommendationObjectDistributionItem[];
   statusDistribution: NamedCount[];
   additionalStatusDistribution: NamedCount[];
   filterOptions: AnalyticsFilterOptions & { auditors: string[] };
