@@ -485,7 +485,7 @@ export function KpiCard({
       'border-emerald-200 bg-emerald-50 text-emerald-900 ',
     red: 'border-rose-200 bg-rose-50 text-rose-900 ',
     amber:
-      'border-amber-200 bg-amber-50 text-amber-900 ',
+      'border-[#FBEB8D]/50 bg-[#FBEB8D]/25 text-slate-900 ',
     violet:
       'border-violet-200 bg-violet-50 text-violet-900 ',
     lilac:
