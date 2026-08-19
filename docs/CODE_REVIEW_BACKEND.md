@@ -86,15 +86,6 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 
 **Тесты:** prod + `SOKOL_LOAD_DEMO_DATA=1` падает до старта; prod + `SOKOL_SEED_REPLACE=1` падает; default compose env не включает demo load.
 
-### BE-02 · P1 · Bearer auth доверял role из JWT — закрыто
-
-**Где:** `app/api/deps.py`, `tests/test_auth_rbac.py`.
-
-**Было:** `get_current_user` декодировал token и возвращал `CurrentUser` из полей `sub`, `role`, `display_name`. База пользователей не читалась для Bearer-запроса.
-
-**Исправлено:** Bearer-ветка берёт из JWT только `sub`, читает пользователя через `get_user_by_username(session, username)`, проверяет `user is not None` и `user.is_active`, затем формирует `CurrentUser` из БД. `role` и `display_name` в token остались неавторитетными.
-
-**Тесты:** добавлены regression tests: валидный JWT деактивированного пользователя возвращает 401; пользователь с token роли admin, но ролью auditor в БД, получает 403 на admin endpoint.
 
 ### BE-03 · P1 · HTTP Basic fallback включён всегда
 
@@ -108,35 +99,6 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 
 **Тесты:** при prod config Basic получает 401, Bearer продолжает работать.
 
-### BE-04 · P1 · Delete recommendation оставлял orphan attachments — закрыто
-
-**Где:** `app/crud/recommendations_crud.py`, `app/api/v1/endpoints/recommendations.py`, `app/models/attachments.py`, `app/services/storage/minio_storage.py`.
-
-**Было:** `delete_recommendation` удалял recommendation и renumber, но не трогал attachments.
-
-**Исправлено:** `recommendations_service.delete_recommendation` вызывает `attachments_service.delete_attachments_for_entity`, удаляет MinIO objects и rows, затем удаляет recommendation и renumber в одной transaction. Storage failure маппится в 502.
-
-**Тесты:** service/API regression tests на cleanup и 502 mapping.
-
-### BE-05 · P1 · Смена serial_number не переносила MinIO bucket — закрыто
-
-**Где:** `app/crud/checks_crud.py`, `app/services/storage/minio_storage.py`, `app/db/recalculate_check_serial_numbers.py`.
-
-**Было:** при PATCH проверки код обновлял `recommendations.serial_number` и `attachments.check_serial_number`, но `Attachment.bucket` оставался старым.
-
-**Исправлено:** добавлен `MinioStorage.copy_check_bucket_objects`; PATCH serial копирует objects в bucket нового serial, обновляет `attachments.bucket`, commit-ит изменения и удаляет старый bucket. Mass recalc использует тот же primitive.
-
-**Тесты:** regression test фиксирует storage copy/delete и cascade execution.
-
-### BE-06 · P1 · Upload мог оставить object без DB row — закрыто
-
-**Где:** `app/api/v1/endpoints/attachments.py`.
-
-**Было:** endpoint загружал файл в MinIO, затем создавал `Attachment` row. Если DB commit падал после upload, object оставался orphan.
-
-**Исправлено:** `attachments_service.upload_attachment` при исключении после upload вызывает `storage.delete_object(stored.bucket, stored.object_key)` и логирует cleanup failure отдельно.
-
-**Тесты:** покрыто lifecycle regression набором.
 
 ### BE-07 · P1 · Import/seed replace опасен для рабочей БД
 
@@ -166,43 +128,6 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 4. Для users вместо delete рассмотреть `is_active=false` с audit trail.
 
 **Тесты:** добавить auditor/department/user через API, запустить prod bootstrap sync, запись остаётся; destructive sync работает только с dev/demo flag.
-
-### BE-08 · P2 · Analytics SQL aggregates — закрыто
-
-**Где:** `app/services/analytics/sql_filters.py`, `app/services/analytics/sql_aggregates.py`, `app/db/migrate_analytics_indexes.py`.
-
-**Было:** каждый analytics endpoint загружал всю таблицу checks/recommendations в память и агрегировал в Python.
-
-**Исправлено:** фильтры перенесены в SQL WHERE; summary, period series, distributions, DVA matrix/load/readiness считаются через `COUNT`/`GROUP BY`. Для effectiveness matrix и planning department mapping остаётся точечная выборка только нужных колонок. Добавлены индексы по `start_date`, `deadline`, `status`, `auditor`, `audit_object`, `materiality_level`.
-
-**Остаток:** при очень больших объёмах можно добавить materialized views/cache для planning coverage и filter options.
-
-### BE-09 · P1 · Recommendation RBAC между аудиторами — закрыто
-
-**Где:** `app/core/person_match.py`, `app/core/recommendation_access.py`, `app/services/recommendations_service.py`, `app/services/attachments_service.py`, `app/api/v1/endpoints/recommendations.py`, `app/api/v1/endpoints/attachments.py`, `tests/test_person_match.py`, `tests/test_auth_rbac.py`.
-
-**Было:** DELETE recommendation и DELETE attachment были admin-only; auditor не мог удалить свою рекомендацию и управлять своими вложениями.
-
-**Исправлено:**
-
-- `user_can_manage_recommendation()` сопоставляет `recommendation.auditor` с `CurrentUser.username` через `person_match` (форматы «Иванов А.А.» / «Иванов Александр Александрович»).
-- `DELETE /recommendations/{id}`: admin — любая рекомендация; auditor — только своя.
-- `POST /recommendations/batch-delete`: та же проверка для каждого id; удаление и renumber в одной transaction.
-- `POST /attachments` для `entity_type=recommendation`: только владелец или admin.
-- `DELETE /attachments/{id}`: для recommendation — владелец или admin; для check — по-прежнему admin only.
-- `DELETE /checks/{id}` — без изменений, admin only.
-
-**Тесты:** `test_person_match.py`; `test_auth_rbac.py` (auditor cannot delete check; can delete own recommendation; cannot delete foreign); service test `delete_recommendations_batch`.
-
-### BE-10 · P1 · Параллельный undo импорта из АЗ давал HTTP 500 — закрыто
-
-**Где:** `app/services/recommendations_service.py`, `app/api/v1/endpoints/recommendations.py`, `sokol-frontend/src/contexts/SokolDataContext.tsx`, `sokol-frontend/src/components/checks/CheckRecommendationsBlock.tsx`.
-
-**Было:** frontend отменял импорт 31 рекомендации через `Promise.all` из 31 `DELETE` запросов. На backend каждый delete делал renumber в отдельной transaction → гонки и HTTP 500.
-
-**Исправлено:** добавлен `POST /api/v1/recommendations/batch-delete` с payload `{ ids: number[] }`; frontend `removeRecommendationsByIds()` вызывает один batch endpoint. После успешного импорта из АЗ UI показывает сессию «можно отменить загрузку».
-
-**Тесты:** `test_delete_recommendations_batch_cleans_and_renumbers_once` — cleanup attachments, delete rows, renumber once per check.
 
 ## Findings
 

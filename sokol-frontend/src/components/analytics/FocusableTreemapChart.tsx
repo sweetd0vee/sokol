@@ -82,7 +82,9 @@ function TreemapContent({
   const isDimmed = activeName !== null && activeName !== name;
   const isActive = activeName === name;
   const showLabel = width >= 42 && height >= 32;
-  const textColor = '#ffffff';
+  // Dashboard treemap labels should be readable against dark fills,
+  // but match the requested "black text" visual design.
+  const textColor = '#000000';
   const labelOpacity = isDimmed ? 0.55 : 1;
   const labelFontSize = width < 100 ? 11 : 12;
   const labelLineHeight = labelFontSize + 3;

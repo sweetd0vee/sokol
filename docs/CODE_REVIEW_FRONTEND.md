@@ -31,15 +31,6 @@ api/ · components/ · contexts/ · utils/ · constants/formLayout.ts
 | UI kit / forms | **8.5 / 10** | Переиспользуемые controls, `formLayout` constants, `LIST_ACTION_GROUP_CLASS` для единых отступов фильтров | Нет Storybook/visual regression |
 | Tests / lint | **8.8 / 10** | 54 Vitest проходят, lint без ошибок/warnings; form payload/API tests и Playwright auth smoke | Нет e2e CRUD flow и storage state |
 
-## Маршруты vs backend
-
-| Route | Backend |
-|-------|---------|
-| checks, recommendations, analytics, planning, tools, settings | ✅ |
-| kantsler | roadmap-заготовка v2, backend/API будет реализован во второй версии |
-| profile password change | ✅ `POST /api/v1/auth/change-password` |
-| admin users (profile) | ✅ `GET/POST /api/v1/users` |
-
 ## Tools
 
 `ToolsTab` → только `DocxToolPanel`: section-ii, section-ii-links, memorandum.  
@@ -51,21 +42,13 @@ Upload limits из `GET /capabilities` (backend).
 
 `SokolDataContext`: checks/recommendations грузятся с limit 10000. Для ожидаемого объёма пилота это полный набор данных без truncation banner; server pagination/search нужен только при росте сверх 10000.
 
-`CheckFormPage`: serial из API, payload не отправляет `serial_number` ✅
+`CheckFormPage`: serial из API, payload не отправляет `serial_number`
 
-`ProfilePage`: пароль меняется через `changePasswordRequest`; старое замечание про неподключённую форму закрыто ✅
+`ProfilePage`: пароль меняется через `changePasswordRequest`; старое замечание про неподключённую форму закрыто
 
 ## Analytics
 
-Server aggregates в PostgreSQL ✅. KPI-блок на всех вкладках analytics с заголовком **«Итого»**; на вкладке проверок первая карточка — **«Всего»** (не «Итого»). Visual export (xlsx/pdf/docx/html) — DOM capture хрупкий. Planning export отключён.
-
-## Тесты
-
-54 Vitest теста (10 файлов): filters, checkKey helpers, fileHelpers, reference options, form payload checks, recommendation batch/yearly number API, person matching coverage, `recommendationYearlyNumber`.
-
-Lint: 0 errors, 0 warnings.
-
-E2E: 5 Playwright auth smoke tests: unauthenticated redirect, login validation, successful login, logout, change-password success/error. Нужны smoke на ключевые CRUD workflows.
+Server aggregates в PostgreSQL. KPI-блок на всех вкладках analytics с заголовком **«Итого»**; на вкладке проверок первая карточка — **«Всего»** (не «Итого»). Visual export (xlsx/pdf/docx/html) — DOM capture хрупкий. Planning export отключён.
 
 ## Подробные findings
 
