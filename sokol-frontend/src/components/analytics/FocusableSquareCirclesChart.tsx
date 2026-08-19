@@ -125,7 +125,7 @@ export function FocusableSquareCirclesChart({
                   fill={fill}
                   fillOpacity={isDimmed ? 0.32 : 1}
                   stroke={isActive ? '#0f172a' : 'none'}
-                  strokeWidth={isActive ? 2 : 0}
+                  strokeWidth={isActive ? 1 : 0}
                 >
                   <title>
                     {formatLegendLabel({

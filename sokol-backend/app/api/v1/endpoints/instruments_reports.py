@@ -6,7 +6,7 @@ from datetime import date
 from pathlib import Path
 from urllib.parse import quote
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +14,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.db.session import get_db_session
 from app.services.dictionary_validation import DictionaryRefError, canonicalize_audit_objects
+from app.services.reports.control_file.generator import (
+    TEMPLATE_PATH as CONTROL_FILE_TEMPLATE_PATH,
+    generate_control_file_template,
+)
 from app.services.reports.memorandum.models import MemorandumAuditObject, MemorandumSource
 from app.services.reports.memorandum import docx_generator as memorandum_generator
 from app.services.reports.memorandum.parser import parse_az_for_memorandum
@@ -23,6 +27,8 @@ from app.services.reports.section_ii import docx_generator
 router = APIRouter(prefix="/tools", tags=["tools"])
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 DOCX_EXT = ".docx"
+XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+XLSX_EXT = ".xlsx"
 ALLOWED_MIME = {DOCX_MIME, "application/octet-stream"}
 MAX_UPLOAD_MB = float(settings.sokol_max_upload_mb)
 
@@ -77,6 +83,10 @@ def _build_memorandum_output_path(input_path: Path) -> Path:
     return input_path.with_suffix("").with_name(f"{input_path.stem}_dz{DOCX_EXT}")
 
 
+def _build_control_file_output_path(input_path: Path) -> Path:
+    return input_path.with_suffix("").with_name(f"{input_path.stem}_control{XLSX_EXT}")
+
+
 async def _canonicalize_memorandum_source(
     session: AsyncSession,
     source: MemorandumSource,
@@ -124,6 +134,31 @@ def _deadline_to_iso(value: str) -> str:
     return f"{year}-{month}-{day.zfill(2)}"
 
 
+def _normalize_control_file_check_leader(value: str) -> str:
+    normalized = re.sub(r"\s+", " ", (value or "").strip())
+    if not normalized:
+        raise HTTPException(status_code=400, detail="Укажите руководителя проверки.")
+    return normalized
+
+
+def _normalize_control_file_check_date(value: str) -> str:
+    normalized = re.sub(r"\s+", " ", (value or "").strip())
+    if not normalized:
+        raise HTTPException(status_code=400, detail="Укажите дату проверки.")
+    if re.fullmatch(r"\d{1,2}\.\d{2}\.\d{4}", normalized):
+        day, month, year = normalized.split(".")
+        try:
+            date(int(year), int(month), int(day))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Некорректная дата проверки.") from exc
+        return f"{day.zfill(2)}.{month}.{year}"
+    try:
+        parsed = date.fromisoformat(normalized)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Некорректная дата проверки.") from exc
+    return parsed.strftime("%d.%m.%Y")
+
+
 def _parse_recommendations_from_docx(input_path: str) -> tuple[list[ParsedRecommendationItem], str | None]:
     source, error = parse_az_for_memorandum(input_path)
     if error:
@@ -155,6 +190,17 @@ def _parse_recommendations_from_docx(input_path: str) -> tuple[list[ParsedRecomm
 
 
 async def _read_result_docx(
+    background_tasks: BackgroundTasks,
+    input_path: Path,
+    output_path: Path,
+) -> bytes:
+    try:
+        return await asyncio.to_thread(output_path.read_bytes)
+    finally:
+        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
+
+
+async def _read_result_xlsx(
     background_tasks: BackgroundTasks,
     input_path: Path,
     output_path: Path,
@@ -222,6 +268,59 @@ async def generate_section_ii_with_links(
         background_tasks,
         file,
         with_hyperlinks=True,
+    )
+
+
+@router.get("/control-file-template")
+async def download_control_file_template():
+    if not CONTROL_FILE_TEMPLATE_PATH.is_file():
+        raise HTTPException(status_code=404, detail="Шаблон файла контроля не найден.")
+    result_bytes = await asyncio.to_thread(CONTROL_FILE_TEMPLATE_PATH.read_bytes)
+    return Response(
+        content=result_bytes,
+        media_type=XLSX_MIME,
+        headers={"Content-Disposition": _attachment_header(CONTROL_FILE_TEMPLATE_PATH.name)},
+    )
+
+
+@router.post("/control-file")
+async def generate_control_file(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    check_leader: str = Form(...),
+    check_date: str = Form(...),
+):
+    _validate_docx_upload(file)
+    normalized_check_leader = _normalize_control_file_check_leader(check_leader)
+    normalized_check_date = _normalize_control_file_check_date(check_date)
+    original_name = (file.filename or "").strip()
+    original_stem = Path(original_name).stem if original_name else ""
+    download_name = (
+        f"{original_stem}_control{XLSX_EXT}" if original_stem else f"control{XLSX_EXT}"
+    )
+    content = await _read_upload(file)
+    input_path = _write_temp_docx(content)
+    output_path = _build_control_file_output_path(input_path)
+
+    result_path, error = await asyncio.to_thread(
+        generate_control_file_template,
+        str(input_path),
+        str(output_path),
+        check_leader=normalized_check_leader,
+        check_date=normalized_check_date,
+    )
+    if error:
+        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
+        raise HTTPException(status_code=400, detail=error)
+    if not result_path or not output_path.is_file():
+        background_tasks.add_task(_cleanup_files, str(input_path), str(output_path))
+        raise HTTPException(status_code=500, detail="Файл контроля не создан.")
+
+    result_bytes = await _read_result_xlsx(background_tasks, input_path, output_path)
+    return Response(
+        content=result_bytes,
+        media_type=XLSX_MIME,
+        headers={"Content-Disposition": _attachment_header(download_name)},
     )
 
 

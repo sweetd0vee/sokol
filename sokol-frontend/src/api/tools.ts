@@ -3,9 +3,14 @@ import { getBlobErrorMessage } from './errors';
 
 const DOCX_TOOL_TIMEOUT_MS = 120_000;
 
-async function postDocxTool(file: File, endpoint: string): Promise<Blob> {
+type DocxToolExtraFields = Record<string, string>;
+
+async function postDocxTool(file: File, endpoint: string, extraFields?: DocxToolExtraFields): Promise<Blob> {
   const formData = new FormData();
   formData.append('file', file);
+  Object.entries(extraFields ?? {}).forEach(([key, value]) => {
+    formData.append(key, value);
+  });
   try {
     const response = await api.post(endpoint, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -32,4 +37,22 @@ export async function generateSectionIIWithLinks(file: File): Promise<Blob> {
 
 export async function generateMemorandum(file: File): Promise<Blob> {
   return postDocxTool(file, '/api/v1/tools/memorandum');
+}
+
+export async function generateControlFile(
+  file: File,
+  payload: { checkLeader: string; checkDate: string },
+): Promise<Blob> {
+  return postDocxTool(file, '/api/v1/tools/control-file', {
+    check_leader: payload.checkLeader,
+    check_date: payload.checkDate,
+  });
+}
+
+export async function downloadControlFileTemplate(): Promise<Blob> {
+  const response = await api.get('/api/v1/tools/control-file-template', {
+    responseType: 'blob',
+    timeout: DOCX_TOOL_TIMEOUT_MS,
+  });
+  return response.data;
 }

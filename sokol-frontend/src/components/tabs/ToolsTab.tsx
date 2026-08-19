@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
 import { PageHeader } from '../ui/PageHeader';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { DocxToolPanel } from '../tools/DocxToolPanel';
+import { DatePicker } from '../ui/DatePicker';
+import { Select } from '../ui/Select';
 import {
+  downloadControlFileTemplate,
+  generateControlFile,
   generateMemorandum,
   generateSectionIITemplate,
   generateSectionIIWithLinks,
@@ -18,10 +23,15 @@ import {
   isFileWithinUploadLimit,
   uploadLimitError,
 } from '../../utils/uploadLimits';
+import { toIsoDate } from '../../utils/dates';
+import { useAuditorOptions } from '../../hooks/useReferenceOptions';
 import {
+  FORM_FIELD_CLASS,
   FORM_SECTION_CLASS,
   FORM_SECTION_TITLE_CLASS,
   FORM_STACK_CLASS,
+  FORM_INPUT_CLASS,
+  FORM_LABEL_CLASS,
 } from '../../constants/formLayout';
 
 const TOOL_TABS = [
@@ -35,17 +45,25 @@ const TOOLS_SECTION_TITLE_CLASS =`${FORM_SECTION_TITLE_CLASS}`;
 const buildSectionIIOutputName = (name: string, withHyperlinks = false) =>
 `${name.replace(/\.docx$/i, '')}${withHyperlinks ? '_section_ii_links' : '_section_ii'}.docx`;
 const buildMemorandumOutputName = (name: string) =>`${name.replace(/\.docx$/i, '')}_dz.docx`;
+const buildControlFileOutputName = (name: string) =>`${name.replace(/\.docx$/i, '')}_control.xlsx`;
+const CONTROL_FILE_TEMPLATE_NAME = 'файл контроля шаблон (шапка).xlsx';
 
 export function ToolsTab() {
   const [activeTab, setActiveTab] = useState<'az' | 'dz'>('az');
   const [azFile, setAzFile] = useState<File | null>(null);
   const [azLinksFile, setAzLinksFile] = useState<File | null>(null);
+  const [azControlFile, setAzControlFile] = useState<File | null>(null);
+  const [azControlLeader, setAzControlLeader] = useState('');
+  const [azControlDate, setAzControlDate] = useState<Date | null>(null);
   const [dzFile, setDzFile] = useState<File | null>(null);
   const [azError, setAzError] = useState<string | null>(null);
   const [azLinksError, setAzLinksError] = useState<string | null>(null);
+  const [azControlError, setAzControlError] = useState<string | null>(null);
   const [dzError, setDzError] = useState<string | null>(null);
   const [isAzProcessing, setIsAzProcessing] = useState(false);
   const [isAzLinksProcessing, setIsAzLinksProcessing] = useState(false);
+  const [isAzControlProcessing, setIsAzControlProcessing] = useState(false);
+  const [isControlTemplateDownloading, setIsControlTemplateDownloading] = useState(false);
   const [isDzProcessing, setIsDzProcessing] = useState(false);
   const capabilitiesQuery = useQuery({
     queryKey: ['capabilities'],
@@ -54,6 +72,7 @@ export function ToolsTab() {
   });
   const maxUploadMb = capabilitiesQuery.data?.max_upload_mb ?? DEFAULT_MAX_UPLOAD_MB;
   const maxUploadBytes = capabilitiesQuery.data?.max_upload_bytes ?? DEFAULT_MAX_UPLOAD_BYTES;
+  const { options: controlLeaderOptions } = useAuditorOptions(azControlLeader);
 
   const validateDocxFile = (file: File | null) => {
     if (!file) {
@@ -99,6 +118,17 @@ export function ToolsTab() {
       return;
     }
     setDzFile(file);
+  };
+
+  const handleAzControlFileChange = (file: File | null) => {
+    setAzControlError(null);
+    const validationError = validateDocxFile(file);
+    if (validationError) {
+      setAzControlFile(null);
+      setAzControlError(validationError);
+      return;
+    }
+    setAzControlFile(file);
   };
 
   const handleGenerateSectionII = async () => {
@@ -154,6 +184,52 @@ export function ToolsTab() {
     }
   };
 
+  const handleDownloadControlTemplate = async () => {
+    setAzControlError(null);
+    setIsControlTemplateDownloading(true);
+    try {
+      const blob = await downloadControlFileTemplate();
+      downloadBlob(blob, CONTROL_FILE_TEMPLATE_NAME);
+    } catch (err) {
+      setAzControlError(
+        getErrorMessage(err, 'Не удалось скачать шаблон файла контроля. Проверьте подключение к API.'),
+      );
+    } finally {
+      setIsControlTemplateDownloading(false);
+    }
+  };
+
+  const handleGenerateControlFile = async () => {
+    if (!azControlFile) {
+      setAzControlError('Выберите файл .docx для обработки.');
+      return;
+    }
+    if (!azControlLeader) {
+      setAzControlError('Выберите руководителя проверки.');
+      return;
+    }
+    const checkDate = toIsoDate(azControlDate);
+    if (!checkDate) {
+      setAzControlError('Выберите дату проверки.');
+      return;
+    }
+    setAzControlError(null);
+    setIsAzControlProcessing(true);
+    try {
+      const blob = await generateControlFile(azControlFile, {
+        checkLeader: azControlLeader,
+        checkDate,
+      });
+      downloadBlob(blob, buildControlFileOutputName(azControlFile.name));
+    } catch (err) {
+      setAzControlError(
+        getErrorMessage(err, 'Не удалось сформировать файл контроля. Проверьте подключение к API.'),
+      );
+    } finally {
+      setIsAzControlProcessing(false);
+    }
+  };
+
   return (
     <div className={`w-full ${FORM_STACK_CLASS}`}>
       <PageHeader title="Инструменты аудита" />
@@ -183,6 +259,50 @@ export function ToolsTab() {
                 isProcessing={isAzLinksProcessing}
                 error={azLinksError}
               />
+              <DocxToolPanel
+                title="3. Парсинг Аудиторского Заключения под форму файла контроля"
+                description="Загрузите Аудиторское заключение с Разделом II, чтобы заполнить шаблон для файла контроля."
+                file={azControlFile}
+                onFileChange={handleAzControlFileChange}
+                onTemplateDownload={handleDownloadControlTemplate}
+                isTemplateDownloading={isControlTemplateDownloading}
+                onProcess={handleGenerateControlFile}
+                isProcessing={isAzControlProcessing}
+                isProcessDisabled={!azControlLeader || !azControlDate}
+                extraFieldsClassName="w-full max-w-[288px]"
+                hideTemplateButton
+                error={azControlError}
+              >
+                <div className="flex flex-wrap items-end gap-4">
+                  <Select
+                    label="Руководитель проверки"
+                    value={azControlLeader}
+                    onChange={setAzControlLeader}
+                    options={controlLeaderOptions}
+                    placeholder="Выберите руководителя"
+                    className="min-w-0 w-full"
+                    labelClassName={FORM_LABEL_CLASS}
+                    inputClassName={FORM_INPUT_CLASS}
+                  />
+                  <DatePicker
+                    label="Дата проверки"
+                    selected={azControlDate}
+                    onChange={setAzControlDate}
+                    className="min-w-0 w-full"
+                    labelClassName={FORM_LABEL_CLASS}
+                    inputClassName={FORM_INPUT_CLASS}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleDownloadControlTemplate}
+                    disabled={isControlTemplateDownloading}
+                    className="inline-flex h-[38px] w-full items-center justify-center gap-2 rounded-lg border border-sber-light px-5 py-2.5 text-sm font-medium text-sber-light transition hover:bg-sber-light hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Download size={18} />
+                    {isControlTemplateDownloading ? 'Скачивание...' : 'Скачать шаблон'}
+                  </button>
+                </div>
+              </DocxToolPanel>
             </div>
           </div>
         )}

@@ -58,7 +58,8 @@ function PieValueLabel({
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   const segmentFill = payload?.color ?? fill;
-  const textColor = payload?.name === 'Средний' ? '#ffffff' : contrastLabelColor(segmentFill);
+  const forceWhiteLabels = new Set(['Средний', 'В процессе']);
+  const textColor = forceWhiteLabels.has(payload?.name ?? '') ? '#ffffff' : contrastLabelColor(segmentFill);
   const percentLabel =`${Math.round(percent * 100)}%`;
 
   if (labelMode === 'both') {
@@ -159,7 +160,7 @@ export function FocusableDonutChart({
                   fill={entry.color}
                   fillOpacity={isDimmed ? 0.32 : 1}
                   stroke={isActive ? '#0f172a' : 'none'}
-                  strokeWidth={isActive ? 2 : 0}
+                  strokeWidth={isActive ? 1 : 0}
                   style={{
                     cursor: 'pointer',
                     filter: isDimmed ? 'brightness(0.72) saturate(0.85)' : isActive ? 'brightness(1.04)' : undefined,
