@@ -79,12 +79,31 @@ function TreemapContent({
     return null;
   }
 
+  function hexToRgb(color: string) {
+    const normalized = color.trim().replace('#', '');
+    if (normalized.length !== 6) {
+      return { red: 0, green: 0, blue: 0 };
+    }
+    return {
+      red: Number.parseInt(normalized.slice(0, 2), 16),
+      green: Number.parseInt(normalized.slice(2, 4), 16),
+      blue: Number.parseInt(normalized.slice(4, 6), 16),
+    };
+  }
+
+  function getContrastingTextColor(backgroundFill: string) {
+    const { red, green, blue } = hexToRgb(backgroundFill);
+    // Relative luminance (sRGB)
+    const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
+    return luminance < 0.6 ? '#FFFFFF' : '#000000';
+  }
+
   const isDimmed = activeName !== null && activeName !== name;
   const isActive = activeName === name;
   const showLabel = width >= 42 && height >= 32;
   // Dashboard treemap labels should be readable against dark fills,
   // but match the requested "black text" visual design.
-  const textColor = '#000000';
+  const textColor = getContrastingTextColor(fill);
   const labelOpacity = isDimmed ? 0.55 : 1;
   const labelFontSize = width < 100 ? 11 : 12;
   const labelLineHeight = labelFontSize + 3;

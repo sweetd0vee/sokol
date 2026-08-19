@@ -179,7 +179,7 @@ export function DvaAnalyticsDashboard() {
           <ChartCard title="Итого" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')}>
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-6">
               <KpiCard label="Проверки" value={checkSummary.total} tone="blue" />
-              <KpiCard label="Рекомендации" value={recSummary.total} tone="violet" />
+              <KpiCard label="Рекомендации" value={recSummary.total} tone="slate" />
               <KpiCard label="Аудиторы" value={auditorLoad.length} tone="slate" />
               <KpiCard label="Объекты аудита" value={departmentMap.length} tone="amber" />
               <KpiCard label="Завершённость" value={completionShare} suffix="%" tone="green" />

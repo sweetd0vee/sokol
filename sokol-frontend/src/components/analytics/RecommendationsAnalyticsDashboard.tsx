@@ -25,7 +25,7 @@ import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
   getValueBasedColors,
   RECOMMENDATIONS_PALETTE,
-  VALUE_VIOLET_SCALE,
+  VALUE_GRAY_SCALE,
 } from './analyticsPalette';
 import { exportRecommendationsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import {
@@ -245,7 +245,7 @@ export function RecommendationsAnalyticsDashboard() {
     [granularity, cumulativeSeries, selectedQuarterKeys],
   );
   const cumulativeColors = useMemo(
-    () => getValueBasedColors(completedCumulativeSeries.map((item) => item.total), VALUE_VIOLET_SCALE),
+    () => getValueBasedColors(completedCumulativeSeries.map((item) => item.total), VALUE_GRAY_SCALE),
     [completedCumulativeSeries],
   );
   const materialityDistribution = data?.materialityDistribution ?? EMPTY_MATERIALITY_DISTRIBUTION;
@@ -381,7 +381,7 @@ export function RecommendationsAnalyticsDashboard() {
             onToggleExport={() => exportSections.toggleSection('summary')}
           >
             <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5">
-              <KpiCard label="Всего" value={summary.total} hint={`из ${universeTotal}`} tone="violet" />
+              <KpiCard label="Всего" value={summary.total} hint={`из ${universeTotal}`} tone="slate" />
               <KpiCard label="В процессе" value={summary.byStatus.in_progress} tone="amber" />
               <KpiCard label="Не решено" value={summary.byStatus.unresolved} tone="slate" />
               <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
@@ -422,7 +422,7 @@ export function RecommendationsAnalyticsDashboard() {
                         dataKey="total"
                         position="top"
                         fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill={RECOMMENDATIONS_PALETTE[0]}
+                        fill="#111827"
                         offset={8}
                       />
                     </Bar>
@@ -456,7 +456,7 @@ export function RecommendationsAnalyticsDashboard() {
         render: () => (
           <ChartCard
             title="Существенность"
-            description="Распределение уровней существенности: по периодам и за период"
+            description="Распределение уровней существенности: за период и по период"
             exportSelected={isMaterialityExportSelected}
             onToggleExport={toggleMaterialityExport}
           >
@@ -564,7 +564,7 @@ export function RecommendationsAnalyticsDashboard() {
             ) : (
               <FocusableTreemapChart
                 data={objectDistributionTop}
-                palette={VALUE_VIOLET_SCALE}
+                palette={VALUE_GRAY_SCALE}
                 colorByValue
               />
             )}

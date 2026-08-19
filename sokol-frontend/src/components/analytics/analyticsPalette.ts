@@ -52,17 +52,20 @@ export const VALUE_BLUE_SCALE = [
 ] as const;
 
 /**
- * Sequential lilac / violet scale for the Recommendations period chart.
- * Values move from light to dark so bar intensity communicates magnitude.
+ * Sequential grey scale for the Recommendations analytics charts.
+ * Values move from light to dark so bar/treemap intensity communicates magnitude.
  */
-export const VALUE_VIOLET_SCALE = [
-  '#EDE9FE',
-  '#DDD6FE',
-  '#C4B5FD',
-  '#A78BFA',
-  '#8B5CF6',
-  '#5B21B6',
+export const VALUE_GRAY_SCALE = [
+  '#F3F4F6', // very light
+  '#E5E7EB',
+  '#D1D5DB',
+  '#BFC6D0',
+  '#9CA3AF',
+  '#4B5563', // dark grey (still readable with contrast-aware labels)
 ] as const;
+
+// Backward-compat alias (older code used the violet name).
+export const VALUE_VIOLET_SCALE = VALUE_GRAY_SCALE;
 
 function hexToRgb(color: string) {
   const hex = color.replace('#', '');
@@ -114,24 +117,24 @@ export function getValueBasedColors(
 }
 
 /**
- * Violet / lilac scale for the Recommendations analytics tab.
+ * Greyscale palette for Recommendations treemaps / discrete colored blocks.
  * Ordered to alternate dark ↔ light ↔ mid so neighbouring segments stay distinct.
  */
 export const RECOMMENDATIONS_PALETTE = [
-  '#4C1D95', // deep violet
-  '#C4B5FD', // soft lilac
-  '#7C3AED', // vivid violet
-  '#EDE9FE', // pale lilac
-  '#5B21B6', // purple
-  '#A78BFA', // light violet
-  '#6D28D9', // mid violet
-  '#DDD6FE', // lavender
-  '#8B5CF6', // bright violet
-  '#F5F3FF', // mist lilac
-  '#4338CA', // indigo-violet
-  '#D8B4FE', // orchid
-  '#2E1065', // ink purple
-  '#B794F4', // soft purple
-  '#6366F1', // indigo
-  '#E9D5FF', // light orchid
+  '#0F172A', // deep ink grey
+  '#E5E7EB', // soft grey
+  '#6B7280', // vivid mid-grey
+  '#F3F4F6', // pale grey
+  '#374151', // dark slate
+  '#CBD5E1', // light slate
+  '#64748B', // mid slate
+  '#D1D5DB', // light grey
+  '#94A3B8', // bright slate
+  '#F8FAFC', // mist
+  '#334155', // indigo-slate
+  '#BFC7D0', // orchid-grey
+  '#1F2937', // ink slate
+  '#AEB7C2', // soft grey
+  '#5B6776', // muted slate
+  '#E2E8F0', // light slate
 ];
