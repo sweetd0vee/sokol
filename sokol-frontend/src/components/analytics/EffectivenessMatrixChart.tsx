@@ -157,13 +157,13 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
       ) : null}
 
       <div className="flex shrink-0 flex-wrap items-end justify-between gap-x-4 gap-y-1.5">
-        <p className="text-xs text-gray-600" data-effectiveness-matrix-total>
+        <p className="text-base font-medium text-gray-700" data-effectiveness-matrix-total>
           <span className="font-semibold text-sber-dark">Итого:</span>{' '}
           {formatEffectivenessChecksCount(rows.length)}
         </p>
 
         <ul
-          className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-gray-600"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-base text-gray-700"
           data-effectiveness-matrix-legend
         >
           {EFFECTIVENESS_LEGEND.map((item) => (

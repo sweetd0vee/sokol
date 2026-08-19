@@ -28,7 +28,7 @@ function parseColor(color?: string): [number, number, number] | null {
 }
 
 /** True when the fill is light enough that dark label text is more readable. */
-export function isLightFill(color?: string, fallbackLight = true) {
+function isLightFill(color?: string, fallbackLight = true) {
   const rgb = parseColor(color);
   if (!rgb) {
     return fallbackLight;

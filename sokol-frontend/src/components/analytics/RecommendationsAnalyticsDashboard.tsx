@@ -13,6 +13,7 @@ import {
   YAxis,
 } from 'recharts';
 import { fetchRecommendationsAnalytics, type RecommendationPeriodPoint } from '../../api/analytics';
+import { queryKeys } from '../../api/queryKeys';
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
@@ -145,7 +146,7 @@ export function RecommendationsAnalyticsDashboard() {
   );
 
   const bootstrapQuery = useQuery({
-    queryKey: ['analytics', 'recommendations', 'bootstrap'],
+    queryKey: queryKeys.analytics.recommendationsBootstrap,
     queryFn: () => fetchRecommendationsAnalytics({ granularity: 'year' }),
     staleTime: 60_000,
   });

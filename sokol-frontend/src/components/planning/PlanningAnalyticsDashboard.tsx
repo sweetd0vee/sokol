@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts';
 import { fetchPlanningAnalytics } from '../../api/analytics';
+import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from '../analytics/AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from '../analytics/AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from '../analytics/AnalyticsSelectionSummary';
@@ -52,7 +53,7 @@ export function PlanningAnalyticsDashboard() {
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('html');
 
   const bootstrapQuery = useQuery({
-    queryKey: ['analytics', 'planning', 'bootstrap'],
+    queryKey: queryKeys.analytics.planningBootstrap,
     queryFn: () => fetchPlanningAnalytics({ granularity: 'year' }),
     staleTime: 60_000,
   });

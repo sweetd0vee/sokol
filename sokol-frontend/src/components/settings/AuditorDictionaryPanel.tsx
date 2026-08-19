@@ -6,6 +6,7 @@ import {
   updateAuditor,
   type Auditor,
 } from '../../api/settings';
+import { queryKeys } from '../../api/queryKeys';
 import { getErrorMessage } from '../../api/errors';
 import { Input } from '../ui/Input';
 import { Modal, ModalActions } from '../ui/Modal';
@@ -42,7 +43,7 @@ export function AuditorDictionaryPanel({
   const [isSaving, setIsSaving] = useState(false);
 
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ['settings', 'auditors'],
+    queryKey: queryKeys.settings.auditors,
     queryFn: fetchAuditors,
   });
 
@@ -72,7 +73,7 @@ export function AuditorDictionaryPanel({
     setSaveError('');
     try {
       await createAuditor({ full_name: fullName, code });
-      await queryClient.invalidateQueries({ queryKey: ['settings', 'auditors'] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.settings.auditors });
       closeAdd();
     } catch (saveFailure) {
       setSaveError(getErrorMessage(saveFailure, 'Не удалось добавить аудитора.'));
@@ -95,7 +96,7 @@ export function AuditorDictionaryPanel({
     setSaveError('');
     try {
       await updateAuditor(editDraft.id, { full_name: fullName, code });
-      await queryClient.invalidateQueries({ queryKey: ['settings', 'auditors'] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.settings.auditors });
       setEditDraft(null);
     } catch (saveFailure) {
       setSaveError(getErrorMessage(saveFailure, 'Не удалось изменить аудитора.'));

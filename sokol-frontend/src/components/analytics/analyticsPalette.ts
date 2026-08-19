@@ -135,6 +135,3 @@ export const RECOMMENDATIONS_PALETTE = [
   '#6366F1', // indigo
   '#E9D5FF', // light orchid
 ];
-
-/** «За период» bars on the recommendations period chart — soft lilac. */
-export const RECOMMENDATIONS_PERIOD_BAR_COLOR = '#C4B5FD';

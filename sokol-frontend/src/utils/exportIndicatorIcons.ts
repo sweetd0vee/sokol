@@ -1,6 +1,6 @@
 /** Lucide-style indicator icons rendered to PNG for document exports. */
 
-export const INDICATOR_ICON_COLORS: Record<string, string> = {
+const INDICATOR_ICON_COLORS: Record<string, string> = {
   'В процессе': 'EAB308',
   Ожидает: '6B7280',
   'Не решено': 'EF4444',
@@ -83,7 +83,7 @@ async function svgToPngBytes(svg: string): Promise<Uint8Array> {
   });
 }
 
-export async function getIndicatorIconPng(label: string): Promise<Uint8Array | null> {
+async function getIndicatorIconPng(label: string): Promise<Uint8Array | null> {
   const text = label.trim();
   if (!text || text === 'Не указан') {
     return null;

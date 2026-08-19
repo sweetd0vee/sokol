@@ -55,7 +55,7 @@ export function buildCheckYearlyNumbers(checks: Check[]): Map<string, number> {
   return result;
 }
 
-export function getCheckYearlyNumber(check: Check, yearlyNumbers: Map<string, number>): number | null {
+function getCheckYearlyNumber(check: Check, yearlyNumbers: Map<string, number>): number | null {
   return yearlyNumbers.get(check.id) ?? null;
 }
 

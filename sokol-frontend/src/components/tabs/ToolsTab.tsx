@@ -14,6 +14,7 @@ import {
   generateSectionIIWithLinks,
 } from '../../api/tools';
 import { fetchCapabilities } from '../../api/capabilities';
+import { queryKeys } from '../../api/queryKeys';
 import { getErrorMessage } from '../../api/errors';
 import { downloadBlob } from '../../utils/download';
 import { isDocxFile } from '../../utils/docx';
@@ -26,7 +27,6 @@ import {
 import { toIsoDate } from '../../utils/dates';
 import { useAuditorOptions } from '../../hooks/useReferenceOptions';
 import {
-  FORM_FIELD_CLASS,
   FORM_SECTION_CLASS,
   FORM_SECTION_TITLE_CLASS,
   FORM_STACK_CLASS,
@@ -66,7 +66,7 @@ export function ToolsTab() {
   const [isControlTemplateDownloading, setIsControlTemplateDownloading] = useState(false);
   const [isDzProcessing, setIsDzProcessing] = useState(false);
   const capabilitiesQuery = useQuery({
-    queryKey: ['capabilities'],
+    queryKey: queryKeys.capabilities,
     queryFn: fetchCapabilities,
     staleTime: 5 * 60 * 1000,
   });

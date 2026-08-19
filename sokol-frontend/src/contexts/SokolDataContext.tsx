@@ -11,6 +11,7 @@ import {
   fetchRecommendations,
   updateRecommendation as updateRecommendationApi,
 } from '../api/recommendations';
+import { queryKeys } from '../api/queryKeys';
 import { useAuth } from '../hooks/useAuth';
 import { SokolDataContext, type SokolDataContextValue } from './sokolData';
 
@@ -25,13 +26,13 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
   const { isAuthenticated } = useAuth();
 
   const checksQuery = useQuery({
-    queryKey: ['checks'],
+    queryKey: queryKeys.checks,
     queryFn: () => fetchChecks({ limit: LIST_FETCH_LIMIT }),
     enabled: isAuthenticated,
   });
 
   const recommendationsQuery = useQuery({
-    queryKey: ['recommendations'],
+    queryKey: queryKeys.recommendations,
     queryFn: () => fetchRecommendations({ limit: LIST_FETCH_LIMIT }),
     enabled: isAuthenticated,
   });
@@ -44,8 +45,8 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
 
   const invalidateAll = useCallback(async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['checks'] }),
-      queryClient.invalidateQueries({ queryKey: ['recommendations'] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.checks }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.recommendations }),
     ]);
   }, [queryClient]);
 
@@ -53,65 +54,52 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
     await Promise.all([checksQuery.refetch(), recommendationsQuery.refetch()]);
   }, [checksQuery, recommendationsQuery]);
 
-  const addCheck = useCallback(
-    async (check: Check) => {
-      const created = await createCheck(check);
+  const runAndInvalidate = useCallback(
+    async <T,>(operation: () => Promise<T>) => {
+      const result = await operation();
       await invalidateAll();
-      return created;
+      return result;
     },
     [invalidateAll],
+  );
+
+  const addCheck = useCallback(
+    (check: Check) => runAndInvalidate(() => createCheck(check)),
+    [runAndInvalidate],
   );
 
   const updateCheck = useCallback(
-    async (check: Check) => {
-      const updated = await updateCheckApi(check.id, check);
-      await invalidateAll();
-      return updated;
-    },
-    [invalidateAll],
+    (check: Check) => runAndInvalidate(() => updateCheckApi(check.id, check)),
+    [runAndInvalidate],
   );
 
   const deleteCheck = useCallback(
-    async (id: string) => {
-      await deleteCheckApi(id);
-      await invalidateAll();
-    },
-    [invalidateAll],
+    (id: string) => runAndInvalidate(() => deleteCheckApi(id)),
+    [runAndInvalidate],
   );
 
   const addRecommendation = useCallback(
-    async (recommendation: Recommendation) => {
-      const created = await createRecommendation(recommendation);
-      await invalidateAll();
-      return created;
-    },
-    [invalidateAll],
+    (recommendation: Recommendation) => runAndInvalidate(() => createRecommendation(recommendation)),
+    [runAndInvalidate],
   );
 
   const addRecommendationsForCheck = useCallback(
     async (serialNumber: string, items: Recommendation[]) => {
-      const result = await batchRecommendations(serialNumber, items, 'append');
-      await invalidateAll();
+      const result = await runAndInvalidate(() => batchRecommendations(serialNumber, items, 'append'));
       return result.items;
     },
-    [invalidateAll],
+    [runAndInvalidate],
   );
 
   const updateRecommendation = useCallback(
-    async (recommendation: Recommendation) => {
-      const updated = await updateRecommendationApi(recommendation.id, recommendation);
-      await invalidateAll();
-      return updated;
-    },
-    [invalidateAll],
+    (recommendation: Recommendation) =>
+      runAndInvalidate(() => updateRecommendationApi(recommendation.id, recommendation)),
+    [runAndInvalidate],
   );
 
   const deleteRecommendation = useCallback(
-    async (id: string) => {
-      await deleteRecommendationApi(id);
-      await invalidateAll();
-    },
-    [invalidateAll],
+    (id: string) => runAndInvalidate(() => deleteRecommendationApi(id)),
+    [runAndInvalidate],
   );
 
   const removeRecommendationsByIds = useCallback(
@@ -119,10 +107,9 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
       if (ids.length === 0) {
         return;
       }
-      await batchDeleteRecommendations(ids);
-      await invalidateAll();
+      await runAndInvalidate(() => batchDeleteRecommendations(ids));
     },
-    [invalidateAll],
+    [runAndInvalidate],
   );
 
   const getRecommendationsByCheckKey = useCallback(
@@ -133,10 +120,9 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
 
   const replaceRecommendationsForCheck = useCallback(
     async (serialNumber: string, items: Recommendation[]) => {
-      await batchRecommendations(serialNumber, items, 'replace');
-      await invalidateAll();
+      await runAndInvalidate(() => batchRecommendations(serialNumber, items, 'replace'));
     },
-    [invalidateAll],
+    [runAndInvalidate],
   );
 
   const value = useMemo<SokolDataContextValue>(

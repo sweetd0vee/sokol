@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '../api/queryKeys';
 import { fetchAuditors, fetchEffectivenessRatings } from '../api/settings';
 
 type SelectOption = { value: string; label: string };
@@ -16,7 +17,7 @@ export function toNameOptions(values: string[], extra?: string): SelectOption[] 
 
 export function useAuditorOptions(extraValue?: string) {
   const { data, isLoading } = useQuery({
-    queryKey: ['settings', 'auditors'],
+    queryKey: queryKeys.settings.auditors,
     queryFn: fetchAuditors,
   });
 
@@ -30,7 +31,7 @@ export function useAuditorOptions(extraValue?: string) {
 
 export function useEffectivenessRatingOptions(...extraValues: string[]) {
   const { data, isLoading } = useQuery({
-    queryKey: ['settings', 'effectiveness-ratings'],
+    queryKey: queryKeys.settings.effectivenessRatings,
     queryFn: fetchEffectivenessRatings,
   });
   const extraValuesKey = extraValues.join('\u0000');

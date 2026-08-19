@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ChevronsUpDown, ChevronLeft, ChevronRight, PencilLine, User } from 'lucide-react';
+import { PencilLine } from 'lucide-react';
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
@@ -14,14 +14,14 @@ import {
   getCheckTypeLabel,
   getCheckViewLabel,
 } from '../../constants/checks';
-import { EXPORT_FORMATS, type ExportFormat, exportChecks } from '../../utils/exports';
+import { type ExportFormat, exportChecks } from '../../utils/exports';
 import { exportCheckAttachments } from '../../utils/exportCheckAttachments';
 import {
   ATTACHMENT_SLOT_LABELS,
   CHECK_ATTACHMENT_EXPORT_SLOTS,
   type AttachmentSlot,
 } from '../../utils/checkAttachments';
-import { formatRuDate, parseDateValue, toEndOfDayMs, toStartOfDayMs } from '../../utils/dates';
+import { formatRuDate } from '../../utils/dates';
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
 import { useAuditorOptions } from '../../hooks/useReferenceOptions';
 import { useSokolData } from '../../contexts/sokolData';
@@ -30,71 +30,14 @@ import {
   LIST_ACTION_GROUP_CLASS,
   listFilterClass,
 } from '../../constants/formLayout';
-import {
-  buildCheckYearlyNumbers,
-  getCheckYearlyId,
-  getCheckYearlySortValue,
-} from '../../utils/checkYearlyNumber';
+import { buildCheckYearlyNumbers, getCheckYearlyId } from '../../utils/checkYearlyNumber';
+import { filterChecks, getCheckSortValue, type CheckSortKey } from '../../utils/checkList';
 import { getErrorMessage } from '../../api/errors';
-
-type SortKey =
-  | 'id'
-  | 'serial_number'
-  | 'check_name'
-  | 'check_type'
-  | 'check_view'
-  | 'start_date'
-  | 'check_leader'
-  | 'status';
-
-
-const getSortValue = (check: Check, key: SortKey, yearlyNumbers: Map<string, number>) => {
-  switch (key) {
-    case 'id':
-      return getCheckYearlySortValue(check, yearlyNumbers);
-    case 'serial_number':
-      return check.serial_number;
-    case 'check_name':
-      return check.check_name;
-    case 'check_type':
-      return getCheckTypeLabel(check.check_type);
-    case 'check_view':
-      return getCheckViewLabel(check.check_view);
-    case 'start_date':
-      return parseDateValue(check.start_date);
-    case 'check_leader':
-      return check.check_leader;
-    case 'status':
-      return (
-        {
-          not_started: 0,
-          in_progress: 1,
-          completed: 2,
-        }[check.status] ?? 999
-      );
-    default:
-      return '';
-  }
-};
-
-const compareValues = (a: string | number | null, b: string | number | null) => {
-  if (a === b) {
-    return 0;
-  }
-  if (a === null || a === undefined || a === '') {
-    return 1;
-  }
-  if (b === null || b === undefined || b === '') {
-    return -1;
-  }
-  if (typeof a === 'number' && typeof b === 'number') {
-    return a - b;
-  }
-  return String(a).localeCompare(String(b), 'ru', { numeric: true, sensitivity: 'base' });
-};
-
-const matchesSelected = (selected: string[], value: string) =>
-  selected.length === 0 || selected.includes(value);
+import { useClientTable } from '../../hooks/useClientTable';
+import { EntityListHeader } from '../lists/EntityListHeader';
+import { ListExportControls } from '../lists/ListExportControls';
+import { ListPagination } from '../lists/ListPagination';
+import { ListSortHeader } from '../lists/ListSortHeader';
 
 export function ChecksTab() {
   const myName = useCurrentUserName();
@@ -108,18 +51,12 @@ export function ChecksTab() {
   const [showOnlyMe, setShowOnlyMe] = useState(false);
   const [startDateFrom, setStartDateFrom] = useState<Date | null>(null);
   const [startDateTo, setStartDateTo] = useState<Date | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('xlsx');
   const [isExporting, setIsExporting] = useState(false);
   const [attachmentExportGroups, setAttachmentExportGroups] = useState<string[]>([
     ...CHECK_ATTACHMENT_EXPORT_SLOTS,
   ]);
   const [isExportingAttachments, setIsExportingAttachments] = useState(false);
-  const [sortConfig, setSortConfig] = useState<{ key: SortKey | null; direction: 'asc' | 'desc' }>({
-    key: null,
-    direction: 'asc',
-  });
   const normalizedMyName = useMemo(() => myName.trim().toLowerCase(), [myName]);
   const { options: leaderOptions } = useAuditorOptions();
 
@@ -132,111 +69,71 @@ export function ChecksTab() {
   } = useSokolData();
   const yearlyNumbers = useMemo(() => buildCheckYearlyNumbers(checks), [checks]);
 
-  const filteredChecks = useMemo(() => {
-    return checks.filter((check) => {
-      if (idFilter) {
-        const yearlyId = getCheckYearlyId(check, yearlyNumbers) ?? '';
-        if (!yearlyId.includes(idFilter.trim())) {
-          return false;
-        }
-      }
-      if (keyFilter && !check.serial_number.toLowerCase().includes(keyFilter.trim().toLowerCase())) {
-        return false;
-      }
-      if (nameFilter && !check.check_name.toLowerCase().includes(nameFilter.trim().toLowerCase())) {
-        return false;
-      }
-      if (!matchesSelected(checkTypes, check.check_type)) {
-        return false;
-      }
-      if (!matchesSelected(checkViews, check.check_view)) {
-        return false;
-      }
-      if (!matchesSelected(statuses, check.status)) {
-        return false;
-      }
-      if (!matchesSelected(checkLeaders, check.check_leader)) {
-        return false;
-      }
-      if (showOnlyMe) {
-        if (!normalizedMyName) {
-          return false;
-        }
-        if (check.check_leader.toLowerCase() !== normalizedMyName) {
-          return false;
-        }
-      }
-      if (startDateFrom || startDateTo) {
-        const checkStartMs = parseDateValue(check.start_date);
-        if (checkStartMs === null) {
-          return false;
-        }
-        if (startDateFrom && checkStartMs < toStartOfDayMs(startDateFrom)) {
-          return false;
-        }
-        if (startDateTo && checkStartMs > toEndOfDayMs(startDateTo)) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [
-    checks,
-    yearlyNumbers,
-    idFilter,
-    keyFilter,
-    nameFilter,
-    checkTypes,
-    checkViews,
-    statuses,
-    checkLeaders,
-    startDateFrom,
-    startDateTo,
-    showOnlyMe,
-    normalizedMyName,
-  ]);
+  const filteredChecks = useMemo(
+    () =>
+      filterChecks(checks, yearlyNumbers, {
+        idFilter,
+        keyFilter,
+        nameFilter,
+        checkTypes,
+        checkViews,
+        statuses,
+        checkLeaders,
+        showOnlyMe,
+        normalizedMyName,
+        startDateFrom,
+        startDateTo,
+      }),
+    [
+      checks,
+      yearlyNumbers,
+      idFilter,
+      keyFilter,
+      nameFilter,
+      checkTypes,
+      checkViews,
+      statuses,
+      checkLeaders,
+      startDateFrom,
+      startDateTo,
+      showOnlyMe,
+      normalizedMyName,
+    ],
+  );
 
-  const sortedChecks = useMemo(() => {
-    const sortKey = sortConfig.key;
-    if (!sortKey) {
-      return filteredChecks;
-    }
-    const sorted = [...filteredChecks];
-    sorted.sort((a, b) => {
-      const valueA = getSortValue(a, sortKey, yearlyNumbers);
-      const valueB = getSortValue(b, sortKey, yearlyNumbers);
-      const cmp = compareValues(valueA, valueB);
-      return sortConfig.direction === 'asc' ? cmp : -cmp;
-    });
-    return sorted;
-  }, [filteredChecks, sortConfig, yearlyNumbers]);
+  const getSortValue = useCallback(
+    (check: Check, key: CheckSortKey) => getCheckSortValue(check, key, yearlyNumbers),
+    [yearlyNumbers],
+  );
 
-  const totalPages = Math.max(1, Math.ceil(sortedChecks.length / pageSize));
-  const pagedChecks = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    return sortedChecks.slice(startIndex, startIndex + pageSize);
-  }, [sortedChecks, currentPage, pageSize]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    idFilter,
-    keyFilter,
-    nameFilter,
-    checkTypes,
-    checkViews,
-    statuses,
-    checkLeaders,
-    startDateFrom,
-    startDateTo,
+  const {
+    sortConfig,
+    toggleSort,
+    currentPage,
+    setCurrentPage,
     pageSize,
-    showOnlyMe,
-    normalizedMyName,
-  ]);
-
-  useEffect(() => {
-    setCurrentPage((prev) => Math.min(prev, totalPages));
-  }, [totalPages]);
+    setPageSize,
+    totalPages,
+    sortedItems: sortedChecks,
+    pagedItems: pagedChecks,
+    rangeLabel,
+  } = useClientTable({
+    items: filteredChecks,
+    getSortValue,
+    resetKey: [
+      idFilter,
+      keyFilter,
+      nameFilter,
+      checkTypes.join('\u0000'),
+      checkViews.join('\u0000'),
+      statuses.join('\u0000'),
+      checkLeaders.join('\u0000'),
+      startDateFrom?.getTime() ?? '',
+      startDateTo?.getTime() ?? '',
+      showOnlyMe,
+      normalizedMyName,
+    ].join('\u0001'),
+  });
 
   const handleResetFilters = () => {
     setIdFilter('');
@@ -309,27 +206,6 @@ export function ChecksTab() {
     [],
   );
 
-  const handleSort = (key: SortKey) => {
-    setSortConfig((prev) => {
-      if (prev.key !== key) {
-        return { key, direction: 'asc' };
-      }
-      if (prev.direction === 'asc') {
-        return { key, direction: 'desc' };
-      }
-      return { key: null, direction: 'asc' };
-    });
-  };
-
-  const renderSortIcon = (key: SortKey) => {
-    if (sortConfig.key !== key) {
-      return <ChevronsUpDown size={14} className="text-white/60" />;
-    }
-    return sortConfig.direction === 'asc'
-      ? <ArrowUp size={14} className="text-white" />
-      : <ArrowDown size={14} className="text-white" />;
-  };
-
   if (isChecksLoading) {
     return <LoadingState title="Загрузка проверок..." />;
   }
@@ -346,29 +222,12 @@ export function ChecksTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-2xl font-bold text-sber-dark text-center sm:text-left">Проверки</h2>
-        <div className="mx-auto flex w-[334px] shrink-0 items-center justify-center gap-3.5 sm:mx-0 sm:pr-px">
-          <button
-            type="button"
-            onClick={() => setShowOnlyMe((v) => !v)}
-            className={`${LIST_ACTION_BUTTON_CLASS} transition-colors ${
-              showOnlyMe
-                ? 'bg-[#6699FF] text-white border-2 border-[#6699FF]'
-                : 'bg-white text-[#6699FF] border-2 border-[#6699FF] hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white '
-            }`}
-          >
-            <User size={18} />
-            Мои
-          </button>
-          <Link
-            to="/checks/new"
-            className={`${LIST_ACTION_BUTTON_CLASS} bg-[#90EE90] text-gray-700 transition hover:bg-[#7fdc7f]`}
-          >
-            Создать
-          </Link>
-        </div>
-      </div>
+      <EntityListHeader
+        title="Проверки"
+        createTo="/checks/new"
+        showOnlyMe={showOnlyMe}
+        onToggleOnlyMe={() => setShowOnlyMe((value) => !value)}
+      />
 
       <div className="rounded-xl border border-gray-200 bg-white">
         <>
@@ -475,86 +334,56 @@ export function ChecksTab() {
                   </th>
                 </tr>
                 <tr className="bg-[#003366] text-white">
-                  <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('id')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      ID
-                      {renderSortIcon('id')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('serial_number')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      Ключ
-                      {renderSortIcon('serial_number')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('check_name')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      Название
-                      {renderSortIcon('check_name')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('check_type')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      Тип
-                      {renderSortIcon('check_type')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('check_view')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      Вид
-                      {renderSortIcon('check_view')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('start_date')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      Дата начала
-                      {renderSortIcon('start_date')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('check_leader')}
-                      className="inline-flex items-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      Руководитель проверки
-                      {renderSortIcon('check_leader')}
-                    </button>
-                  </th>
-                  <th className="px-0 py-3 text-center font-medium">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('status')}
-                      className="inline-flex w-full items-center justify-center gap-1 text-white/90 transition hover:text-white"
-                    >
-                      Статус
-                      {renderSortIcon('status')}
-                    </button>
-                  </th>
+                  <ListSortHeader
+                    label="ID"
+                    className="whitespace-nowrap"
+                    active={sortConfig.key === 'id'}
+                    direction={sortConfig.direction}
+                    onClick={() => toggleSort('id')}
+                  />
+                  <ListSortHeader
+                    label="Ключ"
+                    active={sortConfig.key === 'serial_number'}
+                    direction={sortConfig.direction}
+                    onClick={() => toggleSort('serial_number')}
+                  />
+                  <ListSortHeader
+                    label="Название"
+                    active={sortConfig.key === 'check_name'}
+                    direction={sortConfig.direction}
+                    onClick={() => toggleSort('check_name')}
+                  />
+                  <ListSortHeader
+                    label="Тип"
+                    active={sortConfig.key === 'check_type'}
+                    direction={sortConfig.direction}
+                    onClick={() => toggleSort('check_type')}
+                  />
+                  <ListSortHeader
+                    label="Вид"
+                    active={sortConfig.key === 'check_view'}
+                    direction={sortConfig.direction}
+                    onClick={() => toggleSort('check_view')}
+                  />
+                  <ListSortHeader
+                    label="Дата начала"
+                    active={sortConfig.key === 'start_date'}
+                    direction={sortConfig.direction}
+                    onClick={() => toggleSort('start_date')}
+                  />
+                  <ListSortHeader
+                    label="Руководитель проверки"
+                    active={sortConfig.key === 'check_leader'}
+                    direction={sortConfig.direction}
+                    onClick={() => toggleSort('check_leader')}
+                  />
+                  <ListSortHeader
+                    label="Статус"
+                    align="center"
+                    active={sortConfig.key === 'status'}
+                    direction={sortConfig.direction}
+                    onClick={() => toggleSort('status')}
+                  />
                   <th className="px-0 py-3 text-center font-medium">Действия</th>
                 </tr>
               </thead>
@@ -610,31 +439,18 @@ export function ChecksTab() {
           <div className="flex flex-col gap-3 border-t border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
               <div className="flex flex-col gap-2">
+                <ListExportControls
+                  onExport={() => void handleExport()}
+                  disabled={isExporting || sortedChecks.length === 0}
+                  isExporting={isExporting}
+                  format={exportFormat}
+                  onFormatChange={setExportFormat}
+                  selectClassName="w-[140px] rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
+                />
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={handleExport}
-                    disabled={isExporting || sortedChecks.length === 0}
-                    className="inline-flex w-[160px] items-center justify-center whitespace-nowrap rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isExporting ? 'Экспорт...' : 'Экспорт'}
-                  </button>
-                  <select
-                    value={exportFormat}
-                    onChange={(event) => setExportFormat(event.target.value as ExportFormat)}
-                    className="w-[140px] rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
-                  >
-                    {EXPORT_FORMATS.map((format) => (
-                      <option key={format.value} value={format.value}>
-                        {format.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleExportAttachments}
+                    onClick={() => void handleExportAttachments()}
                     disabled={
                       isExportingAttachments
                       || sortedChecks.length === 0
@@ -659,52 +475,14 @@ export function ChecksTab() {
                 Отработка фильтра: {filteredChecks.length} записей
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="whitespace-nowrap text-sm text-gray-600">
-                {sortedChecks.length > 0
-                  ?`Показано ${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, sortedChecks.length)} из ${sortedChecks.length}`
-                  : 'Показано 0 из 0'}
-              </span>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>Строк на странице:</span>
-                <select
-                  value={pageSize}
-                  onChange={(event) => setPageSize(Number(event.target.value))}
-                  className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
-                >
-                  {[10, 15, 20, 50, 100].map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  aria-label="Предыдущая страница"
-                  title="Предыдущая страница"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-sber-dark transition hover:bg-sber-dark/10 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <span className="text-sm text-gray-700">
-                  Страница {currentPage} из {totalPages}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  aria-label="Следующая страница"
-                  title="Следующая страница"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-sber-dark transition hover:bg-sber-dark/10 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-            </div>
+            <ListPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              rangeLabel={rangeLabel}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </div>
         </>
       </div>

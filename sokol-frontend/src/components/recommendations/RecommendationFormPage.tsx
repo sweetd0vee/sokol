@@ -21,6 +21,7 @@ import {
 import { fetchCheckBySerialNumber } from '../../api/checks';
 import { fetchRecommendation } from '../../api/recommendations';
 import { getErrorMessage } from '../../api/errors';
+import { queryKeys } from '../../api/queryKeys';
 import { useSokolData } from '../../contexts/sokolData';
 import { useAuth } from '../../hooks/useAuth';
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
@@ -87,7 +88,7 @@ export function RecommendationFormPage() {
   );
 
   const { data: fetchedRecommendation, isLoading: isFetching } = useQuery({
-    queryKey: ['recommendation', id],
+    queryKey: queryKeys.recommendation(id),
     queryFn: () => fetchRecommendation(id!),
     enabled: isEditMode && Boolean(id) && !navigationState.recommendation && !recommendationFromContext,
   });
@@ -181,7 +182,7 @@ export function RecommendationFormPage() {
   );
 
   const { data: fetchedLinkedCheck } = useQuery({
-    queryKey: ['check', 'by-serial', resolvedSerialNumber],
+    queryKey: queryKeys.checkBySerial(resolvedSerialNumber),
     queryFn: () => fetchCheckBySerialNumber(resolvedSerialNumber),
     enabled: Boolean(resolvedSerialNumber) && !linkedCheckFromContext,
     staleTime: 60_000,

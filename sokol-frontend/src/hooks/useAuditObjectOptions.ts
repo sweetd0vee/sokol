@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDepartments } from '../api/settings';
+import { queryKeys } from '../api/queryKeys';
 import { toNameOptions } from './useReferenceOptions';
 
 export function useAuditObjectOptions(extraValue?: string) {
   const { data, isLoading } = useQuery({
-    queryKey: ['settings', 'departments'],
+    queryKey: queryKeys.settings.departments,
     queryFn: fetchDepartments,
   });
 

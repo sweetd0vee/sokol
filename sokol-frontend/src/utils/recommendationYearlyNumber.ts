@@ -63,7 +63,7 @@ export function buildRecommendationYearlyNumbers(recommendations: Recommendation
   return result;
 }
 
-export function getRecommendationYearlyNumber(
+function getRecommendationYearlyNumber(
   recommendation: Recommendation,
   yearlyNumbers: Map<string, number>,
 ): number | null {

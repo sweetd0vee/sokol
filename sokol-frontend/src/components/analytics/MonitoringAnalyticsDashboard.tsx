@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchMonitoringAnalytics } from '../../api/analytics';
+import { queryKeys } from '../../api/queryKeys';
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
@@ -43,7 +44,7 @@ export function MonitoringAnalyticsDashboard() {
   );
 
   const bootstrapQuery = useQuery({
-    queryKey: ['analytics', 'monitoring', 'bootstrap'],
+    queryKey: queryKeys.analytics.monitoringBootstrap,
     queryFn: () => fetchMonitoringAnalytics({ granularity: 'year' }),
     staleTime: 60_000,
   });

@@ -11,7 +11,7 @@ function pad2(value: number) {
 }
 
 /** First calendar day of the period, e.g. 01.03.2025 */
-export function formatPeriodFirstDay(year: number, monthIndex: number) {
+function formatPeriodFirstDay(year: number, monthIndex: number) {
   return `01.${pad2(monthIndex + 1)}.${year}`;
 }
 
@@ -68,7 +68,7 @@ export function labelFromPeriodKey(key: string, granularity: PeriodGranularity) 
   return Number.isFinite(year) && Number.isFinite(month) ? formatPeriodFirstDay(year, month - 1) : key;
 }
 
-export function collectPeriodOptions(
+function collectPeriodOptions(
   dateMsList: Array<number | null>,
   granularity: PeriodGranularity,
 ): PeriodBucket[] {

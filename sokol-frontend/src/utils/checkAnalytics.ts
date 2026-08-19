@@ -313,16 +313,25 @@ export function buildEffectivenessColumnShares(
   });
 
   const total = rows.length;
-  return EFFECTIVENESS_LEGEND.map((item) => {
-    const count = counts[item.tone];
-    return {
-      tone: item.tone,
-      label: item.label,
-      color: item.color,
-      count,
-      percent: total === 0 ? 0 : Math.round((count / total) * 100),
-    };
-  });
+  return EFFECTIVENESS_LEGEND
+    .map((item, index) => {
+      const count = counts[item.tone];
+      return {
+        tone: item.tone,
+        label: item.label,
+        color: item.color,
+        count,
+        percent: total === 0 ? 0 : Math.round((count / total) * 100),
+        order: index,
+      };
+    })
+    .sort((left, right) => {
+      if (right.count !== left.count) {
+        return right.count - left.count;
+      }
+      return left.order - right.order;
+    })
+    .map(({ order: _order, ...share }) => share);
 }
 
 export function buildEffectivenessMatrix(checks: Check[]): EffectivenessMatrixRow[] {

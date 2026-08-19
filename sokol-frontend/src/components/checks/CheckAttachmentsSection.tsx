@@ -15,6 +15,7 @@ import {
 import { useEntityAttachments } from '../../hooks/useEntityAttachments';
 import { useAuth } from '../../hooks/useAuth';
 import { fetchCapabilities } from '../../api/capabilities';
+import { queryKeys } from '../../api/queryKeys';
 import { AttachmentFileList, AttachmentsUnavailableNotice } from '../attachments/AttachmentFileList';
 import {
   DEFAULT_MAX_UPLOAD_BYTES,
@@ -236,7 +237,7 @@ export function CheckAttachmentsSection({
   });
   const [openSlot, setOpenSlot] = useState<AttachmentSlot | null>(null);
   const capabilitiesQuery = useQuery({
-    queryKey: ['capabilities'],
+    queryKey: queryKeys.capabilities,
     queryFn: fetchCapabilities,
     staleTime: 5 * 60 * 1000,
   });

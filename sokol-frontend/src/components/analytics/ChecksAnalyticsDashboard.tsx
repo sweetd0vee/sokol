@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts';
 import { fetchChecksAnalytics, type ChecksAnalyticsPeriodPoint } from '../../api/analytics';
+import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
@@ -92,7 +93,7 @@ export function ChecksAnalyticsDashboard() {
   );
 
   const bootstrapQuery = useQuery({
-    queryKey: ['analytics', 'checks', 'bootstrap'],
+    queryKey: queryKeys.analytics.checksBootstrap,
     queryFn: () =>
       fetchChecksAnalytics({
         granularity: 'year',

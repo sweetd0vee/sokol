@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createUser, fetchUsers, type AppUser } from '../../api/users';
+import { queryKeys } from '../../api/queryKeys';
 import { getErrorMessage } from '../../api/errors';
 import type { UserRole } from '../../api/auth';
 import { Input } from '../ui/Input';
@@ -28,7 +29,7 @@ export function AdminUsersSection() {
   const [saving, setSaving] = useState(false);
 
   const { data: users = [], isLoading, error: loadError } = useQuery({
-    queryKey: ['users'],
+    queryKey: queryKeys.users,
     queryFn: fetchUsers,
   });
 
@@ -57,7 +58,7 @@ export function AdminUsersSection() {
       setUsername('');
       setPassword('');
       setSuccess(`Пользователь «${trimmedUsername}» добавлен.`);
-      await queryClient.invalidateQueries({ queryKey: ['users'] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.users });
     } catch (submitError) {
       setError(getErrorMessage(submitError, 'Не удалось добавить пользователя.'));
     } finally {

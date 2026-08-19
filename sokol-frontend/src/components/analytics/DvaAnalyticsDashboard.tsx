@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts';
 import { fetchDvaAnalytics } from '../../api/analytics';
+import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
@@ -52,7 +53,7 @@ export function DvaAnalyticsDashboard() {
   const exportSections = useExportSections(DVA_EXPORT_SECTIONS.map((section) => section.id) as DvaExportSectionId[]);
 
   const bootstrapQuery = useQuery({
-    queryKey: ['analytics', 'dva', 'bootstrap'],
+    queryKey: queryKeys.analytics.dvaBootstrap,
     queryFn: () => fetchDvaAnalytics({ granularity: 'year' }),
     staleTime: 60_000,
   });

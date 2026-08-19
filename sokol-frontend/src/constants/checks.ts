@@ -13,12 +13,6 @@ export const CHECK_QUARTER_OPTIONS = [
   { value: '4', label: 'Q4' },
 ];
 
-export const CHECK_TYPE_PLURAL_LABELS: Record<CheckType, string> = {
-  planned: 'Плановые',
-  unscheduled: 'Внеплановые',
-  thematic: 'Контрольные',
-};
-
 export const CHECK_STATUS_OPTIONS: { value: CheckStatus; label: string }[] = [
   { value: 'not_started', label: 'Запланировано' },
   { value: 'in_progress', label: 'В процессе' },
@@ -46,10 +40,6 @@ export const CHECK_VIEW_OPTIONS: { value: CheckView; label: string }[] = [
 
 export function getCheckTypeLabel(value: CheckType) {
   return CHECK_TYPE_OPTIONS.find((option) => option.value === value)?.label ?? value;
-}
-
-export function getCheckTypePluralLabel(value: CheckType) {
-  return CHECK_TYPE_PLURAL_LABELS[value] ?? getCheckTypeLabel(value);
 }
 
 export function getCheckStatusLabel(value: CheckStatus) {

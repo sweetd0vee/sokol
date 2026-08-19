@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FileUp, Paperclip } from 'lucide-react';
 import type { AttachmentEntityType } from '../../api/attachments';
 import { fetchCapabilities } from '../../api/capabilities';
+import { queryKeys } from '../../api/queryKeys';
 import { useEntityAttachments } from '../../hooks/useEntityAttachments';
 import { filesWord } from '../../utils/fileAttachments';
 import {
@@ -205,7 +206,7 @@ export function FileAttachmentsPanel({
   });
   const [openSlotId, setOpenSlotId] = useState<string | null>(null);
   const capabilitiesQuery = useQuery({
-    queryKey: ['capabilities'],
+    queryKey: queryKeys.capabilities,
     queryFn: fetchCapabilities,
     staleTime: 5 * 60 * 1000,
   });

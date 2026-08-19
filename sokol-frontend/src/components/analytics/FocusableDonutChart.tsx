@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { getValueBasedColors, PALETTE } from './analyticsPalette';
 import { CHART_LEGEND_STYLE, CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
-import { contrastLabelColor } from './chartContrast';
 
 export type DonutDatum = {
   name: string;
@@ -47,8 +46,6 @@ function PieValueLabel({
   value = 0,
   percent = 0,
   labelMode = 'percent',
-  fill,
-  payload,
 }: LabelProps) {
   if (percent < 0.06 || value <= 0) {
     return null;
@@ -57,9 +54,7 @@ function PieValueLabel({
   const radius = innerRadius + (outerRadius - innerRadius) * 0.62;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  const segmentFill = payload?.color ?? fill;
-  const forceWhiteLabels = new Set(['Средний', 'В процессе']);
-  const textColor = forceWhiteLabels.has(payload?.name ?? '') ? '#ffffff' : contrastLabelColor(segmentFill);
+  const textColor = '#ffffff';
   const percentLabel =`${Math.round(percent * 100)}%`;
 
   if (labelMode === 'both') {

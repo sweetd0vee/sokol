@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Trash2 } from 'lucide-react';
 import { DatePicker } from '../ui/DatePicker';
@@ -10,6 +10,8 @@ import { ErrorState, LoadingState } from '../ui/StateMessage';
 import { ConfirmDialog } from '../ui/Modal';
 import { fetchCheck } from '../../api/checks';
 import { getErrorMessage } from '../../api/errors';
+import { queryKeys } from '../../api/queryKeys';
+import { FormPageHeader } from '../forms/FormPageHeader';
 import { CHECK_QUARTER_OPTIONS, CHECK_TYPE_OPTIONS, CHECK_VIEW_OPTIONS } from '../../constants/checks';
 import { toInputDate, toIsoDate, toStartOfDayMs } from '../../utils/dates';
 import { useSokolData } from '../../contexts/sokolData';
@@ -59,7 +61,7 @@ export function CheckFormPage() {
   const isEditMode = Boolean(id);
   const existingCandidate = existingFromNavigation ?? existingFromList;
   const checkQuery = useQuery({
-    queryKey: ['check', id],
+    queryKey: queryKeys.check(id),
     queryFn: () => fetchCheck(id ?? ''),
     enabled: isEditMode && Boolean(id) && !existingCandidate,
     retry: false,
@@ -354,12 +356,7 @@ export function CheckFormPage() {
   if (isEditMode && !existing && checkQuery.isLoading) {
     return (
       <div className={`${FORM_PAGE_CLASS} ${FORM_STACK_CLASS}`}>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-xl font-bold text-sber-dark">{heading}</h2>
-          <Link to="/checks" className={FORM_OUTLINE_BUTTON_CLASS}>
-            Назад к списку
-          </Link>
-        </div>
+        <FormPageHeader title={heading} backTo="/checks" />
         <LoadingState description="Загружаем проверку для редактирования." />
       </div>
     );
@@ -368,12 +365,7 @@ export function CheckFormPage() {
   if (isEditMode && !existing && checkQuery.isError) {
     return (
       <div className={`${FORM_PAGE_CLASS} ${FORM_STACK_CLASS}`}>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-xl font-bold text-sber-dark">{heading}</h2>
-          <Link to="/checks" className={FORM_OUTLINE_BUTTON_CLASS}>
-            Назад к списку
-          </Link>
-        </div>
+        <FormPageHeader title={heading} backTo="/checks" />
         <ErrorState
           title="Проверка не загружена"
           description={getErrorMessage(checkQuery.error, 'Не удалось загрузить проверку для редактирования.')}
@@ -384,15 +376,7 @@ export function CheckFormPage() {
 
   return (
     <div className={`${FORM_PAGE_CLASS} ${FORM_STACK_CLASS}`}>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-xl font-bold text-sber-dark">{heading}</h2>
-        <Link
-          to="/checks"
-          className={FORM_OUTLINE_BUTTON_CLASS}
-        >
-          Назад к списку
-        </Link>
-      </div>
+      <FormPageHeader title={heading} backTo="/checks" />
 
       <form onSubmit={handleSubmit} className={FORM_STACK_CLASS}>
         <div className={FORM_SECTION_CLASS}>

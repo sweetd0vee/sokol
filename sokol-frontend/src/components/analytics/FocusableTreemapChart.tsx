@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { ResponsiveContainer, Tooltip, Treemap } from 'recharts';
 import { getValueBasedColors, PALETTE } from './analyticsPalette';
 import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
-import { contrastLabelColor } from './chartContrast';
 
 export type TreemapDatum = {
   name: string;
@@ -83,7 +82,7 @@ function TreemapContent({
   const isDimmed = activeName !== null && activeName !== name;
   const isActive = activeName === name;
   const showLabel = width >= 42 && height >= 32;
-  const textColor = contrastLabelColor(fill, false);
+  const textColor = '#ffffff';
   const labelOpacity = isDimmed ? 0.55 : 1;
   const labelFontSize = width < 100 ? 11 : 12;
   const labelLineHeight = labelFontSize + 3;

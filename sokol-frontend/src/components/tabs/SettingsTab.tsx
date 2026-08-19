@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../../api/queryKeys';
 import type { AuditType } from '../../api/settings';
 import {
   createAuditType,
@@ -65,7 +66,7 @@ export function SettingsTab() {
     isLoading: auditTypesLoading,
     error: auditTypesError,
   } = useQuery({
-    queryKey: ['settings', 'audit-types'],
+    queryKey: queryKeys.settings.auditTypes,
     queryFn: fetchAuditTypes,
   });
 
@@ -92,19 +93,19 @@ export function SettingsTab() {
     try {
       if (entity === 'auditors') {
         await deleteAuditor(id);
-        await queryClient.invalidateQueries({ queryKey: ['settings', 'auditors'] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.settings.auditors });
       } else if (entity === 'departments') {
         await deleteDepartment(id);
-        await queryClient.invalidateQueries({ queryKey: ['settings', 'departments'] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.settings.departments });
       } else if (entity === 'auditTypes') {
         await deleteAuditType(id);
-        await queryClient.invalidateQueries({ queryKey: ['settings', 'audit-types'] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.settings.auditTypes });
       } else if (entity === 'checkKinds') {
         await deleteCheckKind(id);
-        await queryClient.invalidateQueries({ queryKey: ['settings', 'check-kinds'] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.settings.checkKinds });
       } else if (entity === 'ratings') {
         await deleteEffectivenessRating(id);
-        await queryClient.invalidateQueries({ queryKey: ['settings', 'effectiveness-ratings'] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.settings.effectivenessRatings });
       }
     } finally {
       setDeleteCandidate(null);
@@ -144,7 +145,7 @@ export function SettingsTab() {
     }
     try {
       await updateAuditType(editAuditTypeCandidate.id, { code: trimmedCode, name: trimmedName });
-      await queryClient.invalidateQueries({ queryKey: ['settings', 'audit-types'] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.settings.auditTypes });
       setEditAuditTypeCandidate(null);
     } catch {
       // keep modal open; user can retry
