@@ -77,10 +77,10 @@ export function FocusableSquareCirclesChart({
   // Target positions by size rank (largest -> smallest).
   // TL: top-left, BL: bottom-left, TR: top-right, BR: bottom-right.
   const targetCenters: Array<{ x: number; y: number }> = [
-    { x: 31, y: 29 }, // TL (largest)
-    { x: 31, y: 74 }, // BL (2nd largest)
-    { x: 76, y: 32 }, // TR (3rd largest)
-    { x: 67, y: 66 }, // BR (smallest)
+    { x: 34, y: 32 }, // TL (largest)
+    { x: 34, y: 72 }, // BL (2nd largest)
+    { x: 74, y: 32 }, // TR (3rd largest)
+    { x: 74, y: 72 }, // BR (smallest)
   ];
 
   // Compute per-slice placement by descending value.
@@ -189,7 +189,7 @@ export function FocusableSquareCirclesChart({
       </div>
 
       <div
-        className="grid shrink-0 grid-cols-2 items-start justify-items-center gap-x-8 gap-y-1 px-1.5 pb-1 pt-0.5"
+        className="mx-auto grid w-full max-w-[44rem] shrink-0 grid-cols-2 gap-x-10 gap-y-2 px-3 pb-1 pt-0.5"
         style={{
           fontSize: legendFontSize,
           fontWeight: legendFontWeight,
@@ -201,7 +201,10 @@ export function FocusableSquareCirclesChart({
           const percent = total > 0 ? Math.round((item.value / total) * 100) : 0;
           const fill = colors[index] ?? palette[index % palette.length];
           return (
-            <div key={`${item.name}-${index}`} className="inline-flex items-center gap-2">
+            <div
+              key={`${item.name}-${index}`}
+              className="grid w-full grid-cols-[14px_minmax(0,1fr)] items-center gap-x-2 justify-self-stretch"
+            >
               <span
                 className="inline-block h-3.5 w-3.5 rounded-full"
                 style={{
@@ -209,7 +212,7 @@ export function FocusableSquareCirclesChart({
                 }}
                 aria-hidden
               />
-              <span className="text-slate-900" style={{ fontWeight: legendFontWeight }}>
+              <span className="text-left text-slate-900" style={{ fontWeight: legendFontWeight }}>
                 {formatLegendLabel({
                   name: item.name,
                   value: item.value,
