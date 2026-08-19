@@ -51,6 +51,19 @@ export const VALUE_BLUE_SCALE = [
   '#002B55',
 ] as const;
 
+/**
+ * Sequential lilac / violet scale for the Recommendations period chart.
+ * Values move from light to dark so bar intensity communicates magnitude.
+ */
+export const VALUE_VIOLET_SCALE = [
+  '#EDE9FE',
+  '#DDD6FE',
+  '#C4B5FD',
+  '#A78BFA',
+  '#8B5CF6',
+  '#5B21B6',
+] as const;
+
 function hexToRgb(color: string) {
   const hex = color.replace('#', '');
   return {

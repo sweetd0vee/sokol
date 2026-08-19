@@ -263,11 +263,11 @@ export function ChecksAnalyticsDashboard() {
       },
       {
         id: 'dynamics',
-        defaultLayout: { x: 0, y: 2, w: 9, h: 4, minW: 4, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 9, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
             title="Количество проверок"
-            description="Динамика количества проверок"
+            description="Динамика количества проверок за период"
             exportSectionId="dynamics"
             exportSelected={exportSections.isSelected('dynamics')}
             onToggleExport={() => exportSections.toggleSection('dynamics')}
@@ -325,7 +325,7 @@ export function ChecksAnalyticsDashboard() {
       },
       {
         id: 'views',
-        defaultLayout: { x: 0, y: 6, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Виды проверок"
@@ -364,7 +364,7 @@ export function ChecksAnalyticsDashboard() {
       },
       {
         id: 'types',
-        defaultLayout: { x: 9, y: 2, w: 3, h: 4, minW: 3, minH: 2 },
+        defaultLayout: { x: 9, y: 2, w: 3, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Типы проверок"
@@ -391,7 +391,7 @@ export function ChecksAnalyticsDashboard() {
       },
       {
         id: 'departmentMap',
-        defaultLayout: { x: 4, y: 6, w: 8, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 4, y: 5, w: 8, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Карта департаментов (ТОП-10)"
@@ -414,7 +414,7 @@ export function ChecksAnalyticsDashboard() {
       },
       {
         id: 'effectivenessMatrix',
-        defaultLayout: { x: 0, y: 9, w: 12, h: 8, minW: 6, minH: 6 },
+        defaultLayout: { x: 0, y: 8, w: 12, h: 8, minW: 6, minH: 6 },
         render: () => (
           <ChartCard
             title="Оценка эффективности"

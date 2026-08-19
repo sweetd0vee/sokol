@@ -4,6 +4,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   LabelList,
   Legend,
   ResponsiveContainer,
@@ -16,12 +17,13 @@ import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
-import { ChartCard, CHART_AXIS_TICK, CHART_CATEGORY_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
+  getValueBasedColors,
   RECOMMENDATIONS_PALETTE,
-  RECOMMENDATIONS_PERIOD_BAR_COLOR,
+  VALUE_VIOLET_SCALE,
 } from './analyticsPalette';
 import { exportRecommendationsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import {
@@ -59,7 +61,6 @@ const EMPTY_CUMULATIVE_SERIES: never[] = [];
 const EMPTY_MATERIALITY_DISTRIBUTION: never[] = [];
 const EMPTY_INDICATOR_DISTRIBUTION: never[] = [];
 const EMPTY_OBJECT_DISTRIBUTION: never[] = [];
-const EMPTY_CHECK_LINKS: never[] = [];
 
 export function RecommendationsAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
@@ -154,10 +155,17 @@ export function RecommendationsAnalyticsDashboard() {
   const summary = data?.summary ?? EMPTY_RECOMMENDATION_SUMMARY;
   const periodSeries = data?.periodSeries ?? EMPTY_PERIOD_SERIES;
   const cumulativeSeries = data?.cumulativeSeries ?? EMPTY_CUMULATIVE_SERIES;
+  const cumulativeColors = useMemo(
+    () => getValueBasedColors(cumulativeSeries.map((item) => item.total), VALUE_VIOLET_SCALE),
+    [cumulativeSeries],
+  );
   const materialityDistribution = data?.materialityDistribution ?? EMPTY_MATERIALITY_DISTRIBUTION;
   const indicatorDistribution = data?.indicatorDistribution ?? EMPTY_INDICATOR_DISTRIBUTION;
   const objectDistribution = data?.objectDistribution ?? EMPTY_OBJECT_DISTRIBUTION;
-  const checkLinks = data?.checkLinks ?? EMPTY_CHECK_LINKS;
+  const objectDistributionTop = useMemo(
+    () => [...objectDistribution].sort((left, right) => right.value - left.value).slice(0, 10),
+    [objectDistribution],
+  );
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
 
@@ -219,7 +227,7 @@ export function RecommendationsAnalyticsDashboard() {
               <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
               <KpiCard label="Не решено" value={summary.byStatus.unresolved} tone="slate" />
               <KpiCard label="Высокая существенность" value={summary.byMateriality.высокий} tone="amber" />
-              <KpiCard label="Исполнение" value={summary.completionRate} suffix="%" tone="blue" />
+              <KpiCard label="Исполнение" value={summary.completionRate} suffix="%" tone="green" />
               <KpiCard label="Нарушение срока" value={summary.violationRate} suffix="%" tone="red" />
             </div>
           </ChartCard>
@@ -227,11 +235,11 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'cumulative',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 9, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
             title="Количество рекомендаций"
-            description="Динамика по периодам"
+            description="Динамика количества рекомендаций за период"
             exportSectionId="cumulative"
             exportSelected={exportSections.isSelected('cumulative')}
             onToggleExport={() => exportSections.toggleSection('cumulative')}
@@ -247,8 +255,17 @@ export function RecommendationsAnalyticsDashboard() {
                     <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
                     <Tooltip />
                     <Legend wrapperStyle={CHART_LEGEND_STYLE} />
-                    <Bar dataKey="total" name="За период" fill={RECOMMENDATIONS_PERIOD_BAR_COLOR} radius={[4, 4, 0, 0]}>
-                      <LabelList dataKey="total" position="top" fontSize={CHART_VALUE_LABEL_SIZE} />
+                    <Bar dataKey="total" name="За период" fill={RECOMMENDATIONS_PALETTE[0]} radius={[4, 4, 0, 0]}>
+                      {cumulativeSeries.map((item, index) => (
+                        <Cell key={item.key} fill={cumulativeColors[index]} />
+                      ))}
+                      <LabelList
+                        dataKey="total"
+                        position="top"
+                        fontSize={CHART_VALUE_LABEL_SIZE}
+                        fill={RECOMMENDATIONS_PALETTE[0]}
+                        offset={8}
+                      />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -259,7 +276,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'statusByPeriod',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Статусы по периодам"
@@ -276,7 +293,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'materialityByPeriod',
-        defaultLayout: { x: 0, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 6, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Существенность по периодам"
@@ -293,7 +310,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'materiality',
-        defaultLayout: { x: 6, y: 5, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 9, y: 2, w: 3, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Существенность"
@@ -309,6 +326,7 @@ export function RecommendationsAnalyticsDashboard() {
                 data={materialityDistribution}
                 palette={RECOMMENDATIONS_PALETTE}
                 labelMode="both"
+                legendPercentFirst
               />
             )}
           </ChartCard>
@@ -316,7 +334,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'indicators',
-        defaultLayout: { x: 0, y: 8, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Индикаторы"
@@ -338,33 +356,36 @@ export function RecommendationsAnalyticsDashboard() {
         ),
       },
       {
-        id: 'checkLinks',
-        defaultLayout: { x: 6, y: 8, w: 6, h: 3, minW: 4, minH: 2 },
-        render: () => (
-          <ChartCard title="По проверкам" description="Количество рекомендаций на ключ проверки" exportSectionId="checkLinks" exportSelected={exportSections.isSelected('checkLinks')} onToggleExport={() => exportSections.toggleSection('checkLinks')}>
-            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={checkLinks.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 24, left: 30, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} /><YAxis type="category" dataKey="name" width={120} tick={CHART_CATEGORY_AXIS_TICK} /><Tooltip /><Bar dataKey="value" name="Рекомендации" fill={RECOMMENDATIONS_PALETTE[6]} radius={[0, 6, 6, 0]}><LabelList dataKey="value" position="right" fontSize={CHART_VALUE_LABEL_SIZE} /></Bar></BarChart></ResponsiveContainer></div>
-          </ChartCard>
-        ),
-      },
-      {
         id: 'objects',
-        defaultLayout: { x: 0, y: 11, w: 12, h: 4, minW: 6, minH: 3 },
+        defaultLayout: { x: 4, y: 8, w: 8, h: 3, minW: 6, minH: 3 },
         render: () => (
-          <ChartCard title="Карта департаментов" description="Количество рекомендаций за период по департаментам" exportSectionId="objects" exportSelected={exportSections.isSelected('objects')} onToggleExport={() => exportSections.toggleSection('objects')}>
-            {objectDistribution.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <FocusableTreemapChart data={objectDistribution} palette={RECOMMENDATIONS_PALETTE} />
+          <ChartCard
+            title="Карта департаментов (ТОП-10)"
+            description="Количество рекомендаций за период по департаментам"
+            exportSectionId="objects"
+            exportSelected={exportSections.isSelected('objects')}
+            onToggleExport={() => exportSections.toggleSection('objects')}
+          >
+            {objectDistributionTop.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <FocusableTreemapChart
+                data={objectDistributionTop}
+                palette={VALUE_VIOLET_SCALE}
+                colorByValue
+              />
             )}
           </ChartCard>
         ),
       },
     ],
     [
-      checkLinks,
+      cumulativeColors,
       cumulativeSeries,
       exportSections,
       indicatorDistribution,
       materialityDistribution,
-      objectDistribution,
+      objectDistributionTop,
       periodSeries,
       universeTotal,
       summary,
