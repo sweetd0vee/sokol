@@ -2,6 +2,7 @@ import type {
   MaterialityLevel,
   Recommendation,
   RecommendationAdditionalStatus,
+  RecommendationIndicator,
   RecommendationStatus,
 } from '../types/recommendation';
 import { parseDateValue, toEndOfDayMs, toStartOfDayMs } from './dates';
@@ -43,17 +44,41 @@ export type PeriodCount = PeriodBucket & {
 };
 
 export const MATERIALITY_COLORS: Record<MaterialityLevel, string> = {
-  низкий: '#22C55E',
-  средний: '#F59E0B',
-  высокий: '#EF4444',
+  // Use the same tones as in the "recommendations table" dot styles.
+  низкий: '#A7F7C2', // rgb(167,247,194)
+  средний: '#FBEB8D',
+  высокий: '#FF4347',
 };
 
 export const STATUS_COLORS: Record<RecommendationStatus, string> = {
-  completed: '#22C55E',
-  unresolved: '#EF4444',
+  // Use the same tones as in the "recommendations table" badge styles.
+  // Make them closer to the dashboard "Существенность" intensity (less pale).
+  completed: MATERIALITY_COLORS.низкий,
+  unresolved: MATERIALITY_COLORS.высокий,
   on_control: '#64748B',
-  in_progress: '#F59E0B',
+  in_progress: MATERIALITY_COLORS.средний,
 };
+
+export const INDICATOR_COLORS: Record<RecommendationIndicator, string> = {
+  // Match colors from INDICATOR_OPTIONS.dotClassName.
+  'не указан': '#64748B',
+  'в процессе': MATERIALITY_COLORS.средний,
+  ожидает: '#64748B',
+  'не решено': MATERIALITY_COLORS.высокий,
+  'исполнено': MATERIALITY_COLORS.низкий,
+};
+
+export function getIndicatorColor(value: RecommendationIndicator): string {
+  return INDICATOR_COLORS[value] ?? '#e5e7eb';
+}
+
+export function getMaterialityLevelColor(value: MaterialityLevel): string {
+  return MATERIALITY_COLORS[value] ?? '#e5e7eb';
+}
+
+export function getRecommendationStatusColor(value: RecommendationStatus): string {
+  return STATUS_COLORS[value] ?? '#e5e7eb';
+}
 
 export function filterRecommendationsForAnalytics(
   recommendations: Recommendation[],

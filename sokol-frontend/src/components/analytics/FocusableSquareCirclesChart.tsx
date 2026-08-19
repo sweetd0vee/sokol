@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CHART_LEGEND_STYLE } from './AnalyticsChartPrimitives';
 import { PALETTE } from './analyticsPalette';
-import { contrastLabelColor } from './chartContrast';
 
 export type SquareCirclesDatum = {
   name: string;
@@ -109,7 +108,8 @@ export function FocusableSquareCirclesChart({
             const fill = colors[index] ?? palette[index % palette.length];
 
             const roundedPercent = Math.round(percent);
-            const labelColor = item.name === 'В процессе' ? '#ffffff' : contrastLabelColor(fill);
+            // Keep consistent readability for dashboard charts.
+            const labelColor = '#ffffff';
             const fontSize = Math.max(4.5, Math.min(7.5, radius * 0.42));
 
             return (
@@ -177,7 +177,7 @@ export function FocusableSquareCirclesChart({
                 }}
                 aria-hidden
               />
-              <span className="text-slate-900" style={{ fontWeight: legendFontWeight }}>
+                  <span className="text-white" style={{ fontWeight: legendFontWeight }}>
                 {formatLegendLabel({
                   name: item.name,
                   value: item.value,

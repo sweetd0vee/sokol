@@ -52,6 +52,8 @@ function PieValueLabel({
   value = 0,
   percent = 0,
   labelMode = 'percent',
+  fill: _fill,
+  payload: _payload,
 }: LabelProps) {
   if (percent < 0.06 || value <= 0) {
     return null;
@@ -60,7 +62,8 @@ function PieValueLabel({
   const radius = innerRadius + (outerRadius - innerRadius) * 0.62;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  const textColor = '#ffffff';
+  // Keep consistent readability for dashboard charts.
+  const labelColor = '#ffffff';
   const percentLabel =`${Math.round(percent * 100)}%`;
 
   if (labelMode === 'both') {
@@ -69,7 +72,7 @@ function PieValueLabel({
         <text
           x={x}
           y={y - 5}
-          fill={textColor}
+          fill={labelColor}
           textAnchor="middle"
           dominantBaseline="central"
           fontSize={15}
@@ -80,7 +83,7 @@ function PieValueLabel({
         <text
           x={x}
           y={y + 11}
-          fill={textColor}
+          fill={labelColor}
           textAnchor="middle"
           dominantBaseline="central"
           fontSize={12}
@@ -98,7 +101,7 @@ function PieValueLabel({
       <text
         x={x}
         y={y}
-        fill={textColor}
+        fill={labelColor}
         textAnchor="middle"
         dominantBaseline="central"
         fontSize={labelMode === 'percent' ? 15 : 16}

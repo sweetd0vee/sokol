@@ -15,31 +15,19 @@
 | ID | Задача | Effort |
 |----|--------|--------|
 | P0-01 | Скрыть Kantsler из production nav/route | 0.5 d |
-| P0-02 | Prod: `SOKOL_ENV=prod` + strong `SOKOL_JWT_SECRET`, fail-fast на default | **done** |
 | P0-03 | Docker demo import off by default; запретить `import/seed --replace` на UAT/prod без явного confirm | 0.5 d |
 | P0-04 | Alembic baseline + `upgrade head` | 3–5 d |
-| P0-05 | Audit-opinion: убрать из `docs/API` | **done** |
-| P0-06 | `CheckFormPage` edit by URL: fetch by id и запрет fallback create | **done** |
 
 ## P1 — до пилота
 
 | ID | Задача | Effort |
 |----|--------|--------|
-| P1-01 | ~~JWT: lookup user в БД + `is_active`~~ | **done** |
 | P1-02 | CI workflow добавлен; включить required checks по [CI.md](CI.md) | 0.5 d |
-| P1-03 | ~~Server serial_number~~ — **выполнено** | — |
-| P1-04 | ~~Таблицы грузят полный пилотный объём до 10000 строк без truncation banner~~ | **done** |
 | P1-05 | MinIO policy + UI banner при недоступном storage | 1–2 d |
 | P1-06 | Import dry-run + reject report | 2 d |
-| P1-07 | ~~Delete recommendation → cleanup MinIO~~ | **done** |
 | P1-08 | Runbook backup/restore Postgres + MinIO | 2 d |
 | P1-09 | HTTP Basic fallback: отключить/feature-flag для prod | 0.5 d |
-| P1-10 | ~~Bulk replace recommendations перенести в backend transaction~~ | **done** |
-| P1-11 | ~~Attachment cleanup при upload DB failure и смене serial bucket~~ | **done** |
-| P1-14 | ~~Recommendation RBAC (auditor-owned delete/attachments)~~ | **done** |
-| P1-15 | ~~Batch-delete для undo импорта из АЗ~~ | **done** |
 | P1-12 | Prod-safe `sync_dictionaries`: без destructive delete на старте | 1 d |
-| P1-13 | ~~`RecommendationFormPage` save error + list loading/error UI~~ | **done** |
 
 ## P2 — после go-live / параллельно
 
@@ -49,7 +37,7 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · ro
 
 | Gate | Дата | Критерий |
 |------|------|----------|
-| G-A | 14.08 | P0-01..03, P0-06; Alembic started |
+| G-A | 14.08 | P0-01..03; Alembic started |
 | G-B | 20.08 | Auth UAT; CI green; branch protection requires CI checks |
 | G-C | 27.08 | MinIO decision; DOCX smoke; no P0 |
 | G-D | 01.09 | PLAN G1–G12 signed |
@@ -67,7 +55,7 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · ro
 ## Эта неделя (12–15.08)
 
 1. P0-01 — скрыть Kantsler  
-2. P0-02, P0-03 — prod guards  
+2. P0-03 — prod guards  
 3. P0-04 — старт Alembic  
 4. P1-02 — включить required CI checks  
 5. P1-05 — MinIO policy / storage UX  
@@ -79,12 +67,6 @@ Server pagination · golden DOCX CI · planning export · split exports.ts · ro
 | P0-01 | Убрать `kantsler` из `Sidebar.TABS` и route `/kantsler` или закрыть feature flag `VITE_ENABLE_KANTSLER`. | В production build меню не содержит `Канцлер`; прямой `/kantsler` не показывает stub; Playwright smoke зелёный. |
 | P0-03 | В `sokol-backend/docker/app/docker-compose.yml` и `entrypoint.sh` поставить demo load default `0`; в prod guard запретить demo/replace flags. | Пустой prod/UAT контейнер не импортирует demo Excel сам; `SOKOL_SEED_REPLACE=1` в prod падает до bootstrap. |
 | P0-04 | Ввести Alembic baseline и заменить prod `create_all` flow на `alembic upgrade head`. | Пустая test DB поднимается миграциями; повторный upgrade no-op; runbook обновлён. |
-| P0-06 | **Закрыто:** добавлены `fetchCheck(id)` и `useQuery` в `CheckFormPage`; edit mode не может вызвать `addCheck`. | Hard refresh `/checks/:id/edit` загружает проверку; 404 показывает `ErrorState`; `fetchCheck` покрыт Vitest. |
-| P1-04 | **Закрыто:** поднять API/frontend limit списков до 10000 и убрать truncation banner. | При текущем ожидаемом объёме база целиком попадает в таблицы и export без сообщения “Показано X из Y”. |
 | P1-05 | Добавить frontend `useStorageStatus` и backend/storage runbook: disabled/unreachable states, retry, policy/backup. | Upload disabled при недоступном MinIO; пользователь видит причину; backup/restore steps описаны. |
-| P1-07 | **Закрыто:** при delete recommendation удаляются attachments rows и MinIO objects. | Service/API regression tests подтверждают cleanup и 502 при storage failure. |
 | P1-09 | Добавить `SOKOL_ENABLE_BASIC_AUTH`; в prod не принимать `_basic`, если flag выключен. | При prod config Basic получает 401; Bearer продолжает работать. |
-| P1-10 | **Закрыто:** добавлен backend batch endpoint для append/replace recommendations; frontend переведён с delete-all/create-all. | Batch append/replace атомарны; frontend import из АЗ отправляет один request. |
-| P1-11 | **Закрыто:** добавлен compensation при upload failure и bucket migration при смене serial. | Ошибка DB после upload удаляет MinIO object; PATCH serial переносит objects и обновляет `attachments.bucket`. |
 | P1-12 | Изменить `sync_dictionaries`: prod merge-only, destructive sync только с dev/demo flag. | Пользовательские auditors/departments/users не удаляются после restart; delete проверяет использование. |
-| P1-13 | **Закрыто:** добавить `saveError` в `RecommendationFormPage`; в списках показывать `LoadingState`/`ErrorState` и retry. | Rejected save виден пользователю и не очищает форму; failed fetch не выглядит как пустая таблица. |

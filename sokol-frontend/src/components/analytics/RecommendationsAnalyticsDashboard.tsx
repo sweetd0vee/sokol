@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
@@ -36,6 +36,8 @@ import {
   MATERIALITY_LEVEL_OPTIONS,
   RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS,
   RECOMMENDATION_STATUS_OPTIONS,
+  normalizeMaterialityLevel,
+  normalizeRecommendationIndicator,
 } from '../../constants/recommendations';
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
@@ -44,6 +46,8 @@ import { labelFromPeriodKey } from '../../utils/analyticsPeriod';
 import {
   MATERIALITY_COLORS,
   STATUS_COLORS,
+  getIndicatorColor,
+  getMaterialityLevelColor,
   type PeriodGranularity,
 } from '../../utils/recommendationAnalytics';
 import { registerDashboardChart } from '../../utils/dashboardChartRegistry';
@@ -246,6 +250,26 @@ export function RecommendationsAnalyticsDashboard() {
   );
   const materialityDistribution = data?.materialityDistribution ?? EMPTY_MATERIALITY_DISTRIBUTION;
   const indicatorDistribution = data?.indicatorDistribution ?? EMPTY_INDICATOR_DISTRIBUTION;
+
+  // Colorize chart segments by the same tones used in the recommendations table.
+  const coloredMaterialityDistribution = useMemo(
+    () =>
+      materialityDistribution.map((item) => ({
+        ...item,
+        color: getMaterialityLevelColor(normalizeMaterialityLevel(item.name)),
+      })),
+    [materialityDistribution],
+  );
+
+  const coloredIndicatorDistribution = useMemo(
+    () =>
+      indicatorDistribution.map((item) => ({
+        ...item,
+        color: getIndicatorColor(normalizeRecommendationIndicator(item.name)),
+      })),
+    [indicatorDistribution],
+  );
+
   const objectDistribution = data?.objectDistribution ?? EMPTY_OBJECT_DISTRIBUTION;
   const objectDistributionTop = useMemo(
     () => [...objectDistribution].sort((left, right) => right.value - left.value).slice(0, 10),
@@ -282,7 +306,7 @@ export function RecommendationsAnalyticsDashboard() {
   const isMaterialityExportSelected =
     exportSections.isSelected('materialityByPeriod') && exportSections.isSelected('materiality');
 
-  const toggleMaterialityExport = () => {
+  const toggleMaterialityExport = useCallback(() => {
     const shouldEnable = !isMaterialityExportSelected;
 
     if (shouldEnable) {
@@ -301,7 +325,7 @@ export function RecommendationsAnalyticsDashboard() {
     if (exportSections.isSelected('materiality')) {
       exportSections.toggleSection('materiality');
     }
-  };
+  }, [exportSections, isMaterialityExportSelected]);
 
   const resetFilters = () => {
     resetPeriodSelections();
@@ -490,8 +514,7 @@ export function RecommendationsAnalyticsDashboard() {
                   <EmptyChart message="Нет данных" heightClass="h-full" />
                 ) : (
                   <FocusableDonutChart
-                    data={materialityDistribution}
-                    palette={RECOMMENDATIONS_PALETTE}
+                    data={coloredMaterialityDistribution}
                     labelMode="both"
                     legendLabelMode="name"
                     showLegend={false}
@@ -518,8 +541,7 @@ export function RecommendationsAnalyticsDashboard() {
               <EmptyChart message="Нет данных" />
             ) : (
               <FocusableSquareCirclesChart
-                data={indicatorDistribution}
-                palette={RECOMMENDATIONS_PALETTE}
+                data={coloredIndicatorDistribution}
                 labelMode="both"
               />
             )}
@@ -555,6 +577,8 @@ export function RecommendationsAnalyticsDashboard() {
       completedCumulativeSeries,
       exportSections,
       isMaterialityExportSelected,
+      coloredIndicatorDistribution,
+      coloredMaterialityDistribution,
       indicatorDistribution,
       materialityDistribution,
       objectDistributionTop,

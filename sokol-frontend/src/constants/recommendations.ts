@@ -202,8 +202,9 @@ export function getMaterialityDotClassName(value: MaterialityLevel) {
 }
 
 export function normalizeMaterialityLevel(value: string | null | undefined): MaterialityLevel {
-  if (value === 'низкий' || value === 'средний' || value === 'высокий') {
-    return value;
+  const raw = (value ?? '').trim().toLowerCase();
+  if (raw === 'низкий' || raw === 'средний' || raw === 'высокий') {
+    return raw;
   }
   return 'средний';
 }
