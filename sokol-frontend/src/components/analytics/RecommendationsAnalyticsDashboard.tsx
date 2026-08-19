@@ -462,6 +462,27 @@ export function RecommendationsAnalyticsDashboard() {
           >
             <div className="flex h-full min-h-0 flex-row gap-2">
               <div
+                ref={materialityCaptureRef}
+                style={{ flex: 1 }}
+                data-analytics-export-capture-id="materiality"
+                data-analytics-export-title="Существенность"
+                data-analytics-export-description="Распределение уровней существенности за период"
+                className="flex-1 min-h-0 min-w-0"
+              >
+                {materialityDistribution.length === 0 ? (
+                  <EmptyChart message="Нет данных" heightClass="h-full" />
+                ) : (
+                  <FocusableDonutChart
+                    data={coloredMaterialityDistribution}
+                    labelMode="both"
+                    legendLabelMode="name"
+                    showLegend={false}
+                    containerClassName="h-full min-h-0"
+                  />
+                )}
+              </div>
+
+              <div
                 ref={materialityByPeriodCaptureRef}
                 style={{ flex: 3 }}
                 data-analytics-export-capture-id="materialityByPeriod"
@@ -499,27 +520,6 @@ export function RecommendationsAnalyticsDashboard() {
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
-                )}
-              </div>
-
-              <div
-                ref={materialityCaptureRef}
-                style={{ flex: 1 }}
-                data-analytics-export-capture-id="materiality"
-                data-analytics-export-title="Существенность"
-                data-analytics-export-description="Распределение уровней существенности за период"
-                className="flex-1 min-h-0 min-w-0"
-              >
-                {materialityDistribution.length === 0 ? (
-                  <EmptyChart message="Нет данных" heightClass="h-full" />
-                ) : (
-                  <FocusableDonutChart
-                    data={coloredMaterialityDistribution}
-                    labelMode="both"
-                    legendLabelMode="name"
-                    showLegend={false}
-                    containerClassName="h-full min-h-0"
-                  />
                 )}
               </div>
             </div>

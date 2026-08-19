@@ -16,6 +16,7 @@ import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
 import type { PeriodGranularity } from '../../utils/recommendationAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
+import { getRecommendationAdditionalStatusColor, getRecommendationStatusColor } from '../../utils/recommendationAnalytics';
 
 const EMPTY_RECOMMENDATION_SUMMARY = {
   total: 0,
@@ -126,6 +127,36 @@ export function MonitoringAnalyticsDashboard() {
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
 
+  const coloredStatusDistribution = useMemo(
+    () =>
+      statusDistribution.map((item) => {
+        const statusKey =
+          RECOMMENDATION_STATUS_OPTIONS.find((option) => option.label === item.name)?.value ?? null;
+        return {
+          ...item,
+          // Donut chart supports per-segment color; we override it so Monitoring matches
+          // the same visual language as Recommendations charts.
+          color: statusKey ? getRecommendationStatusColor(statusKey) : '#e5e7eb',
+        };
+      }),
+    [statusDistribution],
+  );
+
+  const coloredAdditionalStatusDistribution = useMemo(
+    () =>
+      additionalStatusDistribution.map((item) => {
+        const additionalStatusKey =
+          RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.find((option) => option.label === item.name)?.value ?? null;
+        return {
+          ...item,
+          color: additionalStatusKey
+            ? getRecommendationAdditionalStatusColor(additionalStatusKey)
+            : '#e5e7eb',
+        };
+      }),
+    [additionalStatusDistribution],
+  );
+
   const resetFilters = () => {
     resetPeriodSelections();
     setSelectedAuditors([]);
@@ -197,7 +228,7 @@ export function MonitoringAnalyticsDashboard() {
             {statusDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableDonutChart data={statusDistribution} />
+              <FocusableDonutChart data={coloredStatusDistribution} />
             )}
           </ChartCard>
         ),
@@ -216,13 +247,13 @@ export function MonitoringAnalyticsDashboard() {
             {additionalStatusDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableDonutChart data={additionalStatusDistribution} />
+              <FocusableDonutChart data={coloredAdditionalStatusDistribution} />
             )}
           </ChartCard>
         ),
       },
     ],
-    [additionalStatusDistribution, exportSections, statusDistribution, summary],
+    [additionalStatusDistribution, coloredAdditionalStatusDistribution, coloredStatusDistribution, exportSections, statusDistribution, summary],
   );
 
   if (bootstrapQuery.isLoading && !data) {

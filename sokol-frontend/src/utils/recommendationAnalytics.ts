@@ -59,6 +59,14 @@ export const STATUS_COLORS: Record<RecommendationStatus, string> = {
   in_progress: MATERIALITY_COLORS.средний,
 };
 
+export const ADDITIONAL_STATUS_COLORS: Record<RecommendationAdditionalStatus, string> = {
+  // Keep the same mapping as recommendations "table" tones.
+  // on_control is intentionally a slate tone to contrast the other categories.
+  on_time: MATERIALITY_COLORS.низкий,
+  deadline_violated: MATERIALITY_COLORS.высокий,
+  on_control: '#64748B',
+};
+
 export const INDICATOR_COLORS: Record<RecommendationIndicator, string> = {
   // Match colors from INDICATOR_OPTIONS.dotClassName.
   'не указан': '#64748B',
@@ -78,6 +86,10 @@ export function getMaterialityLevelColor(value: MaterialityLevel): string {
 
 export function getRecommendationStatusColor(value: RecommendationStatus): string {
   return STATUS_COLORS[value] ?? '#e5e7eb';
+}
+
+export function getRecommendationAdditionalStatusColor(value: RecommendationAdditionalStatus): string {
+  return ADDITIONAL_STATUS_COLORS[value] ?? '#e5e7eb';
 }
 
 export function filterRecommendationsForAnalytics(
