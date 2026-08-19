@@ -366,6 +366,62 @@ function extractLegendHtml(node: HTMLElement): string | undefined {
     .join('')}</ul>`;
 }
 
+function extractMaterialityBreakdownLegend(clone: SVGSVGElement): string | undefined {
+  const cells = [...clone.querySelectorAll('[data-materiality-high], [data-materiality-medium], [data-materiality-low]')];
+  if (cells.length === 0) {
+    return undefined;
+  }
+
+  const rows = cells
+    .map((element) => {
+      const name = (element.getAttribute('data-name') || '').trim();
+      const valueRaw = (element.getAttribute('data-value') || '').trim();
+      if (!name) {
+        return null;
+      }
+      const value = Number(valueRaw);
+      return {
+        name,
+        value: Number.isFinite(value) ? value : 0,
+        high: element.getAttribute('data-materiality-high') ?? '0',
+        medium: element.getAttribute('data-materiality-medium') ?? '0',
+        low: element.getAttribute('data-materiality-low') ?? '0',
+      };
+    })
+    .filter((row): row is { name: string; value: number; high: string; medium: string; low: string } => Boolean(row))
+    .sort((left, right) => right.value - left.value || left.name.localeCompare(right.name, 'ru'));
+
+  if (rows.length === 0) {
+    return undefined;
+  }
+
+  const body = rows
+    .map(
+      (row) => `<tr>
+        <td>${escapeText(row.name)}</td>
+        <td>${escapeText(String(row.value))}</td>
+        <td>${escapeText(row.high)}</td>
+        <td>${escapeText(row.medium)}</td>
+        <td>${escapeText(row.low)}</td>
+      </tr>`,
+    )
+    .join('');
+
+  return `<div class="chart-legend"><table class="chart-materiality-legend">
+    <caption>Уровни существенности</caption>
+    <thead>
+      <tr>
+        <th>Департамент</th>
+        <th>Всего</th>
+        <th>Высокий</th>
+        <th>Средний</th>
+        <th>Низкий</th>
+      </tr>
+    </thead>
+    <tbody>${body}</tbody>
+  </table></div>`;
+}
+
 function resolveSvgViewBox(svg: SVGSVGElement, fallbackWidth: number, fallbackHeight: number): string {
   const native = svg.getAttribute('viewBox')?.trim();
   if (native) {
@@ -418,15 +474,24 @@ function extractSvgMarkup(node: HTMLElement): string | undefined {
     let markup = new XMLSerializer().serializeToString(clone);
     markup = rewriteFragmentIds(markup, uid);
 
+    const extras: string[] = [];
     try {
       const legendHtml = extractLegendHtml(node);
       if (legendHtml) {
-        return `${markup}<div class="chart-legend">${legendHtml}</div>`;
+        extras.push(`<div class="chart-legend">${legendHtml}</div>`);
       }
     } catch (legendError) {
       console.warn('Legend extraction failed', legendError);
     }
-    return markup;
+    try {
+      const materialityLegend = extractMaterialityBreakdownLegend(clone);
+      if (materialityLegend) {
+        extras.push(materialityLegend);
+      }
+    } catch (materialityLegendError) {
+      console.warn('Materiality legend extraction failed', materialityLegendError);
+    }
+    return extras.length > 0 ? `${markup}${extras.join('')}` : markup;
   } catch (error) {
     console.warn('SVG extraction failed', error);
     return undefined;

@@ -30,9 +30,37 @@ type TreemapNodeProps = {
   name?: string;
   value?: number;
   fill?: string;
+  materiality?: TreemapDatum['materiality'];
   activeName?: string | null;
   onActivate?: (name: string | null) => void;
 };
+
+export function formatTreemapExportLabel(
+  name: string,
+  value: number,
+  materiality?: TreemapDatum['materiality'],
+) {
+  if (!materiality) {
+    return `${name}: ${value}`;
+  }
+  return [
+    `${name}: ${value}`,
+    `Высокий: ${materiality.высокий}`,
+    `Средний: ${materiality.средний}`,
+    `Низкий: ${materiality.низкий}`,
+  ].join('\n');
+}
+
+function treemapMaterialityDataAttrs(materiality?: TreemapDatum['materiality']) {
+  if (!materiality) {
+    return {};
+  }
+  return {
+    'data-materiality-high': String(materiality.высокий),
+    'data-materiality-medium': String(materiality.средний),
+    'data-materiality-low': String(materiality.низкий),
+  };
+}
 
 function splitLabelToken(token: string, maxChars: number) {
   if (token.length <= maxChars) {
@@ -78,6 +106,7 @@ function TreemapContent({
   name = '',
   value = 0,
   fill = '#2563EB',
+  materiality,
   activeName = null,
   onActivate,
 }: TreemapNodeProps) {
@@ -117,13 +146,14 @@ function TreemapContent({
   const labelLines = wrapTreemapLabel(name, maxCharsPerLine);
   const firstLabelY = y + 16;
   const valueY = firstLabelY + labelLines.length * labelLineHeight + 2;
+  const exportLabel = formatTreemapExportLabel(name, value, materiality);
 
   return (
     <g
       onMouseEnter={() => onActivate?.(name)}
       style={{ cursor: 'pointer' }}
     >
-      <title>{`${name}: ${value}`}</title>
+      <title>{exportLabel}</title>
       <rect
         x={x}
         y={y}
@@ -134,6 +164,10 @@ function TreemapContent({
         stroke={isActive ? '#0f172a' : '#ffffff'}
         strokeWidth={isActive ? 2.5 : 2}
         rx={showLabel ? 8 : 0}
+        data-name={name}
+        data-value={String(value)}
+        aria-label={exportLabel}
+        {...treemapMaterialityDataAttrs(materiality)}
         style={{
           filter: isDimmed
             ? 'brightness(0.72) saturate(0.85)'

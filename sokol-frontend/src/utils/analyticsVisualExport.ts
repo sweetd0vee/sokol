@@ -1642,6 +1642,43 @@ async function buildVisualHtml(options: {
       display: flex;
       justify-content: center;
     }
+    .chart-legend:has(.chart-materiality-legend) {
+      display: block;
+      width: 100%;
+      overflow: auto;
+    }
+    .chart-materiality-legend {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      color: var(--ink);
+    }
+    .chart-materiality-legend caption {
+      caption-side: top;
+      text-align: left;
+      font-weight: 600;
+      color: var(--brand);
+      margin-bottom: 6px;
+    }
+    .chart-materiality-legend th,
+    .chart-materiality-legend td {
+      border: 1px solid var(--line);
+      padding: 5px 8px;
+      text-align: left;
+      background: #fff;
+    }
+    .chart-materiality-legend th:not(:first-child),
+    .chart-materiality-legend td:not(:first-child) {
+      text-align: center;
+      white-space: nowrap;
+    }
+    .chart-svg:has(.chart-materiality-legend) {
+      width: 100%;
+    }
+    .chart-svg:has(.chart-materiality-legend) svg {
+      max-width: 960px;
+      max-height: 360px;
+    }
     .chart-legend-list {
       display: flex;
       flex-wrap: wrap;
@@ -1779,12 +1816,14 @@ async function buildVisualHtml(options: {
       pointer-events: none;
       display: none;
       min-width: 120px;
-      max-width: 280px;
+      max-width: 320px;
       padding: 8px 10px;
       border-radius: 8px;
       background: rgba(0, 51, 102, 0.94);
       color: #fff;
       font-size: 12px;
+      white-space: pre-line;
+      line-height: 1.35;
     }
     .footnote {
       margin-top: 10px;
@@ -1872,6 +1911,38 @@ async function buildVisualHtml(options: {
         });
       }
       var tooltip = document.getElementById('chart-tooltip');
+      var fillTooltip = function (hit, fallbackLabel) {
+        if (!tooltip) return;
+        var high = hit.getAttribute('data-materiality-high');
+        var medium = hit.getAttribute('data-materiality-medium');
+        var low = hit.getAttribute('data-materiality-low');
+        if (high === null && medium === null && low === null) {
+          tooltip.textContent = fallbackLabel || 'Значение графика';
+          return;
+        }
+        tooltip.replaceChildren();
+        var name = (hit.getAttribute('data-name') || '').trim();
+        var value = (hit.getAttribute('data-value') || '').trim();
+        var headline = name && value
+          ? name + ': ' + value
+          : (fallbackLabel || '').split('\\n')[0] || 'Рекомендации';
+        var titleEl = document.createElement('div');
+        titleEl.style.fontWeight = '600';
+        titleEl.style.marginBottom = '4px';
+        titleEl.textContent = headline;
+        tooltip.appendChild(titleEl);
+        [
+          ['Высокий', high, '#FF4347'],
+          ['Средний', medium, '#FBEB8D'],
+          ['Низкий', low, '#A7F7C2']
+        ].forEach(function (row) {
+          var line = document.createElement('div');
+          line.style.color = row[2];
+          line.style.fontWeight = '600';
+          line.textContent = row[0] + ': ' + (row[1] == null || row[1] === '' ? '0' : row[1]);
+          tooltip.appendChild(line);
+        });
+      };
       document.querySelectorAll('.chart-svg').forEach(function (frame) {
         frame.addEventListener('pointerover', function (event) {
           var target = event.target;
@@ -1902,7 +1973,7 @@ async function buildVisualHtml(options: {
               if (texts.length) label = texts.join(' · ');
             }
           }
-          tooltip.textContent = label || 'Значение графика';
+          fillTooltip(hit, label);
           tooltip.style.display = 'block';
         });
         frame.addEventListener('pointermove', function (event) {
