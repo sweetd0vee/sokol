@@ -1,3 +1,4 @@
+import type { SortDirection } from './listTable';
 import { getMaterialityLevelColor, MATERIALITY_COLORS } from './recommendationAnalytics';
 import type { MaterialityLevel } from '../types/recommendation';
 
@@ -24,12 +25,15 @@ export const MATERIALITY_MATRIX_COLUMNS = [
 
 export type MaterialityMatrixColumnKey = (typeof MATERIALITY_MATRIX_COLUMNS)[number]['key'];
 
-export const MATERIALITY_MATRIX_LEGEND = MATERIALITY_MATRIX_COLUMNS.map((column) => ({
-  key: column.key,
-  level: column.level,
-  label: column.label,
-  color: MATERIALITY_COLORS[column.level],
-}));
+export type MaterialityMatrixCountSortConfig = {
+  key: MaterialityMatrixColumnKey | null;
+  direction: SortDirection;
+};
+
+export const DEFAULT_MATERIALITY_MATRIX_COUNT_SORT: MaterialityMatrixCountSortConfig = {
+  key: null,
+  direction: 'desc',
+};
 
 export function getMaterialityMatrixCount(
   row: MaterialityMatrixRow,
@@ -43,6 +47,45 @@ export function getMaterialityMatrixCount(
   }
   return row.counts.низкий;
 }
+
+export function cycleMaterialityMatrixCountSort(
+  prev: MaterialityMatrixCountSortConfig,
+  key: MaterialityMatrixColumnKey,
+): MaterialityMatrixCountSortConfig {
+  if (prev.key !== key) {
+    return { key, direction: 'desc' };
+  }
+  if (prev.direction === 'desc') {
+    return { key, direction: 'asc' };
+  }
+  return { key: null, direction: 'desc' };
+}
+
+export function sortMaterialityMatrixRows(
+  rows: MaterialityMatrixRow[],
+  sortConfig: MaterialityMatrixCountSortConfig,
+): MaterialityMatrixRow[] {
+  if (!sortConfig.key) {
+    return rows;
+  }
+  const columnKey = sortConfig.key;
+  const direction = sortConfig.direction === 'asc' ? 1 : -1;
+  return [...rows].sort((left, right) => {
+    const countDelta =
+      (getMaterialityMatrixCount(left, columnKey) - getMaterialityMatrixCount(right, columnKey)) * direction;
+    if (countDelta !== 0) {
+      return countDelta;
+    }
+    return left.key.localeCompare(right.key, 'ru', { numeric: true, sensitivity: 'base' });
+  });
+}
+
+export const MATERIALITY_MATRIX_LEGEND = MATERIALITY_MATRIX_COLUMNS.map((column) => ({
+  key: column.key,
+  level: column.level,
+  label: column.label,
+  color: MATERIALITY_COLORS[column.level],
+}));
 
 export function buildMaterialityMatrixColumnTotals(rows: MaterialityMatrixRow[]) {
   return {

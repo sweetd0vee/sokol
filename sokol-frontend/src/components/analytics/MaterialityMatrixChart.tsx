@@ -1,26 +1,26 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { contrastLabelColor } from './chartContrast';
 import { getMaterialityLevelColor } from '../../utils/recommendationAnalytics';
 import type { SortDirection } from '../../utils/listTable';
 import {
+  cycleMaterialityMatrixCountSort,
+  DEFAULT_MATERIALITY_MATRIX_COUNT_SORT,
   MATERIALITY_MATRIX_COLUMNS,
   MATERIALITY_MATRIX_LEGEND,
   buildMaterialityMatrixColumnTotals,
   formatMaterialityChecksCount,
   getMaterialityMatrixCount,
   materialityMatrixGrandTotal,
+  sortMaterialityMatrixRows,
   type MaterialityMatrixColumnKey,
+  type MaterialityMatrixCountSortConfig,
   type MaterialityMatrixRow,
 } from '../../utils/materialityMatrix';
 
-type CountSortConfig = {
-  key: MaterialityMatrixColumnKey | null;
-  direction: SortDirection;
-};
-
 type MaterialityMatrixChartProps = {
   rows: MaterialityMatrixRow[];
+  onSortConfigChange?: (sortConfig: MaterialityMatrixCountSortConfig) => void;
 };
 
 function ColumnShareSquare({
@@ -51,16 +51,6 @@ function ColumnShareSquare({
       <span className="text-xs tabular-nums text-gray-600">{count}</span>
     </div>
   );
-}
-
-function cycleCountSort(prev: CountSortConfig, key: MaterialityMatrixColumnKey): CountSortConfig {
-  if (prev.key !== key) {
-    return { key, direction: 'desc' };
-  }
-  if (prev.direction === 'desc') {
-    return { key, direction: 'asc' };
-  }
-  return { key: null, direction: 'desc' };
 }
 
 function CountSortHeader({
@@ -107,27 +97,22 @@ function CountSortHeader({
   );
 }
 
-export function MaterialityMatrixChart({ rows }: MaterialityMatrixChartProps) {
+export function MaterialityMatrixChart({ rows, onSortConfigChange }: MaterialityMatrixChartProps) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
-  const [sortConfig, setSortConfig] = useState<CountSortConfig>({ key: null, direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState<MaterialityMatrixCountSortConfig>(
+    DEFAULT_MATERIALITY_MATRIX_COUNT_SORT,
+  );
   const hoveredRow = rows.find((row) => row.key === hoveredKey) ?? null;
   const totals = useMemo(() => buildMaterialityMatrixColumnTotals(rows), [rows]);
   const grandTotal = useMemo(() => materialityMatrixGrandTotal(rows), [rows]);
-  const sortedRows = useMemo(() => {
-    if (!sortConfig.key) {
-      return rows;
-    }
-    const columnKey = sortConfig.key;
-    const direction = sortConfig.direction === 'asc' ? 1 : -1;
-    return [...rows].sort((left, right) => {
-      const countDelta =
-        (getMaterialityMatrixCount(left, columnKey) - getMaterialityMatrixCount(right, columnKey)) * direction;
-      if (countDelta !== 0) {
-        return countDelta;
-      }
-      return left.key.localeCompare(right.key, 'ru', { numeric: true, sensitivity: 'base' });
-    });
-  }, [rows, sortConfig]);
+  const sortedRows = useMemo(
+    () => sortMaterialityMatrixRows(rows, sortConfig),
+    [rows, sortConfig],
+  );
+
+  useEffect(() => {
+    onSortConfigChange?.(sortConfig);
+  }, [onSortConfigChange, sortConfig]);
 
   return (
     <div data-export-html className="flex h-full min-h-[13rem] flex-col gap-2">
@@ -155,7 +140,7 @@ export function MaterialityMatrixChart({ rows }: MaterialityMatrixChartProps) {
                     label={column.label}
                     active={sortConfig.key === column.key}
                     direction={sortConfig.direction}
-                    onClick={() => setSortConfig((prev) => cycleCountSort(prev, column.key))}
+                    onClick={() => setSortConfig((prev) => cycleMaterialityMatrixCountSort(prev, column.key))}
                   />
                 ))}
               </tr>

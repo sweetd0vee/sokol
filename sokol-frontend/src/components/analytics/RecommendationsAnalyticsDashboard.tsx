@@ -54,6 +54,11 @@ import {
 import { registerDashboardChart } from '../../utils/dashboardChartRegistry';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 import type { MaterialityLevel } from '../../types/recommendation';
+import {
+  DEFAULT_MATERIALITY_MATRIX_COUNT_SORT,
+  sortMaterialityMatrixRows,
+  type MaterialityMatrixCountSortConfig,
+} from '../../utils/materialityMatrix';
 
 const EMPTY_RECOMMENDATION_SUMMARY = {
   total: 0,
@@ -504,6 +509,12 @@ export function RecommendationsAnalyticsDashboard() {
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
   const materialityMatrix = data?.materialityMatrix ?? EMPTY_MATERIALITY_MATRIX;
+  const materialityMatrixSortRef = useRef<MaterialityMatrixCountSortConfig>(
+    DEFAULT_MATERIALITY_MATRIX_COUNT_SORT,
+  );
+  const handleMaterialityMatrixSortChange = useCallback((sortConfig: MaterialityMatrixCountSortConfig) => {
+    materialityMatrixSortRef.current = sortConfig;
+  }, []);
   const periodXAxisProps = useMemo(() => getPeriodXAxisProps(granularity), [granularity]);
 
   // Export needs two separate capture nodes, even though UI now renders them as one card.
@@ -582,7 +593,10 @@ export function RecommendationsAnalyticsDashboard() {
           departments: selectedDepartments,
           materialityLevels: selectedMateriality as MaterialityLevel[],
           selectedSections: exportSections.selectedSections,
-          materialityMatrixOverride: materialityMatrix,
+          materialityMatrixOverride: sortMaterialityMatrixRows(
+            materialityMatrix,
+            materialityMatrixSortRef.current,
+          ),
         },
         exportFormat,
       );
@@ -859,7 +873,10 @@ export function RecommendationsAnalyticsDashboard() {
             {materialityMatrix.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <MaterialityMatrixChart rows={materialityMatrix} />
+              <MaterialityMatrixChart
+                rows={materialityMatrix}
+                onSortConfigChange={handleMaterialityMatrixSortChange}
+              />
             )}
           </ChartCard>
         ),
@@ -920,6 +937,7 @@ export function RecommendationsAnalyticsDashboard() {
       indicatorDistribution,
       materialityDistribution,
       materialityMatrix,
+      handleMaterialityMatrixSortChange,
       objectDistributionTop,
       periodXAxisProps,
       completedPeriodSeries,
