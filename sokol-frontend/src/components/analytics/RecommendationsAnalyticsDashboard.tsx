@@ -12,13 +12,14 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { fetchRecommendationsAnalytics } from '../../api/analytics';
+import { fetchRecommendationsAnalytics, type RecommendationPeriodPoint } from '../../api/analytics';
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
+import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
   getValueBasedColors,
@@ -38,6 +39,7 @@ import {
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
+import { labelFromPeriodKey } from '../../utils/analyticsPeriod';
 import {
   MATERIALITY_COLORS,
   STATUS_COLORS,
@@ -56,11 +58,78 @@ const EMPTY_RECOMMENDATION_SUMMARY = {
   completionRate: 0,
   violationRate: 0,
 };
-const EMPTY_PERIOD_SERIES: never[] = [];
-const EMPTY_CUMULATIVE_SERIES: never[] = [];
+const EMPTY_PERIOD_SERIES: RecommendationPeriodPoint[] = [];
+const EMPTY_CUMULATIVE_SERIES: RecommendationPeriodPoint[] = [];
 const EMPTY_MATERIALITY_DISTRIBUTION: never[] = [];
 const EMPTY_INDICATOR_DISTRIBUTION: never[] = [];
 const EMPTY_OBJECT_DISTRIBUTION: never[] = [];
+
+function sortKeyFromQuarterKey(key: string) {
+  const [year, quarter] = key.split('-Q');
+  return Number(year) * 10 + Number(quarter);
+}
+
+function completeSelectedQuarterPeriods(
+  series: RecommendationPeriodPoint[],
+  selectedQuarterKeys: string[],
+): RecommendationPeriodPoint[] {
+  if (selectedQuarterKeys.length === 0) {
+    return series;
+  }
+
+  const byKey = new Map(series.map((item) => [item.key, item]));
+
+  const ordered = selectedQuarterKeys
+    .map((key) => {
+      return (
+        byKey.get(key) ?? {
+          key,
+          label: labelFromPeriodKey(key, 'quarter'),
+          sortKey: sortKeyFromQuarterKey(key),
+          total: 0,
+          completed: 0,
+          unresolved: 0,
+          on_control: 0,
+          in_progress: 0,
+          low: 0,
+          medium: 0,
+          high: 0,
+          cumulative: 0,
+          cumulativeCompleted: 0,
+        }
+      );
+    })
+    .sort((a, b) => a.sortKey - b.sortKey);
+
+  let running = 0;
+  let completedRunning = 0;
+  return ordered.map((item) => {
+    running += item.total;
+    completedRunning += item.completed;
+    return {
+      ...item,
+      cumulative: running,
+      cumulativeCompleted: completedRunning,
+    };
+  });
+}
+
+function getPeriodXAxisProps(granularity: PeriodGranularity) {
+  if (granularity === 'quarter') {
+    return {
+      interval: 0 as const,
+      height: 40,
+      tickMargin: 8,
+      minTickGap: 0,
+      tick: {
+        ...CHART_AXIS_TICK,
+        fontSize: 12,
+      },
+    };
+  }
+
+  return {};
+}
 
 export function RecommendationsAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
@@ -155,9 +224,23 @@ export function RecommendationsAnalyticsDashboard() {
   const summary = data?.summary ?? EMPTY_RECOMMENDATION_SUMMARY;
   const periodSeries = data?.periodSeries ?? EMPTY_PERIOD_SERIES;
   const cumulativeSeries = data?.cumulativeSeries ?? EMPTY_CUMULATIVE_SERIES;
+  const completedPeriodSeries = useMemo(
+    () =>
+      granularity === 'quarter'
+        ? completeSelectedQuarterPeriods(periodSeries, selectedQuarterKeys)
+        : periodSeries,
+    [granularity, periodSeries, selectedQuarterKeys],
+  );
+  const completedCumulativeSeries = useMemo(
+    () =>
+      granularity === 'quarter'
+        ? completeSelectedQuarterPeriods(cumulativeSeries, selectedQuarterKeys)
+        : cumulativeSeries,
+    [granularity, cumulativeSeries, selectedQuarterKeys],
+  );
   const cumulativeColors = useMemo(
-    () => getValueBasedColors(cumulativeSeries.map((item) => item.total), VALUE_VIOLET_SCALE),
-    [cumulativeSeries],
+    () => getValueBasedColors(completedCumulativeSeries.map((item) => item.total), VALUE_VIOLET_SCALE),
+    [completedCumulativeSeries],
   );
   const materialityDistribution = data?.materialityDistribution ?? EMPTY_MATERIALITY_DISTRIBUTION;
   const indicatorDistribution = data?.indicatorDistribution ?? EMPTY_INDICATOR_DISTRIBUTION;
@@ -168,6 +251,7 @@ export function RecommendationsAnalyticsDashboard() {
   );
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
+  const periodXAxisProps = useMemo(() => getPeriodXAxisProps(granularity), [granularity]);
 
   const resetFilters = () => {
     resetPeriodSelections();
@@ -244,19 +328,21 @@ export function RecommendationsAnalyticsDashboard() {
             exportSelected={exportSections.isSelected('cumulative')}
             onToggleExport={() => exportSections.toggleSection('cumulative')}
           >
-            {cumulativeSeries.length === 0 ? (
+            {completedCumulativeSeries.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
               <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={cumulativeSeries} margin={{ top: 22, right: 12, left: -10, bottom: 0 }}>
+                  <BarChart
+                    data={completedCumulativeSeries}
+                    margin={{ top: 22, right: 12, left: -10, bottom: 0 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="label" tick={CHART_AXIS_TICK} />
+                    <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
                     <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
                     <Tooltip />
-                    <Legend wrapperStyle={CHART_LEGEND_STYLE} />
                     <Bar dataKey="total" name="За период" fill={RECOMMENDATIONS_PALETTE[0]} radius={[4, 4, 0, 0]}>
-                      {cumulativeSeries.map((item, index) => (
+                      {completedCumulativeSeries.map((item, index) => (
                         <Cell key={item.key} fill={cumulativeColors[index]} />
                       ))}
                       <LabelList
@@ -285,8 +371,8 @@ export function RecommendationsAnalyticsDashboard() {
             exportSelected={exportSections.isSelected('statusByPeriod')}
             onToggleExport={() => exportSections.toggleSection('statusByPeriod')}
           >
-            {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={CHART_AXIS_TICK} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]} />)}</BarChart></ResponsiveContainer></div>
+            {completedPeriodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
+              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={completedPeriodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} />{RECOMMENDATION_STATUS_OPTIONS.map((status) => <Bar key={status.value} dataKey={status.value} name={status.label} stackId="status" fill={STATUS_COLORS[status.value]} />)}</BarChart></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),
@@ -302,8 +388,8 @@ export function RecommendationsAnalyticsDashboard() {
             exportSelected={exportSections.isSelected('materialityByPeriod')}
             onToggleExport={() => exportSections.toggleSection('materialityByPeriod')}
           >
-            {periodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={periodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={CHART_AXIS_TICK} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} /><Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий} /><Bar dataKey="medium" name="Средний" stackId="mat" fill={MATERIALITY_COLORS.средний} /><Bar dataKey="high" name="Высокий" stackId="mat" fill={MATERIALITY_COLORS.высокий} /></BarChart></ResponsiveContainer></div>
+            {completedPeriodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
+              <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={completedPeriodSeries} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} /><Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий} /><Bar dataKey="medium" name="Средний" stackId="mat" fill={MATERIALITY_COLORS.средний} /><Bar dataKey="high" name="Высокий" stackId="mat" fill={MATERIALITY_COLORS.высокий} /></BarChart></ResponsiveContainer></div>
             )}
           </ChartCard>
         ),
@@ -346,7 +432,7 @@ export function RecommendationsAnalyticsDashboard() {
             {indicatorDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableDonutChart
+              <FocusableSquareCirclesChart
                 data={indicatorDistribution}
                 palette={RECOMMENDATIONS_PALETTE}
                 labelMode="both"
@@ -381,12 +467,13 @@ export function RecommendationsAnalyticsDashboard() {
     ],
     [
       cumulativeColors,
-      cumulativeSeries,
+      completedCumulativeSeries,
       exportSections,
       indicatorDistribution,
       materialityDistribution,
       objectDistributionTop,
-      periodSeries,
+      periodXAxisProps,
+      completedPeriodSeries,
       universeTotal,
       summary,
     ],
