@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { CHART_LEGEND_STYLE } from './AnalyticsChartPrimitives';
 import { PALETTE } from './analyticsPalette';
+import { contrastLabelColor } from './chartContrast';
 
 export type SquareCirclesDatum = {
   name: string;
@@ -71,13 +72,13 @@ export function FocusableSquareCirclesChart({
     return Math.max(...slices.map((item) => item.value / total));
   }, [slices, total]);
 
-  // Fits into 25x25 quadrant with padding while avoiding quadrant-overlap.
-  const maxRadius = 19;
+  // Keep generous breathing room so circles never touch the card edges.
+  const maxRadius = 16;
   const centers: Array<{ x: number; y: number }> = [
-    { x: 25, y: 25 }, // top-left
-    { x: 75, y: 25 }, // top-right
-    { x: 25, y: 75 }, // bottom-left
-    { x: 75, y: 75 }, // bottom-right
+    { x: 31, y: 29 }, // top-left
+    { x: 76, y: 32 }, // top-right
+    { x: 31, y: 74 }, // bottom-left
+    { x: 67, y: 66 }, // bottom-right
   ];
 
   const colors = useMemo(() => {
@@ -85,8 +86,8 @@ export function FocusableSquareCirclesChart({
   }, [palette, slices]);
 
   return (
-    <div className="flex h-full min-h-[13rem] flex-col">
-      <div className="flex-1">
+    <div className="flex h-full min-h-[13rem] flex-col overflow-hidden">
+      <div className="min-h-0 flex-1 pb-1">
         <svg
           className="h-full w-full"
           viewBox="0 0 100 100"
@@ -106,37 +107,56 @@ export function FocusableSquareCirclesChart({
             const isActive = activeIndex === index;
             const fill = colors[index] ?? palette[index % palette.length];
 
+            const roundedPercent = Math.round(percent);
+            const labelColor = item.name === 'В процессе' ? '#ffffff' : contrastLabelColor(fill);
+            const fontSize = Math.max(4.5, Math.min(7.5, radius * 0.42));
+
             return (
-              <circle
+              <g
                 key={item.name}
-                cx={center.x}
-                cy={center.y}
-                r={radius}
-                fill={fill}
-                fillOpacity={isDimmed ? 0.32 : 1}
-                stroke={isActive ? '#0f172a' : 'none'}
-                strokeWidth={isActive ? 2 : 0}
                 style={{ cursor: 'default' }}
                 onMouseEnter={() => setActiveIndex(index)}
                 onMouseLeave={() => setActiveIndex(null)}
               >
-                <title>
-                  {formatLegendLabel({
-                    name: item.name,
-                    value: item.value,
-                    percent: Math.round(percent),
-                    labelMode,
-                    legendPercentFirst,
-                  })}
-                </title>
-              </circle>
+                <circle
+                  cx={center.x}
+                  cy={center.y}
+                  r={radius}
+                  fill={fill}
+                  fillOpacity={isDimmed ? 0.32 : 1}
+                  stroke={isActive ? '#0f172a' : 'none'}
+                  strokeWidth={isActive ? 2 : 0}
+                >
+                  <title>
+                    {formatLegendLabel({
+                      name: item.name,
+                      value: item.value,
+                      percent: roundedPercent,
+                      labelMode,
+                      legendPercentFirst,
+                    })}
+                  </title>
+                </circle>
+                <text
+                  x={center.x}
+                  y={center.y}
+                  fill={labelColor}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fontSize={fontSize}
+                  fontWeight={700}
+                  style={{ pointerEvents: 'none' }}
+                >
+                  {roundedPercent}%
+                </text>
+              </g>
             );
           })}
         </svg>
       </div>
 
       <div
-        className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-1.5 pb-1.5 pt-1"
+        className="flex shrink-0 flex-wrap items-center justify-center gap-x-3 gap-y-1 px-1.5 pb-1 pt-0.5"
         style={{
           fontSize: legendFontSize,
           fontWeight: legendFontWeight,

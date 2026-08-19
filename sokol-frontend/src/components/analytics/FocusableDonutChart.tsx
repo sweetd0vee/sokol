@@ -58,7 +58,7 @@ function PieValueLabel({
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   const segmentFill = payload?.color ?? fill;
-  const textColor = contrastLabelColor(segmentFill);
+  const textColor = payload?.name === 'Средний' ? '#ffffff' : contrastLabelColor(segmentFill);
   const percentLabel =`${Math.round(percent * 100)}%`;
 
   if (labelMode === 'both') {
