@@ -36,7 +36,9 @@ import {
 import {
   buildEffectivenessColumnShares,
   buildEffectivenessMatrixHtmlMarkup,
+  EFFECTIVENESS_LEGEND,
   EFFECTIVENESS_MATRIX_COLUMNS,
+  formatEffectivenessChecksCount,
   getEffectivenessToneColor,
   type EffectivenessMatrixRow,
 } from './checkAnalytics';
@@ -91,6 +93,51 @@ function fitImageSize(
     width: Math.max(Math.round(width * ratio), 1),
     height: Math.max(Math.round(height * ratio), 1),
   };
+}
+
+function buildEffectivenessMatrixLegendPdfContent(totalChecks: number): Content[] {
+  const legendBody = EFFECTIVENESS_LEGEND.map((item) => [
+    {
+      text: '',
+      fillColor: item.color,
+      border: [false, false, false, false] as [boolean, boolean, boolean, boolean],
+    },
+    {
+      text: item.label,
+      color: '#334155',
+      fontSize: 10,
+      border: [false, false, false, false] as [boolean, boolean, boolean, boolean],
+    },
+  ]);
+
+  return [
+    {
+      text: `Итого: ${formatEffectivenessChecksCount(totalChecks)}`,
+      fontSize: 10,
+      color: '#64748B',
+      margin: [0, 10, 0, 8],
+    },
+    {
+      text: 'Легенда',
+      fontSize: 11,
+      bold: true,
+      color: '#003366',
+      margin: [0, 0, 0, 4],
+    },
+    {
+      table: {
+        widths: [16, '*'],
+        body: legendBody,
+      },
+      layout: {
+        defaultBorder: false,
+        paddingLeft: () => 0,
+        paddingRight: () => 8,
+        paddingTop: () => 2,
+        paddingBottom: () => 2,
+      },
+    } as Content,
+  ];
 }
 
 function buildEffectivenessMatrixPdfContent(
@@ -189,7 +236,9 @@ function buildEffectivenessMatrixPdfContent(
         paddingTop: () => 4,
         paddingBottom: () => 4,
       },
+      margin: [0, 0, 0, 0],
     } as Content,
+    ...buildEffectivenessMatrixLegendPdfContent(rows.length),
   ];
 }
 
@@ -392,6 +441,87 @@ function writeEffectivenessMatrixSheet(
     });
     excelRow.height = 18;
   });
+
+  const shareStartRow = 5 + rows.length + 2;
+  sheet.mergeCells(shareStartRow, 1, shareStartRow, headers.length);
+  const shareTitleCell = sheet.getCell(shareStartRow, 1);
+  shareTitleCell.value = 'Доля оценок';
+  shareTitleCell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF003366' } };
+  sheet.getRow(shareStartRow).height = 20;
+
+  const shareHeaderRow = sheet.getRow(shareStartRow + 1);
+  ['Раздел', 'Доля оценок'].forEach((header, index) => {
+    const cell = shareHeaderRow.getCell(index + 1);
+    cell.value = header;
+    cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF003366' } };
+    cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+    cell.border = {
+      top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+    };
+  });
+  shareHeaderRow.height = 22;
+
+  EFFECTIVENESS_MATRIX_COLUMNS.forEach((column, index) => {
+    const excelRow = sheet.getRow(shareStartRow + 2 + index);
+    const areaCell = excelRow.getCell(1);
+    areaCell.value = column.label;
+    areaCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF334155' } };
+    areaCell.alignment = { horizontal: 'left', vertical: 'top', wrapText: true };
+
+    const shares = buildEffectivenessColumnShares(rows, column.key);
+    const shareCell = excelRow.getCell(2);
+    shareCell.value = shares.map((share) => `${share.label}: ${share.percent}% (${share.count})`).join('; ') || '—';
+    shareCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF334155' } };
+    shareCell.alignment = { horizontal: 'left', vertical: 'top', wrapText: true };
+
+    [1, 2].forEach((columnIndex) => {
+      const cell = excelRow.getCell(columnIndex);
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        right: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+      };
+    });
+    excelRow.height = 28;
+  });
+
+  const legendStartRow = shareStartRow + 2 + EFFECTIVENESS_MATRIX_COLUMNS.length + 2;
+  sheet.mergeCells(legendStartRow, 1, legendStartRow, headers.length);
+  const legendTitleCell = sheet.getCell(legendStartRow, 1);
+  legendTitleCell.value = 'Легенда';
+  legendTitleCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF003366' } };
+  sheet.getRow(legendStartRow).height = 18;
+
+  EFFECTIVENESS_LEGEND.forEach((item, index) => {
+    const excelRow = sheet.getRow(legendStartRow + 1 + index);
+    const swatchCell = excelRow.getCell(1);
+    swatchCell.value = null;
+    swatchCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: hexToArgb(item.color) } };
+    swatchCell.border = {
+      top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+    };
+
+    const labelCell = excelRow.getCell(2);
+    labelCell.value = item.label;
+    labelCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF334155' } };
+    labelCell.alignment = { horizontal: 'left', vertical: 'middle' };
+    excelRow.height = 18;
+  });
+
+  const totalRow = legendStartRow + 1 + EFFECTIVENESS_LEGEND.length + 1;
+  sheet.mergeCells(totalRow, 1, totalRow, headers.length);
+  const totalCell = sheet.getCell(totalRow, 1);
+  totalCell.value = `Итого: ${formatEffectivenessChecksCount(rows.length)}`;
+  totalCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF64748B' } };
+  sheet.getRow(totalRow).height = 18;
 }
 
 async function buildVisualXlsx(options: {

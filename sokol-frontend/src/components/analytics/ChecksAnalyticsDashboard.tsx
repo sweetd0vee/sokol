@@ -383,6 +383,7 @@ export function ChecksAnalyticsDashboard() {
                 labelMode="both"
                 legendFontSize={18}
                 legendFontWeight={600}
+                legendPercentFirst
               />
             )}
           </ChartCard>

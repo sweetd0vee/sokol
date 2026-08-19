@@ -21,6 +21,8 @@ type FocusableDonutChartProps = {
   showValueLabels?: boolean;
   legendFontSize?: number;
   legendFontWeight?: number;
+  /** When true, legend shows percent first and absolute value in parentheses. */
+  legendPercentFirst?: boolean;
 };
 
 type LabelProps = {
@@ -114,6 +116,7 @@ export function FocusableDonutChart({
   showValueLabels = true,
   legendFontSize = CHART_LEGEND_STYLE.fontSize,
   legendFontWeight = 400,
+  legendPercentFirst = false,
 }: FocusableDonutChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const colors = palette.length > 0 ? palette : PALETTE;
@@ -192,7 +195,9 @@ export function FocusableDonutChart({
                 return name;
               }
               const percent = total > 0 ? Math.round((item.value / total) * 100) : 0;
-              return `${name}: ${item.value} (${percent}%)`;
+              return legendPercentFirst
+                ? `${name}: ${percent}% (${item.value})`
+                : `${name}: ${item.value} (${percent}%)`;
             }}
             wrapperStyle={{
               ...CHART_LEGEND_STYLE,
