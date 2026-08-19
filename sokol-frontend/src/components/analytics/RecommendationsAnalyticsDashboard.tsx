@@ -306,13 +306,12 @@ export function RecommendationsAnalyticsDashboard() {
             exportSelected={exportSections.isSelected('summary')}
             onToggleExport={() => exportSections.toggleSection('summary')}
           >
-            <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5">
               <KpiCard label="Всего" value={summary.total} hint={`из ${universeTotal}`} tone="violet" />
-              <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
+              <KpiCard label="В процессе" value={summary.byStatus.in_progress} tone="amber" />
               <KpiCard label="Не решено" value={summary.byStatus.unresolved} tone="slate" />
-              <KpiCard label="Высокая существенность" value={summary.byMateriality.высокий} tone="amber" />
-              <KpiCard label="Исполнение" value={summary.completionRate} suffix="%" tone="green" />
-              <KpiCard label="Нарушение срока" value={summary.violationRate} suffix="%" tone="red" />
+              <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
+              <KpiCard label="Доля исполненных" value={summary.completionRate} suffix="%" tone="green" />
             </div>
           </ChartCard>
         ),

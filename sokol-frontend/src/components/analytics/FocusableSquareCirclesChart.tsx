@@ -126,6 +126,7 @@ export function FocusableSquareCirclesChart({
                   fillOpacity={isDimmed ? 0.32 : 1}
                   stroke={isActive ? '#0f172a' : 'none'}
                   strokeWidth={isActive ? 1 : 0}
+                  vectorEffect="non-scaling-stroke"
                 >
                   <title>
                     {formatLegendLabel({
