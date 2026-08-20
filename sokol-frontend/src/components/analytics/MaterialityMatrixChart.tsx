@@ -7,6 +7,7 @@ import {
   DEFAULT_MATERIALITY_MATRIX_COUNT_SORT,
   MATERIALITY_MATRIX_COLUMNS,
   MATERIALITY_MATRIX_LEGEND,
+  MATERIALITY_MATRIX_TOTAL_COLUMN,
   buildMaterialityMatrixColumnTotals,
   formatMaterialityChecksCount,
   getMaterialityMatrixCount,
@@ -22,7 +23,7 @@ type MaterialityMatrixChartProps = {
   onSortConfigChange?: (sortConfig: MaterialityMatrixCountSortConfig) => void;
 };
 
-function ColumnShareSquare({
+function ColumnShareCircle({
   columnKey,
   count,
   percent,
@@ -40,7 +41,7 @@ function ColumnShareSquare({
   return (
     <div className="flex flex-col items-center gap-1">
       <span
-        className="inline-flex h-11 w-11 flex-col items-center justify-center rounded-sm border-4 bg-white text-center leading-tight text-black"
+        className="inline-flex h-11 w-11 flex-col items-center justify-center rounded-full border-4 bg-white text-center leading-tight text-black"
         style={{ borderColor: color }}
         title={`${column.label}: ${percent}% (${count})`}
         aria-label={`${column.label}: ${percent}% (${count})`}
@@ -81,7 +82,7 @@ function CountSortHeader({
         title={sortLabel}
         aria-label={sortLabel}
       >
-        <span>{label}</span>
+        <span className="text-balance leading-tight">{label}</span>
         {active ? (
           direction === 'asc' ? (
             <ArrowUp size={14} aria-hidden />
@@ -119,11 +120,12 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
         <div className="min-h-0 flex-1 overflow-auto">
           <table className="w-full table-fixed border-collapse text-sm">
             <colgroup>
-              <col className="w-[14%]" />
-              <col className="w-[47%]" />
+              <col className="w-[12%]" />
+              <col className="w-[40%]" />
               {MATERIALITY_MATRIX_COLUMNS.map((column) => (
-                <col key={column.key} className="w-[13%]" />
+                <col key={column.key} className="w-[11%]" />
               ))}
+              <col className="w-[15%]" />
             </colgroup>
             <thead className="sticky top-0 z-[1] bg-white">
               <tr className="border-b border-gray-100">
@@ -142,6 +144,16 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
                     onClick={() => setSortConfig((prev) => cycleMaterialityMatrixCountSort(prev, column.key))}
                   />
                 ))}
+                <CountSortHeader
+                  label={MATERIALITY_MATRIX_TOTAL_COLUMN.label}
+                  active={sortConfig.key === MATERIALITY_MATRIX_TOTAL_COLUMN.key}
+                  direction={sortConfig.direction}
+                  onClick={() =>
+                    setSortConfig((prev) =>
+                      cycleMaterialityMatrixCountSort(prev, MATERIALITY_MATRIX_TOTAL_COLUMN.key),
+                    )
+                  }
+                />
               </tr>
             </thead>
             <tbody>
@@ -177,7 +189,7 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
                         aria-label={`${column.label}: ${count}`}
                       >
                         <span
-                          className="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-sm px-1.5 text-xs font-bold tabular-nums"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold tabular-nums"
                           style={{
                             backgroundColor: color,
                             color: '#1e293b',
@@ -189,6 +201,13 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
                       </td>
                     );
                   })}
+                  <td
+                    className="px-1 py-2 text-center"
+                    title={`${MATERIALITY_MATRIX_TOTAL_COLUMN.label}: ${row.total}`}
+                    aria-label={`${MATERIALITY_MATRIX_TOTAL_COLUMN.label}: ${row.total}`}
+                  >
+                    <span className="text-sm font-bold tabular-nums text-slate-800">{row.total}</span>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -207,11 +226,17 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
                     <td key={column.key} className="px-1 py-3 text-center align-top">
                       <div className="flex flex-col items-center gap-1.5">
                         <span className="text-sm font-semibold text-sber-dark">{column.label}</span>
-                        <ColumnShareSquare columnKey={column.key} count={count} percent={percent} />
+                        <ColumnShareCircle columnKey={column.key} count={count} percent={percent} />
                       </div>
                     </td>
                   );
                 })}
+                <td className="px-1 py-3 text-center align-top">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <span className="text-sm font-semibold text-sber-dark">Всего</span>
+                    <span className="text-sm font-medium tabular-nums text-gray-700">{grandTotal}</span>
+                  </div>
+                </td>
               </tr>
             </tfoot>
           </table>
@@ -236,7 +261,7 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
           {MATERIALITY_MATRIX_LEGEND.map((item) => (
             <li key={item.key} className="inline-flex items-center gap-1.5">
               <span
-                className="inline-block h-3 w-3 rounded-sm border border-black/10"
+                className="inline-block h-3 w-3 rounded-full border border-black/10"
                 style={{ backgroundColor: item.color }}
                 aria-hidden
               />

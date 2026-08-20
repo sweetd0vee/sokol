@@ -141,6 +141,7 @@ export function FocusableSquareCirclesChart({
             // Keep consistent typography for dashboard charts.
             const labelColor = '#111827';
             const fontSize = Math.max(4.5, Math.min(7.5, radius * 0.42));
+            const strokeColor = isActive ? '#0f172a' : fill;
 
             return (
               <g
@@ -153,10 +154,11 @@ export function FocusableSquareCirclesChart({
                   cx={center.x}
                   cy={center.y}
                   r={radius}
-                  fill={fill}
+                  fill="#ffffff"
                   fillOpacity={isDimmed ? 0.32 : 1}
-                  stroke={isActive ? '#0f172a' : 'none'}
-                  strokeWidth={isActive ? 1 : 0}
+                  stroke={strokeColor}
+                  strokeWidth={3}
+                  strokeOpacity={isDimmed ? 0.32 : 1}
                   vectorEffect="non-scaling-stroke"
                 >
                   <title>
@@ -202,7 +204,7 @@ export function FocusableSquareCirclesChart({
               className="grid w-full grid-cols-[14px_minmax(0,1fr)] items-center gap-x-2 justify-self-stretch"
             >
               <span
-                className="inline-block h-3.5 w-3.5 rounded-full"
+                className="box-border block h-3.5 w-3.5 shrink-0 rounded-full border border-black/15"
                 style={{
                   backgroundColor: item.color,
                 }}

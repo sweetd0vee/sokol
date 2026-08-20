@@ -23,10 +23,16 @@ export const MATERIALITY_MATRIX_COLUMNS = [
   { key: 'low', level: 'низкий', label: 'Низкий' },
 ] as const;
 
+export const MATERIALITY_MATRIX_TOTAL_COLUMN = {
+  key: 'total',
+  label: 'Всего рекомендаций',
+} as const;
+
 export type MaterialityMatrixColumnKey = (typeof MATERIALITY_MATRIX_COLUMNS)[number]['key'];
+export type MaterialityMatrixSortKey = MaterialityMatrixColumnKey | typeof MATERIALITY_MATRIX_TOTAL_COLUMN.key;
 
 export type MaterialityMatrixCountSortConfig = {
-  key: MaterialityMatrixColumnKey | null;
+  key: MaterialityMatrixSortKey | null;
   direction: SortDirection;
 };
 
@@ -48,9 +54,19 @@ export function getMaterialityMatrixCount(
   return row.counts.низкий;
 }
 
+export function getMaterialityMatrixSortValue(
+  row: MaterialityMatrixRow,
+  columnKey: MaterialityMatrixSortKey,
+): number {
+  if (columnKey === 'total') {
+    return row.total;
+  }
+  return getMaterialityMatrixCount(row, columnKey);
+}
+
 export function cycleMaterialityMatrixCountSort(
   prev: MaterialityMatrixCountSortConfig,
-  key: MaterialityMatrixColumnKey,
+  key: MaterialityMatrixSortKey,
 ): MaterialityMatrixCountSortConfig {
   if (prev.key !== key) {
     return { key, direction: 'desc' };
@@ -72,7 +88,8 @@ export function sortMaterialityMatrixRows(
   const direction = sortConfig.direction === 'asc' ? 1 : -1;
   return [...rows].sort((left, right) => {
     const countDelta =
-      (getMaterialityMatrixCount(left, columnKey) - getMaterialityMatrixCount(right, columnKey)) * direction;
+      (getMaterialityMatrixSortValue(left, columnKey) - getMaterialityMatrixSortValue(right, columnKey))
+      * direction;
     if (countDelta !== 0) {
       return countDelta;
     }
@@ -111,7 +128,7 @@ function escapeHtml(value: string) {
 function countBadgeMarkup(count: number, level: MaterialityLevel) {
   const color = getMaterialityLevelColor(level);
   const textColor = '#1e293b';
-  return `<span style="display:inline-flex;min-width:32px;height:32px;align-items:center;justify-content:center;border-radius:2px;background:${color};color:${textColor};font-size:12px;font-weight:700;font-variant-numeric:tabular-nums">${count}</span>`;
+  return `<span style="display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;border-radius:50%;background:${color};color:${textColor};font-size:12px;font-weight:700;font-variant-numeric:tabular-nums">${count}</span>`;
 }
 
 /** Self-contained HTML for materiality matrix export (no Tailwind / Recharts required). */
@@ -123,10 +140,13 @@ export function buildMaterialityMatrixHtmlMarkup(rows: MaterialityMatrixRow[]): 
   const totals = buildMaterialityMatrixColumnTotals(rows);
   const grandTotal = totals.high + totals.medium + totals.low;
 
-  const headerCells = MATERIALITY_MATRIX_COLUMNS.map(
-    (column) =>
-      `<th style="padding:8px 4px;text-align:center;font-weight:600">${escapeHtml(column.label)}</th>`,
-  ).join('');
+  const headerCells = [
+    ...MATERIALITY_MATRIX_COLUMNS.map(
+      (column) =>
+        `<th style="padding:8px 4px;text-align:center;font-weight:600">${escapeHtml(column.label)}</th>`,
+    ),
+    `<th style="padding:8px 4px;text-align:center;font-weight:600">${escapeHtml(MATERIALITY_MATRIX_TOTAL_COLUMN.label)}</th>`,
+  ].join('');
 
   const bodyRows = rows
     .map((row) => {
@@ -134,33 +154,43 @@ export function buildMaterialityMatrixHtmlMarkup(rows: MaterialityMatrixRow[]): 
         const count = getMaterialityMatrixCount(row, column.key);
         return `<td style="padding:8px 4px;text-align:center" title="${escapeHtml(`${column.label}: ${count}`)}">${countBadgeMarkup(count, column.level)}</td>`;
       }).join('');
+      const rowTotal = row.total;
 
       return `<tr style="border-bottom:1px solid #f3f4f6">
         <th style="padding:6px 12px;text-align:left;font-weight:500" title="${escapeHtml(row.name)}">${escapeHtml(row.key)}</th>
         <td style="padding:6px 12px;text-align:left;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(row.shortName || row.name)}">${escapeHtml(row.shortName || '—')}</td>
         ${countCells}
+        <td style="padding:8px 4px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums;color:#111827" title="${escapeHtml(`${MATERIALITY_MATRIX_TOTAL_COLUMN.label}: ${rowTotal}`)}">${rowTotal}</td>
       </tr>`;
     })
     .join('');
 
-  const footerShareCells = MATERIALITY_MATRIX_COLUMNS.map((column) => {
-    const count = totals[column.key];
-    const percent = grandTotal === 0 ? 0 : Math.round((count / grandTotal) * 100);
-    return `<td style="padding:12px 4px;text-align:center;vertical-align:top">
+  const footerShareCells = [
+    ...MATERIALITY_MATRIX_COLUMNS.map((column) => {
+      const count = totals[column.key];
+      const percent = grandTotal === 0 ? 0 : Math.round((count / grandTotal) * 100);
+      return `<td style="padding:12px 4px;text-align:center;vertical-align:top">
         <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
           <span style="font-size:14px;font-weight:600;color:#003366">${escapeHtml(column.label)}</span>
-          <span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:44px;height:44px;border-radius:2px;background:#fff;border:4px solid ${column.level === 'высокий' ? MATERIALITY_COLORS.высокий : column.level === 'средний' ? MATERIALITY_COLORS.средний : MATERIALITY_COLORS.низкий};color:#111827;text-align:center;line-height:1.15" title="${escapeHtml(`${column.label}: ${percent}% (${count})`)}">
+          <span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:#fff;border:4px solid ${column.level === 'высокий' ? MATERIALITY_COLORS.высокий : column.level === 'средний' ? MATERIALITY_COLORS.средний : MATERIALITY_COLORS.низкий};color:#111827;text-align:center;line-height:1.15" title="${escapeHtml(`${column.label}: ${percent}% (${count})`)}">
             <span style="font-size:12px;font-weight:600">${percent}%</span>
           </span>
           <span style="font-size:14px;font-weight:500;color:#374151;font-variant-numeric:tabular-nums">${count}</span>
         </div>
       </td>`;
-  }).join('');
+    }),
+    `<td style="padding:12px 4px;text-align:center;vertical-align:top">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <span style="font-size:14px;font-weight:600;color:#003366">Всего</span>
+        <span style="font-size:14px;font-weight:500;color:#374151;font-variant-numeric:tabular-nums">${grandTotal}</span>
+      </div>
+    </td>`,
+  ].join('');
 
   const legend = MATERIALITY_MATRIX_LEGEND.map(
     (item) =>
       `<li style="display:inline-flex;align-items:center;gap:6px">
-        <span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:${item.color};border:1px solid rgba(0,0,0,0.1)"></span>
+        <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${item.color};border:1px solid rgba(0,0,0,0.1)"></span>
         <span>${escapeHtml(item.label)}</span>
       </li>`,
   ).join('');
@@ -170,9 +200,10 @@ export function buildMaterialityMatrixHtmlMarkup(rows: MaterialityMatrixRow[]): 
       <div style="overflow:auto">
         <table style="width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed">
           <colgroup>
-            <col style="width:14%" />
-            <col style="width:47%" />
-            ${MATERIALITY_MATRIX_COLUMNS.map(() => '<col style="width:13%" />').join('')}
+            <col style="width:12%" />
+            <col style="width:40%" />
+            ${MATERIALITY_MATRIX_COLUMNS.map(() => '<col style="width:11%" />').join('')}
+            <col style="width:15%" />
           </colgroup>
           <thead>
             <tr style="border-bottom:1px solid #f3f4f6;background:#fff">

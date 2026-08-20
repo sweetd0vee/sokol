@@ -58,4 +58,16 @@ describe('materiality matrix sort', () => {
       sortMaterialityMatrixRows(rows, { key: 'medium', direction: 'asc' }).map((item) => item.key),
     ).toEqual(['ПР-1', 'ПР-2', 'ПР-10']);
   });
+
+  it('sorts by total recommendations per check', () => {
+    const rows = [
+      row('A', { высокий: 1, средний: 1, низкий: 1 }),
+      row('B', { высокий: 5, средний: 0, низкий: 0 }),
+      row('C', { высокий: 2, средний: 2, низкий: 2 }),
+    ];
+
+    expect(
+      sortMaterialityMatrixRows(rows, { key: 'total', direction: 'desc' }).map((item) => item.key),
+    ).toEqual(['C', 'B', 'A']);
+  });
 });

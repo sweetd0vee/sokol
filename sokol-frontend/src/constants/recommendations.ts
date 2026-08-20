@@ -148,6 +148,11 @@ export const INDICATOR_OPTIONS: {
   { value: 'исполнено', label: 'Исполнено', dotClassName: 'bg-[rgb(37,235,103)]' },
 ];
 
+/** Indicators shown on analytics charts (excludes placeholder "не указан"). */
+export const INDICATOR_ANALYTICS_OPTIONS = INDICATOR_OPTIONS.filter(
+  (option) => option.value !== 'не указан',
+);
+
 export function getIndicatorLabel(value: RecommendationIndicator | '' | null | undefined) {
   return INDICATOR_OPTIONS.find((option) => option.value === value)?.label ?? 'Не указан';
 }

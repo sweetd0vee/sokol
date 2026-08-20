@@ -332,6 +332,8 @@ async def recommendation_indicator_distribution_sql(
     counts = {key: 0 for key in INDICATOR_LABELS}
     for row in rows:
         key = row.name or "не указан"
+        if key == "не указан":
+            continue
         counts[key] = counts.get(key, 0) + int(row.value)
     return [
         NamedCount(

@@ -50,6 +50,7 @@ import {
   getMaterialityMatrixCount,
   MATERIALITY_MATRIX_COLUMNS,
   MATERIALITY_MATRIX_LEGEND,
+  MATERIALITY_MATRIX_TOTAL_COLUMN,
   materialityMatrixGrandTotal,
   type MaterialityMatrixRow,
 } from './materialityMatrix';
@@ -271,6 +272,13 @@ function buildMaterialityMatrixPdfContent(
         fillColor: '#003366',
         alignment: 'center' as const,
       })),
+      {
+        text: MATERIALITY_MATRIX_TOTAL_COLUMN.label,
+        bold: true,
+        color: '#FFFFFF',
+        fillColor: '#003366',
+        alignment: 'center' as const,
+      },
     ],
     ...rows.map((row) => [
       { text: row.key, bold: true, color: '#334155', noWrap: true },
@@ -286,6 +294,12 @@ function buildMaterialityMatrixPdfContent(
           fillColor: fill,
         };
       }),
+      {
+        text: String(row.total),
+        alignment: 'center' as const,
+        bold: true,
+        color: '#1E293B',
+      },
     ]),
   ];
 
@@ -335,7 +349,7 @@ function buildMaterialityMatrixPdfContent(
     {
       table: {
         headerRows: 1,
-        widths: [72, '*', 64, 64, 64],
+        widths: [72, '*', 54, 54, 54, 72],
         body,
         dontBreakRows: true,
       },
@@ -703,13 +717,19 @@ function writeMaterialityMatrixSheet(
     views: [{ showGridLines: false }],
   });
 
-  const headers = ['Ключ', 'Краткое название проверки', ...MATERIALITY_MATRIX_COLUMNS.map((column) => column.label)];
+  const headers = [
+    'Ключ',
+    'Краткое название проверки',
+    ...MATERIALITY_MATRIX_COLUMNS.map((column) => column.label),
+    MATERIALITY_MATRIX_TOTAL_COLUMN.label,
+  ];
   const keyColumnWidth = 18;
-  const shortNameColumnWidth = 80;
+  const shortNameColumnWidth = 72;
   sheet.columns = [
     { width: keyColumnWidth },
     { width: shortNameColumnWidth },
     ...MATERIALITY_MATRIX_COLUMNS.map(() => ({ width: 14 })),
+    { width: 22 },
   ];
 
   sheet.mergeCells(1, 1, 1, headers.length);
@@ -718,7 +738,7 @@ function writeMaterialityMatrixSheet(
   sheet.getRow(1).height = 24;
 
   sheet.mergeCells(2, 1, 2, headers.length);
-  sheet.getCell(2, 1).value = chart.description || 'Матрица уровней существенности по проверкам за период (все строки выборки)';
+  sheet.getCell(2, 1).value = chart.description || 'Матрица существенности (все строки выборки)';
   sheet.getCell(2, 1).font = { name: 'Calibri', size: 10, color: { argb: 'FF64748B' } };
   sheet.getRow(2).height = 18;
 
@@ -777,6 +797,17 @@ function writeMaterialityMatrixSheet(
         right: { style: 'thin', color: { argb: 'FFFFFFFF' } },
       };
     });
+
+    const totalCell = excelRow.getCell(MATERIALITY_MATRIX_COLUMNS.length + 3);
+    totalCell.value = row.total;
+    totalCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF1E293B' } };
+    totalCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    totalCell.border = {
+      top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+      bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+      left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+      right: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+    };
 
     [1, 2].forEach((columnIndex) => {
       const cell = excelRow.getCell(columnIndex);
@@ -935,7 +966,7 @@ async function buildVisualXlsx(options: {
     if (!materialityMatrix?.length || wroteMaterialityMatrix) {
       return;
     }
-    let sheetName = sheetNameForSection(kind, 'materialityMatrix', chart?.title || 'Существенность');
+    let sheetName = sheetNameForSection(kind, 'materialityMatrix', chart?.title || 'Матрица существенности');
     if (usedNames.has(sheetName)) {
       sheetName = `${sheetName.slice(0, 28)}_matrix`;
     }
@@ -945,8 +976,8 @@ async function buildVisualXlsx(options: {
       sheetName,
       chart ?? {
         id: 'materialityMatrix',
-        title: 'Существенность',
-        description: 'Матрица уровней существенности по проверкам за период (все строки выборки)',
+        title: 'Матрица существенности',
+        description: 'Матрица существенности (все строки выборки)',
         dataUrl: '',
         width: 960,
         height: 540,
@@ -2054,8 +2085,8 @@ function enrichMaterialityMatrixCapture(
   const htmlMarkup = buildMaterialityMatrixHtmlMarkup(rows);
   const matrixMeta = {
     id: 'materialityMatrix',
-    title: 'Существенность',
-    description: 'Матрица уровней существенности по проверкам за период',
+    title: 'Матрица существенности',
+    description: '',
     width: 960,
     height: 540,
   } as const;
@@ -2153,8 +2184,8 @@ export async function exportVisualAnalyticsReport(options: {
             ...(canRenderMaterialityMatrixTable
               ? [{
                   id: 'materialityMatrix',
-                  title: 'Существенность',
-                  description: 'Матрица уровней существенности по проверкам за период',
+                  title: 'Матрица существенности',
+                  description: '',
                   dataUrl: '',
                   width: 960,
                   height: 540,

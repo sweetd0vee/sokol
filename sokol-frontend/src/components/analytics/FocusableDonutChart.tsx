@@ -28,6 +28,8 @@ type FocusableDonutChartProps = {
   legendFontWeight?: number;
   /** When true, legend shows percent first and absolute value in parentheses. */
   legendPercentFirst?: boolean;
+  /** When true, segments use a bold colored outline with white fill instead of solid fill. */
+  outlineOnly?: boolean;
 };
 
 type LabelProps = {
@@ -125,6 +127,7 @@ export function FocusableDonutChart({
   legendFontSize = CHART_LEGEND_STYLE.fontSize,
   legendFontWeight = 400,
   legendPercentFirst = false,
+  outlineOnly = false,
 }: FocusableDonutChartProps) {
   const resolvedLegendLabelMode = legendLabelMode ?? labelMode;
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -159,7 +162,7 @@ export function FocusableDonutChart({
             cy="42%"
             innerRadius={0}
             outerRadius="72%"
-            stroke="none"
+            stroke={outlineOnly ? undefined : 'none'}
             label={
               showValueLabels
                 ? (props) => <PieValueLabel {...props} labelMode={labelMode} />
@@ -173,13 +176,17 @@ export function FocusableDonutChart({
             {pieData.map((entry, index) => {
               const isDimmed = activeIndex !== null && activeIndex !== index;
               const isActive = activeIndex === index;
+              const strokeColor = outlineOnly
+                ? (isActive ? '#0f172a' : entry.color)
+                : (isActive ? '#0f172a' : 'none');
               return (
                 <Cell
                   key={entry.name}
-                  fill={entry.color}
+                  fill={outlineOnly ? '#ffffff' : entry.color}
                   fillOpacity={isDimmed ? 0.32 : 1}
-                  stroke={isActive ? '#0f172a' : 'none'}
-                  strokeWidth={isActive ? 1 : 0}
+                  stroke={strokeColor}
+                  strokeWidth={outlineOnly ? (isActive ? 4 : 3) : (isActive ? 1 : 0)}
+                  strokeOpacity={outlineOnly && isDimmed ? 0.32 : 1}
                   style={{
                     cursor: 'pointer',
                     filter: isDimmed ? 'brightness(0.72) saturate(0.85)' : isActive ? 'brightness(1.04)' : undefined,

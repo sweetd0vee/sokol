@@ -14,7 +14,6 @@ import {
 } from 'recharts';
 import { fetchRecommendationsAnalytics, type RecommendationPeriodPoint } from '../../api/analytics';
 import { queryKeys } from '../../api/queryKeys';
-import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
@@ -34,9 +33,8 @@ import {
   type RecommendationExportSectionId,
 } from '../../constants/analyticsExportSections';
 import {
-  INDICATOR_OPTIONS,
+  INDICATOR_ANALYTICS_OPTIONS,
   MATERIALITY_LEVEL_OPTIONS,
-  RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS,
   RECOMMENDATION_STATUS_OPTIONS,
 } from '../../constants/recommendations';
 import { useExportSections } from '../../hooks/useExportSections';
@@ -53,7 +51,6 @@ import {
 import { completeNamedDistribution, distributionHasValues } from '../../utils/analyticsDistribution';
 import { registerDashboardChart } from '../../utils/dashboardChartRegistry';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
-import type { MaterialityLevel } from '../../types/recommendation';
 import {
   DEFAULT_MATERIALITY_MATRIX_COUNT_SORT,
   sortMaterialityMatrixRows,
@@ -150,12 +147,9 @@ const STACKED_NOTE_FONT_SIZE = 11;
 const STACKED_NOTE_PAD_X = 6;
 const STACKED_NOTE_PAD_Y = 3;
 const STACKED_NOTE_BOX_HEIGHT = STACKED_NOTE_FONT_SIZE + STACKED_NOTE_PAD_Y * 2;
-const STACKED_NOTE_ROW_GAP = 6;
-const STACKED_NOTE_ROW_HEIGHT = STACKED_NOTE_BOX_HEIGHT + STACKED_NOTE_ROW_GAP;
 const STACKED_NOTE_ANCHOR_GAP = 16;
-const STACKED_NOTE_SIDE_GAP = 8;
-const STACKED_PERIOD_CHART_TOP_MARGIN = 56;
-const STACKED_PERIOD_CHART_SIDE_MARGIN = 28;
+const STACKED_PERIOD_CHART_TOP_MARGIN = 72;
+const STACKED_PERIOD_CHART_SIDE_MARGIN = 36;
 
 type StackedSegmentLabelView = {
   x?: number | string;
@@ -323,26 +317,48 @@ function StackedBarSegmentValueLabel({
     ? matchedOutsideIndex
     : stackIndex;
   const boxWidth = roundedStr.length * STACKED_NOTE_FONT_SIZE * STACKED_LABEL_CHAR_WIDTH + STACKED_NOTE_PAD_X * 2;
-  const side = outsideIndex % 2 === 0 ? -1 : 1;
-  const row = Math.floor(outsideIndex / 2);
-  const labelCx = cx + side * (w / 2 + STACKED_NOTE_SIDE_GAP + boxWidth / 2);
-  const boxBottomY = barTopY - STACKED_NOTE_ANCHOR_GAP - row * STACKED_NOTE_ROW_HEIGHT;
-  const noteBoxBottomY = Math.max(STACKED_NOTE_BOX_HEIGHT + 4, boxBottomY);
-  const noteCenterY = noteBoxBottomY - STACKED_NOTE_BOX_HEIGHT / 2;
-  const boxX = labelCx - boxWidth / 2;
+  const outsideCount = Math.max(outsideKeys.length, 1);
+  // Keep callouts and stems inside the bar width so narrow periods do not spill sideways.
+  const edgePad = Math.min(3, Math.max(0, w * 0.1));
+  const spreadLeft = x + edgePad;
+  const spreadRight = x + w - edgePad;
+  const stemX =
+    outsideCount <= 1 || spreadRight <= spreadLeft
+      ? cx
+      : spreadLeft + ((spreadRight - spreadLeft) * outsideIndex) / (outsideCount - 1);
+  const halfBox = boxWidth / 2;
+  const labelCx =
+    w >= boxWidth
+      ? Math.min(x + w - halfBox, Math.max(x + halfBox, stemX))
+      : cx;
+  const noteCenterY = Math.max(
+    STACKED_NOTE_BOX_HEIGHT / 2 + 2,
+    barTopY - STACKED_NOTE_ANCHOR_GAP - STACKED_NOTE_BOX_HEIGHT / 2,
+  );
+  const boxX = labelCx - halfBox;
   const boxY = noteCenterY - STACKED_NOTE_BOX_HEIGHT / 2;
-  const lineStartX = side < 0 ? boxX + boxWidth : boxX;
+  const lineStartY = noteCenterY + STACKED_NOTE_BOX_HEIGHT / 2;
 
   return (
     <g style={{ pointerEvents: 'none' }}>
       <line
-        x1={lineStartX}
-        y1={noteCenterY}
-        x2={cx}
+        x1={stemX}
+        y1={lineStartY}
+        x2={stemX}
         y2={cy}
         stroke={segmentColor}
         strokeWidth={1.25}
       />
+      {Math.abs(labelCx - stemX) > 0.5 ? (
+        <line
+          x1={stemX}
+          y1={lineStartY}
+          x2={labelCx}
+          y2={lineStartY}
+          stroke={segmentColor}
+          strokeWidth={1.25}
+        />
+      ) : null}
       <rect
         x={boxX}
         y={boxY}
@@ -371,9 +387,6 @@ function StackedBarSegmentValueLabel({
 export function RecommendationsAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [selectedMateriality, setSelectedMateriality] = useState<string[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const [selectedAdditionalStatuses, setSelectedAdditionalStatuses] = useState<string[]>([]);
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('html');
   const [isExporting, setIsExporting] = useState(false);
 
@@ -412,9 +425,6 @@ export function RecommendationsAnalyticsDashboard() {
     monthKeys: [],
     auditors: selectedAuditors,
     departments: selectedDepartments,
-    statuses: selectedStatuses,
-    additionalStatuses: selectedAdditionalStatuses,
-    materialityLevels: selectedMateriality,
     granularity,
   });
 
@@ -427,9 +437,6 @@ export function RecommendationsAnalyticsDashboard() {
       selectedQuarterKeys,
       selectedAuditors,
       selectedDepartments,
-      selectedStatuses,
-      selectedAdditionalStatuses,
-      selectedMateriality,
     ],
     queryFn: () =>
       fetchRecommendationsAnalytics({
@@ -439,9 +446,6 @@ export function RecommendationsAnalyticsDashboard() {
         months: [],
         auditors: selectedAuditors,
         departments: selectedDepartments,
-        statuses: selectedStatuses,
-        additionalStatuses: selectedAdditionalStatuses,
-        materialityLevels: selectedMateriality,
       }),
     enabled: bootstrapQuery.isSuccess,
     initialData: !hasActiveFilters ? bootstrapQuery.data : undefined,
@@ -497,7 +501,7 @@ export function RecommendationsAnalyticsDashboard() {
     () =>
       completeNamedDistribution(
         indicatorDistribution,
-        INDICATOR_OPTIONS,
+        INDICATOR_ANALYTICS_OPTIONS,
         getIndicatorColor,
       ),
     [indicatorDistribution],
@@ -571,9 +575,6 @@ export function RecommendationsAnalyticsDashboard() {
     resetPeriodSelections();
     setSelectedAuditors([]);
     setSelectedDepartments([]);
-    setSelectedMateriality([]);
-    setSelectedStatuses([]);
-    setSelectedAdditionalStatuses([]);
   };
 
   const handleExport = async () => {
@@ -593,7 +594,7 @@ export function RecommendationsAnalyticsDashboard() {
           dateTo: null,
           auditors: selectedAuditors,
           departments: selectedDepartments,
-          materialityLevels: selectedMateriality as MaterialityLevel[],
+          materialityLevels: [],
           selectedSections: exportSections.selectedSections,
           materialityMatrixOverride: sortMaterialityMatrixRows(
             materialityMatrix,
@@ -866,8 +867,8 @@ export function RecommendationsAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 8, w: 12, h: 8, minW: 6, minH: 6 },
         render: () => (
           <ChartCard
-            title="Существенность"
-            description="Матрица уровней существенности по проверкам за период"
+            title="Матрица существенности"
+            description=""
             exportSectionId="materialityMatrix"
             exportSelected={exportSections.isSelected('materialityMatrix')}
             onToggleExport={() => exportSections.toggleSection('materialityMatrix')}
@@ -1013,46 +1014,10 @@ export function RecommendationsAnalyticsDashboard() {
                 emptyLabel: 'Все департаменты',
                 onRemove: (value) => setSelectedDepartments((prev) => prev.filter((item) => item !== value)),
               },
-              {
-                label: 'Существенность',
-                chips: selectedMateriality.map((value) => ({
-                  value,
-                  label: MATERIALITY_LEVEL_OPTIONS.find((option) => option.value === value)?.label ?? value,
-                })),
-                emptyLabel: 'Все уровни',
-                onRemove: (value) => setSelectedMateriality((prev) => prev.filter((item) => item !== value)),
-              },
-              {
-                label: 'Статусы',
-                chips: selectedStatuses.map((value) => ({
-                  value,
-                  label: RECOMMENDATION_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value,
-                })),
-                emptyLabel: 'Все статусы',
-                onRemove: (value) => setSelectedStatuses((prev) => prev.filter((item) => item !== value)),
-              },
-              {
-                label: 'Дополнительные статусы',
-                chips: selectedAdditionalStatuses.map((value) => ({
-                  value,
-                  label:
-                    RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value,
-                })),
-                emptyLabel: 'Все доп. статусы',
-                onRemove: (value) => setSelectedAdditionalStatuses((prev) => prev.filter((item) => item !== value)),
-              },
             ]}
           />
         )}
       >
-        <div>
-          <p className="mb-2 text-sm font-medium leading-relaxed text-gray-900">Контроль</p>
-          <div className="space-y-2.5">
-            <MultiCheckboxSelect options={MATERIALITY_LEVEL_OPTIONS} value={selectedMateriality} onChange={setSelectedMateriality} placeholder="Выберите уровень существенности" />
-            <MultiCheckboxSelect options={RECOMMENDATION_STATUS_OPTIONS.map((item) => ({ value: item.value, label: item.label }))} value={selectedStatuses} onChange={setSelectedStatuses} placeholder="Выберите статус" />
-            <MultiCheckboxSelect options={RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.map((item) => ({ value: item.value, label: item.label }))} value={selectedAdditionalStatuses} onChange={setSelectedAdditionalStatuses} placeholder="Выберите дополнительный статус" />
-          </div>
-        </div>
       </AnalyticsFilterSidebar>
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col lg:-mt-[84px]">
