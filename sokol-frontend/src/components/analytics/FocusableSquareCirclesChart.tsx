@@ -76,6 +76,9 @@ export function FocusableSquareCirclesChart({
 
   // Keep generous breathing room so circles never touch the card edges.
   const maxRadius = 17.5;
+  // Fixed stroke for all circles — same absolute thickness as FocusableDonutChart ring
+  // band relative to the largest circle: (outer 70% − inner 48%) / 70%.
+  const strokeWidth = maxRadius * ((70 - 48) / 70);
 
   // Target positions by size rank (largest -> smallest).
   // TL: top-left, BL: bottom-left, TR: top-right, BR: bottom-right.
@@ -157,9 +160,8 @@ export function FocusableSquareCirclesChart({
                   fill="#ffffff"
                   fillOpacity={isDimmed ? 0.32 : 1}
                   stroke={strokeColor}
-                  strokeWidth={7}
+                  strokeWidth={strokeWidth}
                   strokeOpacity={isDimmed ? 0.32 : 1}
-                  vectorEffect="non-scaling-stroke"
                 >
                   <title>
                     {formatLegendLabel({
