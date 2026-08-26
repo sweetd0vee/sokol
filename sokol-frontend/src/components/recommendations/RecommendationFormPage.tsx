@@ -14,6 +14,7 @@ import {
   RECOMMENDATION_STATUS_OPTIONS,
   getRecommendationAdditionalStatusFieldStyle,
   getRecommendationStatusFieldStyle,
+  indicatorFromRecommendationStatus,
   normalizeRecommendationAdditionalStatus,
   normalizeRecommendationIndicator,
   normalizeRecommendationStatus,
@@ -549,7 +550,11 @@ export function RecommendationFormPage() {
             <Select
               label="Статус"
               value={status}
-              onChange={(value) => setStatus(value as Recommendation['status'] | '')}
+              onChange={(value) => {
+                const nextStatus = value as Recommendation['status'] | '';
+                setStatus(nextStatus);
+                setIndicator(indicatorFromRecommendationStatus(nextStatus));
+              }}
               options={RECOMMENDATION_STATUS_OPTIONS}
               placeholder="Выберите статус"
               className={FORM_FIELD_CLASS}

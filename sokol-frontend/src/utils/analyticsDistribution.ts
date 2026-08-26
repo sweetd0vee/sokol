@@ -3,7 +3,10 @@ export function completeNamedDistribution<T extends string>(
   options: ReadonlyArray<{ value: T; label: string }>,
   colorForValue: (value: T) => string,
 ): Array<{ name: string; value: number; color: string }> {
-  const byName = new Map(items.map((item) => [item.name, item.value]));
+  const byName = new Map<string, number>();
+  for (const item of items) {
+    byName.set(item.name, (byName.get(item.name) ?? 0) + item.value);
+  }
   return options.map((option) => ({
     name: option.label,
     value: byName.get(option.label) ?? 0,

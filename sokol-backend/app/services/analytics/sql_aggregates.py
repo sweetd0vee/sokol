@@ -322,7 +322,11 @@ async def recommendation_indicator_distribution_sql(
     session: AsyncSession,
     **filters: Any,
 ) -> list[NamedCount]:
-    from app.services.analytics.recommendations_analytics import INDICATOR_COLORS, INDICATOR_LABELS
+    from app.services.analytics.recommendations_analytics import (
+        INDICATOR_COLORS,
+        INDICATOR_KEY_ALIASES,
+        INDICATOR_LABELS,
+    )
 
     rows = await grouped_named_counts_sql(
         session,
@@ -332,7 +336,8 @@ async def recommendation_indicator_distribution_sql(
     )
     counts = {key: 0 for key in INDICATOR_LABELS}
     for row in rows:
-        key = row.name or "не указан"
+        raw = (row.name or "не указан").strip().casefold()
+        key = INDICATOR_KEY_ALIASES.get(raw, raw)
         if key == "не указан":
             continue
         counts[key] = counts.get(key, 0) + int(row.value)

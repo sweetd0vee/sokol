@@ -18,6 +18,22 @@ export const RECOMMENDATION_STATUS_OPTIONS: { value: RecommendationStatus; label
   { value: 'in_progress', label: 'В процессе' },
 ];
 
+const STATUS_TO_INDICATOR: Record<RecommendationStatus, RecommendationIndicator> = {
+  completed: 'исполнено',
+  unresolved: 'не решено',
+  on_control: 'на контроле',
+  in_progress: 'в процессе',
+};
+
+export function indicatorFromRecommendationStatus(
+  status: RecommendationStatus | '' | null | undefined,
+): RecommendationIndicator {
+  if (!status) {
+    return 'не указан';
+  }
+  return STATUS_TO_INDICATOR[status] ?? 'не указан';
+}
+
 export const RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS: {
   value: RecommendationAdditionalStatus;
   label: string;

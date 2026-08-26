@@ -8,11 +8,9 @@ import {
   cycleStatusMatrixCountSort,
   DEFAULT_STATUS_MATRIX_COUNT_SORT,
   formatStatusChecksCount,
-  getStatusMatrixCellColor,
   getStatusMatrixCount,
   sortStatusMatrixRows,
   statusMatrixGrandTotal,
-  type StatusMatrixColumnKey,
   type StatusMatrixCountSortConfig,
   type StatusMatrixRow,
 } from '../../utils/statusMatrix';
@@ -20,36 +18,6 @@ import {
 type StatusMatrixChartProps = {
   rows: StatusMatrixRow[];
 };
-
-function ColumnShareCircle({
-  columnKey,
-  count,
-  percent,
-}: {
-  columnKey: StatusMatrixColumnKey;
-  count: number;
-  percent: number;
-}) {
-  const column = STATUS_MATRIX_COLUMNS.find((item) => item.key === columnKey);
-  if (!column) {
-    return <span className="text-xs text-gray-400">—</span>;
-  }
-  const color = getStatusMatrixCellColor(column.status);
-
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <span
-        className="inline-flex h-11 w-11 flex-col items-center justify-center rounded-full border-4 bg-white text-center leading-tight text-black"
-        style={{ borderColor: color }}
-        title={`${column.label}: ${percent}% (${count})`}
-        aria-label={`${column.label}: ${percent}% (${count})`}
-      >
-        <span className="text-xs font-semibold tabular-nums">{percent}%</span>
-      </span>
-      <span className="text-sm font-medium tabular-nums text-gray-700">{count}</span>
-    </div>
-  );
-}
 
 function CountSortHeader({
   label,
@@ -163,7 +131,6 @@ export function StatusMatrixChart({ rows }: StatusMatrixChartProps) {
                   </td>
                   {STATUS_MATRIX_COLUMNS.map((column) => {
                     const count = getStatusMatrixCount(row, column.key);
-                    const color = getStatusMatrixCellColor(column.status);
                     return (
                       <td
                         key={column.key}
@@ -171,14 +138,7 @@ export function StatusMatrixChart({ rows }: StatusMatrixChartProps) {
                         title={`${column.label}: ${count}`}
                         aria-label={`${column.label}: ${count}`}
                       >
-                        <span
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold tabular-nums"
-                          style={{
-                            backgroundColor: color,
-                            color: '#1e293b',
-                            opacity: count === 0 ? 0.45 : 1,
-                          }}
-                        >
+                        <span className="text-sm font-semibold tabular-nums text-slate-800">
                           {count}
                         </span>
                       </td>
@@ -200,9 +160,12 @@ export function StatusMatrixChart({ rows }: StatusMatrixChartProps) {
                   const percent = grandTotal === 0 ? 0 : Math.round((count / grandTotal) * 100);
                   return (
                     <td key={column.key} className="px-1 py-3 text-center align-top">
-                      <div className="flex flex-col items-center gap-1.5">
+                      <div className="flex flex-col items-center gap-0.5">
                         <span className="text-sm font-semibold text-sber-dark">{column.label}</span>
-                        <ColumnShareCircle columnKey={column.key} count={count} percent={percent} />
+                        <span className="text-sm font-semibold tabular-nums text-slate-800">
+                          {count}
+                        </span>
+                        <span className="text-sm font-medium tabular-nums text-gray-700">{percent}%</span>
                       </div>
                     </td>
                   );

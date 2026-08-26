@@ -13,7 +13,6 @@ import { StatusMatrixChart } from './StatusMatrixChart';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
 import {
-  INDICATOR_ANALYTICS_OPTIONS,
   MATERIALITY_LEVEL_OPTIONS,
   RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS,
   RECOMMENDATION_STATUS_OPTIONS,
@@ -22,8 +21,8 @@ import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
 import {
-  getIndicatorColor,
   getRecommendationAdditionalStatusColor,
+  getRecommendationStatusColor,
   type PeriodGranularity,
 } from '../../utils/recommendationAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
@@ -40,7 +39,7 @@ const EMPTY_RECOMMENDATION_SUMMARY = {
   violationRate: 0,
 };
 const EMPTY_ADDITIONAL_STATUS_DISTRIBUTION: never[] = [];
-const EMPTY_INDICATOR_DISTRIBUTION: never[] = [];
+const EMPTY_STATUS_DISTRIBUTION: never[] = [];
 const EMPTY_STATUS_MATRIX: never[] = [];
 
 export function MonitoringAnalyticsDashboard() {
@@ -135,7 +134,7 @@ export function MonitoringAnalyticsDashboard() {
 
   const summary = data?.summary ?? EMPTY_RECOMMENDATION_SUMMARY;
   const additionalStatusDistribution = data?.additionalStatusDistribution ?? EMPTY_ADDITIONAL_STATUS_DISTRIBUTION;
-  const indicatorDistribution = data?.indicatorDistribution ?? EMPTY_INDICATOR_DISTRIBUTION;
+  const statusDistribution = data?.statusDistribution ?? EMPTY_STATUS_DISTRIBUTION;
   const statusMatrix = data?.statusMatrix ?? EMPTY_STATUS_MATRIX;
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
@@ -154,14 +153,19 @@ export function MonitoringAnalyticsDashboard() {
     [additionalStatusDistribution],
   );
 
-  const coloredIndicatorDistribution = useMemo(
+  const coloredStatusDistribution = useMemo(
     () =>
       completeNamedDistribution(
-        indicatorDistribution,
-        INDICATOR_ANALYTICS_OPTIONS,
-        getIndicatorColor,
+        statusDistribution,
+        [
+          { value: 'completed', label: 'Исполнено' },
+          { value: 'unresolved', label: 'Не решено' },
+          { value: 'in_progress', label: 'В процессе' },
+          { value: 'on_control', label: 'На контроле' },
+        ],
+        getRecommendationStatusColor,
       ),
-    [indicatorDistribution],
+    [statusDistribution],
   );
 
   const resetFilters = () => {
@@ -222,19 +226,19 @@ export function MonitoringAnalyticsDashboard() {
         ),
       },
       {
-        id: 'indicators',
+        id: 'statuses',
         defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Индикаторы"
-            description="Распределение индикаторов за период"
-            exportSectionId="indicators"
-            exportSelected={exportSections.isSelected('indicators')}
-            onToggleExport={() => exportSections.toggleSection('indicators')}
+            title="Статусы"
+            description="Распределение статусов за период"
+            exportSectionId="statuses"
+            exportSelected={exportSections.isSelected('statuses')}
+            onToggleExport={() => exportSections.toggleSection('statuses')}
           >
-            {distributionHasValues(coloredIndicatorDistribution) ? (
+            {distributionHasValues(coloredStatusDistribution) ? (
               <FocusableSquareCirclesChart
-                data={coloredIndicatorDistribution}
+                data={coloredStatusDistribution}
                 labelMode="both"
               />
             ) : (
@@ -267,7 +271,7 @@ export function MonitoringAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 5, w: 12, h: 8, minW: 6, minH: 6 },
         render: () => (
           <ChartCard
-            title="Статусы"
+            title="Матрица статусов"
             description="Матрица статусов по проверкам за период"
             exportSectionId="statusMatrix"
             exportSelected={exportSections.isSelected('statusMatrix')}
@@ -284,7 +288,7 @@ export function MonitoringAnalyticsDashboard() {
     ],
     [
       coloredAdditionalStatusDistribution,
-      coloredIndicatorDistribution,
+      coloredStatusDistribution,
       exportSections,
       statusMatrix,
       summary,

@@ -10,6 +10,7 @@ import { formatRuDate } from '../../utils/dates';
 import { formatRecommendationAuditObjects, getRecommendationAuditObjects } from '../../utils/auditObjects';
 import { ACCEPTED_DOCX, isDocxFile } from '../../utils/docx';
 import { useSokolData } from '../../contexts/sokolData';
+import { indicatorFromRecommendationStatus } from '../../constants/recommendations';
 import {
   FORM_ACTION_BUTTON_CLASS,
   FORM_SECTION_CLASS,
@@ -283,7 +284,7 @@ export function CheckRecommendationsBlock({
     name: draft.name.trim(),
     observation_name: draft.observation_name?.trim() || undefined,
     description: draft.name.trim(),
-    indicator: 'не указан',
+    indicator: indicatorFromRecommendationStatus(draft.status),
     materiality_level: 'средний',
     audit_object: (draft.audit_object.trim() || 'Не указан').slice(0, 255),
     deadline: draft.deadline,
