@@ -233,22 +233,22 @@ def build_recommendation_closure_fields(
     rng = rng or random.Random(10_000 + index)
 
     if status == "completed":
-        extension_count = 2 if rng.random() < 0.22 else 1 if rng.random() < 0.72 else 0
+        extension_count = 2 if rng.random() < 0.11 else 1 if rng.random() < 0.36 else 0
         fill_completion = True
         fill_removal = True
         closure_pool = CLOSURE_INFORMATION_COMMENTS
     elif status == "on_control":
-        extension_count = 2 if rng.random() < 0.18 else 1 if rng.random() < 0.62 else 0
+        extension_count = 2 if rng.random() < 0.09 else 1 if rng.random() < 0.31 else 0
         fill_completion = rng.random() < 0.55
         fill_removal = rng.random() < 0.45
         closure_pool = CLOSURE_INFORMATION_COMMENTS if fill_completion else IN_PROGRESS_CLOSURE_COMMENTS
     elif status == "unresolved":
-        extension_count = 2 if rng.random() < 0.35 else 1 if rng.random() < 0.9 else 0
+        extension_count = 2 if rng.random() < 0.18 else 1 if rng.random() < 0.45 else 0
         fill_completion = False
         fill_removal = rng.random() < 0.12
         closure_pool = UNRESOLVED_CLOSURE_COMMENTS
     else:
-        extension_count = 2 if rng.random() < 0.2 else 1 if rng.random() < 0.78 else 0
+        extension_count = 2 if rng.random() < 0.1 else 1 if rng.random() < 0.39 else 0
         fill_completion = rng.random() < 0.35
         fill_removal = rng.random() < 0.12
         closure_pool = IN_PROGRESS_CLOSURE_COMMENTS if not fill_completion else CLOSURE_INFORMATION_COMMENTS

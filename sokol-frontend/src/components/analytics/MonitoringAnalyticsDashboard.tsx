@@ -4,6 +4,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   LabelList,
   ResponsiveContainer,
   Tooltip,
@@ -17,12 +18,12 @@ import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import {
   ChartCard,
-  CHART_AXIS_TICK,
   CHART_TOOLTIP_STYLE,
   CHART_VALUE_LABEL_SIZE,
   EmptyChart,
   KpiCard,
 } from './AnalyticsChartPrimitives';
+import { CHECKS_PALETTE, getValueBasedColors } from './analyticsPalette';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
 import { StatusMatrixChart } from './StatusMatrixChart';
@@ -71,11 +72,10 @@ function CheckKeyAxisTick({
     <g transform={`translate(${x},${y})`}>
       <title>{shortName}</title>
       <text
-        dy={12}
-        textAnchor="end"
-        transform="rotate(-35)"
+        dy={14}
+        textAnchor="middle"
         fill="#64748B"
-        fontSize={12}
+        fontSize={9}
       >
         {key}
       </text>
@@ -171,6 +171,10 @@ export function MonitoringAnalyticsDashboard() {
 
   const deadlineExtensionShortNames = useMemo(
     () => new Map(deadlineExtensionsByCheck.map((item) => [item.key, item.shortName || item.name || item.key])),
+    [deadlineExtensionsByCheck],
+  );
+  const deadlineExtensionColors = useMemo(
+    () => getValueBasedColors(deadlineExtensionsByCheck.map((item) => item.value)),
     [deadlineExtensionsByCheck],
   );
 
@@ -303,8 +307,66 @@ export function MonitoringAnalyticsDashboard() {
         ),
       },
       {
+        id: 'deadlineExtensions',
+        defaultLayout: { x: 0, y: 5, w: 12, h: 4, minW: 6, minH: 3 },
+        render: () => (
+          <ChartCard
+            title="Перенос срока"
+            description="Количество переносов срока за период"
+            exportSectionId="deadlineExtensions"
+            exportSelected={exportSections.isSelected('deadlineExtensions')}
+            onToggleExport={() => exportSections.toggleSection('deadlineExtensions')}
+          >
+            {deadlineExtensionsByCheck.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <div className="h-full min-h-[14rem]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={deadlineExtensionsByCheck}
+                    margin={{ top: 22, right: 16, left: -10, bottom: 28 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis
+                      dataKey="key"
+                      interval={0}
+                      height={36}
+                      tick={(props) => (
+                        <CheckKeyAxisTick {...props} shortNameByKey={deadlineExtensionShortNames} />
+                      )}
+                    />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={CHART_TOOLTIP_STYLE}
+                      formatter={(value) => [value, 'Переносов']}
+                      labelFormatter={(label) => {
+                        const key = String(label);
+                        const shortName = deadlineExtensionShortNames.get(key);
+                        return shortName && shortName !== key ? `${key} — ${shortName}` : key;
+                      }}
+                    />
+                    <Bar dataKey="value" name="Переносов" fill={CHECKS_PALETTE[0]} radius={[4, 4, 0, 0]}>
+                      {deadlineExtensionsByCheck.map((item, index) => (
+                        <Cell key={item.id} fill={deadlineExtensionColors[index]} />
+                      ))}
+                      <LabelList
+                        dataKey="value"
+                        position="top"
+                        fontSize={CHART_VALUE_LABEL_SIZE}
+                        fill={CHECKS_PALETTE[0]}
+                        offset={8}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </ChartCard>
+        ),
+      },
+      {
         id: 'statusMatrix',
-        defaultLayout: { x: 0, y: 5, w: 12, h: 8, minW: 6, minH: 6 },
+        defaultLayout: { x: 0, y: 9, w: 12, h: 8, minW: 6, minH: 6 },
         render: () => (
           <ChartCard
             title="Матрица статусов"
@@ -321,65 +383,11 @@ export function MonitoringAnalyticsDashboard() {
           </ChartCard>
         ),
       },
-      {
-        id: 'deadlineExtensions',
-        defaultLayout: { x: 0, y: 13, w: 12, h: 4, minW: 6, minH: 3 },
-        render: () => (
-          <ChartCard
-            title="Перенос срока"
-            description="Количество раз переносов срока за период"
-            exportSectionId="deadlineExtensions"
-            exportSelected={exportSections.isSelected('deadlineExtensions')}
-            onToggleExport={() => exportSections.toggleSection('deadlineExtensions')}
-          >
-            {deadlineExtensionsByCheck.length === 0 ? (
-              <EmptyChart message="Нет данных" />
-            ) : (
-              <div className="h-full min-h-[14rem]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={deadlineExtensionsByCheck}
-                    margin={{ top: 22, right: 16, left: -10, bottom: 48 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis
-                      dataKey="key"
-                      interval={0}
-                      height={64}
-                      tick={(props) => (
-                        <CheckKeyAxisTick {...props} shortNameByKey={deadlineExtensionShortNames} />
-                      )}
-                    />
-                    <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
-                    <Tooltip
-                      contentStyle={CHART_TOOLTIP_STYLE}
-                      formatter={(value) => [value, 'Переносов']}
-                      labelFormatter={(label) => {
-                        const key = String(label);
-                        const shortName = deadlineExtensionShortNames.get(key);
-                        return shortName && shortName !== key ? `${key} — ${shortName}` : key;
-                      }}
-                    />
-                    <Bar dataKey="value" name="Переносов" fill="#B45309" radius={[4, 4, 0, 0]}>
-                      <LabelList
-                        dataKey="value"
-                        position="top"
-                        fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill="#92400E"
-                        offset={8}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </ChartCard>
-        ),
-      },
     ],
     [
       coloredAdditionalStatusDistribution,
       coloredStatusDistribution,
+      deadlineExtensionColors,
       deadlineExtensionShortNames,
       deadlineExtensionsByCheck,
       exportSections,
