@@ -190,7 +190,7 @@ export function FocusableSquareCirclesChart({
       </div>
 
       <div
-        className="mx-auto grid w-full max-w-[44rem] shrink-0 grid-cols-2 gap-x-10 gap-y-2 px-3 pb-1 pt-0.5"
+        className="mx-auto grid w-max max-w-full shrink-0 grid-cols-2 justify-items-start gap-x-10 gap-y-2 px-3 pb-1 pt-0.5"
         style={{
           fontSize: legendFontSize,
           fontWeight: legendFontWeight,
@@ -201,7 +201,7 @@ export function FocusableSquareCirclesChart({
           return (
             <div
               key={`${item.name}-${index}`}
-              className="grid w-full grid-cols-[14px_minmax(0,1fr)] items-center gap-x-2 justify-self-stretch"
+              className="grid grid-cols-[14px_auto] items-center gap-x-2"
             >
               <span
                 className="box-border block h-3.5 w-3.5 shrink-0 rounded-full border border-black/15"

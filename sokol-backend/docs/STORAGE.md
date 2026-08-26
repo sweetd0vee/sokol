@@ -2,6 +2,8 @@
 
 Метаданные — PostgreSQL (`attachments`), файлы — MinIO (S3). UI ходит **только через API**.
 
+Как создавать бакеты, консоль, `mc`, бэкап: [docs/MINIO.md](../../docs/MINIO.md).
+
 ## Layout
 
 Один bucket на проверку: `check-{serial_number}` (lowercase).

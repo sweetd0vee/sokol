@@ -19,7 +19,6 @@ import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
-import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { MaterialityMatrixChart } from './MaterialityMatrixChart';
 import {
@@ -33,7 +32,6 @@ import {
   type RecommendationExportSectionId,
 } from '../../constants/analyticsExportSections';
 import {
-  INDICATOR_ANALYTICS_OPTIONS,
   MATERIALITY_LEVEL_OPTIONS,
   RECOMMENDATION_STATUS_OPTIONS,
 } from '../../constants/recommendations';
@@ -44,7 +42,6 @@ import { labelFromPeriodKey } from '../../utils/analyticsPeriod';
 import {
   MATERIALITY_COLORS,
   STATUS_COLORS,
-  getIndicatorColor,
   getMaterialityLevelColor,
   type PeriodGranularity,
 } from '../../utils/recommendationAnalytics';
@@ -70,7 +67,6 @@ const EMPTY_RECOMMENDATION_SUMMARY = {
 const EMPTY_PERIOD_SERIES: RecommendationPeriodPoint[] = [];
 const EMPTY_CUMULATIVE_SERIES: RecommendationPeriodPoint[] = [];
 const EMPTY_MATERIALITY_DISTRIBUTION: never[] = [];
-const EMPTY_INDICATOR_DISTRIBUTION: never[] = [];
 const EMPTY_OBJECT_DISTRIBUTION: never[] = [];
 const EMPTY_MATERIALITY_MATRIX: never[] = [];
 
@@ -484,7 +480,6 @@ export function RecommendationsAnalyticsDashboard() {
     [completedCumulativeSeries],
   );
   const materialityDistribution = data?.materialityDistribution ?? EMPTY_MATERIALITY_DISTRIBUTION;
-  const indicatorDistribution = data?.indicatorDistribution ?? EMPTY_INDICATOR_DISTRIBUTION;
 
   // Colorize chart segments by the same tones used in the recommendations table.
   const coloredMaterialityDistribution = useMemo(
@@ -495,16 +490,6 @@ export function RecommendationsAnalyticsDashboard() {
         getMaterialityLevelColor,
       ),
     [materialityDistribution],
-  );
-
-  const coloredIndicatorDistribution = useMemo(
-    () =>
-      completeNamedDistribution(
-        indicatorDistribution,
-        INDICATOR_ANALYTICS_OPTIONS,
-        getIndicatorColor,
-      ),
-    [indicatorDistribution],
   );
 
   const objectDistribution = data?.objectDistribution ?? EMPTY_OBJECT_DISTRIBUTION;
@@ -637,7 +622,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'cumulative',
-        defaultLayout: { x: 0, y: 2, w: 9, h: 3, minW: 4, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 12, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
             title="Количество рекомендаций"
@@ -885,28 +870,6 @@ export function RecommendationsAnalyticsDashboard() {
         ),
       },
       {
-        id: 'indicators',
-        defaultLayout: { x: 9, y: 2, w: 3, h: 3, minW: 3, minH: 2 },
-        render: () => (
-          <ChartCard
-            title="Индикаторы"
-            description="Распределение индикаторов за период"
-            exportSectionId="indicators"
-            exportSelected={exportSections.isSelected('indicators')}
-            onToggleExport={() => exportSections.toggleSection('indicators')}
-          >
-            {distributionHasValues(coloredIndicatorDistribution) ? (
-              <FocusableSquareCirclesChart
-                data={coloredIndicatorDistribution}
-                labelMode="both"
-              />
-            ) : (
-              <EmptyChart message="Нет данных" />
-            )}
-          </ChartCard>
-        ),
-      },
-      {
         id: 'objects',
         defaultLayout: { x: 6, y: 16, w: 6, h: 3, minW: 6, minH: 3 },
         render: () => (
@@ -935,9 +898,7 @@ export function RecommendationsAnalyticsDashboard() {
       completedCumulativeSeries,
       exportSections,
       isMaterialityExportSelected,
-      coloredIndicatorDistribution,
       coloredMaterialityDistribution,
-      indicatorDistribution,
       materialityDistribution,
       materialityMatrix,
       handleMaterialityMatrixSortChange,

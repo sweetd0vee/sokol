@@ -85,6 +85,7 @@ async def get_monitoring_analytics(
         period_series=full.period_series,
         status_distribution=full.status_distribution,
         additional_status_distribution=full.additional_status_distribution,
+        indicator_distribution=full.indicator_distribution,
         filter_options=full.filter_options,
     )
 

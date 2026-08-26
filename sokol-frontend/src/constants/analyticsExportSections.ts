@@ -15,15 +15,14 @@ export const RECOMMENDATION_EXPORT_SECTIONS = [
   { id: 'materialityByPeriod', label: 'Существенность по периодам', sheetName: 'Сущ по периодам', headerFill: 'BE123C' },
   { id: 'statusByPeriod', label: 'Статусы по периодам', sheetName: 'Статусы по периодам', headerFill: 'CA8A04' },
   { id: 'materiality', label: 'Существенность', sheetName: 'Существенность', headerFill: '16A34A' },
-  { id: 'indicators', label: 'Индикаторы', sheetName: 'Индикаторы', headerFill: '0891B2' },
   { id: 'objects', label: 'Карта департаментов', sheetName: 'Карта департаментов', headerFill: '0E7490' },
   { id: 'materialityMatrix', label: 'Матрица существенности', sheetName: 'Матрица существенности', headerFill: 'BE123C' },
 ] as const;
 
 export const MONITORING_EXPORT_SECTIONS = [
   { id: 'summary', label: 'Сводка KPI', sheetName: 'Сводка', headerFill: '312E81' },
-  { id: 'statuses', label: 'Статусы', sheetName: 'Статусы', headerFill: 'CA8A04' },
   { id: 'additionalStatuses', label: 'Срок исполнения', sheetName: 'Срок исполнения', headerFill: 'DB2777' },
+  { id: 'indicators', label: 'Индикаторы', sheetName: 'Индикаторы', headerFill: '0891B2' },
 ] as const;
 
 export const DVA_EXPORT_SECTIONS = [

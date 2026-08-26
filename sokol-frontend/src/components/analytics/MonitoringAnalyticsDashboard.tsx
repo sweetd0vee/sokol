@@ -8,15 +8,24 @@ import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
+import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
-import { MATERIALITY_LEVEL_OPTIONS, RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS, RECOMMENDATION_STATUS_OPTIONS } from '../../constants/recommendations';
+import {
+  INDICATOR_ANALYTICS_OPTIONS,
+  MATERIALITY_LEVEL_OPTIONS,
+  RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS,
+  RECOMMENDATION_STATUS_OPTIONS,
+} from '../../constants/recommendations';
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
-import type { PeriodGranularity } from '../../utils/recommendationAnalytics';
+import {
+  getIndicatorColor,
+  getRecommendationAdditionalStatusColor,
+  type PeriodGranularity,
+} from '../../utils/recommendationAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
-import { getRecommendationAdditionalStatusColor, getRecommendationStatusColor } from '../../utils/recommendationAnalytics';
 import { completeNamedDistribution, distributionHasValues } from '../../utils/analyticsDistribution';
 
 const EMPTY_RECOMMENDATION_SUMMARY = {
@@ -29,8 +38,8 @@ const EMPTY_RECOMMENDATION_SUMMARY = {
   completionRate: 0,
   violationRate: 0,
 };
-const EMPTY_STATUS_DISTRIBUTION: never[] = [];
 const EMPTY_ADDITIONAL_STATUS_DISTRIBUTION: never[] = [];
+const EMPTY_INDICATOR_DISTRIBUTION: never[] = [];
 
 export function MonitoringAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
@@ -123,25 +132,10 @@ export function MonitoringAnalyticsDashboard() {
   );
 
   const summary = data?.summary ?? EMPTY_RECOMMENDATION_SUMMARY;
-  const statusDistribution = data?.statusDistribution ?? EMPTY_STATUS_DISTRIBUTION;
   const additionalStatusDistribution = data?.additionalStatusDistribution ?? EMPTY_ADDITIONAL_STATUS_DISTRIBUTION;
+  const indicatorDistribution = data?.indicatorDistribution ?? EMPTY_INDICATOR_DISTRIBUTION;
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
-
-  const coloredStatusDistribution = useMemo(
-    () =>
-      completeNamedDistribution(
-        statusDistribution,
-        [
-          { value: 'on_control', label: 'На контроле' },
-          { value: 'in_progress', label: 'В процессе' },
-          { value: 'completed', label: 'Исполнено' },
-          { value: 'unresolved', label: 'Не решено' },
-        ],
-        getRecommendationStatusColor,
-      ),
-    [statusDistribution],
-  );
 
   const coloredAdditionalStatusDistribution = useMemo(
     () =>
@@ -155,6 +149,16 @@ export function MonitoringAnalyticsDashboard() {
         getRecommendationAdditionalStatusColor,
       ),
     [additionalStatusDistribution],
+  );
+
+  const coloredIndicatorDistribution = useMemo(
+    () =>
+      completeNamedDistribution(
+        indicatorDistribution,
+        INDICATOR_ANALYTICS_OPTIONS,
+        getIndicatorColor,
+      ),
+    [indicatorDistribution],
   );
 
   const resetFilters = () => {
@@ -215,18 +219,21 @@ export function MonitoringAnalyticsDashboard() {
         ),
       },
       {
-        id: 'statuses',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 4, minH: 2 },
+        id: 'indicators',
+        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Статусы"
-            description="Распределение статусов за период"
-            exportSectionId="statuses"
-            exportSelected={exportSections.isSelected('statuses')}
-            onToggleExport={() => exportSections.toggleSection('statuses')}
+            title="Индикаторы"
+            description="Распределение индикаторов за период"
+            exportSectionId="indicators"
+            exportSelected={exportSections.isSelected('indicators')}
+            onToggleExport={() => exportSections.toggleSection('indicators')}
           >
-            {distributionHasValues(coloredStatusDistribution) ? (
-              <FocusableDonutChart data={coloredStatusDistribution} legendPercentFirst />
+            {distributionHasValues(coloredIndicatorDistribution) ? (
+              <FocusableSquareCirclesChart
+                data={coloredIndicatorDistribution}
+                labelMode="both"
+              />
             ) : (
               <EmptyChart message="Нет данных" />
             )}
@@ -235,7 +242,7 @@ export function MonitoringAnalyticsDashboard() {
       },
       {
         id: 'additionalStatuses',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 4, minH: 2 },
+        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Дополнительные статусы"
@@ -253,7 +260,12 @@ export function MonitoringAnalyticsDashboard() {
         ),
       },
     ],
-    [additionalStatusDistribution, coloredAdditionalStatusDistribution, coloredStatusDistribution, exportSections, statusDistribution, summary],
+    [
+      coloredAdditionalStatusDistribution,
+      coloredIndicatorDistribution,
+      exportSections,
+      summary,
+    ],
   );
 
   if (bootstrapQuery.isLoading && !data) {

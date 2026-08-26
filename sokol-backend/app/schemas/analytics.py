@@ -194,6 +194,7 @@ class MonitoringAnalyticsResponse(BaseModel):
     additional_status_distribution: list[NamedCount] = Field(
         serialization_alias="additionalStatusDistribution"
     )
+    indicator_distribution: list[NamedCount] = Field(serialization_alias="indicatorDistribution")
     filter_options: ChecksAnalyticsFilterOptions = Field(serialization_alias="filterOptions")
 
 
