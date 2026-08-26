@@ -125,6 +125,16 @@ class StatusMatrixRow(BaseModel):
     total: int = 0
 
 
+class DeadlineExtensionByCheckRow(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    key: str
+    short_name: str = Field(serialization_alias="shortName")
+    name: str
+    value: int
+
+
 class RecommendationsSummaryByMateriality(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -207,6 +217,9 @@ class MonitoringAnalyticsResponse(BaseModel):
     )
     indicator_distribution: list[NamedCount] = Field(serialization_alias="indicatorDistribution")
     status_matrix: list[StatusMatrixRow] = Field(serialization_alias="statusMatrix")
+    deadline_extensions_by_check: list[DeadlineExtensionByCheckRow] = Field(
+        serialization_alias="deadlineExtensionsByCheck"
+    )
     filter_options: ChecksAnalyticsFilterOptions = Field(serialization_alias="filterOptions")
 
 

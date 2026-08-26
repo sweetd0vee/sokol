@@ -1,22 +1,33 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  LabelList,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { fetchMonitoringAnalytics } from '../../api/analytics';
 import { queryKeys } from '../../api/queryKeys';
-import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
-import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import {
+  ChartCard,
+  CHART_AXIS_TICK,
+  CHART_TOOLTIP_STYLE,
+  CHART_VALUE_LABEL_SIZE,
+  EmptyChart,
+  KpiCard,
+} from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
 import { StatusMatrixChart } from './StatusMatrixChart';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
-import {
-  MATERIALITY_LEVEL_OPTIONS,
-  RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS,
-  RECOMMENDATION_STATUS_OPTIONS,
-} from '../../constants/recommendations';
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
@@ -41,13 +52,40 @@ const EMPTY_RECOMMENDATION_SUMMARY = {
 const EMPTY_ADDITIONAL_STATUS_DISTRIBUTION: never[] = [];
 const EMPTY_STATUS_DISTRIBUTION: never[] = [];
 const EMPTY_STATUS_MATRIX: never[] = [];
+const EMPTY_DEADLINE_EXTENSIONS: never[] = [];
+
+function CheckKeyAxisTick({
+  x = 0,
+  y = 0,
+  payload,
+  shortNameByKey,
+}: {
+  x?: number;
+  y?: number;
+  payload?: { value?: string };
+  shortNameByKey: Map<string, string>;
+}) {
+  const key = String(payload?.value ?? '');
+  const shortName = shortNameByKey.get(key) || key;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <title>{shortName}</title>
+      <text
+        dy={12}
+        textAnchor="end"
+        transform="rotate(-35)"
+        fill="#64748B"
+        fontSize={12}
+      >
+        {key}
+      </text>
+    </g>
+  );
+}
 
 export function MonitoringAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [selectedMateriality, setSelectedMateriality] = useState<string[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const [selectedAdditionalStatuses, setSelectedAdditionalStatuses] = useState<string[]>([]);
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('html');
   const [isExporting, setIsExporting] = useState(false);
 
@@ -86,9 +124,6 @@ export function MonitoringAnalyticsDashboard() {
     monthKeys: [],
     auditors: selectedAuditors,
     departments: selectedDepartments,
-    statuses: selectedStatuses,
-    additionalStatuses: selectedAdditionalStatuses,
-    materialityLevels: selectedMateriality,
     granularity,
   });
 
@@ -101,9 +136,6 @@ export function MonitoringAnalyticsDashboard() {
       selectedQuarterKeys,
       selectedAuditors,
       selectedDepartments,
-      selectedStatuses,
-      selectedAdditionalStatuses,
-      selectedMateriality,
     ],
     queryFn: () =>
       fetchMonitoringAnalytics({
@@ -113,9 +145,6 @@ export function MonitoringAnalyticsDashboard() {
         months: [],
         auditors: selectedAuditors,
         departments: selectedDepartments,
-        statuses: selectedStatuses,
-        additionalStatuses: selectedAdditionalStatuses,
-        materialityLevels: selectedMateriality,
       }),
     enabled: bootstrapQuery.isSuccess,
     initialData: !hasActiveFilters ? bootstrapQuery.data : undefined,
@@ -136,8 +165,14 @@ export function MonitoringAnalyticsDashboard() {
   const additionalStatusDistribution = data?.additionalStatusDistribution ?? EMPTY_ADDITIONAL_STATUS_DISTRIBUTION;
   const statusDistribution = data?.statusDistribution ?? EMPTY_STATUS_DISTRIBUTION;
   const statusMatrix = data?.statusMatrix ?? EMPTY_STATUS_MATRIX;
+  const deadlineExtensionsByCheck = data?.deadlineExtensionsByCheck ?? EMPTY_DEADLINE_EXTENSIONS;
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
+
+  const deadlineExtensionShortNames = useMemo(
+    () => new Map(deadlineExtensionsByCheck.map((item) => [item.key, item.shortName || item.name || item.key])),
+    [deadlineExtensionsByCheck],
+  );
 
   const coloredAdditionalStatusDistribution = useMemo(
     () =>
@@ -172,9 +207,6 @@ export function MonitoringAnalyticsDashboard() {
     resetPeriodSelections();
     setSelectedAuditors([]);
     setSelectedDepartments([]);
-    setSelectedMateriality([]);
-    setSelectedStatuses([]);
-    setSelectedAdditionalStatuses([]);
   };
 
   const handleExport = async () => {
@@ -259,7 +291,11 @@ export function MonitoringAnalyticsDashboard() {
             onToggleExport={() => exportSections.toggleSection('additionalStatuses')}
           >
             {distributionHasValues(coloredAdditionalStatusDistribution) ? (
-              <FocusableDonutChart data={coloredAdditionalStatusDistribution} legendPercentFirst />
+              <FocusableDonutChart
+                data={coloredAdditionalStatusDistribution}
+                variant="ring"
+                showLegend={false}
+              />
             ) : (
               <EmptyChart message="Нет данных" />
             )}
@@ -285,10 +321,67 @@ export function MonitoringAnalyticsDashboard() {
           </ChartCard>
         ),
       },
+      {
+        id: 'deadlineExtensions',
+        defaultLayout: { x: 0, y: 13, w: 12, h: 4, minW: 6, minH: 3 },
+        render: () => (
+          <ChartCard
+            title="Перенос срока"
+            description="Количество раз переносов срока за период"
+            exportSectionId="deadlineExtensions"
+            exportSelected={exportSections.isSelected('deadlineExtensions')}
+            onToggleExport={() => exportSections.toggleSection('deadlineExtensions')}
+          >
+            {deadlineExtensionsByCheck.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <div className="h-full min-h-[14rem]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={deadlineExtensionsByCheck}
+                    margin={{ top: 22, right: 16, left: -10, bottom: 48 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis
+                      dataKey="key"
+                      interval={0}
+                      height={64}
+                      tick={(props) => (
+                        <CheckKeyAxisTick {...props} shortNameByKey={deadlineExtensionShortNames} />
+                      )}
+                    />
+                    <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
+                    <Tooltip
+                      contentStyle={CHART_TOOLTIP_STYLE}
+                      formatter={(value) => [value, 'Переносов']}
+                      labelFormatter={(label) => {
+                        const key = String(label);
+                        const shortName = deadlineExtensionShortNames.get(key);
+                        return shortName && shortName !== key ? `${key} — ${shortName}` : key;
+                      }}
+                    />
+                    <Bar dataKey="value" name="Переносов" fill="#B45309" radius={[4, 4, 0, 0]}>
+                      <LabelList
+                        dataKey="value"
+                        position="top"
+                        fontSize={CHART_VALUE_LABEL_SIZE}
+                        fill="#92400E"
+                        offset={8}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </ChartCard>
+        ),
+      },
     ],
     [
       coloredAdditionalStatusDistribution,
       coloredStatusDistribution,
+      deadlineExtensionShortNames,
+      deadlineExtensionsByCheck,
       exportSections,
       statusMatrix,
       summary,
@@ -359,47 +452,10 @@ export function MonitoringAnalyticsDashboard() {
                 emptyLabel: 'Все департаменты',
                 onRemove: (value) => setSelectedDepartments((prev) => prev.filter((item) => item !== value)),
               },
-              {
-                label: 'Существенность',
-                chips: selectedMateriality.map((value) => ({
-                  value,
-                  label: MATERIALITY_LEVEL_OPTIONS.find((option) => option.value === value)?.label ?? value,
-                })),
-                emptyLabel: 'Все уровни',
-                onRemove: (value) => setSelectedMateriality((prev) => prev.filter((item) => item !== value)),
-              },
-              {
-                label: 'Статусы контроля',
-                chips: selectedStatuses.map((value) => ({
-                  value,
-                  label: RECOMMENDATION_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value,
-                })),
-                emptyLabel: 'Все статусы',
-                onRemove: (value) => setSelectedStatuses((prev) => prev.filter((item) => item !== value)),
-              },
-              {
-                label: 'Дополнительные статусы',
-                chips: selectedAdditionalStatuses.map((value) => ({
-                  value,
-                  label:
-                    RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value,
-                })),
-                emptyLabel: 'Все доп. статусы',
-                onRemove: (value) => setSelectedAdditionalStatuses((prev) => prev.filter((item) => item !== value)),
-              },
             ]}
           />
         )}
-      >
-        <div>
-          <p className="mb-2 text-sm font-medium leading-relaxed text-gray-900">Контроль</p>
-          <div className="space-y-2.5">
-            <MultiCheckboxSelect options={MATERIALITY_LEVEL_OPTIONS} value={selectedMateriality} onChange={setSelectedMateriality} placeholder="Выберите уровень существенности" />
-            <MultiCheckboxSelect options={RECOMMENDATION_STATUS_OPTIONS.map((item) => ({ value: item.value, label: item.label }))} value={selectedStatuses} onChange={setSelectedStatuses} placeholder="Выберите статус" />
-            <MultiCheckboxSelect options={RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS.map((item) => ({ value: item.value, label: item.label }))} value={selectedAdditionalStatuses} onChange={setSelectedAdditionalStatuses} placeholder="Выберите дополнительный статус" />
-          </div>
-        </div>
-      </AnalyticsFilterSidebar>
+      />
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col lg:-mt-[84px]">
         <AnalyticsDashboardGrid cards={cards} />

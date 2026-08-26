@@ -108,6 +108,14 @@ export type RecommendationsAnalyticsResponse = {
   filterOptions: AnalyticsFilterOptions & { auditors: string[] };
 };
 
+export type DeadlineExtensionByCheckRow = {
+  id: string;
+  key: string;
+  shortName: string;
+  name: string;
+  value: number;
+};
+
 export type MonitoringAnalyticsResponse = {
   universeTotal: number;
   filteredTotal: number;
@@ -118,6 +126,7 @@ export type MonitoringAnalyticsResponse = {
   additionalStatusDistribution: NamedCount[];
   indicatorDistribution: NamedCount[];
   statusMatrix: StatusMatrixRow[];
+  deadlineExtensionsByCheck: DeadlineExtensionByCheckRow[];
   filterOptions: AnalyticsFilterOptions & { auditors: string[] };
 };
 

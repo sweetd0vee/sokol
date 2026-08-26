@@ -14,6 +14,7 @@ from app.models.departments import Department
 from app.models.recommendations import Recommendation
 from app.schemas.analytics import (
     ChecksSummary,
+    DeadlineExtensionByCheckRow,
     DocumentReadinessRow,
     DvaAuditorLoadRow,
     DvaAuditorMatrix,
@@ -476,6 +477,93 @@ async def recommendation_status_matrix_sql(
             )
         )
     return result
+
+
+def _count_recommendation_deadline_extensions(
+    *,
+    deadline_extensions: Any,
+    extension_1_date: date | None,
+    extension_1_comment: str | None,
+    extension_2_reason: str | None,
+    extension_2_comment: str | None,
+) -> int:
+    if isinstance(deadline_extensions, list) and deadline_extensions:
+        count = 0
+        for item in deadline_extensions:
+            if not isinstance(item, dict):
+                continue
+            item_date = str(item.get("date") or "").strip()
+            item_comment = str(item.get("comment") or "").strip()
+            if item_date or item_comment:
+                count += 1
+        return count
+
+    count = 0
+    if extension_1_date is not None or str(extension_1_comment or "").strip():
+        count += 1
+    if str(extension_2_reason or "").strip() or str(extension_2_comment or "").strip():
+        count += 1
+    return count
+
+
+async def recommendation_deadline_extensions_by_check_sql(
+    session: AsyncSession, **filters: Any
+) -> list[DeadlineExtensionByCheckRow]:
+    statement = apply_recommendation_filters(
+        select(
+            Recommendation.serial_number,
+            Check.id.label("check_id"),
+            Check.short_name,
+            Check.check_name,
+            Recommendation.deadline_extensions,
+            Recommendation.extension_1_date,
+            Recommendation.extension_1_comment,
+            Recommendation.extension_2_reason,
+            Recommendation.extension_2_comment,
+        )
+        .select_from(Recommendation)
+        .outerjoin(Check, Check.id == Recommendation.check_id),
+        **filters,
+    )
+    rows = (await session.execute(statement)).all()
+
+    totals: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        extension_count = _count_recommendation_deadline_extensions(
+            deadline_extensions=row.deadline_extensions,
+            extension_1_date=row.extension_1_date,
+            extension_1_comment=row.extension_1_comment,
+            extension_2_reason=row.extension_2_reason,
+            extension_2_comment=row.extension_2_comment,
+        )
+        if extension_count <= 0:
+            continue
+
+        serial = str(row.serial_number or "").strip() or "Без проверки"
+        check_id = row.check_id
+        bucket_id = str(check_id) if check_id is not None else serial
+        existing = totals.get(bucket_id)
+        if existing is None:
+            totals[bucket_id] = {
+                "id": bucket_id,
+                "key": serial,
+                "short_name": str(row.short_name or "").strip(),
+                "name": str(row.check_name or "").strip() or serial,
+                "value": extension_count,
+            }
+        else:
+            existing["value"] += extension_count
+
+    return [
+        DeadlineExtensionByCheckRow(
+            id=item["id"],
+            key=item["key"],
+            short_name=item["short_name"],
+            name=item["name"],
+            value=int(item["value"]),
+        )
+        for item in sorted(totals.values(), key=lambda entry: (-int(entry["value"]), str(entry["key"])))
+    ]
 
 
 async def recommendation_check_links_sql(session: AsyncSession, **filters: Any) -> list[NamedCount]:

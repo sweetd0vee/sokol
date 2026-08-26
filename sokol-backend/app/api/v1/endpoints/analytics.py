@@ -21,7 +21,10 @@ from app.services.analytics.checks_analytics import build_checks_analytics
 from app.services.analytics.dva_analytics import build_dva_analytics
 from app.services.analytics.planning_analytics import build_planning_analytics
 from app.services.analytics.recommendations_analytics import build_recommendations_analytics
-from app.services.analytics.sql_aggregates import recommendation_status_matrix_sql
+from app.services.analytics.sql_aggregates import (
+    recommendation_deadline_extensions_by_check_sql,
+    recommendation_status_matrix_sql,
+)
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -98,6 +101,9 @@ async def get_monitoring_analytics(
         additional_status_distribution=full.additional_status_distribution,
         indicator_distribution=full.indicator_distribution,
         status_matrix=await recommendation_status_matrix_sql(session, **recommendation_filters),
+        deadline_extensions_by_check=await recommendation_deadline_extensions_by_check_sql(
+            session, **recommendation_filters
+        ),
         filter_options=full.filter_options,
     )
 

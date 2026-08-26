@@ -10,14 +10,11 @@ import {
   INDICATOR_OPTIONS,
   MATERIALITY_LEVEL_OPTIONS,
   RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS,
-  RECOMMENDATION_STATUS_OPTIONS,
   getIndicatorLabel,
   getMaterialityDotClassName,
   getMaterialityLevelLabel,
   getRecommendationAdditionalStatusBadgeClass,
   getRecommendationAdditionalStatusLabel,
-  getRecommendationStatusBadgeClass,
-  getRecommendationStatusLabel,
 } from '../../constants/recommendations';
 import { type ExportFormat, exportRecommendationsTable } from '../../utils/exports';
 import { formatRuDate } from '../../utils/dates';
@@ -54,7 +51,6 @@ export function RecommendationsTab() {
   const [idFilter, setIdFilter] = useState('');
   const [keyFilter, setKeyFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
-  const [statuses, setStatuses] = useState<string[]>([]);
   const [additionalStatuses, setAdditionalStatuses] = useState<string[]>([]);
   const [auditObjects, setAuditObjects] = useState<string[]>([]);
   const [indicators, setIndicators] = useState<string[]>([]);
@@ -93,7 +89,7 @@ export function RecommendationsTab() {
         idFilter,
         keyFilter,
         nameFilter,
-        statuses,
+        statuses: [],
         additionalStatuses,
         auditObjects,
         indicators,
@@ -111,7 +107,6 @@ export function RecommendationsTab() {
       idFilter,
       keyFilter,
       nameFilter,
-      statuses,
       additionalStatuses,
       auditObjects,
       indicators,
@@ -149,7 +144,6 @@ export function RecommendationsTab() {
       idFilter,
       keyFilter,
       nameFilter,
-      statuses.join('\u0000'),
       additionalStatuses.join('\u0000'),
       auditObjects.join('\u0000'),
       indicators.join('\u0000'),
@@ -167,7 +161,6 @@ export function RecommendationsTab() {
     setIdFilter('');
     setKeyFilter('');
     setNameFilter('');
-    setStatuses([]);
     setAdditionalStatuses([]);
     setAuditObjects([]);
     setIndicators([]);
@@ -232,7 +225,7 @@ export function RecommendationsTab() {
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full text-base table-fixed min-w-[1800px]">
+          <table className="w-full text-base table-fixed min-w-[1630px]">
             <colgroup>
               <col className="w-24" />
               <col className="w-40" />
@@ -243,7 +236,6 @@ export function RecommendationsTab() {
               <col className="w-28" />
               <col className="w-36" />
               <col className="w-[140px]" />
-              <col className="w-[172px]" />
               <col className="w-[172px]" />
               <col className="w-[174px]" />
             </colgroup>
@@ -334,18 +326,6 @@ export function RecommendationsTab() {
                     inputClassName={listFilterClass(managers.length > 0)}
                   />
                 </th>
-                <th className="px-0 py-2 font-normal">
-                  <div className="flex w-[160px] items-center">
-                    <MultiCheckboxSelect
-                      value={statuses}
-                      onChange={setStatuses}
-                      options={RECOMMENDATION_STATUS_OPTIONS}
-                      placeholder="Все"
-                      className="w-full"
-                      inputClassName={listFilterClass(statuses.length > 0)}
-                    />
-                  </div>
-                </th>
                 <th colSpan={2} className="px-0 py-2 font-normal">
                   <div className={`${LIST_ACTION_GROUP_CLASS} sm:pr-px`}>
                     <MultiCheckboxSelect
@@ -383,13 +363,6 @@ export function RecommendationsTab() {
                     <span className="whitespace-nowrap">объекта аудита</span>
                   </>,
                 )}
-                <ListSortHeader
-                  label="Статус"
-                  align="center"
-                  active={sortConfig.key === 'status'}
-                  direction={sortConfig.direction}
-                  onClick={() => toggleSort('status')}
-                />
                 {renderSortableHeader('additional_status', 'Дополнительный статус')}
                 <th className="px-0 py-3 text-center font-medium">Действия</th>
               </tr>
@@ -439,14 +412,7 @@ export function RecommendationsTab() {
                   <td className="px-4 py-3 truncate" title={recommendation.manager}>
                     {recommendation.manager}
                   </td>
-                  <td className="px-4 py-3 pr-6">
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-0.5 text-base font-medium whitespace-nowrap ${getRecommendationStatusBadgeClass(recommendation.status)}`}
-                    >
-                      {getRecommendationStatusLabel(recommendation.status)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 pl-6">
+                  <td className="px-4 py-3">
                     <span
                       className={`inline-flex rounded-full px-2.5 py-0.5 text-base font-medium whitespace-nowrap ${getRecommendationAdditionalStatusBadgeClass(recommendation.additional_status)}`}
                     >

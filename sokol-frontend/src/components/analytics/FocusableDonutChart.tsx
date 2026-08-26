@@ -30,6 +30,8 @@ type FocusableDonutChartProps = {
   legendPercentFirst?: boolean;
   /** When true, segments use a bold colored outline with white fill instead of solid fill. */
   outlineOnly?: boolean;
+  /** Ring (doughnut) layout: hollow center, white gaps, labels outside. */
+  variant?: 'pie' | 'ring';
 };
 
 type LabelProps = {
@@ -44,6 +46,62 @@ type LabelProps = {
   fill?: string;
   payload?: DonutDatum;
 };
+
+function RingSegmentLabels({
+  cx = 0,
+  cy = 0,
+  midAngle = 0,
+  innerRadius = 0,
+  outerRadius = 0,
+  percent = 0,
+  name,
+  payload,
+}: LabelProps & { name?: string }) {
+  if (percent < 0.04) {
+    return null;
+  }
+  const RADIAN = Math.PI / 180;
+  const cos = Math.cos(-midAngle * RADIAN);
+  const sin = Math.sin(-midAngle * RADIAN);
+  const nameRadius = outerRadius + 22;
+  const nameX = cx + nameRadius * cos;
+  const nameY = cy + nameRadius * sin;
+  const nameAnchor = nameX > cx ? 'start' : 'end';
+  const label = name ?? payload?.name ?? '';
+  const percentLabel = `${Math.round(percent * 100)}%`;
+  const percentRadius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const percentX = cx + percentRadius * cos;
+  const percentY = cy + percentRadius * sin;
+
+  return (
+    <g style={{ pointerEvents: 'none' }}>
+      <text
+        x={nameX}
+        y={nameY}
+        fill="#111827"
+        textAnchor={nameAnchor}
+        dominantBaseline="central"
+        fontSize={15}
+        fontWeight={600}
+      >
+        {label}
+      </text>
+      {percent >= 0.06 ? (
+        <text
+          x={percentX}
+          y={percentY}
+          fill="#111827"
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={14}
+          fontWeight={700}
+        >
+          {percentLabel}
+        </text>
+      ) : null}
+    </g>
+  );
+}
 
 function PieValueLabel({
   cx = 0,
@@ -128,7 +186,9 @@ export function FocusableDonutChart({
   legendFontWeight = 400,
   legendPercentFirst = false,
   outlineOnly = false,
+  variant = 'pie',
 }: FocusableDonutChartProps) {
+  const isRing = variant === 'ring';
   const resolvedLegendLabelMode = legendLabelMode ?? labelMode;
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const colors = palette.length > 0 ? palette : PALETTE;
@@ -153,22 +213,31 @@ export function FocusableDonutChart({
   return (
     <div className={containerClassName}>
       <ResponsiveContainer width="100%" height="100%">
-        <PieChart margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
+        <PieChart margin={isRing ? { top: 28, right: 96, bottom: 28, left: 96 } : { top: 8, right: 8, bottom: 0, left: 8 }}>
           <Pie
             data={pieData}
             dataKey="value"
             nameKey="name"
             cx="50%"
-            cy="42%"
-            innerRadius={0}
-            outerRadius="72%"
-            stroke={outlineOnly ? undefined : 'none'}
+            cy={isRing || !showLegend ? '50%' : '42%'}
+            innerRadius={isRing ? '48%' : 0}
+            outerRadius={isRing ? '70%' : outlineOnly ? '68%' : '72%'}
+            startAngle={isRing ? 90 : 0}
+            endAngle={isRing ? -270 : 360}
+            paddingAngle={isRing ? 1.5 : 0}
+            stroke={isRing ? '#ffffff' : outlineOnly ? undefined : 'none'}
             label={
               showValueLabels
-                ? (props) => <PieValueLabel {...props} labelMode={labelMode} />
+                ? isRing
+                  ? (props) => <RingSegmentLabels {...props} />
+                  : (props) => <PieValueLabel {...props} labelMode={labelMode} />
                 : false
             }
-            labelLine={false}
+            labelLine={
+              isRing
+                ? { stroke: '#cbd5e1', strokeWidth: 1 }
+                : false
+            }
             isAnimationActive={false}
             onMouseEnter={(_, index) => setActiveIndex(index)}
             onMouseLeave={() => setActiveIndex(null)}
@@ -176,17 +245,19 @@ export function FocusableDonutChart({
             {pieData.map((entry, index) => {
               const isDimmed = activeIndex !== null && activeIndex !== index;
               const isActive = activeIndex === index;
-              const strokeColor = outlineOnly
-                ? (isActive ? '#0f172a' : entry.color)
-                : (isActive ? '#0f172a' : 'none');
+              const strokeColor = isRing
+                ? '#ffffff'
+                : outlineOnly
+                  ? (isActive ? '#0f172a' : entry.color)
+                  : (isActive ? '#0f172a' : 'none');
               return (
                 <Cell
                   key={entry.name}
-                  fill={outlineOnly ? '#ffffff' : entry.color}
+                  fill={outlineOnly && !isRing ? '#ffffff' : entry.color}
                   fillOpacity={isDimmed ? 0.32 : 1}
                   stroke={strokeColor}
-                  strokeWidth={outlineOnly ? (isActive ? 4 : 3) : (isActive ? 1 : 0)}
-                  strokeOpacity={outlineOnly && isDimmed ? 0.32 : 1}
+                  strokeWidth={isRing ? 3 : outlineOnly ? (isActive ? 12 : 10) : (isActive ? 1 : 0)}
+                  strokeOpacity={outlineOnly && !isRing && isDimmed ? 0.32 : 1}
                   style={{
                     cursor: 'pointer',
                     filter: isDimmed ? 'brightness(0.72) saturate(0.85)' : isActive ? 'brightness(1.04)' : undefined,
