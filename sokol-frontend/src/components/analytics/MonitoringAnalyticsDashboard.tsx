@@ -252,9 +252,9 @@ export function MonitoringAnalyticsDashboard() {
         render: () => (
           <ChartCard title="Итого" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')}>
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
-              <KpiCard label="На контроле" value={summary.byStatus.on_control} tone="slate" />
-              <KpiCard label="В работе" value={summary.byStatus.in_progress} tone="amber" />
               <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
+              <KpiCard label="В работе" value={summary.byStatus.in_progress} tone="amber" />
+              <KpiCard label="На контроле" value={summary.byStatus.on_control} tone="slate" />
               <KpiCard label="Срок нарушен" value={summary.byAdditional.deadline_violated} tone="red" />
               <KpiCard label="Доля просроченных" value={summary.violationRate} suffix="%" tone="red" />
             </div>
