@@ -9,6 +9,7 @@ import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
+import { StatusMatrixChart } from './StatusMatrixChart';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
 import {
@@ -40,6 +41,7 @@ const EMPTY_RECOMMENDATION_SUMMARY = {
 };
 const EMPTY_ADDITIONAL_STATUS_DISTRIBUTION: never[] = [];
 const EMPTY_INDICATOR_DISTRIBUTION: never[] = [];
+const EMPTY_STATUS_MATRIX: never[] = [];
 
 export function MonitoringAnalyticsDashboard() {
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
@@ -134,6 +136,7 @@ export function MonitoringAnalyticsDashboard() {
   const summary = data?.summary ?? EMPTY_RECOMMENDATION_SUMMARY;
   const additionalStatusDistribution = data?.additionalStatusDistribution ?? EMPTY_ADDITIONAL_STATUS_DISTRIBUTION;
   const indicatorDistribution = data?.indicatorDistribution ?? EMPTY_INDICATOR_DISTRIBUTION;
+  const statusMatrix = data?.statusMatrix ?? EMPTY_STATUS_MATRIX;
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
 
@@ -259,11 +262,31 @@ export function MonitoringAnalyticsDashboard() {
           </ChartCard>
         ),
       },
+      {
+        id: 'statusMatrix',
+        defaultLayout: { x: 0, y: 5, w: 12, h: 8, minW: 6, minH: 6 },
+        render: () => (
+          <ChartCard
+            title="Статусы"
+            description="Матрица статусов по проверкам за период"
+            exportSectionId="statusMatrix"
+            exportSelected={exportSections.isSelected('statusMatrix')}
+            onToggleExport={() => exportSections.toggleSection('statusMatrix')}
+          >
+            {statusMatrix.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <StatusMatrixChart rows={statusMatrix} />
+            )}
+          </ChartCard>
+        ),
+      },
     ],
     [
       coloredAdditionalStatusDistribution,
       coloredIndicatorDistribution,
       exportSections,
+      statusMatrix,
       summary,
     ],
   );

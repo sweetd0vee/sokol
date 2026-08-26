@@ -96,7 +96,7 @@ OBSERVATION_TEMPLATES = [
 STATUS_TO_INDICATOR = {
     "completed": "исполнено",
     "in_progress": "в процессе",
-    "on_control": "ожидает",
+    "on_control": "на контроле",
     "unresolved": "не решено",
 }
 

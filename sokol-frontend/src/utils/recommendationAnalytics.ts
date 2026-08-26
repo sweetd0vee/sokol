@@ -71,7 +71,7 @@ export const INDICATOR_COLORS: Record<RecommendationIndicator, string> = {
   // Match colors from INDICATOR_OPTIONS.dotClassName.
   'не указан': '#64748B',
   'в процессе': MATERIALITY_COLORS.средний,
-  ожидает: '#64748B',
+  'на контроле': '#64748B',
   'не решено': MATERIALITY_COLORS.высокий,
   'исполнено': MATERIALITY_COLORS.низкий,
 };

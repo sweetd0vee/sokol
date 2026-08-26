@@ -7,7 +7,7 @@ export type MaterialityLevel = 'низкий' | 'средний' | 'высоки
 export type RecommendationIndicator =
   | 'не указан'
   | 'в процессе'
-  | 'ожидает'
+  | 'на контроле'
   | 'не решено'
   | 'исполнено';
 

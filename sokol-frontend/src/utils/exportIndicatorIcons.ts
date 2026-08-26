@@ -2,7 +2,7 @@
 
 const INDICATOR_ICON_COLORS: Record<string, string> = {
   'В процессе': 'EAB308',
-  Ожидает: '6B7280',
+  'На контроле': '6B7280',
   'Не решено': 'EF4444',
   Исполнено: '25EB67',
 };
@@ -10,7 +10,7 @@ const INDICATOR_ICON_COLORS: Record<string, string> = {
 const INDICATOR_ICON_SHAPES: Record<string, string> = {
   'В процессе':
     '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-  Ожидает:
+  'На контроле':
     '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
   'Не решено':
     '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',

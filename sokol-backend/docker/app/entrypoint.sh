@@ -89,6 +89,7 @@ from app.db.migrate_check_quarter import migrate as migrate_check_quarter
 from app.db.migrate_dictionary_uniqueness import migrate as migrate_dictionary_uniqueness
 from app.db.migrate_dictionary_foreign_keys import migrate as migrate_dictionary_foreign_keys
 from app.db.migrate_recommendation_observation_name import migrate as migrate_recommendation_observation_name
+from app.db.migrate_recommendation_indicator_on_control import migrate as migrate_recommendation_indicator_on_control
 from app.db.seed_audit_types import AUDIT_TYPES, seed_audit_types
 from app.db.seed_check_kinds import CHECK_KINDS, seed_check_kinds
 from app.db.seed_effectiveness_ratings import EFFECTIVENESS_RATINGS, seed_effectiveness_ratings
@@ -107,6 +108,7 @@ async def bootstrap() -> None:
     await migrate_dictionary_uniqueness()
     await migrate_dictionary_foreign_keys()
     await migrate_recommendation_observation_name()
+    await migrate_recommendation_indicator_on_control()
     await migrate_analytics_indexes()
     await seed_audit_types(AUDIT_TYPES)
     await seed_check_kinds(CHECK_KINDS)

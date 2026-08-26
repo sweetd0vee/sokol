@@ -114,6 +114,17 @@ class RecommendationsSummaryByStatus(BaseModel):
     in_progress: int
 
 
+class StatusMatrixRow(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    key: str
+    short_name: str = Field(serialization_alias="shortName")
+    name: str
+    counts: RecommendationsSummaryByStatus
+    total: int = 0
+
+
 class RecommendationsSummaryByMateriality(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -195,6 +206,7 @@ class MonitoringAnalyticsResponse(BaseModel):
         serialization_alias="additionalStatusDistribution"
     )
     indicator_distribution: list[NamedCount] = Field(serialization_alias="indicatorDistribution")
+    status_matrix: list[StatusMatrixRow] = Field(serialization_alias="statusMatrix")
     filter_options: ChecksAnalyticsFilterOptions = Field(serialization_alias="filterOptions")
 
 

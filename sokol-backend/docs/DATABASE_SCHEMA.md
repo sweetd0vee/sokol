@@ -200,7 +200,7 @@ flowchart LR
 | `name` | `TEXT` | нет | search field | Текст рекомендации |
 | `observation_name` | `TEXT` | да | search field | Название наблюдения |
 | `description` | `TEXT` | нет | default `''` | Подробное описание / формулировка |
-| `indicator` | `VARCHAR(32)` | нет | default `не указан` | Смысловой индикатор: исполнено, ожидает, не решено, в процессе и т.п. |
+| `indicator` | `VARCHAR(32)` | нет | default `не указан` | Смысловой индикатор: исполнено, на контроле, не решено, в процессе и т.п. |
 | `materiality_level` | `VARCHAR(32)` | нет | `ix_recommendations_materiality_level`, default `средний` | Уровень существенности |
 | `audit_object` | `TEXT[]` | нет | GIN `ix_recommendations_audit_object_gin` | Денормализованный список объектов аудита; FK-целостность в `recommendation_audit_objects` |
 | `deadline` | `DATE` | да | `ix_recommendations_deadline`, composite `ix_recommendations_deadline_status` | Срок исполнения |

@@ -21,6 +21,7 @@ from app.services.analytics.checks_analytics import build_checks_analytics
 from app.services.analytics.dva_analytics import build_dva_analytics
 from app.services.analytics.planning_analytics import build_planning_analytics
 from app.services.analytics.recommendations_analytics import build_recommendations_analytics
+from app.services.analytics.sql_aggregates import recommendation_status_matrix_sql
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -77,6 +78,16 @@ async def get_monitoring_analytics(
         additional_statuses=filters.additional_statuses,
         materiality_levels=filters.materiality_levels,
     )
+    recommendation_filters = {
+        "years": filters.years,
+        "quarters": filters.quarters,
+        "months": filters.months,
+        "auditors": filters.auditors,
+        "departments": filters.departments,
+        "statuses": filters.statuses,
+        "additional_statuses": filters.additional_statuses,
+        "materiality_levels": filters.materiality_levels,
+    }
     return MonitoringAnalyticsResponse(
         universe_total=full.universe_total,
         filtered_total=full.filtered_total,
@@ -86,6 +97,7 @@ async def get_monitoring_analytics(
         status_distribution=full.status_distribution,
         additional_status_distribution=full.additional_status_distribution,
         indicator_distribution=full.indicator_distribution,
+        status_matrix=await recommendation_status_matrix_sql(session, **recommendation_filters),
         filter_options=full.filter_options,
     )
 

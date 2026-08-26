@@ -23,6 +23,7 @@ export const MONITORING_EXPORT_SECTIONS = [
   { id: 'summary', label: 'Сводка KPI', sheetName: 'Сводка', headerFill: '312E81' },
   { id: 'additionalStatuses', label: 'Срок исполнения', sheetName: 'Срок исполнения', headerFill: 'DB2777' },
   { id: 'indicators', label: 'Индикаторы', sheetName: 'Индикаторы', headerFill: '0891B2' },
+  { id: 'statusMatrix', label: 'Статусы', sheetName: 'Статусы', headerFill: 'CA8A04' },
 ] as const;
 
 export const DVA_EXPORT_SECTIONS = [

@@ -143,7 +143,7 @@ export const INDICATOR_OPTIONS: {
 }[] = [
   { value: 'не указан', label: 'Не указан', dotClassName: 'bg-transparent border border-gray-300' },
   { value: 'в процессе', label: 'В процессе', dotClassName: 'bg-[#FBEB8D]' },
-  { value: 'ожидает', label: 'Ожидает', dotClassName: 'bg-gray-200' },
+  { value: 'на контроле', label: 'На контроле', dotClassName: 'bg-gray-200' },
   { value: 'не решено', label: 'Не решено', dotClassName: 'bg-[#FF4347]' },
   { value: 'исполнено', label: 'Исполнено', dotClassName: 'bg-[rgb(37,235,103)]' },
 ];
@@ -165,7 +165,10 @@ export function normalizeRecommendationIndicator(
     case 'в работе':
       return 'в процессе';
     case 'ожидает':
-      return 'ожидает';
+    case 'на контроле':
+    case 'жёлтый':
+    case 'желтый':
+      return 'на контроле';
     case 'не решено':
     case 'риск / просрочка':
     case 'риск/просрочка':
@@ -176,9 +179,6 @@ export function normalizeRecommendationIndicator(
     case 'зелёный':
     case 'зеленый':
       return 'исполнено';
-    case 'жёлтый':
-    case 'желтый':
-      return 'ожидает';
     case 'не указан':
     case '':
     default:

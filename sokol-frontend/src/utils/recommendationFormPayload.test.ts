@@ -107,7 +107,7 @@ describe('recommendation form payload', () => {
       sequence_number: 5,
       name: 'Old',
       description: 'Old',
-      indicator: 'ожидает',
+      indicator: 'на контроле',
       materiality_level: 'средний',
       audit_object: ['ИТ'],
       deadline: '2026-09-01',

@@ -14,12 +14,13 @@ STATEMENTS = [
     SET indicator = CASE lower(trim(indicator))
       WHEN 'зелёный' THEN 'исполнено'
       WHEN 'зеленый' THEN 'исполнено'
-      WHEN 'жёлтый' THEN 'ожидает'
-      WHEN 'желтый' THEN 'ожидает'
+      WHEN 'жёлтый' THEN 'на контроле'
+      WHEN 'желтый' THEN 'на контроле'
       WHEN 'красный' THEN 'не решено'
       WHEN 'в процессе' THEN 'в процессе'
       WHEN 'в работе' THEN 'в процессе'
-      WHEN 'ожидает' THEN 'ожидает'
+      WHEN 'ожидает' THEN 'на контроле'
+      WHEN 'на контроле' THEN 'на контроле'
       WHEN 'не решено' THEN 'не решено'
       WHEN 'риск / просрочка' THEN 'не решено'
       WHEN 'риск/просрочка' THEN 'не решено'
@@ -30,7 +31,7 @@ STATEMENTS = [
     """,
     """
     UPDATE recommendations
-    SET indicator = (ARRAY['в процессе', 'ожидает', 'не решено', 'исполнено'])[1 + ((id - 1) % 4)]
+    SET indicator = (ARRAY['в процессе', 'на контроле', 'не решено', 'исполнено'])[1 + ((id - 1) % 4)]
     """,
     """
     UPDATE recommendations
