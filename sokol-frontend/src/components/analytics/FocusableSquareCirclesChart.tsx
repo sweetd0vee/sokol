@@ -157,7 +157,7 @@ export function FocusableSquareCirclesChart({
                   fill="#ffffff"
                   fillOpacity={isDimmed ? 0.32 : 1}
                   stroke={strokeColor}
-                  strokeWidth={3}
+                  strokeWidth={7}
                   strokeOpacity={isDimmed ? 0.32 : 1}
                   vectorEffect="non-scaling-stroke"
                 >
