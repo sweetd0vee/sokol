@@ -252,6 +252,14 @@ async def import_seed_data(
                 "observation_name": _optional_str(row.get("observation_name")),
                 "description": str(row.get("description") or row["name"]).strip(),
                 "indicator": str(row.get("indicator") or "не указан").strip(),
+                "additional_indicator": str(
+                    row.get("additional_indicator")
+                    or {
+                        "on_time": "в срок",
+                        "deadline_violated": "срок нарушен",
+                        "on_control": "на контроле",
+                    }.get(str(row.get("additional_status") or "").strip(), "не указан")
+                ).strip(),
                 "materiality_level": str(row.get("materiality_level") or "средний").strip(),
                 "audit_object": await canonicalize_audit_objects(session, row["audit_object"]),
                 "deadline": _parse_date(row.get("deadline")),

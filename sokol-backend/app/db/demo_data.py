@@ -29,6 +29,12 @@ STATUS_TO_INDICATOR = {
     "unresolved": "не решено",
 }
 
+ADDITIONAL_STATUS_TO_INDICATOR = {
+    "on_time": "в срок",
+    "deadline_violated": "срок нарушен",
+    "on_control": "на контроле",
+}
+
 # Руководители проверок / аудиторы = актуальный справочник auditors.
 LEADERS = tuple(AUDITORS)
 
@@ -395,6 +401,7 @@ def build_recommendation_rows(checks: list[dict], count: int = 100) -> list[dict
                 "observation_name": observation_name,
                 "description": f"{name}. Наблюдение: {observation_name}.",
                 "indicator": STATUS_TO_INDICATOR[status],
+                "additional_indicator": ADDITIONAL_STATUS_TO_INDICATOR[additional],
                 "materiality_level": MATERIALITY_LEVELS[index % len(MATERIALITY_LEVELS)],
                 "audit_object": AUDIT_OBJECTS[index % len(AUDIT_OBJECTS)],
                 "deadline": deadline,

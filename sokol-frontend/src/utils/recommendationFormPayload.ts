@@ -1,5 +1,10 @@
 import { closureToRecommendationFields, type RecommendationClosureForm } from '../constants/recommendationClosure';
-import type { MaterialityLevel, Recommendation, RecommendationIndicator } from '../types/recommendation';
+import type {
+  MaterialityLevel,
+  Recommendation,
+  RecommendationAdditionalIndicator,
+  RecommendationIndicator,
+} from '../types/recommendation';
 import { getRecommendationAuditObjects } from './auditObjects';
 import { toIsoDate } from './dates';
 
@@ -10,6 +15,7 @@ export type RecommendationRequiredFieldErrors = {
   auditor: boolean;
   manager: boolean;
   indicator: boolean;
+  additionalIndicator: boolean;
   closureInformation: boolean;
   actualCompletionDate: boolean;
   extensions: boolean;
@@ -33,6 +39,7 @@ export type RecommendationFormPayloadInput = {
   status: string;
   additionalStatus: string;
   indicator: RecommendationIndicator;
+  additionalIndicator: RecommendationAdditionalIndicator;
   materialityLevel: MaterialityLevel;
   closure: RecommendationClosureForm;
   now?: Date;
@@ -40,7 +47,15 @@ export type RecommendationFormPayloadInput = {
 
 type RecommendationRequiredFieldInput = Pick<
   RecommendationFormPayloadInput,
-  'description' | 'auditObject' | 'deadline' | 'auditor' | 'checkLeader' | 'manager' | 'indicator' | 'closure'
+  | 'description'
+  | 'auditObject'
+  | 'deadline'
+  | 'auditor'
+  | 'checkLeader'
+  | 'manager'
+  | 'indicator'
+  | 'additionalIndicator'
+  | 'closure'
 > & {
   hasIncompleteClosureRows: (rows: RecommendationClosureForm['extensions']) => boolean;
 };
@@ -64,6 +79,7 @@ export function getRecommendationRequiredFieldErrors({
   checkLeader,
   manager,
   indicator,
+  additionalIndicator,
   closure,
   hasIncompleteClosureRows,
 }: RecommendationRequiredFieldInput): RecommendationRequiredFieldErrors {
@@ -74,6 +90,7 @@ export function getRecommendationRequiredFieldErrors({
     auditor: !(auditor || checkLeader),
     manager: !manager,
     indicator: !indicator || indicator === 'не указан',
+    additionalIndicator: !additionalIndicator || additionalIndicator === 'не указан',
     closureInformation: !closure.closureInformation.trim(),
     actualCompletionDate: !closure.actualCompletionDate,
     extensions: hasIncompleteClosureRows(closure.extensions),
@@ -101,6 +118,7 @@ export function buildRecommendationPayload({
   status,
   additionalStatus,
   indicator,
+  additionalIndicator,
   materialityLevel,
   closure,
   now = new Date(),
@@ -119,6 +137,7 @@ export function buildRecommendationPayload({
     observation_name: observationName.trim() || undefined,
     description: trimmedDescription,
     indicator,
+    additional_indicator: additionalIndicator,
     materiality_level: materialityLevel,
     audit_object: resolvedAuditObject,
     deadline: toIsoDate(deadline) ?? '',

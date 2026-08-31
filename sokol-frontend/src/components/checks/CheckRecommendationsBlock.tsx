@@ -10,7 +10,7 @@ import { formatRuDate } from '../../utils/dates';
 import { formatRecommendationAuditObjects, getRecommendationAuditObjects } from '../../utils/auditObjects';
 import { ACCEPTED_DOCX, isDocxFile } from '../../utils/docx';
 import { useSokolData } from '../../contexts/sokolData';
-import { indicatorFromRecommendationStatus } from '../../constants/recommendations';
+import { indicatorFromRecommendationAdditionalStatus, indicatorFromRecommendationStatus } from '../../constants/recommendations';
 import {
   FORM_ACTION_BUTTON_CLASS,
   FORM_SECTION_CLASS,
@@ -292,6 +292,7 @@ export function CheckRecommendationsBlock({
     manager: (draft.manager.trim() || 'Не указан').slice(0, 255),
     status: draft.status,
     additional_status: draft.additional_status,
+    additional_indicator: indicatorFromRecommendationAdditionalStatus(draft.additional_status),
     created_at: new Date().toISOString().slice(0, 10),
   });
 

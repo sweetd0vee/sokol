@@ -53,6 +53,7 @@ class RecommendationBase(BaseModel):
     observation_name: Optional[str] = None
     description: str = ""
     indicator: str = Field(default="не указан", max_length=32)
+    additional_indicator: str = Field(default="не указан", max_length=32)
     materiality_level: str = Field(default="средний", max_length=32)
     audit_object: list[str] = Field(..., min_length=1)
     deadline: Optional[Date] = None
@@ -74,6 +75,15 @@ class RecommendationBase(BaseModel):
     control_removals: Optional[list[ClosureDateCommentItem]] = None
     closure_verification_status: Optional[str] = Field(None, max_length=64)
     closure_information: Optional[str] = None
+
+    @field_validator('additional_indicator', mode='before')
+    @classmethod
+    def empty_additional_indicator(cls, value: object) -> object:
+        if value is None:
+            return 'не указан'
+        if isinstance(value, str) and not value.strip():
+            return 'не указан'
+        return value
 
     @field_validator(
         'deadline',
@@ -119,6 +129,7 @@ class RecommendationUpdate(BaseModel):
     observation_name: Optional[str] = None
     description: Optional[str] = None
     indicator: Optional[str] = Field(None, max_length=32)
+    additional_indicator: Optional[str] = Field(None, max_length=32)
     materiality_level: Optional[str] = Field(None, max_length=32)
     audit_object: Optional[list[str]] = Field(None, min_length=1)
     deadline: Optional[Date] = None

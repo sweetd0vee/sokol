@@ -1,5 +1,6 @@
 import type {
   MaterialityLevel,
+  RecommendationAdditionalIndicator,
   RecommendationAdditionalStatus,
   RecommendationIndicator,
   RecommendationStatus,
@@ -32,6 +33,24 @@ export function indicatorFromRecommendationStatus(
     return 'не указан';
   }
   return STATUS_TO_INDICATOR[status] ?? 'не указан';
+}
+
+const ADDITIONAL_STATUS_TO_INDICATOR: Record<
+  RecommendationAdditionalStatus,
+  RecommendationAdditionalIndicator
+> = {
+  on_time: 'в срок',
+  deadline_violated: 'срок нарушен',
+  on_control: 'на контроле',
+};
+
+export function indicatorFromRecommendationAdditionalStatus(
+  additionalStatus: RecommendationAdditionalStatus | '' | null | undefined,
+): RecommendationAdditionalIndicator {
+  if (!additionalStatus) {
+    return 'не указан';
+  }
+  return ADDITIONAL_STATUS_TO_INDICATOR[additionalStatus] ?? 'не указан';
 }
 
 export const RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS: {
@@ -200,6 +219,55 @@ export function normalizeRecommendationIndicator(
     default:
       return 'не указан';
   }
+}
+
+export const ADDITIONAL_INDICATOR_OPTIONS: {
+  value: RecommendationAdditionalIndicator;
+  label: string;
+  dotClassName: string;
+}[] = [
+  { value: 'не указан', label: 'Не указан', dotClassName: 'bg-transparent border border-gray-300' },
+  { value: 'в срок', label: 'В срок', dotClassName: 'bg-[rgb(37,235,103)]' },
+  { value: 'срок нарушен', label: 'Срок нарушен', dotClassName: 'bg-[#FF4347]' },
+  { value: 'на контроле', label: 'На контроле', dotClassName: 'bg-gray-200' },
+];
+
+export function getAdditionalIndicatorLabel(
+  value: RecommendationAdditionalIndicator | '' | null | undefined,
+) {
+  return ADDITIONAL_INDICATOR_OPTIONS.find((option) => option.value === value)?.label ?? 'Не указан';
+}
+
+export function normalizeRecommendationAdditionalIndicator(
+  value: string | null | undefined,
+): RecommendationAdditionalIndicator {
+  switch ((value ?? '').trim().toLowerCase()) {
+    case 'в срок':
+    case 'исполнено':
+    case 'on_time':
+      return 'в срок';
+    case 'срок нарушен':
+    case 'deadline_violated':
+      return 'срок нарушен';
+    case 'на контроле':
+    case 'on_control':
+      return 'на контроле';
+    case 'не указан':
+    case '':
+    default:
+      return 'не указан';
+  }
+}
+
+export function resolveRecommendationAdditionalIndicator(
+  additionalStatus: RecommendationAdditionalStatus | '' | null | undefined,
+  stored?: string | null,
+): RecommendationAdditionalIndicator {
+  const normalized = normalizeRecommendationAdditionalIndicator(stored);
+  if (normalized !== 'не указан') {
+    return normalized;
+  }
+  return indicatorFromRecommendationAdditionalStatus(additionalStatus);
 }
 
 export const MATERIALITY_LEVEL_OPTIONS: {

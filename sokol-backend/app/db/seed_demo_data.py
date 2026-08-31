@@ -98,6 +98,7 @@ async def seed_demo_data(count: int = DEMO_COUNT, *, replace: bool = True) -> tu
                 observation_name=row.get("observation_name"),
                 description=row["description"],
                 indicator=row["indicator"],
+                additional_indicator=row.get("additional_indicator") or "не указан",
                 materiality_level=row["materiality_level"],
                 audit_object=await canonicalize_audit_objects(session, row["audit_object"]),
                 deadline=row.get("deadline"),

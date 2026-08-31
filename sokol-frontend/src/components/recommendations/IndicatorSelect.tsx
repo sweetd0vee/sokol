@@ -4,8 +4,7 @@ import {
   INDICATOR_OPTIONS,
   type ColoredSelectOption,
 } from '../../constants/recommendations';
-import type { RecommendationIndicator } from '../../types/recommendation';
-import { INDICATOR_ICONS } from './indicatorIcons';
+import { INDICATOR_ICONS, type IndicatorIconKey } from './indicatorIcons';
 
 type IndicatorSelectProps = {
   label?: string;
@@ -30,7 +29,7 @@ export function IndicatorSelect({
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
   const selected = options.find((option) => option.value === value) ?? options[0];
-  const selectedMeta = INDICATOR_ICONS[value as RecommendationIndicator];
+  const selectedMeta = INDICATOR_ICONS[value as IndicatorIconKey];
   const SelectedIcon = selectedMeta?.Icon;
 
   useEffect(() => {
@@ -101,7 +100,7 @@ export function IndicatorSelect({
             className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
           >
             {options.map((option) => {
-              const meta = INDICATOR_ICONS[option.value as RecommendationIndicator];
+              const meta = INDICATOR_ICONS[option.value as IndicatorIconKey];
               const Icon = meta?.Icon;
               const isActive = option.value === value;
               return (

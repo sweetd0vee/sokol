@@ -11,6 +11,12 @@ export type RecommendationIndicator =
   | 'не решено'
   | 'исполнено';
 
+export type RecommendationAdditionalIndicator =
+  | 'не указан'
+  | 'в срок'
+  | 'срок нарушен'
+  | 'на контроле';
+
 export interface Recommendation {
   id: string;
   serial_number: string;
@@ -19,6 +25,7 @@ export interface Recommendation {
   observation_name?: string;
   description: string;
   indicator: RecommendationIndicator;
+  additional_indicator?: RecommendationAdditionalIndicator;
   materiality_level: MaterialityLevel;
   audit_object: string[];
   deadline: string;

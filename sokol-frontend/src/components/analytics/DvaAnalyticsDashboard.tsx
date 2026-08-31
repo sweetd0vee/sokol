@@ -4,6 +4,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   LabelList,
   Legend,
   ResponsiveContainer,
@@ -16,9 +17,9 @@ import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
-import { ChartCard, CHART_AXIS_TICK, CHART_CATEGORY_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
-import { VALUE_BLUE_SCALE, VALUE_GRAY_SCALE } from './analyticsPalette';
+import { CHECKS_PALETTE, getValueBasedColors, VALUE_BLUE_SCALE, VALUE_GRAY_SCALE } from './analyticsPalette';
 import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { DVA_EXPORT_SECTIONS, type DvaExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
@@ -26,6 +27,20 @@ import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
 import type { PeriodGranularity } from '../../utils/checkAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
+
+const AUDITOR_LOAD_BAR_LIMIT = 10;
+
+function topAuditorBars(
+  rows: Array<{ name: string; checks: number; recommendations: number }>,
+  metric: 'checks' | 'recommendations',
+  limit = AUDITOR_LOAD_BAR_LIMIT,
+) {
+  return [...rows]
+    .filter((row) => row[metric] > 0)
+    .sort((left, right) => right[metric] - left[metric] || left.name.localeCompare(right.name, 'ru'))
+    .slice(0, limit)
+    .map((row) => ({ name: row.name, value: row[metric] }));
+}
 
 const EMPTY_CHECK_SUMMARY = { total: 0, not_started: 0, in_progress: 0, completed: 0 };
 const EMPTY_RECOMMENDATION_SUMMARY = {
@@ -124,6 +139,22 @@ export function DvaAnalyticsDashboard() {
   const recSummary = data?.recommendationSummary ?? EMPTY_RECOMMENDATION_SUMMARY;
   const completionShare = data?.completionShare ?? 0;
   const auditorLoad = data?.auditorLoad ?? EMPTY_AUDITOR_LOAD;
+  const auditorChecksBars = useMemo(
+    () => topAuditorBars(auditorLoad, 'checks'),
+    [auditorLoad],
+  );
+  const auditorRecommendationsBars = useMemo(
+    () => topAuditorBars(auditorLoad, 'recommendations'),
+    [auditorLoad],
+  );
+  const auditorChecksBarColors = useMemo(
+    () => getValueBasedColors(auditorChecksBars.map((item) => item.value), VALUE_BLUE_SCALE),
+    [auditorChecksBars],
+  );
+  const auditorRecommendationsBarColors = useMemo(
+    () => getValueBasedColors(auditorRecommendationsBars.map((item) => item.value), VALUE_GRAY_SCALE),
+    [auditorRecommendationsBars],
+  );
   const auditorChecksTreemap = data?.auditorChecksTreemap ?? EMPTY_AUDITOR_CHECKS_TREEMAP;
   const auditorRecommendationsTreemap = data?.auditorRecommendationsTreemap ?? EMPTY_AUDITOR_RECOMMENDATIONS_TREEMAP;
   const departmentMap = data?.departmentMap ?? EMPTY_DEPARTMENT_MAP;
@@ -189,26 +220,75 @@ export function DvaAnalyticsDashboard() {
         ),
       },
       {
-        id: 'auditorLoad',
-        defaultLayout: { x: 0, y: 2, w: 12, h: 3, minW: 3, minH: 2 },
+        id: 'auditorLoadChecks',
+        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
-          <ChartCard title="Нагрузка аудиторов" description="Проверки и рекомендации по аудиторам за период" exportSectionId="auditorLoad" exportSelected={exportSections.isSelected('auditorLoad')} onToggleExport={() => exportSections.toggleSection('auditorLoad')}>
-            {auditorLoad.length === 0 ? (
+          <ChartCard
+            title="Нагрузка аудиторов: проверки"
+            description="Количество проверок за период по аудиторам"
+            exportSectionId="auditorLoadChecks"
+            exportSelected={exportSections.isSelected('auditorLoadChecks')}
+            onToggleExport={() => exportSections.toggleSection('auditorLoadChecks')}
+          >
+            {auditorChecksBars.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
               <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={auditorLoad.slice(0, 10)} layout="vertical" margin={{ top: 8, right: 32, left: 30, bottom: 0 }}>
+                  <BarChart data={auditorChecksBars} layout="vertical" margin={{ top: 8, right: 40, left: 16, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
-                    <YAxis type="category" dataKey="name" width={120} tick={CHART_CATEGORY_AXIS_TICK} />
+                    <YAxis dataKey="name" type="category" width={120} tick={CHART_AXIS_TICK} />
                     <Tooltip />
-                    <Legend wrapperStyle={CHART_LEGEND_STYLE} />
-                    <Bar dataKey="checks" name="Проверки" fill="#003366" radius={[0, 4, 4, 0]}>
-                      <LabelList dataKey="checks" position="right" fontSize={CHART_VALUE_LABEL_SIZE} />
+                    <Bar dataKey="value" name="Проверки" fill="#003366" radius={[0, 6, 6, 0]}>
+                      {auditorChecksBars.map((item, index) => (
+                        <Cell key={item.name} fill={auditorChecksBarColors[index]} />
+                      ))}
+                      <LabelList
+                        dataKey="value"
+                        position="right"
+                        fontSize={CHART_VALUE_LABEL_SIZE}
+                        fill={CHECKS_PALETTE[0]}
+                      />
                     </Bar>
-                    <Bar dataKey="recommendations" name="Рекомендации" fill="#A78BFA" radius={[0, 4, 4, 0]}>
-                      <LabelList dataKey="recommendations" position="right" fontSize={CHART_VALUE_LABEL_SIZE} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'auditorLoadRecommendations',
+        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
+        render: () => (
+          <ChartCard
+            title="Нагрузка аудиторов: рекомендации"
+            description="Количество рекомендаций за период по аудиторам"
+            exportSectionId="auditorLoadRecommendations"
+            exportSelected={exportSections.isSelected('auditorLoadRecommendations')}
+            onToggleExport={() => exportSections.toggleSection('auditorLoadRecommendations')}
+          >
+            {auditorRecommendationsBars.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <div className="h-full min-h-[13rem]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={auditorRecommendationsBars} layout="vertical" margin={{ top: 8, right: 40, left: 16, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
+                    <YAxis dataKey="name" type="category" width={120} tick={CHART_AXIS_TICK} />
+                    <Tooltip />
+                    <Bar dataKey="value" name="Рекомендации" fill="#4B5563" radius={[0, 6, 6, 0]}>
+                      {auditorRecommendationsBars.map((item, index) => (
+                        <Cell key={item.name} fill={auditorRecommendationsBarColors[index]} />
+                      ))}
+                      <LabelList
+                        dataKey="value"
+                        position="right"
+                        fontSize={CHART_VALUE_LABEL_SIZE}
+                        fill="#1F2937"
+                      />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -270,8 +350,11 @@ export function DvaAnalyticsDashboard() {
       },
     ],
     [
+      auditorChecksBarColors,
+      auditorChecksBars,
       auditorChecksTreemap,
-      auditorLoad,
+      auditorRecommendationsBarColors,
+      auditorRecommendationsBars,
       auditorRecommendationsTreemap,
       checkSummary.total,
       departmentMap,

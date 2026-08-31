@@ -33,6 +33,7 @@ class Recommendation(Base):
     observation_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     indicator: Mapped[str] = mapped_column(String(32), nullable=False, default="не указан")
+    additional_indicator: Mapped[str] = mapped_column(String(32), nullable=False, default="не указан")
     materiality_level: Mapped[str] = mapped_column(String(32), nullable=False, default="средний")
     audit_object: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
     deadline: Mapped[date | None] = mapped_column(Date, nullable=True)

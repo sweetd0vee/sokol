@@ -8,16 +8,24 @@ import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 import { ConfirmDialog } from '../ui/Modal';
-import type { MaterialityLevel, Recommendation, RecommendationIndicator } from '../../types/recommendation';
+import type {
+  MaterialityLevel,
+  Recommendation,
+  RecommendationAdditionalIndicator,
+  RecommendationIndicator,
+} from '../../types/recommendation';
 import {
+  ADDITIONAL_INDICATOR_OPTIONS,
   RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS,
   RECOMMENDATION_STATUS_OPTIONS,
   getRecommendationAdditionalStatusFieldStyle,
   getRecommendationStatusFieldStyle,
+  indicatorFromRecommendationAdditionalStatus,
   indicatorFromRecommendationStatus,
   normalizeRecommendationAdditionalStatus,
   normalizeRecommendationIndicator,
   normalizeRecommendationStatus,
+  resolveRecommendationAdditionalIndicator,
 } from '../../constants/recommendations';
 import { fetchCheckBySerialNumber } from '../../api/checks';
 import { fetchRecommendation } from '../../api/recommendations';
@@ -116,6 +124,8 @@ export function RecommendationFormPage() {
   const [status, setStatus] = useState<Recommendation['status'] | ''>('');
   const [additionalStatus, setAdditionalStatus] = useState<Recommendation['additional_status'] | ''>('');
   const [indicator, setIndicator] = useState<RecommendationIndicator>('не указан');
+  const [additionalIndicator, setAdditionalIndicator] =
+    useState<RecommendationAdditionalIndicator>('не указан');
   const [materialityLevel, setMaterialityLevel] = useState<MaterialityLevel>('средний');
   const [closure, setClosure] = useState<RecommendationClosureForm>(() =>
     createEmptyRecommendationClosure(),
@@ -139,6 +149,9 @@ export function RecommendationFormPage() {
       setStatus(normalizeRecommendationStatus(source.status));
       setAdditionalStatus(normalizeRecommendationAdditionalStatus(source.additional_status));
       setIndicator(normalizeRecommendationIndicator(source.indicator));
+      setAdditionalIndicator(
+        resolveRecommendationAdditionalIndicator(source.additional_status, source.additional_indicator),
+      );
       setMaterialityLevel(source.materiality_level ?? 'средний');
       setClosure(closureFromRecommendation(source));
       return;
@@ -157,6 +170,7 @@ export function RecommendationFormPage() {
       setStatus('');
       setAdditionalStatus('');
       setIndicator('не указан');
+      setAdditionalIndicator('не указан');
       setMaterialityLevel('средний');
       setClosure(createEmptyRecommendationClosure());
       setShowValidationErrors(false);
@@ -263,10 +277,11 @@ export function RecommendationFormPage() {
       checkLeader,
       manager,
       indicator,
+      additionalIndicator,
       closure,
       hasIncompleteClosureRows,
     });
-  }, [auditObject, auditor, checkLeader, closure, deadline, description, indicator, manager]);
+  }, [additionalIndicator, auditObject, auditor, checkLeader, closure, deadline, description, indicator, manager]);
 
   useEffect(() => {
     if (
@@ -333,6 +348,7 @@ export function RecommendationFormPage() {
       status,
       additionalStatus,
       indicator,
+      additionalIndicator,
       materialityLevel,
       closure,
     });
@@ -547,47 +563,6 @@ export function RecommendationFormPage() {
               labelClassName={FORM_LABEL_CLASS}
               inputClassName={FORM_EQUAL_CONTROL_CLASS}
             />
-            <Select
-              label="Статус"
-              value={status}
-              onChange={(value) => {
-                const nextStatus = value as Recommendation['status'] | '';
-                setStatus(nextStatus);
-                setIndicator(indicatorFromRecommendationStatus(nextStatus));
-              }}
-              options={RECOMMENDATION_STATUS_OPTIONS}
-              placeholder="Выберите статус"
-              className={FORM_FIELD_CLASS}
-              labelClassName={FORM_LABEL_CLASS}
-              inputClassName={FORM_EQUAL_CONTROL_CLASS}
-              inputStyle={getRecommendationStatusFieldStyle(status)}
-            />
-            <Select
-              label="Дополнительный статус"
-              value={additionalStatus}
-              onChange={(value) =>
-                setAdditionalStatus(value as Recommendation['additional_status'] | '')
-              }
-              options={RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS}
-              placeholder="Выберите дополнительный статус"
-              className={FORM_FIELD_CLASS}
-              labelClassName={FORM_LABEL_CLASS}
-              inputClassName={FORM_EQUAL_CONTROL_CLASS}
-              inputStyle={getRecommendationAdditionalStatusFieldStyle(additionalStatus)}
-            />
-            <IndicatorSelect
-              label="Индикатор"
-              value={indicator}
-              onChange={(value) => setIndicator(value as RecommendationIndicator)}
-              className={FORM_FIELD_CLASS}
-              labelClassName={FORM_LABEL_CLASS}
-              inputClassName={[
-                FORM_EQUAL_CONTROL_CLASS,
-                showValidationErrors && requiredFieldErrors.indicator ? FORM_FIELD_ERROR_CLASS : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            />
           </div>
 
           <Textarea
@@ -603,6 +578,68 @@ export function RecommendationFormPage() {
               .filter(Boolean)
               .join(' ')}
           />
+
+          <div className={FORM_ROW_4}>
+            <Select
+              label="Статус"
+              value={status}
+              onChange={(value) => {
+                const nextStatus = value as Recommendation['status'] | '';
+                setStatus(nextStatus);
+                setIndicator(indicatorFromRecommendationStatus(nextStatus));
+              }}
+              options={RECOMMENDATION_STATUS_OPTIONS}
+              placeholder="Выберите статус"
+              className={FORM_FIELD_CLASS}
+              labelClassName={FORM_LABEL_CLASS}
+              inputClassName={FORM_EQUAL_CONTROL_CLASS}
+              inputStyle={getRecommendationStatusFieldStyle(status)}
+            />
+            <IndicatorSelect
+              label="Индикатор статуса"
+              value={indicator}
+              onChange={(value) => setIndicator(value as RecommendationIndicator)}
+              className={FORM_FIELD_CLASS}
+              labelClassName={FORM_LABEL_CLASS}
+              inputClassName={[
+                FORM_EQUAL_CONTROL_CLASS,
+                showValidationErrors && requiredFieldErrors.indicator ? FORM_FIELD_ERROR_CLASS : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            />
+            <Select
+              label="Дополнительный статус"
+              value={additionalStatus}
+              onChange={(value) => {
+                const nextAdditionalStatus = value as Recommendation['additional_status'] | '';
+                setAdditionalStatus(nextAdditionalStatus);
+                setAdditionalIndicator(indicatorFromRecommendationAdditionalStatus(nextAdditionalStatus));
+              }}
+              options={RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS}
+              placeholder="Выберите дополнительный статус"
+              className={FORM_FIELD_CLASS}
+              labelClassName={FORM_LABEL_CLASS}
+              inputClassName={FORM_EQUAL_CONTROL_CLASS}
+              inputStyle={getRecommendationAdditionalStatusFieldStyle(additionalStatus)}
+            />
+            <IndicatorSelect
+              label="Индикатор дополнительного статуса"
+              value={additionalIndicator}
+              onChange={(value) => setAdditionalIndicator(value as RecommendationAdditionalIndicator)}
+              options={ADDITIONAL_INDICATOR_OPTIONS}
+              className={FORM_FIELD_CLASS}
+              labelClassName={FORM_LABEL_CLASS}
+              inputClassName={[
+                FORM_EQUAL_CONTROL_CLASS,
+                showValidationErrors && requiredFieldErrors.additionalIndicator
+                  ? FORM_FIELD_ERROR_CLASS
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            />
+          </div>
 
           <div className={FORM_ROW_3}>
             <Select

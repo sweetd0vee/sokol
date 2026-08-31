@@ -222,11 +222,18 @@ const DASHBOARDS = {
       purpose: 'Сопоставление активности проверок и хвоста рекомендаций.',
     },
     {
-      title: 'Нагрузка аудиторов',
-      id: 'auditorLoad',
-      type: 'Grouped horizontal bar',
-      metrics: 'Проверки (руководитель) + рекомендации (аудитор) за период.',
-      purpose: 'Балансировка работы команды.',
+      title: 'Нагрузка аудиторов: проверки',
+      id: 'auditorLoadChecks',
+      type: 'Horizontal bar',
+      metrics: 'Проверки (руководитель) за период.',
+      purpose: 'Балансировка нагрузки по проверкам.',
+    },
+    {
+      title: 'Нагрузка аудиторов: рекомендации',
+      id: 'auditorLoadRecommendations',
+      type: 'Horizontal bar',
+      metrics: 'Рекомендации (аудитор) за период.',
+      purpose: 'Балансировка нагрузки по рекомендациям.',
     },
     {
       title: 'Документы и закрытие',

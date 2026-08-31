@@ -5,6 +5,7 @@ import {
   normalizeRecommendationAdditionalStatus,
   normalizeRecommendationIndicator,
   normalizeRecommendationStatus,
+  resolveRecommendationAdditionalIndicator,
 } from '../constants/recommendations';
 import { getRecommendationAuditObjects } from '../utils/auditObjects';
 
@@ -46,6 +47,7 @@ export type ApiRecommendation = {
   observation_name?: string | null;
   description: string;
   indicator: string;
+  additional_indicator?: string | null;
   materiality_level: string;
   audit_object: string[] | string;
   deadline?: string | null;
@@ -144,6 +146,10 @@ export function mapRecommendationFromApi(api: ApiRecommendation): Recommendation
     observation_name: api.observation_name ?? undefined,
     description: api.description ?? api.name,
     indicator: normalizeRecommendationIndicator(api.indicator),
+    additional_indicator: resolveRecommendationAdditionalIndicator(
+      api.additional_status,
+      api.additional_indicator,
+    ),
     materiality_level: normalizeMaterialityLevel(api.materiality_level),
     audit_object: getRecommendationAuditObjects(api.audit_object),
     deadline: api.deadline ?? '',
@@ -177,6 +183,10 @@ export function mapRecommendationToCreate(
     observation_name: recommendation.observation_name || null,
     description: recommendation.description,
     indicator: recommendation.indicator,
+    additional_indicator: resolveRecommendationAdditionalIndicator(
+      recommendation.additional_status,
+      recommendation.additional_indicator,
+    ),
     materiality_level: recommendation.materiality_level,
     audit_object: recommendation.audit_object,
     deadline: recommendation.deadline || null,

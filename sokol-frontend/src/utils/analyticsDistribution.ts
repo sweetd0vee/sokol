@@ -17,3 +17,28 @@ export function completeNamedDistribution<T extends string>(
 export function distributionHasValues(items: Array<{ value: number }>) {
   return items.some((item) => item.value > 0);
 }
+
+export function buildTopNamedDistribution(
+  items: Array<{ name: string; value: number }>,
+  options?: { topN?: number; othersLabel?: string },
+): Array<{ name: string; value: number }> {
+  const topN = options?.topN ?? 8;
+  const othersLabel = options?.othersLabel ?? 'Прочие';
+  const positive = items.filter((item) => item.value > 0);
+
+  if (positive.length === 0) {
+    return [];
+  }
+
+  const sorted = [...positive].sort(
+    (left, right) => right.value - left.value || left.name.localeCompare(right.name, 'ru'),
+  );
+  const top = sorted.slice(0, topN);
+  const othersTotal = sorted.slice(topN).reduce((sum, item) => sum + item.value, 0);
+
+  if (othersTotal > 0) {
+    return [...top, { name: othersLabel, value: othersTotal }];
+  }
+
+  return top;
+}
