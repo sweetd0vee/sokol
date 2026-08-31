@@ -7,14 +7,14 @@ import { Input } from '../ui/Input';
 import { EmptyState, ErrorState, LoadingState } from '../ui/StateMessage';
 import type { Recommendation } from '../../types/recommendation';
 import {
+  ADDITIONAL_INDICATOR_OPTIONS,
   INDICATOR_OPTIONS,
   MATERIALITY_LEVEL_OPTIONS,
-  RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS,
+  getAdditionalIndicatorLabel,
   getIndicatorLabel,
   getMaterialityDotClassName,
   getMaterialityLevelLabel,
-  getRecommendationAdditionalStatusBadgeClass,
-  getRecommendationAdditionalStatusLabel,
+  resolveRecommendationAdditionalIndicator,
 } from '../../constants/recommendations';
 import { type ExportFormat, exportRecommendationsTable } from '../../utils/exports';
 import { formatRuDate } from '../../utils/dates';
@@ -23,11 +23,10 @@ import { toNameOptions, useAuditorOptions } from '../../hooks/useReferenceOption
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
 import { useSokolData } from '../../contexts/sokolData';
 import { formatRecommendationAuditObjects } from '../../utils/auditObjects';
-import { INDICATOR_ICONS } from '../recommendations/indicatorIcons';
+import { INDICATOR_ICONS, type IndicatorIconKey } from '../recommendations/indicatorIcons';
 import { RecommendationNameHoverCard } from '../recommendations/RecommendationNameHoverCard';
 import {
   LIST_ACTION_BUTTON_CLASS,
-  LIST_ACTION_GROUP_CLASS,
   listFilterClass,
 } from '../../constants/formLayout';
 import {
@@ -46,12 +45,31 @@ import { ListExportControls } from '../lists/ListExportControls';
 import { ListPagination } from '../lists/ListPagination';
 import { ListSortHeader } from '../lists/ListSortHeader';
 
+function ListIndicatorIcon({
+  value,
+  label,
+}: {
+  value: IndicatorIconKey | undefined;
+  label: string;
+}) {
+  const meta = value ? INDICATOR_ICONS[value] : undefined;
+  if (!meta) {
+    return <span className="text-gray-400">—</span>;
+  }
+  const Icon = meta.Icon;
+  return (
+    <span className="inline-flex items-center justify-center" title={label}>
+      <Icon size={18} className={meta.className} aria-hidden />
+    </span>
+  );
+}
+
 export function RecommendationsTab() {
   const myName = useCurrentUserName();
   const [idFilter, setIdFilter] = useState('');
   const [keyFilter, setKeyFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
-  const [additionalStatuses, setAdditionalStatuses] = useState<string[]>([]);
+  const [additionalIndicators, setAdditionalIndicators] = useState<string[]>([]);
   const [auditObjects, setAuditObjects] = useState<string[]>([]);
   const [indicators, setIndicators] = useState<string[]>([]);
   const [materialityLevels, setMaterialityLevels] = useState<string[]>([]);
@@ -90,7 +108,7 @@ export function RecommendationsTab() {
         keyFilter,
         nameFilter,
         statuses: [],
-        additionalStatuses,
+        additionalIndicators,
         auditObjects,
         indicators,
         materialityLevels,
@@ -107,7 +125,7 @@ export function RecommendationsTab() {
       idFilter,
       keyFilter,
       nameFilter,
-      additionalStatuses,
+      additionalIndicators,
       auditObjects,
       indicators,
       materialityLevels,
@@ -144,7 +162,7 @@ export function RecommendationsTab() {
       idFilter,
       keyFilter,
       nameFilter,
-      additionalStatuses.join('\u0000'),
+      additionalIndicators.join('\u0000'),
       auditObjects.join('\u0000'),
       indicators.join('\u0000'),
       materialityLevels.join('\u0000'),
@@ -161,7 +179,7 @@ export function RecommendationsTab() {
     setIdFilter('');
     setKeyFilter('');
     setNameFilter('');
-    setAdditionalStatuses([]);
+    setAdditionalIndicators([]);
     setAuditObjects([]);
     setIndicators([]);
     setMaterialityLevels([]);
@@ -225,18 +243,18 @@ export function RecommendationsTab() {
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full text-base table-fixed min-w-[1630px]">
+          <table className="w-full text-base table-fixed min-w-[1580px]">
             <colgroup>
               <col className="w-24" />
               <col className="w-40" />
               <col />
               <col className="w-52" />
               <col className="w-28" />
+              <col className="w-36" />
               <col className="w-40" />
               <col className="w-28" />
               <col className="w-36" />
               <col className="w-[140px]" />
-              <col className="w-[172px]" />
               <col className="w-[174px]" />
             </colgroup>
             <thead>
@@ -284,6 +302,15 @@ export function RecommendationsTab() {
                   />
                 </th>
                 <th className="px-2 py-2 font-normal">
+                  <MultiCheckboxSelect
+                    value={additionalIndicators}
+                    onChange={setAdditionalIndicators}
+                    options={ADDITIONAL_INDICATOR_OPTIONS}
+                    placeholder="Все"
+                    inputClassName={listFilterClass(additionalIndicators.length > 0)}
+                  />
+                </th>
+                <th className="px-2 py-2 font-normal">
                   <div className="flex flex-col gap-1.5">
                     <DatePicker
                       selected={deadlineFrom}
@@ -326,16 +353,8 @@ export function RecommendationsTab() {
                     inputClassName={listFilterClass(managers.length > 0)}
                   />
                 </th>
-                <th colSpan={2} className="px-0 py-2 font-normal">
-                  <div className={`${LIST_ACTION_GROUP_CLASS} sm:pr-px`}>
-                    <MultiCheckboxSelect
-                      value={additionalStatuses}
-                      onChange={setAdditionalStatuses}
-                      options={RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS}
-                      placeholder="Все"
-                      className="w-[160px]"
-                      inputClassName={listFilterClass(additionalStatuses.length > 0)}
-                    />
+                <th className="px-0 py-2 font-normal">
+                  <div className="ml-auto flex w-[160px] items-center justify-end sm:pr-px">
                     <button
                       type="button"
                       onClick={handleResetFilters}
@@ -351,7 +370,15 @@ export function RecommendationsTab() {
                 {renderSortableHeader('serial_number', 'Ключ')}
                 {renderSortableHeader('name', 'Название')}
                 {renderSortableHeader('audit_object', 'Объект аудита', 'whitespace-nowrap')}
-                {renderSortableHeader('indicator', 'Индикатор')}
+                {renderSortableHeader('indicator', 'Индикатор статуса')}
+                {renderSortableHeader(
+                  'additional_indicator',
+                  <>
+                    <span className="whitespace-nowrap">Индикатор</span>
+                    <br />
+                    <span>дополнительного статуса</span>
+                  </>,
+                )}
                 {renderSortableHeader('deadline', 'Срок исполнения')}
                 {renderSortableHeader('materiality_level', 'Уровень')}
                 {renderSortableHeader('auditor', 'Аудитор')}
@@ -363,13 +390,17 @@ export function RecommendationsTab() {
                     <span className="whitespace-nowrap">объекта аудита</span>
                   </>,
                 )}
-                {renderSortableHeader('additional_status', 'Дополнительный статус')}
                 <th className="px-0 py-3 text-center font-medium">Действия</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {pagedRecommendations.map((recommendation) => (
-                <tr key={recommendation.id} className="hover:bg-gray-50">
+              {pagedRecommendations.map((recommendation) => {
+                const additionalIndicator = resolveRecommendationAdditionalIndicator(
+                  recommendation.additional_status,
+                  recommendation.additional_indicator,
+                );
+                return (
+                  <tr key={recommendation.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 whitespace-nowrap">
                     {getRecommendationYearlyId(recommendation, recommendationYearlyNumbers) ?? '—'}
                   </td>
@@ -382,21 +413,16 @@ export function RecommendationsTab() {
                     {formatRecommendationAuditObjects(recommendation.audit_object)}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    {(() => {
-                      const meta = INDICATOR_ICONS[recommendation.indicator];
-                      if (!meta) {
-                        return <span className="text-gray-400">—</span>;
-                      }
-                      const Icon = meta.Icon;
-                      return (
-                        <span
-                          className="inline-flex items-center justify-center"
-                          title={getIndicatorLabel(recommendation.indicator)}
-                        >
-                          <Icon size={18} className={meta.className} aria-hidden />
-                        </span>
-                      );
-                    })()}
+                    <ListIndicatorIcon
+                      value={recommendation.indicator}
+                      label={getIndicatorLabel(recommendation.indicator)}
+                    />
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <ListIndicatorIcon
+                      value={additionalIndicator}
+                      label={getAdditionalIndicatorLabel(additionalIndicator)}
+                    />
                   </td>
                   <td className="px-4 py-3 pr-6">{formatRuDate(recommendation.deadline)}</td>
                   <td className="px-2 py-3 text-center">
@@ -412,13 +438,6 @@ export function RecommendationsTab() {
                   <td className="px-4 py-3 truncate" title={recommendation.manager}>
                     {recommendation.manager}
                   </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-0.5 text-base font-medium whitespace-nowrap ${getRecommendationAdditionalStatusBadgeClass(recommendation.additional_status)}`}
-                    >
-                      {getRecommendationAdditionalStatusLabel(recommendation.additional_status)}
-                    </span>
-                  </td>
                   <td className="px-0 py-3">
                     <div className="ml-auto flex w-[160px] items-center justify-end whitespace-nowrap">
                       <Link
@@ -431,8 +450,9 @@ export function RecommendationsTab() {
                       </Link>
                     </div>
                   </td>
-                </tr>
-              ))}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {filteredRecommendations.length === 0 && (

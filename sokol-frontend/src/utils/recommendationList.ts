@@ -1,3 +1,4 @@
+import { resolveRecommendationAdditionalIndicator } from '../constants/recommendations';
 import type { Recommendation } from '../types/recommendation';
 import { formatRecommendationAuditObjects, getRecommendationAuditObjects } from './auditObjects';
 import { parseDateValue } from './dates';
@@ -15,6 +16,7 @@ export type RecommendationSortKey =
   | 'audit_object'
   | 'deadline'
   | 'indicator'
+  | 'additional_indicator'
   | 'materiality_level'
   | 'auditor'
   | 'manager'
@@ -27,6 +29,13 @@ const INDICATOR_ORDER: Record<string, number> = {
   'на контроле': 2,
   'не решено': 3,
   'не указан': 4,
+};
+
+const ADDITIONAL_INDICATOR_ORDER: Record<string, number> = {
+  'в срок': 0,
+  'срок нарушен': 1,
+  'на контроле': 2,
+  'не указан': 3,
 };
 
 const MATERIALITY_ORDER: Record<string, number> = {
@@ -66,6 +75,15 @@ export function getRecommendationSortValue(
       return parseDateValue(recommendation.deadline);
     case 'indicator':
       return INDICATOR_ORDER[recommendation.indicator] ?? 999;
+    case 'additional_indicator':
+      return (
+        ADDITIONAL_INDICATOR_ORDER[
+          resolveRecommendationAdditionalIndicator(
+            recommendation.additional_status,
+            recommendation.additional_indicator,
+          )
+        ] ?? 999
+      );
     case 'materiality_level':
       return MATERIALITY_ORDER[recommendation.materiality_level] ?? 999;
     case 'auditor':
@@ -86,7 +104,7 @@ export type RecommendationListFilters = {
   keyFilter: string;
   nameFilter: string;
   statuses: string[];
-  additionalStatuses: string[];
+  additionalIndicators: string[];
   auditObjects: string[];
   indicators: string[];
   materialityLevels: string[];
@@ -126,7 +144,15 @@ export function filterRecommendations(
     if (!matchesSelected(filters.statuses, recommendation.status)) {
       return false;
     }
-    if (!matchesSelected(filters.additionalStatuses, recommendation.additional_status)) {
+    if (
+      !matchesSelected(
+        filters.additionalIndicators,
+        resolveRecommendationAdditionalIndicator(
+          recommendation.additional_status,
+          recommendation.additional_indicator,
+        ),
+      )
+    ) {
       return false;
     }
     if (
