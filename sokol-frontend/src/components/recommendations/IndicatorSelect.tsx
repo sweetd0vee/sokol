@@ -4,7 +4,7 @@ import {
   INDICATOR_OPTIONS,
   type ColoredSelectOption,
 } from '../../constants/recommendations';
-import { INDICATOR_ICONS, type IndicatorIconKey } from './indicatorIcons';
+import { INDICATOR_ICONS, indicatorIconRenderProps, type IndicatorIconKey } from './indicatorIcons';
 
 type IndicatorSelectProps = {
   label?: string;
@@ -87,7 +87,7 @@ export function IndicatorSelect({
               .filter(Boolean)
               .join(' ')}
           >
-            {SelectedIcon ? <SelectedIcon size={16} strokeWidth={2.25} /> : null}
+            {SelectedIcon ? <SelectedIcon size={16} {...indicatorIconRenderProps(selectedMeta)} /> : null}
           </span>
           <span className="min-w-0 flex-1 truncate">{selected?.label ?? 'Не указан'}</span>
           <ChevronDown size={16} className="shrink-0 text-gray-400" />
@@ -126,7 +126,7 @@ export function IndicatorSelect({
                         .filter(Boolean)
                         .join(' ')}
                     >
-                      {Icon ? <Icon size={16} strokeWidth={2.25} /> : null}
+                      {Icon ? <Icon size={16} {...indicatorIconRenderProps(meta)} /> : null}
                     </span>
                     <span>{option.label}</span>
                   </button>

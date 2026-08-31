@@ -34,5 +34,5 @@ Python 3.12 · FastAPI · SQLAlchemy 2 + asyncpg · PostgreSQL 16 · MinIO · py
 
 | Режим | API |
 |-------|-----|
-| `run_dev.ps1` | **8802** |
+| Локально | **8802** |
 | Docker | **8800** |

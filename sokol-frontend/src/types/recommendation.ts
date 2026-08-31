@@ -9,7 +9,8 @@ export type RecommendationIndicator =
   | 'в процессе'
   | 'на контроле'
   | 'не решено'
-  | 'исполнено';
+  | 'исполнено'
+  | 'исполнено в ходе аудита';
 
 export type RecommendationAdditionalIndicator =
   | 'не указан'

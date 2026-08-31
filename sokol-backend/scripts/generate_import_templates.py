@@ -126,7 +126,7 @@ RECOMMENDATION_COLUMN_META: list[tuple[str, bool, str]] = [
     ("sequence_number", True, "Порядковый номер рекомендации внутри проверки (1, 2, …)"),
     ("name", True, "Краткое название рекомендации"),
     ("description", False, "Полный текст; если пусто — копируется name"),
-    ("indicator", False, "не указан | в процессе | на контроле | не решено | исполнено"),
+    ("indicator", False, "не указан | в процессе | на контроле | не решено | исполнено | исполнено в ходе аудита"),
     ("materiality_level", False, "низкий | средний | высокий (по умолчанию средний)"),
     ("audit_object", True, "Объект аудита / подразделение"),
     ("deadline", False, "Срок исполнения YYYY-MM-DD"),
@@ -228,9 +228,9 @@ def _write_directories_sheet(workbook: Workbook) -> None:
         cell.font = HEADER_FONT
         cell.fill = HEADER_FILL
 
-    max_len = max(len(CHECK_KINDS), len(EFFECTIVENESS_RATINGS), 5, 3)
-    indicators = ["не указан", "в процессе", "на контроле", "не решено", "исполнено"]
+    indicators = ["не указан", "в процессе", "на контроле", "не решено", "исполнено", "исполнено в ходе аудита"]
     materiality = ["низкий", "средний", "высокий"]
+    max_len = max(len(CHECK_KINDS), len(EFFECTIVENESS_RATINGS), len(indicators), len(materiality))
     for index in range(max_len):
         sheet.append(
             [
@@ -280,7 +280,7 @@ def _add_check_validations(sheet, *, view_rows: int, eff_rows: int) -> None:
 def _add_recommendation_validations(sheet) -> None:
     indicator_dv = DataValidation(
         type="list",
-        formula1="справочники!$C$2:$C$6",
+        formula1="справочники!$C$2:$C$7",
         allow_blank=True,
     )
     materiality_dv = DataValidation(

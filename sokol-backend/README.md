@@ -6,7 +6,7 @@ Python 3.12, async SQLAlchemy, PostgreSQL.
 
 | Режим | API / Swagger | Postgres |
 |-------|---------------|----------|
-| Локально (`run_dev.ps1`) | http://localhost:8802/docs | localhost:5433 |
+| Локально | http://localhost:8802/docs | localhost:5433 |
 | Docker | http://localhost:8800/docs | localhost:5433 |
 
 Фронт в dev: `VITE_DEV_API_PORT=8802`. При смене порта обновите `SOKOL_CORS_ORIGINS`.
@@ -19,14 +19,10 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 copy .secrets\sokol.env.example .secrets\sokol.env
-.\run_dev.ps1
-```
-
-Linux/macOS: `python3.12 -m venv venv`, `source venv/bin/activate`, затем uvicorn:
-
-```bash
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8802
 ```
+
+Linux/macOS: `python3.12 -m venv venv`, `source venv/bin/activate`, затем та же команда uvicorn.
 
 ### Минимальный `.secrets/sokol.env`
 

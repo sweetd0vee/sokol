@@ -23,7 +23,7 @@ import { toNameOptions, useAuditorOptions } from '../../hooks/useReferenceOption
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
 import { useSokolData } from '../../contexts/sokolData';
 import { formatRecommendationAuditObjects } from '../../utils/auditObjects';
-import { INDICATOR_ICONS, type IndicatorIconKey } from '../recommendations/indicatorIcons';
+import { INDICATOR_ICONS, indicatorIconRenderProps, type IndicatorIconKey } from '../recommendations/indicatorIcons';
 import { RecommendationNameHoverCard } from '../recommendations/RecommendationNameHoverCard';
 import {
   LIST_ACTION_BUTTON_CLASS,
@@ -59,7 +59,7 @@ function ListIndicatorIcon({
   const Icon = meta.Icon;
   return (
     <span className="inline-flex items-center justify-center" title={label}>
-      <Icon size={18} className={meta.className} aria-hidden />
+      <Icon size={18} className={meta.className} aria-hidden {...indicatorIconRenderProps(meta)} />
     </span>
   );
 }

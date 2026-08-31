@@ -9,7 +9,7 @@
 | Локальная разработка | http://localhost:5180 | http://localhost:8802/docs | localhost:5433 |
 | Docker | http://localhost:5180 | http://localhost:8800/docs | localhost:5433 |
 
-Локально API слушает **8802** (`sokol-backend/run_dev.ps1`), фронт проксирует `/api` туда же. В Docker API на **8800**.
+Локально API слушает **8802**, фронт проксирует `/api` туда же. В Docker API на **8800**.
 
 ## Быстрый старт
 
@@ -22,7 +22,7 @@
 cd sokol-backend
 .\venv\Scripts\Activate.ps1   # после venv + pip install -r requirements.txt
 copy .secrets\sokol.env.example .secrets\sokol.env
-.\run_dev.ps1
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8802
 ```
 
 ```bash

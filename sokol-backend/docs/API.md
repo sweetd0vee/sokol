@@ -2,7 +2,7 @@
 
 Базовый prefix: **`/api/v1`** (из `Settings.api_v1_prefix`).
 
-Интерактивная документация: `http://127.0.0.1:8802/docs` (порт из `run_dev.ps1`).
+Интерактивная документация: `http://127.0.0.1:8802/docs`.
 
 Auth: **internal JWT** (Bearer). Публичны только `GET /`, `GET /api/v1/status` и `GET /api/v1/capabilities`.  
 HTTP Basic принимается в `development` (и если `SOKOL_ENABLE_BASIC_AUTH=true`); в `SOKOL_ENV=prod` по умолчанию выключен. Деактивированные пользователи не проходят ни Bearer, ни Basic. 

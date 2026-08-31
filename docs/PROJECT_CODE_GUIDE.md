@@ -300,7 +300,7 @@ cd sokol-backend
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 copy .secrets\sokol.env.example .secrets\sokol.env
-.\run_dev.ps1
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8802
 ```
 
 Frontend:

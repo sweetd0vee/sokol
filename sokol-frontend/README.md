@@ -14,7 +14,7 @@ React 19 + TypeScript + Vite 7. Внутренний UI аудита.
 ## Быстрый старт
 
 ```powershell
-# терминал 1 — backend (sokol-backend/run_dev.ps1)
+# терминал 1 — backend: python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8802
 # терминал 2:
 cd sokol-frontend
 npm install

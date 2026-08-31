@@ -25,10 +25,11 @@ export type RecommendationSortKey =
 
 const INDICATOR_ORDER: Record<string, number> = {
   исполнено: 0,
-  'в процессе': 1,
-  'на контроле': 2,
-  'не решено': 3,
-  'не указан': 4,
+  'исполнено в ходе аудита': 1,
+  'в процессе': 2,
+  'на контроле': 3,
+  'не решено': 4,
+  'не указан': 5,
 };
 
 const ADDITIONAL_INDICATOR_ORDER: Record<string, number> = {

@@ -74,6 +74,7 @@ export const INDICATOR_COLORS: Record<RecommendationIndicator, string> = {
   'на контроле': '#64748B',
   'не решено': MATERIALITY_COLORS.высокий,
   'исполнено': MATERIALITY_COLORS.низкий,
+  'исполнено в ходе аудита': '#003366',
 };
 
 export function getIndicatorColor(value: RecommendationIndicator): string {

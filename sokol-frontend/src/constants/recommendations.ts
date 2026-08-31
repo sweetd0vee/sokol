@@ -181,6 +181,7 @@ export const INDICATOR_OPTIONS: {
   { value: 'на контроле', label: 'На контроле', dotClassName: 'bg-gray-200' },
   { value: 'не решено', label: 'Не решено', dotClassName: 'bg-[#FF4347]' },
   { value: 'исполнено', label: 'Исполнено', dotClassName: 'bg-[rgb(37,235,103)]' },
+  { value: 'исполнено в ходе аудита', label: 'Исполнено в ходе аудита', dotClassName: 'bg-[#003366]' },
 ];
 
 /** Indicators shown on analytics charts (excludes placeholder "не указан"). */
@@ -214,6 +215,8 @@ export function normalizeRecommendationIndicator(
     case 'зелёный':
     case 'зеленый':
       return 'исполнено';
+    case 'исполнено в ходе аудита':
+      return 'исполнено в ходе аудита';
     case 'не указан':
     case '':
     default:
