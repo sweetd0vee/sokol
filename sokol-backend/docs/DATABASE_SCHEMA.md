@@ -488,9 +488,14 @@ flowchart TD
 | `migrate_dictionary_uniqueness.py` | Нормализует справочники и добавляет unique indexes |
 | `migrate_dictionary_foreign_keys.py` | Unique labels, junction `recommendation_audit_objects`, FK на доменные поля справочников |
 | `migrate_analytics_indexes.py` | Добавляет индексы для фильтров и агрегатов |
+| `seed_auditors` / `seed_departments` / `seed_users` / … | Идемпотентный insert канонических справочников и логинов |
+| `sync_dictionaries.py` | Выравнивает auditors/departments/users с catalogs |
 | `import_seed_data.py` | Загружает реальные Excel-данные checks/recommendations |
 | `seed_demo_data.py` | Загружает синтетические демо-данные |
 | `sync_check_buckets.py` | Синхронизирует MinIO buckets для существующих проверок |
+| `recalculate_check_serial_numbers.py` | Пересчитывает все ключи проверок и связанные serial/attachments |
+
+Docker bootstrap применяет не все `migrate_*`, а упорядоченное подмножество `BOOTSTRAP_MIGRATIONS` — см. [DATA_AND_DB.md](DATA_AND_DB.md).
 
 Перед `--replace`, ручными миграциями enum'ов и изменением живой БД нужен бэкап PostgreSQL и MinIO.
 

@@ -32,7 +32,7 @@ SOKOL_CORS_ORIGINS=http://localhost:5180
 SOKOL_JWT_SECRET=sokol-dev-jwt-secret-change-me
 ```
 
-Dev-пользователи (если таблица `users` пуста и срабатывает seed): `Админ А.А.`/`admin`, `Аудитор А.А.`/`auditor`.
+Dev-пользователи (если таблица `users` пуста и срабатывает seed): `Админ А.А.`/`admin`, `Ковалев С.С.`/`admin` (роль `department_head`), аудиторы/`auditor`.
 
 ## Docker
 
@@ -46,6 +46,7 @@ Dev-пользователи (если таблица `users` пуста и ср
 | `SOKOL_CORS_ORIGINS` | origins фронта через запятую |
 | `SOKOL_ENV` | `development` (default) или `prod` — в prod weak/default JWT secret, demo load и seed `--replace` блокируют старт |
 | `SOKOL_JWT_SECRET` / `SOKOL_JWT_EXPIRE_MINUTES` | JWT (default TTL 480 мин) |
+| `SOKOL_ADMIN_PASSWORD` / `SOKOL_DEFAULT_USER_PASSWORD` | пароли seed: admin/department_head (`admin`) и аудиторы (`auditor`) |
 | `SOKOL_ENABLE_BASIC_AUTH` | HTTP Basic: в development включён по умолчанию, в prod выключен; явный `true`/`false` перекрывает default |
 | `SOKOL_MAX_UPLOAD_MB` | лимит upload `.docx` (default 100) |
 | `SOKOL_LOAD_DEMO_DATA` / `SOKOL_SEED_REPLACE` | Docker bootstrap: demo Excel и TRUNCATE; в `SOKOL_ENV=prod` запрещены |
@@ -57,19 +58,23 @@ Dev-пользователи (если таблица `users` пуста и ср
 ```powershell
 python -c "import asyncio; from app.db.init_db import init_db; asyncio.run(init_db())"
 python -m app.db.seed_auditors
+python -m app.db.seed_departments
 python -m app.db.seed_audit_types
 python -m app.db.seed_check_kinds
 python -m app.db.seed_effectiveness_ratings
+python -m app.db.seed_users
 ```
 
 Seed/import/бэкапы: [docs/ALEMBIC_AND_DATA.md](docs/ALEMBIC_AND_DATA.md).
 
-## Инструменты (DOCX)
+## Инструменты
 
 | Endpoint | Назначение |
 |----------|------------|
 | `POST /api/v1/tools/section-ii` | Раздел II АЗ |
 | `POST /api/v1/tools/section-ii-links` | Раздел II с гиперссылками |
+| `GET /api/v1/tools/control-file-template` | Шаблон файла контроля (XLSX) |
+| `POST /api/v1/tools/control-file` | Файл контроля из АЗ |
 | `POST /api/v1/tools/memorandum` | Докладная записка |
 | `POST /api/v1/tools/parse-recommendations` | Парсинг рекомендаций из АЗ |
 

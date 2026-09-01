@@ -29,7 +29,7 @@ HTTP Basic принимается в `development` (и если `SOKOL_ENABLE_BA
 Логин: `POST /api/v1/auth/login` → `{ access_token, token_type: "bearer", role, username, display_name }`.  
 Профиль: `GET /api/v1/auth/me` → `{ username, display_name, role }` (без `id`, без аватара).  
 Пользователи: таблица `users` (seed/sync из канонического списка).  
-`POST /api/v1/auth/change-password` — `{ current_password, new_password }` (min 4), ответ **204**.
+`POST /api/v1/auth/change-password` — `{ current_password, new_password }` (min 4), ответ **204**. Неверный текущий пароль или совпадение с новым → **400**.
 
 Общий формат списков: `{ "items": [...], "total": N }`.
 
