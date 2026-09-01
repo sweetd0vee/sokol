@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatTreemapExportLabel } from '../components/analytics/FocusableTreemapChart';
+import { formatTreemapExportLabel } from './treemapExportLabel';
 
 describe('formatTreemapExportLabel', () => {
   it('keeps a simple name and value when materiality is missing', () => {

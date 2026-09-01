@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "docs:analytics-screenshots": "node scripts/capture-analytics-screenshots.mjs",
     "docs:analytics-tz": "node scripts/generate-analytics-spec-docx.mjs",
+    "docs:analytics-guide": "node scripts/generate-analytics-spec-docx.mjs",
     "docs:analytics-tz:full": "npm run docs:analytics-screenshots && npm run docs:analytics-tz"
   },
   "dependencies": {

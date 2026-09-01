@@ -3,6 +3,7 @@ import { ResponsiveContainer, Tooltip, Treemap } from 'recharts';
 import { getValueBasedColors, PALETTE } from './analyticsPalette';
 import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { MATERIALITY_COLORS } from '../../utils/recommendationAnalytics';
+import { formatTreemapExportLabel } from '../../utils/treemapExportLabel';
 
 export type TreemapDatum = {
   name: string;
@@ -34,22 +35,6 @@ type TreemapNodeProps = {
   activeName?: string | null;
   onActivate?: (name: string | null) => void;
 };
-
-export function formatTreemapExportLabel(
-  name: string,
-  value: number,
-  materiality?: TreemapDatum['materiality'],
-) {
-  if (!materiality) {
-    return `${name}: ${value}`;
-  }
-  return [
-    `${name}: ${value}`,
-    `Высокий: ${materiality.высокий}`,
-    `Средний: ${materiality.средний}`,
-    `Низкий: ${materiality.низкий}`,
-  ].join('\n');
-}
 
 function treemapMaterialityDataAttrs(materiality?: TreemapDatum['materiality']) {
   if (!materiality) {

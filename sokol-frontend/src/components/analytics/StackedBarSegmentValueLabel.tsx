@@ -122,7 +122,7 @@ export function StackedBarSegmentValueLabel({
 }) {
   const labelView = view as StackedSegmentLabelView;
   const { x, y, width: w, height: h } = readLabelGeometry(labelView);
-  const key = labelView.dataKey != null ? String(labelView.dataKey) : '';
+  const key = labelView.dataKey === undefined || labelView.dataKey === null ? '' : String(labelView.dataKey);
   // Recharts 3 LabelList does not forward `payload` to custom content — `value` is the source of truth.
   const numericValue =
     readLabelValue(labelView.value) ?? (key ? readStackValue(labelView, key, stackRow) : undefined);

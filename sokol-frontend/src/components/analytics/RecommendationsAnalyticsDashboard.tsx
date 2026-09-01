@@ -16,7 +16,8 @@ import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsDashboardFrame } from './AnalyticsDashboardFrame';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
-import { AnalyticsSelectionSummary, filterSelectionItem } from './AnalyticsSelectionSummary';
+import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
+import { filterSelectionItem } from './filterSelectionItem';
 import { ChartCard, CHART_AXIS_TICK, ChartRechartsSquareLegend, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
@@ -652,7 +653,6 @@ export function RecommendationsAnalyticsDashboard() {
       exportSections,
       isMaterialityExportSelected,
       coloredMaterialityDistribution,
-      materialityDistribution,
       materialityMatrix,
       handleMaterialityMatrixSortChange,
       objectDistributionTop,

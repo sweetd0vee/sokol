@@ -17,7 +17,8 @@ import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsDashboardFrame } from './AnalyticsDashboardFrame';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
-import { AnalyticsSelectionSummary, filterSelectionItem } from './AnalyticsSelectionSummary';
+import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
+import { filterSelectionItem } from './filterSelectionItem';
 import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { CHECKS_PALETTE, getValueBasedColors, VALUE_BLUE_SCALE, VALUE_GRAY_SCALE } from './analyticsPalette';
@@ -354,6 +355,7 @@ export function DvaAnalyticsDashboard() {
       auditorChecksBarColors,
       auditorChecksBars,
       auditorChecksTreemap,
+      auditorLoad.length,
       auditorRecommendationsBarColors,
       auditorRecommendationsBars,
       auditorRecommendationsTreemap,

@@ -39,6 +39,7 @@ erDiagram
         varchar check_name
         varchar check_type
         varchar check_view
+        int check_quarter
         date start_date
         date end_date
         varchar check_leader
@@ -54,6 +55,7 @@ erDiagram
         text_array audit_object
         date deadline
         varchar auditor
+        varchar additional_indicator
         recommendation_status status
     }
 
@@ -69,6 +71,7 @@ erDiagram
     AUDITORS {
         uuid id PK
         varchar full_name UK
+        varchar code UK
     }
 
     DEPARTMENTS {
@@ -90,6 +93,7 @@ erDiagram
         uuid id PK
         varchar username UK
         varchar role
+        boolean is_active
     }
 ```
 
@@ -159,10 +163,10 @@ flowchart LR
 | `az_document_date` | `DATE` | да | - | Дата аудиторского заключения |
 | `dz_document_number` | `VARCHAR(128)` | да | - | Номер дорожной карты / ДЗ |
 | `dz_document_date` | `DATE` | да | - | Дата дорожной карты / ДЗ |
-| `process_effectiveness` | `VARCHAR(128)` | да | logical ref to `effectiveness_ratings.label` | Оценка эффективности процесса |
-| `svk_effectiveness` | `VARCHAR(128)` | да | logical ref to `effectiveness_ratings.label` | Оценка СВК |
-| `sur_effectiveness` | `VARCHAR(128)` | да | logical ref to `effectiveness_ratings.label` | Оценка СУР |
-| `svik_effectiveness` | `VARCHAR(128)` | да | logical ref to `effectiveness_ratings.label` | Оценка СВиК |
+| `process_effectiveness` | `VARCHAR(255)` | да | FK `effectiveness_ratings.label ON UPDATE CASCADE ON DELETE SET NULL` | Оценка эффективности процесса |
+| `svk_effectiveness` | `VARCHAR(255)` | да | FK `effectiveness_ratings.label ON UPDATE CASCADE ON DELETE SET NULL` | Оценка СВК |
+| `sur_effectiveness` | `VARCHAR(255)` | да | FK `effectiveness_ratings.label ON UPDATE CASCADE ON DELETE SET NULL` | Оценка СУР |
+| `svik_effectiveness` | `VARCHAR(255)` | да | FK `effectiveness_ratings.label ON UPDATE CASCADE ON DELETE SET NULL` | Оценка СВиК |
 
 ### Enum `check_status`
 
@@ -174,12 +178,12 @@ flowchart LR
 
 ### Генерация `serial_number`
 
-Ключ проверки строится из года начала, постоянного кода руководителя из справочника аудиторов, квартала проверки, типа и порядкового номера среди проверок того же руководителя/типа/года.
+Ключ проверки строится из года начала, постоянного кода руководителя (`auditors.code`, 3 латинские буквы), квартала проверки, типа и порядкового номера среди проверок того же руководителя/типа/года (квартал в счётчик последовательности не входит).
 
 ```mermaid
 flowchart LR
     YEAR[start_date.year last 2 digits] --> KEY[serial_number]
-    LEADER[auditors.code] --> KEY
+    LEADER["auditors.code (3 Latin letters)"] --> KEY
     QUARTER[check_quarter 1-4] --> KEY
     TYPE[check_type code: P/V/K] --> KEY
     N[next sequence within leader + type + year] --> KEY
@@ -201,6 +205,7 @@ flowchart LR
 | `observation_name` | `TEXT` | да | search field | Название наблюдения |
 | `description` | `TEXT` | нет | default `''` | Подробное описание / формулировка |
 | `indicator` | `VARCHAR(32)` | нет | default `не указан` | Смысловой индикатор: исполнено, на контроле, не решено, в процессе и т.п. |
+| `additional_indicator` | `VARCHAR(32)` | нет | default `не указан` | Дополнительный индикатор (тот же набор подписей, что `indicator`) |
 | `materiality_level` | `VARCHAR(32)` | нет | `ix_recommendations_materiality_level`, default `средний` | Уровень существенности |
 | `audit_object` | `TEXT[]` | нет | GIN `ix_recommendations_audit_object_gin` | Денормализованный список объектов аудита; FK-целостность в `recommendation_audit_objects` |
 | `deadline` | `DATE` | да | `ix_recommendations_deadline`, composite `ix_recommendations_deadline_status` | Срок исполнения |
@@ -312,12 +317,12 @@ PostgreSQL dump не включает содержимое MinIO. Для пол�
 | `id` | `UUID` | нет | PK, index | Технический идентификатор |
 | `username` | `VARCHAR(255)` | нет | unique, index | Логин |
 | `password_hash` | `VARCHAR(255)` | нет | - | Хэш пароля |
-| `role` | `VARCHAR(32)` | нет | - | Роль: обычно `admin` или `auditor` |
+| `role` | `VARCHAR(32)` | нет | - | Роль: `admin`, `department_head` или `auditor`. `department_head` входит в `ADMIN_ROLES` |
 | `display_name` | `VARCHAR(255)` | нет | - | Имя для UI и сопоставления с аудитором |
 | `aliases` | `VARCHAR(500)` | да | - | Дополнительные варианты имени для matching |
 | `is_active` | `BOOLEAN` | нет | default `true` | Признак активного пользователя |
 
-Права на операции с рекомендациями и вложениями рекомендаций зависят от роли и сопоставления пользователя с `recommendations.auditor`. Администратор имеет расширенные права, аудитор управляет собственными рекомендациями.
+Права на операции с рекомендациями и вложениями рекомендаций зависят от роли и сопоставления пользователя с `recommendations.auditor`. `admin` и `department_head` имеют расширенные права, аудитор управляет собственными рекомендациями. Аватары в этой таблице не хранятся — они живут только на фронте.
 
 ## 8. Справочники
 
@@ -329,8 +334,9 @@ PostgreSQL dump не включает содержимое MinIO. Для пол�
 |------|----------------|------|----------------------|------------|
 | `id` | `UUID` | нет | PK, index | Технический идентификатор |
 | `full_name` | `VARCHAR(255)` | нет | unique | ФИО аудитора |
+| `code` | `VARCHAR(3)` | нет | unique (`ux_auditors_code`) | Стабильный код из 3 латинских букв для `serial_number` |
 
-Используется для `checks.check_leader` и `recommendations.auditor`.
+Используется для `checks.check_leader` и `recommendations.auditor`. `code` участвует в генерации ключа проверки и не должен меняться без пересчёта `serial_number`.
 
 ### `departments`
 
@@ -428,6 +434,7 @@ flowchart TB
 | `attachments` | `ix_attachments_entity_lookup` | Быстрый список файлов сущности |
 | `attachments` | `ix_attachments_check_serial_number` | Массовые операции по проверке |
 | `auditors` | unique `full_name` | FK-цель для `checks.check_leader` и `recommendations.auditor` |
+| `auditors` | unique `code` | Стабильный трёхбуквенный код ключа проверки |
 | `departments` | unique `name` | FK-цель для `recommendation_audit_objects` |
 | `check_kinds` | unique `label` | FK-цель для `checks.check_view` |
 | `effectiveness_ratings` | unique `label` | FK-цель для оценок эффективности |
@@ -443,7 +450,7 @@ flowchart TB
 | Аналитика | Основные поля |
 |-----------|---------------|
 | Проверки | `checks.start_date`, `checks.status`, `checks.check_leader`, `checks.check_type`, `checks.check_view`, оценки эффективности |
-| Рекомендации | `recommendations.status`, `additional_status`, `deadline`, `actual_completion_date`, `auditor`, `audit_object`, `materiality_level`, `indicator` |
+| Рекомендации | `recommendations.status`, `additional_status`, `deadline`, `actual_completion_date`, `auditor`, `audit_object`, `materiality_level`, `indicator`, `additional_indicator` |
 | Мониторинг | `deadline`, `status`, `additional_status`, `deadline_extensions`, `control_removals`, `remove_from_control_date` |
 | DVA / planning | покрытие объектов аудита через `audit_object[]`, период проверки через `checks.start_date`, существенность через `materiality_level` |
 
@@ -454,7 +461,7 @@ flowchart TB
 ```mermaid
 flowchart TD
     INIT["init_db: Base.metadata.create_all"] --> MIGRATE["migrate_* scripts"]
-    MIGRATE --> DICT_SEED["seed_auditors / seed_check_kinds / seed_effectiveness_ratings / seed_departments"]
+    MIGRATE --> DICT_SEED["seed_auditors / seed_departments / seed_check_kinds / seed_effectiveness_ratings / seed_users"]
     DICT_SEED --> DATA_LOAD["import_seed_data or seed_demo_data"]
     DATA_LOAD --> BUCKETS["sync_check_buckets when MinIO enabled"]
     BUCKETS --> SMOKE["/status, /checks, /analytics/checks"]
@@ -463,9 +470,13 @@ flowchart TD
 | Модуль | Что делает |
 |--------|------------|
 | `init_db.py` | Создаёт таблицы по текущим SQLAlchemy-моделям |
+| `migrate_auditor_codes.py` | Добавляет `auditors.code` VARCHAR(3) NOT NULL + unique index |
+| `migrate_check_quarter.py` | Добавляет `checks.check_quarter` (1–4), backfill из `start_date` |
 | `migrate_check_short_name.py` | Добавляет `checks.short_name` |
 | `migrate_check_effectiveness.py` | Добавляет поля оценок эффективности |
 | `migrate_recommendation_fields.py` | Добавляет `sequence_number`, `description`, `materiality_level`, `indicator` |
+| `migrate_recommendation_additional_indicator.py` | Добавляет/backfill `additional_indicator` NOT NULL |
+| `migrate_recommendation_indicator_on_control.py` | Переименовывает устаревшие значения `indicator` в `на контроле` |
 | `migrate_materiality_required.py` | Приводит пустую существенность к `средний` и меняет default |
 | `migrate_recommendation_statuses.py` | Нормализует enum'ы рекомендаций |
 | `migrate_recommendation_audit_object_array.py` | Переводит `audit_object` в `TEXT[]` и добавляет GIN-индекс |

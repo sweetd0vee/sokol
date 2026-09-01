@@ -16,7 +16,8 @@ import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
 import { AnalyticsDashboardFrame } from './AnalyticsDashboardFrame';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
-import { AnalyticsSelectionSummary, filterSelectionItem } from './AnalyticsSelectionSummary';
+import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
+import { filterSelectionItem } from './filterSelectionItem';
 import {
   ChartCard,
   CHART_AXIS_TICK,
@@ -74,7 +75,7 @@ function CheckKeyAxisTick({
   y?: number | string;
   payload?: { value?: string };
   shortNameByKey: Map<string, string>;
-  orientation?: 'bottom' | 'left';
+  orientation?: 'bottom' | 'left' | 'top' | 'right';
 }) {
   const key = String(payload?.value ?? '');
   const isLeft = orientation === 'left';

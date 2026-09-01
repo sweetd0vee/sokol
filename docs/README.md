@@ -22,3 +22,4 @@
 | План развития | [../PLAN.md](../PLAN.md) |
 | Backend | [../sokol-backend/docs/README.md](../sokol-backend/docs/README.md) |
 | Frontend | [../sokol-frontend/docs/README.md](../sokol-frontend/docs/README.md) |
+| Аналитика (бизнес-описание дашбордов) | [SOKOL_Аналитика.docx](SOKOL_Аналитика.docx) |

@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
         configureServer(server) {
           const apply = () => {
             const httpServer = server.httpServer
-            if (!httpServer) {
+            if (!httpServer || !('requestTimeout' in httpServer)) {
               return
             }
             httpServer.requestTimeout = 0

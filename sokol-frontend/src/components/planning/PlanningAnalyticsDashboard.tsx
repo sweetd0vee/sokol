@@ -16,7 +16,8 @@ import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from '../analytics/AnalyticsDashboardGrid';
 import { AnalyticsDashboardFrame } from '../analytics/AnalyticsDashboardFrame';
 import { AnalyticsFilterSidebar } from '../analytics/AnalyticsFilterSidebar';
-import { AnalyticsSelectionSummary, filterSelectionItem } from '../analytics/AnalyticsSelectionSummary';
+import { AnalyticsSelectionSummary } from '../analytics/AnalyticsSelectionSummary';
+import { filterSelectionItem } from '../analytics/filterSelectionItem';
 import {
   ChartCard,
   CHART_AXIS_TICK,
