@@ -18,7 +18,8 @@ export function AppHeader() {
 
   return (
     <header className="flex h-[88px] items-center justify-end border-b border-gray-200 bg-white pl-6 pr-8">
-      <div className={`flex w-[334px] shrink-0 items-center justify-between ${LIST_CHROME_RIGHT_INSET_CLASS}`}>
+      <div className={`flex shrink-0 ${LIST_CHROME_RIGHT_INSET_CLASS}`}>
+        <div className="flex w-[334px] items-center justify-between">
         <Link
           to="/profile"
           className={`flex h-10 w-[288px] items-center gap-2 rounded-lg border px-3 text-sm transition ${
@@ -52,6 +53,7 @@ export function AppHeader() {
         >
           <LogOut size={18} />
         </button>
+        </div>
       </div>
     </header>
   );
