@@ -4,7 +4,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   LabelList,
   Legend,
   ResponsiveContainer,
@@ -23,8 +22,6 @@ import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { MaterialityMatrixChart } from './MaterialityMatrixChart';
 import {
-  CHECKS_PALETTE,
-  getValueBasedColors,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   VALUE_BLUE_SCALE,
@@ -62,7 +59,6 @@ import {
 } from '../../utils/materialityMatrix';
 
 const EMPTY_PERIOD_SERIES: RecommendationPeriodPoint[] = [];
-const EMPTY_CUMULATIVE_SERIES: RecommendationPeriodPoint[] = [];
 const EMPTY_MATERIALITY_DISTRIBUTION: never[] = [];
 const EMPTY_OBJECT_DISTRIBUTION: never[] = [];
 const EMPTY_MATERIALITY_MATRIX: never[] = [];
@@ -247,24 +243,12 @@ export function RecommendationsAnalyticsDashboard() {
 
   const summary = data?.summary ?? EMPTY_RECOMMENDATION_SUMMARY;
   const periodSeries = data?.periodSeries ?? EMPTY_PERIOD_SERIES;
-  const cumulativeSeries = data?.cumulativeSeries ?? EMPTY_CUMULATIVE_SERIES;
   const completedPeriodSeries = useMemo(
     () =>
       granularity === 'quarter'
         ? completeSelectedQuarterPeriods(periodSeries, selectedQuarterKeys)
         : periodSeries,
     [granularity, periodSeries, selectedQuarterKeys],
-  );
-  const completedCumulativeSeries = useMemo(
-    () =>
-      granularity === 'quarter'
-        ? completeSelectedQuarterPeriods(cumulativeSeries, selectedQuarterKeys)
-        : cumulativeSeries,
-    [granularity, cumulativeSeries, selectedQuarterKeys],
-  );
-  const cumulativeColors = useMemo(
-    () => getValueBasedColors(completedCumulativeSeries.map((item) => item.total), VALUE_BLUE_SCALE),
-    [completedCumulativeSeries],
   );
   const materialityDistribution = data?.materialityDistribution ?? EMPTY_MATERIALITY_DISTRIBUTION;
 
@@ -407,51 +391,8 @@ export function RecommendationsAnalyticsDashboard() {
         ),
       },
       {
-        id: 'cumulative',
-        defaultLayout: { x: 0, y: 2, w: 12, h: 3, minW: 4, minH: 2 },
-        render: () => (
-          <ChartCard
-            title="Количество рекомендаций"
-            description="Динамика количества рекомендаций за период"
-            exportSectionId="cumulative"
-            exportSelected={exportSections.isSelected('cumulative')}
-            onToggleExport={() => exportSections.toggleSection('cumulative')}
-          >
-            {completedCumulativeSeries.length === 0 ? (
-              <EmptyChart message="Нет данных" />
-            ) : (
-              <div className="h-full min-h-[13rem]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={completedCumulativeSeries}
-                    margin={{ top: 22, right: 12, left: -10, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
-                    <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
-                    <Tooltip itemStyle={{ color: '#003366' }} />
-                    <Bar dataKey="total" name="За период" fill="#003366" radius={[4, 4, 0, 0]}>
-                      {completedCumulativeSeries.map((item, index) => (
-                        <Cell key={item.key} fill={cumulativeColors[index]} />
-                      ))}
-                      <LabelList
-                        dataKey="total"
-                        position="top"
-                        fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill={CHECKS_PALETTE[0]}
-                        offset={8}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </ChartCard>
-        ),
-      },
-      {
         id: 'statusByPeriod',
-        defaultLayout: { x: 0, y: 16, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 13, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Статусы по периодам"
@@ -500,7 +441,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'materialityCombined',
-        defaultLayout: { x: 0, y: 5, w: 12, h: 3, minW: 6, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 12, h: 3, minW: 6, minH: 2 },
         render: () => (
           <ChartCard
             title="Существенность"
@@ -640,7 +581,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'materialityMatrix',
-        defaultLayout: { x: 0, y: 8, w: 12, h: 8, minW: 6, minH: 6 },
+        defaultLayout: { x: 0, y: 5, w: 12, h: 8, minW: 6, minH: 6 },
         render: () => (
           <ChartCard
             title="Матрица существенности"
@@ -662,7 +603,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'objects',
-        defaultLayout: { x: 6, y: 16, w: 6, h: 3, minW: 6, minH: 3 },
+        defaultLayout: { x: 6, y: 13, w: 6, h: 3, minW: 6, minH: 3 },
         render: () => (
           <ChartCard
             title="Карта департаментов (ТОП-10)"
@@ -685,8 +626,6 @@ export function RecommendationsAnalyticsDashboard() {
       },
     ],
     [
-      cumulativeColors,
-      completedCumulativeSeries,
       exportSections,
       isMaterialityExportSelected,
       coloredMaterialityDistribution,
