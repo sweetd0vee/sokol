@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CHART_LEGEND_STYLE } from './AnalyticsChartPrimitives';
+import { ChartLegend, CHART_LEGEND_STYLE } from './AnalyticsChartPrimitives';
 import { PALETTE } from './analyticsPalette';
 import { formatChartLegendText } from './chartLegend';
 
@@ -32,13 +32,11 @@ type CircleSlot = {
 };
 
 const VIEW_WIDTH = 200;
-const VIEW_HEIGHT = 76;
+const VIEW_HEIGHT = 68;
 const MAX_RADIUS = 19;
-const CIRCLE_Y = 42;
+const CIRCLE_Y = 34;
 const SIDE_PAD = 28;
-const LABEL_GAP = 3.8;
-const LABEL_FONT_SIZE = 6.6;
-const LABEL_COLOR = '#111827';
+const LABEL_FONT_SIZE = 4.2;
 
 function slotForIndex(index: number, count: number): CircleSlot {
   if (count <= 1) {
@@ -48,12 +46,28 @@ function slotForIndex(index: number, count: number): CircleSlot {
   return { x: SIDE_PAD + (usable * index) / (count - 1), y: CIRCLE_Y };
 }
 
-function percentLabelPosition(slot: CircleSlot, radius: number) {
-  return {
-    x: slot.x,
-    y: slot.y - radius - LABEL_GAP,
-    textAnchor: 'middle' as const,
-  };
+function contrastLabelColor(fill?: string, fallback = '#111827') {
+  if (!fill?.startsWith('#')) {
+    return fallback;
+  }
+  let raw = fill.slice(1);
+  if (raw.length === 3) {
+    raw = raw
+      .split('')
+      .map((char) => char + char)
+      .join('');
+  }
+  if (raw.length < 6) {
+    return fallback;
+  }
+  const red = Number.parseInt(raw.slice(0, 2), 16);
+  const green = Number.parseInt(raw.slice(2, 4), 16);
+  const blue = Number.parseInt(raw.slice(4, 6), 16);
+  if ([red, green, blue].some((channel) => Number.isNaN(channel))) {
+    return fallback;
+  }
+  const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+  return luminance > 0.62 ? '#111827' : '#ffffff';
 }
 
 export function FocusableSquareCirclesChart({
@@ -62,7 +76,7 @@ export function FocusableSquareCirclesChart({
   labelMode = 'both',
   legendPercentFirst = false,
   legendFontSize = CHART_LEGEND_STYLE.fontSize,
-  legendFontWeight = 400,
+  legendFontWeight = CHART_LEGEND_STYLE.fontWeight,
 }: SquareCirclesChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -109,7 +123,6 @@ export function FocusableSquareCirclesChart({
             const isActive = activeIndex === index;
             const fill = item.color ?? palette[index % palette.length];
             const roundedPercent = Math.round(percent);
-            const label = percentLabelPosition(slot, radius);
             const tooltip = formatChartLegendText({
               name: item.name,
               value: item.value,
@@ -141,11 +154,11 @@ export function FocusableSquareCirclesChart({
                   <title>{tooltip}</title>
                 </circle>
                 <text
-                  x={label.x}
-                  y={label.y}
-                  fill={LABEL_COLOR}
-                  textAnchor={label.textAnchor}
-                  dominantBaseline="auto"
+                  x={slot.x}
+                  y={slot.y}
+                  fill={contrastLabelColor(fill)}
+                  textAnchor="middle"
+                  dominantBaseline="central"
                   fontSize={LABEL_FONT_SIZE}
                   fontWeight={700}
                   style={{ pointerEvents: 'none' }}
@@ -158,34 +171,15 @@ export function FocusableSquareCirclesChart({
         </svg>
       </div>
 
-      <div
-        className="mx-auto flex w-full max-w-full shrink-0 flex-wrap items-center justify-center gap-x-4 gap-y-1 px-2 pb-1 pt-0.5"
-        style={{
-          fontSize: legendFontSize,
-          fontWeight: legendFontWeight,
-          paddingTop: 4,
-        }}
-      >
-        {legendItems.map((item, index) => {
-          return (
-            <div
-              key={`${item.name}-${index}`}
-              className="grid shrink-0 grid-cols-[14px_auto] items-center gap-x-2 whitespace-nowrap"
-            >
-              <span
-                className="box-border block h-3.5 w-3.5 shrink-0 rounded-full"
-                style={{
-                  backgroundColor: item.color,
-                }}
-                aria-hidden
-              />
-              <span className="text-left text-slate-900" style={{ fontWeight: legendFontWeight }}>
-                {labelMode === 'both' ? `${item.name}: ${item.value}` : item.name}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      <ChartLegend
+        fontSize={legendFontSize}
+        fontWeight={legendFontWeight}
+        items={legendItems.map((item, index) => ({
+          key: `${item.name}-${index}`,
+          color: item.color,
+          label: labelMode === 'both' ? `${item.name}: ${item.value}` : item.name,
+        }))}
+      />
     </div>
   );
 }

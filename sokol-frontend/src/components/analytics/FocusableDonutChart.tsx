@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { getValueBasedColors, PALETTE } from './analyticsPalette';
-import { CHART_LEGEND_STYLE, CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
+import { ChartLegend, CHART_LEGEND_STYLE, CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { formatChartLegendText } from './chartLegend';
 
 export type DonutDatum = {
@@ -29,7 +29,7 @@ type FocusableDonutChartProps = {
   legendFontWeight?: number;
   /** When true, legend shows percent first and absolute value in parentheses. */
   legendPercentFirst?: boolean;
-  /** Ring (doughnut) layout: hollow center, white gaps, labels outside. */
+  /** Ring (doughnut) layout: hollow center, white gaps, percent labels on the ring. */
   variant?: 'pie' | 'ring';
   /** Color of in-slice percent / value labels. Defaults to white. */
   valueLabelColor?: string;
@@ -49,60 +49,28 @@ type LabelProps = {
   valueLabelColor?: string;
 };
 
-function RingSegmentLabels({
-  cx = 0,
-  cy = 0,
-  midAngle = 0,
-  innerRadius = 0,
-  outerRadius = 0,
-  percent = 0,
-  name,
-  payload,
-}: LabelProps & { name?: string }) {
-  if (percent < 0.04) {
-    return null;
+function contrastLabelColor(fill?: string, fallback = '#111827') {
+  if (!fill?.startsWith('#')) {
+    return fallback;
   }
-  const RADIAN = Math.PI / 180;
-  const cos = Math.cos(-midAngle * RADIAN);
-  const sin = Math.sin(-midAngle * RADIAN);
-  const nameRadius = outerRadius + 22;
-  const nameX = cx + nameRadius * cos;
-  const nameY = cy + nameRadius * sin;
-  const nameAnchor = nameX > cx ? 'start' : 'end';
-  const label = name ?? payload?.name ?? '';
-  const percentLabel = `${Math.round(percent * 100)}%`;
-  const percentRadius = innerRadius + (outerRadius - innerRadius) * 0.5;
-  const percentX = cx + percentRadius * cos;
-  const percentY = cy + percentRadius * sin;
-
-  return (
-    <g style={{ pointerEvents: 'none' }}>
-      <text
-        x={nameX}
-        y={nameY}
-        fill="#111827"
-        textAnchor={nameAnchor}
-        dominantBaseline="central"
-        fontSize={15}
-        fontWeight={600}
-      >
-        {label}
-      </text>
-      {percent >= 0.06 ? (
-        <text
-          x={percentX}
-          y={percentY}
-          fill="#111827"
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize={14}
-          fontWeight={700}
-        >
-          {percentLabel}
-        </text>
-      ) : null}
-    </g>
-  );
+  let raw = fill.slice(1);
+  if (raw.length === 3) {
+    raw = raw
+      .split('')
+      .map((char) => char + char)
+      .join('');
+  }
+  if (raw.length < 6) {
+    return fallback;
+  }
+  const red = Number.parseInt(raw.slice(0, 2), 16);
+  const green = Number.parseInt(raw.slice(2, 4), 16);
+  const blue = Number.parseInt(raw.slice(4, 6), 16);
+  if ([red, green, blue].some((channel) => Number.isNaN(channel))) {
+    return fallback;
+  }
+  const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+  return luminance > 0.62 ? '#111827' : '#ffffff';
 }
 
 function PieValueLabel({
@@ -122,7 +90,8 @@ function PieValueLabel({
     return null;
   }
   const RADIAN = Math.PI / 180;
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.62;
+  const radiusRatio = innerRadius > 0 ? 0.5 : 0.62;
+  const radius = innerRadius + (outerRadius - innerRadius) * radiusRatio;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   const labelColor = valueLabelColor;
@@ -184,7 +153,7 @@ export function FocusableDonutChart({
   legendLabelMode,
   showValueLabels = true,
   legendFontSize = CHART_LEGEND_STYLE.fontSize,
-  legendFontWeight = 400,
+  legendFontWeight = CHART_LEGEND_STYLE.fontWeight,
   legendPercentFirst = false,
   variant = 'pie',
   valueLabelColor = '#ffffff',
@@ -216,7 +185,7 @@ export function FocusableDonutChart({
     <div className={`flex min-h-0 flex-col ${containerClassName}`}>
       <div className="min-h-0 min-w-0 flex-1">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart margin={isRing ? { top: 28, right: 96, bottom: 28, left: 96 } : { top: 8, right: 8, bottom: 8, left: 8 }}>
+          <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
           <Pie
             data={pieData}
             dataKey="value"
@@ -231,18 +200,23 @@ export function FocusableDonutChart({
             stroke={isRing ? '#ffffff' : 'none'}
             label={
               showValueLabels
-                ? isRing
-                  ? (props) => <RingSegmentLabels {...props} />
-                  : (props) => (
-                      <PieValueLabel {...props} labelMode={labelMode} valueLabelColor={valueLabelColor} />
-                    )
+                ? (props) => (
+                    <PieValueLabel
+                      {...props}
+                      labelMode={isRing ? 'percent' : labelMode}
+                      valueLabelColor={
+                        isRing
+                          ? contrastLabelColor(
+                              props.payload?.color ??
+                                (typeof props.fill === 'string' ? props.fill : undefined),
+                            )
+                          : valueLabelColor
+                      }
+                    />
+                  )
                 : false
             }
-            labelLine={
-              isRing
-                ? { stroke: '#cbd5e1', strokeWidth: 1 }
-                : false
-            }
+            labelLine={false}
             isAnimationActive={false}
             onMouseEnter={(_, index) => setActiveIndex(index)}
             onMouseLeave={() => setActiveIndex(null)}
@@ -290,39 +264,18 @@ export function FocusableDonutChart({
         </ResponsiveContainer>
       </div>
       {showLegend ? (
-        <ul
-          className="recharts-default-legend mx-auto flex w-max max-w-full shrink-0 flex-col items-start gap-y-1 px-3 pb-1 pt-0.5"
-          style={{
-            marginTop: 0,
-            marginBottom: 0,
-            paddingTop: 4,
-            listStyle: 'none',
-            fontSize: legendFontSize,
-            fontWeight: legendFontWeight,
-          }}
-        >
-          {chartData.map((item) => (
-            <li
-              key={item.name}
-              className="recharts-legend-item grid grid-cols-[10px_auto] items-center gap-x-2"
-              style={{ margin: 0 }}
-            >
-              <span
-                className="recharts-legend-icon"
-                style={{
-                  display: 'block',
-                  width: 9,
-                  height: 9,
-                  borderRadius: 9,
-                  backgroundColor: item.color,
-                }}
-              />
-              <span className="recharts-legend-item-text whitespace-nowrap" style={{ color: item.color }}>
-                {formatLegendText(item)}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <ChartLegend
+          fontSize={legendFontSize}
+          fontWeight={legendFontWeight}
+          items={chartData.map((item, index) => ({
+            key: `${item.name}-${index}`,
+            color: item.color,
+            label:
+              isRing && resolvedLegendLabelMode === 'both'
+                ? `${item.name}: ${item.value}`
+                : formatLegendText(item),
+          }))}
+        />
       ) : null}
     </div>
   );

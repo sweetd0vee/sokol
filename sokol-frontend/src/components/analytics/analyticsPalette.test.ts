@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyValueBasedColors,
+  colorWithAlpha,
+  kpiAccentStyle,
   lastScaleColor,
   MONITORING_ADDITIONAL_STATUS_COLORS,
   MONITORING_BAR_BLUE_SCALE,
@@ -83,5 +85,20 @@ describe('RECOMMENDATIONS_MATERIALITY_CHART_COLORS', () => {
     expect(RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий).toBe(MONITORING_STATUS_COLORS.completed);
     expect(RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний).toBe(MONITORING_STATUS_COLORS.in_progress);
     expect(RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий).toBe(MONITORING_STATUS_COLORS.unresolved);
+  });
+});
+
+describe('kpiAccentStyle', () => {
+  it('washes emerald as a thin transparent teal and keeps the swatch for text', () => {
+    const style = kpiAccentStyle(MONITORING_STATUS_COLORS.completed);
+    expect(style.backgroundColor).toBe(colorWithAlpha(MONITORING_STATUS_COLORS.completed, 0.1));
+    expect(style.color).toBe(MONITORING_STATUS_COLORS.completed);
+  });
+
+  it('keeps pale yellow / pink fills a bit stronger so they stay visible', () => {
+    const yellow = kpiAccentStyle(MONITORING_STATUS_COLORS.in_progress);
+    const pink = kpiAccentStyle(MONITORING_STATUS_COLORS.unresolved);
+    expect(yellow.backgroundColor).toBe(colorWithAlpha(MONITORING_STATUS_COLORS.in_progress, 0.28));
+    expect(pink.backgroundColor).toBe(colorWithAlpha(MONITORING_STATUS_COLORS.unresolved, 0.28));
   });
 });

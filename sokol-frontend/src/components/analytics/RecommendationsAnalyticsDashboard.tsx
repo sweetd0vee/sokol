@@ -23,11 +23,11 @@ import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { MaterialityMatrixChart } from './MaterialityMatrixChart';
 import {
+  CHECKS_PALETTE,
   getValueBasedColors,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
-  RECOMMENDATIONS_PALETTE,
-  VALUE_GRAY_SCALE,
+  VALUE_BLUE_SCALE,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
@@ -263,7 +263,7 @@ export function RecommendationsAnalyticsDashboard() {
     [granularity, cumulativeSeries, selectedQuarterKeys],
   );
   const cumulativeColors = useMemo(
-    () => getValueBasedColors(completedCumulativeSeries.map((item) => item.total), VALUE_GRAY_SCALE),
+    () => getValueBasedColors(completedCumulativeSeries.map((item) => item.total), VALUE_BLUE_SCALE),
     [completedCumulativeSeries],
   );
   const materialityDistribution = data?.materialityDistribution ?? EMPTY_MATERIALITY_DISTRIBUTION;
@@ -429,8 +429,8 @@ export function RecommendationsAnalyticsDashboard() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
                     <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
-                    <Tooltip />
-                    <Bar dataKey="total" name="За период" fill={RECOMMENDATIONS_PALETTE[0]} radius={[4, 4, 0, 0]}>
+                    <Tooltip itemStyle={{ color: '#003366' }} />
+                    <Bar dataKey="total" name="За период" fill="#003366" radius={[4, 4, 0, 0]}>
                       {completedCumulativeSeries.map((item, index) => (
                         <Cell key={item.key} fill={cumulativeColors[index]} />
                       ))}
@@ -438,7 +438,7 @@ export function RecommendationsAnalyticsDashboard() {
                         dataKey="total"
                         position="top"
                         fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill="#111827"
+                        fill={CHECKS_PALETTE[0]}
                         offset={8}
                       />
                     </Bar>
@@ -672,7 +672,7 @@ export function RecommendationsAnalyticsDashboard() {
             ) : (
               <FocusableTreemapChart
                 data={objectDistributionTop}
-                palette={VALUE_GRAY_SCALE}
+                palette={VALUE_BLUE_SCALE}
                 colorByValue
               />
             )}

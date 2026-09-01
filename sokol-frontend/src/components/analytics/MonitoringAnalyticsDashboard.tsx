@@ -285,11 +285,32 @@ export function MonitoringAnalyticsDashboard() {
         render: () => (
           <ChartCard title="Итого" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')}>
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
-              <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
-              <KpiCard label="В работе" value={summary.byStatus.in_progress} tone="amber" />
-              <KpiCard label="На контроле" value={summary.byStatus.on_control} tone="slate" />
-              <KpiCard label="Срок нарушен" value={summary.byAdditional.deadline_violated} tone="red" />
-              <KpiCard label="Доля просроченных" value={summary.violationRate} suffix="%" tone="red" />
+              <KpiCard
+                label="Исполнено"
+                value={summary.byStatus.completed}
+                accentColor={MONITORING_STATUS_COLORS.completed}
+              />
+              <KpiCard
+                label="В работе"
+                value={summary.byStatus.in_progress}
+                accentColor={MONITORING_STATUS_COLORS.in_progress}
+              />
+              <KpiCard
+                label="На контроле"
+                value={summary.byStatus.on_control}
+                accentColor={MONITORING_STATUS_COLORS.on_control}
+              />
+              <KpiCard
+                label="Срок нарушен"
+                value={summary.byAdditional.deadline_violated}
+                accentColor={MONITORING_ADDITIONAL_STATUS_COLORS.deadline_violated}
+              />
+              <KpiCard
+                label="Доля просроченных"
+                value={summary.violationRate}
+                suffix="%"
+                accentColor={MONITORING_ADDITIONAL_STATUS_COLORS.deadline_violated}
+              />
             </div>
           </ChartCard>
         ),
@@ -331,7 +352,7 @@ export function MonitoringAnalyticsDashboard() {
               <FocusableDonutChart
                 data={coloredAdditionalStatusDistribution}
                 variant="ring"
-                showLegend={false}
+                labelMode="both"
               />
             ) : (
               <EmptyChart message="Нет данных" />

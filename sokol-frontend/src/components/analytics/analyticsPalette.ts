@@ -157,6 +157,32 @@ function hexToRgb(color: string) {
   };
 }
 
+export function colorWithAlpha(hex: string, alpha: number) {
+  const { red, green, blue } = hexToRgb(hex);
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+/**
+ * Transparent KPI chip styles derived from a chart swatch.
+ * Light yellow / pink / grey fills stay a bit stronger so they remain visible;
+ * saturated emerald uses a thinner wash.
+ */
+export function kpiAccentStyle(hex: string): {
+  backgroundColor: string;
+  borderColor: string;
+  color: string;
+} {
+  const { red, green, blue } = hexToRgb(hex);
+  const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+  const fillAlpha = luminance > 0.7 ? 0.28 : 0.1;
+  const borderAlpha = luminance > 0.7 ? 0.48 : 0.26;
+  return {
+    backgroundColor: colorWithAlpha(hex, fillAlpha),
+    borderColor: colorWithAlpha(hex, borderAlpha),
+    color: luminance > 0.55 ? interpolateColor(hex, '#0F172A', 0.55) : hex,
+  };
+}
+
 function channelToHex(value: number) {
   return Math.round(value).toString(16).padStart(2, '0');
 }

@@ -6,13 +6,14 @@ import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { registerDashboardChart } from '../../utils/dashboardChartRegistry';
+import { kpiAccentStyle } from './analyticsPalette';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
 /** Shared Recharts typography for analytics dashboards. */
 export const CHART_AXIS_TICK = { fontSize: 15 } as const;
 export const CHART_CATEGORY_AXIS_TICK = { fontSize: 14 } as const;
-export const CHART_LEGEND_STYLE = { fontSize: 15 } as const;
+export const CHART_LEGEND_STYLE = { fontSize: 15, fontWeight: 600, color: '#000000' } as const;
 export const CHART_VALUE_LABEL_SIZE = 14;
 export const CHART_TOOLTIP_STYLE = {
   fontSize: 14,
@@ -20,6 +21,44 @@ export const CHART_TOOLTIP_STYLE = {
   border: '1px solid #e2e8f0',
   boxShadow: '0 8px 20px rgba(15, 23, 42, 0.08)',
 } as const;
+
+export function ChartLegend({
+  items,
+  fontSize = CHART_LEGEND_STYLE.fontSize,
+  fontWeight = CHART_LEGEND_STYLE.fontWeight,
+}: {
+  items: Array<{ key?: string; color?: string; label: string }>;
+  fontSize?: number;
+  fontWeight?: number;
+}) {
+  return (
+    <ul
+      className="mx-auto flex w-fit max-w-full list-none flex-col items-start gap-y-1 px-2 pb-1 pt-1"
+      style={{
+        fontFamily: 'inherit',
+        fontSize,
+        fontWeight,
+        color: CHART_LEGEND_STYLE.color,
+      }}
+    >
+      {items.map((item, index) => (
+        <li
+          key={item.key ?? `${item.label}-${index}`}
+          className="grid grid-cols-[14px_auto] items-center gap-x-2 whitespace-nowrap"
+        >
+          <span
+            className="box-border block h-3.5 w-3.5 shrink-0 rounded-full"
+            style={{ backgroundColor: item.color }}
+            aria-hidden
+          />
+          <span className="text-left leading-tight" style={{ color: CHART_LEGEND_STYLE.color }}>
+            {item.label}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function slugifyFilename(value: string) {
   return (
@@ -464,12 +503,15 @@ export function KpiCard({
   hint,
   suffix,
   tone = 'blue',
+  accentColor,
 }: {
   label: string;
   value: number;
   hint?: string;
   suffix?: string;
   tone?: 'blue' | 'green' | 'red' | 'amber' | 'violet' | 'slate' | 'lilac' | 'indigo' | 'fuchsia' | 'purple';
+  /** Chart swatch hex; when set, overrides `tone` with a more transparent wash. */
+  accentColor?: string;
 }) {
   const tones = {
     blue: 'border-blue-200 bg-blue-50 text-blue-900 ',
@@ -493,7 +535,10 @@ export function KpiCard({
   };
 
   return (
-    <div className={`flex min-h-[5rem] items-center justify-between gap-2 rounded-lg border px-3 py-3.5 ${tones[tone]}`}>
+    <div
+      className={`flex min-h-[5rem] items-center justify-between gap-2 rounded-lg border px-3 py-3.5 ${accentColor ? '' : tones[tone]}`}
+      style={accentColor ? kpiAccentStyle(accentColor) : undefined}
+    >
       <div className="min-w-0">
         <p className="truncate text-sm leading-none opacity-80">{label}</p>
         {hint ? <p className="mt-0.5 truncate text-xs leading-none opacity-60">{hint}</p> : null}
