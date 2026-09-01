@@ -227,6 +227,17 @@ def _pick(items: tuple[str, ...], rng: random.Random) -> str:
     return items[rng.randrange(len(items))]
 
 
+def _roll_deadline_extension_count(status: str, rng: random.Random) -> int:
+    """Перенос срока — редкое явление; повторный перенос почти не встречается."""
+    if status == "completed":
+        return 2 if rng.random() < 0.008 else 1 if rng.random() < 0.045 else 0
+    if status == "on_control":
+        return 2 if rng.random() < 0.006 else 1 if rng.random() < 0.04 else 0
+    if status == "unresolved":
+        return 2 if rng.random() < 0.015 else 1 if rng.random() < 0.07 else 0
+    return 2 if rng.random() < 0.005 else 1 if rng.random() < 0.03 else 0
+
+
 def build_recommendation_closure_fields(
     *,
     status: str,
@@ -234,30 +245,32 @@ def build_recommendation_closure_fields(
     deadline: date,
     index: int,
     rng: random.Random | None = None,
+    extension_count: int | None = None,
 ) -> dict:
     """Даты и комментарии для «Срок исполнения», «Перенос срока» и «Снять с контроля»."""
     rng = rng or random.Random(10_000 + index)
 
     if status == "completed":
-        extension_count = 2 if rng.random() < 0.11 else 1 if rng.random() < 0.36 else 0
         fill_completion = True
         fill_removal = True
         closure_pool = CLOSURE_INFORMATION_COMMENTS
     elif status == "on_control":
-        extension_count = 2 if rng.random() < 0.09 else 1 if rng.random() < 0.31 else 0
         fill_completion = rng.random() < 0.55
         fill_removal = rng.random() < 0.45
         closure_pool = CLOSURE_INFORMATION_COMMENTS if fill_completion else IN_PROGRESS_CLOSURE_COMMENTS
     elif status == "unresolved":
-        extension_count = 2 if rng.random() < 0.18 else 1 if rng.random() < 0.45 else 0
         fill_completion = False
         fill_removal = rng.random() < 0.12
         closure_pool = UNRESOLVED_CLOSURE_COMMENTS
     else:
-        extension_count = 2 if rng.random() < 0.1 else 1 if rng.random() < 0.39 else 0
         fill_completion = rng.random() < 0.35
         fill_removal = rng.random() < 0.12
         closure_pool = IN_PROGRESS_CLOSURE_COMMENTS if not fill_completion else CLOSURE_INFORMATION_COMMENTS
+
+    if extension_count is None:
+        extension_count = _roll_deadline_extension_count(status, rng)
+    else:
+        extension_count = max(0, min(2, int(extension_count)))
 
     extension_1_date = _add_days(deadline, rng.randint(14, 40)) if extension_count >= 1 else None
     extension_2_date = (

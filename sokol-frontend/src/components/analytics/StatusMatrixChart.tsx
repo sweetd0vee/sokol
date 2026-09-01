@@ -12,13 +12,18 @@ import {
   type StatusMatrixCountSortConfig,
   type StatusMatrixRow,
 } from '../../utils/statusMatrix';
-import { applyValueBasedColors } from './analyticsPalette';
+import { MONITORING_STATUS_COLORS } from './analyticsPalette';
 import { MatrixChartShell, MatrixCountSortHeader, MatrixLegendFooter } from './matrixChartChrome';
 
 type StatusMatrixChartProps = {
   rows: StatusMatrixRow[];
   onSortConfigChange?: (sortConfig: StatusMatrixCountSortConfig) => void;
 };
+
+const MONITORING_STATUS_MATRIX_LEGEND = STATUS_MATRIX_LEGEND.map((item) => ({
+  ...item,
+  color: MONITORING_STATUS_COLORS[item.status],
+}));
 
 export function StatusMatrixChart({ rows, onSortConfigChange }: StatusMatrixChartProps) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
@@ -28,16 +33,6 @@ export function StatusMatrixChart({ rows, onSortConfigChange }: StatusMatrixChar
   const hoveredRow = rows.find((row) => row.key === hoveredKey) ?? null;
   const totals = useMemo(() => buildStatusMatrixColumnTotals(rows), [rows]);
   const grandTotal = useMemo(() => statusMatrixGrandTotal(rows), [rows]);
-  const legend = useMemo(
-    () =>
-      applyValueBasedColors(
-        STATUS_MATRIX_LEGEND.map((item) => ({
-          ...item,
-          value: totals[item.key],
-        })),
-      ),
-    [totals],
-  );
   const sortedRows = useMemo(
     () => sortStatusMatrixRows(rows, sortConfig),
     [rows, sortConfig],
@@ -53,7 +48,7 @@ export function StatusMatrixChart({ rows, onSortConfigChange }: StatusMatrixChar
       footer={(
         <MatrixLegendFooter
           totalText={formatStatusChecksCount(rows.length)}
-          legend={legend}
+          legend={MONITORING_STATUS_MATRIX_LEGEND}
         />
       )}
     >

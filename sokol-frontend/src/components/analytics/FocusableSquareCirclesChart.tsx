@@ -35,17 +35,18 @@ type CircleSlot = {
 
 const VIEW_WIDTH = 140;
 const VIEW_HEIGHT = 100;
-const MAX_RADIUS = 17;
+const MAX_RADIUS = 18;
 const LABEL_GAP = 4.2;
 const LABEL_FONT_SIZE = 6.6;
 const LABEL_COLOR = '#111827';
 
 // Largest → smallest: top-left, bottom-left, top-right, bottom-right.
+// Center gap of 38 keeps max-size circles from overlapping while packing the cluster.
 const TARGET_SLOTS: CircleSlot[] = [
-  { x: 50, y: 30, outward: 'left' },
-  { x: 50, y: 72, outward: 'left' },
-  { x: 96, y: 30, outward: 'right' },
-  { x: 96, y: 72, outward: 'right' },
+  { x: 53, y: 33, outward: 'left' },
+  { x: 53, y: 71, outward: 'left' },
+  { x: 91, y: 33, outward: 'right' },
+  { x: 91, y: 71, outward: 'right' },
 ];
 
 function percentLabelPosition(slot: CircleSlot, radius: number) {

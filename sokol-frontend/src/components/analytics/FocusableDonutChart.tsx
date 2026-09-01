@@ -222,7 +222,7 @@ export function FocusableDonutChart({
             outerRadius={isRing ? '70%' : '72%'}
             startAngle={isRing ? 90 : 0}
             endAngle={isRing ? -270 : 360}
-            paddingAngle={isRing ? 1.5 : 0}
+            paddingAngle={isRing ? 3 : 0}
             stroke={isRing ? '#ffffff' : 'none'}
             label={
               showValueLabels
@@ -250,7 +250,7 @@ export function FocusableDonutChart({
                   fill={entry.color}
                   fillOpacity={isDimmed ? 0.32 : 1}
                   stroke={strokeColor}
-                  strokeWidth={isRing ? 3 : (isActive ? 1 : 0)}
+                  strokeWidth={isRing ? 5 : (isActive ? 1 : 0)}
                   strokeOpacity={1}
                   style={{
                     cursor: 'pointer',

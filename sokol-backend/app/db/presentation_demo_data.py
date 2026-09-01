@@ -261,12 +261,26 @@ def _recommendation_status(rng: random.Random, deadline: date, today: date) -> t
     return status, additional
 
 
+def _check_deadline_extension_sequences(rec_count: int, rng: random.Random) -> dict[int, int]:
+    """Переносы бывают не во всех проверках: у выбранных — 1–3 рекомендации, обычно один перенос."""
+    if rec_count < 1 or rng.random() >= 0.28:
+        return {}
+    extended_count = rng.choices([1, 2, 3], weights=[55, 32, 13], k=1)[0]
+    sequences = rng.sample(range(1, rec_count + 1), k=min(extended_count, rec_count))
+    assigned: dict[int, int] = {}
+    for sequence in sequences:
+        # Повторный перенос только у одиночной рекомендации в проверке, иначе столбцы снова раздуваются.
+        assigned[sequence] = 2 if len(sequences) == 1 and rng.random() < 0.18 else 1
+    return assigned
+
+
 def build_recommendations(checks: list[dict], rng: random.Random, today: date) -> list[dict]:
     rows: list[dict] = []
     materiality_weights = [("низкий", 28), ("средний", 48), ("высокий", 24)]
 
     for check in checks:
         rec_count = rng.randint(30, 50)
+        extension_by_sequence = _check_deadline_extension_sequences(rec_count, rng)
         for sequence in range(1, rec_count + 1):
             materiality = rng.choices([m for m, _ in materiality_weights], weights=[w for _, w in materiality_weights], k=1)[0]
             topic = rng.choice(TOPICS)
@@ -281,6 +295,7 @@ def build_recommendations(checks: list[dict], rng: random.Random, today: date) -
                 deadline=deadline,
                 index=len(rows) + 1,
                 rng=rng,
+                extension_count=extension_by_sequence.get(sequence, 0),
             )
             if status == "completed" and closure["actual_completion_date"] and closure["actual_completion_date"] > deadline:
                 additional_status = "deadline_violated"
@@ -358,4 +373,14 @@ def generate_presentation_dataset(
     print(f"Rec statuses: {dict(Counter(row['status'] for row in recommendations))}")
     dual = sum(1 for row in recommendations if ";" in row["audit_object"])
     print(f"Dual-department recommendations: {dual}")
+    recs_with_extensions = [
+        row for row in recommendations if row.get("deadline_extensions")
+    ]
+    checks_with_extensions = {row["serial_number"] for row in recs_with_extensions}
+    extension_events = sum(len(row.get("deadline_extensions") or []) for row in recs_with_extensions)
+    print(
+        "Deadline extensions: "
+        f"{extension_events} events on {len(recs_with_extensions)}/{len(recommendations)} recs, "
+        f"{len(checks_with_extensions)}/{len(checks)} checks"
+    )
     return checks, recommendations

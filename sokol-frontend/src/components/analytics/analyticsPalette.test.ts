@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   applyValueBasedColors,
   lastScaleColor,
+  MONITORING_ADDITIONAL_STATUS_COLORS,
   MONITORING_BAR_BLUE_SCALE,
+  MONITORING_STATUS_COLORS,
   MONITORING_VALUE_SCALE,
 } from './analyticsPalette';
 
@@ -52,5 +54,26 @@ describe('applyValueBasedColors', () => {
     );
     expect(colored.find((item) => item.name === 'low')?.color.toUpperCase()).toBe('#4580D8');
     expect(MONITORING_BAR_BLUE_SCALE).toContain('#0E7490');
+  });
+});
+
+describe('MONITORING_STATUS_COLORS', () => {
+  it('keeps teal and dusty lilac, and uses grey / gold for the middle statuses', () => {
+    expect(MONITORING_STATUS_COLORS.completed).toBe('#0E7490');
+    expect(MONITORING_STATUS_COLORS.unresolved).toBe('#DAAAD1');
+    expect(MONITORING_STATUS_COLORS.on_control).toBe('#8D939A');
+    expect(MONITORING_STATUS_COLORS.in_progress).toBe('#E0C44C');
+  });
+});
+
+describe('MONITORING_ADDITIONAL_STATUS_COLORS', () => {
+  it('reuses Statuses-chart shades: violated pink, on time teal, on control grey', () => {
+    expect(MONITORING_ADDITIONAL_STATUS_COLORS.deadline_violated).toBe(
+      MONITORING_STATUS_COLORS.unresolved,
+    );
+    expect(MONITORING_ADDITIONAL_STATUS_COLORS.on_time).toBe(MONITORING_STATUS_COLORS.completed);
+    expect(MONITORING_ADDITIONAL_STATUS_COLORS.on_control).toBe(
+      MONITORING_STATUS_COLORS.on_control,
+    );
   });
 });

@@ -101,6 +101,27 @@ export const MONITORING_VALUE_SCALE = [
 ] as const;
 
 /**
+ * Semantic colors for Monitoring status circles.
+ * Teal and dusty lilac stay as-is; in-progress is the KPI yellow (#FBEB8D) darkened; on-control is a cool grey.
+ */
+export const MONITORING_STATUS_COLORS = {
+  completed: '#0E7490',
+  in_progress: '#E0C44C',
+  on_control: '#8D939A',
+  unresolved: '#DAAAD1',
+} as const;
+
+/**
+ * Additional-status donut uses the same shades as the Statuses chart:
+ * on time → teal, deadline violated → dusty lilac, on control → grey.
+ */
+export const MONITORING_ADDITIONAL_STATUS_COLORS = {
+  on_time: MONITORING_STATUS_COLORS.completed,
+  deadline_violated: MONITORING_STATUS_COLORS.unresolved,
+  on_control: MONITORING_STATUS_COLORS.on_control,
+} as const;
+
+/**
  * Sequential blue scale for the Monitoring "deadline extensions" bars.
  * Small values stay a saturated mid-blue (not ice). Large values go navy,
  * with teal #0E7490 in the darker half of the ramp.

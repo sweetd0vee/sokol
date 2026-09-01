@@ -24,7 +24,13 @@ import {
   EmptyChart,
   KpiCard,
 } from './AnalyticsChartPrimitives';
-import { applyValueBasedColors, lastScaleColor, MONITORING_BAR_BLUE_SCALE } from './analyticsPalette';
+import {
+  applyValueBasedColors,
+  lastScaleColor,
+  MONITORING_ADDITIONAL_STATUS_COLORS,
+  MONITORING_BAR_BLUE_SCALE,
+  MONITORING_STATUS_COLORS,
+} from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
@@ -187,33 +193,29 @@ export function MonitoringAnalyticsDashboard() {
 
   const coloredAdditionalStatusDistribution = useMemo(
     () =>
-      applyValueBasedColors(
-        completeNamedDistribution(
-          additionalStatusDistribution,
-          [
-            { value: 'on_control', label: 'На контроле' },
-            { value: 'deadline_violated', label: 'Срок нарушен' },
-            { value: 'on_time', label: 'В срок' },
-          ],
-          () => '',
-        ),
+      completeNamedDistribution(
+        additionalStatusDistribution,
+        [
+          { value: 'on_control', label: 'На контроле' },
+          { value: 'deadline_violated', label: 'Срок нарушен' },
+          { value: 'on_time', label: 'В срок' },
+        ],
+        (status) => MONITORING_ADDITIONAL_STATUS_COLORS[status],
       ),
     [additionalStatusDistribution],
   );
 
   const coloredStatusDistribution = useMemo(
     () =>
-      applyValueBasedColors(
-        completeNamedDistribution(
-          statusDistribution,
-          [
-            { value: 'completed', label: 'Исполнено' },
-            { value: 'unresolved', label: 'Не решено' },
-            { value: 'in_progress', label: 'В процессе' },
-            { value: 'on_control', label: 'На контроле' },
-          ],
-          () => '',
-        ),
+      completeNamedDistribution(
+        statusDistribution,
+        [
+          { value: 'completed', label: 'Исполнено' },
+          { value: 'unresolved', label: 'Не решено' },
+          { value: 'in_progress', label: 'В процессе' },
+          { value: 'on_control', label: 'На контроле' },
+        ],
+        (status) => MONITORING_STATUS_COLORS[status],
       ),
     [statusDistribution],
   );
