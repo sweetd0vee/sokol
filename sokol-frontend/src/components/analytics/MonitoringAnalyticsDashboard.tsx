@@ -23,7 +23,7 @@ import {
   EmptyChart,
   KpiCard,
 } from './AnalyticsChartPrimitives';
-import { CHECKS_PALETTE, getValueBasedColors } from './analyticsPalette';
+import { applyValueBasedColors, MONITORING_BAR_BLUE_SCALE } from './analyticsPalette';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
 import { StatusMatrixChart } from './StatusMatrixChart';
@@ -32,11 +32,7 @@ import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../.
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
-import {
-  getRecommendationAdditionalStatusColor,
-  getRecommendationStatusColor,
-  type PeriodGranularity,
-} from '../../utils/recommendationAnalytics';
+import { type PeriodGranularity } from '../../utils/recommendationAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 import { completeNamedDistribution, distributionHasValues } from '../../utils/analyticsDistribution';
 
@@ -174,35 +170,39 @@ export function MonitoringAnalyticsDashboard() {
     [deadlineExtensionsByCheck],
   );
   const deadlineExtensionColors = useMemo(
-    () => getValueBasedColors(deadlineExtensionsByCheck.map((item) => item.value)),
+    () => applyValueBasedColors(deadlineExtensionsByCheck, MONITORING_BAR_BLUE_SCALE).map((item) => item.color),
     [deadlineExtensionsByCheck],
   );
 
   const coloredAdditionalStatusDistribution = useMemo(
     () =>
-      completeNamedDistribution(
-        additionalStatusDistribution,
-        [
-          { value: 'on_control', label: 'На контроле' },
-          { value: 'deadline_violated', label: 'Срок нарушен' },
-          { value: 'on_time', label: 'В срок' },
-        ],
-        getRecommendationAdditionalStatusColor,
+      applyValueBasedColors(
+        completeNamedDistribution(
+          additionalStatusDistribution,
+          [
+            { value: 'on_control', label: 'На контроле' },
+            { value: 'deadline_violated', label: 'Срок нарушен' },
+            { value: 'on_time', label: 'В срок' },
+          ],
+          () => '',
+        ),
       ),
     [additionalStatusDistribution],
   );
 
   const coloredStatusDistribution = useMemo(
     () =>
-      completeNamedDistribution(
-        statusDistribution,
-        [
-          { value: 'completed', label: 'Исполнено' },
-          { value: 'unresolved', label: 'Не решено' },
-          { value: 'in_progress', label: 'В процессе' },
-          { value: 'on_control', label: 'На контроле' },
-        ],
-        getRecommendationStatusColor,
+      applyValueBasedColors(
+        completeNamedDistribution(
+          statusDistribution,
+          [
+            { value: 'completed', label: 'Исполнено' },
+            { value: 'unresolved', label: 'Не решено' },
+            { value: 'in_progress', label: 'В процессе' },
+            { value: 'on_control', label: 'На контроле' },
+          ],
+          () => '',
+        ),
       ),
     [statusDistribution],
   );
@@ -345,7 +345,7 @@ export function MonitoringAnalyticsDashboard() {
                         return shortName && shortName !== key ? `${key} — ${shortName}` : key;
                       }}
                     />
-                    <Bar dataKey="value" name="Переносов" fill={CHECKS_PALETTE[0]} radius={[4, 4, 0, 0]}>
+                    <Bar dataKey="value" name="Переносов" fill={MONITORING_BAR_BLUE_SCALE[5]} radius={[4, 4, 0, 0]}>
                       {deadlineExtensionsByCheck.map((item, index) => (
                         <Cell key={item.id} fill={deadlineExtensionColors[index]} />
                       ))}
@@ -353,7 +353,7 @@ export function MonitoringAnalyticsDashboard() {
                         dataKey="value"
                         position="top"
                         fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill={CHECKS_PALETTE[0]}
+                        fill={MONITORING_BAR_BLUE_SCALE[5]}
                         offset={8}
                       />
                     </Bar>

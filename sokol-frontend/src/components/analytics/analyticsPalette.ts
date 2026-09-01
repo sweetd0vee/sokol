@@ -64,6 +64,33 @@ export const VALUE_GRAY_SCALE = [
   '#4B5563', // dark grey (still readable with contrast-aware labels)
 ] as const;
 
+/**
+ * Sequential lilac → teal scale for the Monitoring analytics charts.
+ * Small values map to pale lilac rgb(218, 170, 209); large values map to deep teal rgb(14, 116, 144).
+ */
+export const MONITORING_VALUE_SCALE = [
+  '#DAAAD1', // pale lilac — smallest
+  '#B19FC4', // dusty orchid
+  '#8894B7', // muted periwinkle
+  '#6089AA', // steel teal
+  '#377F9D', // mid teal
+  '#0E7490', // deep teal — largest
+] as const;
+
+/**
+ * Sequential blue scale for the Monitoring "deadline extensions" bars.
+ * Small values stay a saturated mid-blue (not ice). Large values go navy,
+ * with the requested teal #0E7490 in the darker half of the ramp.
+ */
+export const MONITORING_BAR_BLUE_SCALE = [
+  '#4580D8', // saturated mid blue — smallest
+  '#3A6FD0',
+  '#2B5BC2',
+  '#1E4EB0',
+  '#0E7490', // requested teal
+  '#163A7A', // deep navy — largest
+] as const;
+
 // Backward-compat alias (older code used the violet name).
 export const VALUE_VIOLET_SCALE = VALUE_GRAY_SCALE;
 
@@ -114,6 +141,21 @@ export function getValueBasedColors(
     const endIndex = Math.min(startIndex + 1, scale.length - 1);
     return interpolateColor(scale[startIndex], scale[endIndex], position - startIndex);
   });
+}
+
+export function applyValueBasedColors<T extends { value: number }>(
+  items: T[],
+  scale: readonly string[] = MONITORING_VALUE_SCALE,
+): Array<T & { color: string }> {
+  const colors = getValueBasedColors(
+    items.map((item) => (item.value > 0 ? item.value : Number.NaN)),
+    scale,
+  );
+  const fallback = scale[0] ?? '#e5e7eb';
+  return items.map((item, index) => ({
+    ...item,
+    color: colors[index] ?? fallback,
+  }));
 }
 
 /**

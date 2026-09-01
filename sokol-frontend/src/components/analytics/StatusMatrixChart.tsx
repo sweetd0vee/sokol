@@ -14,6 +14,7 @@ import {
   type StatusMatrixCountSortConfig,
   type StatusMatrixRow,
 } from '../../utils/statusMatrix';
+import { applyValueBasedColors } from './analyticsPalette';
 
 type StatusMatrixChartProps = {
   rows: StatusMatrixRow[];
@@ -71,6 +72,16 @@ export function StatusMatrixChart({ rows }: StatusMatrixChartProps) {
   const hoveredRow = rows.find((row) => row.key === hoveredKey) ?? null;
   const totals = useMemo(() => buildStatusMatrixColumnTotals(rows), [rows]);
   const grandTotal = useMemo(() => statusMatrixGrandTotal(rows), [rows]);
+  const legend = useMemo(
+    () =>
+      applyValueBasedColors(
+        STATUS_MATRIX_LEGEND.map((item) => ({
+          ...item,
+          value: totals[item.key],
+        })),
+      ),
+    [totals],
+  );
   const sortedRows = useMemo(
     () => sortStatusMatrixRows(rows, sortConfig),
     [rows, sortConfig],
@@ -191,7 +202,7 @@ export function StatusMatrixChart({ rows }: StatusMatrixChartProps) {
         </p>
 
         <ul className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-base text-gray-700">
-          {STATUS_MATRIX_LEGEND.map((item) => (
+          {legend.map((item) => (
             <li key={item.key} className="inline-flex items-center gap-1.5">
               <span
                 className="inline-block h-3 w-3 rounded-full border border-black/10"
