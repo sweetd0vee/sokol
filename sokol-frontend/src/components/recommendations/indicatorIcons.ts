@@ -22,9 +22,9 @@ export const INDICATOR_ICONS: Partial<Record<IndicatorIconKey, IndicatorIconMeta
 };
 
 export const ADDITIONAL_INDICATOR_ICONS: Partial<Record<IndicatorIconKey, IndicatorIconMeta>> = {
-  'в срок': { Icon: Bell, className: 'text-[rgb(37,235,103)]', filled: true },
-  'срок нарушен': { Icon: Bell, className: 'text-[#FF4347]', filled: true },
-  'на контроле': { Icon: Bell, className: 'text-gray-500', filled: true },
+  'в срок': { Icon: Bell, className: 'text-[rgb(37,235,103)]' },
+  'срок нарушен': { Icon: Bell, className: 'text-[#FF4347]' },
+  'на контроле': { Icon: Bell, className: 'text-gray-500' },
 };
 
 export function indicatorIconRenderProps(meta: IndicatorIconMeta | undefined) {
