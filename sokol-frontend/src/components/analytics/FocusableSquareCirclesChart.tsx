@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { CHART_LEGEND_STYLE } from './AnalyticsChartPrimitives';
 import { PALETTE } from './analyticsPalette';
+import { formatChartLegendText } from './chartLegend';
 
 export type SquareCirclesDatum = {
   name: string;
@@ -24,32 +25,6 @@ type SquareCirclesChartProps = {
   legendFontSize?: number;
   legendFontWeight?: number;
 };
-
-function formatPercent(value: number) {
-  return `${value}%`;
-}
-
-function formatLegendLabel({
-  name,
-  value,
-  percent,
-  labelMode,
-  legendPercentFirst,
-}: {
-  name: string;
-  value: number;
-  percent: number;
-  labelMode: 'value' | 'percent' | 'both';
-  legendPercentFirst: boolean;
-}) {
-  if (labelMode !== 'both') {
-    return name;
-  }
-
-  return legendPercentFirst
-    ? `${name}: ${formatPercent(percent)} (${value})`
-    : `${name}: ${value} (${formatPercent(percent)})`;
-}
 
 export function FocusableSquareCirclesChart({
   data,
@@ -164,12 +139,12 @@ export function FocusableSquareCirclesChart({
                   strokeOpacity={isDimmed ? 0.32 : 1}
                 >
                   <title>
-                    {formatLegendLabel({
+                    {formatChartLegendText({
                       name: item.name,
                       value: item.value,
                       percent: roundedPercent,
-                      labelMode,
-                      legendPercentFirst,
+                      mode: labelMode,
+                      percentFirst: legendPercentFirst,
                     })}
                   </title>
                 </circle>

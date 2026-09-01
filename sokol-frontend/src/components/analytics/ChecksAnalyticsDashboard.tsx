@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
@@ -14,14 +14,16 @@ import {
 import { fetchChecksAnalytics, type ChecksAnalyticsPeriodPoint } from '../../api/analytics';
 import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
+import { AnalyticsDashboardFrame } from './AnalyticsDashboardFrame';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
-import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
+import { AnalyticsSelectionSummary, filterSelectionItem } from './AnalyticsSelectionSummary';
 import { ChartCard, CHART_AXIS_TICK, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { EffectivenessMatrixChart } from './EffectivenessMatrixChart';
 import { CHECKS_PALETTE, getValueBasedColors, VALUE_BLUE_SCALE } from './analyticsPalette';
-import { exportChecksDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
+import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
+import { exportChecksDashboard } from '../../utils/analyticsExport';
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
@@ -83,10 +85,19 @@ function completeSelectedPeriods(
 }
 
 export function ChecksAnalyticsDashboard() {
-  const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
-  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('html');
-  const [isExporting, setIsExporting] = useState(false);
+  const {
+    selectedAuditors,
+    setSelectedAuditors,
+    selectedDepartments,
+    setSelectedDepartments,
+    exportFormat,
+    setExportFormat,
+    isExporting,
+    setIsExporting,
+    removeAuditor,
+    removeDepartment,
+    resetEntityFilters,
+  } = useAnalyticsDashboardSession();
 
   const exportSections = useExportSections(
     CHECK_EXPORT_SECTIONS.map((section) => section.id) as CheckExportSectionId[],
@@ -200,8 +211,7 @@ export function ChecksAnalyticsDashboard() {
 
   const resetFilters = () => {
     resetPeriodSelections();
-    setSelectedAuditors([]);
-    setSelectedDepartments([]);
+    resetEntityFilters();
   };
 
   const handleExport = async () => {
@@ -456,7 +466,9 @@ export function ChecksAnalyticsDashboard() {
   }
 
   return (
-    <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-stretch">
+    <AnalyticsDashboardFrame
+      mainClassName="relative flex min-h-0 min-w-0 flex-1 flex-col lg:-mt-[84px]"
+      sidebar={(
       <AnalyticsFilterSidebar
         periodSlice={periodSlice}
         onPeriodSliceChange={handlePeriodSliceChange}
@@ -478,51 +490,31 @@ export function ChecksAnalyticsDashboard() {
         isExporting={isExporting}
         canExport={filteredTotal > 0 && !analyticsQuery.isFetching}
         onExport={handleExport}
-        exportSelectedCount={exportSections.selectedCount}
-        exportTotalCount={exportSections.totalCount}
-        onSelectAllExport={exportSections.selectAll}
-        onClearExport={exportSections.clearAll}
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[
               { label: 'Проверок', value: filteredTotal, hint:`из ${universeTotal}` },
             ]}
             items={[
-              {
-                label: periodSliceLabel,
-                chips: activePeriodValues.map((value) => ({ value, label: value })),
-                emptyLabel: 'Все значения',
-                onRemove: removeActivePeriodValue,
-              },
-              {
-                label: 'Аудиторы',
-                chips: selectedAuditors.map((value) => ({ value, label: value })),
-                emptyLabel: 'Все аудиторы',
-                onRemove: (value) => setSelectedAuditors((prev) => prev.filter((item) => item !== value)),
-              },
-              {
-                label: 'Департаменты',
-                chips: selectedDepartments.map((value) => ({ value, label: value })),
-                emptyLabel: 'Все департаменты',
-                onRemove: (value) => setSelectedDepartments((prev) => prev.filter((item) => item !== value)),
-              },
+              filterSelectionItem(periodSliceLabel, activePeriodValues, 'Все значения', removeActivePeriodValue),
+              filterSelectionItem('Аудиторы', selectedAuditors, 'Все аудиторы', removeAuditor),
+              filterSelectionItem('Департаменты', selectedDepartments, 'Все департаменты', removeDepartment),
             ]}
           />
         )}
       />
-
-      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col lg:-mt-[84px]">
-        {analyticsQuery.isFetching ? (
-          <div className="pointer-events-none absolute right-2 top-2 z-10 rounded-md bg-white/90 px-2 py-1 text-xs text-slate-500 shadow-sm">
-            Обновление…
-          </div>
-        ) : null}
-        {isWaitingForFilteredData ? (
-          <LoadingState title="Загрузка аналитики проверок…" />
-        ) : (
-          <AnalyticsDashboardGrid cards={cards} />
-        )}
-      </main>
-    </div>
+      )}
+    >
+      {analyticsQuery.isFetching ? (
+        <div className="pointer-events-none absolute right-2 top-2 z-10 rounded-md bg-white/90 px-2 py-1 text-xs text-slate-500 shadow-sm">
+          Обновление…
+        </div>
+      ) : null}
+      {isWaitingForFilteredData ? (
+        <LoadingState title="Загрузка аналитики проверок…" />
+      ) : (
+        <AnalyticsDashboardGrid cards={cards} />
+      )}
+    </AnalyticsDashboardFrame>
   );
 }

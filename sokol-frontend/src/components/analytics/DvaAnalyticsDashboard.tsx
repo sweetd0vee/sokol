@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
@@ -15,12 +15,15 @@ import {
 import { fetchDvaAnalytics } from '../../api/analytics';
 import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
+import { AnalyticsDashboardFrame } from './AnalyticsDashboardFrame';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
-import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
+import { AnalyticsSelectionSummary, filterSelectionItem } from './AnalyticsSelectionSummary';
 import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { CHECKS_PALETTE, getValueBasedColors, VALUE_BLUE_SCALE, VALUE_GRAY_SCALE } from './analyticsPalette';
-import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
+import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
+import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
+import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
 import { DVA_EXPORT_SECTIONS, type DvaExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
@@ -43,16 +46,6 @@ function topAuditorBars(
 }
 
 const EMPTY_CHECK_SUMMARY = { total: 0, not_started: 0, in_progress: 0, completed: 0 };
-const EMPTY_RECOMMENDATION_SUMMARY = {
-  total: 0,
-  byStatus: { completed: 0, unresolved: 0, on_control: 0, in_progress: 0 },
-  byMateriality: { низкий: 0, средний: 0, высокий: 0 },
-  byAdditional: { on_time: 0, deadline_violated: 0, on_control: 0 },
-  withExtensions: 0,
-  withCompletionDate: 0,
-  completionRate: 0,
-  violationRate: 0,
-};
 const EMPTY_AUDITOR_LOAD: never[] = [];
 const EMPTY_AUDITOR_CHECKS_TREEMAP: never[] = [];
 const EMPTY_AUDITOR_RECOMMENDATIONS_TREEMAP: never[] = [];
@@ -60,10 +53,19 @@ const EMPTY_DEPARTMENT_MAP: never[] = [];
 const EMPTY_DOCUMENT_READINESS: never[] = [];
 
 export function DvaAnalyticsDashboard() {
-  const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
-  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('html');
-  const [isExporting, setIsExporting] = useState(false);
+  const {
+    selectedAuditors,
+    setSelectedAuditors,
+    selectedDepartments,
+    setSelectedDepartments,
+    exportFormat,
+    setExportFormat,
+    isExporting,
+    setIsExporting,
+    removeAuditor,
+    removeDepartment,
+    resetEntityFilters,
+  } = useAnalyticsDashboardSession();
 
   const exportSections = useExportSections(DVA_EXPORT_SECTIONS.map((section) => section.id) as DvaExportSectionId[]);
 
@@ -166,8 +168,7 @@ export function DvaAnalyticsDashboard() {
 
   const resetFilters = () => {
     resetPeriodSelections();
-    setSelectedAuditors([]);
-    setSelectedDepartments([]);
+    resetEntityFilters();
   };
 
   const handleExport = async () => {
@@ -379,7 +380,8 @@ export function DvaAnalyticsDashboard() {
   }
 
   return (
-    <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-stretch">
+    <AnalyticsDashboardFrame
+      sidebar={(
       <AnalyticsFilterSidebar
         periodSlice={periodSlice}
         onPeriodSliceChange={handlePeriodSliceChange}
@@ -401,10 +403,6 @@ export function DvaAnalyticsDashboard() {
         isExporting={isExporting}
         canExport={filteredChecksTotal > 0 || filteredRecommendationsTotal > 0}
         onExport={handleExport}
-        exportSelectedCount={exportSections.selectedCount}
-        exportTotalCount={exportSections.totalCount}
-        onSelectAllExport={exportSections.selectAll}
-        onClearExport={exportSections.clearAll}
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[
@@ -412,31 +410,16 @@ export function DvaAnalyticsDashboard() {
             { label: 'Рекомендаций', value: filteredRecommendationsTotal, hint:`из ${universeRecommendationsTotal}` },
             ]}
             items={[
-              {
-                label: periodSliceLabel,
-                chips: activePeriodValues.map((value) => ({ value, label: value })),
-                emptyLabel: 'Все значения',
-                onRemove: removeActivePeriodValue,
-              },
-              {
-                label: 'Аудиторы',
-                chips: selectedAuditors.map((value) => ({ value, label: value })),
-                emptyLabel: 'Все аудиторы',
-                onRemove: (value) => setSelectedAuditors((prev) => prev.filter((item) => item !== value)),
-              },
-              {
-                label: 'Департаменты',
-                chips: selectedDepartments.map((value) => ({ value, label: value })),
-                emptyLabel: 'Все департаменты',
-                onRemove: (value) => setSelectedDepartments((prev) => prev.filter((item) => item !== value)),
-              },
+              filterSelectionItem(periodSliceLabel, activePeriodValues, 'Все значения', removeActivePeriodValue),
+              filterSelectionItem('Аудиторы', selectedAuditors, 'Все аудиторы', removeAuditor),
+              filterSelectionItem('Департаменты', selectedDepartments, 'Все департаменты', removeDepartment),
             ]}
           />
         )}
       />
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col lg:-mt-[84px]">
-        <AnalyticsDashboardGrid cards={cards} />
-      </main>
-    </div>
+      )}
+    >
+      <AnalyticsDashboardGrid cards={cards} />
+    </AnalyticsDashboardFrame>
   );
 }

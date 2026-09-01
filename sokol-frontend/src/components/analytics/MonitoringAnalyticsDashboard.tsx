@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
@@ -14,8 +14,9 @@ import {
 import { fetchMonitoringAnalytics } from '../../api/analytics';
 import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
+import { AnalyticsDashboardFrame } from './AnalyticsDashboardFrame';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
-import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
+import { AnalyticsSelectionSummary, filterSelectionItem } from './AnalyticsSelectionSummary';
 import {
   ChartCard,
   CHART_TOOLTIP_STYLE,
@@ -23,29 +24,26 @@ import {
   EmptyChart,
   KpiCard,
 } from './AnalyticsChartPrimitives';
-import { applyValueBasedColors, MONITORING_BAR_BLUE_SCALE } from './analyticsPalette';
+import { applyValueBasedColors, lastScaleColor, MONITORING_BAR_BLUE_SCALE } from './analyticsPalette';
+import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
 import { StatusMatrixChart } from './StatusMatrixChart';
-import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
+import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
+import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
 import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
 import { type PeriodGranularity } from '../../utils/recommendationAnalytics';
+import {
+  DEFAULT_STATUS_MATRIX_COUNT_SORT,
+  sortStatusMatrixRows,
+  type StatusMatrixCountSortConfig,
+} from '../../utils/statusMatrix';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 import { completeNamedDistribution, distributionHasValues } from '../../utils/analyticsDistribution';
 
-const EMPTY_RECOMMENDATION_SUMMARY = {
-  total: 0,
-  byStatus: { completed: 0, unresolved: 0, on_control: 0, in_progress: 0 },
-  byMateriality: { низкий: 0, средний: 0, высокий: 0 },
-  byAdditional: { on_time: 0, deadline_violated: 0, on_control: 0 },
-  withExtensions: 0,
-  withCompletionDate: 0,
-  completionRate: 0,
-  violationRate: 0,
-};
 const EMPTY_ADDITIONAL_STATUS_DISTRIBUTION: never[] = [];
 const EMPTY_STATUS_DISTRIBUTION: never[] = [];
 const EMPTY_STATUS_MATRIX: never[] = [];
@@ -57,8 +55,8 @@ function CheckKeyAxisTick({
   payload,
   shortNameByKey,
 }: {
-  x?: number;
-  y?: number;
+  x?: number | string;
+  y?: number | string;
   payload?: { value?: string };
   shortNameByKey: Map<string, string>;
 }) {
@@ -80,10 +78,19 @@ function CheckKeyAxisTick({
 }
 
 export function MonitoringAnalyticsDashboard() {
-  const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
-  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('html');
-  const [isExporting, setIsExporting] = useState(false);
+  const {
+    selectedAuditors,
+    setSelectedAuditors,
+    selectedDepartments,
+    setSelectedDepartments,
+    exportFormat,
+    setExportFormat,
+    isExporting,
+    setIsExporting,
+    removeAuditor,
+    removeDepartment,
+    resetEntityFilters,
+  } = useAnalyticsDashboardSession();
 
   const exportSections = useExportSections(
     MONITORING_EXPORT_SECTIONS.map((section) => section.id) as MonitoringExportSectionId[],
@@ -161,6 +168,10 @@ export function MonitoringAnalyticsDashboard() {
   const additionalStatusDistribution = data?.additionalStatusDistribution ?? EMPTY_ADDITIONAL_STATUS_DISTRIBUTION;
   const statusDistribution = data?.statusDistribution ?? EMPTY_STATUS_DISTRIBUTION;
   const statusMatrix = data?.statusMatrix ?? EMPTY_STATUS_MATRIX;
+  const statusMatrixSortRef = useRef<StatusMatrixCountSortConfig>(DEFAULT_STATUS_MATRIX_COUNT_SORT);
+  const handleStatusMatrixSortChange = useCallback((sortConfig: StatusMatrixCountSortConfig) => {
+    statusMatrixSortRef.current = sortConfig;
+  }, []);
   const deadlineExtensionsByCheck = data?.deadlineExtensionsByCheck ?? EMPTY_DEADLINE_EXTENSIONS;
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
@@ -209,8 +220,7 @@ export function MonitoringAnalyticsDashboard() {
 
   const resetFilters = () => {
     resetPeriodSelections();
-    setSelectedAuditors([]);
-    setSelectedDepartments([]);
+    resetEntityFilters();
   };
 
   const handleExport = async () => {
@@ -227,6 +237,7 @@ export function MonitoringAnalyticsDashboard() {
           documentTitle: 'Мониторинг',
           filenamePrefix: 'analytics-monitoring',
           selectedSections: exportSections.selectedSections,
+          statusMatrixOverride: sortStatusMatrixRows(statusMatrix, statusMatrixSortRef.current),
           meta: [
             ['Аудиторы', selectedAuditors.length ? selectedAuditors.join(', ') : 'Все'],
             ['Департаменты', selectedDepartments.length ? selectedDepartments.join(', ') : 'Все'],
@@ -345,7 +356,7 @@ export function MonitoringAnalyticsDashboard() {
                         return shortName && shortName !== key ? `${key} — ${shortName}` : key;
                       }}
                     />
-                    <Bar dataKey="value" name="Переносов" fill={MONITORING_BAR_BLUE_SCALE[5]} radius={[4, 4, 0, 0]}>
+                    <Bar dataKey="value" name="Переносов" fill={lastScaleColor(MONITORING_BAR_BLUE_SCALE)} radius={[4, 4, 0, 0]}>
                       {deadlineExtensionsByCheck.map((item, index) => (
                         <Cell key={item.id} fill={deadlineExtensionColors[index]} />
                       ))}
@@ -353,7 +364,7 @@ export function MonitoringAnalyticsDashboard() {
                         dataKey="value"
                         position="top"
                         fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill={MONITORING_BAR_BLUE_SCALE[5]}
+                        fill={lastScaleColor(MONITORING_BAR_BLUE_SCALE)}
                         offset={8}
                       />
                     </Bar>
@@ -378,7 +389,7 @@ export function MonitoringAnalyticsDashboard() {
             {statusMatrix.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <StatusMatrixChart rows={statusMatrix} />
+              <StatusMatrixChart rows={statusMatrix} onSortConfigChange={handleStatusMatrixSortChange} />
             )}
           </ChartCard>
         ),
@@ -391,6 +402,7 @@ export function MonitoringAnalyticsDashboard() {
       deadlineExtensionShortNames,
       deadlineExtensionsByCheck,
       exportSections,
+      handleStatusMatrixSortChange,
       statusMatrix,
       summary,
     ],
@@ -410,7 +422,8 @@ export function MonitoringAnalyticsDashboard() {
   }
 
   return (
-    <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-stretch">
+    <AnalyticsDashboardFrame
+      sidebar={(
       <AnalyticsFilterSidebar
         periodSlice={periodSlice}
         onPeriodSliceChange={handlePeriodSliceChange}
@@ -432,42 +445,22 @@ export function MonitoringAnalyticsDashboard() {
         isExporting={isExporting}
         canExport={filteredTotal > 0}
         onExport={handleExport}
-        exportSelectedCount={exportSections.selectedCount}
-        exportTotalCount={exportSections.totalCount}
-        onSelectAllExport={exportSections.selectAll}
-        onClearExport={exportSections.clearAll}
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[
             { label: 'Рекомендаций', value: filteredTotal, hint:`из ${universeTotal}` },
             ]}
             items={[
-              {
-                label: periodSliceLabel,
-                chips: activePeriodValues.map((value) => ({ value, label: value })),
-                emptyLabel: 'Все значения',
-                onRemove: removeActivePeriodValue,
-              },
-              {
-                label: 'Аудиторы',
-                chips: selectedAuditors.map((value) => ({ value, label: value })),
-                emptyLabel: 'Все аудиторы',
-                onRemove: (value) => setSelectedAuditors((prev) => prev.filter((item) => item !== value)),
-              },
-              {
-                label: 'Департаменты',
-                chips: selectedDepartments.map((value) => ({ value, label: value })),
-                emptyLabel: 'Все департаменты',
-                onRemove: (value) => setSelectedDepartments((prev) => prev.filter((item) => item !== value)),
-              },
+              filterSelectionItem(periodSliceLabel, activePeriodValues, 'Все значения', removeActivePeriodValue),
+              filterSelectionItem('Аудиторы', selectedAuditors, 'Все аудиторы', removeAuditor),
+              filterSelectionItem('Департаменты', selectedDepartments, 'Все департаменты', removeDepartment),
             ]}
           />
         )}
       />
-
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col lg:-mt-[84px]">
-        <AnalyticsDashboardGrid cards={cards} />
-      </main>
-    </div>
+      )}
+    >
+      <AnalyticsDashboardGrid cards={cards} />
+    </AnalyticsDashboardFrame>
   );
 }

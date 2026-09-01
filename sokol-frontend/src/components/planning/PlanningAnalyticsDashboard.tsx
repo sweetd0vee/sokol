@@ -14,8 +14,9 @@ import {
 import { fetchPlanningAnalytics } from '../../api/analytics';
 import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from '../analytics/AnalyticsDashboardGrid';
+import { AnalyticsDashboardFrame } from '../analytics/AnalyticsDashboardFrame';
 import { AnalyticsFilterSidebar } from '../analytics/AnalyticsFilterSidebar';
-import { AnalyticsSelectionSummary } from '../analytics/AnalyticsSelectionSummary';
+import { AnalyticsSelectionSummary, filterSelectionItem } from '../analytics/AnalyticsSelectionSummary';
 import {
   ChartCard,
   CHART_AXIS_TICK,
@@ -286,7 +287,9 @@ export function PlanningAnalyticsDashboard() {
   }
 
   return (
-    <div className="flex flex-col gap-4 text-left lg:flex-row lg:items-stretch">
+    <AnalyticsDashboardFrame
+      mainClassName="flex min-h-0 min-w-0 flex-1 flex-col"
+      sidebar={(
       <AnalyticsFilterSidebar
         periodSlice={periodSlice}
         onPeriodSliceChange={handlePeriodSliceChange}
@@ -305,10 +308,6 @@ export function PlanningAnalyticsDashboard() {
         isExporting={false}
         canExport={false}
         onExport={() => undefined}
-        exportSelectedCount={0}
-        exportTotalCount={0}
-        onSelectAllExport={() => undefined}
-        onClearExport={() => undefined}
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[
@@ -320,27 +319,20 @@ export function PlanningAnalyticsDashboard() {
               },
             ]}
             items={[
-              {
-                label: periodSliceLabel,
-                chips: activePeriodValues.map((value) => ({ value, label: value })),
-                emptyLabel: 'Все значения',
-                onRemove: removeActivePeriodValue,
-              },
-              {
-                label: 'Департаменты',
-                chips: selectedDepartments.map((value) => ({ value, label: value })),
-                emptyLabel: 'Все департаменты',
-                onRemove: (value) =>
-                  setSelectedDepartments((prev) => prev.filter((item) => item !== value)),
-              },
+              filterSelectionItem(periodSliceLabel, activePeriodValues, 'Все значения', removeActivePeriodValue),
+              filterSelectionItem(
+                'Департаменты',
+                selectedDepartments,
+                'Все департаменты',
+                (value) => setSelectedDepartments((prev) => prev.filter((item) => item !== value)),
+              ),
             ]}
           />
         )}
       />
-
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <AnalyticsDashboardGrid cards={cards} />
-      </main>
-    </div>
+      )}
+    >
+      <AnalyticsDashboardGrid cards={cards} />
+    </AnalyticsDashboardFrame>
   );
 }

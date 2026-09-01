@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyValueBasedColors,
+  lastScaleColor,
   MONITORING_BAR_BLUE_SCALE,
   MONITORING_VALUE_SCALE,
 } from './analyticsPalette';
@@ -46,7 +47,9 @@ describe('applyValueBasedColors', () => {
       MONITORING_BAR_BLUE_SCALE,
     );
 
-    expect(colored.find((item) => item.name === 'high')?.color.toUpperCase()).toBe('#163A7A');
+    expect(colored.find((item) => item.name === 'high')?.color.toUpperCase()).toBe(
+      lastScaleColor(MONITORING_BAR_BLUE_SCALE).toUpperCase(),
+    );
     expect(colored.find((item) => item.name === 'low')?.color.toUpperCase()).toBe('#4580D8');
     expect(MONITORING_BAR_BLUE_SCALE).toContain('#0E7490');
   });

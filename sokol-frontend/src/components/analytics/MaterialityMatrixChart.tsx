@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { getMaterialityLevelColor } from '../../utils/recommendationAnalytics';
-import type { SortDirection } from '../../utils/listTable';
 import {
   cycleMaterialityMatrixCountSort,
   DEFAULT_MATERIALITY_MATRIX_COUNT_SORT,
@@ -17,6 +15,7 @@ import {
   type MaterialityMatrixCountSortConfig,
   type MaterialityMatrixRow,
 } from '../../utils/materialityMatrix';
+import { MatrixChartShell, MatrixCountSortHeader, MatrixLegendFooter } from './matrixChartChrome';
 
 type MaterialityMatrixChartProps = {
   rows: MaterialityMatrixRow[];
@@ -53,50 +52,6 @@ function ColumnShareCircle({
   );
 }
 
-function CountSortHeader({
-  label,
-  active,
-  direction,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  direction: SortDirection;
-  onClick: () => void;
-}) {
-  const sortLabel = !active
-    ? `Сортировать по убыванию: ${label}`
-    : direction === 'desc'
-      ? `Сортировать по возрастанию: ${label}`
-      : `Сбросить сортировку: ${label}`;
-
-  return (
-    <th
-      className="px-1 py-2 text-center font-semibold text-sber-dark"
-      aria-sort={active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'}
-    >
-      <button
-        type="button"
-        onClick={onClick}
-        className="inline-flex w-full items-center justify-center gap-1 text-sber-dark transition hover:text-sber"
-        title={sortLabel}
-        aria-label={sortLabel}
-      >
-        <span className="text-balance leading-tight">{label}</span>
-        {active ? (
-          direction === 'asc' ? (
-            <ArrowUp size={14} aria-hidden />
-          ) : (
-            <ArrowDown size={14} aria-hidden />
-          )
-        ) : (
-          <ChevronsUpDown size={14} className="text-gray-400" aria-hidden />
-        )}
-      </button>
-    </th>
-  );
-}
-
 export function MaterialityMatrixChart({ rows, onSortConfigChange }: MaterialityMatrixChartProps) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState<MaterialityMatrixCountSortConfig>(
@@ -115,10 +70,16 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
   }, [onSortConfigChange, sortConfig]);
 
   return (
-    <div data-export-html className="flex h-full min-h-[13rem] flex-col gap-2">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-100">
-        <div className="min-h-0 flex-1 overflow-auto">
-          <table className="w-full table-fixed border-collapse text-sm">
+    <MatrixChartShell
+      hoveredRow={hoveredRow}
+      footer={(
+        <MatrixLegendFooter
+          totalText={formatMaterialityChecksCount(rows.length)}
+          legend={MATERIALITY_MATRIX_LEGEND}
+        />
+      )}
+    >
+      <table className="w-full table-fixed border-collapse text-sm">
             <colgroup>
               <col className="w-[12%]" />
               <col className="w-[40%]" />
@@ -136,7 +97,7 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
                   Краткое название проверки
                 </th>
                 {MATERIALITY_MATRIX_COLUMNS.map((column) => (
-                  <CountSortHeader
+                  <MatrixCountSortHeader
                     key={column.key}
                     label={column.label}
                     active={sortConfig.key === column.key}
@@ -144,7 +105,7 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
                     onClick={() => setSortConfig((prev) => cycleMaterialityMatrixCountSort(prev, column.key))}
                   />
                 ))}
-                <CountSortHeader
+                <MatrixCountSortHeader
                   label={MATERIALITY_MATRIX_TOTAL_COLUMN.label}
                   active={sortConfig.key === MATERIALITY_MATRIX_TOTAL_COLUMN.key}
                   direction={sortConfig.direction}
@@ -239,37 +200,7 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
                 </td>
               </tr>
             </tfoot>
-          </table>
-        </div>
-      </div>
-
-      {hoveredRow ? (
-        <p className="shrink-0 truncate text-xs text-gray-600" title={hoveredRow.name}>
-          <span className="font-semibold text-sber-dark">{hoveredRow.key}</span>
-          {': '}
-          {hoveredRow.name}
-        </p>
-      ) : null}
-
-      <div className="flex shrink-0 flex-wrap items-end justify-between gap-x-4 gap-y-1.5">
-        <p className="text-base font-medium text-gray-700">
-          <span className="font-semibold text-sber-dark">Итого:</span>{' '}
-          {formatMaterialityChecksCount(rows.length)}
-        </p>
-
-        <ul className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-base text-gray-700">
-          {MATERIALITY_MATRIX_LEGEND.map((item) => (
-            <li key={item.key} className="inline-flex items-center gap-1.5">
-              <span
-                className="inline-block h-3 w-3 rounded-full border border-black/10"
-                style={{ backgroundColor: item.color }}
-                aria-hidden
-              />
-              <span>{item.label}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+      </table>
+    </MatrixChartShell>
   );
 }

@@ -39,6 +39,29 @@ export const CHECKS_PALETTE = [
 ];
 
 /**
+ * Greyscale palette for Recommendations treemaps / discrete colored blocks.
+ * Ordered to alternate dark ↔ light ↔ mid so neighbouring segments stay distinct.
+ */
+export const RECOMMENDATIONS_PALETTE = [
+  '#0F172A', // deep ink grey
+  '#E5E7EB', // soft grey
+  '#6B7280', // vivid mid-grey
+  '#F3F4F6', // pale grey
+  '#374151', // dark slate
+  '#CBD5E1', // light slate
+  '#64748B', // mid slate
+  '#D1D5DB', // light grey
+  '#94A3B8', // bright slate
+  '#F8FAFC', // mist
+  '#334155', // indigo-slate
+  '#BFC7D0', // orchid-grey
+  '#1F2937', // ink slate
+  '#AEB7C2', // soft grey
+  '#5B6776', // muted slate
+  '#E2E8F0', // light slate
+];
+
+/**
  * Sequential scale for quantitative charts.
  * Values must move from light to dark so color intensity communicates magnitude.
  */
@@ -65,7 +88,7 @@ export const VALUE_GRAY_SCALE = [
 ] as const;
 
 /**
- * Sequential lilac → teal scale for the Monitoring analytics charts.
+ * Sequential lilac → teal scale for Monitoring donut / circle charts.
  * Small values map to pale lilac rgb(218, 170, 209); large values map to deep teal rgb(14, 116, 144).
  */
 export const MONITORING_VALUE_SCALE = [
@@ -80,7 +103,7 @@ export const MONITORING_VALUE_SCALE = [
 /**
  * Sequential blue scale for the Monitoring "deadline extensions" bars.
  * Small values stay a saturated mid-blue (not ice). Large values go navy,
- * with the requested teal #0E7490 in the darker half of the ramp.
+ * with teal #0E7490 in the darker half of the ramp.
  */
 export const MONITORING_BAR_BLUE_SCALE = [
   '#4580D8', // saturated mid blue — smallest
@@ -91,8 +114,9 @@ export const MONITORING_BAR_BLUE_SCALE = [
   '#163A7A', // deep navy — largest
 ] as const;
 
-// Backward-compat alias (older code used the violet name).
-export const VALUE_VIOLET_SCALE = VALUE_GRAY_SCALE;
+export function lastScaleColor(scale: readonly string[], fallback = '#e5e7eb') {
+  return scale[scale.length - 1] ?? fallback;
+}
 
 function hexToRgb(color: string) {
   const hex = color.replace('#', '');
@@ -114,6 +138,11 @@ function interpolateColor(from: string, to: string, ratio: number) {
   return `#${channelToHex(mix(start.red, end.red))}${channelToHex(mix(start.green, end.green))}${channelToHex(mix(start.blue, end.blue))}`;
 }
 
+/**
+ * Maps numeric values onto a sequential scale.
+ * Zero and other finite values participate in min/max, so a 0 can stretch the ramp.
+ * Used by `colorByValue` on donut/treemap charts.
+ */
 export function getValueBasedColors(
   values: number[],
   scale: readonly string[] = VALUE_BLUE_SCALE,
@@ -143,6 +172,10 @@ export function getValueBasedColors(
   });
 }
 
+/**
+ * Assigns sequential colors onto chart items.
+ * Non-positive values are ignored when placing the ramp, so visible slices still reach both endpoints.
+ */
 export function applyValueBasedColors<T extends { value: number }>(
   items: T[],
   scale: readonly string[] = MONITORING_VALUE_SCALE,
@@ -157,26 +190,3 @@ export function applyValueBasedColors<T extends { value: number }>(
     color: colors[index] ?? fallback,
   }));
 }
-
-/**
- * Greyscale palette for Recommendations treemaps / discrete colored blocks.
- * Ordered to alternate dark ↔ light ↔ mid so neighbouring segments stay distinct.
- */
-export const RECOMMENDATIONS_PALETTE = [
-  '#0F172A', // deep ink grey
-  '#E5E7EB', // soft grey
-  '#6B7280', // vivid mid-grey
-  '#F3F4F6', // pale grey
-  '#374151', // dark slate
-  '#CBD5E1', // light slate
-  '#64748B', // mid slate
-  '#D1D5DB', // light grey
-  '#94A3B8', // bright slate
-  '#F8FAFC', // mist
-  '#334155', // indigo-slate
-  '#BFC7D0', // orchid-grey
-  '#1F2937', // ink slate
-  '#AEB7C2', // soft grey
-  '#5B6776', // muted slate
-  '#E2E8F0', // light slate
-];

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildStatusMatrixColumnShares,
+  buildStatusMatrixHtmlMarkup,
   cycleStatusMatrixCountSort,
   DEFAULT_STATUS_MATRIX_COUNT_SORT,
   sortStatusMatrixRows,
@@ -54,5 +56,38 @@ describe('status matrix sort', () => {
     expect(
       sortStatusMatrixRows(rows, { key: 'unresolved', direction: 'asc' }).map((item) => item.key),
     ).toEqual(['ПР-1', 'ПР-2', 'ПР-10']);
+  });
+});
+
+describe('status matrix export markup', () => {
+  it('includes every check row instead of a clipped screenshot', () => {
+    const rows = Array.from({ length: 12 }, (_, index) =>
+      row(`ПР-${index + 1}`, {
+        completed: index,
+        unresolved: 1,
+        in_progress: 2,
+        on_control: 3,
+      }),
+    );
+
+    const markup = buildStatusMatrixHtmlMarkup(rows);
+    expect(markup).toContain('Ключ проверки');
+    expect(markup).toContain('Доля рекомендаций');
+    rows.forEach((item) => {
+      expect(markup).toContain(item.key);
+    });
+  });
+
+  it('computes share percents from all rows', () => {
+    const shares = buildStatusMatrixColumnShares([
+      row('A', { completed: 2, unresolved: 1, in_progress: 1, on_control: 0 }),
+      row('B', { completed: 2, unresolved: 1, in_progress: 1, on_control: 0 }),
+    ]);
+    expect(shares.find((item) => item.key === 'completed')).toEqual(
+      expect.objectContaining({ count: 4, percent: 50 }),
+    );
+    expect(shares.find((item) => item.key === 'unresolved')).toEqual(
+      expect.objectContaining({ count: 2, percent: 25 }),
+    );
   });
 });

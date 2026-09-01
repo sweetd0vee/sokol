@@ -220,7 +220,11 @@ export function FocusableTreemapChart({
     ...item,
     fill: item.fill ?? (colorByValue ? valueColors[index] : colors[index % colors.length]),
   }));
-  const tooltipFormatter = (value: number | string, _name: string, props?: { payload?: TreemapDatum }) => {
+  const tooltipFormatter = (
+    value: unknown,
+    _name: unknown,
+    props?: { payload?: TreemapDatum },
+  ) => {
     const payload = props?.payload;
     const materiality = payload?.materiality;
     const numericValue = typeof value === 'number' ? value : Number(value);

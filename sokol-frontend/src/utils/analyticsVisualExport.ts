@@ -54,6 +54,15 @@ import {
   materialityMatrixGrandTotal,
   type MaterialityMatrixRow,
 } from './materialityMatrix';
+import {
+  buildStatusMatrixColumnShares,
+  buildStatusMatrixHtmlMarkup,
+  formatStatusChecksCount,
+  getStatusMatrixCount,
+  STATUS_MATRIX_COLUMNS,
+  STATUS_MATRIX_LEGEND,
+  type StatusMatrixRow,
+} from './statusMatrix';
 import { getMaterialityLevelColor } from './recommendationAnalytics';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
@@ -408,6 +417,136 @@ function buildMaterialityMatrixPdfContent(
   ];
 }
 
+function buildStatusMatrixPdfContent(
+  chart: DashboardChartCapture,
+  rows: StatusMatrixRow[],
+): Content[] {
+  const shares = buildStatusMatrixColumnShares(rows);
+  const body = [
+    [
+      { text: 'Ключ проверки', bold: true, color: '#FFFFFF', fillColor: '#003366' },
+      { text: 'Краткое название проверки', bold: true, color: '#FFFFFF', fillColor: '#003366' },
+      ...STATUS_MATRIX_COLUMNS.map((column) => ({
+        text: column.label,
+        bold: true,
+        color: '#FFFFFF',
+        fillColor: '#003366',
+        alignment: 'center' as const,
+      })),
+    ],
+    ...rows.map((row) => [
+      { text: row.key, bold: true, color: '#334155', noWrap: true },
+      { text: row.shortName || row.name || '—', color: '#334155' },
+      ...STATUS_MATRIX_COLUMNS.map((column) => ({
+        text: String(getStatusMatrixCount(row, column.key)),
+        alignment: 'center' as const,
+        bold: true,
+        color: '#1E293B',
+      })),
+    ]),
+  ];
+
+  const shareBody = [
+    [
+      { text: 'Статус', bold: true, color: '#FFFFFF', fillColor: '#003366' },
+      { text: 'Доля рекомендаций', bold: true, color: '#FFFFFF', fillColor: '#003366' },
+    ],
+    ...shares.map((share) => [
+      { text: share.label, bold: true, color: '#334155' },
+      { text: `${share.percent}% (${share.count})`, color: '#334155' },
+    ]),
+  ];
+
+  const legendBody = STATUS_MATRIX_LEGEND.map((item) => [
+    {
+      text: '',
+      fillColor: item.color,
+      border: [false, false, false, false] as [boolean, boolean, boolean, boolean],
+    },
+    {
+      text: item.label,
+      color: '#334155',
+      fontSize: 10,
+      border: [false, false, false, false] as [boolean, boolean, boolean, boolean],
+    },
+  ]);
+
+  return [
+    {
+      text: chart.title,
+      fontSize: 15,
+      bold: true,
+      color: '#003366',
+      margin: [0, 0, 0, 4],
+    },
+    {
+      text: `${chart.description} (все строки выборки)`,
+      fontSize: 10,
+      color: '#64748B',
+      margin: [0, 0, 0, 12],
+    },
+    {
+      table: {
+        headerRows: 1,
+        widths: [72, '*', 54, 54, 54, 54],
+        body,
+        dontBreakRows: true,
+      },
+      layout: {
+        hLineColor: () => '#E2E8F0',
+        vLineColor: () => '#E2E8F0',
+        paddingLeft: () => 4,
+        paddingRight: () => 4,
+        paddingTop: () => 3,
+        paddingBottom: () => 3,
+      },
+      margin: [0, 0, 0, 14],
+    } as Content,
+    {
+      text: 'Доля рекомендаций',
+      fontSize: 12,
+      bold: true,
+      color: '#003366',
+      margin: [0, 0, 0, 6],
+    },
+    {
+      table: {
+        headerRows: 1,
+        widths: [120, '*'],
+        body: shareBody,
+      },
+      layout: {
+        hLineColor: () => '#E2E8F0',
+        vLineColor: () => '#E2E8F0',
+        paddingLeft: () => 6,
+        paddingRight: () => 6,
+        paddingTop: () => 4,
+        paddingBottom: () => 4,
+      },
+      margin: [0, 0, 0, 8],
+    } as Content,
+    {
+      text: `Итого: ${formatStatusChecksCount(rows.length)}`,
+      fontSize: 10,
+      color: '#64748B',
+      margin: [0, 4, 0, 8],
+    },
+    {
+      table: {
+        widths: [16, '*'],
+        body: legendBody,
+      },
+      layout: {
+        defaultBorder: false,
+        paddingLeft: () => 0,
+        paddingRight: () => 8,
+        paddingTop: () => 2,
+        paddingBottom: () => 2,
+      },
+    } as Content,
+  ];
+}
+
 const DOCX_PAGE_MARGIN_TWIPS = 720;
 const DOCX_CHART_MAX_WIDTH = 980;
 const DOCX_CHART_MAX_HEIGHT = 520;
@@ -432,8 +571,9 @@ async function buildVisualPdf(options: {
   filenamePrefix: string;
   effectivenessMatrix?: EffectivenessMatrixRow[];
   materialityMatrix?: MaterialityMatrixRow[];
+  statusMatrix?: StatusMatrixRow[];
 }) {
-  const { documentTitle, meta, charts, filenamePrefix, effectivenessMatrix, materialityMatrix } = options;
+  const { documentTitle, meta, charts, filenamePrefix, effectivenessMatrix, materialityMatrix, statusMatrix } = options;
   const content: Content[] = [
     {
       text: documentTitle,
@@ -478,6 +618,10 @@ async function buildVisualPdf(options: {
     }
     if (chart.id === 'materialityMatrix' && materialityMatrix?.length) {
       content.push(...buildMaterialityMatrixPdfContent(chart, materialityMatrix));
+      return;
+    }
+    if (chart.id === 'statusMatrix' && statusMatrix?.length) {
+      content.push(...buildStatusMatrixPdfContent(chart, statusMatrix));
       return;
     }
     const fitted = fitImageSize(chart.width * 2, chart.height * 2, 760, 430);
@@ -896,6 +1040,172 @@ function writeMaterialityMatrixSheet(
   sheet.getCell(totalRow, 1).font = { name: 'Calibri', size: 10, color: { argb: 'FF64748B' } };
 }
 
+function writeStatusMatrixSheet(
+  workbook: ExcelJS.Workbook,
+  sheetName: string,
+  chart: DashboardChartCapture,
+  rows: StatusMatrixRow[],
+) {
+  const sheet = workbook.addWorksheet(sheetName, {
+    properties: { tabColor: { argb: 'FF0891B2' } },
+    views: [{ showGridLines: false }],
+  });
+
+  const headers = [
+    'Ключ проверки',
+    'Краткое название проверки',
+    ...STATUS_MATRIX_COLUMNS.map((column) => column.label),
+  ];
+  const keyColumnWidth = 18;
+  const shortNameColumnWidth = 72;
+  sheet.columns = [
+    { width: keyColumnWidth },
+    { width: shortNameColumnWidth },
+    ...STATUS_MATRIX_COLUMNS.map(() => ({ width: 16 })),
+  ];
+
+  sheet.mergeCells(1, 1, 1, headers.length);
+  sheet.getCell(1, 1).value = chart.title;
+  sheet.getCell(1, 1).font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF003366' } };
+  sheet.getRow(1).height = 24;
+
+  sheet.mergeCells(2, 1, 2, headers.length);
+  sheet.getCell(2, 1).value = chart.description || 'Матрица статусов по проверкам за период (все строки выборки)';
+  sheet.getCell(2, 1).font = { name: 'Calibri', size: 10, color: { argb: 'FF64748B' } };
+  sheet.getRow(2).height = 18;
+
+  const headerRow = sheet.getRow(4);
+  headers.forEach((header, index) => {
+    const cell = headerRow.getCell(index + 1);
+    cell.value = header;
+    cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0891B2' } };
+    cell.alignment = { horizontal: index < 2 ? 'left' : 'center', vertical: 'middle', wrapText: true };
+    cell.border = {
+      top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+    };
+  });
+  headerRow.height = 22;
+
+  rows.forEach((row, rowIndex) => {
+    const excelRow = sheet.getRow(5 + rowIndex);
+    const keyCell = excelRow.getCell(1);
+    keyCell.value = row.key;
+    keyCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF111827' } };
+    keyCell.alignment = { horizontal: 'left', vertical: 'middle' };
+
+    const shortNameCell = excelRow.getCell(2);
+    const shortNameValue = row.shortName || '—';
+    shortNameCell.value = shortNameValue;
+    shortNameCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF111827' } };
+    shortNameCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+
+    const usableWidth = Math.max(Math.floor(shortNameColumnWidth * 0.75), 8);
+    const wrappedLineCount = shortNameValue
+      .toString()
+      .split(/\r?\n/)
+      .reduce((sum, part) => sum + Math.max(1, Math.ceil(part.length / usableWidth)), 0);
+
+    STATUS_MATRIX_COLUMNS.forEach((column, columnIndex) => {
+      const cell = excelRow.getCell(columnIndex + 3);
+      cell.value = getStatusMatrixCount(row, column.key);
+      cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF1E293B' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        right: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+      };
+    });
+
+    [1, 2].forEach((columnIndex) => {
+      const cell = excelRow.getCell(columnIndex);
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        right: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+      };
+    });
+    excelRow.height = Math.min(72, Math.max(18, 18 * wrappedLineCount + 2));
+  });
+
+  const shares = buildStatusMatrixColumnShares(rows);
+  const shareStartRow = 5 + rows.length + 2;
+  sheet.mergeCells(shareStartRow, 1, shareStartRow, headers.length);
+  const shareTitleCell = sheet.getCell(shareStartRow, 1);
+  shareTitleCell.value = 'Доля рекомендаций';
+  shareTitleCell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF003366' } };
+  sheet.getRow(shareStartRow).height = 20;
+
+  const shareHeaderRow = sheet.getRow(shareStartRow + 1);
+  ['Статус', 'Доля рекомендаций'].forEach((header, index) => {
+    const cell = shareHeaderRow.getCell(index + 1);
+    cell.value = header;
+    cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF003366' } };
+    cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+    cell.border = {
+      top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+    };
+  });
+  shareHeaderRow.height = 22;
+
+  shares.forEach((share, index) => {
+    const excelRow = sheet.getRow(shareStartRow + 2 + index);
+    const areaCell = excelRow.getCell(1);
+    areaCell.value = share.label;
+    areaCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF334155' } };
+    const shareCell = excelRow.getCell(2);
+    shareCell.value = `${share.percent}% (${share.count})`;
+    shareCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF334155' } };
+    [1, 2].forEach((columnIndex) => {
+      const cell = excelRow.getCell(columnIndex);
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        right: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+      };
+    });
+    excelRow.height = 22;
+  });
+
+  const legendStartRow = shareStartRow + 2 + STATUS_MATRIX_COLUMNS.length + 2;
+  sheet.mergeCells(legendStartRow, 1, legendStartRow, headers.length);
+  const legendTitleCell = sheet.getCell(legendStartRow, 1);
+  legendTitleCell.value = 'Легенда';
+  legendTitleCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF003366' } };
+
+  STATUS_MATRIX_LEGEND.forEach((item, index) => {
+    const excelRow = sheet.getRow(legendStartRow + 1 + index);
+    const swatchCell = excelRow.getCell(1);
+    swatchCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: hexToArgb(item.color) } };
+    swatchCell.border = {
+      top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+      right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+    };
+    const labelCell = excelRow.getCell(2);
+    labelCell.value = item.label;
+    labelCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF334155' } };
+    excelRow.height = 18;
+  });
+
+  const totalRow = legendStartRow + 1 + STATUS_MATRIX_LEGEND.length + 1;
+  sheet.mergeCells(totalRow, 1, totalRow, headers.length);
+  sheet.getCell(totalRow, 1).value = `Итого: ${formatStatusChecksCount(rows.length)}`;
+  sheet.getCell(totalRow, 1).font = { name: 'Calibri', size: 10, color: { argb: 'FF64748B' } };
+}
+
 async function buildVisualXlsx(options: {
   documentTitle: string;
   meta: VisualExportMetaRow[];
@@ -904,8 +1214,9 @@ async function buildVisualXlsx(options: {
   filenamePrefix: string;
   effectivenessMatrix?: EffectivenessMatrixRow[];
   materialityMatrix?: MaterialityMatrixRow[];
+  statusMatrix?: StatusMatrixRow[];
 }) {
-  const { documentTitle, meta, charts, kind, filenamePrefix, effectivenessMatrix, materialityMatrix } = options;
+  const { documentTitle, meta, charts, kind, filenamePrefix, effectivenessMatrix, materialityMatrix, statusMatrix } = options;
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'SOKOL';
   workbook.created = new Date();
@@ -935,6 +1246,7 @@ async function buildVisualXlsx(options: {
   let writtenSheets = 0;
   let wroteEffectivenessMatrix = false;
   let wroteMaterialityMatrix = false;
+  let wroteStatusMatrix = false;
 
   const writeMatrixIfNeeded = (chart?: DashboardChartCapture) => {
     if (!effectivenessMatrix?.length || wroteEffectivenessMatrix) {
@@ -988,6 +1300,32 @@ async function buildVisualXlsx(options: {
     writtenSheets += 1;
   };
 
+  const writeStatusMatrixIfNeeded = (chart?: DashboardChartCapture) => {
+    if (!statusMatrix?.length || wroteStatusMatrix) {
+      return;
+    }
+    let sheetName = sheetNameForSection(kind, 'statusMatrix', chart?.title || 'Матрица статусов');
+    if (usedNames.has(sheetName)) {
+      sheetName = `${sheetName.slice(0, 28)}_matrix`;
+    }
+    usedNames.add(sheetName);
+    writeStatusMatrixSheet(
+      workbook,
+      sheetName,
+      chart ?? {
+        id: 'statusMatrix',
+        title: 'Матрица статусов',
+        description: 'Матрица статусов по проверкам за период (все строки выборки)',
+        dataUrl: '',
+        width: 960,
+        height: 540,
+      },
+      statusMatrix,
+    );
+    wroteStatusMatrix = true;
+    writtenSheets += 1;
+  };
+
   for (const [index, chart] of charts.entries()) {
     if (chart.id === 'effectivenessMatrix') {
       writeMatrixIfNeeded(chart);
@@ -995,6 +1333,10 @@ async function buildVisualXlsx(options: {
     }
     if (chart.id === 'materialityMatrix') {
       writeMaterialityMatrixIfNeeded(chart);
+      continue;
+    }
+    if (chart.id === 'statusMatrix') {
+      writeStatusMatrixIfNeeded(chart);
       continue;
     }
 
@@ -1044,6 +1386,7 @@ async function buildVisualXlsx(options: {
 
   writeMatrixIfNeeded();
   writeMaterialityMatrixIfNeeded();
+  writeStatusMatrixIfNeeded();
 
   if (writtenSheets === 0) {
     throw new Error('Не удалось сформировать листы дашбордов для Excel. Обновите страницу и попробуйте снова.');
@@ -1269,14 +1612,329 @@ function createEffectivenessLegendDocxTable(): Table {
   });
 }
 
+function createColorLegendDocxTable(items: Array<{ label: string; color: string }>): Table {
+  const cellMargin = 70;
+  const legendRows = items.map((item) => {
+    return new TableRow({
+      children: [
+        new TableCell({
+          width: { size: 8, type: WidthType.PERCENTAGE },
+          margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+          shading: { type: ShadingType.CLEAR, fill: toDocxHexColor(item.color), color: 'auto' },
+          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: ' ', size: 18 })] })],
+        }),
+        new TableCell({
+          width: { size: 92, type: WidthType.PERCENTAGE },
+          margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.LEFT,
+              children: [new TextRun({ text: item.label, color: '334155', size: 18 })],
+            }),
+          ],
+        }),
+      ],
+    });
+  });
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: legendRows,
+  });
+}
+
+function createShareDocxTable(labelHeader: string, valueHeader: string, rows: Array<{ label: string; text: string }>): Table {
+  const cellMargin = 70;
+  const headerFill = '003366';
+  const headerTextColor = 'FFFFFF';
+  const bodyTextColor = '334155';
+
+  const headerRow = new TableRow({
+    children: [
+      new TableCell({
+        width: { size: 24, type: WidthType.PERCENTAGE },
+        margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+        shading: { type: ShadingType.CLEAR, fill: headerFill, color: 'auto' },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.LEFT,
+            children: [new TextRun({ text: labelHeader, bold: true, color: headerTextColor, size: 20 })],
+          }),
+        ],
+      }),
+      new TableCell({
+        width: { size: 76, type: WidthType.PERCENTAGE },
+        margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+        shading: { type: ShadingType.CLEAR, fill: headerFill, color: 'auto' },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.LEFT,
+            children: [new TextRun({ text: valueHeader, bold: true, color: headerTextColor, size: 20 })],
+          }),
+        ],
+      }),
+    ],
+  });
+
+  const bodyRows = rows.map((row) => new TableRow({
+    children: [
+      new TableCell({
+        width: { size: 24, type: WidthType.PERCENTAGE },
+        margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.LEFT,
+            children: [new TextRun({ text: row.label, bold: true, color: bodyTextColor, size: 20 })],
+          }),
+        ],
+      }),
+      new TableCell({
+        width: { size: 76, type: WidthType.PERCENTAGE },
+        margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.LEFT,
+            children: [new TextRun({ text: row.text, color: bodyTextColor, size: 18 })],
+          }),
+        ],
+      }),
+    ],
+  }));
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: DOCX_FRAME_BORDER,
+      bottom: DOCX_FRAME_BORDER,
+      left: DOCX_FRAME_BORDER,
+      right: DOCX_FRAME_BORDER,
+      insideHorizontal: DOCX_FRAME_BORDER,
+      insideVertical: DOCX_FRAME_BORDER,
+    },
+    rows: [headerRow, ...bodyRows],
+  });
+}
+
+function createMaterialityMatrixDocxTable(rows: MaterialityMatrixRow[]): Table {
+  const cellMargin = 70;
+  const headerFill = '003366';
+  const headerTextColor = 'FFFFFF';
+  const bodyTextColor = '334155';
+  const columnWidths = [16, 30, 13, 13, 13, 15];
+  const headers = [
+    'Ключ',
+    'Краткое название проверки',
+    ...MATERIALITY_MATRIX_COLUMNS.map((column) => column.label),
+    MATERIALITY_MATRIX_TOTAL_COLUMN.label,
+  ];
+
+  const headerRow = new TableRow({
+    children: headers.map((text, index) => {
+      const width = columnWidths[index] ?? 14;
+      return new TableCell({
+        width: { size: width, type: WidthType.PERCENTAGE },
+        margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+        shading: { type: ShadingType.CLEAR, fill: headerFill, color: 'auto' },
+        children: [
+          new Paragraph({
+            alignment: index < 2 ? AlignmentType.LEFT : AlignmentType.CENTER,
+            children: [new TextRun({ text, bold: true, color: headerTextColor, size: 20 })],
+          }),
+        ],
+      });
+    }),
+  });
+
+  const bodyRows = rows.map((row) => {
+    const keyCell = new TableCell({
+      width: { size: columnWidths[0], type: WidthType.PERCENTAGE },
+      margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.LEFT,
+          children: [new TextRun({ text: row.key, bold: true, color: bodyTextColor, size: 20 })],
+        }),
+      ],
+    });
+
+    const shortNameCell = new TableCell({
+      width: { size: columnWidths[1], type: WidthType.PERCENTAGE },
+      margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.LEFT,
+          children: [
+            new TextRun({
+              text: row.shortName || row.name || '—',
+              color: bodyTextColor,
+              size: 20,
+            }),
+          ],
+        }),
+      ],
+    });
+
+    const countCells = MATERIALITY_MATRIX_COLUMNS.map((column, index) => {
+      const count = getMaterialityMatrixCount(row, column.key);
+      const fill = toDocxHexColor(getMaterialityLevelColor(column.level));
+      const width = columnWidths[index + 2] ?? 13;
+      return new TableCell({
+        width: { size: width, type: WidthType.PERCENTAGE },
+        margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+        shading: { type: ShadingType.CLEAR, fill, color: 'auto' },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: String(count), bold: true, color: '1E293B', size: 20 })],
+          }),
+        ],
+      });
+    });
+
+    const totalCell = new TableCell({
+      width: { size: columnWidths[5], type: WidthType.PERCENTAGE },
+      margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: String(row.total), bold: true, color: '1E293B', size: 20 })],
+        }),
+      ],
+    });
+
+    return new TableRow({ children: [keyCell, shortNameCell, ...countCells, totalCell] });
+  });
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: DOCX_FRAME_BORDER,
+      bottom: DOCX_FRAME_BORDER,
+      left: DOCX_FRAME_BORDER,
+      right: DOCX_FRAME_BORDER,
+      insideHorizontal: DOCX_FRAME_BORDER,
+      insideVertical: DOCX_FRAME_BORDER,
+    },
+    rows: [headerRow, ...bodyRows],
+  });
+}
+
+function createStatusMatrixDocxTable(rows: StatusMatrixRow[]): Table {
+  const cellMargin = 70;
+  const headerFill = '003366';
+  const headerTextColor = 'FFFFFF';
+  const bodyTextColor = '334155';
+  const columnWidths = [16, 32, 13, 13, 13, 13];
+  const headers = [
+    'Ключ проверки',
+    'Краткое название проверки',
+    ...STATUS_MATRIX_COLUMNS.map((column) => column.label),
+  ];
+
+  const headerRow = new TableRow({
+    children: headers.map((text, index) => {
+      const width = columnWidths[index] ?? 13;
+      return new TableCell({
+        width: { size: width, type: WidthType.PERCENTAGE },
+        margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+        shading: { type: ShadingType.CLEAR, fill: headerFill, color: 'auto' },
+        children: [
+          new Paragraph({
+            alignment: index < 2 ? AlignmentType.LEFT : AlignmentType.CENTER,
+            children: [new TextRun({ text, bold: true, color: headerTextColor, size: 20 })],
+          }),
+        ],
+      });
+    }),
+  });
+
+  const bodyRows = rows.map((row) => {
+    const keyCell = new TableCell({
+      width: { size: columnWidths[0], type: WidthType.PERCENTAGE },
+      margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.LEFT,
+          children: [new TextRun({ text: row.key, bold: true, color: bodyTextColor, size: 20 })],
+        }),
+      ],
+    });
+
+    const shortNameCell = new TableCell({
+      width: { size: columnWidths[1], type: WidthType.PERCENTAGE },
+      margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.LEFT,
+          children: [
+            new TextRun({
+              text: row.shortName || row.name || '—',
+              color: bodyTextColor,
+              size: 20,
+            }),
+          ],
+        }),
+      ],
+    });
+
+    const countCells = STATUS_MATRIX_COLUMNS.map((column, index) => {
+      const width = columnWidths[index + 2] ?? 13;
+      return new TableCell({
+        width: { size: width, type: WidthType.PERCENTAGE },
+        margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text: String(getStatusMatrixCount(row, column.key)),
+                bold: true,
+                color: '1E293B',
+                size: 20,
+              }),
+            ],
+          }),
+        ],
+      });
+    });
+
+    return new TableRow({ children: [keyCell, shortNameCell, ...countCells] });
+  });
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: DOCX_FRAME_BORDER,
+      bottom: DOCX_FRAME_BORDER,
+      left: DOCX_FRAME_BORDER,
+      right: DOCX_FRAME_BORDER,
+      insideHorizontal: DOCX_FRAME_BORDER,
+      insideVertical: DOCX_FRAME_BORDER,
+    },
+    rows: [headerRow, ...bodyRows],
+  });
+}
+
+function materialityShareDocxRows(rows: MaterialityMatrixRow[]) {
+  const totals = buildMaterialityMatrixColumnTotals(rows);
+  const grandTotal = materialityMatrixGrandTotal(rows);
+  return MATERIALITY_MATRIX_COLUMNS.map((column) => {
+    const count = totals[column.key];
+    const percent = grandTotal === 0 ? 0 : Math.round((count / grandTotal) * 100);
+    return { label: column.label, text: `${percent}% (${count})` };
+  });
+}
+
 async function buildVisualDocx(options: {
   documentTitle: string;
   meta: VisualExportMetaRow[];
   charts: DashboardChartCapture[];
   filenamePrefix: string;
   effectivenessMatrix?: EffectivenessMatrixRow[];
+  materialityMatrix?: MaterialityMatrixRow[];
+  statusMatrix?: StatusMatrixRow[];
 }) {
-  const { documentTitle, meta, charts, filenamePrefix, effectivenessMatrix } = options;
+  const { documentTitle, meta, charts, filenamePrefix, effectivenessMatrix, materialityMatrix, statusMatrix } = options;
   const metaTable = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     rows: meta.map(
@@ -1343,6 +2001,104 @@ async function buildVisualDocx(options: {
             spacing: { after: 10 },
           }),
           createEffectivenessLegendDocxTable(),
+        ],
+      };
+    }
+
+    const canRenderMaterialityMatrix =
+      chart.id === 'materialityMatrix' && Boolean(materialityMatrix?.length);
+    if (canRenderMaterialityMatrix) {
+      const baseDescription = chart.description || 'Матрица существенности';
+      const fullDescription = baseDescription.includes('(все строки выборки)')
+        ? baseDescription
+        : `${baseDescription} (все строки выборки)`;
+
+      return {
+        properties: {
+          page: DOCX_LANDSCAPE_PAGE,
+        },
+        children: [
+          new Paragraph({
+            text: chart.title,
+            heading: HeadingLevel.HEADING_2,
+            spacing: { after: 80 },
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: fullDescription, color: '64748B', size: 20 })],
+            spacing: { after: 40 },
+          }),
+          createMaterialityMatrixDocxTable(materialityMatrix!),
+          new Paragraph({
+            children: [new TextRun({ text: 'Доля рекомендаций', bold: true, color: '003366', size: 22 })],
+            spacing: { after: 20 },
+          }),
+          createShareDocxTable('Уровень', 'Доля рекомендаций', materialityShareDocxRows(materialityMatrix!)),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `Итого: ${formatMaterialityChecksCount(materialityMatrix!.length)}`,
+                color: '64748B',
+                size: 18,
+              }),
+            ],
+            spacing: { after: 10 },
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: 'Легенда', bold: true, color: '003366', size: 20 })],
+            spacing: { after: 10 },
+          }),
+          createColorLegendDocxTable(MATERIALITY_MATRIX_LEGEND),
+        ],
+      };
+    }
+
+    const canRenderStatusMatrix = chart.id === 'statusMatrix' && Boolean(statusMatrix?.length);
+    if (canRenderStatusMatrix) {
+      const baseDescription = chart.description || 'Матрица статусов по проверкам за период';
+      const fullDescription = baseDescription.includes('(все строки выборки)')
+        ? baseDescription
+        : `${baseDescription} (все строки выборки)`;
+      const shares = buildStatusMatrixColumnShares(statusMatrix!);
+
+      return {
+        properties: {
+          page: DOCX_LANDSCAPE_PAGE,
+        },
+        children: [
+          new Paragraph({
+            text: chart.title,
+            heading: HeadingLevel.HEADING_2,
+            spacing: { after: 80 },
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: fullDescription, color: '64748B', size: 20 })],
+            spacing: { after: 40 },
+          }),
+          createStatusMatrixDocxTable(statusMatrix!),
+          new Paragraph({
+            children: [new TextRun({ text: 'Доля рекомендаций', bold: true, color: '003366', size: 22 })],
+            spacing: { after: 20 },
+          }),
+          createShareDocxTable(
+            'Статус',
+            'Доля рекомендаций',
+            shares.map((share) => ({ label: share.label, text: `${share.percent}% (${share.count})` })),
+          ),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `Итого: ${formatStatusChecksCount(statusMatrix!.length)}`,
+                color: '64748B',
+                size: 18,
+              }),
+            ],
+            spacing: { after: 10 },
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: 'Легенда', bold: true, color: '003366', size: 20 })],
+            spacing: { after: 10 },
+          }),
+          createColorLegendDocxTable(STATUS_MATRIX_LEGEND),
         ],
       };
     }
@@ -1465,9 +2221,68 @@ function orderChartsBySelection(
   return [...charts].sort((left, right) => (order.get(left.id) ?? 999) - (order.get(right.id) ?? 999));
 }
 
+function matrixChartPlaceholder(
+  id: 'effectivenessMatrix' | 'materialityMatrix' | 'statusMatrix',
+): DashboardChartCapture {
+  if (id === 'effectivenessMatrix') {
+    return {
+      id,
+      title: 'Оценка эффективности',
+      description: 'Матрица оценок по проверкам за период',
+      dataUrl: '',
+      width: 960,
+      height: 540,
+    };
+  }
+  if (id === 'materialityMatrix') {
+    return {
+      id,
+      title: 'Матрица существенности',
+      description: '',
+      dataUrl: '',
+      width: 960,
+      height: 540,
+    };
+  }
+  return {
+    id,
+    title: 'Матрица статусов',
+    description: 'Матрица статусов по проверкам за период',
+    dataUrl: '',
+    width: 960,
+    height: 540,
+  };
+}
+
+function ensureMatrixCharts(
+  charts: DashboardChartCapture[],
+  selectedSections: string[],
+  flags: {
+    effectiveness: boolean;
+    materiality: boolean;
+    status: boolean;
+  },
+): DashboardChartCapture[] {
+  const next = [...charts];
+  const ensure = (
+    id: 'effectivenessMatrix' | 'materialityMatrix' | 'statusMatrix',
+    enabled: boolean,
+  ) => {
+    if (enabled && !next.some((chart) => chart.id === id)) {
+      next.push(matrixChartPlaceholder(id));
+    }
+  };
+  ensure('effectivenessMatrix', flags.effectiveness);
+  ensure('materialityMatrix', flags.materiality);
+  ensure('statusMatrix', flags.status);
+  return orderChartsBySelection(next, selectedSections);
+}
+
 function resolveHtmlChartBody(chart: DashboardChartCapture, index: number): string {
   const prefersHtml =
     chart.id === 'effectivenessMatrix'
+    || chart.id === 'materialityMatrix'
+    || chart.id === 'statusMatrix'
     || chart.htmlMarkup?.includes('class="chart-html"')
     || chart.htmlMarkup?.includes('class="kpi-strip"');
   if (prefersHtml && chart.htmlMarkup) {
@@ -2112,6 +2927,45 @@ function enrichMaterialityMatrixCapture(
   ];
 }
 
+function enrichStatusMatrixCapture(
+  charts: DashboardChartCapture[],
+  rows: StatusMatrixRow[] | undefined,
+  selected: boolean,
+): DashboardChartCapture[] {
+  if (!selected || !rows?.length) {
+    return charts;
+  }
+
+  const htmlMarkup = buildStatusMatrixHtmlMarkup(rows);
+  const matrixMeta = {
+    id: 'statusMatrix',
+    title: 'Матрица статусов',
+    description: 'Матрица статусов по проверкам за период',
+    width: 960,
+    height: 540,
+  } as const;
+
+  const index = charts.findIndex((chart) => chart.id === 'statusMatrix');
+  if (index >= 0) {
+    const next = [...charts];
+    next[index] = {
+      ...next[index],
+      htmlMarkup,
+      svgMarkup: undefined,
+    };
+    return next;
+  }
+
+  return [
+    ...charts,
+    {
+      ...matrixMeta,
+      dataUrl: '',
+      htmlMarkup,
+    },
+  ];
+}
+
 export async function exportVisualAnalyticsReport(options: {
   format: 'xlsx' | 'pdf' | 'docx' | 'html';
   kind: VisualAnalyticsKind;
@@ -2121,30 +2975,37 @@ export async function exportVisualAnalyticsReport(options: {
   selectedSections: string[];
   effectivenessMatrix?: EffectivenessMatrixRow[];
   materialityMatrix?: MaterialityMatrixRow[];
+  statusMatrix?: StatusMatrixRow[];
 }) {
   const capturedCharts = await captureDashboardCharts(options.selectedSections, {
     // Keep PNG snapshots for HTML too — several inline SVGs otherwise clash on duplicate ids.
     skipPng: false,
   });
-  const htmlCharts = enrichMaterialityMatrixCapture(
-    enrichEffectivenessMatrixCapture(
-      capturedCharts,
-      options.effectivenessMatrix,
-      options.selectedSections.includes('effectivenessMatrix'),
+  const htmlCharts = enrichStatusMatrixCapture(
+    enrichMaterialityMatrixCapture(
+      enrichEffectivenessMatrixCapture(
+        capturedCharts,
+        options.effectivenessMatrix,
+        options.selectedSections.includes('effectivenessMatrix'),
+      ),
+      options.materialityMatrix,
+      options.selectedSections.includes('materialityMatrix'),
     ),
-    options.materialityMatrix,
-    options.selectedSections.includes('materialityMatrix'),
+    options.statusMatrix,
+    options.selectedSections.includes('statusMatrix'),
   );
   const charts = orderChartsBySelection(
     options.format === 'html' ? htmlCharts : capturedCharts,
     options.selectedSections,
   );
+  const canRenderMaterialityMatrixTable =
+    Boolean(options.materialityMatrix?.length) && options.selectedSections.includes('materialityMatrix');
+  const canRenderEffectivenessMatrixTable =
+    Boolean(options.effectivenessMatrix?.length) && options.selectedSections.includes('effectivenessMatrix');
+  const canRenderStatusMatrixTable =
+    Boolean(options.statusMatrix?.length) && options.selectedSections.includes('statusMatrix');
   const canExportMatrixOnly =
-    (options.format === 'xlsx' || options.format === 'html')
-    && (
-      (Boolean(options.effectivenessMatrix?.length) && options.selectedSections.includes('effectivenessMatrix'))
-      || (Boolean(options.materialityMatrix?.length) && options.selectedSections.includes('materialityMatrix'))
-    );
+    canRenderEffectivenessMatrixTable || canRenderMaterialityMatrixTable || canRenderStatusMatrixTable;
   if (charts.length === 0 && !canExportMatrixOnly) {
     throw new Error(
       'Не удалось снять выбранные дашборды. Отметьте карточки с графиками (не только «Исходные данные») и убедитесь, что они видны на экране.',
@@ -2152,62 +3013,53 @@ export async function exportVisualAnalyticsReport(options: {
   }
 
   const chartsWithPng = charts.filter((chart) => chartHasPngPayload(chart.dataUrl));
-  const canRenderMaterialityMatrixTable =
-    Boolean(options.materialityMatrix?.length) && options.selectedSections.includes('materialityMatrix');
-  const canRenderEffectivenessMatrixTable =
-    Boolean(options.effectivenessMatrix?.length) && options.selectedSections.includes('effectivenessMatrix');
 
   if (options.format === 'pdf') {
-    const chartsForPdf = charts.filter(
-      (chart) =>
-        chartHasPngPayload(chart.dataUrl)
-        || (canRenderEffectivenessMatrixTable && chart.id === 'effectivenessMatrix')
-        || (canRenderMaterialityMatrixTable && chart.id === 'materialityMatrix'),
+    const chartsForPdf = ensureMatrixCharts(
+      charts.filter(
+        (chart) =>
+          chartHasPngPayload(chart.dataUrl)
+          || (canRenderEffectivenessMatrixTable && chart.id === 'effectivenessMatrix')
+          || (canRenderMaterialityMatrixTable && chart.id === 'materialityMatrix')
+          || (canRenderStatusMatrixTable && chart.id === 'statusMatrix'),
+      ),
+      options.selectedSections,
+      {
+        effectiveness: canRenderEffectivenessMatrixTable,
+        materiality: canRenderMaterialityMatrixTable,
+        status: canRenderStatusMatrixTable,
+      },
     );
-    if (chartsForPdf.length === 0 && !canRenderMaterialityMatrixTable && !canRenderEffectivenessMatrixTable) {
+    if (chartsForPdf.length === 0) {
       throw new Error('Не удалось снять изображения дашбордов для PDF. Обновите страницу и попробуйте снова.');
     }
-    const pdfCharts =
-      chartsForPdf.length > 0
-        ? chartsForPdf
-        : [
-            ...(canRenderEffectivenessMatrixTable
-              ? [{
-                  id: 'effectivenessMatrix',
-                  title: 'Оценка эффективности',
-                  description: 'Матрица оценок по проверкам за период',
-                  dataUrl: '',
-                  width: 960,
-                  height: 540,
-                } satisfies DashboardChartCapture]
-              : []),
-            ...(canRenderMaterialityMatrixTable
-              ? [{
-                  id: 'materialityMatrix',
-                  title: 'Матрица существенности',
-                  description: '',
-                  dataUrl: '',
-                  width: 960,
-                  height: 540,
-                } satisfies DashboardChartCapture]
-              : []),
-          ];
     await buildVisualPdf({
       documentTitle: options.documentTitle,
       meta: options.meta,
-      charts: pdfCharts,
+      charts: chartsForPdf,
       filenamePrefix: options.filenamePrefix,
       effectivenessMatrix: options.effectivenessMatrix,
       materialityMatrix: options.materialityMatrix,
+      statusMatrix: options.statusMatrix,
     });
     return;
   }
 
   if (options.format === 'docx') {
-    const chartsForDocx = charts.filter(
-      (chart) =>
-        chartHasPngPayload(chart.dataUrl)
-        || (canRenderEffectivenessMatrixTable && chart.id === 'effectivenessMatrix'),
+    const chartsForDocx = ensureMatrixCharts(
+      charts.filter(
+        (chart) =>
+          chartHasPngPayload(chart.dataUrl)
+          || (canRenderEffectivenessMatrixTable && chart.id === 'effectivenessMatrix')
+          || (canRenderMaterialityMatrixTable && chart.id === 'materialityMatrix')
+          || (canRenderStatusMatrixTable && chart.id === 'statusMatrix'),
+      ),
+      options.selectedSections,
+      {
+        effectiveness: canRenderEffectivenessMatrixTable,
+        materiality: canRenderMaterialityMatrixTable,
+        status: canRenderStatusMatrixTable,
+      },
     );
     if (chartsForDocx.length === 0) {
       throw new Error(
@@ -2220,6 +3072,8 @@ export async function exportVisualAnalyticsReport(options: {
       charts: chartsForDocx,
       filenamePrefix: options.filenamePrefix,
       effectivenessMatrix: options.effectivenessMatrix,
+      materialityMatrix: options.materialityMatrix,
+      statusMatrix: options.statusMatrix,
     });
     return;
   }
@@ -2234,7 +3088,8 @@ export async function exportVisualAnalyticsReport(options: {
     return;
   }
 
-  const hasMatrixTable = canRenderEffectivenessMatrixTable || canRenderMaterialityMatrixTable;
+  const hasMatrixTable =
+    canRenderEffectivenessMatrixTable || canRenderMaterialityMatrixTable || canRenderStatusMatrixTable;
   if (chartsWithPng.length === 0 && !hasMatrixTable) {
     throw new Error('Не удалось снять изображения дашбордов для Excel. Обновите страницу и попробуйте снова.');
   }
@@ -2246,5 +3101,6 @@ export async function exportVisualAnalyticsReport(options: {
     filenamePrefix: options.filenamePrefix,
     effectivenessMatrix: options.effectivenessMatrix,
     materialityMatrix: options.materialityMatrix,
+    statusMatrix: options.statusMatrix,
   });
 }

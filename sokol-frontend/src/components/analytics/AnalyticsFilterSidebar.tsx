@@ -34,10 +34,6 @@ export type AnalyticsFilterSidebarProps = {
   isExporting: boolean;
   canExport: boolean;
   onExport: () => void;
-  exportSelectedCount: number;
-  exportTotalCount: number;
-  onSelectAllExport: () => void;
-  onClearExport: () => void;
 };
 
 function SidebarSection({ title, children }: { title: string; children: ReactNode }) {

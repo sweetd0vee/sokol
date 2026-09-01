@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { getValueBasedColors, PALETTE } from './analyticsPalette';
 import { CHART_LEGEND_STYLE, CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
+import { formatChartLegendText } from './chartLegend';
 
 export type DonutDatum = {
   name: string;
@@ -28,8 +29,6 @@ type FocusableDonutChartProps = {
   legendFontWeight?: number;
   /** When true, legend shows percent first and absolute value in parentheses. */
   legendPercentFirst?: boolean;
-  /** When true, segments use a bold colored outline with white fill instead of solid fill. */
-  outlineOnly?: boolean;
   /** Ring (doughnut) layout: hollow center, white gaps, labels outside. */
   variant?: 'pie' | 'ring';
 };
@@ -185,7 +184,6 @@ export function FocusableDonutChart({
   legendFontSize = CHART_LEGEND_STYLE.fontSize,
   legendFontWeight = 400,
   legendPercentFirst = false,
-  outlineOnly = false,
   variant = 'pie',
 }: FocusableDonutChartProps) {
   const isRing = variant === 'ring';
@@ -201,13 +199,14 @@ export function FocusableDonutChart({
   const total = chartData.reduce((sum, entry) => sum + entry.value, 0);
 
   const formatLegendText = (item: DonutDatum) => {
-    if (resolvedLegendLabelMode !== 'both') {
-      return item.name;
-    }
     const percent = total > 0 ? Math.round((item.value / total) * 100) : 0;
-    return legendPercentFirst
-      ? `${item.name}: ${percent}% (${item.value})`
-      : `${item.name}: ${item.value} (${percent}%)`;
+    return formatChartLegendText({
+      name: item.name,
+      value: item.value,
+      percent,
+      mode: resolvedLegendLabelMode,
+      percentFirst: legendPercentFirst,
+    });
   };
 
   return (
@@ -221,11 +220,11 @@ export function FocusableDonutChart({
             cx="50%"
             cy={isRing || !showLegend ? '50%' : '42%'}
             innerRadius={isRing ? '48%' : 0}
-            outerRadius={isRing ? '70%' : outlineOnly ? '68%' : '72%'}
+            outerRadius={isRing ? '70%' : '72%'}
             startAngle={isRing ? 90 : 0}
             endAngle={isRing ? -270 : 360}
             paddingAngle={isRing ? 1.5 : 0}
-            stroke={isRing ? '#ffffff' : outlineOnly ? undefined : 'none'}
+            stroke={isRing ? '#ffffff' : 'none'}
             label={
               showValueLabels
                 ? isRing
@@ -245,19 +244,15 @@ export function FocusableDonutChart({
             {pieData.map((entry, index) => {
               const isDimmed = activeIndex !== null && activeIndex !== index;
               const isActive = activeIndex === index;
-              const strokeColor = isRing
-                ? '#ffffff'
-                : outlineOnly
-                  ? (isActive ? '#0f172a' : entry.color)
-                  : (isActive ? '#0f172a' : 'none');
+              const strokeColor = isRing ? '#ffffff' : (isActive ? '#0f172a' : 'none');
               return (
                 <Cell
                   key={entry.name}
-                  fill={outlineOnly && !isRing ? '#ffffff' : entry.color}
+                  fill={entry.color}
                   fillOpacity={isDimmed ? 0.32 : 1}
                   stroke={strokeColor}
-                  strokeWidth={isRing ? 3 : outlineOnly ? (isActive ? 12 : 10) : (isActive ? 1 : 0)}
-                  strokeOpacity={outlineOnly && !isRing && isDimmed ? 0.32 : 1}
+                  strokeWidth={isRing ? 3 : (isActive ? 1 : 0)}
+                  strokeOpacity={1}
                   style={{
                     cursor: 'pointer',
                     filter: isDimmed ? 'brightness(0.72) saturate(0.85)' : isActive ? 'brightness(1.04)' : undefined,

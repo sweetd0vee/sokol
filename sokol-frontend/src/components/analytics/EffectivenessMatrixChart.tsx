@@ -8,6 +8,7 @@ import {
   type EffectivenessColumnShare,
   type EffectivenessMatrixRow,
 } from '../../utils/checkAnalytics';
+import { MatrixChartShell, MatrixLegendFooter } from './matrixChartChrome';
 
 type EffectivenessMatrixChartProps = {
   rows: EffectivenessMatrixRow[];
@@ -53,10 +54,23 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
   );
 
   return (
-    <div data-export-html className="flex h-full min-h-[13rem] flex-col gap-2">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-100">
-        <div className="min-h-0 flex-1 overflow-auto">
-          <table className="w-full table-fixed border-collapse text-sm">
+    <MatrixChartShell
+      hoveredRow={hoveredRow}
+      footer={(
+        <MatrixLegendFooter
+          totalText={formatEffectivenessChecksCount(rows.length)}
+          totalProps={{ 'data-effectiveness-matrix-total': true }}
+          legend={EFFECTIVENESS_LEGEND.map((item) => ({
+            key: item.tone,
+            label: item.label,
+            color: item.color,
+          }))}
+          legendListProps={{ 'data-effectiveness-matrix-legend': true }}
+          swatchClassName="inline-block h-3 w-3 rounded-sm border border-black/10"
+        />
+      )}
+    >
+      <table className="w-full table-fixed border-collapse text-sm">
             <colgroup>
               <col className="w-[14%]" />
               <col className="w-[34%]" />
@@ -147,40 +161,7 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
                 ))}
               </tr>
             </tfoot>
-          </table>
-        </div>
-      </div>
-
-      {hoveredRow ? (
-        <p className="shrink-0 truncate text-xs text-gray-600" title={hoveredRow.name}>
-          <span className="font-semibold text-sber-dark">{hoveredRow.key}</span>
-          {': '}
-          {hoveredRow.name}
-        </p>
-      ) : null}
-
-      <div className="flex shrink-0 flex-wrap items-end justify-between gap-x-4 gap-y-1.5">
-        <p className="text-base font-medium text-gray-700" data-effectiveness-matrix-total>
-          <span className="font-semibold text-sber-dark">Итого:</span>{' '}
-          {formatEffectivenessChecksCount(rows.length)}
-        </p>
-
-        <ul
-          className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-base text-gray-700"
-          data-effectiveness-matrix-legend
-        >
-          {EFFECTIVENESS_LEGEND.map((item) => (
-            <li key={item.tone} className="inline-flex items-center gap-1.5">
-              <span
-                className="inline-block h-3 w-3 rounded-sm border border-black/10"
-                style={{ backgroundColor: item.color }}
-                aria-hidden
-              />
-              <span>{item.label}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+      </table>
+    </MatrixChartShell>
   );
 }

@@ -25,6 +25,7 @@ type ChartRegistration = {
 const EXPORT_CAPTURE_ATTRIBUTE = 'data-analytics-export-capture-id';
 const EXPORT_TITLE_ATTRIBUTE = 'data-analytics-export-title';
 const EXPORT_DESCRIPTION_ATTRIBUTE = 'data-analytics-export-description';
+const TABLE_EXPORT_CHART_IDS = new Set(['effectivenessMatrix', 'materialityMatrix', 'statusMatrix']);
 
 const chartRegistry = new Map<string, Set<ChartRegistration>>();
 
@@ -735,7 +736,9 @@ export async function captureDashboardCharts(
           node.scrollIntoView({ block: 'center', inline: 'nearest' });
         }
         await delay(320);
-        const captured = await captureNode(node, { skipPng: options?.skipPng });
+        const captured = await captureNode(node, {
+          skipPng: options?.skipPng || TABLE_EXPORT_CHART_IDS.has(id),
+        });
         const hasSvg = isUsefulSvgMarkup(captured.svgMarkup);
         const hasHtml = Boolean(captured.htmlMarkup);
         const hasPng = hasPngPayload(captured.dataUrl);

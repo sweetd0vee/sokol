@@ -6,6 +6,7 @@ import {
   type PeriodGranularity,
 } from './checkAnalytics';
 import type { MaterialityMatrixRow } from './materialityMatrix';
+import type { StatusMatrixRow } from './statusMatrix';
 import {
   exportVisualAnalyticsReport,
   type VisualAnalyticsKind,
@@ -54,6 +55,7 @@ export type GenericAnalyticsDashboardExportInput = {
   filenamePrefix: string;
   selectedSections: string[];
   meta: VisualExportMetaRow[];
+  statusMatrixOverride?: StatusMatrixRow[];
 };
 
 function formatFilterDate(date: Date | null) {
@@ -104,12 +106,16 @@ export async function exportGenericAnalyticsDashboard(
   input: GenericAnalyticsDashboardExportInput,
   format: AnalyticsExportFormat,
 ) {
+  const statusMatrix = input.selectedSections.includes('statusMatrix')
+    ? input.statusMatrixOverride
+    : undefined;
   await exportVisualAnalyticsReport({
     format,
     kind: input.kind,
     documentTitle: input.documentTitle,
     filenamePrefix: input.filenamePrefix,
     selectedSections: input.selectedSections,
+    statusMatrix,
     meta: [...input.meta, ['Сформировано', new Date().toLocaleString('ru-RU')]],
   });
 }
