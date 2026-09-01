@@ -29,6 +29,7 @@ type FocusableDonutChartProps = {
   legendFontWeight?: number;
   /** When true, legend shows percent first and absolute value in parentheses. */
   legendPercentFirst?: boolean;
+  legendLayout?: 'column' | 'row';
   /** Ring (doughnut) layout: hollow center, white gaps, percent labels on the ring. */
   variant?: 'pie' | 'ring';
   /** Color of in-slice percent / value labels. Defaults to white. */
@@ -155,6 +156,7 @@ export function FocusableDonutChart({
   legendFontSize = CHART_LEGEND_STYLE.fontSize,
   legendFontWeight = CHART_LEGEND_STYLE.fontWeight,
   legendPercentFirst = false,
+  legendLayout = 'column',
   variant = 'pie',
   valueLabelColor = '#ffffff',
 }: FocusableDonutChartProps) {
@@ -267,6 +269,7 @@ export function FocusableDonutChart({
         <ChartLegend
           fontSize={legendFontSize}
           fontWeight={legendFontWeight}
+          layout={legendLayout}
           items={chartData.map((item, index) => ({
             key: `${item.name}-${index}`,
             color: item.color,

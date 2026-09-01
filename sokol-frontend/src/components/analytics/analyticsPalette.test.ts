@@ -60,11 +60,11 @@ describe('applyValueBasedColors', () => {
 });
 
 describe('MONITORING_STATUS_COLORS', () => {
-  it('keeps teal and dusty lilac, and uses light grey / pale yellow for the middle statuses', () => {
+  it('keeps teal and dusty lilac, and uses light grey / butter yellow for the middle statuses', () => {
     expect(MONITORING_STATUS_COLORS.completed).toBe('#0E7490');
     expect(MONITORING_STATUS_COLORS.unresolved).toBe('#DAAAD1');
     expect(MONITORING_STATUS_COLORS.on_control).toBe('#DBDBDB');
-    expect(MONITORING_STATUS_COLORS.in_progress).toBe('#FFFFB9');
+    expect(MONITORING_STATUS_COLORS.in_progress).toBe('#FBEB8D');
   });
 });
 

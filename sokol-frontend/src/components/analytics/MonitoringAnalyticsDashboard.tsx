@@ -330,6 +330,7 @@ export function MonitoringAnalyticsDashboard() {
               <FocusableSquareCirclesChart
                 data={coloredStatusDistribution}
                 labelMode="both"
+                legendLayout="row"
               />
             ) : (
               <EmptyChart message="Нет данных" />
@@ -353,6 +354,7 @@ export function MonitoringAnalyticsDashboard() {
                 data={coloredAdditionalStatusDistribution}
                 variant="ring"
                 labelMode="both"
+                legendLayout="row"
               />
             ) : (
               <EmptyChart message="Нет данных" />

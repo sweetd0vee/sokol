@@ -24,26 +24,33 @@ type SquareCirclesChartProps = {
   legendPercentFirst?: boolean;
   legendFontSize?: number;
   legendFontWeight?: number;
-};
-
-type CircleSlot = {
-  x: number;
-  y: number;
+  legendLayout?: 'column' | 'row';
 };
 
 const VIEW_WIDTH = 200;
 const VIEW_HEIGHT = 68;
 const MAX_RADIUS = 19;
 const CIRCLE_Y = 34;
-const SIDE_PAD = 28;
+const CIRCLE_GAP = 4;
 const LABEL_FONT_SIZE = 4.2;
 
-function slotForIndex(index: number, count: number): CircleSlot {
-  if (count <= 1) {
-    return { x: VIEW_WIDTH / 2, y: CIRCLE_Y };
+function packCircleCenters(radii: number[]): number[] {
+  if (radii.length === 0) {
+    return [];
   }
-  const usable = VIEW_WIDTH - SIDE_PAD * 2;
-  return { x: SIDE_PAD + (usable * index) / (count - 1), y: CIRCLE_Y };
+  if (radii.length === 1) {
+    return [VIEW_WIDTH / 2];
+  }
+
+  const xs = [radii[0]];
+  for (let index = 1; index < radii.length; index += 1) {
+    xs.push(xs[index - 1] + radii[index - 1] + CIRCLE_GAP + radii[index]);
+  }
+
+  const left = xs[0] - radii[0];
+  const right = xs[xs.length - 1] + radii[xs.length - 1];
+  const offset = (VIEW_WIDTH - (right - left)) / 2 - left;
+  return xs.map((x) => x + offset);
 }
 
 function contrastLabelColor(fill?: string, fallback = '#111827') {
@@ -77,6 +84,7 @@ export function FocusableSquareCirclesChart({
   legendPercentFirst = false,
   legendFontSize = CHART_LEGEND_STYLE.fontSize,
   legendFontWeight = CHART_LEGEND_STYLE.fontWeight,
+  legendLayout = 'column',
 }: SquareCirclesChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -98,11 +106,22 @@ export function FocusableSquareCirclesChart({
   );
 
   const total = useMemo(() => data.reduce((sum, item) => sum + item.value, 0), [data]);
-  const maxShare = useMemo(() => {
-    if (total <= 0) {
-      return 0;
-    }
-    return Math.max(...slices.map((item) => item.value / total));
+  const packedSlices = useMemo(() => {
+    const maxShare =
+      total > 0 ? Math.max(...slices.map((item) => item.value / total), 0) : 0;
+    const radii = slices.map((item) => {
+      if (total <= 0 || maxShare <= 0) {
+        return 0;
+      }
+      return MAX_RADIUS * Math.sqrt(item.value / total / maxShare);
+    });
+    const xs = packCircleCenters(radii);
+    return slices.map((item, index) => ({
+      ...item,
+      radius: radii[index],
+      x: xs[index],
+      percent: total > 0 ? (item.value / total) * 100 : 0,
+    }));
   }, [slices, total]);
 
   return (
@@ -115,14 +134,10 @@ export function FocusableSquareCirclesChart({
           role="img"
           aria-label="Квадратная визуализация распределения"
         >
-          {slices.map((item, index) => {
-            const slot = slotForIndex(index, slices.length);
-            const percent = total > 0 ? (item.value / total) * 100 : 0;
-            const share = total > 0 ? item.value / total : 0;
-            const radius = maxShare > 0 ? MAX_RADIUS * Math.sqrt(share / maxShare) : 0;
+          {packedSlices.map((item, index) => {
             const isActive = activeIndex === index;
             const fill = item.color ?? palette[index % palette.length];
-            const roundedPercent = Math.round(percent);
+            const roundedPercent = Math.round(item.percent);
             const tooltip = formatChartLegendText({
               name: item.name,
               value: item.value,
@@ -139,9 +154,9 @@ export function FocusableSquareCirclesChart({
                 onMouseLeave={() => setActiveIndex(null)}
               >
                 <circle
-                  cx={slot.x}
-                  cy={slot.y}
-                  r={radius}
+                  cx={item.x}
+                  cy={CIRCLE_Y}
+                  r={item.radius}
                   fill={fill}
                   stroke={isActive ? '#0f172a' : 'none'}
                   strokeWidth={isActive ? 1 : 0}
@@ -153,18 +168,31 @@ export function FocusableSquareCirclesChart({
                 >
                   <title>{tooltip}</title>
                 </circle>
-                <text
-                  x={slot.x}
-                  y={slot.y}
-                  fill={contrastLabelColor(fill)}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fontSize={LABEL_FONT_SIZE}
-                  fontWeight={700}
-                  style={{ pointerEvents: 'none' }}
+                <foreignObject
+                  x={item.x - item.radius}
+                  y={CIRCLE_Y - item.radius}
+                  width={item.radius * 2}
+                  height={item.radius * 2}
+                  pointerEvents="none"
+                  overflow="visible"
                 >
-                  {roundedPercent}%
-                </text>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: `${item.radius * 2}px`,
+                      height: `${item.radius * 2}px`,
+                      color: contrastLabelColor(fill),
+                      fontSize: LABEL_FONT_SIZE,
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  >
+                    {roundedPercent}%
+                  </div>
+                </foreignObject>
               </g>
             );
           })}
@@ -174,6 +202,7 @@ export function FocusableSquareCirclesChart({
       <ChartLegend
         fontSize={legendFontSize}
         fontWeight={legendFontWeight}
+        layout={legendLayout}
         items={legendItems.map((item, index) => ({
           key: `${item.name}-${index}`,
           color: item.color,

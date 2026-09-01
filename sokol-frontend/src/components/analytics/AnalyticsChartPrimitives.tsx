@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { toPng, toSvg } from 'html-to-image';
-import { Clipboard, Expand, FileDown, Image, Minimize2, MoreHorizontal, X } from 'lucide-react';
+import { Clipboard, Expand, FileDown, Image, Minimize2, MoreHorizontal, Plus, X } from 'lucide-react';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
@@ -26,14 +26,21 @@ export function ChartLegend({
   items,
   fontSize = CHART_LEGEND_STYLE.fontSize,
   fontWeight = CHART_LEGEND_STYLE.fontWeight,
+  layout = 'column',
 }: {
   items: Array<{ key?: string; color?: string; label: string }>;
   fontSize?: number;
   fontWeight?: number;
+  layout?: 'column' | 'row';
 }) {
+  const isRow = layout === 'row';
   return (
     <ul
-      className="mx-auto flex w-fit max-w-full list-none flex-col items-start gap-y-1 px-2 pb-1 pt-1"
+      className={
+        isRow
+          ? 'mx-auto flex w-fit max-w-full list-none flex-row flex-nowrap items-center justify-center gap-x-4 px-2 pb-1 pt-1'
+          : 'mx-auto flex w-fit max-w-full list-none flex-col items-start gap-y-1 px-2 pb-1 pt-1'
+      }
       style={{
         fontFamily: 'inherit',
         fontSize,
@@ -116,18 +123,23 @@ function ChartToolbar({
   return (
     <div data-chart-toolbar className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
       {onToggleExport ? (
-        <label
-          className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark"
+        <button
+          type="button"
+          onClick={onToggleExport}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark"
           title="В отчёт"
           aria-label="В отчёт"
+          aria-pressed={Boolean(exportSelected)}
         >
-          <input
-            type="checkbox"
-            checked={Boolean(exportSelected)}
-            onChange={onToggleExport}
-            className="h-3.5 w-3.5 accent-sber-dark"
-          />
-        </label>
+          <span
+            className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-[3px] ${
+              exportSelected ? 'bg-sber-dark text-white' : 'border border-gray-400 bg-white text-transparent'
+            }`}
+            aria-hidden
+          >
+            <Plus className="h-2.5 w-2.5" strokeWidth={3} />
+          </span>
+        </button>
       ) : null}
 
       <button
