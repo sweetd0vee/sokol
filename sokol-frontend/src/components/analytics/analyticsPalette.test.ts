@@ -9,6 +9,7 @@ import {
   MONITORING_STATUS_COLORS,
   MONITORING_VALUE_SCALE,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
+  getMaterialityChartColor,
 } from './analyticsPalette';
 
 describe('applyValueBasedColors', () => {
@@ -85,6 +86,12 @@ describe('RECOMMENDATIONS_MATERIALITY_CHART_COLORS', () => {
     expect(RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий).toBe(MONITORING_STATUS_COLORS.completed);
     expect(RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний).toBe(MONITORING_STATUS_COLORS.in_progress);
     expect(RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий).toBe(MONITORING_STATUS_COLORS.unresolved);
+  });
+
+  it('exposes the same mapping via getMaterialityChartColor', () => {
+    expect(getMaterialityChartColor('низкий')).toBe(RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий);
+    expect(getMaterialityChartColor('средний')).toBe(RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний);
+    expect(getMaterialityChartColor('высокий')).toBe(RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий);
   });
 });
 

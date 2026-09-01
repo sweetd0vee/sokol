@@ -114,13 +114,20 @@ export const MONITORING_STATUS_COLORS = {
 } as const;
 
 /**
- * Materiality donut / stacked bars on Recommendations — same tones as Monitoring status circles.
+ * Materiality donut / stacked bars / matrix circles on Recommendations —
+ * same tones as Monitoring status circles.
  */
 export const RECOMMENDATIONS_MATERIALITY_CHART_COLORS = {
   низкий: MONITORING_STATUS_COLORS.completed,
   средний: MONITORING_STATUS_COLORS.in_progress,
   высокий: MONITORING_STATUS_COLORS.unresolved,
 } as const;
+
+export function getMaterialityChartColor(
+  value: keyof typeof RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
+) {
+  return RECOMMENDATIONS_MATERIALITY_CHART_COLORS[value];
+}
 
 /**
  * Additional-status donut uses the same shades as the Statuses chart:

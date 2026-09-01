@@ -1,5 +1,5 @@
+import { getMaterialityChartColor } from '../components/analytics/analyticsPalette';
 import type { SortDirection } from './listTable';
-import { MATERIALITY_COLORS } from './recommendationAnalytics';
 
 export type MaterialityMatrixCounts = {
   низкий: number;
@@ -100,7 +100,7 @@ export const MATERIALITY_MATRIX_LEGEND = MATERIALITY_MATRIX_COLUMNS.map((column)
   key: column.key,
   level: column.level,
   label: column.label,
-  color: MATERIALITY_COLORS[column.level],
+  color: getMaterialityChartColor(column.level),
 }));
 
 export function buildMaterialityMatrixColumnTotals(rows: MaterialityMatrixRow[]) {
@@ -165,7 +165,7 @@ export function buildMaterialityMatrixHtmlMarkup(rows: MaterialityMatrixRow[]): 
       return `<td style="padding:12px 4px;text-align:center;vertical-align:top">
         <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
           <span style="font-size:14px;font-weight:600;color:#003366">${escapeHtml(column.label)}</span>
-          <span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:#fff;border:4px solid ${column.level === 'высокий' ? MATERIALITY_COLORS.высокий : column.level === 'средний' ? MATERIALITY_COLORS.средний : MATERIALITY_COLORS.низкий};color:#111827;text-align:center;line-height:1.15" title="${escapeHtml(`${column.label}: ${percent}% (${count})`)}">
+          <span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:#fff;border:4px solid ${getMaterialityChartColor(column.level)};color:#111827;text-align:center;line-height:1.15" title="${escapeHtml(`${column.label}: ${percent}% (${count})`)}">
             <span style="font-size:12px;font-weight:600">${percent}%</span>
           </span>
           <span style="font-size:14px;font-weight:500;color:#374151;font-variant-numeric:tabular-nums">${count}</span>

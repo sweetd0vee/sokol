@@ -63,7 +63,8 @@ import {
   STATUS_MATRIX_LEGEND,
   type StatusMatrixRow,
 } from './statusMatrix';
-import { getMaterialityLevelColor, MATERIALITY_COLORS } from './recommendationAnalytics';
+import { getMaterialityChartColor } from '../components/analytics/analyticsPalette';
+import { MATERIALITY_COLORS } from './recommendationAnalytics';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
@@ -294,7 +295,7 @@ function buildMaterialityMatrixPdfContent(
       { text: row.shortName || row.name || '—', color: '#334155' },
       ...MATERIALITY_MATRIX_COLUMNS.map((column) => {
         const count = getMaterialityMatrixCount(row, column.key);
-        const fill = getMaterialityLevelColor(column.level);
+        const fill = getMaterialityChartColor(column.level);
         return {
           text: String(count),
           alignment: 'center' as const,
@@ -924,7 +925,7 @@ function writeMaterialityMatrixSheet(
     MATERIALITY_MATRIX_COLUMNS.forEach((column, columnIndex) => {
       const cell = excelRow.getCell(columnIndex + 3);
       const count = getMaterialityMatrixCount(row, column.key);
-      const color = getMaterialityLevelColor(column.level);
+      const color = getMaterialityChartColor(column.level);
       cell.value = count;
       cell.font = {
         name: 'Calibri',
@@ -1776,7 +1777,7 @@ function createMaterialityMatrixDocxTable(rows: MaterialityMatrixRow[]): Table {
 
     const countCells = MATERIALITY_MATRIX_COLUMNS.map((column, index) => {
       const count = getMaterialityMatrixCount(row, column.key);
-      const fill = toDocxHexColor(getMaterialityLevelColor(column.level));
+      const fill = toDocxHexColor(getMaterialityChartColor(column.level));
       const width = columnWidths[index + 2] ?? 13;
       return new TableCell({
         width: { size: width, type: WidthType.PERCENTAGE },

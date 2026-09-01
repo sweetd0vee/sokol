@@ -22,6 +22,7 @@ import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { MaterialityMatrixChart } from './MaterialityMatrixChart';
 import {
+  getMaterialityChartColor,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   VALUE_BLUE_SCALE,
@@ -137,10 +138,6 @@ function getStatusSegmentColor(key: string) {
   return MONITORING_STATUS_COLORS[key as keyof typeof MONITORING_STATUS_COLORS] ?? '#e5e7eb';
 }
 
-function getMaterialityChartColor(value: keyof typeof RECOMMENDATIONS_MATERIALITY_CHART_COLORS) {
-  return RECOMMENDATIONS_MATERIALITY_CHART_COLORS[value];
-}
-
 function getMaterialitySegmentColor(key: string) {
   if (key === 'low') {
     return RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий;
@@ -252,7 +249,7 @@ export function RecommendationsAnalyticsDashboard() {
   );
   const materialityDistribution = data?.materialityDistribution ?? EMPTY_MATERIALITY_DISTRIBUTION;
 
-  // Colorize chart segments by the same tones used in the recommendations table.
+  // Colorize chart segments by the same tones as the stacked materiality bars.
   const coloredMaterialityDistribution = useMemo(
     () =>
       completeNamedDistribution(
@@ -385,12 +382,29 @@ export function RecommendationsAnalyticsDashboard() {
                 label="Всего"
                 value={summary.total}
                 hint={`из ${universeTotal}`}
+                accentColor={MONITORING_STATUS_COLORS.on_control}
+              />
+              <KpiCard
+                label="В процессе"
+                value={summary.byStatus.in_progress}
+                accentColor={MONITORING_STATUS_COLORS.in_progress}
+              />
+              <KpiCard
+                label="Не решено"
+                value={summary.byStatus.unresolved}
+                accentColor={MONITORING_STATUS_COLORS.unresolved}
+              />
+              <KpiCard
+                label="Исполнено"
+                value={summary.byStatus.completed}
                 accentColor={MONITORING_STATUS_COLORS.completed}
               />
-              <KpiCard label="В процессе" value={summary.byStatus.in_progress} tone="amber" />
-              <KpiCard label="Не решено" value={summary.byStatus.unresolved} tone="slate" />
-              <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
-              <KpiCard label="Доля исполненных" value={summary.completionRate} suffix="%" tone="green" />
+              <KpiCard
+                label="Доля исполненных"
+                value={summary.completionRate}
+                suffix="%"
+                accentColor={MONITORING_STATUS_COLORS.completed}
+              />
             </div>
           </ChartCard>
         ),

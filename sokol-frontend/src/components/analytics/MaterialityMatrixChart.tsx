@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getMaterialityLevelColor } from '../../utils/recommendationAnalytics';
 import {
   cycleMaterialityMatrixCountSort,
   DEFAULT_MATERIALITY_MATRIX_COUNT_SORT,
@@ -15,6 +14,7 @@ import {
   type MaterialityMatrixCountSortConfig,
   type MaterialityMatrixRow,
 } from '../../utils/materialityMatrix';
+import { getMaterialityChartColor } from './analyticsPalette';
 import { MatrixChartShell, MatrixCountSortHeader, MatrixLegendFooter } from './matrixChartChrome';
 
 type MaterialityMatrixChartProps = {
@@ -35,7 +35,7 @@ function ColumnShareCircle({
   if (!column) {
     return <span className="text-xs text-gray-400">—</span>;
   }
-  const color = getMaterialityLevelColor(column.level);
+  const color = getMaterialityChartColor(column.level);
 
   return (
     <div className="flex flex-col items-center gap-1">

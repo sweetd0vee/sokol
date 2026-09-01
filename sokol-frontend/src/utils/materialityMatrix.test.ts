@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { getMaterialityChartColor } from '../components/analytics/analyticsPalette';
 import {
+  buildMaterialityMatrixHtmlMarkup,
   cycleMaterialityMatrixCountSort,
   DEFAULT_MATERIALITY_MATRIX_COUNT_SORT,
+  MATERIALITY_MATRIX_LEGEND,
   sortMaterialityMatrixRows,
   type MaterialityMatrixRow,
 } from './materialityMatrix';
@@ -69,5 +72,24 @@ describe('materiality matrix sort', () => {
     expect(
       sortMaterialityMatrixRows(rows, { key: 'total', direction: 'desc' }).map((item) => item.key),
     ).toEqual(['C', 'B', 'A']);
+  });
+});
+
+describe('materiality matrix chart palette', () => {
+  it('uses the recommendations chart tones for circles and legend', () => {
+    expect(MATERIALITY_MATRIX_LEGEND).toEqual([
+      { key: 'high', level: 'высокий', label: 'Высокий', color: getMaterialityChartColor('высокий') },
+      { key: 'medium', level: 'средний', label: 'Средний', color: getMaterialityChartColor('средний') },
+      { key: 'low', level: 'низкий', label: 'Низкий', color: getMaterialityChartColor('низкий') },
+    ]);
+
+    const markup = buildMaterialityMatrixHtmlMarkup([
+      row('ПР-1', { высокий: 1, средний: 2, низкий: 3 }),
+    ]);
+    expect(markup).toContain(`border:4px solid ${getMaterialityChartColor('высокий')}`);
+    expect(markup).toContain(`border:4px solid ${getMaterialityChartColor('средний')}`);
+    expect(markup).toContain(`border:4px solid ${getMaterialityChartColor('низкий')}`);
+    expect(markup).not.toContain('#FF4347');
+    expect(markup).not.toContain('#A7F7C2');
   });
 });
