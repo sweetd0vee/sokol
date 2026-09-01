@@ -251,7 +251,7 @@ export function RecommendationsTab() {
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full text-base table-fixed min-w-[1580px]">
+          <table className="w-full text-base table-fixed min-w-[1596px]">
             <colgroup>
               <col className="w-24" />
               <col className="w-40" />
@@ -263,7 +263,7 @@ export function RecommendationsTab() {
               <col className="w-28" />
               <col className="w-36" />
               <col className="w-[140px]" />
-              <col className="w-[174px]" />
+              <col className="w-[190px]" />
             </colgroup>
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -361,8 +361,8 @@ export function RecommendationsTab() {
                     inputClassName={listFilterClass(managers.length > 0)}
                   />
                 </th>
-                <th className="px-0 py-2 font-normal">
-                  <div className="ml-auto flex w-[160px] items-center justify-end sm:pr-px">
+                <th className="px-0 pr-4 py-2 font-normal">
+                  <div className="ml-auto flex w-[160px] items-center justify-end">
                     <button
                       type="button"
                       onClick={handleResetFilters}
@@ -398,7 +398,7 @@ export function RecommendationsTab() {
                     <span className="whitespace-nowrap">объекта аудита</span>
                   </>,
                 )}
-                <th className="px-0 py-3 text-center font-medium">Действия</th>
+                <th className="px-0 pr-4 py-3 text-center font-medium">Действия</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -447,7 +447,7 @@ export function RecommendationsTab() {
                   <td className="px-4 py-3 truncate" title={recommendation.manager}>
                     {recommendation.manager}
                   </td>
-                  <td className="px-0 py-3">
+                  <td className="px-0 pr-4 py-3">
                     <div className="ml-auto flex w-[160px] items-center justify-end whitespace-nowrap">
                       <Link
                         to={`/recommendations/${recommendation.id}/edit`}

@@ -232,7 +232,7 @@ export function ChecksTab() {
       <div className="rounded-xl border border-gray-200 bg-white">
         <>
           <div className="overflow-x-auto">
-            <table className="w-full text-base table-fixed min-w-[1600px]">
+            <table className="w-full text-base table-fixed min-w-[1616px]">
               <colgroup>
                 <col className="w-24" />
                 <col className="w-40" />
@@ -242,7 +242,7 @@ export function ChecksTab() {
                 <col className="w-32" />
                 <col className="w-40" />
                 <col className="w-[160px]" />
-                <col className="w-[174px]" />
+                <col className="w-[190px]" />
               </colgroup>
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
@@ -313,8 +313,8 @@ export function ChecksTab() {
                       inputClassName={listFilterClass(checkLeaders.length > 0)}
                     />
                   </th>
-                  <th colSpan={2} className="px-0 py-2 font-normal">
-                    <div className={`${LIST_ACTION_GROUP_CLASS} sm:pr-px`}>
+                  <th colSpan={2} className="px-0 pr-4 py-2 font-normal">
+                    <div className={LIST_ACTION_GROUP_CLASS}>
                       <MultiCheckboxSelect
                         value={statuses}
                         onChange={setStatuses}
@@ -384,7 +384,7 @@ export function ChecksTab() {
                     direction={sortConfig.direction}
                     onClick={() => toggleSort('status')}
                   />
-                  <th className="px-0 py-3 text-center font-medium">Действия</th>
+                  <th className="px-0 pr-4 py-3 text-center font-medium">Действия</th>
                 </tr>
               </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -414,7 +414,7 @@ export function ChecksTab() {
                           {getCheckStatusLabel(check.status)}
                         </span>
                       </td>
-                      <td className="px-0 py-3">
+                      <td className="px-0 pr-4 py-3">
                         <div className="ml-auto flex w-[160px] items-center justify-end whitespace-nowrap">
                           <Link
                             to={`/checks/${check.id}/edit`}
