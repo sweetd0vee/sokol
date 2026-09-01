@@ -141,7 +141,6 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
                   </td>
                   {MATERIALITY_MATRIX_COLUMNS.map((column) => {
                     const count = getMaterialityMatrixCount(row, column.key);
-                    const color = getMaterialityLevelColor(column.level);
                     return (
                       <td
                         key={column.key}
@@ -149,16 +148,7 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
                         title={`${column.label}: ${count}`}
                         aria-label={`${column.label}: ${count}`}
                       >
-                        <span
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold tabular-nums"
-                          style={{
-                            backgroundColor: color,
-                            color: '#1e293b',
-                            opacity: count === 0 ? 0.45 : 1,
-                          }}
-                        >
-                          {count}
-                        </span>
+                        <span className="text-sm font-bold tabular-nums text-slate-800">{count}</span>
                       </td>
                     );
                   })}

@@ -503,7 +503,7 @@ export function RecommendationsAnalyticsDashboard() {
         render: () => (
           <ChartCard
             title="Существенность"
-            description="Распределение уровней существенности: за период и по периодам"
+            description="Распределение уровней существенности рекомендаций: за период и по периодам"
             exportSelected={isMaterialityExportSelected}
             onToggleExport={toggleMaterialityExport}
           >

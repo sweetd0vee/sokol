@@ -1,6 +1,5 @@
 import type { SortDirection } from './listTable';
-import { getMaterialityLevelColor, MATERIALITY_COLORS } from './recommendationAnalytics';
-import type { MaterialityLevel } from '../types/recommendation';
+import { MATERIALITY_COLORS } from './recommendationAnalytics';
 
 export type MaterialityMatrixCounts = {
   низкий: number;
@@ -125,12 +124,6 @@ function escapeHtml(value: string) {
     .replace(/"/g, '&quot;');
 }
 
-function countBadgeMarkup(count: number, level: MaterialityLevel) {
-  const color = getMaterialityLevelColor(level);
-  const textColor = '#1e293b';
-  return `<span style="display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;border-radius:50%;background:${color};color:${textColor};font-size:12px;font-weight:700;font-variant-numeric:tabular-nums">${count}</span>`;
-}
-
 /** Self-contained HTML for materiality matrix export (no Tailwind / Recharts required). */
 export function buildMaterialityMatrixHtmlMarkup(rows: MaterialityMatrixRow[]): string {
   if (rows.length === 0) {
@@ -152,7 +145,7 @@ export function buildMaterialityMatrixHtmlMarkup(rows: MaterialityMatrixRow[]): 
     .map((row) => {
       const countCells = MATERIALITY_MATRIX_COLUMNS.map((column) => {
         const count = getMaterialityMatrixCount(row, column.key);
-        return `<td style="padding:8px 4px;text-align:center" title="${escapeHtml(`${column.label}: ${count}`)}">${countBadgeMarkup(count, column.level)}</td>`;
+        return `<td style="padding:8px 4px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums;color:#111827" title="${escapeHtml(`${column.label}: ${count}`)}">${count}</td>`;
       }).join('');
       const rowTotal = row.total;
 
