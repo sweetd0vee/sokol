@@ -64,11 +64,23 @@ function readLabelGeometry(view: StackedSegmentLabelView) {
   };
 }
 
-function readStackValue(view: StackedSegmentLabelView, key: string): number {
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return undefined;
+}
+
+function readStackValue(
+  view: StackedSegmentLabelView,
+  key: string,
+  stackRow?: unknown,
+): number {
   const sources: Array<Record<string, unknown> | undefined> = [
+    asRecord(stackRow),
     view.payload,
     view as Record<string, unknown>,
-    view.payload?.payload as Record<string, unknown> | undefined,
+    asRecord(view.payload?.payload),
   ];
   for (const source of sources) {
     if (!source) {
@@ -99,20 +111,22 @@ export function StackedBarSegmentValueLabel({
   stackKeys,
   getColor,
   showStackTotal = false,
+  stackRow,
   ...view
 }: {
   stackKeys: readonly string[];
   getColor: (key: string) => string;
   showStackTotal?: boolean;
+  stackRow?: unknown;
   [key: string]: unknown;
 }) {
   const labelView = view as StackedSegmentLabelView;
   const { x, y, width: w, height: h } = readLabelGeometry(labelView);
   const key = labelView.dataKey != null ? String(labelView.dataKey) : '';
-  const numericValue = key
-    ? readStackValue(labelView, key)
-    : readLabelValue(labelView.value);
-  const stackValues = stackKeys.map((stackKey) => readStackValue(labelView, stackKey));
+  // Recharts 3 LabelList does not forward `payload` to custom content — `value` is the source of truth.
+  const numericValue =
+    readLabelValue(labelView.value) ?? (key ? readStackValue(labelView, key, stackRow) : undefined);
+  const stackValues = stackKeys.map((stackKey) => readStackValue(labelView, stackKey, stackRow));
   const stackTotal = stackValues.reduce((sum, stackValue) => sum + stackValue, 0);
   let topVisibleKey = '';
   for (let index = stackKeys.length - 1; index >= 0; index -= 1) {
@@ -159,19 +173,26 @@ export function StackedBarSegmentValueLabel({
   ) : null;
 
   if (canPlaceInside) {
+    const segmentLabel = (
+      <text
+        x={cx}
+        y={cy}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={h >= 20 ? 13 : 12}
+        fontWeight={700}
+        fill="#111827"
+        style={{ pointerEvents: 'none' }}
+      >
+        {roundedStr}
+      </text>
+    );
+    if (!totalLabel) {
+      return segmentLabel;
+    }
     return (
       <g style={{ pointerEvents: 'none' }}>
-        <text
-          x={cx}
-          y={cy}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontSize={h >= 20 ? 13 : 12}
-          fontWeight={700}
-          fill="#111827"
-        >
-          {roundedStr}
-        </text>
+        {segmentLabel}
         {totalLabel}
       </g>
     );

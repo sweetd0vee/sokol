@@ -134,7 +134,6 @@ async def build_recommendations_analytics(
         granularity=granularity,
         summary=summary,
         period_series=period_series,
-        cumulative_series=period_series,
         materiality_distribution=build_materiality_distribution(summary),
         indicator_distribution=await recommendation_indicator_distribution_sql(session, **filters),
         check_links=await recommendation_check_links_sql(session, **filters),

@@ -74,7 +74,6 @@ def _empty_recommendations_payload() -> RecommendationsAnalyticsResponse:
             violation_rate=0,
         ),
         period_series=[],
-        cumulative_series=[],
         materiality_distribution=[],
         indicator_distribution=[],
         check_links=[],

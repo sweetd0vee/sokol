@@ -97,7 +97,6 @@ export type RecommendationsAnalyticsResponse = {
   granularity: PeriodGranularity;
   summary: RecommendationsSummary;
   periodSeries: RecommendationPeriodPoint[];
-  cumulativeSeries: RecommendationPeriodPoint[];
   materialityDistribution: NamedCount[];
   indicatorDistribution: NamedCount[];
   checkLinks: NamedCount[];

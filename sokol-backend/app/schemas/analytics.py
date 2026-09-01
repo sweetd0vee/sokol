@@ -190,7 +190,6 @@ class RecommendationsAnalyticsResponse(BaseModel):
     granularity: PeriodGranularity
     summary: RecommendationsSummary
     period_series: list[RecommendationPeriodCount] = Field(serialization_alias="periodSeries")
-    cumulative_series: list[RecommendationPeriodCount] = Field(serialization_alias="cumulativeSeries")
     materiality_distribution: list[NamedCount] = Field(serialization_alias="materialityDistribution")
     indicator_distribution: list[NamedCount] = Field(serialization_alias="indicatorDistribution")
     check_links: list[NamedCount] = Field(serialization_alias="checkLinks")

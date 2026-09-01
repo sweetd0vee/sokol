@@ -17,7 +17,7 @@ import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashb
 import { AnalyticsDashboardFrame } from './AnalyticsDashboardFrame';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary, filterSelectionItem } from './AnalyticsSelectionSummary';
-import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { MaterialityMatrixChart } from './MaterialityMatrixChart';
@@ -427,6 +427,7 @@ export function RecommendationsAnalyticsDashboard() {
                               stackKeys={STATUS_STACK_KEYS}
                               getColor={getStatusSegmentColor}
                               showStackTotal
+                              stackRow={completedPeriodSeries[Number(props.index)]}
                             />
                           )}
                         />
