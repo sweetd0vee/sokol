@@ -8,7 +8,7 @@
 | [ANALYTICS.md](ANALYTICS.md) | Дашборды `/analytics` |
 | [SOKOL_Аналитика.docx](SOKOL_Аналитика.docx) | Бизнес-описание дашбордов со скриншотами |
 | [PLANNING.md](PLANNING.md) | Раздел `/planning` |
-| [UI_STANDARDS.md](UI_STANDARDS.md) | Сетка форм, цвета |
+| [UI_STANDARDS.md](UI_STANDARDS.md) | Каркас, формы, списки, цвета, UI kit |
 | [CODE_REVIEW](../../docs/CODE_REVIEW_FRONTEND.md) | Код-ревью |
 | Backend | [API.md](../../sokol-backend/docs/API.md), [REPORTS.md](../../sokol-backend/docs/REPORTS.md) |
 | [PLAN.md](../../PLAN.md) | Roadmap |

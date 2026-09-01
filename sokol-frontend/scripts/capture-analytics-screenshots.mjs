@@ -12,9 +12,9 @@ const OUT_DIR = join(__dirname, '../docs/analytics-screenshots');
 const BASE_URL = process.env.SOKOL_UI_URL ?? 'http://localhost:5180';
 
 const LOGIN_ATTEMPTS = [
+  { login: 'admin', password: 'admin' },
   { login: 'auditor', password: 'auditor' },
   { login: 'Иванов И.О.', password: 'demo' },
-  { login: 'admin', password: 'admin' },
 ];
 
 const TABS = [
@@ -60,6 +60,7 @@ const TABS = [
       { title: 'Итого', file: 'dva-summary.png' },
       { title: 'Нагрузка аудиторов: проверки', file: 'dva-auditor-load-checks.png' },
       { title: 'Нагрузка аудиторов: рекомендации', file: 'dva-auditor-load-recommendations.png' },
+      { title: 'Нагрузка аудиторов', file: 'dva-auditor-load-combined.png' },
       { title: 'Документы и закрытие', file: 'dva-documents-closure.png' },
       { title: 'Карта аудиторов по количеству проверок', file: 'dva-auditor-checks-treemap.png' },
       { title: 'Карта аудиторов по количеству рекомендаций', file: 'dva-auditor-recommendations-treemap.png' },
@@ -71,8 +72,8 @@ async function login(page) {
   let lastError = null;
   for (const attempt of LOGIN_ATTEMPTS) {
     await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle' });
-    await page.getByLabel('Логин').fill(attempt.login);
-    await page.getByLabel('Пароль').fill(attempt.password);
+    await page.getByPlaceholder('admin или Фамилия И.О.').fill(attempt.login);
+    await page.getByPlaceholder('Введите пароль').fill(attempt.password);
     await page.getByRole('button', { name: 'Войти' }).click();
     try {
       await page.waitForURL('**/checks**', { timeout: 15000 });
@@ -89,12 +90,19 @@ async function login(page) {
 async function waitForDashboard(page) {
   await page.getByRole('heading', { name: 'Итого', exact: true }).waitFor({ timeout: 30000 });
   await page.getByText('Загрузка').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(2500);
 }
 
 async function screenshotCard(page, title, file) {
-  const heading = page.getByRole('heading', { name: title, exact: true }).first();
-  await heading.waitFor({ timeout: 15000 });
+  const heading = page.getByText(title, { exact: true }).first();
+  try {
+    await heading.waitFor({ state: 'visible', timeout: 8000 });
+  } catch {
+    console.warn(`Skip ${file}: heading "${title}" not found`);
+    return;
+  }
+  await heading.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(400);
   const card = heading.locator('xpath=ancestor::section[1]');
   await card.screenshot({ path: join(OUT_DIR, file) });
   console.log(`Saved ${file}`);
@@ -111,6 +119,14 @@ async function main() {
     await page.goto(`${BASE_URL}/analytics`, { waitUntil: 'networkidle' });
     await page.getByRole('heading', { name: 'Аналитика' }).waitFor({ timeout: 30000 });
     await waitForDashboard(page);
+
+    const headerBlock = page.locator('div.space-y-3').first();
+    await headerBlock.screenshot({ path: join(OUT_DIR, 'analytics-header-tabs.png') });
+    console.log('Saved analytics-header-tabs.png');
+
+    const sidebar = page.locator('aside').first();
+    await sidebar.screenshot({ path: join(OUT_DIR, 'filters-sidebar.png') });
+    console.log('Saved filters-sidebar.png');
 
     await page.screenshot({
       path: join(OUT_DIR, 'analytics-overview-checks.png'),
