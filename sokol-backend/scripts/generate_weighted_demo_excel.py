@@ -349,7 +349,7 @@ def build_recommendations(checks: list[dict], target_count: int) -> list[dict]:
     while len(rows) < target_count:
         check = random.choice(checks)
         rows.extend(build_recommendations([check], target_count - len(rows)))
-    return rows[:target_count]
+    return apply_completed_during_audit_indicator(rows[:target_count])
 
 
 def _write_sheet(workbook: Workbook, title: str, headers: list[str], rows: list[dict]) -> Worksheet:
