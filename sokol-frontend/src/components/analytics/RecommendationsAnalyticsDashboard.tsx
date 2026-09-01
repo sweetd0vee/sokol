@@ -24,6 +24,8 @@ import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { MaterialityMatrixChart } from './MaterialityMatrixChart';
 import {
   getValueBasedColors,
+  MONITORING_STATUS_COLORS,
+  RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   RECOMMENDATIONS_PALETTE,
   VALUE_GRAY_SCALE,
 } from './analyticsPalette';
@@ -48,9 +50,6 @@ import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
 import { labelFromPeriodKey } from '../../utils/analyticsPeriod';
 import {
-  MATERIALITY_COLORS,
-  STATUS_COLORS,
-  getMaterialityLevelColor,
   type PeriodGranularity,
 } from '../../utils/recommendationAnalytics';
 import { completeNamedDistribution, distributionHasValues } from '../../utils/analyticsDistribution';
@@ -139,18 +138,22 @@ const STATUS_STACK_KEYS = RECOMMENDATION_STATUS_OPTIONS.map((status) => status.v
 const MATERIALITY_STACK_KEYS = ['low', 'medium', 'high'] as const;
 
 function getStatusSegmentColor(key: string) {
-  return STATUS_COLORS[key as keyof typeof STATUS_COLORS] ?? '#e5e7eb';
+  return MONITORING_STATUS_COLORS[key as keyof typeof MONITORING_STATUS_COLORS] ?? '#e5e7eb';
+}
+
+function getMaterialityChartColor(value: keyof typeof RECOMMENDATIONS_MATERIALITY_CHART_COLORS) {
+  return RECOMMENDATIONS_MATERIALITY_CHART_COLORS[value];
 }
 
 function getMaterialitySegmentColor(key: string) {
   if (key === 'low') {
-    return MATERIALITY_COLORS.низкий;
+    return RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий;
   }
   if (key === 'medium') {
-    return MATERIALITY_COLORS.средний;
+    return RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний;
   }
   if (key === 'high') {
-    return MATERIALITY_COLORS.высокий;
+    return RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий;
   }
   return '#e5e7eb';
 }
@@ -271,7 +274,7 @@ export function RecommendationsAnalyticsDashboard() {
       completeNamedDistribution(
         materialityDistribution,
         MATERIALITY_LEVEL_OPTIONS,
-        getMaterialityLevelColor,
+        getMaterialityChartColor,
       ),
     [materialityDistribution],
   );
@@ -472,7 +475,7 @@ export function RecommendationsAnalyticsDashboard() {
                         dataKey={status.value}
                         name={status.label}
                         stackId="status"
-                        fill={STATUS_COLORS[status.value]}
+                        fill={MONITORING_STATUS_COLORS[status.value]}
                       >
                         <LabelList
                           dataKey={status.value}
@@ -520,6 +523,7 @@ export function RecommendationsAnalyticsDashboard() {
                     legendLabelMode="name"
                     showLegend={false}
                     containerClassName="h-full min-h-0"
+                    valueLabelColor="#111827"
                   />
                 ) : (
                   <EmptyChart message="Нет данных" heightClass="h-full" />
@@ -547,7 +551,7 @@ export function RecommendationsAnalyticsDashboard() {
                         <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
                         <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
                         <Tooltip />
-                        <Bar dataKey="low" name="Низкий" stackId="mat" fill={MATERIALITY_COLORS.низкий}>
+                        <Bar dataKey="low" name="Низкий" stackId="mat" fill={RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий}>
                           <LabelList
                             dataKey="low"
                             content={(props) => (
@@ -564,7 +568,7 @@ export function RecommendationsAnalyticsDashboard() {
                           dataKey="medium"
                           name="Средний"
                           stackId="mat"
-                          fill={MATERIALITY_COLORS.средний}
+                          fill={RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний}
                         >
                           <LabelList
                             dataKey="medium"
@@ -582,7 +586,7 @@ export function RecommendationsAnalyticsDashboard() {
                           dataKey="high"
                           name="Высокий"
                           stackId="mat"
-                          fill={MATERIALITY_COLORS.высокий}
+                          fill={RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий}
                         >
                           <LabelList
                             dataKey="high"
@@ -604,21 +608,21 @@ export function RecommendationsAnalyticsDashboard() {
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span
                           className="inline-block h-3.5 w-3.5 rounded-sm"
-                          style={{ backgroundColor: MATERIALITY_COLORS.высокий }}
+                          style={{ backgroundColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий }}
                         />
                         Высокий
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span
                           className="inline-block h-3.5 w-3.5 rounded-sm"
-                          style={{ backgroundColor: MATERIALITY_COLORS.средний }}
+                          style={{ backgroundColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний }}
                         />
                         Средний
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span
                           className="inline-block h-3.5 w-3.5 rounded-sm"
-                          style={{ backgroundColor: MATERIALITY_COLORS.низкий }}
+                          style={{ backgroundColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий }}
                         />
                         Низкий
                       </div>

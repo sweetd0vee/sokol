@@ -12,16 +12,25 @@ from app.core.startup_validation import (
     assert_seed_replace_safe_for_env,
     env_flag_enabled,
 )
+from app.db.catalogs import AUDIT_TYPES, CHECK_KINDS, EFFECTIVENESS_RATINGS
 from app.db.import_seed_data import import_seed_data
 from app.db.init_db import init_db
 from app.db.migrations import run_bootstrap_migrations
 from app.db.presentation_demo_data import generate_presentation_dataset
-from app.db.seeds import seed_reference_dictionaries
+from app.db.seeds.audit_types import seed_audit_types
+from app.db.seeds.check_kinds import seed_check_kinds
+from app.db.seeds.effectiveness import seed_effectiveness_ratings
 from app.db.session import AsyncSessionLocal
 from app.db.sync_check_buckets import sync_check_buckets
 from app.db.sync_dictionaries import sync_auditors, sync_departments, sync_users
 from app.models.checks import Check
 from app.utils.paths import get_repo_data_dir
+
+
+async def seed_reference_dictionaries() -> None:
+    await seed_audit_types(AUDIT_TYPES)
+    await seed_check_kinds(CHECK_KINDS)
+    await seed_effectiveness_ratings(EFFECTIVENESS_RATINGS)
 
 
 async def sync_canonical_dictionaries() -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:

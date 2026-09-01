@@ -41,6 +41,17 @@ Import/seed сначала `ensure_*` недостающие labels, затем 
 
 `serial_number` — уникален, генерируется и пересчитывается на backend (`check_key.py`) из года начала, кода аудитора, квартала, типа и порядкового номера. Frontend не отправляет ключ в create/update payload, а показывает значение из ответа API. При смене даты начала, квартала, руководителя или типа проверки backend обновляет ключ и синхронизирует `recommendations.serial_number` / `attachments.check_serial_number`.
 
+## Пакет `app/db`
+
+| Каталог / модуль | Назначение |
+|------------------|------------|
+| `session.py`, `init_db.py` | async engine, `create_all` |
+| `catalogs/` | канонические списки (аудиторы, департаменты, виды, типы, оценки, users) |
+| `seeds/` | идемпотентный insert справочников |
+| `migrations/` | ad-hoc SQL/data patches; `run_bootstrap_migrations()` — порядок Docker |
+| `bootstrap.py` | Docker entrypoint и presentation demo |
+| корневые `seed_*` / `migrate_*` | CLI (`python -m app.db.…`), реэкспорт |
+
 ## Seed и import
 
 | Модуль | Назначение |

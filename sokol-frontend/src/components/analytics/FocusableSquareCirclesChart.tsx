@@ -33,7 +33,7 @@ type CircleSlot = {
 
 const VIEW_WIDTH = 200;
 const VIEW_HEIGHT = 76;
-const MAX_RADIUS = 22;
+const MAX_RADIUS = 19;
 const CIRCLE_Y = 42;
 const SIDE_PAD = 28;
 const LABEL_GAP = 3.8;
@@ -107,7 +107,7 @@ export function FocusableSquareCirclesChart({
             const share = total > 0 ? item.value / total : 0;
             const radius = maxShare > 0 ? MAX_RADIUS * Math.sqrt(share / maxShare) : 0;
             const isActive = activeIndex === index;
-            const fill = colors[index] ?? palette[index % palette.length];
+            const fill = item.color ?? palette[index % palette.length];
             const roundedPercent = Math.round(percent);
             const label = percentLabelPosition(slot, radius);
             const tooltip = formatChartLegendText({

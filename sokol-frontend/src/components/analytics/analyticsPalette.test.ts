@@ -6,6 +6,7 @@ import {
   MONITORING_BAR_BLUE_SCALE,
   MONITORING_STATUS_COLORS,
   MONITORING_VALUE_SCALE,
+  RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
 } from './analyticsPalette';
 
 describe('applyValueBasedColors', () => {
@@ -74,5 +75,13 @@ describe('MONITORING_ADDITIONAL_STATUS_COLORS', () => {
     expect(MONITORING_ADDITIONAL_STATUS_COLORS.on_control).toBe(
       MONITORING_STATUS_COLORS.on_control,
     );
+  });
+});
+
+describe('RECOMMENDATIONS_MATERIALITY_CHART_COLORS', () => {
+  it('reuses Monitoring status-circle tones: emerald / yellow / pink', () => {
+    expect(RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий).toBe(MONITORING_STATUS_COLORS.completed);
+    expect(RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний).toBe(MONITORING_STATUS_COLORS.in_progress);
+    expect(RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий).toBe(MONITORING_STATUS_COLORS.unresolved);
   });
 });

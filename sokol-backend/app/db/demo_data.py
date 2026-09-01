@@ -6,10 +6,7 @@ from __future__ import annotations
 import random
 from datetime import date, timedelta
 
-from app.db.auditor_names import AUDITORS
-from app.db.department_names import DEPARTMENTS
-from app.db.seed_check_kinds import CHECK_KINDS
-from app.db.seed_effectiveness_ratings import EFFECTIVENESS_RATINGS
+from app.db.catalogs import AUDITORS, CHECK_KINDS, DEPARTMENTS, EFFECTIVENESS_RATINGS
 from app.utils.check_key import assign_serial_numbers
 
 CHECK_TYPES = ("planned", "unscheduled", "thematic")

@@ -8,7 +8,9 @@ const INDICATOR_ICON_COLORS: Record<string, string> = {
   'Исполнено в ходе аудита': '003366',
 };
 
-const INDICATOR_ICON_FILLED = new Set(['Исполнено в ходе аудита']);
+const INDICATOR_ICON_PARTIAL_FILL: Record<string, number> = {
+  'Исполнено в ходе аудита': 0.5,
+};
 
 const INDICATOR_ICON_SHAPES: Record<string, string> = {
   'В процессе':
@@ -30,11 +32,17 @@ function buildIndicatorSvg(label: string): string | null {
   if (!color || !shapes) {
     return null;
   }
-  if (INDICATOR_ICON_FILLED.has(label)) {
+  const fillRatio = INDICATOR_ICON_PARTIAL_FILL[label];
+  if (fillRatio != null && fillRatio < 1) {
+    const clipY = (24 * (1 - fillRatio)).toFixed(2);
     return [
       '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24"',
-      ` fill="#${color}" stroke="none">`,
-      shapes,
+      ' fill="none" stroke-linecap="round" stroke-linejoin="round">',
+      '<defs>',
+      `<clipPath id="indicator-partial-fill"><rect x="0" y="${clipY}" width="24" height="${(24 * fillRatio).toFixed(2)}"/></clipPath>`,
+      '</defs>',
+      `<g fill="#${color}" stroke="none" clip-path="url(#indicator-partial-fill)">${shapes}</g>`,
+      `<g fill="none" stroke="#${color}" stroke-width="1.75">${shapes}</g>`,
       '</svg>',
     ].join('');
   }

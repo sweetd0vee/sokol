@@ -6,10 +6,10 @@ import {
 } from '../../constants/recommendations';
 import {
   INDICATOR_ICONS,
-  indicatorIconRenderProps,
   type IndicatorIconKey,
   type IndicatorIconMeta,
 } from './indicatorIcons';
+import { IndicatorGlyph } from './IndicatorGlyph';
 
 type IndicatorSelectProps = {
   label?: string;
@@ -37,7 +37,6 @@ export function IndicatorSelect({
   const listId = useId();
   const selected = options.find((option) => option.value === value) ?? options[0];
   const selectedMeta = icons[value as IndicatorIconKey];
-  const SelectedIcon = selectedMeta?.Icon;
 
   useEffect(() => {
     if (!open) {
@@ -94,7 +93,7 @@ export function IndicatorSelect({
               .filter(Boolean)
               .join(' ')}
           >
-            {SelectedIcon ? <SelectedIcon size={16} {...indicatorIconRenderProps(selectedMeta)} /> : null}
+            <IndicatorGlyph meta={selectedMeta} size={16} />
           </span>
           <span className="min-w-0 flex-1 truncate">{selected?.label ?? 'Не указан'}</span>
           <ChevronDown size={16} className="shrink-0 text-gray-400" />
@@ -108,7 +107,6 @@ export function IndicatorSelect({
           >
             {options.map((option) => {
               const meta = icons[option.value as IndicatorIconKey];
-              const Icon = meta?.Icon;
               const isActive = option.value === value;
               return (
                 <li key={option.value} role="option" aria-selected={isActive}>
@@ -133,7 +131,7 @@ export function IndicatorSelect({
                         .filter(Boolean)
                         .join(' ')}
                     >
-                      {Icon ? <Icon size={16} {...indicatorIconRenderProps(meta)} /> : null}
+                      <IndicatorGlyph meta={meta} size={16} />
                     </span>
                     <span>{option.label}</span>
                   </button>

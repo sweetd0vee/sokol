@@ -2,6 +2,8 @@ from app.db.catalogs.departments import DEPARTMENTS
 from app.db.runtime import run_async_main, run_seed_cli
 from app.db.seeds.departments import seed_departments
 
+__all__ = ["seed_departments"]
+
 # DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db python -m app.db.seed_departments
 
 

@@ -63,7 +63,7 @@ import {
   STATUS_MATRIX_LEGEND,
   type StatusMatrixRow,
 } from './statusMatrix';
-import { getMaterialityLevelColor } from './recommendationAnalytics';
+import { getMaterialityLevelColor, MATERIALITY_COLORS } from './recommendationAnalytics';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
@@ -2778,9 +2778,9 @@ async function buildVisualHtml(options: {
         titleEl.textContent = headline;
         tooltip.appendChild(titleEl);
         [
-          ['Высокий', high, '#FF4347'],
-          ['Средний', medium, '#FBEB8D'],
-          ['Низкий', low, '#A7F7C2']
+          ['Высокий', high, '${MATERIALITY_COLORS.высокий}'],
+          ['Средний', medium, '${MATERIALITY_COLORS.средний}'],
+          ['Низкий', low, '${MATERIALITY_COLORS.низкий}']
         ].forEach(function (row) {
           var line = document.createElement('div');
           line.style.color = row[2];

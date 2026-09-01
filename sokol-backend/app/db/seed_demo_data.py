@@ -11,7 +11,10 @@ from app.db.catalogs import AUDITORS, CHECK_KINDS, DEPARTMENTS, EFFECTIVENESS_RA
 from app.db.demo_data import build_check_rows, build_recommendation_rows
 from app.db.init_db import init_db
 from app.db.runtime import run_async_main, truncate_operational_tables
-from app.db.seeds import seed_auditors, seed_check_kinds, seed_departments, seed_effectiveness_ratings
+from app.db.seeds.auditors import seed_auditors
+from app.db.seeds.check_kinds import seed_check_kinds
+from app.db.seeds.departments import seed_departments
+from app.db.seeds.effectiveness import seed_effectiveness_ratings
 from app.db.session import AsyncSessionLocal
 from app.models.checks import Check, CheckStatus
 from app.models.recommendations import (

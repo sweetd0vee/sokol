@@ -26,10 +26,10 @@ import { formatRecommendationAuditObjects } from '../../utils/auditObjects';
 import {
   ADDITIONAL_INDICATOR_ICONS,
   INDICATOR_ICONS,
-  indicatorIconRenderProps,
   type IndicatorIconKey,
   type IndicatorIconMeta,
 } from '../recommendations/indicatorIcons';
+import { IndicatorGlyph } from '../recommendations/IndicatorGlyph';
 import { RecommendationNameHoverCard } from '../recommendations/RecommendationNameHoverCard';
 import {
   LIST_ACTION_BUTTON_CLASS,
@@ -64,10 +64,9 @@ function ListIndicatorIcon({
   if (!meta) {
     return <span className="text-gray-400">—</span>;
   }
-  const Icon = meta.Icon;
   return (
     <span className="inline-flex items-center justify-center" title={label}>
-      <Icon size={18} className={meta.className} aria-hidden {...indicatorIconRenderProps(meta)} />
+      <IndicatorGlyph meta={meta} size={18} />
     </span>
   );
 }

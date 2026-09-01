@@ -31,6 +31,8 @@ type FocusableDonutChartProps = {
   legendPercentFirst?: boolean;
   /** Ring (doughnut) layout: hollow center, white gaps, labels outside. */
   variant?: 'pie' | 'ring';
+  /** Color of in-slice percent / value labels. Defaults to white. */
+  valueLabelColor?: string;
 };
 
 type LabelProps = {
@@ -44,6 +46,7 @@ type LabelProps = {
   labelMode?: 'value' | 'percent' | 'both';
   fill?: string;
   payload?: DonutDatum;
+  valueLabelColor?: string;
 };
 
 function RingSegmentLabels({
@@ -113,6 +116,7 @@ function PieValueLabel({
   labelMode = 'percent',
   fill: _fill,
   payload: _payload,
+  valueLabelColor = '#ffffff',
 }: LabelProps) {
   if (percent < 0.06 || value <= 0) {
     return null;
@@ -121,7 +125,7 @@ function PieValueLabel({
   const radius = innerRadius + (outerRadius - innerRadius) * 0.62;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  const labelColor = '#ffffff';
+  const labelColor = valueLabelColor;
   const percentLabel =`${Math.round(percent * 100)}%`;
 
   if (labelMode === 'both') {
@@ -183,6 +187,7 @@ export function FocusableDonutChart({
   legendFontWeight = 400,
   legendPercentFirst = false,
   variant = 'pie',
+  valueLabelColor = '#ffffff',
 }: FocusableDonutChartProps) {
   const isRing = variant === 'ring';
   const resolvedLegendLabelMode = legendLabelMode ?? labelMode;
@@ -228,7 +233,9 @@ export function FocusableDonutChart({
               showValueLabels
                 ? isRing
                   ? (props) => <RingSegmentLabels {...props} />
-                  : (props) => <PieValueLabel {...props} labelMode={labelMode} />
+                  : (props) => (
+                      <PieValueLabel {...props} labelMode={labelMode} valueLabelColor={valueLabelColor} />
+                    )
                 : false
             }
             labelLine={

@@ -11,6 +11,8 @@ export type IndicatorIconMeta = {
   Icon: LucideIcon;
   className: string;
   filled?: boolean;
+  /** 0–1 portion of the icon to fill from the bottom. Used with `filled`. */
+  fillRatio?: number;
 };
 
 export const INDICATOR_ICONS: Partial<Record<IndicatorIconKey, IndicatorIconMeta>> = {
@@ -18,7 +20,12 @@ export const INDICATOR_ICONS: Partial<Record<IndicatorIconKey, IndicatorIconMeta
   'на контроле': { Icon: Hourglass, className: 'text-gray-500' },
   'не решено': { Icon: AlertTriangle, className: 'text-red-500' },
   исполнено: { Icon: Check, className: 'text-[rgb(37,235,103)]' },
-  'исполнено в ходе аудита': { Icon: Star, className: 'text-[#003366]', filled: true },
+  'исполнено в ходе аудита': {
+    Icon: Star,
+    className: 'text-[#003366]',
+    filled: true,
+    fillRatio: 0.5,
+  },
 };
 
 export const ADDITIONAL_INDICATOR_ICONS: Partial<Record<IndicatorIconKey, IndicatorIconMeta>> = {

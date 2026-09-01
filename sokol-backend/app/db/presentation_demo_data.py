@@ -12,10 +12,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
 
-from app.db.auditor_names import AUDITORS
+from app.db.catalogs import AUDITORS, CHECK_KINDS, DEPARTMENTS
 from app.db.demo_data import apply_completed_during_audit_indicator, build_recommendation_closure_fields
-from app.db.department_names import DEPARTMENTS
-from app.db.seed_check_kinds import CHECK_KINDS
 from app.utils.check_key import assign_serial_numbers
 from app.utils.paths import get_repo_data_dir
 
