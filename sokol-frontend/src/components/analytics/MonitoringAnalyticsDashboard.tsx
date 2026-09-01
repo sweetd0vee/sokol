@@ -19,6 +19,7 @@ import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary, filterSelectionItem } from './AnalyticsSelectionSummary';
 import {
   ChartCard,
+  CHART_AXIS_TICK,
   CHART_TOOLTIP_STYLE,
   CHART_VALUE_LABEL_SIZE,
   EmptyChart,
@@ -54,28 +55,38 @@ const EMPTY_ADDITIONAL_STATUS_DISTRIBUTION: never[] = [];
 const EMPTY_STATUS_DISTRIBUTION: never[] = [];
 const EMPTY_STATUS_MATRIX: never[] = [];
 const EMPTY_DEADLINE_EXTENSIONS: never[] = [];
+const EMPTY_COMPLETED_DURING_AUDIT: never[] = [];
+
+function checkBarTooltipLabel(label: unknown, shortNameByKey: Map<string, string>) {
+  const key = String(label);
+  const shortName = shortNameByKey.get(key);
+  return shortName && shortName !== key ? `${key} — ${shortName}` : key;
+}
 
 function CheckKeyAxisTick({
   x = 0,
   y = 0,
   payload,
   shortNameByKey,
+  orientation = 'bottom',
 }: {
   x?: number | string;
   y?: number | string;
   payload?: { value?: string };
   shortNameByKey: Map<string, string>;
+  orientation?: 'bottom' | 'left';
 }) {
   const key = String(payload?.value ?? '');
-  const shortName = shortNameByKey.get(key) || key;
+  const isLeft = orientation === 'left';
   return (
     <g transform={`translate(${x},${y})`}>
-      <title>{shortName}</title>
+      <title>{checkBarTooltipLabel(key, shortNameByKey)}</title>
       <text
-        dy={14}
-        textAnchor="middle"
+        x={isLeft ? -4 : 0}
+        dy={isLeft ? 4 : 14}
+        textAnchor={isLeft ? 'end' : 'middle'}
         fill="#64748B"
-        fontSize={9}
+        fontSize={isLeft ? 11 : 9}
       >
         {key}
       </text>
@@ -179,6 +190,7 @@ export function MonitoringAnalyticsDashboard() {
     statusMatrixSortRef.current = sortConfig;
   }, []);
   const deadlineExtensionsByCheck = data?.deadlineExtensionsByCheck ?? EMPTY_DEADLINE_EXTENSIONS;
+  const completedDuringAuditByCheck = data?.completedDuringAuditByCheck ?? EMPTY_COMPLETED_DURING_AUDIT;
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
 
@@ -189,7 +201,15 @@ export function MonitoringAnalyticsDashboard() {
   const deadlineExtensionColors = useMemo(
     () => applyValueBasedColors(deadlineExtensionsByCheck, MONITORING_BAR_BLUE_SCALE).map((item) => item.color),
     [deadlineExtensionsByCheck],
-  ); // navy → emerald #0E7490, not ice blue
+  );
+  const completedDuringAuditShortNames = useMemo(
+    () => new Map(completedDuringAuditByCheck.map((item) => [item.key, item.shortName || item.name || item.key])),
+    [completedDuringAuditByCheck],
+  );
+  const completedDuringAuditColors = useMemo(
+    () => applyValueBasedColors(completedDuringAuditByCheck, MONITORING_BAR_BLUE_SCALE).map((item) => item.color),
+    [completedDuringAuditByCheck],
+  );
 
   const coloredAdditionalStatusDistribution = useMemo(
     () =>
@@ -352,11 +372,7 @@ export function MonitoringAnalyticsDashboard() {
                     <Tooltip
                       contentStyle={CHART_TOOLTIP_STYLE}
                       formatter={(value) => [value, 'Переносов']}
-                      labelFormatter={(label) => {
-                        const key = String(label);
-                        const shortName = deadlineExtensionShortNames.get(key);
-                        return shortName && shortName !== key ? `${key} — ${shortName}` : key;
-                      }}
+                      labelFormatter={(label) => checkBarTooltipLabel(label, deadlineExtensionShortNames)}
                     />
                     <Bar dataKey="value" name="Переносов" fill={lastScaleColor(MONITORING_BAR_BLUE_SCALE)} radius={[4, 4, 0, 0]}>
                       {deadlineExtensionsByCheck.map((item, index) => (
@@ -368,6 +384,61 @@ export function MonitoringAnalyticsDashboard() {
                         fontSize={CHART_VALUE_LABEL_SIZE}
                         fill={lastScaleColor(MONITORING_BAR_BLUE_SCALE)}
                         offset={8}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'completedDuringAudit',
+        defaultLayout: { x: 6, y: 5, w: 6, h: 4, minW: 3, minH: 3 },
+        render: () => (
+          <ChartCard
+            title="Исполнено в ходе аудита"
+            description="Количество рекомендаций со статусом «исполнено в ходе аудита» по проверкам за период"
+            exportSectionId="completedDuringAudit"
+            exportSelected={exportSections.isSelected('completedDuringAudit')}
+            onToggleExport={() => exportSections.toggleSection('completedDuringAudit')}
+          >
+            {completedDuringAuditByCheck.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <div className="h-full min-h-[14rem]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={completedDuringAuditByCheck}
+                    layout="vertical"
+                    margin={{ top: 8, right: 40, left: 8, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
+                    <YAxis
+                      dataKey="key"
+                      type="category"
+                      width={88}
+                      interval={0}
+                      tick={(props) => (
+                        <CheckKeyAxisTick {...props} orientation="left" shortNameByKey={completedDuringAuditShortNames} />
+                      )}
+                    />
+                    <Tooltip
+                      contentStyle={CHART_TOOLTIP_STYLE}
+                      formatter={(value) => [value, 'Рекомендаций']}
+                      labelFormatter={(label) => checkBarTooltipLabel(label, completedDuringAuditShortNames)}
+                    />
+                    <Bar dataKey="value" name="Рекомендаций" fill={lastScaleColor(MONITORING_BAR_BLUE_SCALE)} radius={[0, 4, 4, 0]}>
+                      {completedDuringAuditByCheck.map((item, index) => (
+                        <Cell key={item.id} fill={completedDuringAuditColors[index]} />
+                      ))}
+                      <LabelList
+                        dataKey="value"
+                        position="right"
+                        fontSize={CHART_VALUE_LABEL_SIZE}
+                        fill={lastScaleColor(MONITORING_BAR_BLUE_SCALE)}
                       />
                     </Bar>
                   </BarChart>
@@ -400,6 +471,9 @@ export function MonitoringAnalyticsDashboard() {
     [
       coloredAdditionalStatusDistribution,
       coloredStatusDistribution,
+      completedDuringAuditByCheck,
+      completedDuringAuditColors,
+      completedDuringAuditShortNames,
       deadlineExtensionColors,
       deadlineExtensionShortNames,
       deadlineExtensionsByCheck,

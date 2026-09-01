@@ -102,12 +102,13 @@ export const MONITORING_VALUE_SCALE = [
 
 /**
  * Semantic colors for Monitoring status circles.
- * Teal and dusty lilac stay as-is; in-progress is the KPI yellow (#FBEB8D) darkened; on-control is a cool grey.
+ * Teal and dusty lilac stay as-is; in-progress is pale yellow rgb(255, 255, 185);
+ * on-control is light grey rgb(219, 219, 219).
  */
 export const MONITORING_STATUS_COLORS = {
   completed: '#0E7490',
-  in_progress: '#E0C44C',
-  on_control: '#8D939A',
+  in_progress: '#FFFFB9',
+  on_control: '#DBDBDB',
   unresolved: '#DAAAD1',
 } as const;
 

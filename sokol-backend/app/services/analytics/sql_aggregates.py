@@ -103,6 +103,7 @@ __all__ = [
     "load_effectiveness_matrix_rows",
     "load_recommendation_department_rows",
     "recommendation_check_links_sql",
+    "recommendation_completed_during_audit_by_check_sql",
     "recommendation_deadline_extensions_by_check_sql",
     "recommendation_indicator_distribution_sql",
     "recommendation_materiality_matrix_sql",
@@ -485,6 +486,33 @@ async def recommendation_deadline_extensions_by_check_sql(
         )
         for item in sorted(totals.values(), key=lambda entry: (-int(entry["value"]), str(entry["key"])))
     ]
+
+
+async def recommendation_completed_during_audit_by_check_sql(
+    session: AsyncSession, **filters: Any
+) -> list[DeadlineExtensionByCheckRow]:
+    statement = apply_recommendation_filters(
+        recommendation_grouped_by_check(
+            count_if(Recommendation.indicator == "исполнено в ходе аудита", "value"),
+        ),
+        **filters,
+    )
+    result: list[DeadlineExtensionByCheckRow] = []
+    for row in await fetch_all(session, statement):
+        value = int(row.value or 0)
+        if value <= 0:
+            continue
+        identity = check_group_identity(row)
+        result.append(
+            DeadlineExtensionByCheckRow(
+                id=identity.id,
+                key=identity.key,
+                short_name=identity.short_name,
+                name=identity.name,
+                value=value,
+            )
+        )
+    return sorted(result, key=lambda item: (-item.value, item.key))
 
 
 async def recommendation_check_links_sql(session: AsyncSession, **filters: Any) -> list[NamedCount]:

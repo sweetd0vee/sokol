@@ -220,6 +220,9 @@ class MonitoringAnalyticsResponse(BaseModel):
     deadline_extensions_by_check: list[DeadlineExtensionByCheckRow] = Field(
         serialization_alias="deadlineExtensionsByCheck"
     )
+    completed_during_audit_by_check: list[DeadlineExtensionByCheckRow] = Field(
+        serialization_alias="completedDuringAuditByCheck"
+    )
     filter_options: ChecksAnalyticsFilterOptions = Field(serialization_alias="filterOptions")
 
 

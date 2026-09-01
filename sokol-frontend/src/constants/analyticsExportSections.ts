@@ -29,6 +29,12 @@ export const MONITORING_EXPORT_SECTIONS = [
     sheetName: 'Перенос срока',
     headerFill: '003366',
   },
+  {
+    id: 'completedDuringAudit',
+    label: 'Исполнено в ходе аудита',
+    sheetName: 'Исполнено в ходе аудита',
+    headerFill: '003366',
+  },
   { id: 'statusMatrix', label: 'Матрица статусов', sheetName: 'Матрица статусов', headerFill: '0891B2' },
 ] as const;
 

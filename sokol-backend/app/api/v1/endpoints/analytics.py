@@ -22,6 +22,7 @@ from app.services.analytics.dva_analytics import build_dva_analytics
 from app.services.analytics.planning_analytics import build_planning_analytics
 from app.services.analytics.recommendations_analytics import build_recommendations_analytics
 from app.services.analytics.sql_aggregates import (
+    recommendation_completed_during_audit_by_check_sql,
     recommendation_deadline_extensions_by_check_sql,
     recommendation_status_matrix_sql,
 )
@@ -102,6 +103,9 @@ async def get_monitoring_analytics(
         indicator_distribution=full.indicator_distribution,
         status_matrix=await recommendation_status_matrix_sql(session, **recommendation_filters),
         deadline_extensions_by_check=await recommendation_deadline_extensions_by_check_sql(
+            session, **recommendation_filters
+        ),
+        completed_during_audit_by_check=await recommendation_completed_during_audit_by_check_sql(
             session, **recommendation_filters
         ),
         filter_options=full.filter_options,

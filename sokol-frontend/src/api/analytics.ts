@@ -127,6 +127,7 @@ export type MonitoringAnalyticsResponse = {
   indicatorDistribution: NamedCount[];
   statusMatrix: StatusMatrixRow[];
   deadlineExtensionsByCheck: DeadlineExtensionByCheckRow[];
+  completedDuringAuditByCheck: DeadlineExtensionByCheckRow[];
   filterOptions: AnalyticsFilterOptions & { auditors: string[] };
 };
 
