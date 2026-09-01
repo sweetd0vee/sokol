@@ -381,7 +381,12 @@ export function RecommendationsAnalyticsDashboard() {
             onToggleExport={() => exportSections.toggleSection('summary')}
           >
             <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5">
-              <KpiCard label="Всего" value={summary.total} hint={`из ${universeTotal}`} tone="blue" />
+              <KpiCard
+                label="Всего"
+                value={summary.total}
+                hint={`из ${universeTotal}`}
+                accentColor={MONITORING_STATUS_COLORS.completed}
+              />
               <KpiCard label="В процессе" value={summary.byStatus.in_progress} tone="amber" />
               <KpiCard label="Не решено" value={summary.byStatus.unresolved} tone="slate" />
               <KpiCard label="Исполнено" value={summary.byStatus.completed} tone="green" />
@@ -504,6 +509,7 @@ export function RecommendationsAnalyticsDashboard() {
                                 stackKeys={MATERIALITY_STACK_KEYS}
                                 getColor={getMaterialitySegmentColor}
                                 showStackTotal
+                                stackRow={completedPeriodSeries[Number(props.index)]}
                               />
                             )}
                           />
@@ -523,6 +529,7 @@ export function RecommendationsAnalyticsDashboard() {
                                 stackKeys={MATERIALITY_STACK_KEYS}
                                 getColor={getMaterialitySegmentColor}
                                 showStackTotal
+                                stackRow={completedPeriodSeries[Number(props.index)]}
                               />
                             )}
                           />
@@ -542,6 +549,7 @@ export function RecommendationsAnalyticsDashboard() {
                                 stackKeys={MATERIALITY_STACK_KEYS}
                                 getColor={getMaterialitySegmentColor}
                                 showStackTotal
+                                stackRow={completedPeriodSeries[Number(props.index)]}
                               />
                             )}
                           />
