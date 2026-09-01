@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { resolveAvatarSrc } from '../../constants/avatars';
+import { LIST_CHROME_RIGHT_INSET_CLASS } from '../../constants/formLayout';
 import { useAuth } from '../../hooks/useAuth';
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
 import { useStoredAvatar } from '../../hooks/useStoredAvatar';
@@ -17,7 +18,7 @@ export function AppHeader() {
 
   return (
     <header className="flex h-[88px] items-center justify-end border-b border-gray-200 bg-white pl-6 pr-8">
-      <div className="flex items-center gap-2">
+      <div className={`flex w-[334px] shrink-0 items-center justify-between ${LIST_CHROME_RIGHT_INSET_CLASS}`}>
         <Link
           to="/profile"
           className={`flex h-10 w-[288px] items-center gap-2 rounded-lg border px-3 text-sm transition ${

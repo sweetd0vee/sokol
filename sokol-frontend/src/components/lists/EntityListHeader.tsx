@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { User } from 'lucide-react';
-import { LIST_ACTION_BUTTON_CLASS } from '../../constants/formLayout';
+import { LIST_ACTION_BUTTON_CLASS, LIST_CHROME_RIGHT_INSET_CLASS } from '../../constants/formLayout';
 
 type EntityListHeaderProps = {
   title: string;
@@ -18,7 +18,8 @@ export function EntityListHeader({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <h2 className="text-2xl font-bold text-sber-dark text-center sm:text-left">{title}</h2>
-      <div className="mx-auto flex w-[334px] shrink-0 items-center justify-center gap-3.5 sm:mx-0 sm:pr-px">
+      <div className={`mx-auto flex shrink-0 items-center sm:mx-0 ${LIST_CHROME_RIGHT_INSET_CLASS}`}>
+        <div className="flex w-[334px] items-center justify-center gap-3.5">
         <button
           type="button"
           onClick={onToggleOnlyMe}

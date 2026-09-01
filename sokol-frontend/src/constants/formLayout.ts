@@ -50,8 +50,11 @@ export const FORM_FIELD_SPAN_2_CLASS = 'form-field-span-2 min-w-0';
 
 /** Shared list action sizes: Мои/Создать and table action buttons. */
 export const LIST_ACTION_BUTTON_CLASS =
-  'inline-flex w-[160px] items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium';
+  'inline-flex h-[38px] w-[160px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium';
 export const LIST_ACTION_GROUP_CLASS = 'ml-auto flex w-[334px] items-center justify-end gap-3.5 whitespace-nowrap';
+
+/** 1px table card border + action cell pr-4 — keeps header chrome aligned with list buttons. */
+export const LIST_CHROME_RIGHT_INSET_CLASS = 'pr-[17px]';
 
 /** Base chrome for list table filter controls. */
 const LIST_FILTER_BASE_CLASS = 'py-1.5 text-sm';

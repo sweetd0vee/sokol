@@ -218,7 +218,7 @@ export function FocusableDonutChart({
             dataKey="value"
             nameKey="name"
             cx="50%"
-            cy={isRing || !showLegend ? '50%' : '42%'}
+            cy={isRing || !showLegend ? '50%' : '46%'}
             innerRadius={isRing ? '48%' : 0}
             outerRadius={isRing ? '70%' : '72%'}
             startAngle={isRing ? 90 : 0}
@@ -275,7 +275,7 @@ export function FocusableDonutChart({
           />
           {showLegend ? (
             <Legend
-              layout="vertical"
+              layout="horizontal"
               verticalAlign="bottom"
               align="center"
               wrapperStyle={{
@@ -288,9 +288,15 @@ export function FocusableDonutChart({
                 <ul
                   className="recharts-default-legend"
                   style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '4px 20px',
                     padding: 0,
                     margin: 0,
-                    textAlign: 'center',
+                    listStyle: 'none',
                     fontSize: legendFontSize,
                     fontWeight: legendFontWeight,
                   }}
@@ -300,9 +306,10 @@ export function FocusableDonutChart({
                       key={item.name}
                       className="recharts-legend-item"
                       style={{
-                        display: 'block',
-                        marginRight: 0,
-                        marginBottom: 4,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        margin: 0,
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       <span
