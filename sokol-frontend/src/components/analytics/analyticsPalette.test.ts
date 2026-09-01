@@ -40,7 +40,7 @@ describe('applyValueBasedColors', () => {
     );
   });
 
-  it('maps deadline-extension bars through blues and includes #0E7490', () => {
+  it('maps deadline-extension bars from emerald to navy', () => {
     const colored = applyValueBasedColors(
       [
         { name: 'high', value: 35 },
@@ -52,8 +52,7 @@ describe('applyValueBasedColors', () => {
     expect(colored.find((item) => item.name === 'high')?.color.toUpperCase()).toBe(
       lastScaleColor(MONITORING_BAR_BLUE_SCALE).toUpperCase(),
     );
-    expect(colored.find((item) => item.name === 'low')?.color.toUpperCase()).toBe('#4580D8');
-    expect(MONITORING_BAR_BLUE_SCALE).toContain('#0E7490');
+    expect(colored.find((item) => item.name === 'low')?.color.toUpperCase()).toBe('#0E7490');
   });
 });
 

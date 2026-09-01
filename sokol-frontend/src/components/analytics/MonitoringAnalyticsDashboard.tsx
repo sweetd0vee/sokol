@@ -189,7 +189,7 @@ export function MonitoringAnalyticsDashboard() {
   const deadlineExtensionColors = useMemo(
     () => applyValueBasedColors(deadlineExtensionsByCheck, MONITORING_BAR_BLUE_SCALE).map((item) => item.color),
     [deadlineExtensionsByCheck],
-  );
+  ); // navy → emerald #0E7490, not ice blue
 
   const coloredAdditionalStatusDistribution = useMemo(
     () =>
@@ -321,7 +321,7 @@ export function MonitoringAnalyticsDashboard() {
       },
       {
         id: 'deadlineExtensions',
-        defaultLayout: { x: 0, y: 5, w: 12, h: 4, minW: 6, minH: 3 },
+        defaultLayout: { x: 0, y: 5, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Перенос срока"

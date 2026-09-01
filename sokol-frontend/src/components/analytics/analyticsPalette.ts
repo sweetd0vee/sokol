@@ -122,16 +122,15 @@ export const MONITORING_ADDITIONAL_STATUS_COLORS = {
 } as const;
 
 /**
- * Sequential blue scale for the Monitoring "deadline extensions" bars.
- * Small values stay a saturated mid-blue (not ice). Large values go navy,
- * with teal #0E7490 in the darker half of the ramp.
+ * Sequential teal → navy scale for the Monitoring "deadline extensions" bars.
+ * Small values are emerald #0E7490; large values go navy.
  */
 export const MONITORING_BAR_BLUE_SCALE = [
-  '#4580D8', // saturated mid blue — smallest
-  '#3A6FD0',
-  '#2B5BC2',
-  '#1E4EB0',
-  '#0E7490', // requested teal
+  '#0E7490', // emerald — smallest
+  '#10688C',
+  '#115D87',
+  '#135183',
+  '#14467E',
   '#163A7A', // deep navy — largest
 ] as const;
 
