@@ -78,7 +78,7 @@ export function ProfilePage() {
               <button
                 type="button"
                 onClick={() => setIsAvatarPickerOpen((prev) => !prev)}
-                className="relative h-40 w-40 shrink-0 overflow-hidden rounded-3xl border border-gray-200 bg-gray-100 shadow-sm transition hover:border-sber-dark/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sber-dark/40 sm:h-44 sm:w-44"
+                className="relative h-40 w-40 shrink-0 overflow-hidden rounded-full border border-gray-200 bg-gray-100 shadow-sm transition hover:border-sber-dark/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sber-dark/40 sm:h-44 sm:w-44"
                 aria-expanded={isAvatarPickerOpen}
                 aria-controls="profile-avatar-picker"
                 aria-label="Изменить аватар"
@@ -104,7 +104,7 @@ export function ProfilePage() {
                         aria-label={preset.label}
                         title={preset.label}
                         onClick={() => handleSelectAvatar(preset.id)}
-                        className={`relative h-16 w-16 overflow-hidden rounded-xl border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sber-dark/40 sm:h-20 sm:w-20 ${
+                        className={`relative h-16 w-16 overflow-hidden rounded-full border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sber-dark/40 sm:h-20 sm:w-20 ${
                           isSelected ? 'border-sber-dark shadow-md' : 'border-transparent hover:border-sber-dark/30'
                         }`}
                       >

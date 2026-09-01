@@ -1,24 +1,15 @@
-<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="160" height="160" rx="36" fill="#FFF7ED"/>
-  <ellipse cx="80" cy="138" rx="48" ry="10" fill="#EA580C" fill-opacity="0.1"/>
-  <path d="M48 54L40 32L62 46" fill="#FB923C"/>
-  <path d="M112 54L120 32L98 46" fill="#FB923C"/>
-  <path d="M40 32L48 54L44 42" fill="#C2410C"/>
-  <path d="M120 32L112 54L116 42" fill="#C2410C"/>
-  <ellipse cx="80" cy="92" rx="42" ry="36" fill="#FB923C"/>
-  <ellipse cx="80" cy="100" rx="30" ry="24" fill="#FDBA74"/>
-  <ellipse cx="66" cy="84" rx="9" ry="11" fill="#FFF"/>
-  <ellipse cx="94" cy="84" rx="9" ry="11" fill="#FFF"/>
-  <circle cx="66" cy="86" r="5.5" fill="#292524"/>
-  <circle cx="94" cy="86" r="5.5" fill="#292524"/>
-  <circle cx="68" cy="84" r="2" fill="#FFF"/>
-  <circle cx="96" cy="84" r="2" fill="#FFF"/>
-  <ellipse cx="56" cy="98" rx="7" ry="5" fill="#FDA4AF" fill-opacity="0.55"/>
-  <ellipse cx="104" cy="98" rx="7" ry="5" fill="#FDA4AF" fill-opacity="0.55"/>
-  <ellipse cx="80" cy="94" rx="10" ry="8" fill="#FFF7ED"/>
-  <circle cx="80" cy="92" r="3.5" fill="#292524"/>
-  <path d="M72 106C76 110 84 110 88 106" stroke="#7C2D12" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M58 72C64 66 76 64 80 64C84 64 96 66 102 72" stroke="#1C1917" stroke-width="4" stroke-linecap="round"/>
-  <ellipse cx="58" cy="74" rx="8" ry="6" fill="#1C1917"/>
-  <ellipse cx="102" cy="74" rx="8" ry="6" fill="#1C1917"/>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <style>
+    .st1{fill:#ff8b00}.st3{fill:#fff}.st4{fill:#42526e}
+  </style>
+  <path d="M60 120C27 120 0 93 0 60S27 0 60 0s60 27 60 60-27 60-60 60z" fill="#00a3bf"/>
+  <path class="st1" d="M88 97H32c-2 0-3-1.5-3-3v-4.5h62.5v3.4c0 1-.3 2-.9 2.8-.6.8-1.4 1.3-2.6 1.3zM93 71.5H27c-4.5 0-8.5-3.5-8.5-8.5 0-4.5 3.5-8.5 8.5-8.5h66c4.5 0 8.5 3.5 8.5 8.5s-4 8.5-8.5 8.5z"/>
+  <path d="M91 89.5H29c-2 0-3-1.5-3-3V57c-.5-19 15-34.5 34-34.5S94.5 38 94.5 57v29.5c0 1.5-1.5 3-3.5 3z" fill="#ffab00"/>
+  <circle class="st3" cx="44.5" cy="52" r="9.5"/>
+  <circle class="st4" cx="44.5" cy="52" r="3"/>
+  <circle class="st3" cx="75.5" cy="52" r="9.5"/>
+  <circle class="st4" cx="75.5" cy="52" r="3"/>
+  <path class="st1" d="M62.5 69.5H57c-2.5 0-4-2.5-2.5-5l2.5-4c1-2 4-2 5.5 0l2.5 4c1.5 2 .5 5-2.5 5z"/>
+  <path class="st4" d="M60 83.5c4.5 0 8.5-3.5 9-7.5.1-1.3-.9-2-1.9-2H53.5c-1 0-2.6.3-2.5 2 .5 4.5 4.5 7.5 9 7.5z"/>
+  <path class="st1" d="M60 41c3.5 0 6.5-2.5 6.5-6.5V23c-2-.5-4-.5-6.5-.5-2 0-4.5 0-6.5.5v12c0 3 3 6 6.5 6z"/>
 </svg>

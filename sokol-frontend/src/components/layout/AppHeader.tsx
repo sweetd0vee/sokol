@@ -29,7 +29,7 @@ export function AppHeader() {
           }`}
           title="Профиль"
         >
-          <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+          <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-gray-100">
             {!avatarFailed && (
               <img
                 src={avatarSrc}

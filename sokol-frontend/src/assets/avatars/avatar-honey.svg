@@ -1,21 +1,17 @@
-<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="160" height="160" rx="36" fill="#FFFBEB"/>
-  <ellipse cx="80" cy="138" rx="50" ry="10" fill="#D97706" fill-opacity="0.12"/>
-  <path d="M46 58L38 36L58 50" fill="#FBBF24"/>
-  <path d="M114 58L122 36L102 50" fill="#FBBF24"/>
-  <ellipse cx="80" cy="90" rx="44" ry="38" fill="#FDE68A"/>
-  <ellipse cx="80" cy="98" rx="32" ry="26" fill="#FEF3C7"/>
-  <ellipse cx="66" cy="84" rx="9" ry="11" fill="#FFF"/>
-  <ellipse cx="94" cy="84" rx="9" ry="11" fill="#FFF"/>
-  <circle cx="66" cy="86" r="5.5" fill="#292524"/>
-  <circle cx="94" cy="86" r="5.5" fill="#292524"/>
-  <circle cx="68" cy="84" r="2" fill="#FFF"/>
-  <circle cx="96" cy="84" r="2" fill="#FFF"/>
-  <ellipse cx="56" cy="98" rx="7" ry="5" fill="#FDA4AF" fill-opacity="0.55"/>
-  <ellipse cx="104" cy="98" rx="7" ry="5" fill="#FDA4AF" fill-opacity="0.55"/>
-  <ellipse cx="80" cy="92" rx="10" ry="8" fill="#FFF7ED"/>
-  <circle cx="80" cy="90" r="3.5" fill="#292524"/>
-  <path d="M72 106C76 110 84 110 88 106" stroke="#92400E" stroke-width="2.5" stroke-linecap="round"/>
-  <ellipse cx="80" cy="118" rx="16" ry="10" fill="#FBBF24"/>
-  <path d="M52 118C58 128 68 132 80 132C92 132 102 128 108 118" stroke="#F59E0B" stroke-width="10" stroke-linecap="round"/>
+<svg id="bull" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <style>
+    .st3{fill:#fff}.st4{fill:#79e2f2}.st5{fill:#2b5184}
+  </style>
+  <g id="color_x5F_bg">
+    <path id="XMLID_10_" d="M60 120C27 120 0 93 0 60S27 0 60 0s60 27 60 60-27 60-60 60z" fill="#6554c0"/>
+  </g>
+  <path id="XMLID_9_" d="M79 94.5H41c-7 0-12.5-5.5-12.5-12.5V32c0-5.5 6-8 10-5l2.5 2h37.5l2.5-2c4-3 10 0 10 5v50c0 7-5.5 12.5-12 12.5z" fill="#00c7e5"/>
+  <path d="M70.5 74.5L62 83c-1.5 1.5-3.5 1.5-4.5 0L49 74.5l11-11 10.5 11z" fill="#ffab00"/>
+  <circle id="XMLID_7_" class="st3" cx="42.5" cy="61" r="20"/>
+  <circle id="XMLID_6_" class="st3" cx="77.5" cy="61" r="20"/>
+  <circle id="XMLID_5_" class="st4" cx="42.5" cy="61" r="12"/>
+  <circle id="XMLID_4_" class="st5" cx="42.5" cy="61" r="4"/>
+  <circle id="XMLID_3_" class="st4" cx="77.5" cy="61" r="12"/>
+  <circle id="XMLID_2_" class="st5" cx="77.5" cy="61" r="4"/>
+  <path id="XMLID_1_" d="M41 29c11 9 26.5 9 37.5 0H41z" fill="#00a3bf"/>
 </svg>

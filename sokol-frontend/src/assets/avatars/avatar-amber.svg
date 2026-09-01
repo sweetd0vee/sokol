@@ -1,23 +1,13 @@
-<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="160" height="160" rx="36" fill="#FFF7ED"/>
-  <ellipse cx="80" cy="138" rx="50" ry="10" fill="#EA580C" fill-opacity="0.1"/>
-  <path d="M46 58L34 34L62 50" fill="#F97316"/>
-  <path d="M114 58L126 34L98 50" fill="#F97316"/>
-  <path d="M34 34L46 58L40 44" fill="#C2410C"/>
-  <path d="M126 34L114 58L120 44" fill="#C2410C"/>
-  <path d="M80 118C48 118 38 96 38 78C38 56 56 42 80 42C104 42 122 56 122 78C122 96 112 118 80 118Z" fill="#FB923C"/>
-  <ellipse cx="80" cy="86" rx="36" ry="32" fill="#FDBA74"/>
-  <ellipse cx="80" cy="94" rx="24" ry="20" fill="#FFEDD5"/>
-  <ellipse cx="66" cy="80" rx="8" ry="10" fill="#FFF"/>
-  <ellipse cx="94" cy="80" rx="8" ry="10" fill="#FFF"/>
-  <circle cx="66" cy="82" r="5" fill="#292524"/>
-  <circle cx="94" cy="82" r="5" fill="#292524"/>
-  <circle cx="68" cy="80" r="2" fill="#FFF"/>
-  <circle cx="96" cy="80" r="2" fill="#FFF"/>
-  <ellipse cx="56" cy="94" rx="6" ry="4" fill="#FDA4AF" fill-opacity="0.5"/>
-  <ellipse cx="104" cy="94" rx="6" ry="4" fill="#FDA4AF" fill-opacity="0.5"/>
-  <ellipse cx="80" cy="92" rx="10" ry="8" fill="#FFF7ED"/>
-  <circle cx="80" cy="90" r="3.5" fill="#292524"/>
-  <path d="M74 104C77 107 83 107 86 104" stroke="#7C2D12" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M80 118L74 128H86L80 118Z" fill="#FFF"/>
+<svg id="bull" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <style>
+    .st2{fill:#42526e}
+  </style>
+  <path d="M60 120C27 120 0 93 0 60S27 0 60 0s60 27 60 60-27 60-60 60z" fill="#2684ff" id="color_x5F_bg"/>
+  <path d="M77.5 32.5H41c-.5 0-1-.5-2-1L27 23c-2.5-2-6 0-6 3.5V68c0 16 13 29 29 29h19.5C85.5 97 99 84 99 68V26c0-3-3.5-5-6-3.5l-13 9c-1 1-1.5 1-2.5 1z" fill="#ffab00"/>
+  <circle class="st2" cx="47" cy="53.5" r="3.5"/>
+  <circle class="st2" cx="73" cy="53.5" r="3.5"/>
+  <circle class="st2" cx="60" cy="78" r="10"/>
+  <path d="M60 61.5H48c-6 0-11 5-11 11s2.5 12 11 12 9.5-10 12-10 4 10 12 10 11-6 11-12-5-11-11-11H60z" fill="#fff"/>
+  <path d="M53.5 61.5l4 5.5c1.5 2.1 3.8 2.2 5.5 0l4-5.5H53.5z" fill="#ff5630"/>
+  <path d="M60 44c6.5 0 11-5.5 11-11.5H49C49 39 53.5 44 60 44z" fill="#ff8b00"/>
 </svg>
