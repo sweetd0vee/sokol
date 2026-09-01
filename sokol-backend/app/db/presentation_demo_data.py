@@ -13,7 +13,7 @@ from openpyxl.styles import Font, PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.db.auditor_names import AUDITORS
-from app.db.demo_data import build_recommendation_closure_fields
+from app.db.demo_data import apply_completed_during_audit_indicator, build_recommendation_closure_fields
 from app.db.department_names import DEPARTMENTS
 from app.db.seed_check_kinds import CHECK_KINDS
 from app.utils.check_key import assign_serial_numbers
@@ -321,7 +321,7 @@ def build_recommendations(checks: list[dict], rng: random.Random, today: date) -
                 "created_at": created,
                 **closure,
             })
-    return rows
+    return apply_completed_during_audit_indicator(rows)
 
 
 def _write_sheet(workbook: Workbook, title: str, headers: list[str], rows: list[dict]) -> Worksheet:
@@ -371,6 +371,10 @@ def generate_presentation_dataset(
     print(f"Leaders: {dict(Counter(row['check_leader'] for row in checks))}")
     print(f"Check statuses: {dict(Counter(row['status'] for row in checks))}")
     print(f"Rec statuses: {dict(Counter(row['status'] for row in recommendations))}")
+    print(
+        "Completed during audit: "
+        f"{sum(1 for row in recommendations if row.get('indicator') == 'исполнено в ходе аудита')}"
+    )
     dual = sum(1 for row in recommendations if ";" in row["audit_object"])
     print(f"Dual-department recommendations: {dual}")
     recs_with_extensions = [

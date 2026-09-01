@@ -123,7 +123,6 @@ export function FocusableSquareCirclesChart({
             const percent = total > 0 ? (item.value / total) * 100 : 0;
             const share = total > 0 ? item.value / total : 0;
             const radius = maxShare > 0 ? MAX_RADIUS * Math.sqrt(share / maxShare) : 0;
-            const isDimmed = activeIndex !== null && activeIndex !== index;
             const isActive = activeIndex === index;
             const fill = colors[index] ?? palette[index % palette.length];
             const roundedPercent = Math.round(percent);
@@ -148,11 +147,12 @@ export function FocusableSquareCirclesChart({
                   cy={slot.y}
                   r={radius}
                   fill={fill}
-                  fillOpacity={isDimmed ? 0.34 : 1}
-                  stroke="none"
+                  stroke={isActive ? '#0f172a' : 'none'}
+                  strokeWidth={isActive ? 1 : 0}
+                  vectorEffect="non-scaling-stroke"
                   style={{
                     filter: isActive ? 'brightness(1.05)' : undefined,
-                    transition: 'fill-opacity 160ms ease, filter 160ms ease',
+                    transition: 'filter 160ms ease',
                   }}
                 >
                   <title>{tooltip}</title>

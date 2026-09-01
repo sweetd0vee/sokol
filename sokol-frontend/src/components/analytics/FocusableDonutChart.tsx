@@ -250,10 +250,10 @@ export function FocusableDonutChart({
                 <Cell
                   key={entry.name}
                   fill={entry.color}
-                  fillOpacity={isDimmed ? (isRing ? 0.34 : 0.32) : 1}
+                  fillOpacity={isRing ? 1 : isDimmed ? 0.32 : 1}
                   stroke={strokeColor}
                   strokeWidth={isRing ? (isActive ? 2 : 5) : (isActive ? 1 : 0)}
-                  strokeOpacity={isDimmed && isRing ? 0.34 : 1}
+                  strokeOpacity={1}
                   style={{
                     cursor: 'pointer',
                     filter: isRing

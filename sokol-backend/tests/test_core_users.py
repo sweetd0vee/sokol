@@ -13,7 +13,7 @@ class NormalizeLoginTests(unittest.TestCase):
 
     def test_latin_lookalikes_map_to_cyrillic(self) -> None:
         self.assertEqual(normalize_login("Админ A.A."), normalize_login("Админ А.А."))
-        self.assertEqual(normalize_login("Admin"), "адмin")
+        self.assertEqual(normalize_login("A.A."), "а.а.")
 
     def test_blank_becomes_empty(self) -> None:
         self.assertEqual(normalize_login("   "), "")

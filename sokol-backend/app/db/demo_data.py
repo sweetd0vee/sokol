@@ -28,6 +28,9 @@ STATUS_TO_INDICATOR = {
     "on_control": "на контроле",
     "unresolved": "не решено",
 }
+COMPLETED_DURING_AUDIT_INDICATOR = "исполнено в ходе аудита"
+# Редкий индикатор: ~10 рекомендаций, разнесённых по нескольким проверкам.
+COMPLETED_DURING_AUDIT_PER_CHECK = (3, 2, 1, 1, 1, 1, 1)
 
 ADDITIONAL_STATUS_TO_INDICATOR = {
     "on_time": "в срок",
@@ -431,4 +434,36 @@ def build_recommendation_rows(checks: list[dict], count: int = 100) -> list[dict
                 ),
             }
         )
+    return apply_completed_during_audit_indicator(rows)
+
+
+def apply_completed_during_audit_indicator(
+    rows: list[dict],
+    *,
+    per_check: tuple[int, ...] = COMPLETED_DURING_AUDIT_PER_CHECK,
+) -> list[dict]:
+    """Пометить небольшую долю исполненных рекомендаций редким индикатором."""
+    if not rows or not per_check:
+        return rows
+
+    by_check: dict[str, list[dict]] = {}
+    for row in rows:
+        if row.get("status") != "completed":
+            continue
+        serial = str(row.get("serial_number") or "")
+        by_check.setdefault(serial, []).append(row)
+
+    remaining = list(per_check)
+    for check_rows in by_check.values():
+        if not remaining:
+            break
+        take = min(remaining[0], len(check_rows))
+        if take <= 0:
+            continue
+        for row in check_rows[:take]:
+            row["indicator"] = COMPLETED_DURING_AUDIT_INDICATOR
+            row["status"] = "completed"
+        remaining[0] -= take
+        if remaining[0] <= 0:
+            remaining.pop(0)
     return rows
