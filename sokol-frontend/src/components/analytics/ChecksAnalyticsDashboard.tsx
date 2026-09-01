@@ -384,8 +384,6 @@ export function ChecksAnalyticsDashboard() {
                 palette={VALUE_BLUE_SCALE}
                 colorByValue
                 labelMode="both"
-                legendFontSize={18}
-                legendFontWeight={600}
                 legendPercentFirst
               />
             )}
