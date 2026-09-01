@@ -63,14 +63,14 @@ export const RECOMMENDATIONS_PALETTE = [
 
 /**
  * Sequential scale for quantitative charts.
- * Small values are light emerald; large values go deep navy.
+ * Small values are emerald #0E7490; large values go deep navy.
  */
 export const VALUE_BLUE_SCALE = [
-  '#6EE7B7', // light emerald — smallest
-  '#34D399',
-  '#10B981',
-  '#0E7490', // brand teal
-  '#075985',
+  '#0E7490', // emerald — smallest
+  '#0B6584',
+  '#085778',
+  '#06486D',
+  '#033A61',
   '#002B55', // deep navy — largest
 ] as const;
 

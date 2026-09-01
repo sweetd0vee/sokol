@@ -51,10 +51,10 @@ export function ChartLegend({
       {items.map((item, index) => (
         <li
           key={item.key ?? `${item.label}-${index}`}
-          className="grid grid-cols-[14px_auto] items-center gap-x-2 whitespace-nowrap"
+          className="recharts-legend-item grid grid-cols-[14px_auto] items-center gap-x-2 whitespace-nowrap"
         >
           <span
-            className="box-border block h-3.5 w-3.5 shrink-0 rounded-full"
+            className="recharts-legend-icon box-border block h-3.5 w-3.5 shrink-0 rounded-sm"
             style={{ backgroundColor: item.color }}
             aria-hidden
           />
@@ -64,6 +64,24 @@ export function ChartLegend({
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Recharts `Legend` content: black labels and square color swatches. */
+export function ChartRechartsSquareLegend({
+  payload,
+}: {
+  payload?: ReadonlyArray<{ value?: string; color?: string }>;
+}) {
+  return (
+    <ChartLegend
+      layout="row"
+      items={(payload ?? []).map((entry, index) => ({
+        key: `${entry.value ?? 'item'}-${index}`,
+        color: entry.color,
+        label: String(entry.value ?? ''),
+      }))}
+    />
   );
 }
 

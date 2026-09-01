@@ -17,7 +17,7 @@ import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashb
 import { AnalyticsDashboardFrame } from './AnalyticsDashboardFrame';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary, filterSelectionItem } from './AnalyticsSelectionSummary';
-import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { ChartCard, CHART_AXIS_TICK, ChartRechartsSquareLegend, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { MaterialityMatrixChart } from './MaterialityMatrixChart';
@@ -414,7 +414,7 @@ export function RecommendationsAnalyticsDashboard() {
                     <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
                     <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
                     <Tooltip />
-                    <Legend wrapperStyle={CHART_LEGEND_STYLE} />
+                    <Legend content={<ChartRechartsSquareLegend />} />
                     {RECOMMENDATION_STATUS_OPTIONS.map((status) => (
                       <Bar
                         key={status.value}
@@ -559,21 +559,21 @@ export function RecommendationsAnalyticsDashboard() {
 
                     {/* Custom legend centered across the whole card */}
                     <div className="pointer-events-none absolute bottom-1 left-1/2 flex -translate-x-1/2 flex-row items-center justify-center gap-6">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <div className="flex items-center gap-2 text-sm text-black">
                         <span
                           className="inline-block h-3.5 w-3.5 rounded-sm"
                           style={{ backgroundColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий }}
                         />
                         Высокий
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <div className="flex items-center gap-2 text-sm text-black">
                         <span
                           className="inline-block h-3.5 w-3.5 rounded-sm"
                           style={{ backgroundColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний }}
                         />
                         Средний
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <div className="flex items-center gap-2 text-sm text-black">
                         <span
                           className="inline-block h-3.5 w-3.5 rounded-sm"
                           style={{ backgroundColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий }}

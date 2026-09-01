@@ -79,7 +79,7 @@ export function MatrixLegendFooter({
   totalProps,
   legend,
   legendListProps,
-  swatchClassName = 'inline-block h-3 w-3 rounded-full border border-black/10',
+  swatchClassName = 'inline-block h-3 w-3 rounded-sm border border-black/10',
 }: {
   totalText: ReactNode;
   totalProps?: HTMLAttributes<HTMLParagraphElement> & Record<string, unknown>;
@@ -94,7 +94,7 @@ export function MatrixLegendFooter({
         {totalText}
       </p>
       <ul
-        className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-base text-gray-700"
+        className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-base text-black"
         {...legendListProps}
       >
         {legend.map((item) => (
