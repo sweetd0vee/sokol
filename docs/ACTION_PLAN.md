@@ -1,72 +1,78 @@
 # План действий после код-ревью
 
-**Синхронизация:** [PLAN.md](../PLAN.md) (go-live **01.09.2026**)  
-**Источник:** [CODE_REVIEW.md](CODE_REVIEW.md)
+**Синхронизация:** [PLAN.md](../PLAN.md) (go-live **15.09.2026**, перенос на спринт с 01.09)  
+**Источник:** [CODE_REVIEW.md](CODE_REVIEW.md) (снимок 19.08.2026)
 
 | Уровень | Окно | Критерий |
 |---------|------|----------|
-| P0 | до 18.08 | Блокер go-live, ИБ, ложный UI |
-| P1 | до 25.08 | Стабильность пилота |
-| P2 | 08–09/2026 | Качество, масштаб |
-| P3 | после 01.09 | Backlog |
+| P0 | до 08.09 | Блокер go-live, ИБ, ложный UI |
+| P1 | до 12.09 | Стабильность пилота |
+| P2 | после 15.09 | Качество, масштаб |
+| P3 | после 15.09 | Backlog |
 
-## P0 — немедленно
+## P0 — осталось до 08.09
 
-| ID | Задача | Effort |
-|----|--------|--------|
-| P0-01 | Скрыть Kantsler из production nav/route | 0.5 d |
-| P0-03 | Docker demo import: prod (`SOKOL_ENV=prod`) запрещает load/replace; compose default `1` оставлен для local dev | 0.5 d |
-| P0-04 | Alembic baseline + `upgrade head` | 3–5 d |
+| ID | Задача | Effort | Статус |
+|----|--------|--------|--------|
+| P0-01 | Скрыть Kantsler из production nav/route | 0.5 d | закрыт |
+| P0-02 | Пометить Планирование как limited/beta | 0.5 d | открыт |
+| P0-03 | `check_kinds` в форме и фильтрах проверок | 1 d | открыт |
+| P0-04 | Demo-load: prod запрещает; compose default `1` для local — UAT обязан `SOKOL_ENV=prod` + `SOKOL_LOAD_DEMO_DATA=0` | 0.5 d | частично |
+| P0-05 | Prod guards demo/replace | 0.5 d | закрыт |
+| P0-06 | Alembic baseline + `upgrade head` | 3–5 d | открыт |
+| P0-07 | Import dry-run + reject report | 2 d | открыт |
+| P0-08 | HTTP Basic выключен в prod | — | закрыт |
+| P0-09 | Prod-safe `sync_dictionaries` | — | закрыт |
 
-## P1 — до пилота
+## P1 — до 12.09
 
-| ID | Задача | Effort |
-|----|--------|--------|
-| P1-02 | CI workflow добавлен; включить required checks по [CI.md](CI.md) | 0.5 d |
-| P1-05 | MinIO policy + UI banner при недоступном storage | 1–2 d |
-| P1-06 | Import dry-run + reject report | 2 d |
-| P1-08 | Runbook backup/restore Postgres + MinIO | 2 d |
-| P1-09 | HTTP Basic fallback: отключить/feature-flag для prod | закрыт |
-| P1-12 | Prod-safe `sync_dictionaries`: без destructive delete на старте | закрыт |
+| ID | Задача | Effort | Статус |
+|----|--------|--------|--------|
+| P1-01 | CI workflow есть; включить required checks по [CI.md](CI.md) | 0.5 d | открыт (GitHub settings) |
+| P1-02 | Import validation: reject неизвестных справочников, не `ensure_*` | 2 d | открыт |
+| P1-03 | Frontend `useStorageStatus` + banner при недоступном MinIO | 1–2 d | открыт |
+| P1-04 | Backup/restore drill Postgres + MinIO (документы уже есть) | 1 d | открыт (drill) |
+| P1-05–P1-10 | UAT checklist, пилот/полная загрузка, DOCX smoke, smoke script, runbook | см. PLAN.md | открыт |
 
 ## P2 — после go-live / параллельно
 
-Server pagination · golden DOCX CI · planning export · split exports.ts · route lazy loading · analytics SQL aggregates.
+Server pagination · golden DOCX CI · planning export · split visual-export · route lazy loading · analytics cache.
 
 ## Gates
 
 | Gate | Дата | Критерий |
 |------|------|----------|
-| G-A | 14.08 | P0-01..03; Alembic started |
-| G-B | 20.08 | Auth UAT; CI green; branch protection requires CI checks |
-| G-C | 27.08 | MinIO decision; DOCX smoke; no P0 |
-| G-D | 01.09 | PLAN G1–G12 signed |
+| G-A | 08.09 | P0-02, P0-03, P0-06, P0-07; UAT без demo |
+| G-B | 10.09 | Auth UAT; CI required; пилот 10–20 проверок |
+| G-C | 13.09 | MinIO decision; DOCX smoke; no open P0 |
+| G-D | 15.09 | PLAN Go/No-Go 14.09 signed |
 
 ## Метрики
 
-| Метрика | Сейчас | Target 01.09 |
-|---------|--------|--------------|
+| Метрика | Сейчас (19.08 review) | Target 15.09 |
+|---------|----------------------|--------------|
 | BE tests (py 3.12) | 172 | ≥140 + integration |
 | FE tests | 54 | ≥55 |
 | ESLint warnings | 0 | 0 |
-| Open P0 | 2 | 0 |
-| Demo routes visible | 1 | 0 |
+| Open P0 | 4 (02, 03, 06, 07) + хвост P0-04 | 0 |
+| Demo routes visible | 0 (Kantsler снят) | 0 |
 
-## Эта неделя (12–15.08)
+## Эта неделя (01.09–05.09)
 
-1. P0-01 — скрыть Kantsler  
-2. P0-03 — prod guards  
-3. P0-04 — старт Alembic  
-4. P1-02 — включить required CI checks  
-5. P1-05 — MinIO policy / storage UX  
+1. P0-02 — метка limited на Планировании  
+2. P0-03 — `check_kinds` в форме и фильтрах  
+3. P0-04 — UAT/prod без demo default  
+4. P0-06 — старт Alembic  
+5. P0-07 — import dry-run  
 
-## Детализация задач для исправления багов
+## Детализация оставшихся код-задач
 
 | ID | Что сделать в коде | Definition of Done |
 |----|--------------------|--------------------|
-| P0-01 | Убрать `kantsler` из `Sidebar.TABS` и route `/kantsler` или закрыть feature flag `VITE_ENABLE_KANTSLER`. | В production build меню не содержит `Канцлер`; прямой `/kantsler` не показывает stub; Playwright smoke зелёный. |
-| P0-03 | Prod (`SOKOL_ENV=prod`) запрещает demo load и seed replace; local Docker demo default сохранён. | Prod контейнер не импортирует demo и не делает replace; unit-тесты guards зелёные. |
-| P0-04 | Ввести Alembic baseline и заменить prod `create_all` flow на `alembic upgrade head`. | Пустая test DB поднимается миграциями; повторный upgrade no-op; runbook обновлён. |
-| P1-05 | Добавить frontend `useStorageStatus` и backend/storage runbook: disabled/unreachable states, retry, policy/backup. | Upload disabled при недоступном MinIO; пользователь видит причину; backup/restore steps описаны. |
-| P1-09 | `SOKOL_ENABLE_BASIC_AUTH`; в prod Basic выключен по умолчанию. | **Сделано.** При prod config Basic получает 401; Bearer работает. |
-| P1-12 | `sync_dictionaries`: prod merge-only; in-use labels не удаляются. | **Сделано.** Пользовательские auditors/departments/users не удаляются после restart в prod. |
+| P0-02 | На `/planning` явная метка limited/beta; не обещать экспорт | Пользователь видит, что модуль ограниченный |
+| P0-03 | Форма и фильтры проверок читают `/settings/check_kinds` вместо `CHECK_VIEW_OPTIONS` | Новый вид из Settings доступен без релиза frontend |
+| P0-04 | UAT/prod: `SOKOL_ENV=prod`, `SOKOL_LOAD_DEMO_DATA=0`; по возможности compose default `0` | Пустой UAT не загружает demo сам |
+| P0-06 | Alembic baseline, prod `upgrade head` вместо `create_all` | Пустая test DB поднимается миграциями; повторный upgrade no-op; runbook обновлён |
+| P0-07 | `--dry-run --report` у `import_seed_data` | БД не меняется; csv с ok/reject |
+| P1-03 | `useStorageStatus` + banner/disabled upload | Upload disabled при `reachable=false`; retry обновляет статус |
+| P1-01 | Required checks в GitHub branch protection | Merge заблокирован при красном CI |

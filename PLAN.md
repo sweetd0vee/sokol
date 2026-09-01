@@ -1,16 +1,46 @@
-# План оставшихся работ SOKOL до 01.09.2026
+# План оставшихся работ SOKOL до 15.09.2026
 
-**Актуально:** 13 августа 2026  
-**Жёсткий go-live:** 1 сентября 2026, 09:00  
-**Окно:** 14.08-31.08 = 18 календарных дней / около 12 рабочих дней.
+**Актуально:** 1 сентября 2026  
+**Исходный go-live:** 1 сентября 2026 — не уложились, перенос на **один спринт**.  
+**Новый жёсткий go-live:** 15 сентября 2026, 09:00  
+**Окно:** 01.09–14.09 = 14 календарных дней / около 10 рабочих дней.
 
-Документ оставляет только незакрытые работы, решения до go-live и backlog после 1 сентября.
+Документ фиксирует текущее состояние продукта, закрытые работы августа, оставшийся объём до go-live и backlog после 15 сентября.
 
-## Цель к 1 сентября
+## Что уже есть в текущей версии
+
+Продуктовый контур пилота собран и работает локально / в Docker. Это не go-live, но база для спринта 01.09–15.09.
+
+| Область | Состояние на 01.09 |
+|---------|--------------------|
+| Auth | Internal JWT, RBAC `auditor` / `department_head` / `admin`, lookup `is_active` из БД. HTTP Basic в prod выключен. Слабый JWT-секрет в prod блокирует старт |
+| Проверки / рекомендации | CRUD, фильтры, клиентский экспорт таблиц (XLSX/PDF/DOCX/HTML), yearly №, импорт рекомендаций из АЗ с undo, вложения через MinIO API |
+| Справочники | Settings CRUD; физические FK на labels; in-use delete → 409. Виды проверок живут в `check_kinds`, но **форма и фильтры проверок всё ещё на захардкоженном списке** |
+| Аналитика | Серверные SQL-агрегаты: проверки, рекомендации, мониторинг, ДВА. Визуальный экспорт дашбордов. Матрица существенности — в текущей доработке |
+| Планирование | Дашборд `/planning` подключён к `GET /analytics/planning`. Экспорт выключен, в UI нет пометки limited/beta |
+| Инструменты | Раздел II, ссылки, докладная, parse-recommendations, control file. Audit opinion / Ollama — вне scope |
+| Канцлер | Убран из nav и routes. Прямой `/kantsler` уходит на `/checks` |
+| БД | PostgreSQL + `create_all` + `migrate_*`. Alembic **не внедрён** |
+| Import | Excel → checks/recommendations; `--replace` в prod только с `--confirm-prod-replace`. Нет dry-run и reject report: неизвестные справочники **досоздаются**, а не отклоняются |
+| Demo | `SOKOL_ENV=prod` запрещает demo load и seed replace. Compose default `SOKOL_LOAD_DEMO_DATA=1` сохранён для local Docker |
+| CI | Workflow `Backend (Python 3.12)` и `Frontend (Node 22)` есть. Required checks в GitHub branch protection ещё нужно включить |
+| Storage UX | Backend `GET /attachments/storage/status` есть. Frontend banner/disabled upload при недоступном MinIO — нет |
+| Эксплуатация | Документы MinIO/backup есть. UAT URL, пилотные данные, restore drill, runbook сопровождения — не закрыты |
+
+## Закрыто в августе (не повторяем)
+
+| ID | Что сделано |
+|----|-------------|
+| P0-01 | `Канцлер` снят с production nav/route |
+| P0-05 | Prod guards: `SOKOL_ENV=prod` блокирует demo load и `--replace` без `--confirm-prod-replace` |
+| P0-08 | HTTP Basic выключен в prod (`SOKOL_ENABLE_BASIC_AUTH`) |
+| P0-09 | `sync_dictionaries` в prod — merge-only, in-use labels не удаляются |
+
+## Цель к 15 сентября
 
 К go-live должен быть доступен ограниченный, но рабочий промышленный контур:
 
-| Критерий | Минимум к 01.09 |
+| Критерий | Минимум к 15.09 |
 |----------|-----------------|
 | Доступ | UI и API доступны во внутреннем контуре по HTTPS или через согласованный UAT/prod URL |
 | Auth | Internal JWT включён, слабые prod-секреты запрещены, HTTP Basic отключён или явно запрещён в prod |
@@ -23,117 +53,109 @@
 
 ## Scope Freeze
 
-До 1 сентября не начинаем новые продуктовые модули. Любой новый запрос бизнеса идёт после go-live, кроме P0 по ИБ, потере данных или невозможности запуска.
+До 15 сентября не начинаем новые продуктовые модули. Текущая доработка аналитики (матрица существенности / visual export) добивается, если уже в работе; новые дашборды и рефакторинг экспортов — после go-live. Любой новый запрос бизнеса идёт после 15.09, кроме P0 по ИБ, потере данных или невозможности запуска.
 
-Вне scope до 01.09:
+Вне scope до 15.09:
 
 - OIDC/Keycloak как обязательный flow, если банк не выдаёт IdP вовремя.
 - CRUD наблюдений.
 - Интеграция с СЭД Канцлер.
 - Server-side pagination/search, пока фактический объём не превышает 10000 checks/recommendations.
 - Streaming/queue для DOCX tools.
-- Golden DOCX CI и большой рефакторинг exports.
-- Полная FK-нормализация справочников.
+- Golden DOCX CI и большой рефакторинг analytics visual export.
+- Planning export.
+- Полная FK-нормализация справочников (UUID вместо label).
 
-## P0 - сделать до 18.08
+## P0 — сделать до 08.09
+
+Оставшиеся блокеры. Без них нельзя грузить UAT-данные и резать prod-like стенд.
 
 | ID | Задача | Почему критично | DoD |
 |----|--------|-----------------|-----|
-| P0-01 | Скрыть `Канцлер` из production nav/route или закрыть feature flag | Сейчас это видимая заглушка без backend-контракта | В prod build нет пункта `Канцлер`; прямой `/kantsler` не показывает обещания интеграции |
-| P0-02 | Принять решение по `Планированию`: скрыть до v2 или явно пометить beta/limited | Раздел есть в UI, но экспорт отключён и scope ограничен | В prod нет ложного обещания полноценного модуля планирования |
-| P0-03 | Подключить `check_kinds` к форме и фильтрам проверок | Go-live критерий G6: виды проверок должны браться из справочника, а не из захардкоженного списка | Форма проверки и фильтры используют `/settings/check_kinds`; новые виды из Settings доступны без релиза frontend |
-| P0-04 | Запретить demo-load по умолчанию в Docker | Сейчас `SOKOL_LOAD_DEMO_DATA` default `1`; пустой UAT/prod может сам загрузить demo | Default `0` в root compose и backend compose; demo включается только явным opt-in |
-| P0-05 | Добавить prod guards для destructive seed/import | `--replace` очищает `checks` и `recommendations` | `SOKOL_ENV=prod` блокирует demo load / seed replace без явного break-glass confirm |
-| P0-06 | Alembic baseline или утверждённый временный DB migration gate | Сейчас схема = `create_all` + ad-hoc `migrate_*`, что рискованно для UAT/prod | Предпочтительно: `alembic upgrade head` на пустой БД. Минимальный fallback: зафиксированный порядок `migrate_*`, проверенный на чистой БД |
-| P0-07 | Import dry-run + reject report | Нельзя грузить реальные данные без отчёта ошибок | `python -m app.db.import_seed_data --dry-run --report reject_report.csv` не меняет БД и показывает ok/reject counts |
-| P0-08 | Отключить HTTP Basic в prod | Basic сейчас второй auth-flow, который сложнее контролировать | `SOKOL_ENABLE_BASIC_AUTH=false` в prod; Bearer продолжает работать |
-| P0-09 | Prod-safe `sync_dictionaries` | Сейчас sync может удалить пользователей/аудиторов/подразделения, которых нет в каноническом списке | В prod sync только добавляет недостающие записи; destructive sync только по explicit dev/demo flag |
+| P0-02 | Явно пометить `Планирование` как limited/beta | Раздел в nav, дашборд рабочий, экспорт выключен — без пометки это выглядит как полноценный модуль | В prod на `/planning` видно, что модуль ограниченный; экспорт не обещается |
+| P0-03 | Подключить `check_kinds` к форме и фильтрам проверок | Виды проверок должны браться из справочника, а не из `CHECK_VIEW_OPTIONS` | Форма проверки и фильтры используют `/settings/check_kinds`; новые виды из Settings доступны без релиза frontend |
+| P0-04 | Demo-load не должен быть default на UAT/prod | Compose default всё ещё `SOKOL_LOAD_DEMO_DATA=1`; пустой стенд без `SOKOL_ENV=prod` сам загрузит demo | UAT/prod: `SOKOL_ENV=prod` и `SOKOL_LOAD_DEMO_DATA=0`. Предпочтительно default `0` в root/backend compose; demo только явным opt-in |
+| P0-06 | Alembic baseline или утверждённый временный DB migration gate | Схема = `create_all` + ad-hoc `migrate_*` | Предпочтительно: `alembic upgrade head` на пустой БД. Минимальный fallback: зафиксированный порядок `migrate_*`, проверенный на чистой БД, подписанный runbook |
+| P0-07 | Import dry-run + reject report | Сейчас import досоздаёт справочники и пишет в БД без отчёта ошибок | `python -m app.db.import_seed_data --dry-run --report reject_report.csv` не меняет БД и показывает ok/reject counts |
 
-## P1 - сделать до 25.08
+## P1 — сделать до 12.09
 
 | ID | Задача | Почему важно | DoD |
 |----|--------|--------------|-----|
-| P1-01 | Включить required CI checks в branch protection | Workflow есть, но без required gate его можно обойти | `Backend (Python 3.12)` и `Frontend (Node 22)` обязательны для merge |
-| P1-02 | Import validation на bulk-загрузке | API CRUD валидирует справочники, но import пишет напрямую в модели | Import канонизирует и валидирует аудиторов, виды, объекты аудита; rejects попадают в report |
-| P1-03 | Storage status UX для MinIO | Пользователь сейчас узнаёт о недоступном MinIO только после действия | UI показывает `storage disabled/unreachable`, upload disabled, есть retry |
-| P1-04 | MinIO policy и backup/restore runbook | Файлы живут вне PostgreSQL dump | Документированы bucket policy, volume backup, restore и сверка `attachments` |
+| P1-01 | Включить required CI checks в branch protection | Workflow есть, без required gate его можно обойти | `Backend (Python 3.12)` и `Frontend (Node 22)` обязательны для merge |
+| P1-02 | Import validation на bulk-загрузке | API CRUD валидирует справочники; import сейчас `ensure_*` (досоздаёт labels) | Import канонизирует и валидирует аудиторов, виды, объекты аудита; неизвестные значения — reject в report, а не silent insert в справочник |
+| P1-03 | Storage status UX для MinIO | Пользователь узнаёт о недоступном MinIO только после действия; endpoint уже есть | UI показывает `storage disabled/unreachable`, upload disabled, есть retry |
+| P1-04 | Backup/restore drill MinIO + PostgreSQL | Документы `docs/MINIO.md` и dump-команды есть; операционный drill не подтверждён | Restore PostgreSQL на чистый том успешен; MinIO volume/object backup проверен; сверка `attachments` |
 | P1-05 | UAT deploy checklist | Нужен воспроизводимый запуск в банковском контуре | `.env`/секреты/порты/DNS/TLS/CORS описаны; `/api/v1/status` и UI открываются |
-| P1-06 | Загрузка пилотных данных 10-20 проверок | Ранний контроль маппинга до полной загрузки | 10-20 проверок и рекомендации видны в UI; 3 карточки сверены бизнесом |
+| P1-06 | Загрузка пилотных данных 10–20 проверок | Ранний контроль маппинга до полной загрузки | 10–20 проверок и рекомендации видны в UI; 3 карточки сверены бизнесом |
 | P1-07 | Полная загрузка согласованного объёма на UAT | Go-live без данных бессмысленен | Count checks/recommendations в API совпадает с freeze-файлом |
-| P1-08 | DOCX smoke на эталонных АЗ | Инструменты - ключевая ценность пилота | 2-3 файла АЗ проходят `section-ii`, `section-ii-links`, `memorandum`, `parse-recommendations` |
-| P1-09 | Backup/restore drill | Без восстановления нельзя идти в prod-like | Restore PostgreSQL на чистый том успешен; MinIO volume/object backup проверен |
-| P1-10 | Сквозной smoke script | Нужна быстрая проверка перед freeze | Login -> list checks -> create/edit check -> recommendation -> attachments -> analytics -> tools |
-| P1-11 | Runbook сопровождения | После 01.09 поддержка должна знать, что делать | Старт/стоп, логи, backup, restore, rollback, контакты, known limits |
+| P1-08 | DOCX smoke на эталонных АЗ | Инструменты — ключевая ценность пилота | 2–3 файла АЗ проходят `section-ii`, `section-ii-links`, `memorandum`, `parse-recommendations` |
+| P1-09 | Сквозной smoke script | Нужна быстрая проверка перед freeze | Login → list checks → create/edit check → recommendation → attachments → analytics → tools |
+| P1-10 | Runbook сопровождения | После 15.09 поддержка должна знать, что делать | Старт/стоп, логи, backup, restore, rollback, контакты, known limits |
 
 ## Календарь до go-live
 
 ```mermaid
 gantt
-  title SOKOL remaining work to 01.09.2026
+  title SOKOL remaining work to 15.09.2026
   dateFormat YYYY-MM-DD
   axisFormat %d.%m
 
   section DEV
-  P0 prod guards + nav scope         :crit, dev1, 2026-08-14, 3d
-  Wire check_kinds to checks form    :crit, dev0, 2026-08-14, 2d
-  Alembic or migration gate          :crit, dev2, 2026-08-14, 5d
-  Import dry-run and reject report   :crit, dev3, 2026-08-15, 4d
-  Storage UX and smoke fixes         :dev4, 2026-08-19, 5d
-  Freeze hotfix only                 :crit, dev5, 2026-08-27, 5d
+  Planning limited label + check_kinds :crit, dev0, 2026-09-01, 2d
+  Alembic or migration gate            :crit, dev1, 2026-09-01, 5d
+  Import dry-run and reject report     :crit, dev2, 2026-09-03, 4d
+  Storage UX and smoke fixes           :dev3, 2026-09-08, 4d
+  Freeze hotfix only                   :crit, dev4, 2026-09-13, 2d
 
   section OPS
-  UAT env DNS TLS secrets            :crit, ops1, 2026-08-14, 5d
-  MinIO and backup drill             :crit, ops2, 2026-08-19, 7d
-  Prod-like cutover prep             :crit, ops3, 2026-08-26, 5d
+  UAT env DNS TLS secrets              :crit, ops1, 2026-09-01, 5d
+  MinIO backup drill                   :crit, ops2, 2026-09-08, 4d
+  Prod-like cutover prep               :crit, ops3, 2026-09-12, 3d
 
   section DATA
-  Normalize source Excel             :crit, data1, 2026-08-14, 4d
-  Pilot load and sign-off            :crit, data2, 2026-08-18, 4d
-  Full UAT load and reconciliation   :crit, data3, 2026-08-22, 5d
-  Final delta only                   :data4, 2026-08-29, 2d
+  Normalize source Excel               :crit, data1, 2026-09-01, 4d
+  Pilot load and sign-off              :crit, data2, 2026-09-04, 3d
+  Full UAT load and reconciliation     :crit, data3, 2026-09-08, 4d
+  Final delta only                     :data4, 2026-09-13, 2d
 ```
 
 ## Daily Plan
 
-### 14.08-18.08 - закрыть P0
+### 01.09–08.09 — закрыть P0
 
 | Дата | Фокус | Результат к EOD |
 |------|-------|-----------------|
-| 14.08 | Freeze scope, branch protection, nav scope, `check_kinds`, Docker demo default | Нет видимых заглушек в prod scope; CI required согласован; виды проверок идут из справочника |
-| 15.08 | Prod guards: demo/replace/basic auth | Prod не стартует с опасными флагами; Basic выключаем для prod |
-| 16-17.08 | Alembic baseline или проверенный migration fallback | Чистая БД поднимается воспроизводимо |
-| 18.08 | Import dry-run и первый dry-run данных | Есть reject report и список правок DATA |
+| 01–02.09 | Scope freeze, `check_kinds` в форме/фильтрах, метка limited на Планировании, demo default / UAT env flags | Нет ложного обещания планирования; виды проверок идут из справочника; UAT не грузит demo сам |
+| 03–05.09 | Alembic baseline или проверенный migration fallback | Чистая БД поднимается воспроизводимо |
+| 08.09 | Import dry-run и первый dry-run данных | Есть reject report и список правок DATA |
 
-### 19.08-25.08 - UAT и данные
-
-| Дата | Фокус | Результат к EOD |
-|------|-------|-----------------|
-| 19.08 | UAT env, CORS, TLS/proxy черновик | Login открывается на UAT URL |
-| 20.08 | Пилотная загрузка 10-20 проверок | DATA sign-off по 3 карточкам |
-| 21.08 | Storage UX + MinIO operational policy | Upload либо работает, либо явно заблокирован с понятным текстом |
-| 22-23.08 | Полная нормализация Excel | Freeze-файл готов к загрузке |
-| 24-25.08 | Полная UAT загрузка + сверка | Count API = count источника; расхождения разобраны |
-
-### 26.08-01.09 - freeze и запуск
+### 09.09–12.09 — UAT и данные
 
 | Дата | Фокус | Результат к EOD |
 |------|-------|-----------------|
-| 26.08 | DOCX smoke + backup/restore | Протокол smoke и restore |
-| 27.08 | Feature freeze | Новые фичи запрещены, только P0/P1 bugs |
-| 28.08 | Prod-like regression | Сквозной smoke проходит за 30 минут |
-| 29-30.08 | Финальная дельта данных, runbook | Runbook v1.0 у сопровождения |
-| 31.08 | Go/No-Go | Протокол Go или сокращённый режим |
-| 01.09 09:00 | Go-live | Мониторинг первого дня |
+| 09.09 | UAT env, CORS, TLS/proxy; CI required checks | Login открывается на UAT URL; merge без зелёного CI запрещён |
+| 10.09 | Пилотная загрузка 10–20 проверок; Storage UX | DATA sign-off по 3 карточкам; upload либо работает, либо явно заблокирован |
+| 11.09 | Полная нормализация Excel + MinIO/PG restore drill | Freeze-файл готов; протокол restore |
+| 12.09 | Полная UAT загрузка + сверка | Count API = count источника; расхождения разобраны |
+
+### 13.09–15.09 — freeze и запуск
+
+| Дата | Фокус | Результат к EOD |
+|------|-------|-----------------|
+| 13.09 | DOCX smoke + feature freeze | Протокол smoke; новые фичи запрещены, только P0/P1 bugs |
+| 14.09 | Prod-like regression, финальная дельта, runbook, Go/No-Go | Сквозной smoke за 30 минут; runbook v1.0 у сопровождения; протокол Go или сокращённый режим |
+| 15.09 09:00 | Go-live | Мониторинг первого дня |
 
 ## DATA Track
 
-Цель DATA-трека - не идеальная витрина, а загружаемый и сверенный набор данных.
+Цель DATA-трека — не идеальная витрина, а загружаемый и сверенный набор данных.
 
 | Шаг | Что сделать | Критерий |
 |-----|-------------|----------|
 | D1 | Зафиксировать freeze-шаблон Excel для `checks` и `recommendations` | Колонки соответствуют API/import |
 | D2 | Нормализовать даты, статусы, виды проверок, аудиторов, объекты аудита | Dry-run reject меньше 5%; есть `mappings.yaml` или другой согласованный словарь замен |
-| D3 | Загрузить пилот 10-20 проверок | 3 карточки проверены владельцем данных |
+| D3 | Загрузить пилот 10–20 проверок | 3 карточки проверены владельцем данных |
 | D4 | Загрузить полный объём на UAT | Count совпадает с Excel |
 | D5 | Заморозить файл источника | Freeze-файл лежит в backup share с датой |
 | D6 | Перед cutover грузить только дельту | Дельта меньше 5% или явно согласована |
@@ -158,7 +180,7 @@ gantt
 | Logs | Понятно, где смотреть API/UI/Postgres/MinIO logs |
 | Rollback | Есть инструкция: остановить сервисы, восстановить DB/MinIO, поднять предыдущий образ |
 
-## Go/No-Go 31.08
+## Go/No-Go 14.09
 
 Go разрешён только если все пункты ниже закрыты:
 
@@ -183,7 +205,7 @@ No-Go обязателен, если:
 
 Fallback при No-Go: ограниченный read-only/UAT-pilot режим, а не тихий production.
 
-## Backlog после 01.09
+## Backlog после 15.09
 
 Эти задачи не должны мешать текущему дедлайну:
 
@@ -193,7 +215,7 @@ Fallback при No-Go: ограниченный read-only/UAT-pilot режим, 
 | P2 | Server-side pagination/search и backend export-all при росте сверх 10000 строк |
 | P2 | Streaming upload + concurrency limit для DOCX tools |
 | P2 | Golden DOCX CI |
-| P2 | Route lazy loading и split крупных frontend exports |
+| P2 | Route lazy loading и split крупных frontend visual-export |
 | P2 | Planning export |
 | P2 | Materialized views/cache для тяжёлой analytics при росте данных |
 | P3 | CRUD наблюдений |
@@ -211,3 +233,4 @@ Fallback при No-Go: ограниченный read-only/UAT-pilot режим, 
 | [sokol-backend/docs/ALEMBIC_AND_DATA.md](sokol-backend/docs/ALEMBIC_AND_DATA.md) | Init/migrate/import/backup |
 | [sokol-backend/docs/DATABASE_SCHEMA.md](sokol-backend/docs/DATABASE_SCHEMA.md) | Подробная схема БД |
 | [sokol-backend/docs/STORAGE.md](sokol-backend/docs/STORAGE.md) | MinIO и вложения |
+| [docs/MINIO.md](docs/MINIO.md) | Бакеты, консоль, backup MinIO |
