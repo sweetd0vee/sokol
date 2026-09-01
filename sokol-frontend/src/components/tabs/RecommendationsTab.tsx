@@ -251,15 +251,15 @@ export function RecommendationsTab() {
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full text-base table-fixed min-w-[1596px]">
+          <table className="w-full text-base table-fixed min-w-[1644px]">
             <colgroup>
               <col className="w-24" />
               <col className="w-40" />
               <col />
               <col className="w-52" />
               <col className="w-28" />
-              <col className="w-36" />
-              <col className="w-40" />
+              <col className="w-44" />
+              <col className="w-44" />
               <col className="w-28" />
               <col className="w-36" />
               <col className="w-[140px]" />
