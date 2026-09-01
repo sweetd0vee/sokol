@@ -485,6 +485,7 @@ export function RecommendationsAnalyticsDashboard() {
                               dataKey={status.value}
                               stackKeys={STATUS_STACK_KEYS}
                               getColor={getStatusSegmentColor}
+                              showStackTotal
                             />
                           )}
                         />
@@ -560,6 +561,7 @@ export function RecommendationsAnalyticsDashboard() {
                                 dataKey="low"
                                 stackKeys={MATERIALITY_STACK_KEYS}
                                 getColor={getMaterialitySegmentColor}
+                                showStackTotal
                               />
                             )}
                           />
@@ -578,6 +580,7 @@ export function RecommendationsAnalyticsDashboard() {
                                 dataKey="medium"
                                 stackKeys={MATERIALITY_STACK_KEYS}
                                 getColor={getMaterialitySegmentColor}
+                                showStackTotal
                               />
                             )}
                           />
@@ -596,6 +599,7 @@ export function RecommendationsAnalyticsDashboard() {
                                 dataKey="high"
                                 stackKeys={MATERIALITY_STACK_KEYS}
                                 getColor={getMaterialitySegmentColor}
+                                showStackTotal
                               />
                             )}
                           />

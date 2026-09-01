@@ -5,6 +5,9 @@ const STACKED_NOTE_PAD_X = 6;
 const STACKED_NOTE_PAD_Y = 3;
 const STACKED_NOTE_BOX_HEIGHT = STACKED_NOTE_FONT_SIZE + STACKED_NOTE_PAD_Y * 2;
 const STACKED_NOTE_ANCHOR_GAP = 16;
+const STACKED_TOTAL_FONT_SIZE = 14;
+const STACKED_TOTAL_OFFSET = 6;
+const STACKED_TOTAL_RESERVE = STACKED_TOTAL_FONT_SIZE + STACKED_TOTAL_OFFSET;
 
 export const STACKED_PERIOD_CHART_TOP_MARGIN = 72;
 export const STACKED_PERIOD_CHART_SIDE_MARGIN = 36;
@@ -95,50 +98,87 @@ function segmentFitsInsideLabel(segmentHeight: number, segmentWidth: number, val
 export function StackedBarSegmentValueLabel({
   stackKeys,
   getColor,
+  showStackTotal = false,
   ...view
 }: {
   stackKeys: readonly string[];
   getColor: (key: string) => string;
+  showStackTotal?: boolean;
   [key: string]: unknown;
 }) {
   const labelView = view as StackedSegmentLabelView;
   const { x, y, width: w, height: h } = readLabelGeometry(labelView);
   const key = labelView.dataKey != null ? String(labelView.dataKey) : '';
-  const numericValue = readLabelValue(labelView.value) ?? (key ? readStackValue(labelView, key) : undefined);
-  if (numericValue === undefined || numericValue <= 0 || x === undefined || y === undefined) {
+  const numericValue = key
+    ? readStackValue(labelView, key)
+    : readLabelValue(labelView.value);
+  const stackValues = stackKeys.map((stackKey) => readStackValue(labelView, stackKey));
+  const stackTotal = stackValues.reduce((sum, stackValue) => sum + stackValue, 0);
+  let topVisibleKey = '';
+  for (let index = stackKeys.length - 1; index >= 0; index -= 1) {
+    if (stackValues[index] > 0) {
+      topVisibleKey = stackKeys[index];
+      break;
+    }
+  }
+  const shouldRenderTotal = showStackTotal && key !== '' && key === topVisibleKey && stackTotal > 0;
+  if (x === undefined || y === undefined) {
+    return null;
+  }
+  if ((numericValue === undefined || numericValue <= 0) && !shouldRenderTotal) {
     return null;
   }
 
-  const rounded = Math.round(numericValue);
+  const rounded = Math.round(numericValue ?? 0);
   const roundedStr = String(rounded);
   const cx = x + w / 2;
   const cy = y + h / 2;
   const segmentColor = (key ? getColor(key) : undefined) || labelView.fill || '#e5e7eb';
   const stackIndex = Math.max(0, stackKeys.indexOf(key));
-  const stackValues = stackKeys.map((stackKey) => readStackValue(labelView, stackKey));
   const hasPayloadValues = stackValues.some((stackValue) => stackValue > 0);
-  const pxPerUnit = h > 0 ? h / numericValue : 0;
+  const pxPerUnit = h > 0 && (numericValue ?? 0) > 0 ? h / (numericValue as number) : 0;
   const valueAbove = hasPayloadValues
     ? stackValues.slice(stackIndex + 1).reduce((sum, stackValue) => sum + stackValue, 0)
     : 0;
   const barTopY = pxPerUnit > 0 ? y - valueAbove * pxPerUnit : y;
-  const canPlaceInside = segmentFitsInsideLabel(h, w, numericValue);
+  const canPlaceInside =
+    numericValue !== undefined && numericValue > 0 && segmentFitsInsideLabel(h, w, numericValue);
+  const totalLabel = shouldRenderTotal ? (
+    <text
+      x={cx}
+      y={barTopY - STACKED_TOTAL_OFFSET - STACKED_TOTAL_FONT_SIZE / 2}
+      textAnchor="middle"
+      dominantBaseline="middle"
+      fontSize={STACKED_TOTAL_FONT_SIZE}
+      fontWeight={700}
+      fill="#111827"
+      style={{ pointerEvents: 'none' }}
+    >
+      {Math.round(stackTotal)}
+    </text>
+  ) : null;
 
   if (canPlaceInside) {
     return (
-      <text
-        x={cx}
-        y={cy}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontSize={h >= 20 ? 13 : 12}
-        fontWeight={700}
-        fill="#111827"
-        style={{ pointerEvents: 'none' }}
-      >
-        {roundedStr}
-      </text>
+      <g style={{ pointerEvents: 'none' }}>
+        <text
+          x={cx}
+          y={cy}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize={h >= 20 ? 13 : 12}
+          fontWeight={700}
+          fill="#111827"
+        >
+          {roundedStr}
+        </text>
+        {totalLabel}
+      </g>
     );
+  }
+
+  if (numericValue === undefined || numericValue <= 0) {
+    return totalLabel;
   }
 
   const outsideKeys = hasPayloadValues
@@ -151,6 +191,12 @@ export function StackedBarSegmentValueLabel({
         return !segmentFitsInsideLabel(segmentHeight, w, stackValue);
       })
     : stackKeys.filter((stackKey) => stackKey === key);
+  const calloutDuplicatesTotal =
+    showStackTotal && outsideKeys.length === 1 && Math.round(stackTotal) === rounded;
+  if (calloutDuplicatesTotal) {
+    return totalLabel;
+  }
+
   const matchedOutsideIndex = outsideKeys.indexOf(key);
   const outsideIndex = hasPayloadValues && matchedOutsideIndex !== -1
     ? matchedOutsideIndex
@@ -170,9 +216,10 @@ export function StackedBarSegmentValueLabel({
     w >= boxWidth
       ? Math.min(x + w - halfBox, Math.max(x + halfBox, stemX))
       : cx;
+  const calloutLift = showStackTotal ? STACKED_TOTAL_RESERVE : 0;
   const noteCenterY = Math.max(
     STACKED_NOTE_BOX_HEIGHT / 2 + 2,
-    barTopY - STACKED_NOTE_ANCHOR_GAP - STACKED_NOTE_BOX_HEIGHT / 2,
+    barTopY - calloutLift - STACKED_NOTE_ANCHOR_GAP - STACKED_NOTE_BOX_HEIGHT / 2,
   );
   const boxX = labelCx - halfBox;
   const boxY = noteCenterY - STACKED_NOTE_BOX_HEIGHT / 2;
@@ -219,6 +266,7 @@ export function StackedBarSegmentValueLabel({
       >
         {roundedStr}
       </text>
+      {totalLabel}
     </g>
   );
 }

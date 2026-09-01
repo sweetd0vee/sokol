@@ -126,14 +126,16 @@ function ChartToolbar({
         <button
           type="button"
           onClick={onToggleExport}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark"
           title="В отчёт"
           aria-label="В отчёт"
           aria-pressed={Boolean(exportSelected)}
         >
           <span
             className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-[3px] ${
-              exportSelected ? 'bg-sber-dark text-white' : 'border border-gray-400 bg-white text-transparent'
+              exportSelected
+                ? 'border border-sber-dark bg-white text-sber-dark'
+                : 'border border-gray-400 bg-white text-transparent'
             }`}
             aria-hidden
           >
