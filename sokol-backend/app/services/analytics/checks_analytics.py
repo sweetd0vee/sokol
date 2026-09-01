@@ -13,6 +13,12 @@ from app.schemas.analytics import (
     EffectivenessTones,
     PeriodGranularity,
 )
+from app.services.analytics.constants import (
+    CHECK_TYPE_PLURAL_LABELS,
+    EFFECTIVENESS_TONE_BY_LABEL,
+    UNSET_EFFECTIVENESS_LABELS,
+)
+from app.services.analytics.params import check_params
 from app.services.analytics.sql_aggregates import (
     check_period_series_sql,
     check_type_distribution_sql,
@@ -28,26 +34,16 @@ from app.services.analytics.sql_aggregates import (
     summarize_checks_sql,
 )
 
-CHECK_TYPE_PLURAL_LABELS = {
-    "planned": "Плановые",
-    "unscheduled": "Внеплановые",
-    "thematic": "Контрольные",
-}
+__all__ = ["CHECK_TYPE_PLURAL_LABELS", "build_checks_analytics"]
 
 
-def _resolve_effectiveness_tone(value: str | None) -> Literal["effective", "sufficient", "insufficient", "ineffective", "unset"]:
+def _resolve_effectiveness_tone(
+    value: str | None,
+) -> Literal["effective", "sufficient", "insufficient", "ineffective", "unset"]:
     raw = " ".join((value or "").strip().lower().split())
-    if not raw or raw in {"не указано", "не оценивалось"}:
+    if not raw or raw in UNSET_EFFECTIVENESS_LABELS:
         return "unset"
-    if raw == "эффективно":
-        return "effective"
-    if raw == "достаточно эффективно":
-        return "sufficient"
-    if raw == "недостаточно эффективно":
-        return "insufficient"
-    if raw in {"неэффективно", "не эффективно"}:
-        return "ineffective"
-    return "unset"
+    return EFFECTIVENESS_TONE_BY_LABEL.get(raw, "unset")
 
 
 def _effectiveness_matrix(checks: list[Check]) -> list[EffectivenessMatrixRow]:
@@ -87,13 +83,13 @@ async def build_checks_analytics(
     auditors: list[str] | None = None,
     departments: list[str] | None = None,
 ) -> ChecksAnalyticsResponse:
-    filters = {
-        "years": years,
-        "quarters": quarters,
-        "months": months,
-        "auditors": auditors,
-        "departments": departments,
-    }
+    filters = check_params(
+        years=years,
+        quarters=quarters,
+        months=months,
+        auditors=auditors,
+        departments=departments,
+    )
     summary = await summarize_checks_sql(session, **filters)
     department_pairs = await load_check_department_pairs(session, **filters)
     matrix_checks = await load_effectiveness_matrix_rows(session, **filters)

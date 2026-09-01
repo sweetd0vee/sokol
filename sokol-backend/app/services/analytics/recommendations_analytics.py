@@ -9,6 +9,18 @@ from app.schemas.analytics import (
     RecommendationsAnalyticsResponse,
     RecommendationsSummary,
 )
+from app.services.analytics.constants import (
+    ADDITIONAL_STATUS_COLORS,
+    ADDITIONAL_STATUS_LABELS,
+    INDICATOR_COLORS,
+    INDICATOR_KEY_ALIASES,
+    INDICATOR_LABELS,
+    MATERIALITY_COLORS,
+    MATERIALITY_LABELS,
+    STATUS_COLORS,
+    STATUS_LABELS,
+)
+from app.services.analytics.params import recommendation_params
 from app.services.analytics.sql_aggregates import (
     collect_filter_option_departments_sql,
     collect_filter_option_recommendation_auditors_sql,
@@ -22,98 +34,73 @@ from app.services.analytics.sql_aggregates import (
     summarize_recommendations_sql,
 )
 
-STATUS_LABELS = {
-    "completed": "Исполнено",
-    "unresolved": "Не решено",
-    "on_control": "На контроле",
-    "in_progress": "В процессе",
-}
-ADDITIONAL_STATUS_LABELS = {
-    "on_time": "В срок",
-    "deadline_violated": "Срок нарушен",
-    "on_control": "На контроле",
-}
-MATERIALITY_LABELS = {
-    "низкий": "Низкий",
-    "средний": "Средний",
-    "высокий": "Высокий",
-}
-INDICATOR_LABELS = {
-    "в процессе": "В процессе",
-    "на контроле": "На контроле",
-    "не решено": "Не решено",
-    "исполнено": "Исполнено",
-    "исполнено в ходе аудита": "Исполнено в ходе аудита",
-}
-INDICATOR_KEY_ALIASES = {
-    "ожидает": "на контроле",
-    "жёлтый": "на контроле",
-    "желтый": "на контроле",
-}
-STATUS_COLORS = {
-    "completed": "#22C55E",
-    "unresolved": "#EF4444",
-    "on_control": "#64748B",
-    "in_progress": "#F59E0B",
-}
-ADDITIONAL_STATUS_COLORS = {
-    "on_time": "#22C55E",
-    "deadline_violated": "#EF4444",
-    "on_control": "#64748B",
-}
-MATERIALITY_COLORS = {
-    "низкий": "#22C55E",
-    "средний": "#F59E0B",
-    "высокий": "#EF4444",
-}
-INDICATOR_COLORS = {
-    "в процессе": "#F59E0B",
-    "на контроле": "#64748B",
-    "не решено": "#EF4444",
-    "исполнено": "#22C55E",
-    "исполнено в ходе аудита": "#003366",
-}
+__all__ = [
+    "ADDITIONAL_STATUS_COLORS",
+    "ADDITIONAL_STATUS_LABELS",
+    "INDICATOR_COLORS",
+    "INDICATOR_KEY_ALIASES",
+    "INDICATOR_LABELS",
+    "MATERIALITY_COLORS",
+    "MATERIALITY_LABELS",
+    "STATUS_COLORS",
+    "STATUS_LABELS",
+    "build_additional_status_distribution",
+    "build_materiality_distribution",
+    "build_recommendations_analytics",
+    "build_status_distribution",
+]
 
 
-def _named_from_map(counts: dict[str, int], labels: dict[str, str], colors: dict[str, str] | None = None) -> list[NamedCount]:
-    result: list[NamedCount] = []
-    for key, value in counts.items():
-        result.append(
-            NamedCount(
-                name=labels.get(key, key),
-                value=value,
-                color=(colors or {}).get(key),
-            )
+def _named_from_map(
+    counts: dict[str, int],
+    labels: dict[str, str],
+    colors: dict[str, str] | None = None,
+) -> list[NamedCount]:
+    return [
+        NamedCount(
+            name=labels.get(key, key),
+            value=value,
+            color=(colors or {}).get(key),
         )
-    return result
+        for key, value in counts.items()
+    ]
 
 
 def build_status_distribution(summary: RecommendationsSummary) -> list[NamedCount]:
-    counts = {
-        "completed": summary.by_status.completed,
-        "unresolved": summary.by_status.unresolved,
-        "on_control": summary.by_status.on_control,
-        "in_progress": summary.by_status.in_progress,
-    }
-    return _named_from_map(counts, STATUS_LABELS, STATUS_COLORS)
+    return _named_from_map(
+        {
+            "completed": summary.by_status.completed,
+            "unresolved": summary.by_status.unresolved,
+            "on_control": summary.by_status.on_control,
+            "in_progress": summary.by_status.in_progress,
+        },
+        STATUS_LABELS,
+        STATUS_COLORS,
+    )
 
 
 def build_additional_status_distribution(summary: RecommendationsSummary) -> list[NamedCount]:
-    counts = {
-        "on_time": summary.by_additional.on_time,
-        "deadline_violated": summary.by_additional.deadline_violated,
-        "on_control": summary.by_additional.on_control,
-    }
-    return _named_from_map(counts, ADDITIONAL_STATUS_LABELS, ADDITIONAL_STATUS_COLORS)
+    return _named_from_map(
+        {
+            "on_time": summary.by_additional.on_time,
+            "deadline_violated": summary.by_additional.deadline_violated,
+            "on_control": summary.by_additional.on_control,
+        },
+        ADDITIONAL_STATUS_LABELS,
+        ADDITIONAL_STATUS_COLORS,
+    )
 
 
 def build_materiality_distribution(summary: RecommendationsSummary) -> list[NamedCount]:
-    counts = {
-        "низкий": summary.by_materiality.низкий,
-        "средний": summary.by_materiality.средний,
-        "высокий": summary.by_materiality.высокий,
-    }
-    return _named_from_map(counts, MATERIALITY_LABELS, MATERIALITY_COLORS)
+    return _named_from_map(
+        {
+            "низкий": summary.by_materiality.низкий,
+            "средний": summary.by_materiality.средний,
+            "высокий": summary.by_materiality.высокий,
+        },
+        MATERIALITY_LABELS,
+        MATERIALITY_COLORS,
+    )
 
 
 async def build_recommendations_analytics(
@@ -129,16 +116,16 @@ async def build_recommendations_analytics(
     additional_statuses: list[str] | None = None,
     materiality_levels: list[str] | None = None,
 ) -> RecommendationsAnalyticsResponse:
-    filters = {
-        "years": years,
-        "quarters": quarters,
-        "months": months,
-        "auditors": auditors,
-        "departments": departments,
-        "statuses": statuses,
-        "additional_statuses": additional_statuses,
-        "materiality_levels": materiality_levels,
-    }
+    filters = recommendation_params(
+        years=years,
+        quarters=quarters,
+        months=months,
+        auditors=auditors,
+        departments=departments,
+        statuses=statuses,
+        additional_statuses=additional_statuses,
+        materiality_levels=materiality_levels,
+    )
     summary = await summarize_recommendations_sql(session, **filters)
     period_series = await recommendation_period_series_sql(session, granularity, **filters)
     return RecommendationsAnalyticsResponse(

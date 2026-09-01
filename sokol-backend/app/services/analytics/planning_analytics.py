@@ -13,12 +13,14 @@ from app.schemas.analytics import (
     PlanningCoverageDonutSlice,
     PlanningDepartmentAnalyticsRow,
 )
-from app.services.analytics.common import (
+from app.services.analytics.constants import PLANNING_TOP_DEPARTMENTS, WITHOUT_DEPARTMENT
+from app.services.analytics.departments import (
     build_department_lookup,
     check_canonical_department_distribution_from_links,
     load_department_names,
-    match_audit_object_to_departments,
+    matched_departments_or_fallback,
 )
+from app.services.analytics.params import check_params
 from app.services.analytics.sql_aggregates import (
     collect_combined_anchor_dates_sql,
     count_checks,
@@ -61,6 +63,20 @@ def _build_coverage(
     )
 
 
+def _count_recommendations_by_department(
+    recommendation_rows: list[tuple[str, str | list[str], str]],
+    department_lookup: dict[str, str],
+) -> tuple[dict[str, int], dict[str, int]]:
+    rec_by_dept: dict[str, int] = defaultdict(int)
+    high_by_dept: dict[str, int] = defaultdict(int)
+    for _serial, audit_object, materiality_level in recommendation_rows:
+        for name in matched_departments_or_fallback(audit_object, department_lookup):
+            rec_by_dept[name] += 1
+            if materiality_level == "высокий":
+                high_by_dept[name] += 1
+    return rec_by_dept, high_by_dept
+
+
 def _department_analytics(
     check_serials: list[str],
     recommendation_rows: list[tuple[str, str | list[str], str]],
@@ -73,16 +89,10 @@ def _department_analytics(
         [(serial, audit_object) for serial, audit_object, _materiality in all_recommendation_links],
         all_departments,
     )
-    rec_by_dept: dict[str, int] = defaultdict(int)
-    high_by_dept: dict[str, int] = defaultdict(int)
-    for _serial, audit_object, materiality_level in recommendation_rows:
-        matched = match_audit_object_to_departments(audit_object, department_lookup)
-        targets = matched or {"Без департамента"}
-        for name in targets:
-            rec_by_dept[name] += 1
-            if materiality_level == "высокий":
-                high_by_dept[name] += 1
-
+    rec_by_dept, high_by_dept = _count_recommendations_by_department(
+        recommendation_rows,
+        department_lookup,
+    )
     names = set(check_by_dept) | set(rec_by_dept)
     rows = [
         PlanningDepartmentAnalyticsRow(
@@ -92,12 +102,12 @@ def _department_analytics(
             high_materiality=high_by_dept.get(name, 0),
         )
         for name in names
-        if name != "Без департамента"
+        if name != WITHOUT_DEPARTMENT
     ]
     return sorted(
         rows,
         key=lambda row: (-(row.checks + row.recommendations), row.name),
-    )[:15]
+    )[:PLANNING_TOP_DEPARTMENTS]
 
 
 def _high_materiality_by_department(
@@ -108,13 +118,11 @@ def _high_materiality_by_department(
     for _serial, audit_object, materiality_level in recommendation_rows:
         if materiality_level != "высокий":
             continue
-        matched = match_audit_object_to_departments(audit_object, department_lookup)
-        targets = matched or {"Без департамента"}
-        for name in targets:
+        for name in matched_departments_or_fallback(audit_object, department_lookup):
             counts[name] += 1
     return [
         NamedCount(name=name, value=value)
-        for name, value in sorted(counts.items(), key=lambda row: (-row[1], row[0]))[:15]
+        for name, value in sorted(counts.items(), key=lambda row: (-row[1], row[0]))[:PLANNING_TOP_DEPARTMENTS]
     ]
 
 
@@ -127,18 +135,18 @@ async def build_planning_analytics(
     months: list[str] | None = None,
     departments: list[str] | None = None,
 ) -> PlanningAnalyticsResponse:
-    filters = {
-        "years": years,
-        "quarters": quarters,
-        "months": months,
-        "departments": departments,
-    }
-    coverage_filters = {
-        "years": years,
-        "quarters": quarters,
-        "months": months,
-        "departments": [],
-    }
+    filters = check_params(
+        years=years,
+        quarters=quarters,
+        months=months,
+        departments=departments,
+    )
+    coverage_filters = check_params(
+        years=years,
+        quarters=quarters,
+        months=months,
+        departments=[],
+    )
     all_departments = await load_department_names(session)
     department_lookup = build_department_lookup(all_departments)
 
@@ -154,7 +162,7 @@ async def build_planning_analytics(
             [(serial, audit_object) for serial, audit_object, _materiality in all_recommendation_rows],
             all_departments,
         ).items()
-        if name != "Без департамента"
+        if name != WITHOUT_DEPARTMENT
     }
     coverage = _build_coverage(all_departments, check_counts)
     high_ranking = _high_materiality_by_department(filtered_recommendation_rows, department_lookup)

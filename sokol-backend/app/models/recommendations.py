@@ -2,11 +2,21 @@ from datetime import date
 from enum import Enum
 from typing import Any
 
-from sqlalchemy import Date, Enum as SAEnum, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+from app.models.columns import (
+    auditor_fk,
+    department_name_fk,
+    int_pk,
+    optional_date,
+    optional_string,
+    required_date,
+    required_string,
+    value_enum_column,
+)
 
 
 class RecommendationStatus(str, Enum):
@@ -25,9 +35,9 @@ class RecommendationAdditionalStatus(str, Enum):
 class Recommendation(Base):
     __tablename__ = "recommendations"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = int_pk()
     check_id: Mapped[int] = mapped_column(ForeignKey("checks.id", ondelete="CASCADE"), nullable=False, index=True)
-    serial_number: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    serial_number: Mapped[str] = required_string(32, index=True)
     sequence_number: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     observation_name: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -36,48 +46,30 @@ class Recommendation(Base):
     additional_indicator: Mapped[str] = mapped_column(String(32), nullable=False, default="не указан")
     materiality_level: Mapped[str] = mapped_column(String(32), nullable=False, default="средний")
     audit_object: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
-    deadline: Mapped[date | None] = mapped_column(Date, nullable=True)
-    auditor: Mapped[str] = mapped_column(
-        String(255),
-        ForeignKey(
-            "auditors.full_name",
-            name="fk_recommendations_auditor",
-            onupdate="CASCADE",
-            ondelete="RESTRICT",
-        ),
-        nullable=False,
-        index=True,
+    deadline: Mapped[date | None] = optional_date()
+    auditor: Mapped[str] = auditor_fk("fk_recommendations_auditor", index=True)
+    manager: Mapped[str] = required_string()
+    status: Mapped[RecommendationStatus] = value_enum_column(
+        RecommendationStatus,
+        "recommendation_status",
     )
-    manager: Mapped[str] = mapped_column(String(255), nullable=False)
-    status: Mapped[RecommendationStatus] = mapped_column(
-        SAEnum(
-            RecommendationStatus,
-            name="recommendation_status",
-            values_callable=lambda enum_cls: [item.value for item in enum_cls],
-        ),
-        nullable=False,
+    additional_status: Mapped[RecommendationAdditionalStatus] = value_enum_column(
+        RecommendationAdditionalStatus,
+        "recommendation_additional_status",
     )
-    additional_status: Mapped[RecommendationAdditionalStatus] = mapped_column(
-        SAEnum(
-            RecommendationAdditionalStatus,
-            name="recommendation_additional_status",
-            values_callable=lambda enum_cls: [item.value for item in enum_cls],
-        ),
-        nullable=False,
-    )
-    created_at: Mapped[date] = mapped_column(Date, nullable=False)
-    actual_completion_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    extension_1_reason: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    extension_1_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    created_at: Mapped[date] = required_date()
+    actual_completion_date: Mapped[date | None] = optional_date()
+    extension_1_reason: Mapped[str | None] = optional_string(64)
+    extension_1_date: Mapped[date | None] = optional_date()
     extension_1_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
-    extension_2_reason: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    extension_2_reason: Mapped[str | None] = optional_string(64)
     extension_2_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
-    remove_from_control_reason: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    remove_from_control_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    remove_from_control_reason: Mapped[str | None] = optional_string(64)
+    remove_from_control_date: Mapped[date | None] = optional_date()
     remove_from_control_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     deadline_extensions: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
     control_removals: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
-    closure_verification_status: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    closure_verification_status: Mapped[str | None] = optional_string(64)
     closure_information: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     check: Mapped["Check"] = relationship("Check", back_populates="recommendations")
@@ -100,14 +92,8 @@ class RecommendationAuditObject(Base):
         ),
         primary_key=True,
     )
-    department_name: Mapped[str] = mapped_column(
-        String(255),
-        ForeignKey(
-            "departments.name",
-            name="fk_recommendation_audit_objects_department",
-            onupdate="CASCADE",
-            ondelete="RESTRICT",
-        ),
+    department_name: Mapped[str] = department_name_fk(
+        "fk_recommendation_audit_objects_department",
         primary_key=True,
         index=True,
     )

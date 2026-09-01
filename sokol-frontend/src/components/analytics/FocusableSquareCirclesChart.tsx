@@ -26,6 +26,37 @@ type SquareCirclesChartProps = {
   legendFontWeight?: number;
 };
 
+type CircleSlot = {
+  x: number;
+  y: number;
+  /** Percent label sits on the outer side of the 2×2 grid. */
+  outward: 'left' | 'right';
+};
+
+const VIEW_WIDTH = 140;
+const VIEW_HEIGHT = 100;
+const MAX_RADIUS = 17;
+const LABEL_GAP = 4.2;
+const LABEL_FONT_SIZE = 6.6;
+const LABEL_COLOR = '#111827';
+
+// Largest → smallest: top-left, bottom-left, top-right, bottom-right.
+const TARGET_SLOTS: CircleSlot[] = [
+  { x: 50, y: 30, outward: 'left' },
+  { x: 50, y: 72, outward: 'left' },
+  { x: 96, y: 30, outward: 'right' },
+  { x: 96, y: 72, outward: 'right' },
+];
+
+function percentLabelPosition(slot: CircleSlot, radius: number) {
+  const isLeft = slot.outward === 'left';
+  return {
+    x: isLeft ? slot.x - radius - LABEL_GAP : slot.x + radius + LABEL_GAP,
+    y: slot.y,
+    textAnchor: (isLeft ? 'end' : 'start') as 'end' | 'start',
+  };
+}
+
 export function FocusableSquareCirclesChart({
   data,
   palette = PALETTE,
@@ -49,36 +80,19 @@ export function FocusableSquareCirclesChart({
     return Math.max(...slices.map((item) => item.value / total));
   }, [slices, total]);
 
-  // Keep generous breathing room so circles never touch the card edges.
-  const maxRadius = 17.5;
-  // Fixed stroke for all circles — same absolute thickness as FocusableDonutChart ring
-  // band relative to the largest circle: (outer 70% − inner 48%) / 70%.
-  const strokeWidth = maxRadius * ((70 - 48) / 70);
-
-  // Target positions by size rank (largest -> smallest).
-  // TL: top-left, BL: bottom-left, TR: top-right, BR: bottom-right.
-  const targetCenters: Array<{ x: number; y: number }> = [
-    { x: 34, y: 32 }, // TL (largest)
-    { x: 34, y: 72 }, // BL (2nd largest)
-    { x: 74, y: 32 }, // TR (3rd largest)
-    { x: 74, y: 72 }, // BR (smallest)
-  ];
-
-  // Compute per-slice placement by descending value.
-  const centersByIndex = useMemo(() => {
+  const slotsByIndex = useMemo(() => {
     const indexed = slices.map((slice, i) => ({ i, v: slice.value }));
-    // Stable sort: if values are equal, preserve original index order.
     indexed.sort((a, b) => (b.v - a.v) || (a.i - b.i));
 
-    const byIndex = new Map<number, { x: number; y: number }>();
+    const byIndex = new Map<number, CircleSlot>();
     indexed.forEach((entry, rank) => {
-      const center = targetCenters[rank];
-      if (center) {
-        byIndex.set(entry.i, center);
+      const slot = TARGET_SLOTS[rank];
+      if (slot) {
+        byIndex.set(entry.i, slot);
       }
     });
     return byIndex;
-  }, [slices, targetCenters]);
+  }, [slices]);
 
   const colors = useMemo(() => {
     return slices.map((item, index) => item.color ?? palette[index % palette.length]);
@@ -98,63 +112,59 @@ export function FocusableSquareCirclesChart({
       <div className="min-h-0 flex-1 pb-1">
         <svg
           className="h-full w-full"
-          viewBox="0 0 100 100"
+          viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
           preserveAspectRatio="xMidYMid meet"
           role="img"
-        aria-label="Квадратная визуализация распределения"
+          aria-label="Квадратная визуализация распределения"
         >
           {slices.map((item, index) => {
-            const center = centersByIndex.get(index) ?? targetCenters[0];
+            const slot = slotsByIndex.get(index) ?? TARGET_SLOTS[0];
             const percent = total > 0 ? (item.value / total) * 100 : 0;
             const share = total > 0 ? item.value / total : 0;
-
-            // Radius^2 is proportional to share (and therefore to percent).
-            // Normalize to `maxShare` so the largest circle fits the quadrant.
-            const radius = maxShare > 0 ? maxRadius * Math.sqrt(share / maxShare) : 0;
+            const radius = maxShare > 0 ? MAX_RADIUS * Math.sqrt(share / maxShare) : 0;
             const isDimmed = activeIndex !== null && activeIndex !== index;
             const isActive = activeIndex === index;
             const fill = colors[index] ?? palette[index % palette.length];
-
             const roundedPercent = Math.round(percent);
-            // Keep consistent typography for dashboard charts.
-            const labelColor = '#111827';
-            const fontSize = Math.max(4.5, Math.min(7.5, radius * 0.42));
-            const strokeColor = isActive ? '#0f172a' : fill;
+            const label = percentLabelPosition(slot, radius);
+            const tooltip = formatChartLegendText({
+              name: item.name,
+              value: item.value,
+              percent: roundedPercent,
+              mode: labelMode,
+              percentFirst: legendPercentFirst,
+            });
 
             return (
               <g
                 key={item.name}
-                style={{ cursor: 'default' }}
+                style={{ cursor: 'pointer' }}
                 onMouseEnter={() => setActiveIndex(index)}
                 onMouseLeave={() => setActiveIndex(null)}
               >
                 <circle
-                  cx={center.x}
-                  cy={center.y}
+                  cx={slot.x}
+                  cy={slot.y}
                   r={radius}
-                  fill="#ffffff"
-                  fillOpacity={isDimmed ? 0.32 : 1}
-                  stroke={strokeColor}
-                  strokeWidth={strokeWidth}
-                  strokeOpacity={isDimmed ? 0.32 : 1}
+                  fill={fill}
+                  fillOpacity={isDimmed ? 0.34 : 1}
+                  stroke={isActive ? '#0f172a' : 'rgba(15, 23, 42, 0.14)'}
+                  strokeWidth={isActive ? 1.1 : 0.45}
+                  strokeOpacity={isDimmed ? 0.34 : 1}
+                  style={{
+                    filter: isDimmed ? 'brightness(0.78) saturate(0.88)' : isActive ? 'brightness(1.05)' : undefined,
+                    transition: 'fill-opacity 160ms ease, filter 160ms ease',
+                  }}
                 >
-                  <title>
-                    {formatChartLegendText({
-                      name: item.name,
-                      value: item.value,
-                      percent: roundedPercent,
-                      mode: labelMode,
-                      percentFirst: legendPercentFirst,
-                    })}
-                  </title>
+                  <title>{tooltip}</title>
                 </circle>
                 <text
-                  x={center.x}
-                  y={center.y}
-                  fill={labelColor}
-                  textAnchor="middle"
+                  x={label.x}
+                  y={label.y}
+                  fill={LABEL_COLOR}
+                  textAnchor={label.textAnchor}
                   dominantBaseline="central"
-                  fontSize={fontSize}
+                  fontSize={LABEL_FONT_SIZE}
                   fontWeight={700}
                   style={{ pointerEvents: 'none' }}
                 >
@@ -197,4 +207,3 @@ export function FocusableSquareCirclesChart({
     </div>
   );
 }
-

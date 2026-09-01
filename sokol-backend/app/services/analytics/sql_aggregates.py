@@ -6,10 +6,10 @@ from collections import defaultdict
 from datetime import date
 from typing import Any
 
-from sqlalchemy import case, extract, func, or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.checks import Check, CheckStatus
+from app.models.checks import Check
 from app.models.departments import Department
 from app.models.recommendations import Recommendation
 from app.schemas.analytics import (
@@ -35,73 +35,105 @@ from app.schemas.analytics import (
     RecommendationsSummaryByStatus,
     StatusMatrixRow,
 )
-from app.services.analytics.common import (
-    completion_share,
-    named_counts,
-    pad_anchor_dates,
-    parse_audit_object_parts,
+from app.services.analytics.constants import (
+    CHECK_LINKS_LIMIT,
+    CHECK_TYPE_PLURAL_LABELS,
+    DEFAULT_MATERIALITY,
+    INDICATOR_COLORS,
+    INDICATOR_KEY_ALIASES,
+    INDICATOR_LABELS,
+    MATERIALITY_LEVELS,
+    UNSPECIFIED,
+    WITHOUT_AUDITOR,
+    WITHOUT_CHECK,
+    WITHOUT_LEADER,
+    WITHOUT_OBJECT,
 )
-from app.services.analytics.period import get_period_bucket
+from app.services.analytics.departments import department_map_from_pairs, parse_audit_object_parts
 from app.services.analytics.sql_filters import (
     apply_check_filters,
     apply_recommendation_filters,
     check_filter_conditions,
     recommendation_filter_conditions,
 )
+from app.services.analytics.sql_helpers import (
+    accumulate_period_totals,
+    apply_period_grouped_query,
+    check_group_identity,
+    check_status_count_columns,
+    column_dates,
+    completion_share_from_summary,
+    count_if,
+    count_rows,
+    distinct_nonempty_values,
+    fetch_all,
+    fetch_one,
+    grouped_named_counts_sql,
+    period_from_sql_row,
+    period_group_columns,
+    recommendation_grouped_by_check,
+    recommendation_has_extensions,
+    recommendation_materiality_count_columns,
+    recommendation_status_count_columns,
+)
+from app.services.analytics.values import pad_anchor_dates
 
-
-def _period_group_columns(date_column, granularity: PeriodGranularity):
-    year_col = extract("year", date_column).label("bucket_year")
-    if granularity == "year":
-        return (year_col,)
-    if granularity == "quarter":
-        return (year_col, extract("quarter", date_column).label("bucket_quarter"))
-    return (year_col, extract("month", date_column).label("bucket_month"))
-
-
-def _bucket_date_from_row(row: Any, granularity: PeriodGranularity) -> date:
-    year = int(row.bucket_year)
-    if granularity == "year":
-        return date(year, 1, 1)
-    if granularity == "quarter":
-        quarter = int(row.bucket_quarter)
-        return date(year, (quarter - 1) * 3 + 1, 1)
-    return date(year, int(row.bucket_month), 1)
+__all__ = [
+    "check_period_series_sql",
+    "check_type_distribution_sql",
+    "check_view_distribution_sql",
+    "collect_check_anchor_dates_sql",
+    "collect_combined_anchor_dates_sql",
+    "collect_filter_option_auditors_sql",
+    "collect_filter_option_departments_sql",
+    "collect_filter_option_recommendation_auditors_sql",
+    "collect_recommendation_anchor_dates_sql",
+    "completion_share_from_summary",
+    "count_checks",
+    "count_recommendations",
+    "department_map_from_pairs",
+    "dva_auditor_load_from_counts",
+    "dva_auditor_load_sql",
+    "dva_auditor_matrix_sql",
+    "dva_document_readiness_sql",
+    "dva_portfolio_series_sql",
+    "grouped_named_counts_sql",
+    "load_check_department_pairs",
+    "load_check_serial_numbers",
+    "load_effectiveness_matrix_rows",
+    "load_recommendation_department_rows",
+    "recommendation_check_links_sql",
+    "recommendation_deadline_extensions_by_check_sql",
+    "recommendation_indicator_distribution_sql",
+    "recommendation_materiality_matrix_sql",
+    "recommendation_object_distribution_sql",
+    "recommendation_period_series_sql",
+    "recommendation_status_matrix_sql",
+    "summarize_checks_sql",
+    "summarize_recommendations_sql",
+]
 
 
 async def count_checks(session: AsyncSession, *, filtered: bool = False, **filters: Any) -> int:
-    statement = select(func.count()).select_from(Check)
-    if filtered:
-        statement = apply_check_filters(statement, **filters)
-    result = await session.execute(statement)
-    return int(result.scalar_one())
+    return await count_rows(session, Check, apply_check_filters, filtered=filtered, **filters)
 
 
 async def count_recommendations(session: AsyncSession, *, filtered: bool = False, **filters: Any) -> int:
-    statement = select(func.count()).select_from(Recommendation)
-    if filtered:
-        statement = apply_recommendation_filters(statement, **filters)
-    result = await session.execute(statement)
-    return int(result.scalar_one())
+    return await count_rows(
+        session,
+        Recommendation,
+        apply_recommendation_filters,
+        filtered=filtered,
+        **filters,
+    )
 
 
 async def summarize_checks_sql(session: AsyncSession, **filters: Any) -> ChecksSummary:
     statement = apply_check_filters(
-        select(
-            func.count().label("total"),
-            func.count()
-            .filter(Check.status == CheckStatus.NOT_STARTED)
-            .label("not_started"),
-            func.count()
-            .filter(Check.status == CheckStatus.IN_PROGRESS)
-            .label("in_progress"),
-            func.count()
-            .filter(Check.status == CheckStatus.COMPLETED)
-            .label("completed"),
-        ).select_from(Check),
+        select(*check_status_count_columns()).select_from(Check),
         **filters,
     )
-    row = (await session.execute(statement)).one()
+    row = await fetch_one(session, statement)
     return ChecksSummary(
         total=int(row.total),
         not_started=int(row.not_started),
@@ -111,35 +143,20 @@ async def summarize_checks_sql(session: AsyncSession, **filters: Any) -> ChecksS
 
 
 async def summarize_recommendations_sql(session: AsyncSession, **filters: Any) -> RecommendationsSummary:
-    has_extensions = or_(
-        Recommendation.deadline_extensions.isnot(None),
-        Recommendation.extension_1_date.isnot(None),
-        Recommendation.extension_1_comment.isnot(None),
-        Recommendation.extension_2_comment.isnot(None),
-    )
     statement = apply_recommendation_filters(
         select(
             func.count().label("total"),
-            func.count().filter(Recommendation.status == "completed").label("completed"),
-            func.count().filter(Recommendation.status == "unresolved").label("unresolved"),
-            func.count().filter(Recommendation.status == "on_control").label("on_control"),
-            func.count().filter(Recommendation.status == "in_progress").label("in_progress"),
-            func.count().filter(Recommendation.materiality_level == "низкий").label("low"),
-            func.count().filter(Recommendation.materiality_level == "средний").label("medium"),
-            func.count().filter(Recommendation.materiality_level == "высокий").label("high"),
-            func.count().filter(Recommendation.additional_status == "on_time").label("on_time"),
-            func.count()
-            .filter(Recommendation.additional_status == "deadline_violated")
-            .label("deadline_violated"),
-            func.count().filter(Recommendation.additional_status == "on_control").label("add_on_control"),
-            func.count().filter(has_extensions).label("with_extensions"),
-            func.count()
-            .filter(Recommendation.actual_completion_date.isnot(None))
-            .label("with_completion_date"),
+            *recommendation_status_count_columns(),
+            *recommendation_materiality_count_columns(),
+            count_if(Recommendation.additional_status == "on_time", "on_time"),
+            count_if(Recommendation.additional_status == "deadline_violated", "deadline_violated"),
+            count_if(Recommendation.additional_status == "on_control", "add_on_control"),
+            count_if(recommendation_has_extensions(), "with_extensions"),
+            count_if(Recommendation.actual_completion_date.isnot(None), "with_completion_date"),
         ).select_from(Recommendation),
         **filters,
     )
-    row = (await session.execute(statement)).one()
+    row = await fetch_one(session, statement)
     total = int(row.total)
     completed = int(row.completed)
     deadline_violated = int(row.deadline_violated)
@@ -173,30 +190,17 @@ async def check_period_series_sql(
     granularity: PeriodGranularity,
     **filters: Any,
 ) -> list[PeriodCount]:
-    group_cols = _period_group_columns(Check.start_date, granularity)
-    statement = apply_check_filters(
-        select(
-            *group_cols,
-            func.count().label("total"),
-            func.count()
-            .filter(Check.status == CheckStatus.NOT_STARTED)
-            .label("not_started"),
-            func.count()
-            .filter(Check.status == CheckStatus.IN_PROGRESS)
-            .label("in_progress"),
-            func.count()
-            .filter(Check.status == CheckStatus.COMPLETED)
-            .label("completed"),
-        )
-        .select_from(Check)
-        .group_by(*group_cols)
-        .order_by(*group_cols),
+    statement = apply_period_grouped_query(
+        model=Check,
+        date_column=Check.start_date,
+        granularity=granularity,
+        extra_columns=check_status_count_columns(),
+        apply_filters=apply_check_filters,
         **filters,
     )
-    rows = (await session.execute(statement)).all()
     buckets: list[PeriodCount] = []
-    for row in rows:
-        period = get_period_bucket(_bucket_date_from_row(row, granularity), granularity)
+    for row in await fetch_all(session, statement):
+        period = period_from_sql_row(row, granularity)
         buckets.append(
             PeriodCount(
                 key=period.key,
@@ -209,12 +213,7 @@ async def check_period_series_sql(
                 cumulative=0,
             )
         )
-    buckets.sort(key=lambda item: item.sort_key)
-    running = 0
-    for item in buckets:
-        running += item.total
-        item.cumulative = running
-    return buckets
+    return accumulate_period_totals(buckets)
 
 
 async def recommendation_period_series_sql(
@@ -222,28 +221,21 @@ async def recommendation_period_series_sql(
     granularity: PeriodGranularity,
     **filters: Any,
 ) -> list[RecommendationPeriodCount]:
-    group_cols = _period_group_columns(Recommendation.deadline, granularity)
-    statement = apply_recommendation_filters(
-        select(
-            *group_cols,
+    statement = apply_period_grouped_query(
+        model=Recommendation,
+        date_column=Recommendation.deadline,
+        granularity=granularity,
+        extra_columns=(
             func.count().label("total"),
-            func.count().filter(Recommendation.status == "completed").label("completed"),
-            func.count().filter(Recommendation.status == "unresolved").label("unresolved"),
-            func.count().filter(Recommendation.status == "on_control").label("on_control"),
-            func.count().filter(Recommendation.status == "in_progress").label("in_progress"),
-            func.count().filter(Recommendation.materiality_level == "низкий").label("low"),
-            func.count().filter(Recommendation.materiality_level == "средний").label("medium"),
-            func.count().filter(Recommendation.materiality_level == "высокий").label("high"),
-        )
-        .select_from(Recommendation)
-        .group_by(*group_cols)
-        .order_by(*group_cols),
+            *recommendation_status_count_columns(),
+            *recommendation_materiality_count_columns(),
+        ),
+        apply_filters=apply_recommendation_filters,
         **filters,
     )
-    rows = (await session.execute(statement)).all()
     buckets: list[RecommendationPeriodCount] = []
-    for row in rows:
-        period = get_period_bucket(_bucket_date_from_row(row, granularity), granularity)
+    for row in await fetch_all(session, statement):
+        period = period_from_sql_row(row, granularity)
         buckets.append(
             RecommendationPeriodCount(
                 key=period.key,
@@ -261,38 +253,7 @@ async def recommendation_period_series_sql(
                 cumulative_completed=0,
             )
         )
-    buckets.sort(key=lambda row: row.sort_key)
-    running = 0
-    completed_running = 0
-    for row in buckets:
-        running += row.total
-        completed_running += row.completed
-        row.cumulative = running
-        row.cumulative_completed = completed_running
-    return buckets
-
-
-async def grouped_named_counts_sql(
-    session: AsyncSession,
-    *,
-    model,
-    column,
-    filters: list,
-    positive_only: bool = False,
-    limit: int | None = None,
-) -> list[NamedCount]:
-    statement = (
-        select(column.label("name"), func.count().label("value"))
-        .select_from(model)
-        .where(*filters)
-        .group_by(column)
-        .order_by(func.count().desc(), column.asc())
-    )
-    if limit is not None:
-        statement = statement.limit(limit)
-    rows = (await session.execute(statement)).all()
-    counts = {str(row.name): int(row.value) for row in rows if row.name is not None}
-    return named_counts(counts, positive_only=positive_only)
+    return accumulate_period_totals(buckets, extra=(("completed", "cumulative_completed"),))
 
 
 async def check_view_distribution_sql(session: AsyncSession, **filters: Any) -> list[NamedCount]:
@@ -305,8 +266,6 @@ async def check_view_distribution_sql(session: AsyncSession, **filters: Any) -> 
 
 
 async def check_type_distribution_sql(session: AsyncSession, **filters: Any) -> list[NamedCount]:
-    from app.services.analytics.checks_analytics import CHECK_TYPE_PLURAL_LABELS
-
     rows = await grouped_named_counts_sql(
         session,
         model=Check,
@@ -323,12 +282,6 @@ async def recommendation_indicator_distribution_sql(
     session: AsyncSession,
     **filters: Any,
 ) -> list[NamedCount]:
-    from app.services.analytics.recommendations_analytics import (
-        INDICATOR_COLORS,
-        INDICATOR_KEY_ALIASES,
-        INDICATOR_LABELS,
-    )
-
     rows = await grouped_named_counts_sql(
         session,
         model=Recommendation,
@@ -352,6 +305,13 @@ async def recommendation_indicator_distribution_sql(
     ]
 
 
+def _normalize_materiality(value: object) -> str:
+    materiality_level = str(value or "").strip().casefold() or DEFAULT_MATERIALITY
+    if materiality_level not in MATERIALITY_LEVELS:
+        return DEFAULT_MATERIALITY
+    return materiality_level
+
+
 async def recommendation_object_distribution_sql(
     session: AsyncSession,
     **filters: Any,
@@ -359,19 +319,16 @@ async def recommendation_object_distribution_sql(
     statement = select(Recommendation.audit_object, Recommendation.materiality_level).where(
         *recommendation_filter_conditions(**filters),
     )
-    rows = (await session.execute(statement)).all()
     totals: dict[str, int] = defaultdict(int)
     materiality_counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
-    for row in rows:
+    for row in await fetch_all(session, statement):
         parts = parse_audit_object_parts(row.audit_object)
-        departments = parts if parts else ["Без объекта"]
-        materiality_level = str(row.materiality_level or "").strip().casefold() or "средний"
-        if materiality_level not in {"низкий", "средний", "высокий"}:
-            materiality_level = "средний"
+        departments = parts if parts else [WITHOUT_OBJECT]
+        materiality_level = _normalize_materiality(row.materiality_level)
         for department in departments:
             totals[department] += 1
             materiality_counts[department][materiality_level] += 1
-    result = [
+    return [
         RecommendationObjectCount(
             name=name,
             value=value,
@@ -383,47 +340,31 @@ async def recommendation_object_distribution_sql(
         )
         for name, value in sorted(totals.items(), key=lambda item: (-item[1], item[0]))
     ]
-    return result
 
 
 async def recommendation_materiality_matrix_sql(
     session: AsyncSession, **filters: Any
 ) -> list[MaterialityMatrixRow]:
     statement = apply_recommendation_filters(
-        select(
-            Recommendation.serial_number,
-            Check.id.label("check_id"),
-            Check.short_name,
-            Check.check_name,
-            func.count().filter(Recommendation.materiality_level == "высокий").label("high"),
-            func.count().filter(Recommendation.materiality_level == "средний").label("medium"),
-            func.count().filter(Recommendation.materiality_level == "низкий").label("low"),
+        recommendation_grouped_by_check(
+            *recommendation_materiality_count_columns(),
             func.count().label("total"),
-        )
-        .select_from(Recommendation)
-        .outerjoin(Check, Check.id == Recommendation.check_id)
-        .group_by(Recommendation.serial_number, Check.id, Check.short_name, Check.check_name)
-        .order_by(Recommendation.serial_number.asc()),
+        ),
         **filters,
     )
-    rows = (await session.execute(statement)).all()
     result: list[MaterialityMatrixRow] = []
-    for row in rows:
-        serial = str(row.serial_number or "").strip() or "Без проверки"
-        check_id = row.check_id
-        high = int(row.high or 0)
-        medium = int(row.medium or 0)
-        low = int(row.low or 0)
+    for row in await fetch_all(session, statement):
+        identity = check_group_identity(row)
         result.append(
             MaterialityMatrixRow(
-                id=str(check_id) if check_id is not None else serial,
-                key=serial,
-                short_name=str(row.short_name or "").strip(),
-                name=str(row.check_name or "").strip() or serial,
+                id=identity.id,
+                key=identity.key,
+                short_name=identity.short_name,
+                name=identity.name,
                 counts=RecommendationMaterialityCounts(
-                    низкий=low,
-                    средний=medium,
-                    высокий=high,
+                    низкий=int(row.low or 0),
+                    средний=int(row.medium or 0),
+                    высокий=int(row.high or 0),
                 ),
                 total=int(row.total or 0),
             )
@@ -435,43 +376,26 @@ async def recommendation_status_matrix_sql(
     session: AsyncSession, **filters: Any
 ) -> list[StatusMatrixRow]:
     statement = apply_recommendation_filters(
-        select(
-            Recommendation.serial_number,
-            Check.id.label("check_id"),
-            Check.short_name,
-            Check.check_name,
-            func.count().filter(Recommendation.status == "completed").label("completed"),
-            func.count().filter(Recommendation.status == "unresolved").label("unresolved"),
-            func.count().filter(Recommendation.status == "in_progress").label("in_progress"),
-            func.count().filter(Recommendation.status == "on_control").label("on_control"),
+        recommendation_grouped_by_check(
+            *recommendation_status_count_columns(),
             func.count().label("total"),
-        )
-        .select_from(Recommendation)
-        .outerjoin(Check, Check.id == Recommendation.check_id)
-        .group_by(Recommendation.serial_number, Check.id, Check.short_name, Check.check_name)
-        .order_by(Recommendation.serial_number.asc()),
+        ),
         **filters,
     )
-    rows = (await session.execute(statement)).all()
     result: list[StatusMatrixRow] = []
-    for row in rows:
-        serial = str(row.serial_number or "").strip() or "Без проверки"
-        check_id = row.check_id
-        completed = int(row.completed or 0)
-        unresolved = int(row.unresolved or 0)
-        in_progress = int(row.in_progress or 0)
-        on_control = int(row.on_control or 0)
+    for row in await fetch_all(session, statement):
+        identity = check_group_identity(row)
         result.append(
             StatusMatrixRow(
-                id=str(check_id) if check_id is not None else serial,
-                key=serial,
-                short_name=str(row.short_name or "").strip(),
-                name=str(row.check_name or "").strip() or serial,
+                id=identity.id,
+                key=identity.key,
+                short_name=identity.short_name,
+                name=identity.name,
                 counts=RecommendationsSummaryByStatus(
-                    completed=completed,
-                    unresolved=unresolved,
-                    in_progress=in_progress,
-                    on_control=on_control,
+                    completed=int(row.completed or 0),
+                    unresolved=int(row.unresolved or 0),
+                    in_progress=int(row.in_progress or 0),
+                    on_control=int(row.on_control or 0),
                 ),
                 total=int(row.total or 0),
             )
@@ -525,10 +449,9 @@ async def recommendation_deadline_extensions_by_check_sql(
         .outerjoin(Check, Check.id == Recommendation.check_id),
         **filters,
     )
-    rows = (await session.execute(statement)).all()
 
     totals: dict[str, dict[str, Any]] = {}
-    for row in rows:
+    for row in await fetch_all(session, statement):
         extension_count = _count_recommendation_deadline_extensions(
             deadline_extensions=row.deadline_extensions,
             extension_1_date=row.extension_1_date,
@@ -539,16 +462,14 @@ async def recommendation_deadline_extensions_by_check_sql(
         if extension_count <= 0:
             continue
 
-        serial = str(row.serial_number or "").strip() or "Без проверки"
-        check_id = row.check_id
-        bucket_id = str(check_id) if check_id is not None else serial
-        existing = totals.get(bucket_id)
+        identity = check_group_identity(row)
+        existing = totals.get(identity.id)
         if existing is None:
-            totals[bucket_id] = {
-                "id": bucket_id,
-                "key": serial,
-                "short_name": str(row.short_name or "").strip(),
-                "name": str(row.check_name or "").strip() or serial,
+            totals[identity.id] = {
+                "id": identity.id,
+                "key": identity.key,
+                "short_name": identity.short_name,
+                "name": identity.name,
                 "value": extension_count,
             }
         else:
@@ -572,10 +493,13 @@ async def recommendation_check_links_sql(session: AsyncSession, **filters: Any) 
         model=Recommendation,
         column=Recommendation.serial_number,
         filters=recommendation_filter_conditions(**filters),
-        limit=12,
+        limit=CHECK_LINKS_LIMIT,
     )
     return [
-        NamedCount(name=(row.name.strip() if row.name and row.name.strip() else "Без проверки"), value=row.value)
+        NamedCount(
+            name=(row.name.strip() if row.name and row.name.strip() else WITHOUT_CHECK),
+            value=row.value,
+        )
         for row in rows
     ]
 
@@ -594,39 +518,14 @@ async def load_check_department_pairs(
     **filters: Any,
 ) -> list[tuple[int, list[str]]]:
     check_ids_subquery = apply_check_filters(select(Check.id), **filters).subquery()
-    statement = (
-        select(check_ids_subquery.c.id.label("check_id"), Recommendation.audit_object)
-        .select_from(
-            check_ids_subquery.outerjoin(
-                Recommendation,
-                Recommendation.check_id == check_ids_subquery.c.id,
-            ),
-        )
+    statement = select(check_ids_subquery.c.id.label("check_id"), Recommendation.audit_object).select_from(
+        check_ids_subquery.outerjoin(
+            Recommendation,
+            Recommendation.check_id == check_ids_subquery.c.id,
+        ),
     )
-    rows = (await session.execute(statement)).all()
+    rows = await fetch_all(session, statement)
     return [(int(row.check_id), list(row.audit_object or [])) for row in rows if row.check_id is not None]
-
-
-def department_map_from_pairs(
-    pairs: list[tuple[int, str | list[str]]],
-    *,
-    selected_departments: list[str] | None = None,
-) -> list[NamedCount]:
-    selected = {item.strip() for item in (selected_departments or []) if item.strip()}
-    by_check: dict[int, set[str]] = defaultdict(set)
-    for check_id, audit_object in pairs:
-        by_check[check_id].update(parse_audit_object_parts(audit_object))
-    counts: dict[str, int] = defaultdict(int)
-    for departments in by_check.values():
-        visible_departments = departments & selected if selected else departments
-        if selected and not visible_departments:
-            continue
-        if not visible_departments:
-            counts["Без департамента"] += 1
-            continue
-        for department in visible_departments:
-            counts[department] += 1
-    return named_counts(counts)
 
 
 async def load_recommendation_department_rows(
@@ -642,7 +541,7 @@ async def load_recommendation_department_rows(
         ),
         **filters,
     )
-    rows = (await session.execute(statement)).all()
+    rows = await fetch_all(session, statement)
     return [
         (str(row.serial_number or "").strip(), list(row.audit_object or []), str(row.materiality_level))
         for row in rows
@@ -651,35 +550,19 @@ async def load_recommendation_department_rows(
 
 async def load_check_serial_numbers(session: AsyncSession, **filters: Any) -> list[str]:
     statement = apply_check_filters(select(Check.serial_number), **filters)
-    rows = (await session.execute(statement)).all()
+    rows = await fetch_all(session, statement)
     return [str(row.serial_number).strip() for row in rows if row.serial_number]
 
 
 async def collect_filter_option_auditors_sql(session: AsyncSession) -> list[str]:
-    check_leaders = await session.execute(
-        select(Check.check_leader).where(Check.check_leader.isnot(None), Check.check_leader != "").distinct()
-    )
-    auditors = await session.execute(
-        select(Recommendation.auditor).where(Recommendation.auditor.isnot(None), Recommendation.auditor != "").distinct()
-    )
-    managers = await session.execute(
-        select(Recommendation.manager).where(Recommendation.manager.isnot(None), Recommendation.manager != "").distinct()
-    )
-    values = {
-        str(row[0]).strip()
-        for row in (*check_leaders.all(), *auditors.all(), *managers.all())
-        if row[0] and str(row[0]).strip()
-    }
+    values: set[str] = set()
+    for column in (Check.check_leader, Recommendation.auditor, Recommendation.manager):
+        values |= await distinct_nonempty_values(session, column)
     return sorted(values, key=lambda value: value.casefold())
 
 
 async def collect_filter_option_recommendation_auditors_sql(session: AsyncSession) -> list[str]:
-    rows = await session.execute(
-        select(Recommendation.auditor)
-        .where(Recommendation.auditor.isnot(None), Recommendation.auditor != "")
-        .distinct()
-    )
-    values = {str(row[0]).strip() for row in rows.all() if row[0] and str(row[0]).strip()}
+    values = await distinct_nonempty_values(session, Recommendation.auditor)
     return sorted(values, key=lambda value: value.casefold())
 
 
@@ -698,19 +581,34 @@ async def collect_filter_option_departments_sql(session: AsyncSession) -> list[s
 
 
 async def collect_check_anchor_dates_sql(session: AsyncSession) -> list[str]:
-    rows = await session.execute(select(Check.start_date).where(Check.start_date.isnot(None)))
-    return pad_anchor_dates([row[0] for row in rows.all()])
+    return pad_anchor_dates(await column_dates(session, Check.start_date))
 
 
 async def collect_recommendation_anchor_dates_sql(session: AsyncSession) -> list[str]:
-    rows = await session.execute(select(Recommendation.deadline).where(Recommendation.deadline.isnot(None)))
-    return pad_anchor_dates([row[0] for row in rows.all()])
+    return pad_anchor_dates(await column_dates(session, Recommendation.deadline))
 
 
 async def collect_combined_anchor_dates_sql(session: AsyncSession) -> list[str]:
-    check_dates = [row[0] for row in (await session.execute(select(Check.start_date).where(Check.start_date.isnot(None)))).all()]
-    rec_dates = [row[0] for row in (await session.execute(select(Recommendation.deadline).where(Recommendation.deadline.isnot(None)))).all()]
+    check_dates = await column_dates(session, Check.start_date)
+    rec_dates = await column_dates(session, Recommendation.deadline)
     return pad_anchor_dates(check_dates + rec_dates)
+
+
+def _ensure_portfolio_point(
+    merged: dict[str, DvaPortfolioPoint],
+    period,
+) -> DvaPortfolioPoint:
+    current = merged.get(period.key)
+    if current is None:
+        current = DvaPortfolioPoint(
+            key=period.key,
+            label=period.label,
+            sort_key=period.sort_key,
+            checks=0,
+            recommendations=0,
+        )
+        merged[period.key] = current
+    return current
 
 
 async def dva_portfolio_series_sql(
@@ -720,40 +618,44 @@ async def dva_portfolio_series_sql(
     check_filters: dict[str, Any],
     recommendation_filters: dict[str, Any],
 ) -> list[DvaPortfolioPoint]:
-    check_group = _period_group_columns(Check.start_date, granularity)
+    check_group = period_group_columns(Check.start_date, granularity)
     check_statement = apply_check_filters(
         select(*check_group, func.count().label("checks")).select_from(Check).group_by(*check_group),
         **check_filters,
     )
-    rec_group = _period_group_columns(Recommendation.deadline, granularity)
+    rec_group = period_group_columns(Recommendation.deadline, granularity)
     rec_statement = apply_recommendation_filters(
         select(*rec_group, func.count().label("recommendations")).select_from(Recommendation).group_by(*rec_group),
         **recommendation_filters,
     )
     merged: dict[str, DvaPortfolioPoint] = {}
-    for row in (await session.execute(check_statement)).all():
-        period = get_period_bucket(_bucket_date_from_row(row, granularity), granularity)
-        merged[period.key] = DvaPortfolioPoint(
-            key=period.key,
-            label=period.label,
-            sort_key=period.sort_key,
-            checks=int(row.checks),
-            recommendations=0,
-        )
-    for row in (await session.execute(rec_statement)).all():
-        period = get_period_bucket(_bucket_date_from_row(row, granularity), granularity)
-        current = merged.get(period.key)
-        if current is None:
-            merged[period.key] = DvaPortfolioPoint(
-                key=period.key,
-                label=period.label,
-                sort_key=period.sort_key,
-                checks=0,
-                recommendations=int(row.recommendations),
-            )
-        else:
-            current.recommendations = int(row.recommendations)
+    for row in await fetch_all(session, check_statement):
+        period = period_from_sql_row(row, granularity)
+        _ensure_portfolio_point(merged, period).checks = int(row.checks)
+    for row in await fetch_all(session, rec_statement):
+        period = period_from_sql_row(row, granularity)
+        _ensure_portfolio_point(merged, period).recommendations = int(row.recommendations)
     return sorted(merged.values(), key=lambda row: row.sort_key)
+
+
+def dva_auditor_load_from_counts(
+    check_rows: list[NamedCount],
+    rec_rows: list[NamedCount],
+) -> list[DvaAuditorLoadRow]:
+    check_counts = {row.name.strip() or WITHOUT_LEADER: row.value for row in check_rows}
+    rec_counts = {row.name.strip() or WITHOUT_AUDITOR: row.value for row in rec_rows}
+    names = set(check_counts) | set(rec_counts)
+    rows = [
+        DvaAuditorLoadRow(
+            name=name,
+            checks=check_counts.get(name, 0),
+            recommendations=rec_counts.get(name, 0),
+            value=check_counts.get(name, 0) + rec_counts.get(name, 0),
+        )
+        for name in names
+        if check_counts.get(name, 0) > 0 or rec_counts.get(name, 0) > 0
+    ]
+    return sorted(rows, key=lambda row: (-row.value, row.name))
 
 
 async def dva_auditor_load_sql(
@@ -776,42 +678,33 @@ async def dva_auditor_load_sql(
         filters=recommendation_filter_conditions(**recommendation_filters),
         positive_only=True,
     )
-    check_counts = {row.name.strip() or "Без руководителя": row.value for row in check_rows}
-    rec_counts = {row.name.strip() or "Без аудитора": row.value for row in rec_rows}
-    names = set(check_counts) | set(rec_counts)
-    rows = [
-        DvaAuditorLoadRow(
-            name=name,
-            checks=check_counts.get(name, 0),
-            recommendations=rec_counts.get(name, 0),
-            value=check_counts.get(name, 0) + rec_counts.get(name, 0),
-        )
-        for name in names
-        if check_counts.get(name, 0) > 0 or rec_counts.get(name, 0) > 0
-    ]
-    return sorted(rows, key=lambda row: (-row.value, row.name))
+    return dva_auditor_load_from_counts(check_rows, rec_rows)
 
 
 async def dva_document_readiness_sql(session: AsyncSession, **filters: Any) -> list[DocumentReadinessRow]:
     statement = apply_check_filters(
         select(
             func.count().label("total"),
-            func.count()
-            .filter(or_(Check.order_document_number.isnot(None), Check.order_document_date.isnot(None)))
-            .label("order_filled"),
-            func.count()
-            .filter(or_(Check.program_document_number.isnot(None), Check.program_document_date.isnot(None)))
-            .label("program_filled"),
-            func.count()
-            .filter(or_(Check.az_document_number.isnot(None), Check.az_document_date.isnot(None)))
-            .label("az_filled"),
-            func.count()
-            .filter(or_(Check.dz_document_number.isnot(None), Check.dz_document_date.isnot(None)))
-            .label("dz_filled"),
+            count_if(
+                or_(Check.order_document_number.isnot(None), Check.order_document_date.isnot(None)),
+                "order_filled",
+            ),
+            count_if(
+                or_(Check.program_document_number.isnot(None), Check.program_document_date.isnot(None)),
+                "program_filled",
+            ),
+            count_if(
+                or_(Check.az_document_number.isnot(None), Check.az_document_date.isnot(None)),
+                "az_filled",
+            ),
+            count_if(
+                or_(Check.dz_document_number.isnot(None), Check.dz_document_date.isnot(None)),
+                "dz_filled",
+            ),
         ).select_from(Check),
         **filters,
     )
-    row = (await session.execute(statement)).one()
+    row = await fetch_one(session, statement)
     total = int(row.total)
     docs = [
         ("Приказ", int(row.order_filled)),
@@ -832,7 +725,7 @@ async def dva_auditor_matrix_sql(
     check_filters: dict[str, Any],
     recommendation_filters: dict[str, Any],
 ) -> DvaAuditorMatrix:
-    check_group = _period_group_columns(Check.start_date, granularity)
+    check_group = period_group_columns(Check.start_date, granularity)
     check_statement = apply_check_filters(
         select(
             Check.check_leader.label("auditor"),
@@ -843,7 +736,7 @@ async def dva_auditor_matrix_sql(
         .group_by(Check.check_leader, *check_group),
         **check_filters,
     )
-    rec_group = _period_group_columns(Recommendation.deadline, granularity)
+    rec_group = period_group_columns(Recommendation.deadline, granularity)
     rec_statement = apply_recommendation_filters(
         select(
             Recommendation.auditor.label("auditor"),
@@ -859,38 +752,33 @@ async def dva_auditor_matrix_sql(
     row_map: dict[str, DvaAuditorMatrixRow] = {}
 
     def touch(auditor_raw: str) -> DvaAuditorMatrixRow:
-        auditor = auditor_raw.strip() or "Не указан"
+        auditor = auditor_raw.strip() or UNSPECIFIED
         current = row_map.get(auditor)
         if current is None:
             current = DvaAuditorMatrixRow(auditor=auditor, total=0, by_period={})
             row_map[auditor] = current
         return current
 
-    for row in (await session.execute(check_statement)).all():
-        period = get_period_bucket(_bucket_date_from_row(row, granularity), granularity)
-        period_schema = PeriodBucketSchema(key=period.key, label=period.label, sort_key=period.sort_key)
-        period_map[period.key] = period_schema
+    def add_cell(row: Any, *, checks: int = 0, recommendations: int = 0) -> None:
+        period = period_from_sql_row(row, granularity)
+        period_map[period.key] = PeriodBucketSchema(
+            key=period.key,
+            label=period.label,
+            sort_key=period.sort_key,
+        )
         matrix_row = touch(str(row.auditor))
         cell = matrix_row.by_period.get(period.key) or DvaAuditorMatrixCell(checks=0, recommendations=0)
-        cell.checks += int(row.checks)
+        cell.checks += checks
+        cell.recommendations += recommendations
         matrix_row.by_period[period.key] = cell
-        matrix_row.total += int(row.checks)
+        matrix_row.total += checks + recommendations
 
-    for row in (await session.execute(rec_statement)).all():
-        period = get_period_bucket(_bucket_date_from_row(row, granularity), granularity)
-        period_schema = PeriodBucketSchema(key=period.key, label=period.label, sort_key=period.sort_key)
-        period_map[period.key] = period_schema
-        matrix_row = touch(str(row.auditor))
-        cell = matrix_row.by_period.get(period.key) or DvaAuditorMatrixCell(checks=0, recommendations=0)
-        cell.recommendations += int(row.recommendations)
-        matrix_row.by_period[period.key] = cell
-        matrix_row.total += int(row.recommendations)
+    for row in await fetch_all(session, check_statement):
+        add_cell(row, checks=int(row.checks))
+    for row in await fetch_all(session, rec_statement):
+        add_cell(row, recommendations=int(row.recommendations))
 
     return DvaAuditorMatrix(
         periods=sorted(period_map.values(), key=lambda item: item.sort_key),
         rows=sorted(row_map.values(), key=lambda item: (-item.total, item.auditor)),
     )
-
-
-def completion_share_from_summary(summary: ChecksSummary) -> int:
-    return completion_share(summary.total, summary.completed)

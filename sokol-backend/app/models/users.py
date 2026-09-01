@@ -1,24 +1,19 @@
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from sqlalchemy import Boolean, String
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy import Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
+from app.models.columns import optional_string, required_string, unique_string, uuid_pk
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True),
-        primary_key=True,
-        default=uuid4,
-        index=True,
-    )
-    username: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[str] = mapped_column(String(32), nullable=False)
-    display_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    aliases: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    id: Mapped[UUID] = uuid_pk()
+    username: Mapped[str] = unique_string(index=True)
+    password_hash: Mapped[str] = required_string()
+    role: Mapped[str] = required_string(32)
+    display_name: Mapped[str] = required_string()
+    aliases: Mapped[str | None] = optional_string(500)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

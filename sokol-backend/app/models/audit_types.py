@@ -1,20 +1,14 @@
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from sqlalchemy import String
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped
 
 from app.models.base import Base
+from app.models.columns import required_string, uuid_pk
 
 
 class AuditType(Base):
     __tablename__ = "audit_types"
 
-    id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True),
-        primary_key=True,
-        default=uuid4,
-        index=True,
-    )
-    code: Mapped[str] = mapped_column(String(255), nullable=False)
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    id: Mapped[UUID] = uuid_pk()
+    code: Mapped[str] = required_string()
+    name: Mapped[str] = required_string()

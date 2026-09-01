@@ -3,7 +3,6 @@ import {
   FileText,
   ClipboardList,
   BarChart3,
-  FileCheck,
   Settings,
   Wrench,
   CalendarClock,
@@ -15,7 +14,6 @@ const TABS = [
   { id: 'analytics', path: '/analytics', label: 'Аналитика', icon: BarChart3 },
   { id: 'planning', path: '/planning', label: 'Планирование', icon: CalendarClock },
   { id: 'tools', path: '/tools', label: 'Инструменты', icon: Wrench },
-  { id: 'kantsler', path: '/kantsler', label: 'Канцлер', icon: FileCheck },
   { id: 'settings', path: '/settings', label: 'Настройки', icon: Settings },
 ] as const;
 

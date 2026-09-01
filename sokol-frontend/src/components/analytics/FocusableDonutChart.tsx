@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { getValueBasedColors, PALETTE } from './analyticsPalette';
 import { CHART_LEGEND_STYLE, CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { formatChartLegendText } from './chartLegend';
@@ -121,8 +121,7 @@ function PieValueLabel({
   const radius = innerRadius + (outerRadius - innerRadius) * 0.62;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  // Keep consistent typography for dashboard charts.
-  const labelColor = '#111827';
+  const labelColor = '#ffffff';
   const percentLabel =`${Math.round(percent * 100)}%`;
 
   if (labelMode === 'both') {
@@ -147,7 +146,6 @@ function PieValueLabel({
           dominantBaseline="central"
           fontSize={12}
           fontWeight={600}
-          opacity={0.92}
         >
           {value}
         </text>
@@ -210,15 +208,16 @@ export function FocusableDonutChart({
   };
 
   return (
-    <div className={containerClassName}>
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart margin={isRing ? { top: 28, right: 96, bottom: 28, left: 96 } : { top: 8, right: 8, bottom: 0, left: 8 }}>
+    <div className={`flex min-h-0 flex-col ${containerClassName}`}>
+      <div className="min-h-0 min-w-0 flex-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart margin={isRing ? { top: 28, right: 96, bottom: 28, left: 96 } : { top: 8, right: 8, bottom: 8, left: 8 }}>
           <Pie
             data={pieData}
             dataKey="value"
             nameKey="name"
             cx="50%"
-            cy={isRing || !showLegend ? '50%' : '46%'}
+            cy="50%"
             innerRadius={isRing ? '48%' : 0}
             outerRadius={isRing ? '70%' : '72%'}
             startAngle={isRing ? 90 : 0}
@@ -273,68 +272,44 @@ export function FocusableDonutChart({
             }}
             contentStyle={CHART_TOOLTIP_STYLE}
           />
-          {showLegend ? (
-            <Legend
-              layout="horizontal"
-              verticalAlign="bottom"
-              align="center"
-              wrapperStyle={{
-                ...CHART_LEGEND_STYLE,
-                fontSize: legendFontSize,
-                fontWeight: legendFontWeight,
-                paddingTop: 4,
-              }}
-              content={() => (
-                <ul
-                  className="recharts-default-legend"
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: '4px 20px',
-                    padding: 0,
-                    margin: 0,
-                    listStyle: 'none',
-                    fontSize: legendFontSize,
-                    fontWeight: legendFontWeight,
-                  }}
-                >
-                  {chartData.map((item) => (
-                    <li
-                      key={item.name}
-                      className="recharts-legend-item"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        margin: 0,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      <span
-                        className="recharts-legend-icon"
-                        style={{
-                          display: 'inline-block',
-                          width: 9,
-                          height: 9,
-                          marginRight: 6,
-                          borderRadius: 9,
-                          backgroundColor: item.color,
-                          verticalAlign: 'middle',
-                        }}
-                      />
-                      <span className="recharts-legend-item-text" style={{ color: item.color }}>
-                        {formatLegendText(item)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            />
-          ) : null}
         </PieChart>
-      </ResponsiveContainer>
+        </ResponsiveContainer>
+      </div>
+      {showLegend ? (
+        <ul
+          className="recharts-default-legend mx-auto flex w-max max-w-full shrink-0 flex-col items-start gap-y-1 px-3 pb-1 pt-0.5"
+          style={{
+            marginTop: 0,
+            marginBottom: 0,
+            paddingTop: 4,
+            listStyle: 'none',
+            fontSize: legendFontSize,
+            fontWeight: legendFontWeight,
+          }}
+        >
+          {chartData.map((item) => (
+            <li
+              key={item.name}
+              className="recharts-legend-item grid grid-cols-[10px_auto] items-center gap-x-2"
+              style={{ margin: 0 }}
+            >
+              <span
+                className="recharts-legend-icon"
+                style={{
+                  display: 'block',
+                  width: 9,
+                  height: 9,
+                  borderRadius: 9,
+                  backgroundColor: item.color,
+                }}
+              />
+              <span className="recharts-legend-item-text whitespace-nowrap" style={{ color: item.color }}>
+                {formatLegendText(item)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 }

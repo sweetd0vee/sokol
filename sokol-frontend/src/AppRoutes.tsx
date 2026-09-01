@@ -10,7 +10,6 @@ import { ChecksTab } from './components/tabs/ChecksTab';
 import { CheckFormPage } from './components/checks/CheckFormPage';
 import { AnalyticsTab } from './components/tabs/AnalyticsTab';
 import { PlanningTab } from './components/tabs/PlanningTab';
-import { KantslerTab } from './components/tabs/KantslerTab';
 import { SettingsTab } from './components/tabs/SettingsTab';
 import { ToolsTab } from './components/tabs/ToolsTab';
 
@@ -32,7 +31,6 @@ export function AppRoutes() {
           <Route path="/analytics" element={<AnalyticsTab />} />
           <Route path="/planning" element={<PlanningTab />} />
           <Route path="/tools" element={<ToolsTab />} />
-          <Route path="/kantsler" element={<KantslerTab />} />
           <Route path="/settings" element={<SettingsTab />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/checks" replace />} />
