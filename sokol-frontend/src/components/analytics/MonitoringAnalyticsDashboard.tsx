@@ -354,6 +354,8 @@ export function MonitoringAnalyticsDashboard() {
                 data={coloredAdditionalStatusDistribution}
                 variant="ring"
                 labelMode="both"
+                legendFontSize={18}
+                legendFontWeight={600}
                 legendLayout="row"
               />
             ) : (
