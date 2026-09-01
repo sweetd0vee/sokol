@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { toPng, toSvg } from 'html-to-image';
-import { Clipboard, Expand, FileDown, Image, Minimize2, MoreHorizontal, Plus, X } from 'lucide-react';
+import { Check, Clipboard, Expand, FileDown, Image, Minimize2, MoreHorizontal, X } from 'lucide-react';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
@@ -157,7 +157,7 @@ function ChartToolbar({
             }`}
             aria-hidden
           >
-            <Plus className="h-2.5 w-2.5" strokeWidth={3} />
+            <Check className="h-2.5 w-2.5" strokeWidth={3} />
           </span>
         </button>
       ) : null}
