@@ -149,11 +149,9 @@ export function FocusableSquareCirclesChart({
                   r={radius}
                   fill={fill}
                   fillOpacity={isDimmed ? 0.34 : 1}
-                  stroke={isActive ? '#0f172a' : 'rgba(15, 23, 42, 0.14)'}
-                  strokeWidth={isActive ? 1.1 : 0.45}
-                  strokeOpacity={isDimmed ? 0.34 : 1}
+                  stroke="none"
                   style={{
-                    filter: isDimmed ? 'brightness(0.78) saturate(0.88)' : isActive ? 'brightness(1.05)' : undefined,
+                    filter: isActive ? 'brightness(1.05)' : undefined,
                     transition: 'fill-opacity 160ms ease, filter 160ms ease',
                   }}
                 >
@@ -192,7 +190,7 @@ export function FocusableSquareCirclesChart({
               className="grid grid-cols-[14px_auto] items-center gap-x-2"
             >
               <span
-                className="box-border block h-3.5 w-3.5 shrink-0 rounded-full border border-black/15"
+                className="box-border block h-3.5 w-3.5 shrink-0 rounded-full"
                 style={{
                   backgroundColor: item.color,
                 }}

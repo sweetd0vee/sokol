@@ -16,34 +16,41 @@ _PBKDF2_PREFIX = "pbkdf2_sha256$"
 _PBKDF2_ITERATIONS = 120_000
 
 
-def hash_password(password: str) -> str:
-    salt = secrets.token_hex(16)
-    digest = hashlib.pbkdf2_hmac(
+def _pbkdf2_hex(password: str, salt: str, iterations: int) -> str:
+    return hashlib.pbkdf2_hmac(
         "sha256",
         password.encode("utf-8"),
         salt.encode("utf-8"),
-        _PBKDF2_ITERATIONS,
+        iterations,
     ).hex()
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    digest = _pbkdf2_hex(password, salt, _PBKDF2_ITERATIONS)
     return f"{_PBKDF2_PREFIX}{_PBKDF2_ITERATIONS}${salt}${digest}"
+
+
+def _verify_pbkdf2(plain_password: str, stored: str) -> bool:
+    try:
+        _, iterations_s, salt, expected = stored.split("$", 3)
+        iterations = int(iterations_s)
+    except ValueError:
+        return False
+    digest = _pbkdf2_hex(plain_password, salt, iterations)
+    return hmac.compare_digest(digest, expected)
+
+
+def _verify_legacy_plaintext(plain_password: str, stored: str) -> bool:
+    if len(plain_password) != len(stored):
+        return False
+    return hmac.compare_digest(plain_password, stored)
 
 
 def verify_password(plain_password: str, stored: str) -> bool:
     if stored.startswith(_PBKDF2_PREFIX):
-        try:
-            _, iterations_s, salt, expected = stored.split("$", 3)
-            iterations = int(iterations_s)
-        except ValueError:
-            return False
-        digest = hashlib.pbkdf2_hmac(
-            "sha256",
-            plain_password.encode("utf-8"),
-            salt.encode("utf-8"),
-            iterations,
-        ).hex()
-        return hmac.compare_digest(digest, expected)
-    if len(plain_password) != len(stored):
-        return False
-    return hmac.compare_digest(plain_password, stored)
+        return _verify_pbkdf2(plain_password, stored)
+    return _verify_legacy_plaintext(plain_password, stored)
 
 
 def create_access_token(

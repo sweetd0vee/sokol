@@ -55,9 +55,13 @@ class StartupValidationTests(unittest.TestCase):
     def test_env_flag_parsing(self) -> None:
         self.assertTrue(env_flag_enabled("1", default=False))
         self.assertTrue(env_flag_enabled("YES", default=False))
+        self.assertTrue(env_flag_enabled("on", default=False))
         self.assertFalse(env_flag_enabled("0", default=True))
+        self.assertFalse(env_flag_enabled("OFF", default=True))
         self.assertFalse(env_flag_enabled(None, default=False))
         self.assertTrue(env_flag_enabled(None, default=True))
+        self.assertTrue(env_flag_enabled("", default=True))
+        self.assertTrue(env_flag_enabled("   ", default=True))
         self.assertFalse(env_flag_enabled("maybe", default=False))
 
     def test_prod_rejects_demo_load(self) -> None:

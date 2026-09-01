@@ -1,6 +1,13 @@
+from __future__ import annotations
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.core.startup_validation import is_production_env
+from app.core.startup_validation import DEFAULT_JWT_SECRET, is_production_env
+
+
+def parse_cors_origins(raw: str) -> list[str]:
+    """Comma-separated origins; empty or blank entries → allow all (`*`)."""
+    return [origin.strip() for origin in raw.split(",") if origin.strip()] or ["*"]
 
 
 class Settings(BaseSettings):
@@ -12,7 +19,7 @@ class Settings(BaseSettings):
 
     # Auth (JWT; optional HTTP Basic for local/tools; users in PostgreSQL `users` table)
     sokol_env: str = "development"
-    sokol_jwt_secret: str = "sokol-dev-jwt-secret-change-me"
+    sokol_jwt_secret: str = DEFAULT_JWT_SECRET
     sokol_jwt_expire_minutes: int = 480
     sokol_enable_basic_auth: bool | None = None
     sokol_admin_password: str = "admin"
@@ -32,12 +39,8 @@ class Settings(BaseSettings):
     )
 
     @property
-    def minio_enabled(self) -> bool:
-        return bool(
-            self.sokol_minio_endpoint.strip()
-            and self.sokol_minio_access_key.strip()
-            and self.sokol_minio_secret_key.strip()
-        )
+    def is_production(self) -> bool:
+        return is_production_env(self.sokol_env)
 
     @property
     def minio_endpoint(self) -> str:
@@ -60,6 +63,10 @@ class Settings(BaseSettings):
         return self.sokol_minio_region.strip()
 
     @property
+    def minio_enabled(self) -> bool:
+        return bool(self.minio_endpoint and self.minio_access_key and self.minio_secret_key)
+
+    @property
     def max_upload_bytes(self) -> int:
         return max(1, self.sokol_max_upload_mb) * 1024 * 1024
 
@@ -68,15 +75,12 @@ class Settings(BaseSettings):
         """HTTP Basic is on in development unless explicitly disabled; off in prod by default."""
         if self.sokol_enable_basic_auth is not None:
             return self.sokol_enable_basic_auth
-        return not is_production_env(self.sokol_env)
+        return not self.is_production
 
     @property
     def cors_origins(self) -> list[str]:
         """Comma-separated SOKOL_CORS_ORIGINS; empty → allow all (`*`)."""
-        raw = self.sokol_cors_origins.strip()
-        if not raw:
-            return ["*"]
-        return [origin.strip() for origin in raw.split(",") if origin.strip()] or ["*"]
+        return parse_cors_origins(self.sokol_cors_origins)
 
 
 settings = Settings()

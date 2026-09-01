@@ -218,8 +218,8 @@ export function FocusableDonutChart({
             nameKey="name"
             cx="50%"
             cy="50%"
-            innerRadius={isRing ? '48%' : 0}
-            outerRadius={isRing ? '70%' : '72%'}
+            innerRadius={isRing ? '36%' : 0}
+            outerRadius="72%"
             startAngle={isRing ? 90 : 0}
             endAngle={isRing ? -270 : 360}
             paddingAngle={isRing ? 3 : 0}
@@ -243,18 +243,26 @@ export function FocusableDonutChart({
             {pieData.map((entry, index) => {
               const isDimmed = activeIndex !== null && activeIndex !== index;
               const isActive = activeIndex === index;
-              const strokeColor = isRing ? '#ffffff' : (isActive ? '#0f172a' : 'none');
+              const strokeColor = isRing
+                ? (isActive ? '#0f172a' : '#ffffff')
+                : (isActive ? '#0f172a' : 'none');
               return (
                 <Cell
                   key={entry.name}
                   fill={entry.color}
-                  fillOpacity={isDimmed ? 0.32 : 1}
+                  fillOpacity={isDimmed ? (isRing ? 0.34 : 0.32) : 1}
                   stroke={strokeColor}
-                  strokeWidth={isRing ? 5 : (isActive ? 1 : 0)}
-                  strokeOpacity={1}
+                  strokeWidth={isRing ? (isActive ? 2 : 5) : (isActive ? 1 : 0)}
+                  strokeOpacity={isDimmed && isRing ? 0.34 : 1}
                   style={{
                     cursor: 'pointer',
-                    filter: isDimmed ? 'brightness(0.72) saturate(0.85)' : isActive ? 'brightness(1.04)' : undefined,
+                    filter: isRing
+                      ? (isActive ? 'brightness(1.04)' : undefined)
+                      : isDimmed
+                        ? 'brightness(0.72) saturate(0.85)'
+                        : isActive
+                          ? 'brightness(1.04)'
+                          : undefined,
                     transition: 'fill-opacity 160ms ease, filter 160ms ease',
                     outline: 'none',
                   }}

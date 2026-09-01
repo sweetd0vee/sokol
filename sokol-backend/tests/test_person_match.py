@@ -64,6 +64,27 @@ class PersonMatchTests(unittest.TestCase):
             )
         )
 
+    def test_empty_values_do_not_match(self) -> None:
+        self.assertFalse(person_field_matches_user("", "Важник Д.С."))
+        self.assertFalse(person_field_matches_user("Важник Д.С.", "  "))
+
+    def test_surname_only_user_matches_same_surname_field(self) -> None:
+        self.assertTrue(person_field_matches_user("Иванов А.А.", "Иванов"))
+
+    def test_surname_only_field_does_not_match_initials_user(self) -> None:
+        self.assertFalse(person_field_matches_user("Иванов", "Иванов А.А."))
+
+    def test_partial_initials_prefix_matches_full_name(self) -> None:
+        self.assertTrue(
+            person_field_matches_user(
+                "Иванов Александр Александрович",
+                "Иванов А.",
+            )
+        )
+
+    def test_conflicting_initials_do_not_match(self) -> None:
+        self.assertFalse(person_field_matches_user("Иванов А.А.", "Иванов Б.Б."))
+
 
 if __name__ == "__main__":
     unittest.main()

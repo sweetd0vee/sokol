@@ -7,6 +7,10 @@ MIN_PROD_JWT_SECRET_LEN = 32
 _PROD_ENV_VALUES = frozenset({"prod", "production"})
 _TRUE_FLAG_VALUES = frozenset({"1", "true", "yes", "on"})
 _FALSE_FLAG_VALUES = frozenset({"0", "false", "no", "off"})
+_FLAG_VALUES: dict[str, bool] = {
+    **dict.fromkeys(_TRUE_FLAG_VALUES, True),
+    **dict.fromkeys(_FALSE_FLAG_VALUES, False),
+}
 
 
 def is_production_env(env: str) -> bool:
@@ -20,11 +24,7 @@ def env_flag_enabled(raw: str | None, *, default: bool = False) -> bool:
     value = raw.strip().lower()
     if not value:
         return default
-    if value in _TRUE_FLAG_VALUES:
-        return True
-    if value in _FALSE_FLAG_VALUES:
-        return False
-    return default
+    return _FLAG_VALUES.get(value, default)
 
 
 def destructive_dictionary_sync_enabled(*, env: str, flag: str | None) -> bool:

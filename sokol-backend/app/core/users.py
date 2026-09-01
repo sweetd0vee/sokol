@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+# Latin lookalikes → Cyrillic so "Админ A.A." matches "Админ А.А."
+_LATIN_LOOKALIKES = str.maketrans(
+    "ABCEHKMOPTXYabcehkmoptxy",
+    "АВСЕНКМОРТХУавсенкмортху",
+)
+
 
 def normalize_login(value: str) -> str:
-    # Latin lookalikes → Cyrillic so "Админ A.A." matches "Админ А.А."
-    translated = value.strip().translate(
-        str.maketrans("ABCEHKMOPTXYabcehkmoptxy", "АВСЕНКМОРТХУавсенкмортху")
-    )
+    translated = value.strip().translate(_LATIN_LOOKALIKES)
     return " ".join(translated.split()).casefold()
