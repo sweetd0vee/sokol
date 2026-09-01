@@ -1,59 +1,13 @@
-import asyncio
-from collections.abc import Sequence
-
-from sqlalchemy import func, select
-
-from app.db.auditor_names import AUDITORS, AUDITOR_CODES
-from app.db.init_db import init_db
-from app.db.session import AsyncSessionLocal
-from app.models.auditors import Auditor
-from app.utils.dictionary_text import normalize_dictionary_label
-from app.utils.check_key import get_leader_initials_code
+from app.db.catalogs.auditors import AUDITORS
+from app.db.runtime import run_async_main, run_seed_cli
+from app.db.seeds.auditors import seed_auditors
 
 # DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db python -m app.db.seed_auditors
 
 
-async def seed_auditors(
-    auditors: Sequence[str], *, only_if_empty: bool = False
-) -> int:
-    if not auditors:
-        return 0
-    inserted = 0
-    async with AsyncSessionLocal() as session:
-        if only_if_empty:
-            count = int(
-                await session.scalar(select(func.count()).select_from(Auditor)) or 0
-            )
-            if count:
-                return 0
-
-        existing = await session.execute(select(Auditor))
-        existing_normalized = {
-            normalize_dictionary_label(row.full_name)
-            for row in existing.scalars()
-        }
-
-        for name in auditors:
-            normalized = normalize_dictionary_label(name)
-            if not normalized or normalized in existing_normalized:
-                continue
-            session.add(
-                Auditor(
-                    full_name=normalized,
-                    code=AUDITOR_CODES.get(name, get_leader_initials_code(normalized)),
-                )
-            )
-            existing_normalized.add(normalized)
-            inserted += 1
-        await session.commit()
-    return inserted
-
-
 async def main() -> None:
-    await init_db()
-    inserted = await seed_auditors(AUDITORS)
-    print(f"Seeded auditors: {inserted}")
+    await run_seed_cli("Seeded auditors", seed_auditors, AUDITORS)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run_async_main(main)

@@ -3,20 +3,15 @@
 
 from __future__ import annotations
 
-import asyncio
-
 from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.startup_validation import assert_seed_replace_safe_for_env
-from app.db.auditor_names import AUDITORS
-from app.db.department_names import DEPARTMENTS
+from app.db.catalogs import AUDITORS, CHECK_KINDS, DEPARTMENTS, EFFECTIVENESS_RATINGS
 from app.db.demo_data import build_check_rows, build_recommendation_rows
 from app.db.init_db import init_db
-from app.db.seed_auditors import seed_auditors
-from app.db.seed_check_kinds import CHECK_KINDS, seed_check_kinds
-from app.db.seed_departments import seed_departments
-from app.db.seed_effectiveness_ratings import EFFECTIVENESS_RATINGS, seed_effectiveness_ratings
+from app.db.runtime import run_async_main, truncate_operational_tables
+from app.db.seeds import seed_auditors, seed_check_kinds, seed_departments, seed_effectiveness_ratings
 from app.db.session import AsyncSessionLocal
 from app.models.checks import Check, CheckStatus
 from app.models.recommendations import (
@@ -45,13 +40,7 @@ async def seed_demo_data(count: int = DEMO_COUNT, *, replace: bool = True) -> tu
 
     async with AsyncSessionLocal() as session:
         if replace:
-            await session.execute(
-                text(
-                    "TRUNCATE TABLE recommendation_audit_objects, recommendations, checks "
-                    "RESTART IDENTITY CASCADE"
-                )
-            )
-            await session.commit()
+            await truncate_operational_tables(session)
 
         serial_to_id: dict[str, int] = {}
         for index, row in enumerate(checks, start=1):
@@ -155,4 +144,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run_async_main(main)

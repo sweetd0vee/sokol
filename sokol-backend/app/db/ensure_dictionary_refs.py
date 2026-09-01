@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import string
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import DeclarativeBase
 
 from app.crud.dictionary_crud import find_dictionary_duplicate_by_label
 from app.models.auditors import Auditor
@@ -40,56 +41,57 @@ def allocate_auditor_code(full_name: str, used: set[str]) -> str:
     raise RuntimeError("No free auditor codes left.")
 
 
-async def ensure_department_names(session: AsyncSession, names: Iterable[str]) -> int:
+async def _ensure_normalized_rows(
+    session: AsyncSession,
+    *,
+    model: type[DeclarativeBase],
+    column,
+    values: Iterable[str],
+    make_row: Callable[[str], object],
+) -> int:
     inserted = 0
-    await ensure_unspecified_department(session)
-    for raw in names:
-        name = normalize_dictionary_label(str(raw or "").strip())
-        if not name:
+    for raw in values:
+        label = normalize_dictionary_label(str(raw or "").strip())
+        if not label:
             continue
-        existing = await find_dictionary_duplicate_by_label(
-            session, Department, Department.name, name
-        )
+        existing = await find_dictionary_duplicate_by_label(session, model, column, label)
         if existing is not None:
             continue
-        session.add(Department(name=name))
+        session.add(make_row(label))
         inserted += 1
         await session.flush()
     return inserted
+
+
+async def ensure_department_names(session: AsyncSession, names: Iterable[str]) -> int:
+    await ensure_unspecified_department(session)
+    return await _ensure_normalized_rows(
+        session,
+        model=Department,
+        column=Department.name,
+        values=names,
+        make_row=lambda name: Department(name=name),
+    )
 
 
 async def ensure_check_kind_labels(session: AsyncSession, labels: Iterable[str]) -> int:
-    inserted = 0
-    for raw in labels:
-        label = normalize_dictionary_label(str(raw or "").strip())
-        if not label:
-            continue
-        existing = await find_dictionary_duplicate_by_label(
-            session, CheckKind, CheckKind.label, label
-        )
-        if existing is not None:
-            continue
-        session.add(CheckKind(label=label))
-        inserted += 1
-        await session.flush()
-    return inserted
+    return await _ensure_normalized_rows(
+        session,
+        model=CheckKind,
+        column=CheckKind.label,
+        values=labels,
+        make_row=lambda label: CheckKind(label=label),
+    )
 
 
 async def ensure_effectiveness_labels(session: AsyncSession, labels: Iterable[str]) -> int:
-    inserted = 0
-    for raw in labels:
-        label = normalize_dictionary_label(str(raw or "").strip())
-        if not label:
-            continue
-        existing = await find_dictionary_duplicate_by_label(
-            session, EffectivenessRating, EffectivenessRating.label, label
-        )
-        if existing is not None:
-            continue
-        session.add(EffectivenessRating(label=label))
-        inserted += 1
-        await session.flush()
-    return inserted
+    return await _ensure_normalized_rows(
+        session,
+        model=EffectivenessRating,
+        column=EffectivenessRating.label,
+        values=labels,
+        make_row=lambda label: EffectivenessRating(label=label),
+    )
 
 
 async def ensure_auditor_names(session: AsyncSession, names: Iterable[str]) -> int:

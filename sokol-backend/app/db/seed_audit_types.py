@@ -1,47 +1,15 @@
-import asyncio
-from collections.abc import Sequence
+from app.db.catalogs.audit_types import AUDIT_TYPES
+from app.db.runtime import run_async_main, run_seed_cli
+from app.db.seeds.audit_types import seed_audit_types
 
-from sqlalchemy import select
+# DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db python -m app.db.seed_audit_types
 
-from app.db.init_db import init_db
-from app.db.session import AsyncSessionLocal
-from app.models.audit_types import AuditType
-
-# DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db \ python -m app.db.seed_audit_types
-
-AUDIT_TYPES = [
-    ("КП", "Контрольная процедура"),
-    ("ВП", "Внеплановая проверка"),
-    ("ПП", "Плановая проверка"),
-]
-
-
-async def seed_audit_types(audit_types: Sequence[tuple[str, str]]) -> int:
-    if not audit_types:
-        return 0
-    inserted = 0
-    async with AsyncSessionLocal() as session:
-        for code, name in audit_types:
-            code = code.strip()
-            name = name.strip()
-            if not code or not name:
-                continue
-            result = await session.execute(
-                select(AuditType).where(AuditType.code == code)
-            )
-            if result.scalar_one_or_none():
-                continue
-            session.add(AuditType(code=code, name=name))
-            inserted += 1
-        await session.commit()
-    return inserted
+__all__ = ["AUDIT_TYPES", "seed_audit_types"]
 
 
 async def main() -> None:
-    await init_db()
-    inserted = await seed_audit_types(AUDIT_TYPES)
-    print(f"Seeded audit types: {inserted}")
+    await run_seed_cli("Seeded audit types", seed_audit_types, AUDIT_TYPES)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run_async_main(main)

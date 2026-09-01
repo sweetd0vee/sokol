@@ -1,14 +1,5 @@
 """Активные аудиторы и их постоянные коды для ключей проверок."""
 
-AUDITOR_CODES = {
-    "Важник Д.С.": "VDS",
-    "Харитонов А.И.": "KAI",
-    "Крейзо В.С.": "KVS",
-    "Гуль Е.Г.": "GEG",
-    "Якубович В.В.": "YVV",
-    "Каракосова Е.Д.": "KED",
-    "Голубицкая А.О.": "GAO",
-    "Каминская В.В.": "KVV",
-}
+from app.db.catalogs.auditors import AUDITOR_CODES, AUDITORS
 
-AUDITORS = list(AUDITOR_CODES)
+__all__ = ["AUDITOR_CODES", "AUDITORS"]

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import os
 
 from sqlalchemy import select
@@ -12,9 +11,18 @@ from app.core.roles import ADMIN_ROLES, Role
 from app.core.security import hash_password
 from app.core.startup_validation import destructive_dictionary_sync_enabled
 from app.crud.users_crud import ensure_user, get_user_by_username
-from app.db.auditor_names import AUDITORS, AUDITOR_CODES
-from app.db.department_names import DEPARTMENTS
+from app.db.catalogs import (
+    ADMIN_ALIASES,
+    ADMIN_DISPLAY_NAME,
+    ADMIN_USERNAME,
+    AUDITOR_CODES,
+    AUDITORS,
+    DEPARTMENT_HEAD_DISPLAY_NAME,
+    DEPARTMENT_HEAD_USERNAME,
+    DEPARTMENTS,
+)
 from app.db.init_db import init_db
+from app.db.runtime import run_async_main
 from app.db.session import AsyncSessionLocal
 from app.models.auditors import Auditor
 from app.models.departments import Department
@@ -23,12 +31,6 @@ from app.services.dictionary_integrity import auditor_label_in_use, department_l
 from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT, normalize_dictionary_label
 
 # DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db python -m app.db.sync_dictionaries
-
-ADMIN_USERNAME = "Админ А.А."
-ADMIN_DISPLAY_NAME = "Администратор"
-ADMIN_ALIASES = ("admin",)
-DEPARTMENT_HEAD_USERNAME = "Ковалев С.С."
-DEPARTMENT_HEAD_DISPLAY_NAME = "Ковалев С.С."
 
 
 def _allow_destructive_sync() -> bool:
@@ -170,4 +172,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run_async_main(main)

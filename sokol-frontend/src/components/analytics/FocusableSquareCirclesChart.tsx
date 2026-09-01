@@ -66,9 +66,21 @@ export function FocusableSquareCirclesChart({
 }: SquareCirclesChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
+  const legendItems = useMemo(
+    () =>
+      data
+        .map((item, index) => ({
+          ...item,
+          color: item.color ?? palette[index % palette.length],
+          index,
+        }))
+        .sort((a, b) => b.value - a.value || a.index - b.index),
+    [data, palette],
+  );
+
   const slices = useMemo(
-    () => data.filter((item) => item.value > 0).slice(0, 4),
-    [data],
+    () => legendItems.filter((item) => item.value > 0).slice(0, 4),
+    [legendItems],
   );
 
   const total = useMemo(() => data.reduce((sum, item) => sum + item.value, 0), [data]);
@@ -78,19 +90,6 @@ export function FocusableSquareCirclesChart({
     }
     return Math.max(...slices.map((item) => item.value / total));
   }, [slices, total]);
-
-  const colors = useMemo(() => {
-    return slices.map((item, index) => item.color ?? palette[index % palette.length]);
-  }, [palette, slices]);
-
-  const legendItems = useMemo(
-    () =>
-      data.map((item, index) => ({
-        ...item,
-        color: item.color ?? palette[index % palette.length],
-      })),
-    [data, palette],
-  );
 
   return (
     <div className="flex h-full min-h-[13rem] flex-col overflow-hidden">
@@ -160,7 +159,7 @@ export function FocusableSquareCirclesChart({
       </div>
 
       <div
-        className="mx-auto flex w-max max-w-full shrink-0 flex-nowrap items-center justify-center gap-x-6 px-3 pb-1 pt-0.5"
+        className="mx-auto flex w-full max-w-full shrink-0 flex-wrap items-center justify-center gap-x-4 gap-y-1 px-2 pb-1 pt-0.5"
         style={{
           fontSize: legendFontSize,
           fontWeight: legendFontWeight,
