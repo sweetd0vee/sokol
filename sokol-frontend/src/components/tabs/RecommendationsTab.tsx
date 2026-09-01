@@ -23,7 +23,13 @@ import { toNameOptions, useAuditorOptions } from '../../hooks/useReferenceOption
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
 import { useSokolData } from '../../contexts/sokolData';
 import { formatRecommendationAuditObjects } from '../../utils/auditObjects';
-import { INDICATOR_ICONS, indicatorIconRenderProps, type IndicatorIconKey } from '../recommendations/indicatorIcons';
+import {
+  ADDITIONAL_INDICATOR_ICONS,
+  INDICATOR_ICONS,
+  indicatorIconRenderProps,
+  type IndicatorIconKey,
+  type IndicatorIconMeta,
+} from '../recommendations/indicatorIcons';
 import { RecommendationNameHoverCard } from '../recommendations/RecommendationNameHoverCard';
 import {
   LIST_ACTION_BUTTON_CLASS,
@@ -48,11 +54,13 @@ import { ListSortHeader } from '../lists/ListSortHeader';
 function ListIndicatorIcon({
   value,
   label,
+  icons = INDICATOR_ICONS,
 }: {
   value: IndicatorIconKey | undefined;
   label: string;
+  icons?: Partial<Record<IndicatorIconKey, IndicatorIconMeta>>;
 }) {
-  const meta = value ? INDICATOR_ICONS[value] : undefined;
+  const meta = value ? icons[value] : undefined;
   if (!meta) {
     return <span className="text-gray-400">—</span>;
   }
@@ -422,6 +430,7 @@ export function RecommendationsTab() {
                     <ListIndicatorIcon
                       value={additionalIndicator}
                       label={getAdditionalIndicatorLabel(additionalIndicator)}
+                      icons={ADDITIONAL_INDICATOR_ICONS}
                     />
                   </td>
                   <td className="px-4 py-3 pr-6">{formatRuDate(recommendation.deadline)}</td>

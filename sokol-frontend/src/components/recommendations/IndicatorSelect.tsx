@@ -4,13 +4,19 @@ import {
   INDICATOR_OPTIONS,
   type ColoredSelectOption,
 } from '../../constants/recommendations';
-import { INDICATOR_ICONS, indicatorIconRenderProps, type IndicatorIconKey } from './indicatorIcons';
+import {
+  INDICATOR_ICONS,
+  indicatorIconRenderProps,
+  type IndicatorIconKey,
+  type IndicatorIconMeta,
+} from './indicatorIcons';
 
 type IndicatorSelectProps = {
   label?: string;
   value: string;
   onChange: (value: string) => void;
   options?: ColoredSelectOption[];
+  icons?: Partial<Record<IndicatorIconKey, IndicatorIconMeta>>;
   className?: string;
   labelClassName?: string;
   inputClassName?: string;
@@ -21,6 +27,7 @@ export function IndicatorSelect({
   value,
   onChange,
   options = INDICATOR_OPTIONS,
+  icons = INDICATOR_ICONS,
   className = '',
   labelClassName = '',
   inputClassName = '',
@@ -29,7 +36,7 @@ export function IndicatorSelect({
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
   const selected = options.find((option) => option.value === value) ?? options[0];
-  const selectedMeta = INDICATOR_ICONS[value as IndicatorIconKey];
+  const selectedMeta = icons[value as IndicatorIconKey];
   const SelectedIcon = selectedMeta?.Icon;
 
   useEffect(() => {
@@ -100,7 +107,7 @@ export function IndicatorSelect({
             className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
           >
             {options.map((option) => {
-              const meta = INDICATOR_ICONS[option.value as IndicatorIconKey];
+              const meta = icons[option.value as IndicatorIconKey];
               const Icon = meta?.Icon;
               const isActive = option.value === value;
               return (

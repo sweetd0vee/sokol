@@ -46,6 +46,7 @@ import {
 } from '../../utils/checkFormNavigation';
 import { MaterialitySelect } from './MaterialitySelect';
 import { IndicatorSelect } from './IndicatorSelect';
+import { ADDITIONAL_INDICATOR_ICONS } from './indicatorIcons';
 import { CollapsibleFormBlock, RecommendationClosureSection } from './RecommendationClosureSection';
 import { FileAttachmentsPanel } from '../attachments/FileAttachmentsPanel';
 import {
@@ -628,6 +629,7 @@ export function RecommendationFormPage() {
               value={additionalIndicator}
               onChange={(value) => setAdditionalIndicator(value as RecommendationAdditionalIndicator)}
               options={ADDITIONAL_INDICATOR_OPTIONS}
+              icons={ADDITIONAL_INDICATOR_ICONS}
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
               inputClassName={[
