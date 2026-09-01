@@ -29,32 +29,30 @@ type SquareCirclesChartProps = {
 type CircleSlot = {
   x: number;
   y: number;
-  /** Percent label sits on the outer side of the 2×2 grid. */
-  outward: 'left' | 'right';
 };
 
-const VIEW_WIDTH = 140;
-const VIEW_HEIGHT = 100;
-const MAX_RADIUS = 18;
-const LABEL_GAP = 4.2;
+const VIEW_WIDTH = 200;
+const VIEW_HEIGHT = 76;
+const MAX_RADIUS = 22;
+const CIRCLE_Y = 42;
+const SIDE_PAD = 28;
+const LABEL_GAP = 3.8;
 const LABEL_FONT_SIZE = 6.6;
 const LABEL_COLOR = '#111827';
 
-// Largest → smallest: top-left, bottom-left, top-right, bottom-right.
-// Center gap of 38 keeps max-size circles from overlapping while packing the cluster.
-const TARGET_SLOTS: CircleSlot[] = [
-  { x: 53, y: 33, outward: 'left' },
-  { x: 53, y: 71, outward: 'left' },
-  { x: 91, y: 33, outward: 'right' },
-  { x: 91, y: 71, outward: 'right' },
-];
+function slotForIndex(index: number, count: number): CircleSlot {
+  if (count <= 1) {
+    return { x: VIEW_WIDTH / 2, y: CIRCLE_Y };
+  }
+  const usable = VIEW_WIDTH - SIDE_PAD * 2;
+  return { x: SIDE_PAD + (usable * index) / (count - 1), y: CIRCLE_Y };
+}
 
 function percentLabelPosition(slot: CircleSlot, radius: number) {
-  const isLeft = slot.outward === 'left';
   return {
-    x: isLeft ? slot.x - radius - LABEL_GAP : slot.x + radius + LABEL_GAP,
-    y: slot.y,
-    textAnchor: (isLeft ? 'end' : 'start') as 'end' | 'start',
+    x: slot.x,
+    y: slot.y - radius - LABEL_GAP,
+    textAnchor: 'middle' as const,
   };
 }
 
@@ -81,20 +79,6 @@ export function FocusableSquareCirclesChart({
     return Math.max(...slices.map((item) => item.value / total));
   }, [slices, total]);
 
-  const slotsByIndex = useMemo(() => {
-    const indexed = slices.map((slice, i) => ({ i, v: slice.value }));
-    indexed.sort((a, b) => (b.v - a.v) || (a.i - b.i));
-
-    const byIndex = new Map<number, CircleSlot>();
-    indexed.forEach((entry, rank) => {
-      const slot = TARGET_SLOTS[rank];
-      if (slot) {
-        byIndex.set(entry.i, slot);
-      }
-    });
-    return byIndex;
-  }, [slices]);
-
   const colors = useMemo(() => {
     return slices.map((item, index) => item.color ?? palette[index % palette.length]);
   }, [palette, slices]);
@@ -119,7 +103,7 @@ export function FocusableSquareCirclesChart({
           aria-label="Квадратная визуализация распределения"
         >
           {slices.map((item, index) => {
-            const slot = slotsByIndex.get(index) ?? TARGET_SLOTS[0];
+            const slot = slotForIndex(index, slices.length);
             const percent = total > 0 ? (item.value / total) * 100 : 0;
             const share = total > 0 ? item.value / total : 0;
             const radius = maxShare > 0 ? MAX_RADIUS * Math.sqrt(share / maxShare) : 0;
@@ -162,7 +146,7 @@ export function FocusableSquareCirclesChart({
                   y={label.y}
                   fill={LABEL_COLOR}
                   textAnchor={label.textAnchor}
-                  dominantBaseline="central"
+                  dominantBaseline="auto"
                   fontSize={LABEL_FONT_SIZE}
                   fontWeight={700}
                   style={{ pointerEvents: 'none' }}
@@ -176,7 +160,7 @@ export function FocusableSquareCirclesChart({
       </div>
 
       <div
-        className="mx-auto grid w-max max-w-full shrink-0 grid-cols-2 justify-items-start gap-x-10 gap-y-2 px-3 pb-1 pt-0.5"
+        className="mx-auto flex w-max max-w-full shrink-0 flex-nowrap items-center justify-center gap-x-6 px-3 pb-1 pt-0.5"
         style={{
           fontSize: legendFontSize,
           fontWeight: legendFontWeight,
@@ -187,7 +171,7 @@ export function FocusableSquareCirclesChart({
           return (
             <div
               key={`${item.name}-${index}`}
-              className="grid grid-cols-[14px_auto] items-center gap-x-2"
+              className="grid shrink-0 grid-cols-[14px_auto] items-center gap-x-2 whitespace-nowrap"
             >
               <span
                 className="box-border block h-3.5 w-3.5 shrink-0 rounded-full"

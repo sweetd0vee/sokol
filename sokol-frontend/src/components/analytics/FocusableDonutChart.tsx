@@ -218,7 +218,7 @@ export function FocusableDonutChart({
             nameKey="name"
             cx="50%"
             cy="50%"
-            innerRadius={isRing ? '36%' : 0}
+            innerRadius={isRing ? '48%' : 0}
             outerRadius="72%"
             startAngle={isRing ? 90 : 0}
             endAngle={isRing ? -270 : 360}
@@ -246,6 +246,7 @@ export function FocusableDonutChart({
               const strokeColor = isRing
                 ? (isActive ? '#0f172a' : '#ffffff')
                 : (isActive ? '#0f172a' : 'none');
+              const hoverFilter = isActive ? 'brightness(1.04)' : undefined;
               return (
                 <Cell
                   key={entry.name}
@@ -257,12 +258,10 @@ export function FocusableDonutChart({
                   style={{
                     cursor: 'pointer',
                     filter: isRing
-                      ? (isActive ? 'brightness(1.04)' : undefined)
+                      ? hoverFilter
                       : isDimmed
                         ? 'brightness(0.72) saturate(0.85)'
-                        : isActive
-                          ? 'brightness(1.04)'
-                          : undefined,
+                        : hoverFilter,
                     transition: 'fill-opacity 160ms ease, filter 160ms ease',
                     outline: 'none',
                   }}
