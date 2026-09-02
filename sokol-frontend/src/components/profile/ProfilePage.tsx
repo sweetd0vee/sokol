@@ -89,7 +89,7 @@ export function ProfilePage() {
               {isAvatarPickerOpen && (
                 <div
                   id="profile-avatar-picker"
-                  className="grid w-fit grid-cols-6 justify-items-center gap-2.5 sm:gap-3"
+                  className="flex w-fit flex-col items-center gap-3"
                   role="listbox"
                   aria-label="Предложенные аватары"
                 >
@@ -104,7 +104,7 @@ export function ProfilePage() {
                         aria-label={preset.label}
                         title={preset.label}
                         onClick={() => handleSelectAvatar(preset.id)}
-                        className={`relative h-16 w-16 overflow-hidden rounded-full border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sber-dark/40 sm:h-20 sm:w-20 ${
+                        className={`relative h-24 w-24 overflow-hidden rounded-full border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sber-dark/40 sm:h-28 sm:w-28 ${
                           isSelected ? 'border-sber-dark shadow-md' : 'border-transparent hover:border-sber-dark/30'
                         }`}
                       >
