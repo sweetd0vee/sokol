@@ -34,6 +34,10 @@ export type AnalyticsFilterSidebarProps = {
   isExporting: boolean;
   canExport: boolean;
   onExport: () => void;
+  onAddToConstructor?: () => void;
+  canAddToConstructor?: boolean;
+  addToConstructorCount?: number;
+  constructorAdded?: boolean;
 };
 
 function SidebarSection({ title, children }: { title: string; children: ReactNode }) {
@@ -79,6 +83,10 @@ export function AnalyticsFilterSidebar({
   isExporting,
   canExport,
   onExport,
+  onAddToConstructor,
+  canAddToConstructor = false,
+  addToConstructorCount = 0,
+  constructorAdded = false,
 }: AnalyticsFilterSidebarProps) {
   const periodSliceOptions = PERIOD_SLICE_OPTIONS.filter((option) =>
     availablePeriodSlices.includes(option.value),
@@ -212,6 +220,20 @@ export function AnalyticsFilterSidebar({
             ))}
           </select>
         </div>
+        {onAddToConstructor ? (
+          <button
+            type="button"
+            onClick={onAddToConstructor}
+            disabled={!canAddToConstructor}
+            className={`${FORM_OUTLINE_BUTTON_CLASS} mt-2.5 !w-full disabled:cursor-not-allowed disabled:opacity-50`}
+          >
+            {constructorAdded
+              ? 'Добавлено'
+              : addToConstructorCount > 0
+                ? `В конструктор (${addToConstructorCount})`
+                : 'В конструктор'}
+          </button>
+        ) : null}
       </section>
     </aside>
   );

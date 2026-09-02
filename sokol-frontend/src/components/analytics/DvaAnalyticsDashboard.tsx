@@ -31,6 +31,9 @@ import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
 import type { PeriodGranularity } from '../../utils/checkAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
+import { useAddToConstructor } from './constructor/useAddToConstructor';
+import { buildDvaConstructorDrafts } from './constructor/buildConstructorWidgets';
+import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
 
 const AUDITOR_LOAD_BAR_LIMIT = 10;
 
@@ -69,6 +72,7 @@ export function DvaAnalyticsDashboard() {
   } = useAnalyticsDashboardSession();
 
   const exportSections = useExportSections(DVA_EXPORT_SECTIONS.map((section) => section.id) as DvaExportSectionId[]);
+  const { addToConstructor, justAdded } = useAddToConstructor();
 
   const bootstrapQuery = useQuery({
     queryKey: queryKeys.analytics.dvaBootstrap,
@@ -201,6 +205,35 @@ export function DvaAnalyticsDashboard() {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleAddToConstructor = () => {
+    addToConstructor(
+      buildDvaConstructorDrafts({
+        selectedSections: exportSections.selectedSections,
+        filterCaption: buildConstructorFilterCaption({
+          periodSliceLabel,
+          periods: activePeriodValues,
+          auditors: selectedAuditors,
+          departments: selectedDepartments,
+        }),
+        checkTotal: checkSummary.total,
+        recTotal: recSummary.total,
+        auditorCount: auditorLoad.length,
+        departmentCount: departmentMap.length,
+        completionShare,
+        recCompletionRate: recSummary.completionRate,
+        auditorChecksBars,
+        auditorChecksBarColors,
+        auditorRecommendationsBars,
+        auditorRecommendationsBarColors,
+        documentReadiness,
+        recSummaryFilled: recSummary.withCompletionDate,
+        recSummaryEmpty: Math.max(recSummary.total - recSummary.withCompletionDate, 0),
+        auditorChecksTreemap,
+        auditorRecommendationsTreemap,
+      }),
+    );
   };
 
   const cards = useMemo<AnalyticsGridCard[]>(
@@ -405,6 +438,10 @@ export function DvaAnalyticsDashboard() {
         isExporting={isExporting}
         canExport={filteredChecksTotal > 0 || filteredRecommendationsTotal > 0}
         onExport={handleExport}
+        onAddToConstructor={handleAddToConstructor}
+        canAddToConstructor={exportSections.selectedCount > 0}
+        addToConstructorCount={exportSections.selectedCount}
+        constructorAdded={justAdded}
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[

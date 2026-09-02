@@ -50,6 +50,9 @@ import {
   type StatusMatrixCountSortConfig,
 } from '../../utils/statusMatrix';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
+import { useAddToConstructor } from './constructor/useAddToConstructor';
+import { buildMonitoringConstructorDrafts } from './constructor/buildConstructorWidgets';
+import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
 import { completeNamedDistribution, distributionHasValues } from '../../utils/analyticsDistribution';
 
 const EMPTY_ADDITIONAL_STATUS_DISTRIBUTION: never[] = [];
@@ -113,6 +116,7 @@ export function MonitoringAnalyticsDashboard() {
   const exportSections = useExportSections(
     MONITORING_EXPORT_SECTIONS.map((section) => section.id) as MonitoringExportSectionId[],
   );
+  const { addToConstructor, justAdded } = useAddToConstructor();
 
   const bootstrapQuery = useQuery({
     queryKey: queryKeys.analytics.monitoringBootstrap,
@@ -276,6 +280,30 @@ export function MonitoringAnalyticsDashboard() {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleAddToConstructor = () => {
+    addToConstructor(
+      buildMonitoringConstructorDrafts({
+        selectedSections: exportSections.selectedSections,
+        filterCaption: buildConstructorFilterCaption({
+          periodSliceLabel,
+          periods: activePeriodValues,
+          auditors: selectedAuditors,
+          departments: selectedDepartments,
+        }),
+        summary,
+        coloredStatusDistribution,
+        coloredAdditionalStatusDistribution,
+        deadlineExtensionsByCheck,
+        deadlineExtensionColors,
+        deadlineExtensionShortNames: Object.fromEntries(deadlineExtensionShortNames),
+        completedDuringAuditByCheck,
+        completedDuringAuditColors,
+        completedDuringAuditShortNames: Object.fromEntries(completedDuringAuditShortNames),
+        statusMatrix,
+      }),
+    );
   };
 
   const cards = useMemo<AnalyticsGridCard[]>(
@@ -545,6 +573,10 @@ export function MonitoringAnalyticsDashboard() {
         isExporting={isExporting}
         canExport={filteredTotal > 0}
         onExport={handleExport}
+        onAddToConstructor={handleAddToConstructor}
+        canAddToConstructor={exportSections.selectedCount > 0}
+        addToConstructorCount={exportSections.selectedCount}
+        constructorAdded={justAdded}
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[

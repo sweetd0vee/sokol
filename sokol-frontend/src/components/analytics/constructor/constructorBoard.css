@@ -1,0 +1,19 @@
+.constructor-grid .react-grid-item.react-grid-placeholder {
+  background: rgb(0 51 102 / 0.12);
+  border-radius: 0.5rem;
+}
+
+.constructor-grid .react-resizable-handle {
+  opacity: 0.55;
+}
+
+.constructor-grid .react-grid-item:hover .react-resizable-handle,
+.constructor-grid .react-grid-item:focus-within .react-resizable-handle {
+  opacity: 1;
+}
+
+body.constructor-export-mode .constructor-widget-actions,
+body.constructor-export-mode .constructor-drag-handle,
+body.constructor-export-mode .react-resizable-handle {
+  visibility: hidden !important;
+}

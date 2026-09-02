@@ -54,6 +54,9 @@ import {
 import { completeNamedDistribution, distributionHasValues } from '../../utils/analyticsDistribution';
 import { registerDashboardChart } from '../../utils/dashboardChartRegistry';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
+import { useAddToConstructor } from './constructor/useAddToConstructor';
+import { buildRecommendationsConstructorDrafts } from './constructor/buildConstructorWidgets';
+import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
 import {
   DEFAULT_MATERIALITY_MATRIX_COUNT_SORT,
   sortMaterialityMatrixRows,
@@ -170,6 +173,7 @@ export function RecommendationsAnalyticsDashboard() {
   const exportSections = useExportSections(
     RECOMMENDATION_EXPORT_SECTIONS.map((section) => section.id) as RecommendationExportSectionId[],
   );
+  const { addToConstructor, justAdded } = useAddToConstructor();
 
   const bootstrapQuery = useQuery({
     queryKey: queryKeys.analytics.recommendationsBootstrap,
@@ -362,6 +366,27 @@ export function RecommendationsAnalyticsDashboard() {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleAddToConstructor = () => {
+    addToConstructor(
+      buildRecommendationsConstructorDrafts({
+        selectedSections: exportSections.selectedSections,
+        filterCaption: buildConstructorFilterCaption({
+          periodSliceLabel,
+          periods: activePeriodValues,
+          auditors: selectedAuditors,
+          departments: selectedDepartments,
+        }),
+        summary,
+        universeTotal,
+        completedPeriodSeries,
+        coloredMaterialityDistribution,
+        objectDistributionTop,
+        materialityMatrix,
+        granularity,
+      }),
+    );
   };
 
   const cards = useMemo<AnalyticsGridCard[]>(
@@ -701,6 +726,10 @@ export function RecommendationsAnalyticsDashboard() {
         isExporting={isExporting}
         canExport={filteredTotal > 0}
         onExport={handleExport}
+        onAddToConstructor={handleAddToConstructor}
+        canAddToConstructor={exportSections.selectedCount > 0}
+        addToConstructorCount={exportSections.selectedCount}
+        constructorAdded={justAdded}
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[

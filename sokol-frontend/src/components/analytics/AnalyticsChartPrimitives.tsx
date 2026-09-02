@@ -145,8 +145,8 @@ function ChartToolbar({
           type="button"
           onClick={onToggleExport}
           className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark"
-          title="В отчёт"
-          aria-label="В отчёт"
+          title="В отчёт и конструктор"
+          aria-label="В отчёт и конструктор"
           aria-pressed={Boolean(exportSelected)}
         >
           <span

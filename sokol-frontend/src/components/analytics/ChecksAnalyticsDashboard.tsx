@@ -32,6 +32,9 @@ import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/
 import { labelFromPeriodKey } from '../../utils/analyticsPeriod';
 import type { PeriodGranularity } from '../../utils/checkAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
+import { useAddToConstructor } from './constructor/useAddToConstructor';
+import { buildChecksConstructorDrafts } from './constructor/buildConstructorWidgets';
+import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
 
 const EMPTY_CHECKS_SUMMARY = { total: 0, not_started: 0, in_progress: 0, completed: 0 };
 const EMPTY_FLOW_SERIES: never[] = [];
@@ -103,6 +106,7 @@ export function ChecksAnalyticsDashboard() {
   const exportSections = useExportSections(
     CHECK_EXPORT_SECTIONS.map((section) => section.id) as CheckExportSectionId[],
   );
+  const { addToConstructor, justAdded } = useAddToConstructor();
 
   const bootstrapQuery = useQuery({
     queryKey: queryKeys.analytics.checksBootstrap,
@@ -246,6 +250,31 @@ export function ChecksAnalyticsDashboard() {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleAddToConstructor = () => {
+    addToConstructor(
+      buildChecksConstructorDrafts({
+        selectedSections: exportSections.selectedSections,
+        filterCaption: buildConstructorFilterCaption({
+          periodSliceLabel,
+          periods: activePeriodValues,
+          auditors: selectedAuditors,
+          departments: selectedDepartments,
+        }),
+        summary,
+        universeTotal,
+        completionShare,
+        flowSeries,
+        flowColors,
+        granularity,
+        viewDistribution,
+        viewColors,
+        typeDistribution,
+        departmentMapTop,
+        effectivenessMatrix,
+      }),
+    );
   };
 
   const cards = useMemo<AnalyticsGridCard[]>(
@@ -489,6 +518,10 @@ export function ChecksAnalyticsDashboard() {
         isExporting={isExporting}
         canExport={filteredTotal > 0 && !analyticsQuery.isFetching}
         onExport={handleExport}
+        onAddToConstructor={handleAddToConstructor}
+        canAddToConstructor={exportSections.selectedCount > 0}
+        addToConstructorCount={exportSections.selectedCount}
+        constructorAdded={justAdded}
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[
