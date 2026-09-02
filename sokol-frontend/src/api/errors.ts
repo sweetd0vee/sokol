@@ -129,7 +129,55 @@ async function readResponseBody(data: unknown): Promise<string> {
   return '';
 }
 
+function errorResponseBlob(error: unknown): Blob | null {
+  if (axios.isAxiosError(error) && error.response?.data instanceof Blob) {
+    return error.response.data;
+  }
+  if (isApiError(error) && error.details instanceof Blob) {
+    return error.details;
+  }
+  return null;
+}
+
+async function messageFromErrorBody(text: string, status?: number): Promise<string> {
+  if (!text.trim()) {
+    if (status === 500 || status === 502 || status === 503) {
+      return API_UNAVAILABLE_HINT;
+    }
+    return status ? `Ошибка API (HTTP ${status}).` : 'Ошибка API.';
+  }
+
+  try {
+    const payload = JSON.parse(text) as ErrorPayload;
+    const payloadMessage = formatPayloadMessage(payload);
+    if (payloadMessage) {
+      return payloadMessage;
+    }
+  } catch {
+    return text;
+  }
+
+  return text;
+}
+
 export async function getBlobErrorMessage(error: unknown): Promise<string | null> {
+  if (isApiError(error)) {
+    if (error.code === 'timeout') {
+      return error.message;
+    }
+    if (error.code === 'network_error') {
+      return error.message || API_UNAVAILABLE_HINT;
+    }
+    const blob = errorResponseBlob(error);
+    if (blob) {
+      return messageFromErrorBody(await blob.text(), error.status);
+    }
+    if (error.message && !/^HTTP \d+$/.test(error.message)) {
+      return error.message;
+    }
+    return error.status ? `Ошибка API (HTTP ${error.status}).` : null;
+  }
+
   if (!axios.isAxiosError(error)) {
     return null;
   }
@@ -141,22 +189,7 @@ export async function getBlobErrorMessage(error: unknown): Promise<string | null
   }
 
   const status = error.response.status;
-  const text = await readResponseBody(error.response.data);
-
-  if (!text.trim()) {
-    if (status === 500 || status === 502 || status === 503) {
-      return API_UNAVAILABLE_HINT;
-    }
-    return `Ошибка API (HTTP ${status}).`;
-  }
-
-  try {
-    const payload = JSON.parse(text) as ErrorPayload;
-    const payloadMessage = formatPayloadMessage(payload);
-    if (payloadMessage) {return payloadMessage;}
-  } catch {
-    return text;
-  }
-
-  return text;
+  const blob = errorResponseBlob(error);
+  const text = blob ? await blob.text() : await readResponseBody(error.response.data);
+  return messageFromErrorBody(text, status);
 }

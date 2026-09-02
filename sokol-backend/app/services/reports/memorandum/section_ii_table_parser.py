@@ -10,7 +10,7 @@ from app.services.reports.memorandum.models import (
     MemorandumSource,
 )
 from app.services.reports.section_ii import xml_utils
-from app.services.reports.section_ii.docx_blocks import load_document_xml
+from app.services.reports.section_ii.docx_blocks import get_cell_text, load_document_xml
 from app.services.reports.section_ii.field_parser import int_to_roman
 from app.services.reports.section_ii.patterns import OBS_START_RE, SROK_TAIL_RE, W_NS
 
@@ -37,23 +37,44 @@ OBSERVATION_PREFIX_RE = re.compile(
 )
 
 
+_ROW_WRAPPER_TAGS = frozenset({"sdt", "sdtContent", "customXml", "smartTag", "ins", "del"})
+
+
+def _local_tag(el) -> str:
+    tag = getattr(el, "tag", "") or ""
+    return tag.split("}")[-1] if "}" in tag else tag
+
+
+def _iter_wrapped(el, target_tag: str) -> List[object]:
+    found: List[object] = []
+
+    def walk(node) -> None:
+        for child in node:
+            tag = _local_tag(child)
+            if tag == target_tag:
+                found.append(child)
+            elif tag == "tbl":
+                continue
+            elif tag in _ROW_WRAPPER_TAGS:
+                walk(child)
+
+    walk(el)
+    return found
+
+
+def _table_rows(table) -> List[object]:
+    return _iter_wrapped(table, "tr")
+
+
 def _cell_texts(tr) -> List[str]:
-    texts: List[str] = []
-    for tc in tr.findall(f"./{{{W_NS}}}tc"):
-        parts: List[str] = []
-        for node in tc.iter(f"{{{W_NS}}}t"):
-            if node.text:
-                parts.append(node.text)
-        texts.append("".join(parts).strip())
-    return texts
+    return [get_cell_text(tc).strip() for tc in _iter_wrapped(tr, "tc")]
 
 
 def _find_section_ii_table(body) -> Optional[object]:
-    for btype, el in xml_utils.get_blocks_from_xml(body):
-        if btype != "tbl":
-            continue
+    header = SECTION2_TABLE_HEADER.lower()
+    for el in body.iter(f"{{{W_NS}}}tbl"):
         text = xml_utils.get_text_from_element(el)
-        if SECTION2_TABLE_HEADER.lower() in text.lower():
+        if header in text.lower():
             return el
     return None
 
@@ -196,7 +217,7 @@ def parse_section_ii_for_memorandum(file_path: str) -> Tuple[Optional[Memorandum
     group_index: dict = {}
     current_observation_name = ""
 
-    for tr in table.findall(f"./{{{W_NS}}}tr"):
+    for tr in _table_rows(table):
         cells = _cell_texts(tr)
         if not cells:
             continue

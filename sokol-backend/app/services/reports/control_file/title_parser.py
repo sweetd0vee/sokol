@@ -138,16 +138,59 @@ def _lines_from_paragraph_block(paragraph) -> List[str]:
     return _lines_from_paragraph(paragraph)
 
 
+_TITLE_STOP_LINE_RE = re.compile(
+    r"^(?:"
+    r"содержание"
+    r"|разделы\s+аудиторского"
+    r"|(?:раздел\s+)?(?:iv|iii|ii|i|1|2|3)\s*[.)–—\-:]"
+    r"|аудиторское\s+мнение"
+    r")",
+    re.IGNORECASE,
+)
+
+
+def _is_title_stop_line(line: str) -> bool:
+    normalized = re.sub(r"\s+", " ", (line or "").strip())
+    if not normalized:
+        return False
+    lowered = normalized.lower()
+    if _TITLE_STOP_LINE_RE.match(lowered):
+        return True
+    return "основные нарушения и недостатки" in lowered
+
+
 def _collect_title_page_lines(blocks: Iterable[tuple[str, object]]) -> List[str]:
-    lines: List[str] = []
+    pages: List[List[str]] = [[]]
+    stopped = False
     for btype, el in blocks:
         if btype == "p":
-            _extend_unique_lines(lines, _lines_from_paragraph_block(el))
-            if xml_utils._paragraph_has_page_break(el):
-                break
+            new_lines = _lines_from_paragraph_block(el)
         elif btype == "tbl":
-            _extend_unique_lines(lines, _lines_from_table(el))
-    return lines
+            new_lines = _lines_from_table(el)
+        else:
+            continue
+
+        page = pages[-1]
+        for line in new_lines:
+            if _is_title_stop_line(line):
+                stopped = True
+                break
+            _extend_unique_lines(page, [line])
+        if stopped:
+            break
+        if btype == "p" and xml_utils._paragraph_has_page_break(el):
+            if _build_check_name_from_lines(page):
+                break
+            pages.append([])
+
+    for page in pages:
+        if _build_check_name_from_lines(page):
+            return page
+
+    merged: List[str] = []
+    for page in pages:
+        _extend_unique_lines(merged, page)
+    return merged
 
 
 def _remove_immediate_repetition(text: str) -> str:

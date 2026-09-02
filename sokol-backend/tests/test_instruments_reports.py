@@ -114,3 +114,62 @@ class SectionIIApiTests(unittest.TestCase):
                 files={"file": ("report.docx", b"12345", DOCX_MIME)},
             )
         self.assertEqual(response.status_code, 413)
+
+
+class ControlFileApiTests(unittest.TestCase):
+    def setUp(self) -> None:
+        async def _fake_session():
+            yield AsyncMock()
+
+        app.dependency_overrides[get_db_session] = _fake_session
+        override_current_user()
+        self.client = TestClient(app)
+
+    def tearDown(self) -> None:
+        app.dependency_overrides.clear()
+        self.client.close()
+
+    def test_control_file_streams_xlsx(self) -> None:
+        def fake_generate(input_path, output_path, *, check_leader, check_date):
+            self.assertEqual(check_leader, "Иванов И.И.")
+            self.assertEqual(check_date, "02.09.2026")
+            Path(output_path).write_bytes(b"PK-xlsx")
+            return output_path, None
+
+        with patch(
+            "app.api.v1.endpoints.instruments_reports.generate_control_file_template",
+            side_effect=fake_generate,
+        ):
+            response = self.client.post(
+                "/api/v1/tools/control-file",
+                files={"file": ("report.docx", b"PK-source", DOCX_MIME)},
+                data={"check_leader": "Иванов И.И.", "check_date": "2026-09-02"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b"PK-xlsx")
+        self.assertIn("report_control.xlsx", response.headers["content-disposition"])
+
+    def test_control_file_returns_parse_error_detail(self) -> None:
+        with patch(
+            "app.api.v1.endpoints.instruments_reports.generate_control_file_template",
+            return_value=(None, "В документе не найден Раздел II. Загрузите АЗ с заполненным Разделом II."),
+        ):
+            response = self.client.post(
+                "/api/v1/tools/control-file",
+                files={"file": ("report.docx", b"PK-source", "application/zip")},
+                data={"check_leader": "Иванов И.И.", "check_date": "02.09.2026"},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Раздел II", response.json()["detail"])
+
+    def test_control_file_rejects_missing_leader(self) -> None:
+        response = self.client.post(
+            "/api/v1/tools/control-file",
+            files={"file": ("report.docx", b"PK-source", DOCX_MIME)},
+            data={"check_leader": "  ", "check_date": "2026-09-02"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("руководителя", response.json()["detail"].lower())
+

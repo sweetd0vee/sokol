@@ -80,4 +80,22 @@ describe('getBlobErrorMessage', () => {
 
     await expect(getBlobErrorMessage(error)).resolves.toBe('Раздел II не найден.');
   });
+
+  it('extracts FastAPI detail after the interceptor wrapped a blob 400', async () => {
+    const axiosError = new AxiosError('Bad Request');
+    axiosError.response = {
+      status: 400,
+      data: new Blob(
+        [JSON.stringify({ detail: 'В документе не найден Раздел II. Загрузите АЗ с заполненным Разделом II.' })],
+        { type: 'application/json' },
+      ),
+      statusText: 'Bad Request',
+      headers: {},
+      config: {} as never,
+    };
+
+    await expect(getBlobErrorMessage(toApiError(axiosError))).resolves.toBe(
+      'В документе не найден Раздел II. Загрузите АЗ с заполненным Разделом II.',
+    );
+  });
 });

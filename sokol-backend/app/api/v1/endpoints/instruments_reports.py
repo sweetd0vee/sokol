@@ -29,7 +29,6 @@ DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.docu
 DOCX_EXT = ".docx"
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 XLSX_EXT = ".xlsx"
-ALLOWED_MIME = {DOCX_MIME, "application/octet-stream"}
 UPLOAD_CHUNK_SIZE = 256 * 1024
 
 
@@ -51,8 +50,6 @@ def _validate_docx_upload(file: UploadFile) -> None:
     filename = file.filename or ""
     if not filename.lower().endswith(DOCX_EXT):
         raise HTTPException(status_code=400, detail="Файл должен быть в формате .docx.")
-    if file.content_type and file.content_type not in ALLOWED_MIME:
-        raise HTTPException(status_code=400, detail="Неверный MIME-тип файла.")
 
 
 async def _save_upload_to_temp(file: UploadFile) -> Path:

@@ -130,6 +130,24 @@ class ControlFileGeneratorTest(unittest.TestCase):
             self.assertIsNone(error)
             self.assertEqual(title, "Комплексный аудит административно-хозяйственных процессов")
 
+    def test_parse_title_skips_boilerplate_cover_page(self):
+        check_title = "Комплексный аудит административно-хозяйственных процессов"
+        with tempfile.TemporaryDirectory() as tmp:
+            az_path = Path(tmp) / "az.docx"
+            doc = Document()
+            doc.add_paragraph("АУДИТОРСКОЕ ЗАКЛЮЧЕНИЕ")
+            cover = doc.add_paragraph("Департамент внутреннего аудита")
+            cover.add_run().add_break(WD_BREAK.PAGE)
+            title_paragraph = doc.add_paragraph(check_title)
+            title_paragraph.add_run().add_break(WD_BREAK.PAGE)
+            doc.add_paragraph("Содержание")
+            doc.add_paragraph("I. Аудиторское мнение")
+            doc.save(az_path)
+
+            title, error = parse_az_title_from_docx(str(az_path))
+            self.assertIsNone(error)
+            self.assertEqual(title, check_title)
+
     def test_generate_control_file_from_az_with_section_ii(self):
         with tempfile.TemporaryDirectory() as tmp:
             az_path = Path(tmp) / "az.docx"

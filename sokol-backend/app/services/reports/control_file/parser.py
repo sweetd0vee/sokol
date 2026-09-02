@@ -15,6 +15,7 @@ from app.services.reports.memorandum.section_ii_table_parser import (
     _find_section_ii_table,
     _parse_audit_object_header,
     _split_body_into_recommendations,
+    _table_rows,
 )
 from app.services.reports.section_ii.docx_blocks import load_document_xml
 from app.services.reports.section_ii.field_parser import SROK_TAIL_RE
@@ -67,7 +68,7 @@ def parse_section_ii_for_control_file(
 
     rows: List[ControlFileRow] = []
 
-    for tr in table.findall(f"./{{{W_NS}}}tr"):
+    for tr in _table_rows(table):
         cells = _cell_texts(tr)
         if not cells:
             continue

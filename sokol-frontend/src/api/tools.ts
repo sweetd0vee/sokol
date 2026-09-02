@@ -57,9 +57,20 @@ export async function generateControlFile(
 }
 
 export async function downloadControlFileTemplate(): Promise<Blob> {
-  const response = await api.get('/api/v1/tools/control-file-template', {
-    responseType: 'blob',
-    timeout: DOCX_TOOL_TIMEOUT_MS,
-  });
-  return response.data;
+  try {
+    const response = await api.get('/api/v1/tools/control-file-template', {
+      responseType: 'blob',
+      timeout: DOCX_TOOL_TIMEOUT_MS,
+    });
+    return response.data;
+  } catch (error) {
+    if (toApiError(error).code === 'timeout') {
+      throw new Error(DOCX_TIMEOUT_MESSAGE);
+    }
+    const message = await getBlobErrorMessage(error);
+    if (message) {
+      throw new Error(message);
+    }
+    throw error;
+  }
 }

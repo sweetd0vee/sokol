@@ -16,8 +16,11 @@ api.interceptors.request.use((config) => {
   }
   // Let the browser set multipart boundary for FormData.
   if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
-    if (config.headers && 'Content-Type' in config.headers) {
-      delete config.headers['Content-Type'];
+    const headers = config.headers;
+    if (headers && typeof headers.delete === 'function') {
+      headers.delete('Content-Type');
+    } else if (headers) {
+      delete headers['Content-Type'];
     }
   }
   return config;
