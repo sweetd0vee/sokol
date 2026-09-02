@@ -14,11 +14,13 @@ from app.services.reports.control_file.generator import (
     COL_DEADLINE,
     COL_RECOMMENDATION,
     COL_RESPONSIBLE,
+    TEMPLATE_PATH,
     format_responsible_from_pairs,
     generate_control_file_template,
 )
 from app.services.reports.control_file.title_parser import parse_az_title_from_docx
 from app.services.reports.section_ii.docx_generator import process_document
+from app.utils.paths import CONTROL_FILE_TEMPLATE_NAME, get_control_file_template_path
 
 
 def _add_bordered_paragraph(doc: Document, text: str) -> None:
@@ -71,6 +73,14 @@ def _build_az_without_section_ii(path: Path, *, title: str) -> None:
 
 
 class ControlFileGeneratorTest(unittest.TestCase):
+    def test_header_template_file_exists(self):
+        self.assertEqual(TEMPLATE_PATH.name, CONTROL_FILE_TEMPLATE_NAME)
+        self.assertTrue(
+            TEMPLATE_PATH.is_file(),
+            msg=f"Шаблон файла контроля не найден: {TEMPLATE_PATH}",
+        )
+        self.assertTrue(get_control_file_template_path().is_file())
+
     def test_parse_title_removes_duplicated_glued_title_and_footer(self):
         check_title = (
             "Тематическая проверка Аудит процессов У.3.36 «Управление объектами недвижимости "

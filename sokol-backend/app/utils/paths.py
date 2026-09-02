@@ -26,6 +26,21 @@ def get_backend_data_dir() -> Path:
     return _BACKEND_ROOT / "data"
 
 
+CONTROL_FILE_TEMPLATE_NAME = "файл контроля шаблон (шапка).xlsx"
+
+
+def get_control_file_template_path() -> Path:
+    """XLSX-шаблон шапки файла контроля (локально, backend или Docker SOKOL_DATA_DIR)."""
+    candidates = (
+        get_backend_data_dir() / CONTROL_FILE_TEMPLATE_NAME,
+        get_repo_data_dir() / CONTROL_FILE_TEMPLATE_NAME,
+    )
+    for path in candidates:
+        if path.is_file():
+            return path
+    return candidates[0]
+
+
 def get_materiality_images_dir() -> Path:
     """Каталог PNG для уровней существенности в генераторе Раздела II."""
     candidates = (

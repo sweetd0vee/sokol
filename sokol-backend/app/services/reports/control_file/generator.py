@@ -3,7 +3,6 @@
 
 import re
 import shutil
-from pathlib import Path
 from typing import List, Optional, Tuple
 
 from openpyxl import load_workbook
@@ -13,8 +12,9 @@ from openpyxl.utils import get_column_letter
 from app.services.reports.control_file.parser import parse_section_ii_for_control_file
 from app.services.reports.control_file.title_parser import parse_az_title_from_docx
 from app.services.reports.memorandum.parser import document_has_section_ii
+from app.utils.paths import get_control_file_template_path
 
-TEMPLATE_PATH = Path(__file__).resolve().parents[4] / "data" / "файл контроля шаблон (шапка).xlsx"
+TEMPLATE_PATH = get_control_file_template_path()
 
 COL_CHECK_NAME = 4
 COL_CHECK_DATE = 2
