@@ -32,6 +32,7 @@ import {
   MONITORING_BAR_BLUE_SCALE,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   VALUE_BLUE_SCALE,
+  VALUE_EMERALD_SCALE,
   VALUE_GRAY_SCALE,
 } from '../analyticsPalette';
 import {
@@ -345,7 +346,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
     return (
       <FocusableTreemapChart
         data={payload.data}
-        palette={payload.palette === 'gray' ? VALUE_GRAY_SCALE : VALUE_BLUE_SCALE}
+        palette={payload.palette === 'gray' ? VALUE_GRAY_SCALE : VALUE_EMERALD_SCALE}
         colorByValue
       />
     );

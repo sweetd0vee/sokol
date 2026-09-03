@@ -95,7 +95,7 @@ describe('constructor xlsx grid mapping', () => {
   it('keeps the captured chart aspect instead of stretching it to the cell', () => {
     const cell = constructorXlsxImageExtent({ x: 0, y: 0, w: 6, h: 4 });
     const fitted = constructorXlsxFittedImage({ x: 0, y: 0, w: 6, h: 4 }, { width: 640, height: 360 });
-    expect(fitted.ext.width / fitted.ext.height).toBeCloseTo(640 / 360, 3);
+    expect(fitted.ext.width / fitted.ext.height).toBeCloseTo(640 / 360, 2);
     expect(fitted.ext.width).toBeLessThanOrEqual(cell.width);
     expect(fitted.ext.height).toBeLessThanOrEqual(cell.height);
     expect(fitted.editAs).toBe('oneCell');

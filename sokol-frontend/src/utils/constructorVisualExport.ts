@@ -1,19 +1,7 @@
 /**
  * Constructor board export: one visual sheet matching the assembled dashboard.
  */
-import {
-  AlignmentType,
-  Document,
-  HeadingLevel,
-  ImageRun,
-  Packer,
-  Paragraph,
-  Table,
-  TableCell,
-  TableRow,
-  TextRun,
-  WidthType,
-} from 'docx';
+import { Packer } from 'docx';
 import { toPng } from 'html-to-image';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
@@ -22,6 +10,8 @@ import type { AnalyticsExportFormat } from './analyticsExport';
 import { captureDashboardCharts, chartHasPngPayload } from './dashboardChartRegistry';
 import type { ConstructorWidget } from '../components/analytics/constructor/constructorTypes';
 import { CONSTRUCTOR_GRID_COLS } from '../components/analytics/constructor/constructorLayout';
+import { buildConstructorDashboardHtml } from './constructorHtmlExport';
+import { buildConstructorDashboardDocument } from './constructorDocxExport';
 import { buildConstructorDashboardWorkbook } from './constructorXlsxLayout';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
@@ -30,19 +20,6 @@ function stamp() {
   const now = new Date();
   const pad = (value: number) => String(value).padStart(2, '0');
   return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
-}
-
-function dataUrlToBase64(dataUrl: string): string {
-  return dataUrl.split(',')[1] ?? '';
-}
-
-function dataUrlToUint8Array(dataUrl: string): Uint8Array {
-  const binary = window.atob(dataUrlToBase64(dataUrl));
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-  return bytes;
 }
 
 function triggerDownload(blob: Blob, filename: string) {
@@ -75,13 +52,16 @@ function fitImageSize(width: number, height: number, maxWidth: number, maxHeight
   };
 }
 
-async function captureConstructorWidgetCharts(widgets: ConstructorWidget[]) {
+async function captureConstructorWidgetCharts(
+  widgets: ConstructorWidget[],
+  options?: { skipPng?: boolean },
+) {
   document.body.classList.add('constructor-export-mode');
   try {
     await delay(80);
     return await captureDashboardCharts(
       widgets.map((widget) => widget.instanceId),
-      { skipPng: false },
+      { skipPng: options?.skipPng ?? false },
     );
   } finally {
     document.body.classList.remove('constructor-export-mode');
@@ -185,6 +165,13 @@ export async function exportConstructorDashboard(options: {
   const title = options.title?.trim() || 'Конструктор отчёта';
   const filenamePrefix = fileSafeName(title);
 
+  if (format === 'html') {
+    const captures = await captureConstructorWidgetCharts(widgets, { skipPng: true });
+    const html = buildConstructorDashboardHtml({ title, meta, widgets, captures });
+    triggerDownload(new Blob([html], { type: 'text/html;charset=utf-8' }), `${filenamePrefix}-${stamp()}.html`);
+    return;
+  }
+
   if (format === 'xlsx') {
     const captures = await captureConstructorWidgetCharts(widgets);
     const workbook = buildConstructorDashboardWorkbook({ title, meta, widgets, captures });
@@ -196,53 +183,16 @@ export async function exportConstructorDashboard(options: {
     return;
   }
 
-  const dataUrl = await captureConstructorBoard(boardNode, widgets);
-  const size = await imageSize(dataUrl);
-
-  if (format === 'html') {
-    const metaRows = meta
-      .map(
-        ([label, value]) =>
-          `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`,
-      )
-      .join('');
-    const html = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8" />
-  <title>${escapeHtml(title)}</title>
-  <style>
-    :root { --brand: #003366; --ink: #1a2332; --line: #d7dee7; --bg: #f3f5f7; }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: var(--ink); background: var(--bg); }
-    .page { width: min(1180px, calc(100% - 32px)); margin: 24px auto 48px; }
-    .hero { background: #fff; border: 1px solid var(--line); border-top: 3px solid var(--brand); border-radius: 12px; padding: 22px 24px; margin-bottom: 14px; }
-    h1 { margin: 0; color: var(--brand); font-size: 1.6rem; }
-    .meta { background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: left; font-size: 0.9rem; }
-    th { width: 220px; color: var(--brand); }
-    .sheet { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
-    .sheet img { display: block; width: 100%; height: auto; }
-    @media print { body { background: #fff; } .page { width: 100%; margin: 0; } }
-  </style>
-</head>
-<body>
-  <div class="page">
-    <section class="hero">
-      <p style="margin:0 0 8px;letter-spacing:.12em;text-transform:uppercase;font-size:.75rem;font-weight:700;color:var(--brand)">SOKOL</p>
-      <h1>${escapeHtml(title)}</h1>
-    </section>
-    <section class="meta"><table>${metaRows}</table></section>
-    <section class="sheet">
-      <img src="${dataUrl}" alt="${escapeHtml(title)}" width="${size.width}" height="${size.height}" />
-    </section>
-  </div>
-</body>
-</html>`;
-    triggerDownload(new Blob([html], { type: 'text/html;charset=utf-8' }), `${filenamePrefix}-${stamp()}.html`);
+  if (format === 'docx') {
+    const captures = await captureConstructorWidgetCharts(widgets);
+    const doc = buildConstructorDashboardDocument({ title, meta, widgets, captures });
+    const blob = await Packer.toBlob(doc);
+    triggerDownload(blob, `${filenamePrefix}-${stamp()}.docx`);
     return;
   }
+
+  const dataUrl = await captureConstructorBoard(boardNode, widgets);
+  const size = await imageSize(dataUrl);
 
   if (format === 'pdf') {
     const pageWidth = 1122;
@@ -276,71 +226,5 @@ export async function exportConstructorDashboard(options: {
     return;
   }
 
-  if (format === 'docx') {
-    const fitted = fitImageSize(size.width, size.height, 680, 900);
-    const metaTable = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: meta.map(
-        ([label, value]) =>
-          new TableRow({
-            children: [
-              new TableCell({
-                width: { size: 28, type: WidthType.PERCENTAGE },
-                children: [new Paragraph({ children: [new TextRun({ text: label, bold: true, color: '003366' })] })],
-              }),
-              new TableCell({
-                width: { size: 72, type: WidthType.PERCENTAGE },
-                children: [new Paragraph({ children: [new TextRun({ text: value })] })],
-              }),
-            ],
-          }),
-      ),
-    });
-    const doc = new Document({
-      creator: 'SOKOL',
-      title,
-      sections: [
-        {
-          children: [
-            new Paragraph({ text: title, heading: HeadingLevel.TITLE, spacing: { after: 120 } }),
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: 'Собранный дашборд экспортирован одним листом в компоновке конструктора.',
-                  color: '64748B',
-                }),
-              ],
-              spacing: { after: 200 },
-            }),
-            metaTable,
-            new Paragraph({ spacing: { before: 240 } }),
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [
-                new ImageRun({
-                  data: dataUrlToUint8Array(dataUrl),
-                  transformation: fitted,
-                  type: 'png',
-                }),
-              ],
-            }),
-          ],
-        },
-      ],
-    });
-    const blob = await Packer.toBlob(doc);
-    triggerDownload(blob, `${filenamePrefix}-${stamp()}.docx`);
-    return;
-  }
-
   throw new Error(`Неизвестный формат экспорта: ${format}`);
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
 }

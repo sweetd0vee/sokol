@@ -75,6 +75,24 @@ export const VALUE_BLUE_SCALE = [
 ] as const;
 
 /**
+ * Emerald + blue treemap palette.
+ * Stops alternate light blue ↔ deep teal so neighbouring blocks stay distinct.
+ * The last color is emerald #0E7490 and is reserved for the largest value.
+ */
+export const VALUE_EMERALD_SCALE = [
+  '#60A5FA', // soft blue
+  '#075985', // deep teal
+  '#93C5FD', // ice blue
+  '#2563EB', // royal blue
+  '#7DD3FC', // light cyan
+  '#0369A1', // strong cyan-blue
+  '#38BDF8', // sky
+  '#1E40AF', // indigo
+  '#BAE6FD', // pale ice
+  '#0E7490', // emerald — largest
+] as const;
+
+/**
  * Sequential grey scale for the Recommendations analytics charts.
  * Values move from light to dark so bar/treemap intensity communicates magnitude.
  */
@@ -234,6 +252,40 @@ export function getValueBasedColors(
     const endIndex = Math.min(startIndex + 1, scale.length - 1);
     return interpolateColor(scale[startIndex], scale[endIndex], position - startIndex);
   });
+}
+
+/**
+ * Assigns distinct palette colors by value rank.
+ * Close values still get different stops, so treemap neighbours do not melt together.
+ * The highest value always gets the last scale color.
+ */
+export function getRankBasedColors(
+  values: number[],
+  scale: readonly string[] = VALUE_EMERALD_SCALE,
+) {
+  if (values.length === 0 || scale.length === 0) {
+    return [];
+  }
+  if (scale.length === 1) {
+    return values.map(() => scale[0]);
+  }
+
+  const ranked = values
+    .map((value, index) => ({
+      index,
+      value: Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY,
+    }))
+    .sort((left, right) => right.value - left.value || left.index - right.index);
+
+  const peak = scale[scale.length - 1];
+  const rest = scale.slice(0, -1);
+  const colors = new Array<string>(values.length);
+
+  ranked.forEach((item, rank) => {
+    colors[item.index] = rank === 0 ? peak : rest[(rank - 1) % rest.length];
+  });
+
+  return colors;
 }
 
 /**

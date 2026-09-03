@@ -9,7 +9,9 @@ import {
   MONITORING_STATUS_COLORS,
   MONITORING_VALUE_SCALE,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
+  VALUE_EMERALD_SCALE,
   getMaterialityChartColor,
+  getRankBasedColors,
 } from './analyticsPalette';
 
 describe('applyValueBasedColors', () => {
@@ -57,6 +59,17 @@ describe('applyValueBasedColors', () => {
       lastScaleColor(MONITORING_BAR_BLUE_SCALE).toUpperCase(),
     );
     expect(colored.find((item) => item.name === 'low')?.color.toUpperCase()).toBe('#0E7490');
+  });
+});
+
+describe('VALUE_EMERALD_SCALE', () => {
+  it('maps the largest treemap block to emerald and nearby values to distinct blue/teal stops', () => {
+    const colors = getRankBasedColors([87, 57, 52, 51, 48], VALUE_EMERALD_SCALE);
+
+    expect(colors[0]?.toUpperCase()).toBe('#0E7490');
+    expect(colors[1]?.toUpperCase()).toBe('#60A5FA');
+    expect(new Set(colors.map((color) => color.toUpperCase())).size).toBe(5);
+    expect(lastScaleColor(VALUE_EMERALD_SCALE).toUpperCase()).toBe('#0E7490');
   });
 });
 

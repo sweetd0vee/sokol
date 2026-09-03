@@ -26,7 +26,7 @@ import {
   getMaterialityChartColor,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
-  VALUE_BLUE_SCALE,
+  VALUE_EMERALD_SCALE,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
@@ -665,7 +665,7 @@ export function RecommendationsAnalyticsDashboard() {
             ) : (
               <FocusableTreemapChart
                 data={objectDistributionTop}
-                palette={VALUE_BLUE_SCALE}
+                palette={VALUE_EMERALD_SCALE}
                 colorByValue
               />
             )}

@@ -15,7 +15,7 @@ import {
   MONITORING_ADDITIONAL_STATUS_COLORS,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
-  VALUE_BLUE_SCALE,
+  VALUE_EMERALD_SCALE,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
@@ -294,7 +294,7 @@ export function DvaAnalyticsDashboard() {
             {auditorChecksMap.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableTreemapChart data={auditorChecksMap} palette={VALUE_BLUE_SCALE} colorByValue />
+              <FocusableTreemapChart data={auditorChecksMap} palette={VALUE_EMERALD_SCALE} colorByValue />
             )}
           </ChartCard>
         ),
