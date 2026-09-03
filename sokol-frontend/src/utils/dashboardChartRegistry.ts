@@ -617,11 +617,6 @@ async function captureNodeAsPng(
   height: number,
   pixelRatio = EXPORT_PNG_PIXEL_RATIO,
 ): Promise<string> {
-  const sizeStyle = {
-    transform: 'none',
-    width: `${width}px`,
-    height: `${height}px`,
-  };
   try {
     return await withClearedAncestorTransforms(node, async () => {
       await delay(40);
@@ -631,7 +626,7 @@ async function captureNodeAsPng(
         backgroundColor: '#ffffff',
         width,
         height,
-        style: sizeStyle,
+        style: { transform: 'none' },
         filter: (domNode) => {
           if (!(domNode instanceof HTMLElement)) {
             return true;
@@ -656,7 +651,6 @@ async function captureNodeAsPng(
     const clone = node.cloneNode(true) as HTMLElement;
     clone.style.width = `${width}px`;
     clone.style.height = `${height}px`;
-    clone.style.maxWidth = 'none';
     clone.style.transform = 'none';
     host.appendChild(clone);
     document.body.appendChild(host);
@@ -668,7 +662,6 @@ async function captureNodeAsPng(
         backgroundColor: '#ffffff',
         width,
         height,
-        style: sizeStyle,
       });
     } finally {
       host.remove();
@@ -678,12 +671,7 @@ async function captureNodeAsPng(
 
 async function captureNode(
   node: HTMLElement,
-  options?: {
-    skipPng?: boolean;
-    pixelRatio?: number;
-    width?: number;
-    height?: number;
-  },
+  options?: { skipPng?: boolean; pixelRatio?: number },
 ): Promise<{
   dataUrl: string;
   svgMarkup?: string;
@@ -693,11 +681,8 @@ async function captureNode(
 }> {
   await waitForChartPaint(node);
   const rect = node.getBoundingClientRect();
-  const cssWidth = Math.max(Math.round(rect.width), node.offsetWidth || 0, 1);
-  const cssHeight = Math.max(Math.round(rect.height), node.offsetHeight || 0, 1);
-  const width = Math.max(options?.width ?? cssWidth, 1);
-  const height = Math.max(options?.height ?? cssHeight, 1);
-  // Never let SVG/HTML enrichment fail the whole card — PNG is the safety net.
+  const width = Math.max(Math.round(rect.width), node.offsetWidth || 0, 1);
+  const height = Math.max(Math.round(rect.height), node.offsetHeight || 0, 1);
   const exportHtmlMarkup = buildExportHtmlMarkup(node);
   const svgMarkup = exportHtmlMarkup ? undefined : extractSvgMarkup(node);
   const htmlMarkup = exportHtmlMarkup ?? (isUsefulSvgMarkup(svgMarkup) ? undefined : extractHtmlMarkup(node));
@@ -733,7 +718,6 @@ export function registerDashboardChart(registration: ChartRegistration) {
 export type DashboardChartCaptureOptions = {
   skipPng?: boolean;
   pixelRatio?: number;
-  sizeForId?: (id: string, cssSize: { width: number; height: number }) => { width: number; height: number };
 };
 
 export async function captureDashboardCharts(
@@ -761,17 +745,9 @@ export async function captureDashboardCharts(
           node.scrollIntoView({ block: 'center', inline: 'nearest' });
         }
         await delay(320);
-        const cssWidth = Math.max(Math.round(node.getBoundingClientRect().width), node.offsetWidth || 0, 1);
-        const cssHeight = Math.max(Math.round(node.getBoundingClientRect().height), node.offsetHeight || 0, 1);
-        const target = options?.sizeForId?.(id, { width: cssWidth, height: cssHeight }) ?? {
-          width: cssWidth,
-          height: cssHeight,
-        };
         const captured = await captureNode(node, {
           skipPng: options?.skipPng || TABLE_EXPORT_CHART_IDS.has(id),
           pixelRatio: options?.pixelRatio,
-          width: target.width,
-          height: target.height,
         });
         const hasSvg = isUsefulSvgMarkup(captured.svgMarkup);
         const hasHtml = Boolean(captured.htmlMarkup);

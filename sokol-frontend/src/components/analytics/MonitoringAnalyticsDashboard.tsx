@@ -499,6 +499,7 @@ export function MonitoringAnalyticsDashboard() {
       {
         id: 'statusMatrix',
         defaultLayout: { x: 0, y: 9, w: 12, h: 8, minW: 6, minH: 6 },
+        expandToContent: true,
         render: () => (
           <ChartCard
             title="Матрица статусов"
@@ -506,11 +507,16 @@ export function MonitoringAnalyticsDashboard() {
             exportSectionId="statusMatrix"
             exportSelected={exportSections.isSelected('statusMatrix')}
             onToggleExport={() => exportSections.toggleSection('statusMatrix')}
+            fitContent
           >
             {statusMatrix.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <StatusMatrixChart rows={statusMatrix} onSortConfigChange={handleStatusMatrixSortChange} />
+              <StatusMatrixChart
+                rows={statusMatrix}
+                onSortConfigChange={handleStatusMatrixSortChange}
+                scrollBody={false}
+              />
             )}
           </ChartCard>
         ),
@@ -547,6 +553,7 @@ export function MonitoringAnalyticsDashboard() {
 
   return (
     <AnalyticsDashboardFrame
+      mainClassName="relative flex min-w-0 flex-1 flex-col lg:-mt-[84px] lg:self-start"
       sidebar={(
       <AnalyticsFilterSidebar
         periodSlice={periodSlice}

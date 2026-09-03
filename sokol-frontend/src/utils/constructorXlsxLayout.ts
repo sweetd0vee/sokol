@@ -16,8 +16,6 @@ export const CONSTRUCTOR_XLSX_ROWS_PER_UNIT = 4;
 export const CONSTRUCTOR_XLSX_ROW_HEIGHT = 18;
 export const CONSTRUCTOR_XLSX_IMAGE_PAD = 0.3;
 export const CONSTRUCTOR_XLSX_IMAGE_PAD_ROW = 0.7;
-/** Rasterize each chart at 2× the Excel cell so Excel does not upscale a screen-sized PNG. */
-export const CONSTRUCTOR_XLSX_CAPTURE_PIXEL_RATIO = 2;
 /** Title + subtitle + gap before the board grid (0-based image origin). */
 export const CONSTRUCTOR_XLSX_GRID_ORIGIN_ROW = 3;
 
@@ -104,6 +102,31 @@ export function constructorXlsxImageExtent(
   return {
     width: Math.max(Math.round(w * colPx - 2 * padCol * colPx), 1),
     height: Math.max(Math.round(h * CONSTRUCTOR_XLSX_ROWS_PER_UNIT * rowPx - 2 * padRow * rowPx), 1),
+  };
+}
+
+/** Place a native-aspect capture inside the widget cell without stretching. */
+export function constructorXlsxFittedImage(
+  layout: ConstructorGridRect,
+  captureSize: { width: number; height: number },
+  originRow = CONSTRUCTOR_XLSX_GRID_ORIGIN_ROW,
+): { tl: { col: number; row: number }; ext: { width: number; height: number }; editAs: 'oneCell' } {
+  const box = constructorXlsxImageAnchor(layout, originRow);
+  const cell = constructorXlsxImageExtent(layout);
+  const srcW = Math.max(captureSize.width, 1);
+  const srcH = Math.max(captureSize.height, 1);
+  const scale = Math.min(cell.width / srcW, cell.height / srcH);
+  const width = Math.max(Math.round(srcW * scale), 1);
+  const height = Math.max(Math.round(srcH * scale), 1);
+  const colPx = excelColumnWidthToPixels(CONSTRUCTOR_XLSX_COL_WIDTH);
+  const rowPx = excelRowHeightToPixels(CONSTRUCTOR_XLSX_ROW_HEIGHT);
+  return {
+    tl: {
+      col: box.tl.col + (cell.width - width) / 2 / colPx,
+      row: box.tl.row + (cell.height - height) / 2 / rowPx,
+    },
+    ext: { width, height },
+    editAs: 'oneCell',
   };
 }
 
@@ -243,12 +266,12 @@ export function buildConstructorDashboardWorkbook(options: {
         : `data:image/png;base64,${capture.dataUrl}`,
       extension: 'png',
     });
-    const anchor = constructorXlsxImageAnchor(layout, originRow);
+    const fitted = constructorXlsxFittedImage(layout, capture);
     sheet.addImage(imageId, {
-      tl: { col: anchor.tl.col, row: anchor.tl.row },
-      br: { col: anchor.br.col, row: anchor.br.row },
-      editAs: anchor.editAs,
-    } as unknown as ExcelJS.ImageRange);
+      tl: { col: fitted.tl.col, row: fitted.tl.row },
+      ext: fitted.ext,
+      editAs: fitted.editAs,
+    } as unknown as ExcelJS.ImagePosition);
   });
 
   const headerTitle = title.replaceAll('&', '&&');

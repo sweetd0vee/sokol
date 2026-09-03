@@ -18,6 +18,7 @@ import { MatrixChartShell, MatrixCountSortHeader, MatrixLegendFooter } from './m
 type StatusMatrixChartProps = {
   rows: StatusMatrixRow[];
   onSortConfigChange?: (sortConfig: StatusMatrixCountSortConfig) => void;
+  scrollBody?: boolean;
 };
 
 const MONITORING_STATUS_MATRIX_LEGEND = STATUS_MATRIX_LEGEND.map((item) => ({
@@ -25,7 +26,7 @@ const MONITORING_STATUS_MATRIX_LEGEND = STATUS_MATRIX_LEGEND.map((item) => ({
   color: MONITORING_STATUS_COLORS[item.status],
 }));
 
-export function StatusMatrixChart({ rows, onSortConfigChange }: StatusMatrixChartProps) {
+export function StatusMatrixChart({ rows, onSortConfigChange, scrollBody = true }: StatusMatrixChartProps) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState<StatusMatrixCountSortConfig>(
     DEFAULT_STATUS_MATRIX_COUNT_SORT,
@@ -45,6 +46,7 @@ export function StatusMatrixChart({ rows, onSortConfigChange }: StatusMatrixChar
   return (
     <MatrixChartShell
       hoveredRow={hoveredRow}
+      scrollBody={scrollBody}
       footer={(
         <MatrixLegendFooter
           totalText={formatStatusChecksCount(rows.length)}
@@ -119,7 +121,7 @@ export function StatusMatrixChart({ rows, onSortConfigChange }: StatusMatrixChar
             </tr>
           ))}
         </tbody>
-        <tfoot className="sticky bottom-0 z-[1] bg-gray-50/95">
+        <tfoot className={scrollBody ? 'sticky bottom-0 z-[1] bg-gray-50/95' : 'bg-gray-50/95'}>
           <tr className="border-t border-gray-200">
             <th
               colSpan={2}
