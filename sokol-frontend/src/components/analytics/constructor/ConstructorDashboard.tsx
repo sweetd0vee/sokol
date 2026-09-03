@@ -27,7 +27,10 @@ const ROW_HEIGHT = 76;
 
 export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
   const { dashboards, removeWidget, clearBoard, updateLayout } = useAnalyticsConstructor();
-  const widgets = dashboards.find((item) => item.id === dashboardId)?.widgets ?? [];
+  const widgets = useMemo(
+    () => dashboards.find((item) => item.id === dashboardId)?.widgets ?? [],
+    [dashboards, dashboardId],
+  );
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('pdf');
   const [isExporting, setIsExporting] = useState(false);
   const [containerWidth, setContainerWidth] = useState(1200);
