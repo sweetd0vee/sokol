@@ -276,6 +276,11 @@ class DvaAuditorTimelinessRow(BaseModel):
     violation_rate: int
 
 
+class DvaMissingCheckRef(BaseModel):
+    key: str
+    short_name: str
+
+
 class DvaAuditorDocumentRow(BaseModel):
     name: str
     checks: int
@@ -284,6 +289,10 @@ class DvaAuditorDocumentRow(BaseModel):
     az_filled: int
     dz_filled: int
     readiness: int
+    missing_order: list[DvaMissingCheckRef] = Field(default_factory=list)
+    missing_program: list[DvaMissingCheckRef] = Field(default_factory=list)
+    missing_az: list[DvaMissingCheckRef] = Field(default_factory=list)
+    missing_dz: list[DvaMissingCheckRef] = Field(default_factory=list)
 
 
 class DvaAuditorMatrixCell(BaseModel):

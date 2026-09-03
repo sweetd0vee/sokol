@@ -1,14 +1,16 @@
-import { useMemo, useState } from 'react';
-import type { DvaAuditorDocumentRow } from '../../api/analytics';
+import { useMemo, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import type { DvaAuditorDocumentRow, DvaMissingCheckRef } from '../../api/analytics';
+import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { getValueBasedColors, VALUE_BLUE_SCALE } from './analyticsPalette';
 import { MatrixChartShell, MatrixCountSortHeader, MatrixLegendFooter } from './matrixChartChrome';
 import type { SortDirection } from '../../utils/listTable';
 
 const DOCUMENT_COLUMNS = [
-  { key: 'order_filled', label: 'Приказ' },
-  { key: 'program_filled', label: 'Программа' },
-  { key: 'az_filled', label: 'АЗ' },
-  { key: 'dz_filled', label: 'ДЗ' },
+  { key: 'order_filled', missingKey: 'missing_order', label: 'Приказ' },
+  { key: 'program_filled', missingKey: 'missing_program', label: 'Программа' },
+  { key: 'az_filled', missingKey: 'missing_az', label: 'АЗ' },
+  { key: 'dz_filled', missingKey: 'missing_dz', label: 'ДЗ' },
 ] as const;
 
 type DocumentColumnKey = (typeof DOCUMENT_COLUMNS)[number]['key'];
@@ -22,7 +24,7 @@ function colorForPercent(percent: number) {
   return getValueBasedColors([0, percent, 100], VALUE_BLUE_SCALE)[1] ?? VALUE_BLUE_SCALE[0];
 }
 
-function ReadinessMark({
+function ReadinessValue({
   percent,
   filled,
   total,
@@ -31,20 +33,76 @@ function ReadinessMark({
   filled: number;
   total: number;
 }) {
-  const color = colorForPercent(percent);
   return (
-    <div className="flex flex-col items-center gap-1">
-      <span
-        className="inline-flex h-11 w-11 flex-col items-center justify-center rounded-full border-4 bg-white text-center leading-tight text-black"
-        style={{ borderColor: color }}
-        title={`${percent}% (${filled} из ${total})`}
-        aria-label={`${percent}% (${filled} из ${total})`}
-      >
-        <span className="text-xs font-semibold tabular-nums">{percent}%</span>
+    <div className="flex flex-col items-center leading-tight">
+      <span className="text-sm font-semibold tabular-nums" style={{ color: colorForPercent(percent) }}>
+        {percent}%
       </span>
-      <span className="text-sm font-medium tabular-nums text-gray-700">
+      <span className="text-xs font-medium tabular-nums text-gray-500">
         {filled}/{total}
       </span>
+    </div>
+  );
+}
+
+function MissingChecksHover({
+  documentLabel,
+  missing,
+  children,
+}: {
+  documentLabel: string;
+  missing: DvaMissingCheckRef[];
+  children: ReactNode;
+}) {
+  const [anchor, setAnchor] = useState<DOMRect | null>(null);
+  if (missing.length === 0) {
+    return children;
+  }
+
+  const estimatedHeight = 52 + missing.length * 22;
+  const showAbove = Boolean(
+    anchor && anchor.bottom + 8 + estimatedHeight > window.innerHeight,
+  );
+
+  return (
+    <div
+      className="relative cursor-help"
+      onMouseEnter={(event) => setAnchor(event.currentTarget.getBoundingClientRect())}
+      onMouseLeave={() => setAnchor(null)}
+    >
+      {children}
+      {anchor
+        ? createPortal(
+            <div
+              role="tooltip"
+              className="pointer-events-none fixed z-[80] max-h-72 max-w-sm overflow-auto rounded-lg border border-slate-200 bg-white px-3 py-2 text-left shadow-lg"
+              style={{
+                ...CHART_TOOLTIP_STYLE,
+                left: Math.min(Math.max(12, anchor.left + anchor.width / 2 - 160), window.innerWidth - 332),
+                top: showAbove ? undefined : anchor.bottom + 8,
+                bottom: showAbove ? window.innerHeight - anchor.top + 8 : undefined,
+              }}
+            >
+              <p className="mb-1.5 text-xs font-semibold text-sber-dark">
+                Нет документа «{documentLabel}»
+              </p>
+              <ul className="space-y-1">
+                {missing.map((item) => (
+                  <li key={item.key} className="text-sm leading-snug text-slate-700">
+                    <span className="font-semibold text-sber-dark">{item.key}</span>
+                    {item.short_name ? (
+                      <>
+                        {' — '}
+                        {item.short_name}
+                      </>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
@@ -146,18 +204,25 @@ export function AuditorDocumentsMatrixChart({ rows }: { rows: DvaAuditorDocument
               </td>
               {DOCUMENT_COLUMNS.map((column) => {
                 const filled = row[column.key];
+                const missing = row[column.missingKey] ?? [];
                 return (
                   <td key={column.key} className="px-1 py-2 text-center">
-                    <ReadinessMark
-                      percent={percentFor(filled, row.checks)}
-                      filled={filled}
-                      total={row.checks}
-                    />
+                    <MissingChecksHover documentLabel={column.label} missing={missing}>
+                      <ReadinessValue
+                        percent={percentFor(filled, row.checks)}
+                        filled={filled}
+                        total={row.checks}
+                      />
+                    </MissingChecksHover>
                   </td>
                 );
               })}
               <td className="px-1 py-2 text-center">
-                <ReadinessMark percent={row.readiness} filled={row.order_filled + row.program_filled + row.az_filled + row.dz_filled} total={row.checks * 4} />
+                <ReadinessValue
+                  percent={row.readiness}
+                  filled={row.order_filled + row.program_filled + row.az_filled + row.dz_filled}
+                  total={row.checks * 4}
+                />
               </td>
             </tr>
           ))}

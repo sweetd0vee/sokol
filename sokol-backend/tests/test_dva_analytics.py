@@ -52,23 +52,49 @@ class DvaAnalyticsMappingTests(unittest.TestCase):
         self.assertEqual(timeliness[0].violation_rate, 30)
         self.assertEqual(timeliness[1].name, "Без аудитора")
 
-    def test_document_readiness_puts_weakest_auditors_first(self) -> None:
+    def test_document_readiness_lists_missing_checks_and_ranks_weakest_first(self) -> None:
         rows = [
             SimpleNamespace(
                 name="Петров",
-                checks=2,
-                order_filled=2,
-                program_filled=2,
-                az_filled=2,
-                dz_filled=2,
+                serial_number="П-1",
+                short_name="Полный комплект",
+                check_name="Проверка 1",
+                order_document_number="1",
+                order_document_date=None,
+                program_document_number="1",
+                program_document_date=None,
+                az_document_number="1",
+                az_document_date=None,
+                dz_document_number="1",
+                dz_document_date=None,
             ),
             SimpleNamespace(
                 name="Сидоров",
-                checks=2,
-                order_filled=1,
-                program_filled=0,
-                az_filled=0,
-                dz_filled=0,
+                serial_number="С-1",
+                short_name="Без программы",
+                check_name="Проверка 2",
+                order_document_number="1",
+                order_document_date=None,
+                program_document_number=None,
+                program_document_date=None,
+                az_document_number=None,
+                az_document_date=None,
+                dz_document_number=None,
+                dz_document_date=None,
+            ),
+            SimpleNamespace(
+                name="Сидоров",
+                serial_number="С-2",
+                short_name="Пустая",
+                check_name="Проверка 3",
+                order_document_number=None,
+                order_document_date=None,
+                program_document_number=None,
+                program_document_date=None,
+                az_document_number=None,
+                az_document_date=None,
+                dz_document_number=None,
+                dz_document_date=None,
             ),
         ]
 
@@ -76,7 +102,11 @@ class DvaAnalyticsMappingTests(unittest.TestCase):
 
         self.assertEqual([row.name for row in documents], ["Сидоров", "Петров"])
         self.assertEqual(documents[0].readiness, 13)
+        self.assertEqual([item.key for item in documents[0].missing_order], ["С-2"])
+        self.assertEqual([item.key for item in documents[0].missing_program], ["С-1", "С-2"])
+        self.assertEqual(documents[0].missing_program[0].short_name, "Без программы")
         self.assertEqual(documents[1].readiness, 100)
+        self.assertEqual(documents[1].missing_dz, [])
 
 
 if __name__ == "__main__":

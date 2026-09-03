@@ -24,6 +24,7 @@ from app.schemas.analytics import (
     DvaAuditorExecutionRow,
     DvaAuditorMaterialityRow,
     DvaAuditorTimelinessRow,
+    DvaMissingCheckRef,
     DvaPortfolioPoint,
     MaterialityMatrixRow,
     NamedCount,
@@ -793,27 +794,78 @@ async def dva_auditor_recommendation_profiles_sql(
     return dva_recommendation_profiles_from_rows(await fetch_all(session, statement))
 
 
+def _document_is_filled(number: Any, date_value: Any) -> bool:
+    return number is not None or date_value is not None
+
+
+def _missing_check_ref(row: Any) -> DvaMissingCheckRef:
+    serial = str(row.serial_number or "").strip() or WITHOUT_CHECK
+    short_name = str(row.short_name or "").strip() or str(row.check_name or "").strip()
+    return DvaMissingCheckRef(key=serial, short_name=short_name)
+
+
 def dva_auditor_documents_from_rows(rows: Any) -> list[DvaAuditorDocumentRow]:
-    result: list[DvaAuditorDocumentRow] = []
+    buckets: dict[str, dict[str, Any]] = {}
     for row in rows:
-        checks = int(row.checks)
+        name = _auditor_display_name(row.name, WITHOUT_LEADER)
+        bucket = buckets.get(name)
+        if bucket is None:
+            bucket = {
+                "checks": 0,
+                "order_filled": 0,
+                "program_filled": 0,
+                "az_filled": 0,
+                "dz_filled": 0,
+                "missing_order": [],
+                "missing_program": [],
+                "missing_az": [],
+                "missing_dz": [],
+            }
+            buckets[name] = bucket
+        bucket["checks"] += 1
+        ref = _missing_check_ref(row)
+        if _document_is_filled(row.order_document_number, row.order_document_date):
+            bucket["order_filled"] += 1
+        else:
+            bucket["missing_order"].append(ref)
+        if _document_is_filled(row.program_document_number, row.program_document_date):
+            bucket["program_filled"] += 1
+        else:
+            bucket["missing_program"].append(ref)
+        if _document_is_filled(row.az_document_number, row.az_document_date):
+            bucket["az_filled"] += 1
+        else:
+            bucket["missing_az"].append(ref)
+        if _document_is_filled(row.dz_document_number, row.dz_document_date):
+            bucket["dz_filled"] += 1
+        else:
+            bucket["missing_dz"].append(ref)
+
+    result: list[DvaAuditorDocumentRow] = []
+    for name, bucket in buckets.items():
+        checks = int(bucket["checks"])
         if checks <= 0:
             continue
-        order_filled = int(row.order_filled)
-        program_filled = int(row.program_filled)
-        az_filled = int(row.az_filled)
-        dz_filled = int(row.dz_filled)
         slots = checks * 4
-        filled = order_filled + program_filled + az_filled + dz_filled
+        filled = (
+            bucket["order_filled"]
+            + bucket["program_filled"]
+            + bucket["az_filled"]
+            + bucket["dz_filled"]
+        )
         result.append(
             DvaAuditorDocumentRow(
-                name=_auditor_display_name(row.name, WITHOUT_LEADER),
+                name=name,
                 checks=checks,
-                order_filled=order_filled,
-                program_filled=program_filled,
-                az_filled=az_filled,
-                dz_filled=dz_filled,
+                order_filled=bucket["order_filled"],
+                program_filled=bucket["program_filled"],
+                az_filled=bucket["az_filled"],
+                dz_filled=bucket["dz_filled"],
                 readiness=int(filled / slots * 100 + 0.5) if slots else 0,
+                missing_order=sorted(bucket["missing_order"], key=lambda item: item.key),
+                missing_program=sorted(bucket["missing_program"], key=lambda item: item.key),
+                missing_az=sorted(bucket["missing_az"], key=lambda item: item.key),
+                missing_dz=sorted(bucket["missing_dz"], key=lambda item: item.key),
             )
         )
     return sorted(result, key=lambda item: (item.readiness, -item.checks, item.name))
@@ -823,26 +875,18 @@ async def dva_auditor_documents_sql(session: AsyncSession, **filters: Any) -> li
     statement = apply_check_filters(
         select(
             Check.check_leader.label("name"),
-            func.count().label("checks"),
-            count_if(
-                or_(Check.order_document_number.isnot(None), Check.order_document_date.isnot(None)),
-                "order_filled",
-            ),
-            count_if(
-                or_(Check.program_document_number.isnot(None), Check.program_document_date.isnot(None)),
-                "program_filled",
-            ),
-            count_if(
-                or_(Check.az_document_number.isnot(None), Check.az_document_date.isnot(None)),
-                "az_filled",
-            ),
-            count_if(
-                or_(Check.dz_document_number.isnot(None), Check.dz_document_date.isnot(None)),
-                "dz_filled",
-            ),
-        )
-        .select_from(Check)
-        .group_by(Check.check_leader),
+            Check.serial_number,
+            Check.short_name,
+            Check.check_name,
+            Check.order_document_number,
+            Check.order_document_date,
+            Check.program_document_number,
+            Check.program_document_date,
+            Check.az_document_number,
+            Check.az_document_date,
+            Check.dz_document_number,
+            Check.dz_document_date,
+        ).select_from(Check),
         **filters,
     )
     return dva_auditor_documents_from_rows(await fetch_all(session, statement))

@@ -16,7 +16,6 @@ import {
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   VALUE_BLUE_SCALE,
-  VALUE_GRAY_SCALE,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
@@ -34,7 +33,6 @@ import { buildConstructorFilterCaption } from './constructor/constructorFilterCa
 
 const EMPTY_CHECK_SUMMARY = { total: 0, not_started: 0, in_progress: 0, completed: 0 };
 const EMPTY_AUDITOR_CHECKS_MAP: never[] = [];
-const EMPTY_AUDITOR_RECOMMENDATIONS_MAP: never[] = [];
 const EMPTY_AUDITOR_IMPACT: never[] = [];
 const EMPTY_AUDITOR_EXECUTION: never[] = [];
 const EMPTY_AUDITOR_TIMELINESS: never[] = [];
@@ -148,7 +146,6 @@ export function DvaAnalyticsDashboard() {
   const checkSummary = data?.checkSummary ?? EMPTY_CHECK_SUMMARY;
   const recSummary = data?.recommendationSummary ?? EMPTY_RECOMMENDATION_SUMMARY;
   const auditorChecksMap = data?.auditorChecksTreemap ?? EMPTY_AUDITOR_CHECKS_MAP;
-  const auditorRecommendationsMap = data?.auditorRecommendationsTreemap ?? EMPTY_AUDITOR_RECOMMENDATIONS_MAP;
   const auditorImpact = useMemo(
     () =>
       rankAuditorRows(data?.auditorImpact ?? EMPTY_AUDITOR_IMPACT, (row) => row.high, {
@@ -242,7 +239,6 @@ export function DvaAnalyticsDashboard() {
         recCompletionRate: recSummary.completionRate,
         recViolationRate: recSummary.violationRate,
         auditorChecksMap,
-        auditorRecommendationsMap,
         auditorImpact,
         auditorExecution,
         auditorTimeliness,
@@ -261,7 +257,7 @@ export function DvaAnalyticsDashboard() {
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-6">
               <KpiCard label="Проверки" value={checkSummary.total} tone="blue" />
               <KpiCard label="Рекомендации" value={recSummary.total} tone="slate" />
-              <KpiCard label="Сотрудники" value={employeeCount} tone="slate" />
+              <KpiCard label="Аудиторы" value={employeeCount} tone="slate" />
               <KpiCard
                 label="Высокая существенность"
                 value={highMateriality}
@@ -286,7 +282,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorChecksMap',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 4, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 12, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
             title="Карта сотрудников по проверкам"
@@ -299,29 +295,6 @@ export function DvaAnalyticsDashboard() {
               <EmptyChart message="Нет данных" />
             ) : (
               <FocusableTreemapChart data={auditorChecksMap} palette={VALUE_BLUE_SCALE} colorByValue />
-            )}
-          </ChartCard>
-        ),
-      },
-      {
-        id: 'auditorRecommendationsMap',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 4, minH: 2 },
-        render: () => (
-          <ChartCard
-            title="Карта сотрудников по рекомендациям"
-            description="Количество рекомендаций за период по всем сотрудникам ДВА"
-            exportSectionId="auditorRecommendationsMap"
-            exportSelected={exportSections.isSelected('auditorRecommendationsMap')}
-            onToggleExport={() => exportSections.toggleSection('auditorRecommendationsMap')}
-          >
-            {auditorRecommendationsMap.length === 0 ? (
-              <EmptyChart message="Нет данных" />
-            ) : (
-              <FocusableTreemapChart
-                data={auditorRecommendationsMap}
-                palette={VALUE_GRAY_SCALE}
-                colorByValue
-              />
             )}
           </ChartCard>
         ),
@@ -408,7 +381,6 @@ export function DvaAnalyticsDashboard() {
       auditorDocuments,
       auditorExecution,
       auditorImpact,
-      auditorRecommendationsMap,
       auditorTimeliness,
       checkSummary.total,
       employeeCount,

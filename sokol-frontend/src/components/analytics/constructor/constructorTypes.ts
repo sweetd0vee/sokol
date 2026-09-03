@@ -236,7 +236,6 @@ export type DvaConstructorInput = {
   recCompletionRate: number;
   recViolationRate: number;
   auditorChecksMap: NamedCount[];
-  auditorRecommendationsMap: NamedCount[];
   auditorImpact: DvaAuditorMaterialityRow[];
   auditorExecution: DvaAuditorExecutionRow[];
   auditorTimeliness: DvaAuditorTimelinessRow[];

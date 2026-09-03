@@ -11,6 +11,9 @@ const STACKED_TOTAL_RESERVE = STACKED_TOTAL_FONT_SIZE + STACKED_TOTAL_OFFSET;
 
 export const STACKED_PERIOD_CHART_TOP_MARGIN = 72;
 export const STACKED_PERIOD_CHART_SIDE_MARGIN = 36;
+export const STACKED_HORIZONTAL_CHART_RIGHT_MARGIN = 88;
+
+const STACKED_CALLOUT_BOX_GAP = 4;
 
 type StackedSegmentLabelView = {
   x?: number | string;
@@ -107,17 +110,28 @@ function segmentFitsInsideLabel(segmentHeight: number, segmentWidth: number, val
   return segmentWidth >= estimatedTextWidth + 4 && fontSize >= 9;
 }
 
+function estimateTextWidth(text: string, fontSize: number) {
+  return text.length * fontSize * STACKED_LABEL_CHAR_WIDTH;
+}
+
+function calloutBoxWidth(value: number) {
+  return estimateTextWidth(String(Math.round(value)), STACKED_NOTE_FONT_SIZE) + STACKED_NOTE_PAD_X * 2;
+}
+
 export function StackedBarSegmentValueLabel({
   stackKeys,
   getColor,
   showStackTotal = false,
   stackRow,
+  layout = 'horizontal',
   ...view
 }: {
   stackKeys: readonly string[];
   getColor: (key: string) => string;
   showStackTotal?: boolean;
   stackRow?: unknown;
+  /** Recharts BarChart layout: `horizontal` = vertical columns, `vertical` = horizontal bars. */
+  layout?: 'horizontal' | 'vertical';
   [key: string]: unknown;
 }) {
   const labelView = view as StackedSegmentLabelView;
@@ -150,26 +164,44 @@ export function StackedBarSegmentValueLabel({
   const segmentColor = (key ? getColor(key) : undefined) || labelView.fill || '#e5e7eb';
   const stackIndex = Math.max(0, stackKeys.indexOf(key));
   const hasPayloadValues = stackValues.some((stackValue) => stackValue > 0);
-  const pxPerUnit = h > 0 && (numericValue ?? 0) > 0 ? h / (numericValue as number) : 0;
-  const valueAbove = hasPayloadValues
+  const isHorizontalBar = layout === 'vertical';
+  const alongValue = isHorizontalBar ? w : h;
+  const pxPerUnit = alongValue > 0 && (numericValue ?? 0) > 0 ? alongValue / (numericValue as number) : 0;
+  const valueAfter = hasPayloadValues
     ? stackValues.slice(stackIndex + 1).reduce((sum, stackValue) => sum + stackValue, 0)
     : 0;
-  const barTopY = pxPerUnit > 0 ? y - valueAbove * pxPerUnit : y;
+  const barTopY = pxPerUnit > 0 ? y - valueAfter * pxPerUnit : y;
+  const barRightX = pxPerUnit > 0 ? x + w + valueAfter * pxPerUnit : x + w;
   const canPlaceInside =
     numericValue !== undefined && numericValue > 0 && segmentFitsInsideLabel(h, w, numericValue);
   const totalLabel = shouldRenderTotal ? (
-    <text
-      x={cx}
-      y={barTopY - STACKED_TOTAL_OFFSET - STACKED_TOTAL_FONT_SIZE / 2}
-      textAnchor="middle"
-      dominantBaseline="middle"
-      fontSize={STACKED_TOTAL_FONT_SIZE}
-      fontWeight={700}
-      fill="#111827"
-      style={{ pointerEvents: 'none' }}
-    >
-      {Math.round(stackTotal)}
-    </text>
+    isHorizontalBar ? (
+      <text
+        x={barRightX + STACKED_TOTAL_OFFSET}
+        y={cy}
+        textAnchor="start"
+        dominantBaseline="middle"
+        fontSize={STACKED_TOTAL_FONT_SIZE}
+        fontWeight={700}
+        fill="#111827"
+        style={{ pointerEvents: 'none' }}
+      >
+        {Math.round(stackTotal)}
+      </text>
+    ) : (
+      <text
+        x={cx}
+        y={barTopY - STACKED_TOTAL_OFFSET - STACKED_TOTAL_FONT_SIZE / 2}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={STACKED_TOTAL_FONT_SIZE}
+        fontWeight={700}
+        fill="#111827"
+        style={{ pointerEvents: 'none' }}
+      >
+        {Math.round(stackTotal)}
+      </text>
+    )
   ) : null;
 
   if (canPlaceInside) {

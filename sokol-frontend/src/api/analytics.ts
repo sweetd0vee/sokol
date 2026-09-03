@@ -171,6 +171,11 @@ export type DvaAuditorTimelinessRow = {
   violation_rate: number;
 };
 
+export type DvaMissingCheckRef = {
+  key: string;
+  short_name: string;
+};
+
 export type DvaAuditorDocumentRow = {
   name: string;
   checks: number;
@@ -179,6 +184,10 @@ export type DvaAuditorDocumentRow = {
   az_filled: number;
   dz_filled: number;
   readiness: number;
+  missing_order: DvaMissingCheckRef[];
+  missing_program: DvaMissingCheckRef[];
+  missing_az: DvaMissingCheckRef[];
+  missing_dz: DvaMissingCheckRef[];
 };
 
 export type DvaAuditorMatrix = {
