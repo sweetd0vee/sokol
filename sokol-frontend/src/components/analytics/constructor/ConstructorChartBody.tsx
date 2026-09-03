@@ -213,25 +213,53 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
       return <EmptyChart message="Нет данных" />;
     }
     const stackKeys = payload.series.map((item) => item.key);
+    const isVertical = payload.layout === 'vertical';
+    const isGrouped = payload.grouped === true;
     return (
       <div className="h-full min-h-[13rem]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={payload.data}
-            margin={{
-              top: STACKED_PERIOD_CHART_TOP_MARGIN,
-              right: STACKED_PERIOD_CHART_SIDE_MARGIN,
-              left: -10,
-              bottom: 0,
-            }}
+            layout={isVertical ? 'vertical' : 'horizontal'}
+            margin={
+              isVertical
+                ? { top: 8, right: 24, left: 8, bottom: 0 }
+                : {
+                    top: STACKED_PERIOD_CHART_TOP_MARGIN,
+                    right: STACKED_PERIOD_CHART_SIDE_MARGIN,
+                    left: -10,
+                    bottom: 0,
+                  }
+            }
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-            <XAxis dataKey={payload.xKey} tick={CHART_AXIS_TICK} {...periodXAxisProps(payload.granularity)} />
-            <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
+            {isVertical ? (
+              <>
+                <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
+                <YAxis
+                  type="category"
+                  dataKey={payload.xKey}
+                  width={payload.categoryWidth ?? 120}
+                  tick={CHART_AXIS_TICK}
+                />
+              </>
+            ) : (
+              <>
+                <XAxis dataKey={payload.xKey} tick={CHART_AXIS_TICK} {...periodXAxisProps(payload.granularity)} />
+                <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
+              </>
+            )}
             <Tooltip />
             {payload.showLegend ? <Legend content={<ChartRechartsSquareLegend />} /> : null}
             {payload.series.map((series) => (
-              <Bar key={series.key} dataKey={series.key} name={series.name} stackId="stack" fill={series.color}>
+              <Bar
+                key={series.key}
+                dataKey={series.key}
+                name={series.name}
+                stackId={isGrouped ? undefined : 'stack'}
+                fill={series.color}
+                radius={isVertical ? [0, 4, 4, 0] : undefined}
+              >
                 {payload.showStackTotal ? (
                   <LabelList
                     dataKey={series.key}
@@ -251,6 +279,31 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
             ))}
           </BarChart>
         </ResponsiveContainer>
+      </div>
+    );
+  }
+
+  if (payload.chart === 'list') {
+    if (payload.items.length === 0) {
+      return <EmptyChart message={payload.emptyMessage ?? 'Нет данных'} />;
+    }
+    return (
+      <div className="flex h-full min-h-[13rem] flex-col gap-2">
+        <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-slate-200 bg-white">
+          <ol className="divide-y divide-slate-100">
+            {payload.items.map((item, index) => (
+              <li key={`${item}-${index}`} className="flex items-start gap-3 px-3 py-2 text-sm text-slate-700">
+                <span className="mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
+                  {index + 1}
+                </span>
+                <span className="leading-snug">{item}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+        {payload.footer ? (
+          <p className="shrink-0 text-sm font-semibold leading-snug text-sber-dark">{payload.footer}</p>
+        ) : null}
       </div>
     );
   }

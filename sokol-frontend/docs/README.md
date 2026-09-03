@@ -7,6 +7,7 @@
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Структура, state, API-слой |
 | [ANALYTICS.md](ANALYTICS.md) | Дашборды `/analytics` |
 | [SOKOL_Аналитика.docx](SOKOL_Аналитика.docx) | Бизнес-описание дашбордов со скриншотами |
+| [CONSTRUCTOR.md](CONSTRUCTOR.md) | Конструктор дашбордов `/constructor` |
 | [PLANNING.md](PLANNING.md) | Раздел `/planning` |
 | [UI_STANDARDS.md](UI_STANDARDS.md) | Каркас, формы, списки, цвета, UI kit |
 | [CODE_REVIEW](../../docs/CODE_REVIEW_FRONTEND.md) | Код-ревью |

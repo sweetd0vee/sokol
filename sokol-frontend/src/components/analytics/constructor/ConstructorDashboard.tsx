@@ -26,9 +26,10 @@ const GRID_MARGIN = 10;
 const ROW_HEIGHT = 76;
 
 export function ConstructorDashboard() {
-  const { widgets, removeWidget, clearBoard, updateLayout } = useAnalyticsConstructor();
+  const { widgets, removeWidget, clearBoard, updateLayout, saveActiveDashboard, activeDashboard } = useAnalyticsConstructor();
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('pdf');
   const [isExporting, setIsExporting] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [containerWidth, setContainerWidth] = useState(1200);
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)').matches : true,
@@ -102,12 +103,20 @@ export function ConstructorDashboard() {
     }
   };
 
+  const handleSave = () => {
+    saveActiveDashboard();
+    setJustSaved(true);
+    window.setTimeout(() => setJustSaved(false), 1600);
+  };
+
   const sidebar = (
     <aside className="w-full shrink-0 space-y-5 lg:sticky lg:top-4 lg:w-80">
       <section className="rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed">
         <h3 className="mb-2 text-base font-semibold text-gray-900">Конструктор</h3>
         <p className="text-sm text-gray-600">
-          Соберите дашборд для отчёта: отметьте графики галочкой на других вкладках, при необходимости смените фильтры и нажмите «В конструктор». Один и тот же график можно добавить несколько раз.
+          Соберите дашборд для отчёта: отметьте графики галочкой на вкладках «Аналитика» и «Планирование»,
+          при необходимости смените фильтры и нажмите «В конструктор». Один и тот же график можно добавить несколько раз.
+          {activeDashboard ? ` Текущий лист: «${activeDashboard.name}».` : ''}
         </p>
       </section>
 
@@ -149,6 +158,13 @@ export function ConstructorDashboard() {
           className={`${FORM_OUTLINE_BUTTON_CLASS} mt-3 disabled:cursor-not-allowed disabled:opacity-50`}
         >
           Очистить лист
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          className={`${FORM_OUTLINE_BUTTON_CLASS} mt-2 disabled:cursor-not-allowed disabled:opacity-50`}
+        >
+          {justSaved ? 'Сохранено' : 'Сохранить'}
         </button>
       </section>
 
@@ -192,7 +208,8 @@ export function ConstructorDashboard() {
           </div>
           <h3 className="text-lg font-semibold text-sber-dark">Пустой лист отчёта</h3>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-gray-500">
-            Откройте «Проверки», «Рекомендации», «Мониторинг» или «ДВА», отметьте нужные графики галочкой и нажмите «В конструктор». Можно менять фильтры и добавлять один график несколько раз.
+            Откройте «Аналитика» или «Планирование», отметьте нужные графики галочкой и нажмите «В конструктор».
+            Можно менять фильтры и добавлять один график несколько раз.
           </p>
           <p className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-gray-400">
             <Plus className="h-3.5 w-3.5" />

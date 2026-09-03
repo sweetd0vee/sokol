@@ -20,3 +20,5 @@ Bootstrap: `granularity=year`, затем перезапрос при смене
 ## Экспорт
 
 Отключён (`canExport={false}`). Включить — по аналогии с analytics visual export.
+
+В конструктор графики уже можно добавить: галочка на карточке → **В конструктор**. Снимки попадают на текущий дашборд в `/constructor` — [CONSTRUCTOR.md](CONSTRUCTOR.md).

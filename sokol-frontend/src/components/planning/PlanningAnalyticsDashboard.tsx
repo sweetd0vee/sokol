@@ -33,6 +33,11 @@ import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 import type { PeriodGranularity } from '../../utils/checkAnalytics';
+import { useExportSections } from '../../hooks/useExportSections';
+import { PLANNING_EXPORT_SECTIONS, type PlanningExportSectionId } from '../../constants/analyticsExportSections';
+import { useAddToConstructor } from '../analytics/constructor/useAddToConstructor';
+import { buildPlanningConstructorDrafts } from '../analytics/constructor/buildConstructorWidgets';
+import { buildConstructorFilterCaption } from '../analytics/constructor/constructorFilterCaption';
 
 const PLANNING_HIGH_MATERIALITY_COLOR = '#FF4347';
 
@@ -53,6 +58,10 @@ const EMPTY_HIGH_MATERIALITY_RANKING: never[] = [];
 export function PlanningAnalyticsDashboard() {
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('html');
+  const exportSections = useExportSections(
+    PLANNING_EXPORT_SECTIONS.map((section) => section.id) as PlanningExportSectionId[],
+  );
+  const { addToConstructor, justAdded } = useAddToConstructor();
 
   const bootstrapQuery = useQuery({
     queryKey: queryKeys.analytics.planningBootstrap,
@@ -129,13 +138,42 @@ export function PlanningAnalyticsDashboard() {
     setSelectedDepartments([]);
   };
 
+  const handleAddToConstructor = () => {
+    addToConstructor(
+      buildPlanningConstructorDrafts({
+        selectedSections: exportSections.selectedSections,
+        filterCaption: buildConstructorFilterCaption({
+          periodSliceLabel,
+          periods: activePeriodValues,
+          auditors: [],
+          departments: selectedDepartments,
+        }),
+        coverage,
+        departmentAnalytics,
+        highMaterialityRanking,
+        highMaterialityTotal,
+        filteredChecksTotal,
+        filteredRecommendationsTotal,
+        universeChecksTotal,
+        universeRecommendationsTotal,
+      }),
+    );
+  };
+
   const cards = useMemo<AnalyticsGridCard[]>(
     () => [
       {
         id: 'summary',
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
         render: () => (
-          <ChartCard title="Сводка планирования" description="" dense>
+          <ChartCard
+            title="Сводка планирования"
+            description=""
+            dense
+            exportSectionId="summary"
+            exportSelected={exportSections.isSelected('summary')}
+            onToggleExport={() => exportSections.toggleSection('summary')}
+          >
             <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-4">
               <KpiCard label="Охват департаментов" value={coverage.coverageRate} suffix="%" tone="blue" />
               <KpiCard label="С проверками" value={coverage.covered} hint={`из ${coverage.total}`} tone="green" />
@@ -154,6 +192,9 @@ export function PlanningAnalyticsDashboard() {
             <ChartCard
               title="Охват департаментов"
               description="Неохваченные департаменты за выбранный период"
+              exportSectionId="coverage"
+              exportSelected={exportSections.isSelected('coverage')}
+              onToggleExport={() => exportSections.toggleSection('coverage')}
             >
               {coverage.total === 0 ? (
                 <EmptyChart message="Нет департаментов в данных" />
@@ -193,6 +234,9 @@ export function PlanningAnalyticsDashboard() {
           <ChartCard
             title="Аналитика департаментов"
             description="Проверки и рекомендации по подразделениям"
+            exportSectionId="departmentAnalytics"
+            exportSelected={exportSections.isSelected('departmentAnalytics')}
+            onToggleExport={() => exportSections.toggleSection('departmentAnalytics')}
           >
             {departmentAnalytics.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -235,6 +279,9 @@ export function PlanningAnalyticsDashboard() {
           <ChartCard
             title="Красные рекомендации по департаментам"
             description="Подразделения с наибольшим числом рекомендаций высокой существенности"
+            exportSectionId="highMateriality"
+            exportSelected={exportSections.isSelected('highMateriality')}
+            onToggleExport={() => exportSections.toggleSection('highMateriality')}
           >
             {highMaterialityRanking.length === 0 ? (
               <EmptyChart message="Нет красных рекомендаций за период" />
@@ -271,7 +318,7 @@ export function PlanningAnalyticsDashboard() {
         ),
       },
     ],
-    [coverage, departmentAnalytics, highMaterialityRanking, highMaterialityTotal],
+    [coverage, departmentAnalytics, exportSections, highMaterialityRanking, highMaterialityTotal],
   );
 
   if (bootstrapQuery.isLoading && !data) {
@@ -309,6 +356,10 @@ export function PlanningAnalyticsDashboard() {
         isExporting={false}
         canExport={false}
         onExport={() => undefined}
+        onAddToConstructor={handleAddToConstructor}
+        canAddToConstructor={exportSections.selectedCount > 0}
+        addToConstructorCount={exportSections.selectedCount}
+        constructorAdded={justAdded}
         selectionSummary={(
           <AnalyticsSelectionSummary
             metrics={[

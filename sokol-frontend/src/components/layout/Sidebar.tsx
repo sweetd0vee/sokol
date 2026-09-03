@@ -6,6 +6,7 @@ import {
   Settings,
   Wrench,
   CalendarClock,
+  LayoutDashboard,
 } from 'lucide-react';
 
 const TABS = [
@@ -13,6 +14,7 @@ const TABS = [
   { id: 'recommendations', path: '/recommendations', label: 'Рекомендации', icon: FileText },
   { id: 'analytics', path: '/analytics', label: 'Аналитика', icon: BarChart3 },
   { id: 'planning', path: '/planning', label: 'Планирование', icon: CalendarClock },
+  { id: 'constructor', path: '/constructor', label: 'Конструктор', icon: LayoutDashboard },
   { id: 'tools', path: '/tools', label: 'Инструменты', icon: Wrench },
   { id: 'settings', path: '/settings', label: 'Настройки', icon: Settings },
 ] as const;

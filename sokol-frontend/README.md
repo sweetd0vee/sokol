@@ -49,6 +49,7 @@ VITE_DEV_API_PORT=8802
 | `/recommendations`, `.../new`, `.../:id/edit` | рекомендации |
 | `/analytics` | аналитика |
 | `/planning` | планирование |
+| `/constructor` | конструктор дашбордов |
 | `/tools` | DOCX-инструменты |
 | `/settings` | справочники (admin) |
 | `/profile` | профиль |

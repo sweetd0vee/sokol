@@ -19,7 +19,7 @@
 
 Выравнивание правого хрома: группа 334px + `LIST_CHROME_RIGHT_INSET_CLASS` (`pr-[17px]`). Одинаково у `AppHeader` (профиль 288×40 + выход 40×40), `EntityListHeader` («Мои» / «Создать») и колонки действий в таблицах.
 
-**Sidebar:** активный пункт — `bg-sber-light text-white`; hover — `#0066CC`. Пункты: Проверки, Рекомендации, Аналитика, Планирование, Инструменты, Настройки (иконки Lucide 20px).
+**Sidebar:** активный пункт — `bg-sber-light text-white`; hover — `#0066CC`. Пункты: Проверки, Рекомендации, Аналитика, Планирование, Конструктор, Инструменты, Настройки (иконки Lucide 20px).
 
 **Login:** заголовок «СберБанк» сверху слева, «SOKOL» `text-6xl text-sber-dark`, поля `py-5 text-xl`, кнопка входа на всю ширину `rounded-2xl bg-sber-dark`.
 
@@ -142,7 +142,7 @@
 - `KpiCard`: цветная заливка по `tone` / `accentColor`.
 - Матрицы: `MatrixChartShell`, сортируемые заголовки navy.
 
-Подробнее по вкладкам и API — [ANALYTICS.md](ANALYTICS.md), [PLANNING.md](PLANNING.md).
+Подробнее по вкладкам и API — [ANALYTICS.md](ANALYTICS.md), [PLANNING.md](PLANNING.md), [CONSTRUCTOR.md](CONSTRUCTOR.md).
 
 ## Компоненты UI kit
 

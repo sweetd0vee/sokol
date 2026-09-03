@@ -9,6 +9,7 @@ const SOURCE_BADGE: Record<ConstructorWidget['kind'], string> = {
   recommendations: 'bg-rose-50 text-rose-800',
   monitoring: 'bg-amber-50 text-amber-900',
   dva: 'bg-indigo-50 text-indigo-800',
+  planning: 'bg-teal-50 text-teal-800',
 };
 
 export function ConstructorWidgetCard({

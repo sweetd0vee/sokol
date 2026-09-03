@@ -83,27 +83,34 @@ async function loginAsAuditor(page: Page) {
   await expect(page).toHaveURL(/\/checks$/);
 }
 
-test('constructor board starts empty, accepts checked charts, and can delete them', async ({ page }) => {
+test('constructor history can create a dashboard and accept charts from analytics', async ({ page }) => {
   await mockAuthenticatedApi(page);
   await loginAsAuditor(page);
 
-  await page.getByRole('link', { name: 'Аналитика' }).click();
-  await expect(page).toHaveURL(/\/analytics$/);
-  await expect(page.getByRole('heading', { name: 'Аналитика' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Количество проверок' })).toBeVisible();
+  await page.getByRole('link', { name: 'Конструктор' }).click();
+  await expect(page).toHaveURL(/\/constructor$/);
+  await expect(page.getByRole('heading', { name: 'Конструктор' })).toBeVisible();
+  await expect(page.getByText('Пока нет дашбордов')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Конструктор' }).click();
+  await page.getByRole('button', { name: 'Создать дашборд' }).click();
+  await page.getByLabel('Название').fill('Отчёт E2E');
+  await page.getByRole('button', { name: 'Создать' }).click();
+  await expect(page).toHaveURL(/\/constructor\/.+/);
+  await expect(page.getByRole('heading', { name: 'Отчёт E2E' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Пустой лист отчёта' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Экспорт' })).toBeDisabled();
 
-  await page.getByRole('button', { name: 'Проверки' }).click();
+  await page.getByRole('link', { name: 'Аналитика' }).click();
+  await expect(page).toHaveURL(/\/analytics$/);
   await expect(page.getByRole('heading', { name: 'Количество проверок' })).toBeVisible();
 
   await page.getByRole('button', { name: 'В отчёт и конструктор' }).first().click();
   await page.getByRole('button', { name: 'В конструктор (1)' }).click();
   await expect(page.getByRole('button', { name: 'Добавлено' })).toBeVisible();
 
-  await page.getByRole('button', { name: /Конструктор/ }).click();
+  await page.getByRole('link', { name: 'Конструктор' }).click();
+  await expect(page.getByRole('link', { name: 'Отчёт E2E' })).toBeVisible();
+  await page.getByRole('link', { name: /Редактировать «Отчёт E2E»/ }).click();
   await expect(page.getByRole('heading', { name: 'Итого' })).toBeVisible();
   await expect(page.getByText('Проверки', { exact: true }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Экспорт' })).toBeEnabled();

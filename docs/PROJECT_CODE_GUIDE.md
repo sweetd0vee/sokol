@@ -169,6 +169,8 @@ HTTP request
 - `sokol-frontend/src/api/analytics.ts` - frontend API-клиент.
 - `sokol-frontend/src/components/tabs/AnalyticsTab.tsx` - общая вкладка аналитики.
 - `sokol-frontend/src/components/analytics/` - dashboard-компоненты.
+- `sokol-frontend/src/components/tabs/ConstructorTab.tsx` - история дашбордов конструктора.
+- `sokol-frontend/docs/CONSTRUCTOR.md` - модель листа, create / edit / save / export.
 
 Основные endpoints: `checks`, `recommendations`, `monitoring`, `dva`, `planning`.
 
@@ -231,6 +233,7 @@ QueryClientProvider
 - `/recommendations/new` и `/recommendations/:id/edit` - форма рекомендации.
 - `/analytics` - аналитика.
 - `/planning` - планирование.
+- `/constructor` - конструктор дашбордов.
 - `/tools` - DOCX-инструменты.
 - `/settings` - справочники, доступ к изменению ограничен admin.
 - `/profile` - профиль.

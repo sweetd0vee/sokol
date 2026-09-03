@@ -2,46 +2,147 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import type { ConstructorWidget, ConstructorWidgetDraft, ConstructorWidgetLayout } from './constructorTypes';
 import { createConstructorInstanceId, packNewLayouts } from './constructorLayout';
 import { AnalyticsConstructorContext } from './analyticsConstructorState';
+import {
+  createDashboardRecord,
+  defaultDashboardName,
+  duplicateDashboardRecord,
+  ensureActiveDashboard,
+  loadConstructorLibrary,
+  persistConstructorLibrary,
+  replaceDashboardWidgets,
+  type ConstructorDashboardRecord,
+  type ConstructorLibrary,
+} from './constructorLibrary';
 
-const STORAGE_KEY = 'sokol.analytics.constructor.v1';
-
-function loadWidgets(): ConstructorWidget[] {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-  try {
-    const raw = window.sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-    const parsed = JSON.parse(raw) as ConstructorWidget[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function persistWidgets(widgets: ConstructorWidget[]) {
-  try {
-    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(widgets));
-  } catch {
-    // Quota or private mode — keep the board in memory only.
-  }
+function persist(library: ConstructorLibrary) {
+  persistConstructorLibrary(library);
 }
 
 export function AnalyticsConstructorProvider({ children }: { children: ReactNode }) {
-  const [widgets, setWidgets] = useState<ConstructorWidget[]>(loadWidgets);
+  const [library, setLibrary] = useState<ConstructorLibrary>(loadConstructorLibrary);
+
+  const createDashboard = useCallback((name: string) => {
+    const record = createDashboardRecord(name.trim() || defaultDashboardName());
+    setLibrary((prev) => {
+      const next = {
+        dashboards: [record, ...prev.dashboards],
+        activeDashboardId: record.id,
+      };
+      persist(next);
+      return next;
+    });
+    return record;
+  }, []);
+
+  const renameDashboard = useCallback((id: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return;
+    }
+    setLibrary((prev) => {
+      const next = {
+        ...prev,
+        dashboards: prev.dashboards.map((item) =>
+          item.id === id
+            ? { ...item, name: trimmed, updatedAt: new Date().toISOString() }
+            : item,
+        ),
+      };
+      persist(next);
+      return next;
+    });
+  }, []);
+
+  const duplicateDashboard = useCallback((id: string, name: string) => {
+    let created: ConstructorDashboardRecord | null = null;
+    setLibrary((prev) => {
+      const source = prev.dashboards.find((item) => item.id === id);
+      if (!source) {
+        return prev;
+      }
+      created = duplicateDashboardRecord(source, name.trim() || `${source.name} (копия)`);
+      const next = {
+        dashboards: [created, ...prev.dashboards],
+        activeDashboardId: created.id,
+      };
+      persist(next);
+      return next;
+    });
+    return created;
+  }, []);
+
+  const deleteDashboard = useCallback((id: string) => {
+    setLibrary((prev) => {
+      const dashboards = prev.dashboards.filter((item) => item.id !== id);
+      const activeDashboardId =
+        prev.activeDashboardId === id
+          ? (dashboards[0]?.id ?? null)
+          : prev.activeDashboardId;
+      const next = { dashboards, activeDashboardId };
+      persist(next);
+      return next;
+    });
+  }, []);
+
+  const setActiveDashboard = useCallback((id: string | null) => {
+    setLibrary((prev) => {
+      if (prev.activeDashboardId === id) {
+        return prev;
+      }
+      if (id !== null && !prev.dashboards.some((item) => item.id === id)) {
+        return prev;
+      }
+      const next = { ...prev, activeDashboardId: id };
+      persist(next);
+      return next;
+    });
+  }, []);
+
+  const saveActiveDashboard = useCallback(() => {
+    setLibrary((prev) => {
+      if (!prev.activeDashboardId) {
+        return prev;
+      }
+      const next = {
+        ...prev,
+        dashboards: prev.dashboards.map((item) =>
+          item.id === prev.activeDashboardId
+            ? { ...item, updatedAt: new Date().toISOString() }
+            : item,
+        ),
+      };
+      persist(next);
+      return next;
+    });
+  }, []);
+
+  const updateActiveWidgets = useCallback(
+    (mutator: (widgets: ConstructorWidget[]) => ConstructorWidget[]) => {
+      setLibrary((prev) => {
+        const ensured = ensureActiveDashboard(prev);
+        const dashboard = ensured.library.dashboards.find((item) => item.id === ensured.dashboardId);
+        if (!dashboard) {
+          return prev;
+        }
+        const nextWidgets = mutator(dashboard.widgets);
+        const next = replaceDashboardWidgets(ensured.library, ensured.dashboardId, nextWidgets);
+        persist(next);
+        return next;
+      });
+    },
+    [],
+  );
 
   const addWidgets = useCallback((drafts: ConstructorWidgetDraft[]) => {
     if (drafts.length === 0) {
       return 0;
     }
-    setWidgets((prev) => {
+    updateActiveWidgets((prev) => {
       const layouts = packNewLayouts(
         prev.map((widget) => widget.layout),
         drafts.map((draft) => draft.size),
       );
-      const next = [
+      return [
         ...prev,
         ...drafts.map((draft, index) => ({
           ...draft,
@@ -49,30 +150,27 @@ export function AnalyticsConstructorProvider({ children }: { children: ReactNode
           layout: layouts[index] as ConstructorWidgetLayout,
         })),
       ];
-      persistWidgets(next);
-      return next;
     });
     return drafts.length;
-  }, []);
+  }, [updateActiveWidgets]);
 
   const removeWidget = useCallback((instanceId: string) => {
-    setWidgets((prev) => {
-      const next = prev.filter((widget) => widget.instanceId !== instanceId);
-      persistWidgets(next);
-      return next;
-    });
-  }, []);
+    updateActiveWidgets((prev) => prev.filter((widget) => widget.instanceId !== instanceId));
+  }, [updateActiveWidgets]);
 
   const clearBoard = useCallback(() => {
-    setWidgets([]);
-    persistWidgets([]);
-  }, []);
+    updateActiveWidgets(() => []);
+  }, [updateActiveWidgets]);
 
   const updateLayout = useCallback((nextLayout: Array<{ i: string; x: number; y: number; w: number; h: number }>) => {
-    setWidgets((prev) => {
+    setLibrary((prev) => {
+      const dashboard = prev.dashboards.find((item) => item.id === prev.activeDashboardId);
+      if (!dashboard) {
+        return prev;
+      }
       const byId = new Map(nextLayout.map((item) => [item.i, item]));
       let changed = false;
-      const next = prev.map((widget) => {
+      const widgets = dashboard.widgets.map((widget) => {
         const item = byId.get(widget.instanceId);
         if (!item) {
           return widget;
@@ -100,14 +198,49 @@ export function AnalyticsConstructorProvider({ children }: { children: ReactNode
       if (!changed) {
         return prev;
       }
-      persistWidgets(next);
+      const next = replaceDashboardWidgets(prev, dashboard.id, widgets);
+      persist(next);
       return next;
     });
   }, []);
 
+  const activeDashboard = useMemo(
+    () => library.dashboards.find((item) => item.id === library.activeDashboardId) ?? null,
+    [library.activeDashboardId, library.dashboards],
+  );
+
   const value = useMemo(
-    () => ({ widgets, addWidgets, removeWidget, clearBoard, updateLayout }),
-    [addWidgets, clearBoard, removeWidget, updateLayout, widgets],
+    () => ({
+      dashboards: library.dashboards,
+      activeDashboardId: library.activeDashboardId,
+      activeDashboard,
+      widgets: activeDashboard?.widgets ?? [],
+      createDashboard,
+      renameDashboard,
+      duplicateDashboard,
+      deleteDashboard,
+      setActiveDashboard,
+      saveActiveDashboard,
+      addWidgets,
+      removeWidget,
+      clearBoard,
+      updateLayout,
+    }),
+    [
+      activeDashboard,
+      addWidgets,
+      clearBoard,
+      createDashboard,
+      deleteDashboard,
+      duplicateDashboard,
+      library.activeDashboardId,
+      library.dashboards,
+      removeWidget,
+      renameDashboard,
+      saveActiveDashboard,
+      setActiveDashboard,
+      updateLayout,
+    ],
   );
 
   return (

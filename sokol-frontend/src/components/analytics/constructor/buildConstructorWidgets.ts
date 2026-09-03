@@ -1,6 +1,8 @@
 import {
+  CHECKS_PALETTE,
   MONITORING_ADDITIONAL_STATUS_COLORS,
   MONITORING_STATUS_COLORS,
+  RECOMMENDATIONS_PALETTE,
 } from '../analyticsPalette';
 import { RECOMMENDATION_STATUS_OPTIONS } from '../../../constants/recommendations';
 import type {
@@ -10,6 +12,7 @@ import type {
   ConstructorWidgetDraft,
   DvaConstructorInput,
   MonitoringConstructorInput,
+  PlanningConstructorInput,
   RecommendationsConstructorInput,
 } from './constructorTypes';
 import type { ConstructorSizeHint } from './constructorLayout';
@@ -376,6 +379,94 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
           data: input.auditorRecommendationsTreemap,
           palette: 'gray',
         }),
+      );
+    }
+  }
+
+  return drafts;
+}
+
+const PLANNING_HIGH_MATERIALITY_COLOR = '#FF4347';
+
+export function buildPlanningConstructorDrafts(input: PlanningConstructorInput): ConstructorWidgetDraft[] {
+  const drafts: ConstructorWidgetDraft[] = [];
+  const { filterCaption: caption } = input;
+  const kind = 'planning' as const;
+
+  for (const sectionId of input.selectedSections) {
+    if (sectionId === 'summary') {
+      drafts.push(
+        draft(kind, sectionId, 'Сводка планирования', '', caption, SIZE.kpi, {
+          chart: 'kpi',
+          columns: 4,
+          items: [
+            { label: 'Охват департаментов', value: input.coverage.coverageRate, suffix: '%', tone: 'blue' },
+            {
+              label: 'С проверками',
+              value: input.coverage.covered,
+              hint: `из ${input.coverage.total}`,
+              tone: 'green',
+            },
+            { label: 'Не охвачено', value: input.coverage.uncoveredRate, suffix: '%', tone: 'slate' },
+            { label: 'Красные рекомендации', value: input.highMaterialityTotal, tone: 'red' },
+          ],
+        }),
+      );
+    } else if (sectionId === 'coverage') {
+      drafts.push(
+        draft(
+          kind,
+          sectionId,
+          'Охват департаментов',
+          'Неохваченные департаменты за выбранный период',
+          caption,
+          SIZE.tallHalf,
+          {
+            chart: 'list',
+            items: input.coverage.uncoveredDepartments,
+            emptyMessage: 'Все департаменты охвачены проверками за выбранный период',
+            footer: `Не охвачено: ${input.coverage.uncovered} из ${input.coverage.total} (${input.coverage.uncoveredRate}%)`,
+          },
+        ),
+      );
+    } else if (sectionId === 'departmentAnalytics') {
+      drafts.push(
+        draft(kind, sectionId, 'Аналитика департаментов', 'Проверки и рекомендации по подразделениям', caption, SIZE.tallHalf, {
+          chart: 'stacked',
+          data: input.departmentAnalytics.map((item) => ({
+            name: item.name,
+            checks: item.checks,
+            recommendations: item.recommendations,
+          })),
+          series: [
+            { key: 'checks', name: 'Проверки', color: CHECKS_PALETTE[8] },
+            { key: 'recommendations', name: 'Рекомендации', color: RECOMMENDATIONS_PALETTE[2] },
+          ],
+          xKey: 'name',
+          showLegend: true,
+          layout: 'vertical',
+          grouped: true,
+          categoryWidth: 120,
+        }),
+      );
+    } else if (sectionId === 'highMateriality') {
+      drafts.push(
+        draft(
+          kind,
+          sectionId,
+          'Красные рекомендации по департаментам',
+          'Подразделения с наибольшим числом рекомендаций высокой существенности',
+          caption,
+          SIZE.full,
+          {
+            chart: 'bar',
+            variant: 'bars',
+            data: barPointsFromNamed(input.highMaterialityRanking),
+            colors: input.highMaterialityRanking.map(() => PLANNING_HIGH_MATERIALITY_COLOR),
+            seriesName: 'Высокая существенность',
+            categoryWidth: 140,
+          },
+        ),
       );
     }
   }

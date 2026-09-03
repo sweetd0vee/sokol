@@ -21,7 +21,7 @@ types/
 ## Провайдеры и маршруты
 
 ```
-QueryClient → AuthProvider → SokolDataProvider → BrowserRouter
+QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvider → BrowserRouter
   /login          — публичный (AuthLayout)
   /*              — AuthGuard → AppLayout → разделы
 ```
@@ -33,6 +33,7 @@ QueryClient → AuthProvider → SokolDataProvider → BrowserRouter
 | `/checks`, `/recommendations` | списки + form pages (`/new`, `/:id/edit`) |
 | `/analytics` | `AnalyticsTab` (4 вкладки) |
 | `/planning` | `PlanningTab` |
+| `/constructor`, `/constructor/:id` | история дашбордов и холст ([CONSTRUCTOR.md](CONSTRUCTOR.md)) |
 | `/tools` | `ToolsTab` (АЗ / ДЗ) |
 | `/settings` | `SettingsTab` (mutate — `isAdmin`) |
 | `/profile` | аватар (localStorage), смена пароля; admin — `AdminUsersSection` |
@@ -47,6 +48,7 @@ QueryClient → AuthProvider → SokolDataProvider → BrowserRouter
 | **SokolDataContext** | checks + recommendations до 10000 строк через React Query |
 | **React Query** | settings, analytics (bootstrap + filtered), users, capabilities, attachments |
 | **Component state** | фильтры, пагинация списков (по 50), файлы форм, экспорт |
+| **Constructor library** | именованные дашборды + виджеты в `localStorage` (`sokol.constructor.library.v1`) |
 
 Redux/Zustand нет.
 
@@ -77,7 +79,9 @@ Redux/Zustand нет.
 
 **Analytics** — server aggregates, static `react-grid-layout`, visual export ([ANALYTICS.md](ANALYTICS.md)).
 
-**Planning** — `GET /analytics/planning`, экспорт отключён ([PLANNING.md](PLANNING.md)).
+**Planning** — `GET /analytics/planning`, visual export отключён; графики можно отправить в конструктор ([PLANNING.md](PLANNING.md)).
+
+**Constructor** — история дашбордов и холст из снимков аналитики/планирования ([CONSTRUCTOR.md](CONSTRUCTOR.md)).
 
 **Settings** — аудиторы, департаменты, виды проверок, виды аудита, оценки эффективности.
 

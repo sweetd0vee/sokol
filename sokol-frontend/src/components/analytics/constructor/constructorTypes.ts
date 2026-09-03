@@ -15,6 +15,7 @@ export const CONSTRUCTOR_SOURCE_LABELS = {
   recommendations: 'Рекомендации',
   monitoring: 'Мониторинг',
   dva: 'ДВА',
+  planning: 'Планирование',
 } as const;
 
 export type ConstructorSourceKind = keyof typeof CONSTRUCTOR_SOURCE_LABELS;
@@ -71,6 +72,15 @@ export type ConstructorPayload =
       granularity?: PeriodGranularity;
       showLegend?: boolean;
       showStackTotal?: boolean;
+      layout?: 'horizontal' | 'vertical';
+      grouped?: boolean;
+      categoryWidth?: number;
+    }
+  | {
+      chart: 'list';
+      items: string[];
+      footer?: string;
+      emptyMessage?: string;
     }
   | {
       chart: 'donut';
@@ -185,6 +195,26 @@ export type MonitoringConstructorInput = {
   completedDuringAuditColors: string[];
   completedDuringAuditShortNames: Record<string, string>;
   statusMatrix: StatusMatrixRow[];
+};
+
+export type PlanningConstructorInput = {
+  selectedSections: string[];
+  filterCaption: string;
+  coverage: {
+    covered: number;
+    uncovered: number;
+    total: number;
+    coverageRate: number;
+    uncoveredRate: number;
+    uncoveredDepartments: string[];
+  };
+  departmentAnalytics: Array<{ name: string; checks: number; recommendations: number }>;
+  highMaterialityRanking: NamedCount[];
+  highMaterialityTotal: number;
+  filteredChecksTotal: number;
+  filteredRecommendationsTotal: number;
+  universeChecksTotal: number;
+  universeRecommendationsTotal: number;
 };
 
 export type DvaConstructorInput = {

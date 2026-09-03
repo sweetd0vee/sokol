@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { packNewLayouts } from './constructorLayout';
 import { buildConstructorFilterCaption } from './constructorFilterCaption';
-import { buildChecksConstructorDrafts, buildRecommendationsConstructorDrafts } from './buildConstructorWidgets';
+import { buildChecksConstructorDrafts, buildPlanningConstructorDrafts, buildRecommendationsConstructorDrafts } from './buildConstructorWidgets';
 
 describe('packNewLayouts', () => {
   it('starts at the origin on an empty board', () => {
@@ -96,5 +96,36 @@ describe('buildConstructorDrafts', () => {
       granularity: 'year',
     });
     expect(drafts.map((item) => item.sectionId).sort()).toEqual(['materialityCombined', 'objects']);
+  });
+
+  it('snapshots planning charts including the uncovered-department list', () => {
+    const drafts = buildPlanningConstructorDrafts({
+      selectedSections: ['summary', 'coverage', 'departmentAnalytics', 'highMateriality'],
+      filterCaption: '2025 · Все департаменты',
+      coverage: {
+        covered: 3,
+        uncovered: 1,
+        total: 4,
+        coverageRate: 75,
+        uncoveredRate: 25,
+        uncoveredDepartments: ['Казначейство'],
+      },
+      departmentAnalytics: [{ name: 'ДВА', checks: 2, recommendations: 5 }],
+      highMaterialityRanking: [{ name: 'ДВА', value: 4 }],
+      highMaterialityTotal: 4,
+      filteredChecksTotal: 2,
+      filteredRecommendationsTotal: 5,
+      universeChecksTotal: 10,
+      universeRecommendationsTotal: 20,
+    });
+    expect(drafts.map((item) => item.sectionId)).toEqual([
+      'summary',
+      'coverage',
+      'departmentAnalytics',
+      'highMateriality',
+    ]);
+    expect(drafts[0]?.kind).toBe('planning');
+    expect(drafts[1]?.payload.chart).toBe('list');
+    expect(drafts[2]?.payload.chart).toBe('stacked');
   });
 });
