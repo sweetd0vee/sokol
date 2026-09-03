@@ -26,11 +26,10 @@ const GRID_MARGIN = 10;
 const ROW_HEIGHT = 76;
 
 export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
-  const { dashboards, removeWidget, clearBoard, updateLayout, saveDashboard } = useAnalyticsConstructor();
+  const { dashboards, removeWidget, clearBoard, updateLayout } = useAnalyticsConstructor();
   const widgets = dashboards.find((item) => item.id === dashboardId)?.widgets ?? [];
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('pdf');
   const [isExporting, setIsExporting] = useState(false);
-  const [justSaved, setJustSaved] = useState(false);
   const [containerWidth, setContainerWidth] = useState(1200);
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)').matches : true,
@@ -104,19 +103,6 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
     }
   };
 
-  const handleSave = () => {
-    saveDashboard(dashboardId);
-    setJustSaved(true);
-  };
-
-  useEffect(() => {
-    if (!justSaved) {
-      return undefined;
-    }
-    const timer = window.setTimeout(() => setJustSaved(false), 1600);
-    return () => window.clearTimeout(timer);
-  }, [justSaved]);
-
   const sidebar = (
     <aside className="w-full shrink-0 space-y-5 lg:sticky lg:top-4 lg:w-80">
       <section className="rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed">
@@ -155,13 +141,6 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
           className={`${FORM_OUTLINE_BUTTON_CLASS} mt-3 disabled:cursor-not-allowed disabled:opacity-50`}
         >
           Очистить лист
-        </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          className={`${FORM_OUTLINE_BUTTON_CLASS} mt-2 disabled:cursor-not-allowed disabled:opacity-50`}
-        >
-          {justSaved ? 'Сохранено' : 'Сохранить'}
         </button>
       </section>
 

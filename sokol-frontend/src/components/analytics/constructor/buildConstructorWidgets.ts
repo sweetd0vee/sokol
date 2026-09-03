@@ -2,6 +2,7 @@ import {
   CHECKS_PALETTE,
   MONITORING_ADDITIONAL_STATUS_COLORS,
   MONITORING_STATUS_COLORS,
+  RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   RECOMMENDATIONS_PALETTE,
 } from '../analyticsPalette';
 import { RECOMMENDATION_STATUS_OPTIONS } from '../../../constants/recommendations';
@@ -325,59 +326,98 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
           items: [
             { label: 'Проверки', value: input.checkTotal, tone: 'blue' },
             { label: 'Рекомендации', value: input.recTotal, tone: 'slate' },
-            { label: 'Аудиторы', value: input.auditorCount, tone: 'slate' },
-            { label: 'Объекты аудита', value: input.departmentCount, tone: 'amber' },
-            { label: 'Завершённость', value: input.completionShare, suffix: '%', tone: 'green' },
-            { label: 'Исполнение рекомендаций', value: input.recCompletionRate, suffix: '%', tone: 'green' },
+            { label: 'Сотрудники', value: input.employeeCount, tone: 'slate' },
+            {
+              label: 'Высокая существенность',
+              value: input.highMateriality,
+              hint: `${input.highMaterialityShare}% рекомендаций`,
+              accentColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий,
+            },
+            {
+              label: 'Исполнение',
+              value: input.recCompletionRate,
+              suffix: '%',
+              accentColor: MONITORING_STATUS_COLORS.completed,
+            },
+            {
+              label: 'Нарушение сроков',
+              value: input.recViolationRate,
+              suffix: '%',
+              accentColor: MONITORING_ADDITIONAL_STATUS_COLORS.deadline_violated,
+            },
           ],
         }),
       );
-    } else if (sectionId === 'auditorLoadChecks') {
+    } else if (sectionId === 'auditorLoad') {
       drafts.push(
-        draft(kind, sectionId, 'Нагрузка аудиторов: проверки', 'Количество проверок за период по аудиторам', caption, SIZE.half, {
-          chart: 'bar',
-          variant: 'bars',
-          data: barPointsFromNamed(input.auditorChecksBars),
-          colors: input.auditorChecksBarColors,
-          seriesName: 'Проверки',
-          categoryWidth: 120,
-        }),
-      );
-    } else if (sectionId === 'auditorLoadRecommendations') {
-      drafts.push(
-        draft(kind, sectionId, 'Нагрузка аудиторов: рекомендации', 'Количество рекомендаций за период по аудиторам', caption, SIZE.half, {
-          chart: 'bar',
-          variant: 'bars',
-          data: barPointsFromNamed(input.auditorRecommendationsBars),
-          colors: input.auditorRecommendationsBarColors,
-          seriesName: 'Рекомендации',
-          categoryWidth: 120,
-        }),
-      );
-    } else if (sectionId === 'documentsClosure') {
-      drafts.push(
-        draft(kind, sectionId, 'Документы и закрытие', 'Готовность документов проверок и закрытие рекомендаций', caption, SIZE.full, {
-          chart: 'documents-closure',
-          data: [
-            ...input.documentReadiness,
-            { name: 'Закрытие рек.', filled: input.recSummaryFilled, empty: input.recSummaryEmpty },
+        draft(kind, sectionId, 'Нагрузка сотрудников', 'Портфель проверок и рекомендаций по сотрудникам ДВА', caption, SIZE.half, {
+          chart: 'stacked',
+          data: input.auditorLoad,
+          series: [
+            { key: 'checks', name: 'Проверки', color: CHECKS_PALETTE[8] },
+            { key: 'recommendations', name: 'Рекомендации', color: RECOMMENDATIONS_PALETTE[2] },
           ],
+          xKey: 'name',
+          showLegend: true,
+          layout: 'vertical',
+          grouped: true,
+          categoryWidth: 128,
         }),
       );
-    } else if (sectionId === 'auditorChecksTreemap') {
+    } else if (sectionId === 'auditorImpact') {
       drafts.push(
-        draft(kind, sectionId, 'Карта аудиторов по количеству проверок', 'Количество проверок за период по аудиторам', caption, SIZE.half, {
-          chart: 'treemap',
-          data: input.auditorChecksTreemap,
-          palette: 'blue',
+        draft(kind, sectionId, 'Импакт рекомендаций', 'Существенность находок: кто выявляет наиболее значимые риски', caption, SIZE.half, {
+          chart: 'stacked',
+          data: input.auditorImpact,
+          series: [
+            { key: 'high', name: 'Высокий', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий },
+            { key: 'medium', name: 'Средний', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний },
+            { key: 'low', name: 'Низкий', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий },
+          ],
+          xKey: 'name',
+          showLegend: true,
+          layout: 'vertical',
+          categoryWidth: 128,
         }),
       );
-    } else if (sectionId === 'auditorRecommendationsTreemap') {
+    } else if (sectionId === 'auditorExecution') {
       drafts.push(
-        draft(kind, sectionId, 'Карта аудиторов по количеству рекомендаций', 'Количество рекомендаций за период по аудиторам', caption, SIZE.half, {
-          chart: 'treemap',
-          data: input.auditorRecommendationsTreemap,
-          palette: 'gray',
+        draft(kind, sectionId, 'Результативность исполнения', 'Статус рекомендаций сотрудника: закрытие vs открытый хвост', caption, SIZE.half, {
+          chart: 'stacked',
+          data: input.auditorExecution,
+          series: [
+            { key: 'completed', name: 'Исполнено', color: MONITORING_STATUS_COLORS.completed },
+            { key: 'in_progress', name: 'В процессе', color: MONITORING_STATUS_COLORS.in_progress },
+            { key: 'on_control', name: 'На контроле', color: MONITORING_STATUS_COLORS.on_control },
+            { key: 'unresolved', name: 'Не решено', color: MONITORING_STATUS_COLORS.unresolved },
+          ],
+          xKey: 'name',
+          showLegend: true,
+          layout: 'vertical',
+          categoryWidth: 128,
+        }),
+      );
+    } else if (sectionId === 'auditorTimeliness') {
+      drafts.push(
+        draft(kind, sectionId, 'Своевременность', 'Соблюдение сроков исполнения рекомендаций по сотрудникам', caption, SIZE.half, {
+          chart: 'stacked',
+          data: input.auditorTimeliness,
+          series: [
+            { key: 'on_time', name: 'В срок', color: MONITORING_ADDITIONAL_STATUS_COLORS.on_time },
+            { key: 'on_control', name: 'На контроле', color: MONITORING_ADDITIONAL_STATUS_COLORS.on_control },
+            { key: 'deadline_violated', name: 'Срок нарушен', color: MONITORING_ADDITIONAL_STATUS_COLORS.deadline_violated },
+          ],
+          xKey: 'name',
+          showLegend: true,
+          layout: 'vertical',
+          categoryWidth: 128,
+        }),
+      );
+    } else if (sectionId === 'auditorDocuments') {
+      drafts.push(
+        draft(kind, sectionId, 'Документная дисциплина', 'Готовность приказа, программы, АЗ и ДЗ по проверкам каждого сотрудника', caption, SIZE.matrix, {
+          chart: 'auditor-documents-matrix',
+          rows: input.auditorDocuments,
         }),
       );
     }

@@ -98,24 +98,6 @@ export function AnalyticsConstructorProvider({ children }: { children: ReactNode
     });
   }, []);
 
-  const saveDashboard = useCallback((id: string) => {
-    setLibrary((prev) => {
-      if (!prev.dashboards.some((item) => item.id === id)) {
-        return prev;
-      }
-      const next = {
-        ...prev,
-        dashboards: prev.dashboards.map((item) =>
-          item.id === id
-            ? { ...item, updatedAt: new Date().toISOString() }
-            : item,
-        ),
-      };
-      persist(next);
-      return next;
-    });
-  }, []);
-
   const updateDashboardWidgets = useCallback(
     (dashboardId: string, mutator: (widgets: ConstructorWidget[]) => ConstructorWidget[]) => {
       setLibrary((prev) => {
@@ -234,7 +216,6 @@ export function AnalyticsConstructorProvider({ children }: { children: ReactNode
       duplicateDashboard,
       deleteDashboard,
       setActiveDashboard,
-      saveDashboard,
       addWidgets,
       removeWidget,
       clearBoard,
@@ -251,7 +232,6 @@ export function AnalyticsConstructorProvider({ children }: { children: ReactNode
       library.dashboards,
       removeWidget,
       renameDashboard,
-      saveDashboard,
       setActiveDashboard,
       updateLayout,
     ],

@@ -58,12 +58,11 @@ const TABS = [
     file: 'tab-dva.png',
     charts: [
       { title: 'Итого', file: 'dva-summary.png' },
-      { title: 'Нагрузка аудиторов: проверки', file: 'dva-auditor-load-checks.png' },
-      { title: 'Нагрузка аудиторов: рекомендации', file: 'dva-auditor-load-recommendations.png' },
-      { title: 'Нагрузка аудиторов', file: 'dva-auditor-load-combined.png' },
-      { title: 'Документы и закрытие', file: 'dva-documents-closure.png' },
-      { title: 'Карта аудиторов по количеству проверок', file: 'dva-auditor-checks-treemap.png' },
-      { title: 'Карта аудиторов по количеству рекомендаций', file: 'dva-auditor-recommendations-treemap.png' },
+      { title: 'Нагрузка сотрудников', file: 'dva-auditor-load.png' },
+      { title: 'Импакт рекомендаций', file: 'dva-auditor-impact.png' },
+      { title: 'Результативность исполнения', file: 'dva-auditor-execution.png' },
+      { title: 'Своевременность', file: 'dva-auditor-timeliness.png' },
+      { title: 'Документная дисциплина', file: 'dva-auditor-documents.png' },
     ],
   },
 ];

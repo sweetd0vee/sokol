@@ -54,14 +54,15 @@ const EMPTY_COVERAGE = {
 };
 const EMPTY_DEPARTMENT_ANALYTICS: never[] = [];
 const EMPTY_HIGH_MATERIALITY_RANKING: never[] = [];
+const PLANNING_EXPORT_SECTION_IDS = PLANNING_EXPORT_SECTIONS.map(
+  (section) => section.id,
+) as PlanningExportSectionId[];
 
 export function PlanningAnalyticsDashboard() {
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('html');
   const [isExporting, setIsExporting] = useState(false);
-  const exportSections = useExportSections(
-    PLANNING_EXPORT_SECTIONS.map((section) => section.id) as PlanningExportSectionId[],
-  );
+  const exportSections = useExportSections(PLANNING_EXPORT_SECTION_IDS);
   const { addToConstructor, justAdded } = useAddToConstructor();
 
   const bootstrapQuery = useQuery({
@@ -140,7 +141,7 @@ export function PlanningAnalyticsDashboard() {
   };
 
   const handleExport = async () => {
-    if (isExporting || analyticsQuery.isFetching || !data) {
+    if (isExporting || !data) {
       return;
     }
     setIsExporting(true);
@@ -150,13 +151,14 @@ export function PlanningAnalyticsDashboard() {
           kind: 'planning',
           documentTitle: 'Планирование',
           filenamePrefix: 'analytics-planning',
-          selectedSections: [...exportSections.allIds],
+          selectedSections: [...PLANNING_EXPORT_SECTION_IDS],
           meta: [
-            ['Группировка', periodSliceLabel],
+            ['Группировка', periodSlice === 'quarter' ? 'По кварталам' : 'По годам'],
             ...(activePeriodValues.map((label) => ['Период', label] as [string, string])),
             ['Департаменты', selectedDepartments.length ? selectedDepartments.join(', ') : 'Все'],
             ['Проверок в выборке', String(filteredChecksTotal)],
             ['Рекомендаций в выборке', String(filteredRecommendationsTotal)],
+            ['Охват департаментов', `${coverage.coverageRate}% (${coverage.covered} из ${coverage.total})`],
           ],
         },
         exportFormat,
@@ -230,7 +232,7 @@ export function PlanningAnalyticsDashboard() {
               {coverage.total === 0 ? (
                 <EmptyChart message="Нет департаментов в данных" />
               ) : (
-                <div className="flex h-full min-h-[13rem] flex-col gap-2">
+                <div className="flex h-full min-h-[13rem] flex-col gap-2" data-export-html>
                   {uncoveredDepartments.length === 0 ? (
                     <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 px-4 text-center text-sm font-semibold text-emerald-700">
                       Все департаменты охвачены проверками за выбранный период
@@ -385,7 +387,7 @@ export function PlanningAnalyticsDashboard() {
         exportFormat={exportFormat}
         onExportFormatChange={setExportFormat}
         isExporting={isExporting}
-        canExport={Boolean(data) && !analyticsQuery.isFetching}
+        canExport={Boolean(data)}
         onExport={() => void handleExport()}
         onAddToConstructor={handleAddToConstructor}
         canAddToConstructor={exportSections.selectedCount > 0}

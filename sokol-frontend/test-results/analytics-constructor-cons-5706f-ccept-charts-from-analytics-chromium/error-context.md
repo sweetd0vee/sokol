@@ -6,13 +6,13 @@
 
 # Test info
 
-- Name: analytics-constructor.spec.ts >> constructor board starts empty, accepts checked charts, and can delete them
+- Name: analytics-constructor.spec.ts >> constructor history can create a dashboard and accept charts from analytics
 - Location: e2e\analytics-constructor.spec.ts:86:1
 
 # Error details
 
 ```
-Error: browserType.launch: Executable doesn't exist at C:\Users\audit\AppData\Local\Temp\cursor-sandbox-cache\0e7fb910c2f8d537e927f62df68c5ef3\playwright\chromium_headless_shell-1234\chrome-headless-shell-win64\chrome-headless-shell.exe
+Error: browserType.launch: Executable doesn't exist at C:\Users\audit\AppData\Local\ms-playwright\chromium_headless_shell-1234\chrome-headless-shell-win64\chrome-headless-shell.exe
 ╔════════════════════════════════════════════════════════════╗
 ║ Looks like Playwright was just installed or updated.       ║
 ║ Please run the following command to download new browsers: ║

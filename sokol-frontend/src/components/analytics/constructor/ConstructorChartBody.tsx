@@ -25,6 +25,7 @@ import { FocusableTreemapChart } from '../FocusableTreemapChart';
 import { EffectivenessMatrixChart } from '../EffectivenessMatrixChart';
 import { MaterialityMatrixChart } from '../MaterialityMatrixChart';
 import { StatusMatrixChart } from '../StatusMatrixChart';
+import { AuditorDocumentsMatrixChart } from '../AuditorDocumentsMatrixChart';
 import {
   CHECKS_PALETTE,
   lastScaleColor,
@@ -370,6 +371,13 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
       return <EmptyChart message="Нет данных" />;
     }
     return <StatusMatrixChart rows={payload.rows} />;
+  }
+
+  if (payload.chart === 'auditor-documents-matrix') {
+    if (payload.rows.length === 0) {
+      return <EmptyChart message="Нет данных" />;
+    }
+    return <AuditorDocumentsMatrixChart rows={payload.rows} />;
   }
 
   if (payload.chart === 'materiality-combined') {

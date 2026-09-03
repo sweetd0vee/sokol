@@ -1,17 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, Copy, Download, LayoutDashboard, MoreHorizontal, PencilLine, Plus, Trash2 } from 'lucide-react';
+import { Check, Copy, Download, LayoutDashboard, MoreHorizontal, PencilLine, Trash2 } from 'lucide-react';
 import { PageHeader } from '../ui/PageHeader';
 import { EmptyState } from '../ui/StateMessage';
 import { ConfirmDialog } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import {
+  LIST_ACTION_BUTTON_CLASS,
   LIST_CHROME_RIGHT_INSET_CLASS,
   listFilterClass,
 } from '../../constants/formLayout';
 import { useAnalyticsConstructor } from '../analytics/constructor/analyticsConstructorState';
 import { ConstructorNameModal } from '../analytics/constructor/ConstructorNameModal';
-import { defaultDashboardName } from '../analytics/constructor/constructorLibrary';
+import {
+  defaultDashboardName,
+  type ConstructorDashboardRecord,
+} from '../analytics/constructor/constructorLibrary';
 import { useClientTable } from '../../hooks/useClientTable';
 import { ListPagination } from '../lists/ListPagination';
 import { ListSortHeader } from '../lists/ListSortHeader';
@@ -55,7 +59,7 @@ export function ConstructorTab() {
     [dashboards, nameFilter],
   );
   const getSortValue = useCallback(
-    (dashboard: (typeof dashboards)[number], key: ConstructorSortKey) =>
+    (dashboard: ConstructorDashboardRecord, key: ConstructorSortKey) =>
       getConstructorSortValue(dashboard, key),
     [],
   );
@@ -121,9 +125,8 @@ export function ConstructorTab() {
           <button
             type="button"
             onClick={openCreate}
-            className="inline-flex h-[38px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#90EE90] px-4 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f]"
+            className={`${LIST_ACTION_BUTTON_CLASS} bg-[#90EE90] text-gray-700 transition hover:bg-[#7fdc7f]`}
           >
-            <Plus size={16} />
             Создать дашборд
           </button>
         </div>
@@ -135,9 +138,8 @@ export function ConstructorTab() {
           description="Создайте лист или добавьте график из аналитики / планирования — появится черновик в этой истории."
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-base">
+        <div className="rounded-xl border border-gray-200 bg-white">
+          <table className="min-w-full text-left text-base">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="px-2 py-2 font-normal">
@@ -313,7 +315,6 @@ export function ConstructorTab() {
                 />
               </div>
             )}
-          </div>
           <div className="flex flex-col gap-3 border-t border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between">
             <span className="whitespace-nowrap text-sm text-gray-600">
               Отработка фильтра: {filteredDashboards.length} записей

@@ -804,6 +804,7 @@ def dva_auditor_documents_from_rows(rows: Any) -> list[DvaAuditorDocumentRow]:
         az_filled = int(row.az_filled)
         dz_filled = int(row.dz_filled)
         slots = checks * 4
+        filled = order_filled + program_filled + az_filled + dz_filled
         result.append(
             DvaAuditorDocumentRow(
                 name=_auditor_display_name(row.name, WITHOUT_LEADER),
@@ -812,9 +813,7 @@ def dva_auditor_documents_from_rows(rows: Any) -> list[DvaAuditorDocumentRow]:
                 program_filled=program_filled,
                 az_filled=az_filled,
                 dz_filled=dz_filled,
-                readiness=round(((order_filled + program_filled + az_filled + dz_filled) / slots) * 100)
-                if slots
-                else 0,
+                readiness=int(filled / slots * 100 + 0.5) if slots else 0,
             )
         )
     return sorted(result, key=lambda item: (item.readiness, -item.checks, item.name))

@@ -12,7 +12,6 @@ export type AnalyticsConstructorContextValue = {
   duplicateDashboard: (id: string, name: string) => ConstructorDashboardRecord | null;
   deleteDashboard: (id: string) => void;
   setActiveDashboard: (id: string | null) => void;
-  saveDashboard: (id: string) => void;
   addWidgets: (drafts: ConstructorWidgetDraft[]) => number;
   removeWidget: (dashboardId: string, instanceId: string) => void;
   clearBoard: (dashboardId: string) => void;

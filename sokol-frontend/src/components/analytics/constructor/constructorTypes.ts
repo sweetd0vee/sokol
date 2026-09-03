@@ -2,6 +2,11 @@ import type {
   ChecksAnalyticsPeriodPoint,
   ChecksAnalyticsSummary,
   DeadlineExtensionByCheckRow,
+  DvaAuditorDocumentRow,
+  DvaAuditorExecutionRow,
+  DvaAuditorLoadRow,
+  DvaAuditorMaterialityRow,
+  DvaAuditorTimelinessRow,
   RecommendationPeriodPoint,
   RecommendationsSummary,
 } from '../../../api/analytics';
@@ -130,6 +135,10 @@ export type ConstructorPayload =
   | {
       chart: 'documents-closure';
       data: Array<{ name: string; filled: number; empty: number }>;
+    }
+  | {
+      chart: 'auditor-documents-matrix';
+      rows: DvaAuditorDocumentRow[];
     };
 
 export type ConstructorWidgetDraft = {
@@ -222,17 +231,14 @@ export type DvaConstructorInput = {
   filterCaption: string;
   checkTotal: number;
   recTotal: number;
-  auditorCount: number;
-  departmentCount: number;
-  completionShare: number;
+  employeeCount: number;
+  highMateriality: number;
+  highMaterialityShare: number;
   recCompletionRate: number;
-  auditorChecksBars: Array<{ name: string; value: number }>;
-  auditorChecksBarColors: string[];
-  auditorRecommendationsBars: Array<{ name: string; value: number }>;
-  auditorRecommendationsBarColors: string[];
-  documentReadiness: Array<{ name: string; filled: number; empty: number }>;
-  recSummaryFilled: number;
-  recSummaryEmpty: number;
-  auditorChecksTreemap: NamedCount[];
-  auditorRecommendationsTreemap: NamedCount[];
+  recViolationRate: number;
+  auditorLoad: DvaAuditorLoadRow[];
+  auditorImpact: DvaAuditorMaterialityRow[];
+  auditorExecution: DvaAuditorExecutionRow[];
+  auditorTimeliness: DvaAuditorTimelinessRow[];
+  auditorDocuments: DvaAuditorDocumentRow[];
 };

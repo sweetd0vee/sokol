@@ -33,7 +33,7 @@ describe('constructorList', () => {
     expect(filterConstructorDashboards(dashboards, '  ')).toHaveLength(2);
   });
 
-  it('orders unsourced lists last by default updated time', () => {
+  it('orders by updated time descending by default', () => {
     const dashboards = [
       dashboard({ id: 'old', name: 'Старый', updatedAt: '2026-09-01T08:00:00.000Z' }),
       dashboard({ id: 'new', name: 'Новый', updatedAt: '2026-09-03T08:00:00.000Z' }),

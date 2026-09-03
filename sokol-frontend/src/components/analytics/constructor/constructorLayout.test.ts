@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { packNewLayouts } from './constructorLayout';
 import { buildConstructorFilterCaption } from './constructorFilterCaption';
-import { buildChecksConstructorDrafts, buildPlanningConstructorDrafts, buildRecommendationsConstructorDrafts } from './buildConstructorWidgets';
+import { buildChecksConstructorDrafts, buildDvaConstructorDrafts, buildPlanningConstructorDrafts, buildRecommendationsConstructorDrafts } from './buildConstructorWidgets';
 
 describe('packNewLayouts', () => {
   it('starts at the origin on an empty board', () => {
@@ -127,5 +127,43 @@ describe('buildConstructorDrafts', () => {
     expect(drafts[0]?.kind).toBe('planning');
     expect(drafts[1]?.payload.chart).toBe('list');
     expect(drafts[2]?.payload.chart).toBe('stacked');
+  });
+
+  it('snapshots DVA employee dashboards', () => {
+    const drafts = buildDvaConstructorDrafts({
+      selectedSections: ['summary', 'auditorLoad', 'auditorImpact', 'auditorDocuments'],
+      filterCaption: '2025 · Все аудиторы · Все департаменты',
+      checkTotal: 12,
+      recTotal: 40,
+      employeeCount: 3,
+      highMateriality: 8,
+      highMaterialityShare: 20,
+      recCompletionRate: 55,
+      recViolationRate: 18,
+      auditorLoad: [{ name: 'Иванов', checks: 4, recommendations: 10, value: 14 }],
+      auditorImpact: [{ name: 'Иванов', low: 2, medium: 3, high: 5, total: 10 }],
+      auditorExecution: [],
+      auditorTimeliness: [],
+      auditorDocuments: [
+        {
+          name: 'Иванов',
+          checks: 4,
+          order_filled: 4,
+          program_filled: 3,
+          az_filled: 2,
+          dz_filled: 1,
+          readiness: 63,
+        },
+      ],
+    });
+    expect(drafts.map((item) => item.sectionId)).toEqual([
+      'summary',
+      'auditorLoad',
+      'auditorImpact',
+      'auditorDocuments',
+    ]);
+    expect(drafts[0]?.payload.chart).toBe('kpi');
+    expect(drafts[1]?.payload.chart).toBe('stacked');
+    expect(drafts[3]?.payload.chart).toBe('auditor-documents-matrix');
   });
 });

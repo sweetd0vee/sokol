@@ -21,7 +21,7 @@ const TABS = [
 
 export function Sidebar() {
   return (
-    <aside className="w-56 min-h-screen bg-[#003366] flex flex-col shrink-0">
+    <aside className="flex h-full w-56 shrink-0 flex-col bg-[#003366]">
       <div className="flex h-[88px] items-center justify-center border-b border-sber-light/30 px-4">
         <h1 className="text-3xl font text-white">SOKOL</h1>
       </div>
