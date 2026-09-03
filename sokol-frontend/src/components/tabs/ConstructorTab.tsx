@@ -4,7 +4,7 @@ import { Download, LayoutDashboard, MoreHorizontal, PencilLine, Plus, Trash2 } f
 import { PageHeader } from '../ui/PageHeader';
 import { EmptyState } from '../ui/StateMessage';
 import { ConfirmDialog } from '../ui/Modal';
-import { LIST_ACTION_BUTTON_CLASS, LIST_CHROME_RIGHT_INSET_CLASS } from '../../constants/formLayout';
+import { LIST_CHROME_RIGHT_INSET_CLASS } from '../../constants/formLayout';
 import { useAnalyticsConstructor } from '../analytics/constructor/analyticsConstructorState';
 import { ConstructorNameModal } from '../analytics/constructor/ConstructorNameModal';
 import { CONSTRUCTOR_SOURCE_LABELS } from '../analytics/constructor/constructorTypes';
@@ -81,7 +81,7 @@ export function ConstructorTab() {
           <button
             type="button"
             onClick={openCreate}
-            className={`${LIST_ACTION_BUTTON_CLASS} w-auto min-w-[160px] bg-[#90EE90] px-4 text-gray-700 transition hover:bg-[#7fdc7f]`}
+            className="inline-flex h-[38px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#90EE90] px-4 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f]"
           >
             <Plus size={16} />
             Создать дашборд

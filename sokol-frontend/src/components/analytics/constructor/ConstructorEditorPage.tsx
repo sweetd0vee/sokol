@@ -1,6 +1,6 @@
 import { useLayoutEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { LoadingState } from '../ui/StateMessage';
+import { LoadingState } from '../../ui/StateMessage';
 import { ConstructorDashboard } from './ConstructorDashboard';
 import { ConstructorNameModal } from './ConstructorNameModal';
 import { useAnalyticsConstructor } from './analyticsConstructorState';
