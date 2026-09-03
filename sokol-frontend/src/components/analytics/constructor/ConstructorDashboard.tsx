@@ -125,7 +125,7 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
           <span className="text-xs font-medium text-gray-500">{widgets.length}</span>
         </div>
         {widgets.length > 0 ? (
-          <ul className="max-h-[32rem] space-y-1.5 overflow-auto pr-1">
+          <ul className="space-y-1.5 pr-1">
             {widgets.map((widget, index) => (
               <li key={widget.instanceId} className="flex items-start gap-2 rounded-md bg-white/80 px-2 py-1.5">
                 <span className="mt-0.5 w-4 shrink-0 text-xs text-gray-400">{index + 1}</span>
