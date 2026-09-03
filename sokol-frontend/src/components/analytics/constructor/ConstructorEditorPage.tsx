@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { LoadingState } from '../../ui/StateMessage';
 import { ConstructorDashboard } from './ConstructorDashboard';
@@ -9,23 +9,25 @@ import { FORM_OUTLINE_BUTTON_CLASS } from '../../../constants/formLayout';
 export function ConstructorEditorPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { dashboards, activeDashboard, setActiveDashboard, renameDashboard } = useAnalyticsConstructor();
+  const { dashboards, activeDashboardId, setActiveDashboard, renameDashboard } = useAnalyticsConstructor();
   const [renameValue, setRenameValue] = useState<string | null>(null);
+  const dashboard = useMemo(
+    () => dashboards.find((item) => item.id === id) ?? null,
+    [dashboards, id],
+  );
+  const isCurrent = Boolean(dashboard && dashboard.id === activeDashboardId);
 
   useLayoutEffect(() => {
     if (!id) {
       navigate('/constructor', { replace: true });
       return;
     }
-    const found = dashboards.some((item) => item.id === id);
-    if (!found) {
+    if (!dashboards.some((item) => item.id === id)) {
       navigate('/constructor', { replace: true });
-      return;
     }
-    setActiveDashboard(id);
-  }, [dashboards, id, navigate, setActiveDashboard]);
+  }, [dashboards, id, navigate]);
 
-  if (!id || !activeDashboard || activeDashboard.id !== id) {
+  if (!id || !dashboard) {
     return <LoadingState title="Загрузка дашборда…" />;
   }
 
@@ -33,10 +35,25 @@ export function ConstructorEditorPage() {
     <div className="w-full space-y-5 text-left">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-sber-dark">{activeDashboard.name}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-xl font-bold text-sber-dark">{dashboard.name}</h2>
+            {isCurrent ? (
+              <span className="rounded-full bg-sber-dark/10 px-2 py-0.5 text-[11px] font-medium text-sber-dark">
+                Текущий
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setActiveDashboard(dashboard.id)}
+                className="rounded-full border border-sber-dark/25 px-2 py-0.5 text-[11px] font-medium text-gray-500 transition hover:border-sber-dark hover:text-sber-dark"
+              >
+                Сделать текущим
+              </button>
+            )}
+          </div>
           <button
             type="button"
-            onClick={() => setRenameValue(activeDashboard.name)}
+            onClick={() => setRenameValue(dashboard.name)}
             className="mt-1 text-sm font-medium text-[#6699FF] hover:text-[#3B82F6]"
           >
             Переименовать
@@ -46,7 +63,7 @@ export function ConstructorEditorPage() {
           К списку дашбордов
         </Link>
       </div>
-      <ConstructorDashboard />
+      <ConstructorDashboard dashboardId={dashboard.id} />
       {renameValue !== null ? (
         <ConstructorNameModal
           title="Название дашборда"
@@ -55,7 +72,7 @@ export function ConstructorEditorPage() {
           onChange={setRenameValue}
           onClose={() => setRenameValue(null)}
           onSubmit={() => {
-            renameDashboard(activeDashboard.id, renameValue);
+            renameDashboard(dashboard.id, renameValue);
             setRenameValue(null);
           }}
         />

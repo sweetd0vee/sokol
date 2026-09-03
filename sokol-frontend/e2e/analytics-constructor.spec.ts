@@ -89,7 +89,7 @@ test('constructor history can create a dashboard and accept charts from analytic
 
   await page.getByRole('link', { name: 'Конструктор' }).click();
   await expect(page).toHaveURL(/\/constructor$/);
-  await expect(page.getByRole('heading', { name: 'Конструктор' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Конструктор дашбордов' })).toBeVisible();
   await expect(page.getByText('Пока нет дашбордов')).toBeVisible();
 
   await page.getByRole('button', { name: 'Создать дашборд' }).click();
@@ -110,6 +110,16 @@ test('constructor history can create a dashboard and accept charts from analytic
 
   await page.getByRole('link', { name: 'Конструктор' }).click();
   await expect(page.getByRole('link', { name: 'Отчёт E2E' })).toBeVisible();
+  await expect(page.getByText('Текущий')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Создать дашборд' }).click();
+  await page.getByLabel('Название').fill('Второй лист');
+  await page.getByRole('button', { name: 'Создать' }).click();
+  await page.getByRole('link', { name: 'К списку дашбордов' }).click();
+  await page.getByRole('button', { name: 'Ещё действия для «Отчёт E2E»' }).click();
+  await page.getByRole('button', { name: 'Сделать текущим' }).click();
+  await expect(page.getByText('Текущий')).toBeVisible();
+
   await page.getByRole('link', { name: /Редактировать «Отчёт E2E»/ }).click();
   await expect(page.getByRole('heading', { name: 'Итого' })).toBeVisible();
   await expect(page.getByText('Проверки', { exact: true }).first()).toBeVisible();

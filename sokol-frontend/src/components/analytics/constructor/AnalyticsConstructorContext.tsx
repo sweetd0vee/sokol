@@ -98,15 +98,15 @@ export function AnalyticsConstructorProvider({ children }: { children: ReactNode
     });
   }, []);
 
-  const saveActiveDashboard = useCallback(() => {
+  const saveDashboard = useCallback((id: string) => {
     setLibrary((prev) => {
-      if (!prev.activeDashboardId) {
+      if (!prev.dashboards.some((item) => item.id === id)) {
         return prev;
       }
       const next = {
         ...prev,
         dashboards: prev.dashboards.map((item) =>
-          item.id === prev.activeDashboardId
+          item.id === id
             ? { ...item, updatedAt: new Date().toISOString() }
             : item,
         ),
@@ -116,6 +116,21 @@ export function AnalyticsConstructorProvider({ children }: { children: ReactNode
     });
   }, []);
 
+  const updateDashboardWidgets = useCallback(
+    (dashboardId: string, mutator: (widgets: ConstructorWidget[]) => ConstructorWidget[]) => {
+      setLibrary((prev) => {
+        const dashboard = prev.dashboards.find((item) => item.id === dashboardId);
+        if (!dashboard) {
+          return prev;
+        }
+        const next = replaceDashboardWidgets(prev, dashboardId, mutator(dashboard.widgets));
+        persist(next);
+        return next;
+      });
+    },
+    [],
+  );
+
   const updateActiveWidgets = useCallback(
     (mutator: (widgets: ConstructorWidget[]) => ConstructorWidget[]) => {
       setLibrary((prev) => {
@@ -124,8 +139,7 @@ export function AnalyticsConstructorProvider({ children }: { children: ReactNode
         if (!dashboard) {
           return prev;
         }
-        const nextWidgets = mutator(dashboard.widgets);
-        const next = replaceDashboardWidgets(ensured.library, ensured.dashboardId, nextWidgets);
+        const next = replaceDashboardWidgets(ensured.library, ensured.dashboardId, mutator(dashboard.widgets));
         persist(next);
         return next;
       });
@@ -154,17 +168,17 @@ export function AnalyticsConstructorProvider({ children }: { children: ReactNode
     return drafts.length;
   }, [updateActiveWidgets]);
 
-  const removeWidget = useCallback((instanceId: string) => {
-    updateActiveWidgets((prev) => prev.filter((widget) => widget.instanceId !== instanceId));
-  }, [updateActiveWidgets]);
+  const removeWidget = useCallback((dashboardId: string, instanceId: string) => {
+    updateDashboardWidgets(dashboardId, (prev) => prev.filter((widget) => widget.instanceId !== instanceId));
+  }, [updateDashboardWidgets]);
 
-  const clearBoard = useCallback(() => {
-    updateActiveWidgets(() => []);
-  }, [updateActiveWidgets]);
+  const clearBoard = useCallback((dashboardId: string) => {
+    updateDashboardWidgets(dashboardId, () => []);
+  }, [updateDashboardWidgets]);
 
-  const updateLayout = useCallback((nextLayout: Array<{ i: string; x: number; y: number; w: number; h: number }>) => {
+  const updateLayout = useCallback((dashboardId: string, nextLayout: Array<{ i: string; x: number; y: number; w: number; h: number }>) => {
     setLibrary((prev) => {
-      const dashboard = prev.dashboards.find((item) => item.id === prev.activeDashboardId);
+      const dashboard = prev.dashboards.find((item) => item.id === dashboardId);
       if (!dashboard) {
         return prev;
       }
@@ -220,7 +234,7 @@ export function AnalyticsConstructorProvider({ children }: { children: ReactNode
       duplicateDashboard,
       deleteDashboard,
       setActiveDashboard,
-      saveActiveDashboard,
+      saveDashboard,
       addWidgets,
       removeWidget,
       clearBoard,
@@ -237,7 +251,7 @@ export function AnalyticsConstructorProvider({ children }: { children: ReactNode
       library.dashboards,
       removeWidget,
       renameDashboard,
-      saveActiveDashboard,
+      saveDashboard,
       setActiveDashboard,
       updateLayout,
     ],

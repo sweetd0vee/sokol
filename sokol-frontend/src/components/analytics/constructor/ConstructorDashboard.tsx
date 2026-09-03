@@ -25,8 +25,9 @@ const BaseGridLayout = (gridLayoutModule.default ?? ReactGridLayout) as Componen
 const GRID_MARGIN = 10;
 const ROW_HEIGHT = 76;
 
-export function ConstructorDashboard() {
-  const { widgets, removeWidget, clearBoard, updateLayout, saveActiveDashboard, activeDashboard } = useAnalyticsConstructor();
+export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
+  const { dashboards, removeWidget, clearBoard, updateLayout, saveDashboard } = useAnalyticsConstructor();
+  const widgets = dashboards.find((item) => item.id === dashboardId)?.widgets ?? [];
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('pdf');
   const [isExporting, setIsExporting] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
@@ -104,31 +105,27 @@ export function ConstructorDashboard() {
   };
 
   const handleSave = () => {
-    saveActiveDashboard();
+    saveDashboard(dashboardId);
     setJustSaved(true);
-    window.setTimeout(() => setJustSaved(false), 1600);
   };
+
+  useEffect(() => {
+    if (!justSaved) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setJustSaved(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, [justSaved]);
 
   const sidebar = (
     <aside className="w-full shrink-0 space-y-5 lg:sticky lg:top-4 lg:w-80">
-      <section className="rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed">
-        <h3 className="mb-2 text-base font-semibold text-gray-900">Конструктор</h3>
-        <p className="text-sm text-gray-600">
-          Соберите дашборд для отчёта: отметьте графики галочкой на вкладках «Аналитика» и «Планирование»,
-          при необходимости смените фильтры и нажмите «В конструктор». Один и тот же график можно добавить несколько раз.
-          {activeDashboard ? ` Текущий лист: «${activeDashboard.name}».` : ''}
-        </p>
-      </section>
-
       <section className="rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed">
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="text-base font-semibold text-gray-900">Лист</h3>
           <span className="text-xs font-medium text-gray-500">{widgets.length}</span>
         </div>
-        {widgets.length === 0 ? (
-          <p className="text-sm text-gray-500">Пока пусто — холст справа ждёт графики.</p>
-        ) : (
-          <ul className="max-h-64 space-y-1.5 overflow-auto pr-1">
+        {widgets.length > 0 ? (
+          <ul className="max-h-[32rem] space-y-1.5 overflow-auto pr-1">
             {widgets.map((widget, index) => (
               <li key={widget.instanceId} className="flex items-start gap-2 rounded-md bg-white/80 px-2 py-1.5">
                 <span className="mt-0.5 w-4 shrink-0 text-xs text-gray-400">{index + 1}</span>
@@ -140,7 +137,7 @@ export function ConstructorDashboard() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => removeWidget(widget.instanceId)}
+                  onClick={() => removeWidget(dashboardId, widget.instanceId)}
                   className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-400 hover:bg-rose-50 hover:text-rose-700"
                   aria-label={`Удалить «${widget.title}»`}
                   title="Удалить"
@@ -150,10 +147,10 @@ export function ConstructorDashboard() {
               </li>
             ))}
           </ul>
-        )}
+        ) : null}
         <button
           type="button"
-          onClick={clearBoard}
+          onClick={() => clearBoard(dashboardId)}
           disabled={widgets.length === 0}
           className={`${FORM_OUTLINE_BUTTON_CLASS} mt-3 disabled:cursor-not-allowed disabled:opacity-50`}
         >
@@ -207,10 +204,6 @@ export function ConstructorDashboard() {
             <LayoutDashboard className="h-7 w-7" />
           </div>
           <h3 className="text-lg font-semibold text-sber-dark">Пустой лист отчёта</h3>
-          <p className="mt-2 max-w-md text-sm leading-relaxed text-gray-500">
-            Откройте «Аналитика» или «Планирование», отметьте нужные графики галочкой и нажмите «В конструктор».
-            Можно менять фильтры и добавлять один график несколько раз.
-          </p>
           <p className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-gray-400">
             <Plus className="h-3.5 w-3.5" />
             Затем переставьте, растяните или удалите блоки на этом листе
@@ -234,12 +227,15 @@ export function ConstructorDashboard() {
                 draggableHandle=".constructor-drag-handle"
                 style={{ minHeight: rowSpan * (ROW_HEIGHT + GRID_MARGIN) }}
                 onLayoutChange={(next: Array<{ i: string; x: number; y: number; w: number; h: number }>) => {
-                  updateLayout(next);
+                  updateLayout(dashboardId, next);
                 }}
               >
                 {widgets.map((widget) => (
                   <div key={widget.instanceId} className="min-h-0">
-                    <ConstructorWidgetCard widget={widget} onRemove={removeWidget} />
+                    <ConstructorWidgetCard
+                      widget={widget}
+                      onRemove={(instanceId) => removeWidget(dashboardId, instanceId)}
+                    />
                   </div>
                 ))}
               </BaseGridLayout>
@@ -247,7 +243,10 @@ export function ConstructorDashboard() {
               <div className="space-y-2.5">
                 {widgets.map((widget) => (
                   <div key={widget.instanceId} className="min-h-[16rem]">
-                    <ConstructorWidgetCard widget={widget} onRemove={removeWidget} />
+                    <ConstructorWidgetCard
+                      widget={widget}
+                      onRemove={(instanceId) => removeWidget(dashboardId, instanceId)}
+                    />
                   </div>
                 ))}
               </div>

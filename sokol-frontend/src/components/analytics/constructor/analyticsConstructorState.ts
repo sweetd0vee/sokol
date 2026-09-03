@@ -12,11 +12,11 @@ export type AnalyticsConstructorContextValue = {
   duplicateDashboard: (id: string, name: string) => ConstructorDashboardRecord | null;
   deleteDashboard: (id: string) => void;
   setActiveDashboard: (id: string | null) => void;
-  saveActiveDashboard: () => void;
+  saveDashboard: (id: string) => void;
   addWidgets: (drafts: ConstructorWidgetDraft[]) => number;
-  removeWidget: (instanceId: string) => void;
-  clearBoard: () => void;
-  updateLayout: (next: Array<{ i: string; x: number; y: number; w: number; h: number }>) => void;
+  removeWidget: (dashboardId: string, instanceId: string) => void;
+  clearBoard: (dashboardId: string) => void;
+  updateLayout: (dashboardId: string, next: Array<{ i: string; x: number; y: number; w: number; h: number }>) => void;
 };
 
 export const AnalyticsConstructorContext = createContext<AnalyticsConstructorContextValue | null>(null);

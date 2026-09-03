@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Download, LayoutDashboard, MoreHorizontal, PencilLine, Plus, Trash2 } from 'lucide-react';
+import { Check, Download, LayoutDashboard, MoreHorizontal, PencilLine, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '../ui/PageHeader';
 import { EmptyState } from '../ui/StateMessage';
 import { ConfirmDialog } from '../ui/Modal';
@@ -35,6 +35,7 @@ export function ConstructorTab() {
     createDashboard,
     duplicateDashboard,
     deleteDashboard,
+    setActiveDashboard,
   } = useAnalyticsConstructor();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createName, setCreateName] = useState('');
@@ -48,6 +49,15 @@ export function ConstructorTab() {
     [dashboards],
   );
   const deleteTarget = dashboards.find((item) => item.id === deleteId);
+
+  useEffect(() => {
+    if (!openMenuId) {
+      return undefined;
+    }
+    const close = () => setOpenMenuId(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [openMenuId]);
 
   const openCreate = () => {
     setCreateName(defaultDashboardName());
@@ -76,7 +86,7 @@ export function ConstructorTab() {
   return (
     <div className="w-full space-y-5 text-left">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <PageHeader title="Конструктор" />
+        <PageHeader title="Конструктор дашбордов" />
         <div className={`mx-auto flex shrink-0 items-center sm:mx-0 ${LIST_CHROME_RIGHT_INSET_CLASS}`}>
           <button
             type="button"
@@ -89,19 +99,14 @@ export function ConstructorTab() {
         </div>
       </div>
 
-      <p className="max-w-3xl text-sm leading-relaxed text-gray-600">
-        Соберите отчёт из графиков «Аналитики» и «Планирования». Отметьте карточки галочкой, нажмите
-        «В конструктор» — снимок попадёт в текущий дашборд. Здесь — история листов: открыть, сохранить копию, экспортировать или удалить.
-      </p>
-
       {sortedDashboards.length === 0 ? (
         <EmptyState
           title="Пока нет дашбордов"
           description="Создайте лист или добавьте график из аналитики / планирования — появится черновик в этой истории."
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-          <table className="min-w-full text-left text-sm">
+        <div className="rounded-xl border border-gray-200 bg-white">
+          <table className="min-w-full text-left text-base">
             <thead>
               <tr className="bg-[#003366] text-white">
                 <th className="px-4 py-3 font-medium">Название</th>
@@ -128,7 +133,7 @@ export function ConstructorTab() {
                           {dashboard.name}
                         </Link>
                         {isActive ? (
-                          <span className="rounded-full bg-sber-dark/10 px-2 py-0.5 text-[11px] font-medium text-sber-dark">
+                          <span className="shrink-0 rounded-full bg-sber-dark/10 px-2 py-0.5 text-[11px] font-medium text-sber-dark">
                             Текущий
                           </span>
                         ) : null}
@@ -138,45 +143,65 @@ export function ConstructorTab() {
                     <td className="px-4 py-3 text-gray-600">{sourceSummary(kinds)}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-gray-600">{formatDateTime(dashboard.updatedAt)}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-gray-600">{formatDateTime(dashboard.createdAt)}</td>
-                    <td className="px-0 pr-4 py-3">
-                      <div className="relative ml-auto flex w-[160px] items-center justify-end gap-1.5">
+                    <td className="overflow-visible px-0 pr-4 py-3">
+                      <div className="relative ml-auto flex w-20 items-center justify-end gap-1">
                         <Link
                           to={`/constructor/${dashboard.id}`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#003366] text-[#003366] transition hover:border-[#3B82F6] hover:bg-[#3B82F6] hover:text-white"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#003366] transition hover:bg-gray-100"
                           aria-label={`Редактировать «${dashboard.name}»`}
                           title="Редактировать"
                         >
-                          <PencilLine size={14} />
+                          <PencilLine size={16} />
                         </Link>
                         <button
                           type="button"
-                          onClick={() => setOpenMenuId((current) => (current === dashboard.id ? null : dashboard.id))}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setOpenMenuId((current) => (current === dashboard.id ? null : dashboard.id));
+                          }}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#003366] transition hover:bg-gray-100"
+                          aria-expanded={openMenuId === dashboard.id}
                           aria-label={`Ещё действия для «${dashboard.name}»`}
                           title="Ещё"
                         >
                           <MoreHorizontal size={16} />
                         </button>
                         {openMenuId === dashboard.id ? (
-                          <div className="absolute right-0 top-10 z-20 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                          <div
+                            className="absolute right-0 top-9 z-30 w-52 rounded-lg border border-gray-200 bg-white py-1 text-gray-900 shadow-lg"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            {isActive ? null : (
+                              <button
+                                type="button"
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
+                                onClick={() => {
+                                  setActiveDashboard(dashboard.id);
+                                  setOpenMenuId(null);
+                                }}
+                              >
+                                <Check size={14} />
+                                <span>Сделать текущим</span>
+                              </button>
+                            )}
                             <Link
                               to={`/constructor/${dashboard.id}`}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
                               onClick={() => setOpenMenuId(null)}
                             >
                               <Download size={14} />
-                              Экспорт
+                              <span>Экспорт</span>
                             </Link>
                             <button
                               type="button"
-                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
                               onClick={() => {
                                 setSaveAsId(dashboard.id);
                                 setSaveAsName(`${dashboard.name} (копия)`);
                                 setOpenMenuId(null);
                               }}
                             >
-                              Сохранить как
+                              <span>Сохранить как</span>
                             </button>
                             <button
                               type="button"
@@ -187,7 +212,7 @@ export function ConstructorTab() {
                               }}
                             >
                               <Trash2 size={14} />
-                              Удалить
+                              <span>Удалить</span>
                             </button>
                           </div>
                         ) : null}
