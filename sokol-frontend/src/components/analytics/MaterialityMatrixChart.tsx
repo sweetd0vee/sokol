@@ -20,6 +20,7 @@ import { MatrixChartShell, MatrixCountSortHeader, MatrixLegendFooter } from './m
 type MaterialityMatrixChartProps = {
   rows: MaterialityMatrixRow[];
   onSortConfigChange?: (sortConfig: MaterialityMatrixCountSortConfig) => void;
+  scrollBody?: boolean;
 };
 
 function ColumnShareCircle({
@@ -52,7 +53,11 @@ function ColumnShareCircle({
   );
 }
 
-export function MaterialityMatrixChart({ rows, onSortConfigChange }: MaterialityMatrixChartProps) {
+export function MaterialityMatrixChart({
+  rows,
+  onSortConfigChange,
+  scrollBody = true,
+}: MaterialityMatrixChartProps) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState<MaterialityMatrixCountSortConfig>(
     DEFAULT_MATERIALITY_MATRIX_COUNT_SORT,
@@ -72,6 +77,7 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
   return (
     <MatrixChartShell
       hoveredRow={hoveredRow}
+      scrollBody={scrollBody}
       footer={(
         <MatrixLegendFooter
           totalText={formatMaterialityChecksCount(rows.length)}
@@ -162,7 +168,7 @@ export function MaterialityMatrixChart({ rows, onSortConfigChange }: Materiality
                 </tr>
               ))}
             </tbody>
-            <tfoot className="sticky bottom-0 z-[1] bg-gray-50/95">
+            <tfoot className={scrollBody ? 'sticky bottom-0 z-[1] bg-gray-50/95' : 'bg-gray-50/95'}>
               <tr className="border-t border-gray-200">
                 <th
                   colSpan={2}

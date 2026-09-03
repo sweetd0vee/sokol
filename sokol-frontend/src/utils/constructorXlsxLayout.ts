@@ -9,12 +9,13 @@ import type { ConstructorWidget } from '../components/analytics/constructor/cons
 import type { DashboardChartCapture } from './dashboardChartRegistry';
 import { chartHasPngPayload } from './dashboardChartRegistry';
 
-/** ~159px per column → full board ~1900px, close to a desktop constructor pane. */
-export const CONSTRUCTOR_XLSX_COL_WIDTH = 22;
+/** ~103px per column → full board ~1240px, close to the on-screen constructor. */
+export const CONSTRUCTOR_XLSX_COL_WIDTH = 14;
 export const CONSTRUCTOR_XLSX_ROWS_PER_UNIT = 4;
-/** 26pt × 4 rows ≈ 139px per grid unit; a h=4 widget is ~555px tall. */
-export const CONSTRUCTOR_XLSX_ROW_HEIGHT = 26;
-export const CONSTRUCTOR_XLSX_IMAGE_PAD = 0.1;
+/** 18pt × 4 rows ≈ 96px per grid unit; a h=4 widget is ~360px tall plus gap. */
+export const CONSTRUCTOR_XLSX_ROW_HEIGHT = 18;
+export const CONSTRUCTOR_XLSX_IMAGE_PAD = 0.3;
+export const CONSTRUCTOR_XLSX_IMAGE_PAD_ROW = 0.7;
 /** Rasterize each chart at 2× the Excel cell so Excel does not upscale a screen-sized PNG. */
 export const CONSTRUCTOR_XLSX_CAPTURE_PIXEL_RATIO = 2;
 /** Title + subtitle + gap before the board grid (0-based image origin). */
@@ -64,17 +65,18 @@ export type ConstructorXlsxImageAnchor = {
 export function constructorXlsxImageAnchor(
   layout: ConstructorGridRect,
   originRow = CONSTRUCTOR_XLSX_GRID_ORIGIN_ROW,
-  pad = CONSTRUCTOR_XLSX_IMAGE_PAD,
+  padCol = CONSTRUCTOR_XLSX_IMAGE_PAD,
+  padRow = CONSTRUCTOR_XLSX_IMAGE_PAD_ROW,
 ): ConstructorXlsxImageAnchor {
   const { x, y, w, h } = clampConstructorGridRect(layout);
   return {
     tl: {
-      col: x + pad,
-      row: originRow + y * CONSTRUCTOR_XLSX_ROWS_PER_UNIT + pad,
+      col: x + padCol,
+      row: originRow + y * CONSTRUCTOR_XLSX_ROWS_PER_UNIT + padRow,
     },
     br: {
-      col: x + w - pad,
-      row: originRow + (y + h) * CONSTRUCTOR_XLSX_ROWS_PER_UNIT - pad,
+      col: x + w - padCol,
+      row: originRow + (y + h) * CONSTRUCTOR_XLSX_ROWS_PER_UNIT - padRow,
     },
     editAs: 'twoCell',
   };
@@ -93,14 +95,15 @@ export function excelRowHeightToPixels(heightPt: number): number {
 /** On-sheet drawing size of a widget, matching the enlarged 12-col grid. */
 export function constructorXlsxImageExtent(
   layout: ConstructorGridRect,
-  pad = CONSTRUCTOR_XLSX_IMAGE_PAD,
+  padCol = CONSTRUCTOR_XLSX_IMAGE_PAD,
+  padRow = CONSTRUCTOR_XLSX_IMAGE_PAD_ROW,
 ): { width: number; height: number } {
   const { w, h } = clampConstructorGridRect(layout);
   const colPx = excelColumnWidthToPixels(CONSTRUCTOR_XLSX_COL_WIDTH);
   const rowPx = excelRowHeightToPixels(CONSTRUCTOR_XLSX_ROW_HEIGHT);
   return {
-    width: Math.max(Math.round(w * colPx - 2 * pad * colPx), 1),
-    height: Math.max(Math.round(h * CONSTRUCTOR_XLSX_ROWS_PER_UNIT * rowPx - 2 * pad * rowPx), 1),
+    width: Math.max(Math.round(w * colPx - 2 * padCol * colPx), 1),
+    height: Math.max(Math.round(h * CONSTRUCTOR_XLSX_ROWS_PER_UNIT * rowPx - 2 * padRow * rowPx), 1),
   };
 }
 
@@ -222,7 +225,6 @@ export function buildConstructorDashboardWorkbook(options: {
   placed.forEach(({ widget, layout }) => {
     const range = constructorXlsxCellRange(layout, originRow);
     sheet.mergeCells(range.startRow, range.startCol, range.endRow, range.endCol);
-    outlineRange(sheet, range.startRow, range.startCol, range.endRow, range.endCol);
 
     const labelCell = sheet.getCell(range.startRow, range.startCol);
     labelCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
@@ -230,6 +232,7 @@ export function buildConstructorDashboardWorkbook(options: {
 
     const capture = byId.get(widget.instanceId);
     if (!capture) {
+      outlineRange(sheet, range.startRow, range.startCol, range.endRow, range.endCol);
       labelCell.value = widget.title;
       return;
     }
@@ -241,12 +244,11 @@ export function buildConstructorDashboardWorkbook(options: {
       extension: 'png',
     });
     const anchor = constructorXlsxImageAnchor(layout, originRow);
-    const extent = constructorXlsxImageExtent(layout);
     sheet.addImage(imageId, {
       tl: { col: anchor.tl.col, row: anchor.tl.row },
-      ext: extent,
-      editAs: 'oneCell',
-    } as unknown as ExcelJS.ImagePosition);
+      br: { col: anchor.br.col, row: anchor.br.row },
+      editAs: anchor.editAs,
+    } as unknown as ExcelJS.ImageRange);
   });
 
   const headerTitle = title.replaceAll('&', '&&');

@@ -38,6 +38,13 @@ type AnalyticsDashboardGridProps = {
 const GRID_MARGIN_Y = 2;
 const MIN_ROW_HEIGHT = 48;
 
+function shiftYPastStackedCards(
+  y: number,
+  stacked: Array<{ y: number; h: number }>,
+) {
+  return stacked.reduce((nextY, band) => (band.y + band.h <= y ? nextY - band.h : nextY), y);
+}
+
 export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const gridAreaRef = useRef<HTMLDivElement>(null);
@@ -57,14 +64,22 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
     if (gridCards.length === 0) {
       return [];
     }
-    const minY = Math.min(...gridCards.map((card) => card.defaultLayout.y));
-    return gridCards.map((card) => ({
+    const stackedBands = stackedCards.map((card) => ({
+      y: card.defaultLayout.y,
+      h: card.defaultLayout.h,
+    }));
+    const shifted = gridCards.map((card) => ({
       i: card.id,
       ...card.defaultLayout,
-      y: card.defaultLayout.y - minY,
+      y: shiftYPastStackedCards(card.defaultLayout.y, stackedBands),
       static: true,
     }));
-  }, [gridCards]);
+    const minY = Math.min(...shifted.map((item) => item.y));
+    return shifted.map((item) => ({
+      ...item,
+      y: item.y - minY,
+    }));
+  }, [gridCards, stackedCards]);
 
   const rowSpan = useMemo(() => {
     if (layout.length === 0) {

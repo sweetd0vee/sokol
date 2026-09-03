@@ -7,12 +7,14 @@ import {
   CONSTRUCTOR_XLSX_COL_WIDTH,
   CONSTRUCTOR_XLSX_GRID_ORIGIN_ROW,
   CONSTRUCTOR_XLSX_IMAGE_PAD,
+  CONSTRUCTOR_XLSX_IMAGE_PAD_ROW,
   CONSTRUCTOR_XLSX_ROWS_PER_UNIT,
   constructorGridRowSpan,
   constructorXlsxCellRange,
   constructorXlsxHasChartImages,
   constructorXlsxImageAnchor,
   constructorXlsxImageExtent,
+  excelColumnWidthToPixels,
   excelSheetName,
 } from './constructorXlsxLayout';
 
@@ -71,24 +73,28 @@ describe('constructor xlsx grid mapping', () => {
     expect(left.br.col).toBeCloseTo(6 - CONSTRUCTOR_XLSX_IMAGE_PAD);
     expect(right.tl.col).toBeCloseTo(6 + CONSTRUCTOR_XLSX_IMAGE_PAD);
     expect(right.br.col).toBeCloseTo(12 - CONSTRUCTOR_XLSX_IMAGE_PAD);
+    expect(right.tl.col - left.br.col).toBeCloseTo(CONSTRUCTOR_XLSX_IMAGE_PAD * 2);
     expect(left.tl.row).toBe(right.tl.row);
     expect(left.br.row).toBe(right.br.row);
     expect(left.editAs).toBe('twoCell');
   });
 
-  it('draws a half-width chart near original dashboard size, not a thumbnail', () => {
+  it('draws a half-width chart at dashboard scale without stretching the whole sheet', () => {
     const half = constructorXlsxImageExtent({ x: 0, y: 0, w: 6, h: 4 });
     const full = constructorXlsxImageExtent({ x: 0, y: 4, w: 12, h: 3 });
-    expect(half.width).toBeGreaterThanOrEqual(850);
-    expect(half.height).toBeGreaterThanOrEqual(500);
+    const boardWidth = excelColumnWidthToPixels(CONSTRUCTOR_XLSX_COL_WIDTH) * 12;
+    expect(half.width).toBeGreaterThanOrEqual(500);
+    expect(half.width).toBeLessThan(800);
+    expect(half.height).toBeGreaterThanOrEqual(280);
     expect(full.width).toBeGreaterThan(half.width);
     expect(full.width / half.width).toBeCloseTo(2, 0);
+    expect(boardWidth).toBeLessThan(1400);
   });
 
   it('places a full-width chart on the next board row', () => {
     const top = constructorXlsxImageAnchor({ x: 0, y: 0, w: 6, h: 4 });
     const below = constructorXlsxImageAnchor({ x: 0, y: 4, w: 12, h: 3 });
-    expect(below.tl.row).toBeCloseTo(top.br.row + CONSTRUCTOR_XLSX_IMAGE_PAD * 2);
+    expect(below.tl.row).toBeCloseTo(top.br.row + CONSTRUCTOR_XLSX_IMAGE_PAD_ROW * 2);
     expect(below.tl.col).toBeCloseTo(CONSTRUCTOR_XLSX_IMAGE_PAD);
     expect(below.br.col).toBeCloseTo(12 - CONSTRUCTOR_XLSX_IMAGE_PAD);
     expect(constructorGridRowSpan([{ x: 0, y: 0, w: 6, h: 4 }, { x: 0, y: 4, w: 12, h: 3 }])).toBe(7);
@@ -147,13 +153,13 @@ describe('buildConstructorDashboardWorkbook', () => {
     const cols = images.map((image) => {
       const range = image.range as {
         tl?: { col: number; row: number };
-        ext?: { width: number; height: number };
+        br?: { col: number; row: number };
       };
       return {
         col: range.tl?.col ?? -1,
         row: range.tl?.row ?? -1,
-        width: range.ext?.width ?? -1,
-        height: range.ext?.height ?? -1,
+        brCol: range.br?.col ?? -1,
+        brRow: range.br?.row ?? -1,
       };
     });
     expect(cols[0]?.col).toBeCloseTo(CONSTRUCTOR_XLSX_IMAGE_PAD);
@@ -161,10 +167,8 @@ describe('buildConstructorDashboardWorkbook', () => {
     expect(cols[0]?.row).toBe(cols[1]?.row);
     expect(cols[2]?.col).toBeCloseTo(CONSTRUCTOR_XLSX_IMAGE_PAD);
     expect(cols[2]?.row).toBeGreaterThan(cols[0]?.row ?? 0);
-    expect(cols[0]?.width).toBe(cols[1]?.width);
-    expect(cols[0]?.width).toBeGreaterThanOrEqual(850);
-    expect(cols[0]?.height).toBeGreaterThanOrEqual(500);
-    expect(cols[2]?.width).toBeGreaterThan(cols[0]?.width ?? 0);
+    expect((cols[1]?.col ?? 0) - (cols[0]?.brCol ?? 0)).toBeCloseTo(CONSTRUCTOR_XLSX_IMAGE_PAD * 2);
+    expect((cols[2]?.row ?? 0) - (cols[0]?.brRow ?? 0)).toBeCloseTo(CONSTRUCTOR_XLSX_IMAGE_PAD_ROW * 2);
 
     const buffer = await workbook.xlsx.writeBuffer();
     expect(buffer.byteLength).toBeGreaterThan(1000);

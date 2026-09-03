@@ -627,6 +627,7 @@ export function RecommendationsAnalyticsDashboard() {
       {
         id: 'materialityMatrix',
         defaultLayout: { x: 0, y: 5, w: 12, h: 8, minW: 6, minH: 6 },
+        expandToContent: true,
         render: () => (
           <ChartCard
             title="Матрица существенности"
@@ -634,6 +635,7 @@ export function RecommendationsAnalyticsDashboard() {
             exportSectionId="materialityMatrix"
             exportSelected={exportSections.isSelected('materialityMatrix')}
             onToggleExport={() => exportSections.toggleSection('materialityMatrix')}
+            fitContent
           >
             {materialityMatrix.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -641,6 +643,7 @@ export function RecommendationsAnalyticsDashboard() {
               <MaterialityMatrixChart
                 rows={materialityMatrix}
                 onSortConfigChange={handleMaterialityMatrixSortChange}
+                scrollBody={false}
               />
             )}
           </ChartCard>
@@ -700,6 +703,7 @@ export function RecommendationsAnalyticsDashboard() {
 
   return (
     <AnalyticsDashboardFrame
+      mainClassName="relative flex min-w-0 flex-1 flex-col lg:-mt-[84px] lg:self-start"
       sidebar={(
       <AnalyticsFilterSidebar
         periodSlice={periodSlice}
