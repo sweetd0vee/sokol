@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, Download, LayoutDashboard, MoreHorizontal, PencilLine, Plus, Trash2 } from 'lucide-react';
+import { Check, Copy, Download, LayoutDashboard, MoreHorizontal, PencilLine, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '../ui/PageHeader';
 import { EmptyState } from '../ui/StateMessage';
 import { ConfirmDialog } from '../ui/Modal';
@@ -201,7 +201,8 @@ export function ConstructorTab() {
                                 setOpenMenuId(null);
                               }}
                             >
-                              <span>Сохранить как</span>
+                              <Copy size={14} />
+                              <span>Копировать</span>
                             </button>
                             <button
                               type="button"
@@ -239,7 +240,7 @@ export function ConstructorTab() {
 
       {saveAsId ? (
         <ConstructorNameModal
-          title="Сохранить как"
+          title="Копировать"
           submitLabel="Сохранить"
           value={saveAsName}
           onChange={setSaveAsName}

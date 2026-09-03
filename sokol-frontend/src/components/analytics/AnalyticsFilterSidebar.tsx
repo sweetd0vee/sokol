@@ -198,6 +198,23 @@ export function AnalyticsFilterSidebar({
 
       {selectionSummary}
 
+      {onAddToConstructor ? (
+        <section className="rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed">
+          <button
+            type="button"
+            onClick={onAddToConstructor}
+            disabled={!canAddToConstructor}
+            className={`${FORM_OUTLINE_BUTTON_CLASS} !w-full disabled:cursor-not-allowed disabled:opacity-50`}
+          >
+            {constructorAdded
+              ? 'Добавлено'
+              : addToConstructorCount > 0
+                ? `Добавить в конструктор (${addToConstructorCount})`
+                : 'Добавить в конструктор'}
+          </button>
+        </section>
+      ) : null}
+
       <section className="rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed">
         <div className="flex items-center gap-2">
           <button
@@ -220,20 +237,6 @@ export function AnalyticsFilterSidebar({
             ))}
           </select>
         </div>
-        {onAddToConstructor ? (
-          <button
-            type="button"
-            onClick={onAddToConstructor}
-            disabled={!canAddToConstructor}
-            className={`${FORM_OUTLINE_BUTTON_CLASS} mt-2.5 !w-full disabled:cursor-not-allowed disabled:opacity-50`}
-          >
-            {constructorAdded
-              ? 'Добавлено'
-              : addToConstructorCount > 0
-                ? `В конструктор (${addToConstructorCount})`
-                : 'В конструктор'}
-          </button>
-        ) : null}
       </section>
     </aside>
   );

@@ -105,7 +105,7 @@ test('constructor history can create a dashboard and accept charts from analytic
   await expect(page.getByRole('heading', { name: 'Количество проверок' })).toBeVisible();
 
   await page.getByRole('button', { name: 'В отчёт и конструктор' }).first().click();
-  await page.getByRole('button', { name: 'В конструктор (1)' }).click();
+  await page.getByRole('button', { name: 'Добавить в конструктор (1)' }).click();
   await expect(page.getByRole('button', { name: 'Добавлено' })).toBeVisible();
 
   await page.getByRole('link', { name: 'Конструктор' }).click();
