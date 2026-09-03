@@ -240,8 +240,10 @@ export function StackedBarSegmentValueLabel({
         if (stackValue <= 0) {
           return false;
         }
-        const segmentHeight = pxPerUnit > 0 ? stackValue * pxPerUnit : stackKey === key ? h : 0;
-        return !segmentFitsInsideLabel(segmentHeight, w, stackValue);
+        const segmentAlong = pxPerUnit > 0 ? stackValue * pxPerUnit : stackKey === key ? alongValue : 0;
+        return isHorizontalBar
+          ? !segmentFitsInsideLabel(h, segmentAlong, stackValue)
+          : !segmentFitsInsideLabel(segmentAlong, w, stackValue);
       })
     : stackKeys.filter((stackKey) => stackKey === key);
   const calloutDuplicatesTotal =
@@ -254,7 +256,59 @@ export function StackedBarSegmentValueLabel({
   const outsideIndex = hasPayloadValues && matchedOutsideIndex !== -1
     ? matchedOutsideIndex
     : stackIndex;
-  const boxWidth = roundedStr.length * STACKED_NOTE_FONT_SIZE * STACKED_LABEL_CHAR_WIDTH + STACKED_NOTE_PAD_X * 2;
+  const boxWidth = calloutBoxWidth(rounded);
+  const halfBox = boxWidth / 2;
+
+  if (isHorizontalBar) {
+    const totalReserve = showStackTotal
+      ? estimateTextWidth(String(Math.round(stackTotal)), STACKED_TOTAL_FONT_SIZE) + STACKED_TOTAL_OFFSET + 4
+      : 0;
+    const calloutStartX = barRightX + totalReserve + STACKED_NOTE_ANCHOR_GAP;
+    const xOffset = outsideKeys.slice(0, Math.max(0, outsideIndex)).reduce((sum, stackKey) => {
+      const stackValue = stackValues[stackKeys.indexOf(stackKey)] ?? 0;
+      return sum + calloutBoxWidth(stackValue) + STACKED_CALLOUT_BOX_GAP;
+    }, 0);
+    const labelCx = calloutStartX + xOffset + halfBox;
+    const boxX = labelCx - halfBox;
+    const boxY = cy - STACKED_NOTE_BOX_HEIGHT / 2;
+    const lineStartX = boxX;
+
+    return (
+      <g style={{ pointerEvents: 'none' }}>
+        <line
+          x1={cx}
+          y1={cy}
+          x2={lineStartX}
+          y2={cy}
+          stroke={segmentColor}
+          strokeWidth={1.25}
+        />
+        <rect
+          x={boxX}
+          y={boxY}
+          width={boxWidth}
+          height={STACKED_NOTE_BOX_HEIGHT}
+          rx={6}
+          fill="#ffffff"
+          stroke={segmentColor}
+          strokeWidth={1.25}
+        />
+        <text
+          x={labelCx}
+          y={cy}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize={STACKED_NOTE_FONT_SIZE}
+          fontWeight={700}
+          fill="#111827"
+        >
+          {roundedStr}
+        </text>
+        {totalLabel}
+      </g>
+    );
+  }
+
   const outsideCount = Math.max(outsideKeys.length, 1);
   // Keep callouts and stems inside the bar width so narrow periods do not spill sideways.
   const edgePad = Math.min(3, Math.max(0, w * 0.1));
@@ -264,7 +318,6 @@ export function StackedBarSegmentValueLabel({
     outsideCount <= 1 || spreadRight <= spreadLeft
       ? cx
       : spreadLeft + ((spreadRight - spreadLeft) * outsideIndex) / (outsideCount - 1);
-  const halfBox = boxWidth / 2;
   const labelCx =
     w >= boxWidth
       ? Math.min(x + w - halfBox, Math.max(x + halfBox, stemX))

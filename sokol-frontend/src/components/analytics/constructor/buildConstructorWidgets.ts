@@ -350,7 +350,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorChecksMap') {
       drafts.push(
-        draft(kind, sectionId, 'Карта сотрудников по проверкам', 'Количество проверок за период по всем сотрудникам ДВА', caption, SIZE.full, {
+        draft(kind, sectionId, 'Карта сотрудников по проверкам', 'Количество проверок за период по всем сотрудникам ДВА', caption, SIZE.half, {
           chart: 'treemap',
           data: input.auditorChecksMap,
           palette: 'blue',
@@ -368,6 +368,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
           ],
           xKey: 'name',
           showLegend: true,
+          showStackTotal: true,
           layout: 'vertical',
           categoryWidth: 128,
         }),
@@ -385,6 +386,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
           ],
           xKey: 'name',
           showLegend: true,
+          showStackTotal: true,
           layout: 'vertical',
           categoryWidth: 128,
         }),
@@ -401,6 +403,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
           ],
           xKey: 'name',
           showLegend: true,
+          showStackTotal: true,
           layout: 'vertical',
           categoryWidth: 128,
         }),

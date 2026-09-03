@@ -282,7 +282,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorChecksMap',
-        defaultLayout: { x: 0, y: 2, w: 12, h: 3, minW: 4, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 6, h: 4, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
             title="Карта сотрудников по проверкам"
@@ -301,7 +301,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorImpact',
-        defaultLayout: { x: 0, y: 5, w: 12, h: 4, minW: 3, minH: 3 },
+        defaultLayout: { x: 6, y: 2, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Импакт рекомендаций"
@@ -320,7 +320,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorExecution',
-        defaultLayout: { x: 0, y: 9, w: 6, h: 4, minW: 3, minH: 3 },
+        defaultLayout: { x: 0, y: 6, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Результативность исполнения"
@@ -339,7 +339,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorTimeliness',
-        defaultLayout: { x: 6, y: 9, w: 6, h: 4, minW: 3, minH: 3 },
+        defaultLayout: { x: 6, y: 6, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Своевременность"
@@ -358,7 +358,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorDocuments',
-        defaultLayout: { x: 0, y: 13, w: 12, h: 6, minW: 6, minH: 4 },
+        defaultLayout: { x: 0, y: 10, w: 12, h: 6, minW: 6, minH: 4 },
         render: () => (
           <ChartCard
             title="Документная дисциплина"

@@ -30,12 +30,12 @@ import {
   CHECKS_PALETTE,
   lastScaleColor,
   MONITORING_BAR_BLUE_SCALE,
-  MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   VALUE_BLUE_SCALE,
   VALUE_GRAY_SCALE,
 } from '../analyticsPalette';
 import {
+  STACKED_HORIZONTAL_CHART_RIGHT_MARGIN,
   STACKED_PERIOD_CHART_SIDE_MARGIN,
   STACKED_PERIOD_CHART_TOP_MARGIN,
   StackedBarSegmentValueLabel,
@@ -58,10 +58,6 @@ function periodXAxisProps(granularity?: PeriodGranularity) {
     };
   }
   return {};
-}
-
-function getStatusSegmentColor(key: string) {
-  return MONITORING_STATUS_COLORS[key as keyof typeof MONITORING_STATUS_COLORS] ?? '#e5e7eb';
 }
 
 function getMaterialitySegmentColor(key: string) {
@@ -214,8 +210,10 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
       return <EmptyChart message="Нет данных" />;
     }
     const stackKeys = payload.series.map((item) => item.key);
+    const colorByKey = Object.fromEntries(payload.series.map((item) => [item.key, item.color]));
     const isVertical = payload.layout === 'vertical';
     const isGrouped = payload.grouped === true;
+    const showSegmentLabels = payload.showStackTotal === true && !isGrouped;
     return (
       <div className="h-full min-h-[13rem]">
         <ResponsiveContainer width="100%" height="100%">
@@ -224,7 +222,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
             layout={isVertical ? 'vertical' : 'horizontal'}
             margin={
               isVertical
-                ? { top: 8, right: 24, left: 8, bottom: 0 }
+                ? { top: 8, right: showSegmentLabels ? STACKED_HORIZONTAL_CHART_RIGHT_MARGIN : 24, left: 8, bottom: 0 }
                 : {
                     top: STACKED_PERIOD_CHART_TOP_MARGIN,
                     right: STACKED_PERIOD_CHART_SIDE_MARGIN,
@@ -261,7 +259,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
                 fill={series.color}
                 radius={isVertical ? [0, 4, 4, 0] : undefined}
               >
-                {payload.showStackTotal ? (
+                {showSegmentLabels ? (
                   <LabelList
                     dataKey={series.key}
                     content={(props) => (
@@ -269,9 +267,10 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
                         {...props}
                         dataKey={series.key}
                         stackKeys={stackKeys}
-                        getColor={getStatusSegmentColor}
+                        getColor={(key) => colorByKey[key] ?? series.color}
                         showStackTotal
                         stackRow={payload.data[Number(props.index)]}
+                        layout={payload.layout ?? 'horizontal'}
                       />
                     )}
                   />
