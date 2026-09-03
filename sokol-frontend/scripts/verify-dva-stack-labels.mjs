@@ -42,7 +42,7 @@ async function screenshotCard(page, title, file) {
   console.log(`Saved ${file}`);
 }
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, channel: 'chrome' });
 const page = await browser.newPage({ viewport: { width: 1680, height: 1100 } });
 mkdirSync(OUT_DIR, { recursive: true });
 try {
@@ -52,9 +52,10 @@ try {
   await page.getByRole('button', { name: 'ДВА', exact: true }).click();
   await page.getByRole('heading', { name: 'Итого', exact: true }).waitFor({ timeout: 30000 });
   await page.waitForTimeout(2500);
-  await screenshotCard(page, 'Импакт рекомендаций', 'dva-auditor-impact-labels.png');
-  await screenshotCard(page, 'Результативность исполнения', 'dva-auditor-execution-labels.png');
-  await screenshotCard(page, 'Своевременность', 'dva-auditor-timeliness-labels.png');
+  await page.getByRole('button', { name: 'Рекомендации', exact: true }).click();
+  await page.getByRole('heading', { name: 'Итого', exact: true }).waitFor({ timeout: 30000 });
+  await page.waitForTimeout(2000);
+  await screenshotCard(page, 'Существенность', 'recommendations-materiality-labels-check.png');
 } finally {
   await browser.close();
 }
