@@ -79,10 +79,11 @@ function useSheetListReorder(onReorder: (fromIndex: number, toIndex: number) => 
 
 export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
   const { dashboards, removeWidget, reorderWidgets, clearBoard, updateLayout } = useAnalyticsConstructor();
-  const widgets = useMemo(
-    () => dashboards.find((item) => item.id === dashboardId)?.widgets ?? [],
+  const dashboard = useMemo(
+    () => dashboards.find((item) => item.id === dashboardId) ?? null,
     [dashboards, dashboardId],
   );
+  const widgets = dashboard?.widgets ?? [];
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('pdf');
   const [isExporting, setIsExporting] = useState(false);
   const [containerWidth, setContainerWidth] = useState(1200);
@@ -174,15 +175,16 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
     setIsExporting(true);
     try {
       await exportConstructorDashboard({
-        format: exportFormat,
-        boardNode,
-        widgets,
-        meta: [
-          ['Графиков на листе', String(widgets.length)],
-          ['Источники', [...new Set(widgets.map((widget) => CONSTRUCTOR_SOURCE_LABELS[widget.kind]))].join(', ')],
-          ['Сформировано', new Date().toLocaleString('ru-RU')],
-        ],
-      });
+          format: exportFormat,
+          boardNode,
+          widgets,
+          title: dashboard?.name,
+          meta: [
+            ['Графиков на листе', String(widgets.length)],
+            ['Источники', [...new Set(widgets.map((widget) => CONSTRUCTOR_SOURCE_LABELS[widget.kind]))].join(', ')],
+            ['Сформировано', new Date().toLocaleString('ru-RU')],
+          ],
+        });
     } catch (error) {
       console.error('Constructor export failed', error);
       window.alert(`Не удалось экспортировать дашборд: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`);

@@ -1,7 +1,6 @@
 /**
  * Constructor board export: one visual sheet matching the assembled dashboard.
  */
-import ExcelJS from 'exceljs';
 import {
   AlignmentType,
   Document,
@@ -22,6 +21,7 @@ import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import type { AnalyticsExportFormat } from './analyticsExport';
 import { captureDashboardCharts, chartHasPngPayload } from './dashboardChartRegistry';
 import type { ConstructorWidget } from '../components/analytics/constructor/constructorTypes';
+import { buildConstructorDashboardWorkbook } from './constructorXlsxLayout';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
@@ -74,8 +74,21 @@ function fitImageSize(width: number, height: number, maxWidth: number, maxHeight
   };
 }
 
+async function captureConstructorWidgetCharts(widgets: ConstructorWidget[]) {
+  document.body.classList.add('constructor-export-mode');
+  try {
+    await delay(80);
+    return await captureDashboardCharts(
+      widgets.map((widget) => widget.instanceId),
+      { skipPng: false },
+    );
+  } finally {
+    document.body.classList.remove('constructor-export-mode');
+  }
+}
+
 async function composeFromWidgets(widgets: ConstructorWidget[]): Promise<string> {
-  const captures = await captureDashboardCharts(widgets.map((widget) => widget.instanceId), { skipPng: false });
+  const captures = await captureConstructorWidgetCharts(widgets);
   const byId = new Map(captures.filter((item) => chartHasPngPayload(item.dataUrl)).map((item) => [item.id, item]));
   const cellW = 160;
   const cellH = 96;
@@ -147,21 +160,43 @@ export async function captureConstructorBoard(boardNode: HTMLElement, widgets: C
   return composeFromWidgets(widgets);
 }
 
+function fileSafeName(name: string) {
+  const cleaned = name
+    .replace(/[<>:"/\\|?*]/g, ' ')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return cleaned.slice(0, 60) || 'analytics-constructor';
+}
+
 export async function exportConstructorDashboard(options: {
   format: AnalyticsExportFormat;
   boardNode: HTMLElement;
   widgets: ConstructorWidget[];
   meta: Array<[string, string]>;
+  title?: string;
 }) {
   const { format, boardNode, widgets, meta } = options;
   if (widgets.length === 0) {
     throw new Error('На холсте нет графиков');
   }
 
+  const title = options.title?.trim() || 'Конструктор отчёта';
+  const filenamePrefix = fileSafeName(title);
+
+  if (format === 'xlsx') {
+    const captures = await captureConstructorWidgetCharts(widgets);
+    const workbook = buildConstructorDashboardWorkbook({ title, meta, widgets, captures });
+    const buffer = await workbook.xlsx.writeBuffer();
+    triggerDownload(
+      new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      `${filenamePrefix}-${stamp()}.xlsx`,
+    );
+    return;
+  }
+
   const dataUrl = await captureConstructorBoard(boardNode, widgets);
   const size = await imageSize(dataUrl);
-  const filenamePrefix = 'analytics-constructor';
-  const title = 'Конструктор отчёта';
 
   if (format === 'html') {
     const metaRows = meta
@@ -297,37 +332,7 @@ export async function exportConstructorDashboard(options: {
     return;
   }
 
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'SOKOL';
-  const sheet = workbook.addWorksheet('Конструктор', {
-    pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 1, paperSize: 9 },
-  });
-  sheet.mergeCells('A1:L1');
-  sheet.getCell('A1').value = title;
-  sheet.getCell('A1').font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF003366' } };
-  let row = 3;
-  for (const [label, value] of meta) {
-    sheet.getCell(`A${row}`).value = label;
-    sheet.getCell(`A${row}`).font = { bold: true, color: { argb: 'FF003366' } };
-    sheet.mergeCells(`B${row}:L${row}`);
-    sheet.getCell(`B${row}`).value = value;
-    row += 1;
-  }
-  const imageId = workbook.addImage({
-    base64: dataUrl.startsWith('data:') ? dataUrl : `data:image/png;base64,${dataUrl}`,
-    extension: 'png',
-  });
-  const fittedSheet = fitImageSize(size.width, size.height, 960, 720);
-  sheet.addImage(imageId, {
-    tl: { col: 0.15, row: row + 0.4 },
-    ext: { width: fittedSheet.width, height: fittedSheet.height },
-    editAs: 'oneCell',
-  });
-  const buffer = await workbook.xlsx.writeBuffer();
-  triggerDownload(
-    new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-    `${filenamePrefix}-${stamp()}.xlsx`,
-  );
+  throw new Error(`Неизвестный формат экспорта: ${format}`);
 }
 
 function escapeHtml(value: string) {

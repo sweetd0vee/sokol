@@ -2,10 +2,10 @@ import type { ConstructorWidget, ConstructorWidgetLayout } from './constructorTy
 
 export type ConstructorSizeHint = Pick<ConstructorWidgetLayout, 'w' | 'h' | 'minW' | 'minH'>;
 
-const COLS = 12;
+export const CONSTRUCTOR_GRID_COLS = 12;
 
 function clampSize(size: ConstructorSizeHint): ConstructorSizeHint {
-  const width = Math.min(Math.max(size.w, 1), COLS);
+  const width = Math.min(Math.max(size.w, 1), CONSTRUCTOR_GRID_COLS);
   const height = Math.max(size.h, 1);
   return {
     w: width,
@@ -29,7 +29,7 @@ export function packNewLayouts(
 
   for (const rawSize of sizes) {
     const size = clampSize(rawSize);
-    if (x > 0 && x + size.w > COLS) {
+    if (x > 0 && x + size.w > CONSTRUCTOR_GRID_COLS) {
       x = 0;
       y += rowHeight;
       rowHeight = 0;
@@ -37,7 +37,7 @@ export function packNewLayouts(
     placed.push({ x, y, ...size });
     x += size.w;
     rowHeight = Math.max(rowHeight, size.h);
-    if (x >= COLS) {
+    if (x >= CONSTRUCTOR_GRID_COLS) {
       x = 0;
       y += rowHeight;
       rowHeight = 0;
