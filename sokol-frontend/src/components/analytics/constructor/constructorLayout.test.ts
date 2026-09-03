@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { packNewLayouts } from './constructorLayout';
+import { moveArrayItem, packNewLayouts, reorderConstructorWidgets } from './constructorLayout';
+import type { ConstructorWidget, ConstructorWidgetLayout } from './constructorTypes';
 import { buildConstructorFilterCaption } from './constructorFilterCaption';
 import { buildChecksConstructorDrafts, buildDvaConstructorDrafts, buildPlanningConstructorDrafts, buildRecommendationsConstructorDrafts } from './buildConstructorWidgets';
 
@@ -25,6 +26,66 @@ describe('packNewLayouts', () => {
     );
     expect(packed[0]).toMatchObject({ x: 0, y: 2, w: 8, h: 4 });
     expect(packed[1]).toMatchObject({ x: 0, y: 6, w: 6, h: 4 });
+  });
+});
+
+describe('moveArrayItem', () => {
+  it('moves an item to a new index', () => {
+    expect(moveArrayItem(['a', 'b', 'c', 'd'], 0, 2)).toEqual(['b', 'c', 'a', 'd']);
+    expect(moveArrayItem(['a', 'b', 'c', 'd'], 3, 0)).toEqual(['d', 'a', 'b', 'c']);
+    expect(moveArrayItem(['a', 'b', 'c'], 2, 1)).toEqual(['a', 'c', 'b']);
+  });
+
+  it('returns the same array when the move is a no-op', () => {
+    const items = ['a', 'b'];
+    expect(moveArrayItem(items, 1, 1)).toBe(items);
+    expect(moveArrayItem(items, -1, 0)).toBe(items);
+    expect(moveArrayItem(items, 0, 2)).toBe(items);
+  });
+});
+
+describe('reorderConstructorWidgets', () => {
+  const size = { w: 12, h: 2, minW: 4, minH: 2 };
+
+  function widget(id: string, layout: ConstructorWidgetLayout = { x: 0, y: 0, ...size }): ConstructorWidget {
+    return {
+      instanceId: id,
+      kind: 'checks',
+      sectionId: id,
+      title: id,
+      description: '',
+      filterCaption: '',
+      size,
+      payload: { chart: 'list', items: [] },
+      layout,
+    };
+  }
+
+  it('reorders list items and leaves board coordinates unchanged', () => {
+    const widgets = [
+      widget('a', { x: 0, y: 0, ...size }),
+      widget('b', { x: 0, y: 2, ...size }),
+      widget('c', { x: 0, y: 4, ...size }),
+    ];
+    const next = reorderConstructorWidgets(widgets, 2, 0);
+    expect(next.map((item) => item.instanceId)).toEqual(['c', 'a', 'b']);
+    expect(next.map((item) => item.layout)).toEqual([
+      widgets[2]?.layout,
+      widgets[0]?.layout,
+      widgets[1]?.layout,
+    ]);
+  });
+
+  it('does not swap positions of widgets that share a row', () => {
+    const half = { w: 6, h: 4, minW: 3, minH: 3 };
+    const widgets = [
+      widget('a', { x: 0, y: 0, ...half }),
+      widget('b', { x: 6, y: 0, ...half }),
+    ];
+    const next = reorderConstructorWidgets(widgets, 1, 0);
+    expect(next.map((item) => item.instanceId)).toEqual(['b', 'a']);
+    expect(next[0]?.layout).toEqual(widgets[1]?.layout);
+    expect(next[1]?.layout).toEqual(widgets[0]?.layout);
   });
 });
 

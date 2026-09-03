@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import type { ConstructorWidget, ConstructorWidgetDraft, ConstructorWidgetLayout } from './constructorTypes';
-import { createConstructorInstanceId, packNewLayouts } from './constructorLayout';
+import { createConstructorInstanceId, packNewLayouts, reorderConstructorWidgets } from './constructorLayout';
 import { AnalyticsConstructorContext } from './analyticsConstructorState';
 import {
   createDashboardRecord,
@@ -154,6 +154,10 @@ export function AnalyticsConstructorProvider({ children }: { children: ReactNode
     updateDashboardWidgets(dashboardId, (prev) => prev.filter((widget) => widget.instanceId !== instanceId));
   }, [updateDashboardWidgets]);
 
+  const reorderWidgets = useCallback((dashboardId: string, fromIndex: number, toIndex: number) => {
+    updateDashboardWidgets(dashboardId, (prev) => reorderConstructorWidgets(prev, fromIndex, toIndex));
+  }, [updateDashboardWidgets]);
+
   const clearBoard = useCallback((dashboardId: string) => {
     updateDashboardWidgets(dashboardId, () => []);
   }, [updateDashboardWidgets]);
@@ -218,6 +222,7 @@ export function AnalyticsConstructorProvider({ children }: { children: ReactNode
       setActiveDashboard,
       addWidgets,
       removeWidget,
+      reorderWidgets,
       clearBoard,
       updateLayout,
     }),
@@ -231,6 +236,7 @@ export function AnalyticsConstructorProvider({ children }: { children: ReactNode
       library.activeDashboardId,
       library.dashboards,
       removeWidget,
+      reorderWidgets,
       renameDashboard,
       setActiveDashboard,
       updateLayout,

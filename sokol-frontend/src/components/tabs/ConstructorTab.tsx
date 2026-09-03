@@ -139,7 +139,15 @@ export function ConstructorTab() {
         />
       ) : (
         <div className="rounded-xl border border-gray-200 bg-white">
-          <table className="min-w-full text-left text-base">
+          <table className="min-w-full table-fixed text-left text-base">
+              <colgroup>
+                <col className="w-[36%]" />
+                <col className="w-[8%]" />
+                <col className="w-[18%]" />
+                <col className="w-[15%]" />
+                <col className="w-[15%]" />
+                <col className="w-[8%]" />
+              </colgroup>
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="px-2 py-2 font-normal">
@@ -206,8 +214,8 @@ export function ConstructorTab() {
                   const isActive = dashboard.id === activeDashboardId;
                   return (
                     <tr key={dashboard.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
+                      <td className="min-w-0 px-4 py-3">
+                        <div className="flex min-w-0 items-center gap-2">
                           <LayoutDashboard className="h-4 w-4 shrink-0 text-sber-dark" />
                           <Link
                             to={`/constructor/${dashboard.id}`}
@@ -267,14 +275,6 @@ export function ConstructorTab() {
                                   <span>Сделать текущим</span>
                                 </button>
                               )}
-                              <Link
-                                to={`/constructor/${dashboard.id}`}
-                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
-                                onClick={() => setOpenMenuId(null)}
-                              >
-                                <Download size={14} />
-                                <span>Экспорт</span>
-                              </Link>
                               <button
                                 type="button"
                                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
@@ -287,6 +287,14 @@ export function ConstructorTab() {
                                 <Copy size={14} />
                                 <span>Копировать</span>
                               </button>
+                              <Link
+                                to={`/constructor/${dashboard.id}`}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
+                                onClick={() => setOpenMenuId(null)}
+                              >
+                                <Download size={14} />
+                                <span>Экспорт</span>
+                              </Link>
                               <button
                                 type="button"
                                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50"

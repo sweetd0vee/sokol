@@ -1,4 +1,4 @@
-import type { ConstructorWidgetLayout } from './constructorTypes';
+import type { ConstructorWidget, ConstructorWidgetLayout } from './constructorTypes';
 
 export type ConstructorSizeHint = Pick<ConstructorWidgetLayout, 'w' | 'h' | 'minW' | 'minH'>;
 
@@ -45,6 +45,34 @@ export function packNewLayouts(
   }
 
   return placed;
+}
+
+export function moveArrayItem<T>(items: T[], fromIndex: number, toIndex: number): T[] {
+  if (
+    fromIndex === toIndex
+    || fromIndex < 0
+    || toIndex < 0
+    || fromIndex >= items.length
+    || toIndex >= items.length
+  ) {
+    return items;
+  }
+  const next = items.slice();
+  const [item] = next.splice(fromIndex, 1);
+  if (item === undefined) {
+    return items;
+  }
+  next.splice(toIndex, 0, item);
+  return next;
+}
+
+/** Change list order only; keep each widget's board layout as-is. */
+export function reorderConstructorWidgets(
+  widgets: ConstructorWidget[],
+  fromIndex: number,
+  toIndex: number,
+): ConstructorWidget[] {
+  return moveArrayItem(widgets, fromIndex, toIndex);
 }
 
 export function createConstructorInstanceId(kind: string, sectionId: string) {

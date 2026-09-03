@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
-import { LayoutDashboard, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ComponentType, type KeyboardEvent, type PointerEvent } from 'react';
+import { GripVertical, LayoutDashboard, Plus, Trash2 } from 'lucide-react';
 import * as ReactGridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
@@ -25,8 +25,60 @@ const BaseGridLayout = (gridLayoutModule.default ?? ReactGridLayout) as Componen
 const GRID_MARGIN = 10;
 const ROW_HEIGHT = 76;
 
+function useSheetListReorder(onReorder: (fromIndex: number, toIndex: number) => void) {
+  const sessionRef = useRef<{ from: number; over: number } | null>(null);
+  const onReorderRef = useRef(onReorder);
+  onReorderRef.current = onReorder;
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+
+  const handlePointerDown = (event: PointerEvent<HTMLElement>, index: number) => {
+    if (event.button !== 0) {
+      return;
+    }
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    sessionRef.current = { from: index, over: index };
+    setDraggingIndex(index);
+    setOverIndex(index);
+  };
+
+  const handlePointerMove = (event: PointerEvent<HTMLElement>) => {
+    const session = sessionRef.current;
+    if (!session) {
+      return;
+    }
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    const item = target instanceof Element ? target.closest('[data-constructor-sheet-item]') : null;
+    if (!(item instanceof HTMLElement)) {
+      return;
+    }
+    const next = Number(item.dataset.index);
+    if (!Number.isInteger(next) || next === session.over) {
+      return;
+    }
+    session.over = next;
+    setOverIndex(next);
+  };
+
+  const endDrag = (event: PointerEvent<HTMLElement>) => {
+    const session = sessionRef.current;
+    sessionRef.current = null;
+    setDraggingIndex(null);
+    setOverIndex(null);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    if (session && session.from !== session.over) {
+      onReorderRef.current(session.from, session.over);
+    }
+  };
+
+  return { draggingIndex, overIndex, handlePointerDown, handlePointerMove, endDrag };
+}
+
 export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
-  const { dashboards, removeWidget, clearBoard, updateLayout } = useAnalyticsConstructor();
+  const { dashboards, removeWidget, reorderWidgets, clearBoard, updateLayout } = useAnalyticsConstructor();
   const widgets = useMemo(
     () => dashboards.find((item) => item.id === dashboardId)?.widgets ?? [],
     [dashboards, dashboardId],
@@ -39,10 +91,43 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
   );
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+  const canReorder = widgets.length > 1;
+  const { draggingIndex, overIndex, handlePointerDown, handlePointerMove, endDrag } = useSheetListReorder(
+    (fromIndex, toIndex) => reorderWidgets(dashboardId, fromIndex, toIndex),
+  );
+
+  const handleListKeyDown = (event: KeyboardEvent<HTMLLIElement>, index: number) => {
+    if (!canReorder) {
+      return;
+    }
+    if (event.key === 'ArrowUp' && index > 0) {
+      event.preventDefault();
+      reorderWidgets(dashboardId, index, index - 1);
+    } else if (event.key === 'ArrowDown' && index < widgets.length - 1) {
+      event.preventDefault();
+      reorderWidgets(dashboardId, index, index + 1);
+    }
+  };
+
+  const boardWidgets = useMemo(
+    () => [...widgets].sort((left, right) => left.instanceId.localeCompare(right.instanceId)),
+    [widgets],
+  );
+
+  const stackedWidgets = useMemo(
+    () =>
+      [...widgets].sort(
+        (left, right) =>
+          left.layout.y - right.layout.y
+          || left.layout.x - right.layout.x
+          || left.instanceId.localeCompare(right.instanceId),
+      ),
+    [widgets],
+  );
 
   const layout = useMemo(
     () =>
-      widgets.map((widget) => ({
+      boardWidgets.map((widget) => ({
         i: widget.instanceId,
         x: widget.layout.x,
         y: widget.layout.y,
@@ -51,7 +136,7 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
         minW: widget.layout.minW,
         minH: widget.layout.minH,
       })),
-    [widgets],
+    [boardWidgets],
   );
 
   const rowSpan = useMemo(() => {
@@ -114,27 +199,60 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
           <span className="text-xs font-medium text-gray-500">{widgets.length}</span>
         </div>
         {widgets.length > 0 ? (
-          <ul className="space-y-1.5 pr-1">
-            {widgets.map((widget, index) => (
-              <li key={widget.instanceId} className="flex items-start gap-2 rounded-md bg-white/80 px-2 py-1.5">
-                <span className="mt-0.5 w-4 shrink-0 text-xs text-gray-400">{index + 1}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900">{widget.title}</p>
-                  <p className="truncate text-[11px] text-gray-500">
-                    {CONSTRUCTOR_SOURCE_LABELS[widget.kind]} · {widget.filterCaption}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeWidget(dashboardId, widget.instanceId)}
-                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-400 hover:bg-rose-50 hover:text-rose-700"
-                  aria-label={`Удалить «${widget.title}»`}
-                  title="Удалить"
+          <ul
+            className={`space-y-1.5 pr-1 ${draggingIndex !== null ? 'select-none' : ''}`}
+            aria-label="Порядок графиков на листе"
+          >
+            {widgets.map((widget, index) => {
+              const isDragging = draggingIndex === index;
+              const isDropTarget = overIndex === index && draggingIndex !== null && draggingIndex !== index;
+              return (
+                <li
+                  key={widget.instanceId}
+                  data-constructor-sheet-item
+                  data-index={index}
+                  tabIndex={canReorder ? 0 : undefined}
+                  onKeyDown={(event) => handleListKeyDown(event, index)}
+                  className={`flex items-start gap-2 rounded-md bg-white/80 px-2 py-1.5 outline-none ${
+                    isDragging ? 'opacity-50' : ''
+                  } ${isDropTarget ? 'ring-1 ring-sber-dark' : ''} ${
+                    canReorder ? 'focus-visible:ring-1 focus-visible:ring-sber-dark' : ''
+                  }`}
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </li>
-            ))}
+                  {canReorder ? (
+                    <span
+                      role="button"
+                      tabIndex={-1}
+                      className="inline-flex h-6 w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded text-gray-400 hover:bg-gray-50 hover:text-gray-600 active:cursor-grabbing"
+                      aria-label={`Переместить «${widget.title}»`}
+                      title="Перетащить"
+                      onPointerDown={(event) => handlePointerDown(event, index)}
+                      onPointerMove={handlePointerMove}
+                      onPointerUp={endDrag}
+                      onPointerCancel={endDrag}
+                    >
+                      <GripVertical className="h-3.5 w-3.5" />
+                    </span>
+                  ) : null}
+                  <span className="mt-0.5 w-4 shrink-0 text-xs text-gray-400">{index + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-gray-900">{widget.title}</p>
+                    <p className="truncate text-[11px] text-gray-500">
+                      {CONSTRUCTOR_SOURCE_LABELS[widget.kind]} · {widget.filterCaption}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeWidget(dashboardId, widget.instanceId)}
+                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-400 hover:bg-rose-50 hover:text-rose-700"
+                    aria-label={`Удалить «${widget.title}»`}
+                    title="Удалить"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         ) : null}
         <button
@@ -212,7 +330,7 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
                   updateLayout(dashboardId, next);
                 }}
               >
-                {widgets.map((widget) => (
+                {boardWidgets.map((widget) => (
                   <div key={widget.instanceId} className="min-h-0">
                     <ConstructorWidgetCard
                       widget={widget}
@@ -223,7 +341,7 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
               </BaseGridLayout>
             ) : (
               <div className="space-y-2.5">
-                {widgets.map((widget) => (
+                {stackedWidgets.map((widget) => (
                   <div key={widget.instanceId} className="min-h-[16rem]">
                     <ConstructorWidgetCard
                       widget={widget}

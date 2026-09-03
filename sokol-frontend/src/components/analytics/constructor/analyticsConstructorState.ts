@@ -14,6 +14,7 @@ export type AnalyticsConstructorContextValue = {
   setActiveDashboard: (id: string | null) => void;
   addWidgets: (drafts: ConstructorWidgetDraft[]) => number;
   removeWidget: (dashboardId: string, instanceId: string) => void;
+  reorderWidgets: (dashboardId: string, fromIndex: number, toIndex: number) => void;
   clearBoard: (dashboardId: string) => void;
   updateLayout: (dashboardId: string, next: Array<{ i: string; x: number; y: number; w: number; h: number }>) => void;
 };
