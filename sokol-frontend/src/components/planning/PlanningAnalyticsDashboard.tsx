@@ -232,7 +232,7 @@ export function PlanningAnalyticsDashboard() {
               {coverage.total === 0 ? (
                 <EmptyChart message="Нет департаментов в данных" />
               ) : (
-                <div className="flex h-full min-h-[13rem] flex-col gap-2" data-export-html>
+                <div className="flex h-full min-h-[13rem] flex-col gap-2">
                   {uncoveredDepartments.length === 0 ? (
                     <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 px-4 text-center text-sm font-semibold text-emerald-700">
                       Все департаменты охвачены проверками за выбранный период

@@ -99,6 +99,7 @@ test('constructor history can create a dashboard and accept charts from analytic
   await expect(page.getByRole('heading', { name: 'Отчёт E2E' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Пустой лист отчёта' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Экспорт' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Сохранить' })).toHaveCount(0);
 
   await page.getByRole('link', { name: 'Аналитика' }).click();
   await expect(page).toHaveURL(/\/analytics$/);

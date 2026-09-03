@@ -60,7 +60,7 @@ export function AuditorStackedBarChart({
               name={item.name}
               stackId={grouped ? undefined : 'auditor'}
               fill={item.color}
-              radius={[0, 4, 4, 0]}
+              radius={grouped || item.key === lastSeriesKey ? [0, 4, 4, 0] : 0}
             >
               {totalKey && item.key === lastSeriesKey ? (
                 <LabelList
