@@ -131,7 +131,7 @@ describe('buildConstructorDrafts', () => {
 
   it('snapshots DVA employee dashboards', () => {
     const drafts = buildDvaConstructorDrafts({
-      selectedSections: ['summary', 'auditorLoad', 'auditorImpact', 'auditorDocuments'],
+      selectedSections: ['summary', 'auditorChecksMap', 'auditorRecommendationsMap', 'auditorDocuments'],
       filterCaption: '2025 · Все аудиторы · Все департаменты',
       checkTotal: 12,
       recTotal: 40,
@@ -140,7 +140,8 @@ describe('buildConstructorDrafts', () => {
       highMaterialityShare: 20,
       recCompletionRate: 55,
       recViolationRate: 18,
-      auditorLoad: [{ name: 'Иванов', checks: 4, recommendations: 10, value: 14 }],
+      auditorChecksMap: [{ name: 'Иванов', value: 4 }],
+      auditorRecommendationsMap: [{ name: 'Иванов', value: 10 }],
       auditorImpact: [{ name: 'Иванов', low: 2, medium: 3, high: 5, total: 10 }],
       auditorExecution: [],
       auditorTimeliness: [],
@@ -158,12 +159,13 @@ describe('buildConstructorDrafts', () => {
     });
     expect(drafts.map((item) => item.sectionId)).toEqual([
       'summary',
-      'auditorLoad',
-      'auditorImpact',
+      'auditorChecksMap',
+      'auditorRecommendationsMap',
       'auditorDocuments',
     ]);
     expect(drafts[0]?.payload.chart).toBe('kpi');
-    expect(drafts[1]?.payload.chart).toBe('stacked');
+    expect(drafts[1]?.payload.chart).toBe('treemap');
+    expect(drafts[2]?.payload.chart).toBe('treemap');
     expect(drafts[3]?.payload.chart).toBe('auditor-documents-matrix');
   });
 });

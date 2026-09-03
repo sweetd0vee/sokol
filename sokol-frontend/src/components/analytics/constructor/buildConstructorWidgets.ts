@@ -348,20 +348,20 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
           ],
         }),
       );
-    } else if (sectionId === 'auditorLoad') {
+    } else if (sectionId === 'auditorChecksMap') {
       drafts.push(
-        draft(kind, sectionId, 'Нагрузка сотрудников', 'Портфель проверок и рекомендаций по сотрудникам ДВА', caption, SIZE.half, {
-          chart: 'stacked',
-          data: input.auditorLoad,
-          series: [
-            { key: 'checks', name: 'Проверки', color: CHECKS_PALETTE[8] },
-            { key: 'recommendations', name: 'Рекомендации', color: RECOMMENDATIONS_PALETTE[2] },
-          ],
-          xKey: 'name',
-          showLegend: true,
-          layout: 'vertical',
-          grouped: true,
-          categoryWidth: 128,
+        draft(kind, sectionId, 'Карта сотрудников по проверкам', 'Количество проверок за период по всем сотрудникам ДВА', caption, SIZE.half, {
+          chart: 'treemap',
+          data: input.auditorChecksMap,
+          palette: 'blue',
+        }),
+      );
+    } else if (sectionId === 'auditorRecommendationsMap') {
+      drafts.push(
+        draft(kind, sectionId, 'Карта сотрудников по рекомендациям', 'Количество рекомендаций за период по всем сотрудникам ДВА', caption, SIZE.half, {
+          chart: 'treemap',
+          data: input.auditorRecommendationsMap,
+          palette: 'gray',
         }),
       );
     } else if (sectionId === 'auditorImpact') {

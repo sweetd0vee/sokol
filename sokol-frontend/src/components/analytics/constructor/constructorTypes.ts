@@ -4,7 +4,6 @@ import type {
   DeadlineExtensionByCheckRow,
   DvaAuditorDocumentRow,
   DvaAuditorExecutionRow,
-  DvaAuditorLoadRow,
   DvaAuditorMaterialityRow,
   DvaAuditorTimelinessRow,
   RecommendationPeriodPoint,
@@ -236,7 +235,8 @@ export type DvaConstructorInput = {
   highMaterialityShare: number;
   recCompletionRate: number;
   recViolationRate: number;
-  auditorLoad: DvaAuditorLoadRow[];
+  auditorChecksMap: NamedCount[];
+  auditorRecommendationsMap: NamedCount[];
   auditorImpact: DvaAuditorMaterialityRow[];
   auditorExecution: DvaAuditorExecutionRow[];
   auditorTimeliness: DvaAuditorTimelinessRow[];

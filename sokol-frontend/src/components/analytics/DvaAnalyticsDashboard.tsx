@@ -10,12 +10,13 @@ import { filterSelectionItem } from './filterSelectionItem';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { AuditorStackedBarChart } from './AuditorStackedBarChart';
 import { AuditorDocumentsMatrixChart } from './AuditorDocumentsMatrixChart';
+import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
-  CHECKS_PALETTE,
   MONITORING_ADDITIONAL_STATUS_COLORS,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
-  RECOMMENDATIONS_PALETTE,
+  VALUE_BLUE_SCALE,
+  VALUE_GRAY_SCALE,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
@@ -32,16 +33,12 @@ import { buildDvaConstructorDrafts } from './constructor/buildConstructorWidgets
 import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
 
 const EMPTY_CHECK_SUMMARY = { total: 0, not_started: 0, in_progress: 0, completed: 0 };
-const EMPTY_AUDITOR_LOAD: never[] = [];
+const EMPTY_AUDITOR_CHECKS_MAP: never[] = [];
+const EMPTY_AUDITOR_RECOMMENDATIONS_MAP: never[] = [];
 const EMPTY_AUDITOR_IMPACT: never[] = [];
 const EMPTY_AUDITOR_EXECUTION: never[] = [];
 const EMPTY_AUDITOR_TIMELINESS: never[] = [];
 const EMPTY_AUDITOR_DOCUMENTS: never[] = [];
-
-const LOAD_SERIES = [
-  { key: 'checks', name: 'Проверки', color: CHECKS_PALETTE[8] },
-  { key: 'recommendations', name: 'Рекомендации', color: RECOMMENDATIONS_PALETTE[2] },
-] as const;
 
 const IMPACT_SERIES = [
   { key: 'high', name: 'Высокий', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий },
@@ -150,10 +147,8 @@ export function DvaAnalyticsDashboard() {
 
   const checkSummary = data?.checkSummary ?? EMPTY_CHECK_SUMMARY;
   const recSummary = data?.recommendationSummary ?? EMPTY_RECOMMENDATION_SUMMARY;
-  const auditorLoad = useMemo(
-    () => rankAuditorRows(data?.auditorLoad ?? EMPTY_AUDITOR_LOAD, (row) => row.value),
-    [data?.auditorLoad],
-  );
+  const auditorChecksMap = data?.auditorChecksTreemap ?? EMPTY_AUDITOR_CHECKS_MAP;
+  const auditorRecommendationsMap = data?.auditorRecommendationsTreemap ?? EMPTY_AUDITOR_RECOMMENDATIONS_MAP;
   const auditorImpact = useMemo(
     () =>
       rankAuditorRows(data?.auditorImpact ?? EMPTY_AUDITOR_IMPACT, (row) => row.high, {
@@ -246,7 +241,8 @@ export function DvaAnalyticsDashboard() {
         highMaterialityShare,
         recCompletionRate: recSummary.completionRate,
         recViolationRate: recSummary.violationRate,
-        auditorLoad,
+        auditorChecksMap,
+        auditorRecommendationsMap,
         auditorImpact,
         auditorExecution,
         auditorTimeliness,
@@ -289,27 +285,50 @@ export function DvaAnalyticsDashboard() {
         ),
       },
       {
-        id: 'auditorLoad',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 4, minW: 3, minH: 3 },
+        id: 'auditorChecksMap',
+        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
-            title="Нагрузка сотрудников"
-            description="Портфель проверок и рекомендаций по сотрудникам ДВА"
-            exportSectionId="auditorLoad"
-            exportSelected={exportSections.isSelected('auditorLoad')}
-            onToggleExport={() => exportSections.toggleSection('auditorLoad')}
+            title="Карта сотрудников по проверкам"
+            description="Количество проверок за период по всем сотрудникам ДВА"
+            exportSectionId="auditorChecksMap"
+            exportSelected={exportSections.isSelected('auditorChecksMap')}
+            onToggleExport={() => exportSections.toggleSection('auditorChecksMap')}
           >
-            {auditorLoad.length === 0 ? (
+            {auditorChecksMap.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <AuditorStackedBarChart data={auditorLoad} series={[...LOAD_SERIES]} grouped />
+              <FocusableTreemapChart data={auditorChecksMap} palette={VALUE_BLUE_SCALE} colorByValue />
+            )}
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'auditorRecommendationsMap',
+        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 4, minH: 2 },
+        render: () => (
+          <ChartCard
+            title="Карта сотрудников по рекомендациям"
+            description="Количество рекомендаций за период по всем сотрудникам ДВА"
+            exportSectionId="auditorRecommendationsMap"
+            exportSelected={exportSections.isSelected('auditorRecommendationsMap')}
+            onToggleExport={() => exportSections.toggleSection('auditorRecommendationsMap')}
+          >
+            {auditorRecommendationsMap.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <FocusableTreemapChart
+                data={auditorRecommendationsMap}
+                palette={VALUE_GRAY_SCALE}
+                colorByValue
+              />
             )}
           </ChartCard>
         ),
       },
       {
         id: 'auditorImpact',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 4, minW: 3, minH: 3 },
+        defaultLayout: { x: 0, y: 5, w: 12, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Импакт рекомендаций"
@@ -328,7 +347,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorExecution',
-        defaultLayout: { x: 0, y: 6, w: 6, h: 4, minW: 3, minH: 3 },
+        defaultLayout: { x: 0, y: 9, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Результативность исполнения"
@@ -347,7 +366,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorTimeliness',
-        defaultLayout: { x: 6, y: 6, w: 6, h: 4, minW: 3, minH: 3 },
+        defaultLayout: { x: 6, y: 9, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Своевременность"
@@ -366,7 +385,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorDocuments',
-        defaultLayout: { x: 0, y: 10, w: 12, h: 6, minW: 6, minH: 4 },
+        defaultLayout: { x: 0, y: 13, w: 12, h: 6, minW: 6, minH: 4 },
         render: () => (
           <ChartCard
             title="Документная дисциплина"
@@ -385,10 +404,11 @@ export function DvaAnalyticsDashboard() {
       },
     ],
     [
+      auditorChecksMap,
       auditorDocuments,
       auditorExecution,
       auditorImpact,
-      auditorLoad,
+      auditorRecommendationsMap,
       auditorTimeliness,
       checkSummary.total,
       employeeCount,
