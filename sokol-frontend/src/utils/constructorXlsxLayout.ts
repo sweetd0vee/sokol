@@ -41,7 +41,13 @@ export function constructorGridRowSpan(layouts: ConstructorGridRect[]): number {
   if (layouts.length === 0) {
     return 1;
   }
-  return Math.max(1, ...layouts.map((item) => clampConstructorGridRect(item).y + clampConstructorGridRect(item).h));
+  return Math.max(
+    1,
+    ...layouts.map((item) => {
+      const rect = clampConstructorGridRect(item);
+      return rect.y + rect.h;
+    }),
+  );
 }
 
 export type ConstructorXlsxImageAnchor = {
@@ -133,8 +139,15 @@ export function buildConstructorDashboardWorkbook(options: {
 }): ExcelJS.Workbook {
   const { title, meta, widgets, captures } = options;
   const byId = new Map(captures.filter((item) => chartHasPngPayload(item.dataUrl)).map((item) => [item.id, item]));
-  const layouts = widgets.map((widget) => clampConstructorGridRect(widget.layout));
-  const rowSpan = constructorGridRowSpan(layouts);
+  const placed = widgets
+    .map((widget) => ({ widget, layout: clampConstructorGridRect(widget.layout) }))
+    .sort(
+      (left, right) =>
+        left.layout.y - right.layout.y
+        || left.layout.x - right.layout.x
+        || left.widget.instanceId.localeCompare(right.widget.instanceId),
+    );
+  const rowSpan = constructorGridRowSpan(placed.map((item) => item.layout));
   const originRow = CONSTRUCTOR_XLSX_GRID_ORIGIN_ROW;
 
   const workbook = new ExcelJS.Workbook();
@@ -179,8 +192,7 @@ export function buildConstructorDashboardWorkbook(options: {
     sheet.getRow(row).height = CONSTRUCTOR_XLSX_ROW_HEIGHT;
   }
 
-  widgets.forEach((widget, index) => {
-    const layout = layouts[index] ?? clampConstructorGridRect(widget.layout);
+  placed.forEach(({ widget, layout }) => {
     const range = constructorXlsxCellRange(layout, originRow);
     sheet.mergeCells(range.startRow, range.startCol, range.endRow, range.endCol);
     outlineRange(sheet, range.startRow, range.startCol, range.endRow, range.endCol);
@@ -201,11 +213,17 @@ export function buildConstructorDashboardWorkbook(options: {
         : `data:image/png;base64,${capture.dataUrl}`,
       extension: 'png',
     });
-    sheet.addImage(imageId, constructorXlsxImageAnchor(layout, originRow));
+    const anchor = constructorXlsxImageAnchor(layout, originRow);
+    sheet.addImage(imageId, {
+      tl: { col: anchor.tl.col, row: anchor.tl.row },
+      br: { col: anchor.br.col, row: anchor.br.row },
+      editAs: anchor.editAs,
+    } as unknown as ExcelJS.ImageRange);
   });
 
+  const headerTitle = title.replaceAll('&', '&&');
   sheet.pageSetup.printArea = `A1:${sheet.getColumn(CONSTRUCTOR_GRID_COLS).letter}${gridEndRow}`;
-  sheet.headerFooter.oddHeader = `&LSOKOL&C&B${title}`;
+  sheet.headerFooter.oddHeader = `&LSOKOL&C&B${headerTitle}`;
 
   return workbook;
 }

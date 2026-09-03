@@ -14,6 +14,9 @@
 
 body.constructor-export-mode .constructor-widget-actions,
 body.constructor-export-mode .constructor-drag-handle,
-body.constructor-export-mode .react-resizable-handle {
+body.constructor-export-mode .react-resizable-handle,
+body.analytics-export-mode .constructor-widget-actions,
+body.analytics-export-mode .constructor-drag-handle,
+body.analytics-export-mode .react-resizable-handle {
   visibility: hidden !important;
 }

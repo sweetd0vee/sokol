@@ -21,6 +21,7 @@ import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import type { AnalyticsExportFormat } from './analyticsExport';
 import { captureDashboardCharts, chartHasPngPayload } from './dashboardChartRegistry';
 import type { ConstructorWidget } from '../components/analytics/constructor/constructorTypes';
+import { CONSTRUCTOR_GRID_COLS } from '../components/analytics/constructor/constructorLayout';
 import { buildConstructorDashboardWorkbook } from './constructorXlsxLayout';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
@@ -94,7 +95,7 @@ async function composeFromWidgets(widgets: ConstructorWidget[]): Promise<string>
   const cellH = 96;
   const maxY = Math.max(...widgets.map((widget) => widget.layout.y + widget.layout.h), 1);
   const canvas = document.createElement('canvas');
-  canvas.width = 12 * cellW;
+  canvas.width = CONSTRUCTOR_GRID_COLS * cellW;
   canvas.height = maxY * cellH;
   const ctx = canvas.getContext('2d');
   if (!ctx) {

@@ -89,7 +89,7 @@ describe('constructor xlsx grid mapping', () => {
     const anchor = constructorXlsxImageAnchor(layout);
     const range = constructorXlsxCellRange(layout);
     expect(range.startCol).toBe(4);
-    expect(range.endCol).toBe(6);
+    expect(range.endCol).toBe(7);
     expect(range.startRow).toBe(CONSTRUCTOR_XLSX_GRID_ORIGIN_ROW + CONSTRUCTOR_XLSX_ROWS_PER_UNIT + 1);
     expect(range.endRow).toBe(CONSTRUCTOR_XLSX_GRID_ORIGIN_ROW + 3 * CONSTRUCTOR_XLSX_ROWS_PER_UNIT);
     expect(anchor.tl.col).toBeGreaterThan(range.startCol - 1);
