@@ -12,6 +12,7 @@ import {
   constructorXlsxCellRange,
   constructorXlsxHasChartImages,
   constructorXlsxImageAnchor,
+  constructorXlsxImageExtent,
   excelSheetName,
 } from './constructorXlsxLayout';
 
@@ -75,6 +76,15 @@ describe('constructor xlsx grid mapping', () => {
     expect(left.editAs).toBe('twoCell');
   });
 
+  it('draws a half-width chart near original dashboard size, not a thumbnail', () => {
+    const half = constructorXlsxImageExtent({ x: 0, y: 0, w: 6, h: 4 });
+    const full = constructorXlsxImageExtent({ x: 0, y: 4, w: 12, h: 3 });
+    expect(half.width).toBeGreaterThanOrEqual(850);
+    expect(half.height).toBeGreaterThanOrEqual(500);
+    expect(full.width).toBeGreaterThan(half.width);
+    expect(full.width / half.width).toBeCloseTo(2, 0);
+  });
+
   it('places a full-width chart on the next board row', () => {
     const top = constructorXlsxImageAnchor({ x: 0, y: 0, w: 6, h: 4 });
     const below = constructorXlsxImageAnchor({ x: 0, y: 4, w: 12, h: 3 });
@@ -135,15 +145,26 @@ describe('buildConstructorDashboardWorkbook', () => {
     expect(constructorXlsxHasChartImages(workbook)).toBe(true);
 
     const cols = images.map((image) => {
-      const range = image.range as { tl?: { col: number; row: number }; br?: { col: number; row: number } };
-      return { col: range.tl?.col ?? -1, row: range.tl?.row ?? -1, brCol: range.br?.col ?? -1 };
+      const range = image.range as {
+        tl?: { col: number; row: number };
+        ext?: { width: number; height: number };
+      };
+      return {
+        col: range.tl?.col ?? -1,
+        row: range.tl?.row ?? -1,
+        width: range.ext?.width ?? -1,
+        height: range.ext?.height ?? -1,
+      };
     });
     expect(cols[0]?.col).toBeCloseTo(CONSTRUCTOR_XLSX_IMAGE_PAD);
     expect(cols[1]?.col).toBeCloseTo(6 + CONSTRUCTOR_XLSX_IMAGE_PAD);
     expect(cols[0]?.row).toBe(cols[1]?.row);
     expect(cols[2]?.col).toBeCloseTo(CONSTRUCTOR_XLSX_IMAGE_PAD);
     expect(cols[2]?.row).toBeGreaterThan(cols[0]?.row ?? 0);
-    expect(cols[1]?.brCol).toBeCloseTo(12 - CONSTRUCTOR_XLSX_IMAGE_PAD);
+    expect(cols[0]?.width).toBe(cols[1]?.width);
+    expect(cols[0]?.width).toBeGreaterThanOrEqual(850);
+    expect(cols[0]?.height).toBeGreaterThanOrEqual(500);
+    expect(cols[2]?.width).toBeGreaterThan(cols[0]?.width ?? 0);
 
     const buffer = await workbook.xlsx.writeBuffer();
     expect(buffer.byteLength).toBeGreaterThan(1000);

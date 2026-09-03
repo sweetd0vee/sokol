@@ -442,6 +442,7 @@ export function ChecksAnalyticsDashboard() {
       {
         id: 'effectivenessMatrix',
         defaultLayout: { x: 0, y: 8, w: 12, h: 8, minW: 6, minH: 6 },
+        expandToContent: true,
         render: () => (
           <ChartCard
             title="Оценка эффективности"
@@ -449,11 +450,12 @@ export function ChecksAnalyticsDashboard() {
             exportSectionId="effectivenessMatrix"
             exportSelected={exportSections.isSelected('effectivenessMatrix')}
             onToggleExport={() => exportSections.toggleSection('effectivenessMatrix')}
+            fitContent
           >
             {effectivenessMatrix.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <EffectivenessMatrixChart rows={effectivenessMatrix} />
+              <EffectivenessMatrixChart rows={effectivenessMatrix} scrollBody={false} />
             )}
           </ChartCard>
         ),
@@ -491,7 +493,7 @@ export function ChecksAnalyticsDashboard() {
 
   return (
     <AnalyticsDashboardFrame
-      mainClassName="relative flex min-h-0 min-w-0 flex-1 flex-col lg:-mt-[84px]"
+      mainClassName="relative flex min-w-0 flex-1 flex-col lg:-mt-[84px] lg:self-start"
       sidebar={(
       <AnalyticsFilterSidebar
         periodSlice={periodSlice}

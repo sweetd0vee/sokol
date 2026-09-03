@@ -27,6 +27,8 @@ export type AnalyticsGridCard = {
   id: string;
   defaultLayout: Omit<DashboardLayoutItem, 'i'>;
   render: () => ReactNode;
+  /** Render below the fitted chart grid at natural height instead of inside react-grid-layout. */
+  expandToContent?: boolean;
 };
 
 type AnalyticsDashboardGridProps = {
@@ -45,7 +47,12 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)').matches : true,
   );
   const summaryCards = useMemo(() => cards.filter((card) => card.id === 'summary'), [cards]);
-  const gridCards = useMemo(() => cards.filter((card) => card.id !== 'summary'), [cards]);
+  const stackedCards = useMemo(() => cards.filter((card) => card.expandToContent), [cards]);
+  const gridCards = useMemo(
+    () => cards.filter((card) => card.id !== 'summary' && !card.expandToContent),
+    [cards],
+  );
+  const hasStackedCards = stackedCards.length > 0;
   const layout = useMemo(() => {
     if (gridCards.length === 0) {
       return [];
@@ -102,38 +109,53 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
   }, [isDesktop, rowSpan]);
 
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col gap-2.5">
+    <div className={`flex w-full flex-col gap-2.5 ${hasStackedCards ? '' : 'min-h-0 flex-1'}`}>
       {summaryCards.map((card) => (
         <div key={card.id} className="w-full shrink-0">
           {card.render()}
         </div>
       ))}
       {isDesktop ? (
-        <div className="min-h-0 flex-1" ref={gridAreaRef}>
-          <div ref={containerRef} className="h-full w-full">
-            <BaseGridLayout
-              className="layout h-full"
-              layout={layout}
-              cols={12}
-              width={containerWidth}
-              rowHeight={rowHeight}
-              margin={[GRID_MARGIN_Y, GRID_MARGIN_Y]}
-              containerPadding={[0, 0]}
-              isDraggable={false}
-              isResizable={false}
-              compactType="vertical"
+        <>
+          {gridCards.length > 0 ? (
+            <div
+              className={hasStackedCards ? 'h-[min(36rem,calc(100vh-14rem))] w-full shrink-0' : 'min-h-0 flex-1'}
+              ref={gridAreaRef}
             >
-              {gridCards.map((card) => (
-                <div key={card.id} className="min-h-0 [&>section]:h-full">
-                  {card.render()}
-                </div>
-              ))}
-            </BaseGridLayout>
-          </div>
-        </div>
+              <div ref={containerRef} className="h-full w-full">
+                <BaseGridLayout
+                  className="layout h-full"
+                  layout={layout}
+                  cols={12}
+                  width={containerWidth}
+                  rowHeight={rowHeight}
+                  margin={[GRID_MARGIN_Y, GRID_MARGIN_Y]}
+                  containerPadding={[0, 0]}
+                  isDraggable={false}
+                  isResizable={false}
+                  compactType="vertical"
+                >
+                  {gridCards.map((card) => (
+                    <div key={card.id} className="min-h-0 [&>section]:h-full">
+                      {card.render()}
+                    </div>
+                  ))}
+                </BaseGridLayout>
+              </div>
+            </div>
+          ) : null}
+          {stackedCards.map((card) => (
+            <div key={card.id} className="w-full shrink-0">
+              {card.render()}
+            </div>
+          ))}
+        </>
       ) : (
         <div className="space-y-2.5">
           {gridCards.map((card) => (
+            <div key={card.id}>{card.render()}</div>
+          ))}
+          {stackedCards.map((card) => (
             <div key={card.id}>{card.render()}</div>
           ))}
         </div>

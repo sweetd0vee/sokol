@@ -9,10 +9,14 @@ import type { ConstructorWidget } from '../components/analytics/constructor/cons
 import type { DashboardChartCapture } from './dashboardChartRegistry';
 import { chartHasPngPayload } from './dashboardChartRegistry';
 
-export const CONSTRUCTOR_XLSX_COL_WIDTH = 11;
+/** ~159px per column → full board ~1900px, close to a desktop constructor pane. */
+export const CONSTRUCTOR_XLSX_COL_WIDTH = 22;
 export const CONSTRUCTOR_XLSX_ROWS_PER_UNIT = 4;
-export const CONSTRUCTOR_XLSX_ROW_HEIGHT = 14;
-export const CONSTRUCTOR_XLSX_IMAGE_PAD = 0.12;
+/** 26pt × 4 rows ≈ 139px per grid unit; a h=4 widget is ~555px tall. */
+export const CONSTRUCTOR_XLSX_ROW_HEIGHT = 26;
+export const CONSTRUCTOR_XLSX_IMAGE_PAD = 0.1;
+/** Rasterize each chart at 2× the Excel cell so Excel does not upscale a screen-sized PNG. */
+export const CONSTRUCTOR_XLSX_CAPTURE_PIXEL_RATIO = 2;
 /** Title + subtitle + gap before the board grid (0-based image origin). */
 export const CONSTRUCTOR_XLSX_GRID_ORIGIN_ROW = 3;
 
@@ -73,6 +77,30 @@ export function constructorXlsxImageAnchor(
       row: originRow + (y + h) * CONSTRUCTOR_XLSX_ROWS_PER_UNIT - pad,
     },
     editAs: 'twoCell',
+  };
+}
+
+/** Excel column-width units → CSS pixels (Calibri 11, MDW 7). */
+export function excelColumnWidthToPixels(width: number): number {
+  const mdw = 7;
+  return Math.floor(((256 * width + Math.floor(128 / mdw)) / 256) * mdw);
+}
+
+export function excelRowHeightToPixels(heightPt: number): number {
+  return Math.round((heightPt * 96) / 72);
+}
+
+/** On-sheet drawing size of a widget, matching the enlarged 12-col grid. */
+export function constructorXlsxImageExtent(
+  layout: ConstructorGridRect,
+  pad = CONSTRUCTOR_XLSX_IMAGE_PAD,
+): { width: number; height: number } {
+  const { w, h } = clampConstructorGridRect(layout);
+  const colPx = excelColumnWidthToPixels(CONSTRUCTOR_XLSX_COL_WIDTH);
+  const rowPx = excelRowHeightToPixels(CONSTRUCTOR_XLSX_ROW_HEIGHT);
+  return {
+    width: Math.max(Math.round(w * colPx - 2 * pad * colPx), 1),
+    height: Math.max(Math.round(h * CONSTRUCTOR_XLSX_ROWS_PER_UNIT * rowPx - 2 * pad * rowPx), 1),
   };
 }
 
@@ -156,13 +184,12 @@ export function buildConstructorDashboardWorkbook(options: {
 
   const sheet = workbook.addWorksheet(excelSheetName(title), {
     properties: { tabColor: { argb: BRAND } },
-    views: [{ showGridLines: false, zoomScale: 85, state: 'frozen', ySplit: 2 }],
+    views: [{ showGridLines: false, zoomScale: 100, zoomScaleNormal: 100, state: 'frozen', ySplit: 2 }],
     pageSetup: {
       orientation: 'landscape',
       paperSize: 9,
-      fitToPage: true,
-      fitToWidth: 1,
-      fitToHeight: 0,
+      fitToPage: false,
+      scale: 100,
       horizontalCentered: true,
     },
   });
@@ -214,11 +241,12 @@ export function buildConstructorDashboardWorkbook(options: {
       extension: 'png',
     });
     const anchor = constructorXlsxImageAnchor(layout, originRow);
+    const extent = constructorXlsxImageExtent(layout);
     sheet.addImage(imageId, {
       tl: { col: anchor.tl.col, row: anchor.tl.row },
-      br: { col: anchor.br.col, row: anchor.br.row },
-      editAs: anchor.editAs,
-    } as unknown as ExcelJS.ImageRange);
+      ext: extent,
+      editAs: 'oneCell',
+    } as unknown as ExcelJS.ImagePosition);
   });
 
   const headerTitle = title.replaceAll('&', '&&');

@@ -12,6 +12,7 @@ import { MatrixChartShell, MatrixLegendFooter } from './matrixChartChrome';
 
 type EffectivenessMatrixChartProps = {
   rows: EffectivenessMatrixRow[];
+  scrollBody?: boolean;
 };
 
 function ColumnShareSquares({ shares }: { shares: EffectivenessColumnShare[] }) {
@@ -39,7 +40,7 @@ function ColumnShareSquares({ shares }: { shares: EffectivenessColumnShare[] }) 
   );
 }
 
-export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps) {
+export function EffectivenessMatrixChart({ rows, scrollBody = true }: EffectivenessMatrixChartProps) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const hoveredRow = rows.find((row) => row.key === hoveredKey) ?? null;
   const columnShares = useMemo(
@@ -56,6 +57,7 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
   return (
     <MatrixChartShell
       hoveredRow={hoveredRow}
+      scrollBody={scrollBody}
       footer={(
         <MatrixLegendFooter
           totalText={formatEffectivenessChecksCount(rows.length)}
@@ -141,7 +143,7 @@ export function EffectivenessMatrixChart({ rows }: EffectivenessMatrixChartProps
               ))}
             </tbody>
             <tfoot
-              className="sticky bottom-0 z-[1] bg-gray-50/95"
+              className={scrollBody ? 'sticky bottom-0 z-[1] bg-gray-50/95' : 'bg-gray-50/95'}
               data-effectiveness-matrix-footer
             >
               <tr className="border-t border-gray-200">

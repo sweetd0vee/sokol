@@ -22,7 +22,11 @@ import type { AnalyticsExportFormat } from './analyticsExport';
 import { captureDashboardCharts, chartHasPngPayload } from './dashboardChartRegistry';
 import type { ConstructorWidget } from '../components/analytics/constructor/constructorTypes';
 import { CONSTRUCTOR_GRID_COLS } from '../components/analytics/constructor/constructorLayout';
-import { buildConstructorDashboardWorkbook } from './constructorXlsxLayout';
+import {
+  buildConstructorDashboardWorkbook,
+  CONSTRUCTOR_XLSX_CAPTURE_PIXEL_RATIO,
+  constructorXlsxImageExtent,
+} from './constructorXlsxLayout';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
@@ -79,9 +83,24 @@ async function captureConstructorWidgetCharts(widgets: ConstructorWidget[]) {
   document.body.classList.add('constructor-export-mode');
   try {
     await delay(80);
+    const byInstance = new Map(widgets.map((widget) => [widget.instanceId, widget]));
     return await captureDashboardCharts(
       widgets.map((widget) => widget.instanceId),
-      { skipPng: false },
+      {
+        skipPng: false,
+        pixelRatio: CONSTRUCTOR_XLSX_CAPTURE_PIXEL_RATIO,
+        sizeForId: (id, cssSize) => {
+          const widget = byInstance.get(id);
+          if (!widget) {
+            return cssSize;
+          }
+          const extent = constructorXlsxImageExtent(widget.layout);
+          return {
+            width: Math.max(extent.width, cssSize.width),
+            height: Math.max(extent.height, cssSize.height),
+          };
+        },
+      },
     );
   } finally {
     document.body.classList.remove('constructor-export-mode');

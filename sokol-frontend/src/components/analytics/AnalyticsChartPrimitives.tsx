@@ -246,6 +246,7 @@ export function ChartCard({
   exportSelected,
   onToggleExport,
   dense = false,
+  fitContent = false,
 }: {
   title: string;
   description: string;
@@ -256,6 +257,7 @@ export function ChartCard({
   exportSelected?: boolean;
   onToggleExport?: () => void;
   dense?: boolean;
+  fitContent?: boolean;
 }) {
   const exportCardRef = useRef<HTMLElement>(null);
   const captureRef = useRef<HTMLDivElement>(null);
@@ -428,8 +430,12 @@ export function ChartCard({
       {...exportCaptureAttributes}
       className={
         isFullscreen
-          ? 'h-full min-h-0 overflow-auto rounded-lg bg-white p-2 [&>*]:!h-full [&_.recharts-responsive-container]:!h-full'
-          : 'min-h-[13rem] rounded-lg bg-white lg:min-h-0 lg:flex-1 lg:[&>*]:!h-full lg:[&_.recharts-responsive-container]:!h-full'
+          ? fitContent
+            ? 'h-full min-h-0 overflow-auto rounded-lg bg-white p-2'
+            : 'h-full min-h-0 overflow-auto rounded-lg bg-white p-2 [&>*]:!h-full [&_.recharts-responsive-container]:!h-full'
+          : fitContent
+            ? 'rounded-lg bg-white'
+            : 'min-h-[13rem] rounded-lg bg-white lg:min-h-0 lg:flex-1 lg:[&>*]:!h-full lg:[&_.recharts-responsive-container]:!h-full'
       }
     >
       {children}
@@ -457,7 +463,7 @@ export function ChartCard({
     return (
       <section
         ref={exportCardRef}
-        className={`flex h-full flex-col rounded-lg border bg-white p-1.5 shadow-sm ${accentClassName} ${className}`}
+        className={`${fitContent ? 'flex w-full flex-col' : 'flex h-full flex-col'} rounded-lg border bg-white p-1.5 shadow-sm ${accentClassName} ${className}`}
       >
         <div className="mb-0.5 flex items-start justify-between gap-1.5">
           <div className="min-w-0 space-y-0">
