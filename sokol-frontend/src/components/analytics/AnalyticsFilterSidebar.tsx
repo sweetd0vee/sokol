@@ -202,15 +202,15 @@ export function AnalyticsFilterSidebar({
         <section className="rounded-lg bg-gray-100 p-3.5 text-left leading-relaxed">
           <button
             type="button"
-            onClick={onAddToConstructor}
-            disabled={!canAddToConstructor}
-            className={`${FORM_OUTLINE_BUTTON_CLASS} !w-full disabled:cursor-not-allowed disabled:opacity-50`}
+            onClick={() => {
+              if (!canAddToConstructor) {
+                return;
+              }
+              onAddToConstructor();
+            }}
+            className={`${FORM_OUTLINE_BUTTON_CLASS} !w-full`}
           >
-            {constructorAdded
-              ? 'Добавлено'
-              : addToConstructorCount > 0
-                ? `Добавить в конструктор (${addToConstructorCount})`
-                : 'Добавить в конструктор'}
+            {constructorAdded ? 'Добавлено' : `Добавить в конструктор (${addToConstructorCount})`}
           </button>
         </section>
       ) : null}
