@@ -93,6 +93,12 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
 
     const update = () => {
       setContainerWidth(Math.max(Math.floor(widthNode.getBoundingClientRect().width), 320));
+      if (hasStackedCards) {
+        const chartArea = Math.min(576, Math.max(window.innerHeight - 224, 320));
+        const next = Math.floor((chartArea - GRID_MARGIN_Y * Math.max(rowSpan - 1, 0)) / rowSpan);
+        setRowHeight(Math.max(MIN_ROW_HEIGHT, next));
+        return;
+      }
       const available = Math.floor(heightNode.getBoundingClientRect().height);
       if (available < 80) {
         return;
@@ -106,7 +112,7 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
     observer.observe(widthNode);
     observer.observe(heightNode);
     return () => observer.disconnect();
-  }, [isDesktop, rowSpan]);
+  }, [hasStackedCards, isDesktop, rowSpan]);
 
   return (
     <div className={`flex w-full flex-col gap-2.5 ${hasStackedCards ? '' : 'min-h-0 flex-1'}`}>
@@ -119,12 +125,12 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
         <>
           {gridCards.length > 0 ? (
             <div
-              className={hasStackedCards ? 'h-[min(36rem,calc(100vh-14rem))] w-full shrink-0' : 'min-h-0 flex-1'}
+              className={hasStackedCards ? 'w-full shrink-0' : 'min-h-0 flex-1'}
               ref={gridAreaRef}
             >
-              <div ref={containerRef} className="h-full w-full">
+              <div ref={containerRef} className={hasStackedCards ? 'w-full' : 'h-full w-full'}>
                 <BaseGridLayout
-                  className="layout h-full"
+                  className={hasStackedCards ? 'layout' : 'layout h-full'}
                   layout={layout}
                   cols={12}
                   width={containerWidth}
