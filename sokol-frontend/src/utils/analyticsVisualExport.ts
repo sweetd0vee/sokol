@@ -25,6 +25,7 @@ import {
   CHECK_EXPORT_SECTIONS,
   DVA_EXPORT_SECTIONS,
   MONITORING_EXPORT_SECTIONS,
+  PLANNING_EXPORT_SECTIONS,
   RECOMMENDATION_EXPORT_SECTIONS,
 } from '../constants/analyticsExportSections';
 import {
@@ -76,7 +77,7 @@ function stamp() {
   return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
 }
 
-export type VisualAnalyticsKind = 'checks' | 'recommendations' | 'monitoring' | 'dva';
+export type VisualAnalyticsKind = 'checks' | 'recommendations' | 'monitoring' | 'dva' | 'planning';
 
 function sheetNameForSection(kind: VisualAnalyticsKind, sectionId: string, fallbackTitle: string) {
   const catalog =
@@ -86,7 +87,9 @@ function sheetNameForSection(kind: VisualAnalyticsKind, sectionId: string, fallb
         ? RECOMMENDATION_EXPORT_SECTIONS
         : kind === 'monitoring'
           ? MONITORING_EXPORT_SECTIONS
-          : DVA_EXPORT_SECTIONS;
+          : kind === 'planning'
+            ? PLANNING_EXPORT_SECTIONS
+            : DVA_EXPORT_SECTIONS;
   const found = catalog.find((section) => section.id === sectionId);
   const raw = found?.sheetName ?? fallbackTitle;
   return raw.replace(/[\\/?*[\]:]/g, ' ').trim().slice(0, 31) || 'Дашборд';
@@ -3009,7 +3012,7 @@ export async function exportVisualAnalyticsReport(options: {
     canRenderEffectivenessMatrixTable || canRenderMaterialityMatrixTable || canRenderStatusMatrixTable;
   if (charts.length === 0 && !canExportMatrixOnly) {
     throw new Error(
-      'Не удалось снять выбранные дашборды. Отметьте карточки с графиками (не только «Исходные данные») и убедитесь, что они видны на экране.',
+      'Не удалось снять дашборды вкладки. Убедитесь, что графики видны на экране, и попробуйте снова.',
     );
   }
 

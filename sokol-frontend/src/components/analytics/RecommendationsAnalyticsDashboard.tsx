@@ -336,10 +336,6 @@ export function RecommendationsAnalyticsDashboard() {
 
   const handleExport = async () => {
     if (filteredTotal === 0 || isExporting) {return;}
-    if (exportSections.selectedSections.length === 0) {
-      window.alert('Выберите хотя бы один дашборд для экспорта');
-      return;
-    }
     setIsExporting(true);
     try {
       await exportRecommendationsDashboard(
@@ -352,7 +348,7 @@ export function RecommendationsAnalyticsDashboard() {
           auditors: selectedAuditors,
           departments: selectedDepartments,
           materialityLevels: [],
-          selectedSections: exportSections.selectedSections,
+          selectedSections: [...exportSections.allIds],
           materialityMatrixOverride: sortMaterialityMatrixRows(
             materialityMatrix,
             materialityMatrixSortRef.current,

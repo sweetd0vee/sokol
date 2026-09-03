@@ -104,7 +104,7 @@ test('constructor history can create a dashboard and accept charts from analytic
   await expect(page).toHaveURL(/\/analytics$/);
   await expect(page.getByRole('heading', { name: 'Количество проверок' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'В отчёт и конструктор' }).first().click();
+  await page.getByRole('button', { name: 'В конструктор', exact: true }).first().click();
   await page.getByRole('button', { name: 'Добавить в конструктор (1)' }).click();
   await expect(page.getByRole('button', { name: 'Добавлено' })).toBeVisible();
 
@@ -116,6 +116,12 @@ test('constructor history can create a dashboard and accept charts from analytic
   await page.getByLabel('Название').fill('Второй лист');
   await page.getByRole('button', { name: 'Создать' }).click();
   await page.getByRole('link', { name: 'К списку дашбордов' }).click();
+  await page.getByPlaceholder('Название').fill('Отчёт');
+  await expect(page.getByRole('link', { name: 'Отчёт E2E' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Второй лист' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Сбросить фильтры' }).click();
+  await expect(page.getByRole('link', { name: 'Второй лист' })).toBeVisible();
+  await page.getByRole('button', { name: 'Название' }).click();
   await page.getByRole('button', { name: 'Ещё действия для «Отчёт E2E»' }).click();
   await page.getByRole('button', { name: 'Сделать текущим' }).click();
   await expect(page.getByText('Текущий')).toBeVisible();

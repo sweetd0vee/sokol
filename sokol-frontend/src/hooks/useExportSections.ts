@@ -24,6 +24,7 @@ export function useExportSections<T extends string>(allIds: readonly T[]) {
 
   return {
     selectedSections,
+    allIds,
     isSelected,
     toggleSection,
     selectAll,

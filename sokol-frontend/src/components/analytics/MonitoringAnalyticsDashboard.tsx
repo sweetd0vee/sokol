@@ -252,10 +252,6 @@ export function MonitoringAnalyticsDashboard() {
 
   const handleExport = async () => {
     if (filteredTotal === 0 || isExporting) {return;}
-    if (exportSections.selectedSections.length === 0) {
-      window.alert('Выберите хотя бы один дашборд для экспорта');
-      return;
-    }
     setIsExporting(true);
     try {
       await exportGenericAnalyticsDashboard(
@@ -263,7 +259,7 @@ export function MonitoringAnalyticsDashboard() {
           kind: 'monitoring',
           documentTitle: 'Мониторинг',
           filenamePrefix: 'analytics-monitoring',
-          selectedSections: exportSections.selectedSections,
+          selectedSections: [...exportSections.allIds],
           statusMatrixOverride: sortStatusMatrixRows(statusMatrix, statusMatrixSortRef.current),
           meta: [
             ['Аудиторы', selectedAuditors.length ? selectedAuditors.join(', ') : 'Все'],

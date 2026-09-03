@@ -28,7 +28,7 @@ import {
   KpiCard,
 } from '../analytics/AnalyticsChartPrimitives';
 import { CHECKS_PALETTE, RECOMMENDATIONS_PALETTE } from '../analytics/analyticsPalette';
-import type { AnalyticsExportFormat } from '../../utils/analyticsExport';
+import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
@@ -58,6 +58,7 @@ const EMPTY_HIGH_MATERIALITY_RANKING: never[] = [];
 export function PlanningAnalyticsDashboard() {
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('html');
+  const [isExporting, setIsExporting] = useState(false);
   const exportSections = useExportSections(
     PLANNING_EXPORT_SECTIONS.map((section) => section.id) as PlanningExportSectionId[],
   );
@@ -136,6 +137,36 @@ export function PlanningAnalyticsDashboard() {
   const resetFilters = () => {
     resetPeriodSelections();
     setSelectedDepartments([]);
+  };
+
+  const handleExport = async () => {
+    if (isExporting || analyticsQuery.isFetching || !data) {
+      return;
+    }
+    setIsExporting(true);
+    try {
+      await exportGenericAnalyticsDashboard(
+        {
+          kind: 'planning',
+          documentTitle: 'Планирование',
+          filenamePrefix: 'analytics-planning',
+          selectedSections: [...exportSections.allIds],
+          meta: [
+            ['Группировка', periodSliceLabel],
+            ...(activePeriodValues.map((label) => ['Период', label] as [string, string])),
+            ['Департаменты', selectedDepartments.length ? selectedDepartments.join(', ') : 'Все'],
+            ['Проверок в выборке', String(filteredChecksTotal)],
+            ['Рекомендаций в выборке', String(filteredRecommendationsTotal)],
+          ],
+        },
+        exportFormat,
+      );
+    } catch (error) {
+      console.error('Planning export failed', error);
+      window.alert(`Не удалось экспортировать отчёт: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleAddToConstructor = () => {
@@ -353,9 +384,9 @@ export function PlanningAnalyticsDashboard() {
         onResetFilters={resetFilters}
         exportFormat={exportFormat}
         onExportFormatChange={setExportFormat}
-        isExporting={false}
-        canExport={false}
-        onExport={() => undefined}
+        isExporting={isExporting}
+        canExport={Boolean(data) && !analyticsQuery.isFetching}
+        onExport={() => void handleExport()}
         onAddToConstructor={handleAddToConstructor}
         canAddToConstructor={exportSections.selectedCount > 0}
         addToConstructorCount={exportSections.selectedCount}

@@ -116,7 +116,11 @@ export async function exportGenericAnalyticsDashboard(
     filenamePrefix: input.filenamePrefix,
     selectedSections: input.selectedSections,
     statusMatrix,
-    meta: [...input.meta, ['Сформировано', new Date().toLocaleString('ru-RU')]],
+    meta: [
+      ...input.meta,
+      ['Дашбордов в отчёте', String(input.selectedSections.filter((id) => id !== 'source').length)],
+      ['Сформировано', new Date().toLocaleString('ru-RU')],
+    ],
   });
 }
 

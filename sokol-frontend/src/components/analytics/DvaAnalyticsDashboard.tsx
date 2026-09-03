@@ -1,17 +1,5 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  LabelList,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import { fetchDvaAnalytics } from '../../api/analytics';
 import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
@@ -19,9 +7,16 @@ import { AnalyticsDashboardFrame } from './AnalyticsDashboardFrame';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { filterSelectionItem } from './filterSelectionItem';
-import { ChartCard, CHART_AXIS_TICK, CHART_LEGEND_STYLE, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
-import { FocusableTreemapChart } from './FocusableTreemapChart';
-import { CHECKS_PALETTE, getValueBasedColors, VALUE_BLUE_SCALE, VALUE_GRAY_SCALE } from './analyticsPalette';
+import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { AuditorStackedBarChart } from './AuditorStackedBarChart';
+import { AuditorDocumentsMatrixChart } from './AuditorDocumentsMatrixChart';
+import {
+  CHECKS_PALETTE,
+  MONITORING_ADDITIONAL_STATUS_COLORS,
+  MONITORING_STATUS_COLORS,
+  RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
+  RECOMMENDATIONS_PALETTE,
+} from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
 import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
@@ -30,31 +25,42 @@ import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
 import type { PeriodGranularity } from '../../utils/checkAnalytics';
+import { rankAuditorRows } from '../../utils/dvaAnalytics';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 import { useAddToConstructor } from './constructor/useAddToConstructor';
 import { buildDvaConstructorDrafts } from './constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
 
-const AUDITOR_LOAD_BAR_LIMIT = 10;
-
-function topAuditorBars(
-  rows: Array<{ name: string; checks: number; recommendations: number }>,
-  metric: 'checks' | 'recommendations',
-  limit = AUDITOR_LOAD_BAR_LIMIT,
-) {
-  return [...rows]
-    .filter((row) => row[metric] > 0)
-    .sort((left, right) => right[metric] - left[metric] || left.name.localeCompare(right.name, 'ru'))
-    .slice(0, limit)
-    .map((row) => ({ name: row.name, value: row[metric] }));
-}
-
 const EMPTY_CHECK_SUMMARY = { total: 0, not_started: 0, in_progress: 0, completed: 0 };
 const EMPTY_AUDITOR_LOAD: never[] = [];
-const EMPTY_AUDITOR_CHECKS_TREEMAP: never[] = [];
-const EMPTY_AUDITOR_RECOMMENDATIONS_TREEMAP: never[] = [];
-const EMPTY_DEPARTMENT_MAP: never[] = [];
-const EMPTY_DOCUMENT_READINESS: never[] = [];
+const EMPTY_AUDITOR_IMPACT: never[] = [];
+const EMPTY_AUDITOR_EXECUTION: never[] = [];
+const EMPTY_AUDITOR_TIMELINESS: never[] = [];
+const EMPTY_AUDITOR_DOCUMENTS: never[] = [];
+
+const LOAD_SERIES = [
+  { key: 'checks', name: 'Проверки', color: CHECKS_PALETTE[8] },
+  { key: 'recommendations', name: 'Рекомендации', color: RECOMMENDATIONS_PALETTE[2] },
+] as const;
+
+const IMPACT_SERIES = [
+  { key: 'high', name: 'Высокий', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий },
+  { key: 'medium', name: 'Средний', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний },
+  { key: 'low', name: 'Низкий', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий },
+] as const;
+
+const EXECUTION_SERIES = [
+  { key: 'completed', name: 'Исполнено', color: MONITORING_STATUS_COLORS.completed },
+  { key: 'in_progress', name: 'В процессе', color: MONITORING_STATUS_COLORS.in_progress },
+  { key: 'on_control', name: 'На контроле', color: MONITORING_STATUS_COLORS.on_control },
+  { key: 'unresolved', name: 'Не решено', color: MONITORING_STATUS_COLORS.unresolved },
+] as const;
+
+const TIMELINESS_SERIES = [
+  { key: 'on_time', name: 'В срок', color: MONITORING_ADDITIONAL_STATUS_COLORS.on_time },
+  { key: 'on_control', name: 'На контроле', color: MONITORING_ADDITIONAL_STATUS_COLORS.on_control },
+  { key: 'deadline_violated', name: 'Срок нарушен', color: MONITORING_ADDITIONAL_STATUS_COLORS.deadline_violated },
+] as const;
 
 export function DvaAnalyticsDashboard() {
   const {
@@ -144,32 +150,46 @@ export function DvaAnalyticsDashboard() {
 
   const checkSummary = data?.checkSummary ?? EMPTY_CHECK_SUMMARY;
   const recSummary = data?.recommendationSummary ?? EMPTY_RECOMMENDATION_SUMMARY;
-  const completionShare = data?.completionShare ?? 0;
-  const auditorLoad = data?.auditorLoad ?? EMPTY_AUDITOR_LOAD;
-  const auditorChecksBars = useMemo(
-    () => topAuditorBars(auditorLoad, 'checks'),
-    [auditorLoad],
+  const auditorLoad = useMemo(
+    () => rankAuditorRows(data?.auditorLoad ?? EMPTY_AUDITOR_LOAD, (row) => row.value),
+    [data?.auditorLoad],
   );
-  const auditorRecommendationsBars = useMemo(
-    () => topAuditorBars(auditorLoad, 'recommendations'),
-    [auditorLoad],
+  const auditorImpact = useMemo(
+    () =>
+      rankAuditorRows(data?.auditorImpact ?? EMPTY_AUDITOR_IMPACT, (row) => row.high, {
+        includeZeros: true,
+      }),
+    [data?.auditorImpact],
   );
-  const auditorChecksBarColors = useMemo(
-    () => getValueBasedColors(auditorChecksBars.map((item) => item.value), VALUE_BLUE_SCALE),
-    [auditorChecksBars],
+  const auditorExecution = useMemo(
+    () =>
+      rankAuditorRows(
+        data?.auditorExecution ?? EMPTY_AUDITOR_EXECUTION,
+        (row) => row.unresolved + row.in_progress,
+        { includeZeros: true },
+      ),
+    [data?.auditorExecution],
   );
-  const auditorRecommendationsBarColors = useMemo(
-    () => getValueBasedColors(auditorRecommendationsBars.map((item) => item.value), VALUE_GRAY_SCALE),
-    [auditorRecommendationsBars],
+  const auditorTimeliness = useMemo(
+    () =>
+      rankAuditorRows(data?.auditorTimeliness ?? EMPTY_AUDITOR_TIMELINESS, (row) => row.deadline_violated, {
+        includeZeros: true,
+      }),
+    [data?.auditorTimeliness],
   );
-  const auditorChecksTreemap = data?.auditorChecksTreemap ?? EMPTY_AUDITOR_CHECKS_TREEMAP;
-  const auditorRecommendationsTreemap = data?.auditorRecommendationsTreemap ?? EMPTY_AUDITOR_RECOMMENDATIONS_TREEMAP;
-  const departmentMap = data?.departmentMap ?? EMPTY_DEPARTMENT_MAP;
-  const documentReadiness = data?.documentReadiness ?? EMPTY_DOCUMENT_READINESS;
+  const auditorDocuments = data?.auditorDocuments ?? EMPTY_AUDITOR_DOCUMENTS;
   const filteredChecksTotal = data?.filteredChecksTotal ?? 0;
   const filteredRecommendationsTotal = data?.filteredRecommendationsTotal ?? 0;
   const universeChecksTotal = data?.universeChecksTotal ?? 0;
   const universeRecommendationsTotal = data?.universeRecommendationsTotal ?? 0;
+  const highMateriality = recSummary.byMateriality.высокий;
+  const highMaterialityShare = recSummary.total
+    ? Math.round((highMateriality / recSummary.total) * 100)
+    : 0;
+  const employeeCount = new Set([
+    ...(data?.auditorLoad ?? []).map((row) => row.name),
+    ...auditorDocuments.map((row) => row.name),
+  ]).size;
 
   const resetFilters = () => {
     resetPeriodSelections();
@@ -177,7 +197,9 @@ export function DvaAnalyticsDashboard() {
   };
 
   const handleExport = async () => {
-    if ((filteredChecksTotal === 0 && filteredRecommendationsTotal === 0) || isExporting) {return;}
+    if ((filteredChecksTotal === 0 && filteredRecommendationsTotal === 0) || isExporting) {
+      return;
+    }
     if (exportSections.selectedSections.length === 0) {
       window.alert('Выберите хотя бы один дашборд для экспорта');
       return;
@@ -219,19 +241,16 @@ export function DvaAnalyticsDashboard() {
         }),
         checkTotal: checkSummary.total,
         recTotal: recSummary.total,
-        auditorCount: auditorLoad.length,
-        departmentCount: departmentMap.length,
-        completionShare,
+        employeeCount,
+        highMateriality,
+        highMaterialityShare,
         recCompletionRate: recSummary.completionRate,
-        auditorChecksBars,
-        auditorChecksBarColors,
-        auditorRecommendationsBars,
-        auditorRecommendationsBarColors,
-        documentReadiness,
-        recSummaryFilled: recSummary.withCompletionDate,
-        recSummaryEmpty: Math.max(recSummary.total - recSummary.withCompletionDate, 0),
-        auditorChecksTreemap,
-        auditorRecommendationsTreemap,
+        recViolationRate: recSummary.violationRate,
+        auditorLoad,
+        auditorImpact,
+        auditorExecution,
+        auditorTimeliness,
+        auditorDocuments,
       }),
     );
   };
@@ -246,158 +265,137 @@ export function DvaAnalyticsDashboard() {
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-6">
               <KpiCard label="Проверки" value={checkSummary.total} tone="blue" />
               <KpiCard label="Рекомендации" value={recSummary.total} tone="slate" />
-              <KpiCard label="Аудиторы" value={auditorLoad.length} tone="slate" />
-              <KpiCard label="Объекты аудита" value={departmentMap.length} tone="amber" />
-              <KpiCard label="Завершённость" value={completionShare} suffix="%" tone="green" />
-              <KpiCard label="Исполнение рекомендаций" value={recSummary.completionRate} suffix="%" tone="green" />
+              <KpiCard label="Сотрудники" value={employeeCount} tone="slate" />
+              <KpiCard
+                label="Высокая существенность"
+                value={highMateriality}
+                hint={`${highMaterialityShare}% рекомендаций`}
+                accentColor={RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий}
+              />
+              <KpiCard
+                label="Исполнение"
+                value={recSummary.completionRate}
+                suffix="%"
+                accentColor={MONITORING_STATUS_COLORS.completed}
+              />
+              <KpiCard
+                label="Нарушение сроков"
+                value={recSummary.violationRate}
+                suffix="%"
+                accentColor={MONITORING_ADDITIONAL_STATUS_COLORS.deadline_violated}
+              />
             </div>
           </ChartCard>
         ),
       },
       {
-        id: 'auditorLoadChecks',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
+        id: 'auditorLoad',
+        defaultLayout: { x: 0, y: 2, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
-            title="Нагрузка аудиторов: проверки"
-            description="Количество проверок за период по аудиторам"
-            exportSectionId="auditorLoadChecks"
-            exportSelected={exportSections.isSelected('auditorLoadChecks')}
-            onToggleExport={() => exportSections.toggleSection('auditorLoadChecks')}
+            title="Нагрузка сотрудников"
+            description="Портфель проверок и рекомендаций по сотрудникам ДВА"
+            exportSectionId="auditorLoad"
+            exportSelected={exportSections.isSelected('auditorLoad')}
+            onToggleExport={() => exportSections.toggleSection('auditorLoad')}
           >
-            {auditorChecksBars.length === 0 ? (
+            {auditorLoad.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <div className="h-full min-h-[13rem]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={auditorChecksBars} layout="vertical" margin={{ top: 8, right: 40, left: 16, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
-                    <YAxis dataKey="name" type="category" width={120} tick={CHART_AXIS_TICK} />
-                    <Tooltip />
-                    <Bar dataKey="value" name="Проверки" fill="#003366" radius={[0, 6, 6, 0]}>
-                      {auditorChecksBars.map((item, index) => (
-                        <Cell key={item.name} fill={auditorChecksBarColors[index]} />
-                      ))}
-                      <LabelList
-                        dataKey="value"
-                        position="right"
-                        fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill={CHECKS_PALETTE[0]}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <AuditorStackedBarChart data={auditorLoad} series={[...LOAD_SERIES]} grouped />
             )}
           </ChartCard>
         ),
       },
       {
-        id: 'auditorLoadRecommendations',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
+        id: 'auditorImpact',
+        defaultLayout: { x: 6, y: 2, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
-            title="Нагрузка аудиторов: рекомендации"
-            description="Количество рекомендаций за период по аудиторам"
-            exportSectionId="auditorLoadRecommendations"
-            exportSelected={exportSections.isSelected('auditorLoadRecommendations')}
-            onToggleExport={() => exportSections.toggleSection('auditorLoadRecommendations')}
+            title="Импакт рекомендаций"
+            description="Существенность находок: кто выявляет наиболее значимые риски"
+            exportSectionId="auditorImpact"
+            exportSelected={exportSections.isSelected('auditorImpact')}
+            onToggleExport={() => exportSections.toggleSection('auditorImpact')}
           >
-            {auditorRecommendationsBars.length === 0 ? (
+            {auditorImpact.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <div className="h-full min-h-[13rem]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={auditorRecommendationsBars} layout="vertical" margin={{ top: 8, right: 40, left: 16, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
-                    <YAxis dataKey="name" type="category" width={120} tick={CHART_AXIS_TICK} />
-                    <Tooltip />
-                    <Bar dataKey="value" name="Рекомендации" fill="#4B5563" radius={[0, 6, 6, 0]}>
-                      {auditorRecommendationsBars.map((item, index) => (
-                        <Cell key={item.name} fill={auditorRecommendationsBarColors[index]} />
-                      ))}
-                      <LabelList
-                        dataKey="value"
-                        position="right"
-                        fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill="#1F2937"
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <AuditorStackedBarChart data={auditorImpact} series={[...IMPACT_SERIES]} totalKey="total" />
             )}
           </ChartCard>
         ),
       },
       {
-        id: 'documentsClosure',
-        defaultLayout: { x: 0, y: 5, w: 12, h: 3, minW: 3, minH: 2 },
-        render: () => (
-          <ChartCard title="Документы и закрытие" description="Готовность документов проверок и закрытие рекомендаций" exportSectionId="documentsClosure" exportSelected={exportSections.isSelected('documentsClosure')} onToggleExport={() => exportSections.toggleSection('documentsClosure')}>
-            <div className="h-full min-h-[13rem]"><ResponsiveContainer width="100%" height="100%"><BarChart data={[...documentReadiness, { name: 'Закрытие рек.', filled: recSummary.withCompletionDate, empty: Math.max(recSummary.total - recSummary.withCompletionDate, 0) }]} margin={{ top: 18, right: 12, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="name" tick={CHART_AXIS_TICK} /><YAxis allowDecimals={false} tick={CHART_AXIS_TICK} /><Tooltip /><Legend wrapperStyle={CHART_LEGEND_STYLE} /><Bar dataKey="filled" name="Готово" stackId="docs" fill="#22C55E"><LabelList dataKey="filled" position="center" fontSize={CHART_VALUE_LABEL_SIZE} fill="#fff" /></Bar><Bar dataKey="empty" name="Не готово" stackId="docs" fill="#CBD5E1"><LabelList dataKey="empty" position="center" fontSize={CHART_VALUE_LABEL_SIZE} /></Bar></BarChart></ResponsiveContainer></div>
-          </ChartCard>
-        ),
-      },
-      {
-        id: 'auditorChecksTreemap',
-        defaultLayout: { x: 0, y: 8, w: 6, h: 3, minW: 4, minH: 2 },
+        id: 'auditorExecution',
+        defaultLayout: { x: 0, y: 6, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
-            title="Карта аудиторов по количеству проверок"
-            description="Количество проверок за период по аудиторам"
-            exportSectionId="auditorChecksTreemap"
-            exportSelected={exportSections.isSelected('auditorChecksTreemap')}
-            onToggleExport={() => exportSections.toggleSection('auditorChecksTreemap')}
+            title="Результативность исполнения"
+            description="Статус рекомендаций сотрудника: закрытие vs открытый хвост"
+            exportSectionId="auditorExecution"
+            exportSelected={exportSections.isSelected('auditorExecution')}
+            onToggleExport={() => exportSections.toggleSection('auditorExecution')}
           >
-            {auditorChecksTreemap.length === 0 ? (
+            {auditorExecution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableTreemapChart
-                data={auditorChecksTreemap}
-                palette={VALUE_BLUE_SCALE}
-                colorByValue
-              />
+              <AuditorStackedBarChart data={auditorExecution} series={[...EXECUTION_SERIES]} totalKey="total" />
             )}
           </ChartCard>
         ),
       },
       {
-        id: 'auditorRecommendationsTreemap',
-        defaultLayout: { x: 6, y: 8, w: 6, h: 3, minW: 4, minH: 2 },
+        id: 'auditorTimeliness',
+        defaultLayout: { x: 6, y: 6, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
-            title="Карта аудиторов по количеству рекомендаций"
-            description="Количество рекомендаций за период по аудиторам"
-            exportSectionId="auditorRecommendationsTreemap"
-            exportSelected={exportSections.isSelected('auditorRecommendationsTreemap')}
-            onToggleExport={() => exportSections.toggleSection('auditorRecommendationsTreemap')}
+            title="Своевременность"
+            description="Соблюдение сроков исполнения рекомендаций по сотрудникам"
+            exportSectionId="auditorTimeliness"
+            exportSelected={exportSections.isSelected('auditorTimeliness')}
+            onToggleExport={() => exportSections.toggleSection('auditorTimeliness')}
           >
-            {auditorRecommendationsTreemap.length === 0 ? (
+            {auditorTimeliness.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableTreemapChart data={auditorRecommendationsTreemap} palette={VALUE_GRAY_SCALE} colorByValue />
+              <AuditorStackedBarChart data={auditorTimeliness} series={[...TIMELINESS_SERIES]} totalKey="total" />
+            )}
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'auditorDocuments',
+        defaultLayout: { x: 0, y: 10, w: 12, h: 6, minW: 6, minH: 4 },
+        render: () => (
+          <ChartCard
+            title="Документная дисциплина"
+            description="Готовность приказа, программы, АЗ и ДЗ по проверкам каждого сотрудника"
+            exportSectionId="auditorDocuments"
+            exportSelected={exportSections.isSelected('auditorDocuments')}
+            onToggleExport={() => exportSections.toggleSection('auditorDocuments')}
+          >
+            {auditorDocuments.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <AuditorDocumentsMatrixChart rows={auditorDocuments} />
             )}
           </ChartCard>
         ),
       },
     ],
     [
-      auditorChecksBarColors,
-      auditorChecksBars,
-      auditorChecksTreemap,
-      auditorLoad.length,
-      auditorRecommendationsBarColors,
-      auditorRecommendationsBars,
-      auditorRecommendationsTreemap,
+      auditorDocuments,
+      auditorExecution,
+      auditorImpact,
+      auditorLoad,
+      auditorTimeliness,
       checkSummary.total,
-      departmentMap,
-      documentReadiness,
+      employeeCount,
       exportSections,
+      highMateriality,
+      highMaterialityShare,
       recSummary,
-      completionShare,
     ],
   );
 

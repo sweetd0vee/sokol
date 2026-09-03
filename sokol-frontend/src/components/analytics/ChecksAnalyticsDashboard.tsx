@@ -223,10 +223,6 @@ export function ChecksAnalyticsDashboard() {
     if (filteredTotal === 0 || isExporting || analyticsQuery.isFetching || !data) {
       return;
     }
-    if (exportSections.selectedSections.length === 0) {
-      window.alert('Выберите хотя бы один дашборд для экспорта');
-      return;
-    }
     setIsExporting(true);
     try {
       await exportChecksDashboard(
@@ -236,7 +232,7 @@ export function ChecksAnalyticsDashboard() {
           granularity,
           auditors: selectedAuditors,
           departments: selectedDepartments,
-          selectedSections: exportSections.selectedSections,
+          selectedSections: [...exportSections.allIds],
           selectedPeriodLabels: activePeriodValues,
           universeTotal,
           filteredTotal,

@@ -145,6 +145,42 @@ export type DvaAuditorLoadRow = {
   value: number;
 };
 
+export type DvaAuditorMaterialityRow = {
+  name: string;
+  low: number;
+  medium: number;
+  high: number;
+  total: number;
+};
+
+export type DvaAuditorExecutionRow = {
+  name: string;
+  completed: number;
+  in_progress: number;
+  on_control: number;
+  unresolved: number;
+  total: number;
+};
+
+export type DvaAuditorTimelinessRow = {
+  name: string;
+  on_time: number;
+  deadline_violated: number;
+  on_control: number;
+  total: number;
+  violation_rate: number;
+};
+
+export type DvaAuditorDocumentRow = {
+  name: string;
+  checks: number;
+  order_filled: number;
+  program_filled: number;
+  az_filled: number;
+  dz_filled: number;
+  readiness: number;
+};
+
 export type DvaAuditorMatrix = {
   periods: Array<{ key: string; label: string; sortKey: number }>;
   rows: Array<{
@@ -165,6 +201,10 @@ export type DvaAnalyticsResponse = {
   completionShare: number;
   portfolioSeries: DvaPortfolioPoint[];
   auditorLoad: DvaAuditorLoadRow[];
+  auditorImpact: DvaAuditorMaterialityRow[];
+  auditorExecution: DvaAuditorExecutionRow[];
+  auditorTimeliness: DvaAuditorTimelinessRow[];
+  auditorDocuments: DvaAuditorDocumentRow[];
   auditorMatrix: DvaAuditorMatrix;
   documentReadiness: Array<{ name: string; filled: number; empty: number }>;
   auditorChecksTreemap: NamedCount[];

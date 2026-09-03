@@ -20,6 +20,10 @@ from app.schemas.analytics import (
     DvaAuditorMatrix,
     DvaAuditorMatrixCell,
     DvaAuditorMatrixRow,
+    DvaAuditorDocumentRow,
+    DvaAuditorExecutionRow,
+    DvaAuditorMaterialityRow,
+    DvaAuditorTimelinessRow,
     DvaPortfolioPoint,
     MaterialityMatrixRow,
     NamedCount,
@@ -92,11 +96,15 @@ __all__ = [
     "count_checks",
     "count_recommendations",
     "department_map_from_pairs",
+    "dva_auditor_documents_from_rows",
+    "dva_auditor_documents_sql",
     "dva_auditor_load_from_counts",
     "dva_auditor_load_sql",
     "dva_auditor_matrix_sql",
+    "dva_auditor_recommendation_profiles_sql",
     "dva_document_readiness_sql",
     "dva_portfolio_series_sql",
+    "dva_recommendation_profiles_from_rows",
     "grouped_named_counts_sql",
     "load_check_department_pairs",
     "load_check_serial_numbers",
@@ -707,6 +715,138 @@ async def dva_auditor_load_sql(
         positive_only=True,
     )
     return dva_auditor_load_from_counts(check_rows, rec_rows)
+
+
+def _auditor_display_name(raw: Any, fallback: str) -> str:
+    value = str(raw or "").strip()
+    return value or fallback
+
+
+def dva_recommendation_profiles_from_rows(
+    rows: Any,
+) -> tuple[list[DvaAuditorMaterialityRow], list[DvaAuditorExecutionRow], list[DvaAuditorTimelinessRow]]:
+    impact: list[DvaAuditorMaterialityRow] = []
+    execution: list[DvaAuditorExecutionRow] = []
+    timeliness: list[DvaAuditorTimelinessRow] = []
+    for row in rows:
+        name = _auditor_display_name(row.name, WITHOUT_AUDITOR)
+        total = int(row.total)
+        if total <= 0:
+            continue
+        low = int(row.low)
+        medium = int(row.medium)
+        high = int(row.high)
+        completed = int(row.completed)
+        in_progress = int(row.in_progress)
+        on_control = int(row.on_control)
+        unresolved = int(row.unresolved)
+        on_time = int(row.on_time)
+        deadline_violated = int(row.deadline_violated)
+        add_on_control = int(row.add_on_control)
+        impact.append(
+            DvaAuditorMaterialityRow(name=name, low=low, medium=medium, high=high, total=total)
+        )
+        execution.append(
+            DvaAuditorExecutionRow(
+                name=name,
+                completed=completed,
+                in_progress=in_progress,
+                on_control=on_control,
+                unresolved=unresolved,
+                total=total,
+            )
+        )
+        timeliness.append(
+            DvaAuditorTimelinessRow(
+                name=name,
+                on_time=on_time,
+                deadline_violated=deadline_violated,
+                on_control=add_on_control,
+                total=total,
+                violation_rate=round((deadline_violated / total) * 100) if total else 0,
+            )
+        )
+    impact.sort(key=lambda item: (-item.high, -item.total, item.name))
+    execution.sort(key=lambda item: (-(item.unresolved + item.in_progress), -item.total, item.name))
+    timeliness.sort(key=lambda item: (-item.deadline_violated, -item.violation_rate, item.name))
+    return impact, execution, timeliness
+
+
+async def dva_auditor_recommendation_profiles_sql(
+    session: AsyncSession,
+    **filters: Any,
+) -> tuple[list[DvaAuditorMaterialityRow], list[DvaAuditorExecutionRow], list[DvaAuditorTimelinessRow]]:
+    statement = apply_recommendation_filters(
+        select(
+            Recommendation.auditor.label("name"),
+            func.count().label("total"),
+            *recommendation_status_count_columns(),
+            *recommendation_materiality_count_columns(),
+            count_if(Recommendation.additional_status == "on_time", "on_time"),
+            count_if(Recommendation.additional_status == "deadline_violated", "deadline_violated"),
+            count_if(Recommendation.additional_status == "on_control", "add_on_control"),
+        )
+        .select_from(Recommendation)
+        .group_by(Recommendation.auditor),
+        **filters,
+    )
+    return dva_recommendation_profiles_from_rows(await fetch_all(session, statement))
+
+
+def dva_auditor_documents_from_rows(rows: Any) -> list[DvaAuditorDocumentRow]:
+    result: list[DvaAuditorDocumentRow] = []
+    for row in rows:
+        checks = int(row.checks)
+        if checks <= 0:
+            continue
+        order_filled = int(row.order_filled)
+        program_filled = int(row.program_filled)
+        az_filled = int(row.az_filled)
+        dz_filled = int(row.dz_filled)
+        slots = checks * 4
+        result.append(
+            DvaAuditorDocumentRow(
+                name=_auditor_display_name(row.name, WITHOUT_LEADER),
+                checks=checks,
+                order_filled=order_filled,
+                program_filled=program_filled,
+                az_filled=az_filled,
+                dz_filled=dz_filled,
+                readiness=round(((order_filled + program_filled + az_filled + dz_filled) / slots) * 100)
+                if slots
+                else 0,
+            )
+        )
+    return sorted(result, key=lambda item: (item.readiness, -item.checks, item.name))
+
+
+async def dva_auditor_documents_sql(session: AsyncSession, **filters: Any) -> list[DvaAuditorDocumentRow]:
+    statement = apply_check_filters(
+        select(
+            Check.check_leader.label("name"),
+            func.count().label("checks"),
+            count_if(
+                or_(Check.order_document_number.isnot(None), Check.order_document_date.isnot(None)),
+                "order_filled",
+            ),
+            count_if(
+                or_(Check.program_document_number.isnot(None), Check.program_document_date.isnot(None)),
+                "program_filled",
+            ),
+            count_if(
+                or_(Check.az_document_number.isnot(None), Check.az_document_date.isnot(None)),
+                "az_filled",
+            ),
+            count_if(
+                or_(Check.dz_document_number.isnot(None), Check.dz_document_date.isnot(None)),
+                "dz_filled",
+            ),
+        )
+        .select_from(Check)
+        .group_by(Check.check_leader),
+        **filters,
+    )
+    return dva_auditor_documents_from_rows(await fetch_all(session, statement))
 
 
 async def dva_document_readiness_sql(session: AsyncSession, **filters: Any) -> list[DocumentReadinessRow]:

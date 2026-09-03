@@ -250,6 +250,42 @@ class DvaAuditorLoadRow(BaseModel):
     value: int
 
 
+class DvaAuditorMaterialityRow(BaseModel):
+    name: str
+    low: int
+    medium: int
+    high: int
+    total: int
+
+
+class DvaAuditorExecutionRow(BaseModel):
+    name: str
+    completed: int
+    in_progress: int
+    on_control: int
+    unresolved: int
+    total: int
+
+
+class DvaAuditorTimelinessRow(BaseModel):
+    name: str
+    on_time: int
+    deadline_violated: int
+    on_control: int
+    total: int
+    violation_rate: int
+
+
+class DvaAuditorDocumentRow(BaseModel):
+    name: str
+    checks: int
+    order_filled: int
+    program_filled: int
+    az_filled: int
+    dz_filled: int
+    readiness: int
+
+
 class DvaAuditorMatrixCell(BaseModel):
     checks: int
     recommendations: int
@@ -287,6 +323,16 @@ class DvaAnalyticsResponse(BaseModel):
     completion_share: int = Field(serialization_alias="completionShare")
     portfolio_series: list[DvaPortfolioPoint] = Field(serialization_alias="portfolioSeries")
     auditor_load: list[DvaAuditorLoadRow] = Field(serialization_alias="auditorLoad")
+    auditor_impact: list[DvaAuditorMaterialityRow] = Field(default_factory=list, serialization_alias="auditorImpact")
+    auditor_execution: list[DvaAuditorExecutionRow] = Field(
+        default_factory=list, serialization_alias="auditorExecution"
+    )
+    auditor_timeliness: list[DvaAuditorTimelinessRow] = Field(
+        default_factory=list, serialization_alias="auditorTimeliness"
+    )
+    auditor_documents: list[DvaAuditorDocumentRow] = Field(
+        default_factory=list, serialization_alias="auditorDocuments"
+    )
     auditor_matrix: DvaAuditorMatrix = Field(serialization_alias="auditorMatrix")
     document_readiness: list[DocumentReadinessRow] = Field(serialization_alias="documentReadiness")
     auditor_checks_treemap: list[NamedCount] = Field(serialization_alias="auditorChecksTreemap")

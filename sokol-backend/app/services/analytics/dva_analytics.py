@@ -17,8 +17,10 @@ from app.services.analytics.sql_aggregates import (
     completion_share_from_summary,
     count_checks,
     count_recommendations,
+    dva_auditor_documents_sql,
     dva_auditor_load_from_counts,
     dva_auditor_matrix_sql,
+    dva_auditor_recommendation_profiles_sql,
     dva_document_readiness_sql,
     dva_portfolio_series_sql,
     grouped_named_counts_sql,
@@ -62,6 +64,10 @@ async def build_dva_analytics(
         filters=recommendation_filter_conditions(**filters),
         positive_only=True,
     )
+    auditor_impact, auditor_execution, auditor_timeliness = await dva_auditor_recommendation_profiles_sql(
+        session,
+        **filters,
+    )
     return DvaAnalyticsResponse(
         universe_checks_total=await count_checks(session, filtered=False),
         universe_recommendations_total=await count_recommendations(session, filtered=False),
@@ -78,6 +84,10 @@ async def build_dva_analytics(
             recommendation_filters=filters,
         ),
         auditor_load=dva_auditor_load_from_counts(auditor_checks, auditor_recommendations),
+        auditor_impact=auditor_impact,
+        auditor_execution=auditor_execution,
+        auditor_timeliness=auditor_timeliness,
+        auditor_documents=await dva_auditor_documents_sql(session, **filters),
         auditor_matrix=await dva_auditor_matrix_sql(
             session,
             granularity,

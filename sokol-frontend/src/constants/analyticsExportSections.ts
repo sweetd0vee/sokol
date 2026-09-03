@@ -39,31 +39,11 @@ export const MONITORING_EXPORT_SECTIONS = [
 
 export const DVA_EXPORT_SECTIONS = [
   { id: 'summary', label: 'Сводка KPI', sheetName: 'Сводка', headerFill: '312E81' },
-  {
-    id: 'auditorLoadChecks',
-    label: 'Нагрузка аудиторов: проверки',
-    sheetName: 'Нагрузка проверки',
-    headerFill: '1E40AF',
-  },
-  {
-    id: 'auditorLoadRecommendations',
-    label: 'Нагрузка аудиторов: рекомендации',
-    sheetName: 'Нагрузка рекоменд',
-    headerFill: '7C3AED',
-  },
-  { id: 'documentsClosure', label: 'Документы и закрытие', sheetName: 'Документы закрытие', headerFill: '065F46' },
-  {
-    id: 'auditorChecksTreemap',
-    label: 'Карта аудиторов по количеству проверок',
-    sheetName: 'Аудиторы проверки',
-    headerFill: '003366',
-  },
-  {
-    id: 'auditorRecommendationsTreemap',
-    label: 'Карта аудиторов по количеству рекомендаций',
-    sheetName: 'Аудиторы рекомендации',
-    headerFill: '7C3AED',
-  },
+  { id: 'auditorLoad', label: 'Нагрузка сотрудников', sheetName: 'Нагрузка', headerFill: '1D4ED8' },
+  { id: 'auditorImpact', label: 'Импакт рекомендаций', sheetName: 'Импакт', headerFill: 'DAAAD1' },
+  { id: 'auditorExecution', label: 'Результативность исполнения', sheetName: 'Исполнение', headerFill: '0E7490' },
+  { id: 'auditorTimeliness', label: 'Своевременность', sheetName: 'Своевременность', headerFill: 'DAAAD1' },
+  { id: 'auditorDocuments', label: 'Документная дисциплина', sheetName: 'Документы', headerFill: '002B55' },
 ] as const;
 
 export type CheckExportSectionId = (typeof CHECK_EXPORT_SECTIONS)[number]['id'];
