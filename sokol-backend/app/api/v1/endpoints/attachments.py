@@ -1,4 +1,5 @@
 from typing import Optional
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
@@ -25,6 +26,11 @@ from app.services.crud_errors import (
 )
 
 router = APIRouter(prefix="/attachments", tags=["attachments"])
+
+
+def _attachment_header(filename: str) -> str:
+    ascii_fallback = "".join(char if ord(char) < 128 else "_" for char in filename)
+    return f"attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{quote(filename)}"
 
 
 def _raise_http_error(exc: Exception) -> None:
@@ -109,7 +115,7 @@ async def download_attachment_endpoint(
         _raise_http_error(exc)
 
     headers = {
-        "Content-Disposition": f'attachment; filename="{attachment.original_name}"',
+        "Content-Disposition": _attachment_header(attachment.original_name),
     }
     return Response(content=payload, media_type=media_type, headers=headers)
 

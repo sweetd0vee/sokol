@@ -131,6 +131,36 @@ class AttachmentsApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("слот", response.json()["detail"].lower())
 
+    def test_download_cyrillic_filename_ok(self) -> None:
+        row = Attachment(
+            id=7,
+            entity_type="check",
+            entity_id=1,
+            slot="order",
+            check_serial_number="26IVP1P1",
+            bucket="check-26ivp1p1",
+            object_key="order/uuid_prikaz.pdf",
+            original_name="Приказ_о_проверке.pdf",
+            content_type="application/pdf",
+            size_bytes=4,
+            created_at=datetime(2026, 8, 11, tzinfo=timezone.utc),
+        )
+        with (
+            patch.object(Settings, "minio_enabled", new_callable=PropertyMock, return_value=True),
+            patch(
+                "app.services.attachments_service.download_attachment",
+                new_callable=AsyncMock,
+                return_value=(row, b"%PDF", "application/pdf"),
+            ),
+        ):
+            response = self.client.get("/api/v1/attachments/7/download")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b"%PDF")
+        disposition = response.headers["content-disposition"]
+        self.assertIn("filename*=UTF-8''", disposition)
+        self.assertNotIn("Приказ", disposition.split("filename=")[1].split(";")[0])
+
     def test_get_missing_attachment_download_404(self) -> None:
         with (
             patch.object(Settings, "minio_enabled", new_callable=PropertyMock, return_value=True),
