@@ -9,7 +9,6 @@ import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { filterSelectionItem } from './filterSelectionItem';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { AuditorStackedBarChart } from './AuditorStackedBarChart';
-import { AuditorDocumentsMatrixChart } from './AuditorDocumentsMatrixChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
   DVA_VALUE_SCALE,
@@ -363,29 +362,9 @@ export function DvaAnalyticsDashboard() {
           </ChartCard>
         ),
       },
-      {
-        id: 'auditorDocuments',
-        defaultLayout: { x: 0, y: 10, w: 12, h: 6, minW: 6, minH: 4 },
-        render: () => (
-          <ChartCard
-            title="Документная дисциплина"
-            description="Готовность приказа, программы, АЗ и ДЗ по проверкам каждого сотрудника"
-            exportSectionId="auditorDocuments"
-            exportSelected={exportSections.isSelected('auditorDocuments')}
-            onToggleExport={() => exportSections.toggleSection('auditorDocuments')}
-          >
-            {auditorDocuments.length === 0 ? (
-              <EmptyChart message="Нет данных" />
-            ) : (
-              <AuditorDocumentsMatrixChart rows={auditorDocuments} />
-            )}
-          </ChartCard>
-        ),
-      },
     ],
     [
       auditorChecksMap,
-      auditorDocuments,
       auditorExecution,
       auditorImpact,
       auditorTimeliness,

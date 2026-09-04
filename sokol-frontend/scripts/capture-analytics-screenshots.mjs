@@ -62,7 +62,6 @@ const TABS = [
       { title: 'Импакт рекомендаций', file: 'dva-auditor-impact.png' },
       { title: 'Результативность исполнения', file: 'dva-auditor-execution.png' },
       { title: 'Своевременность', file: 'dva-auditor-timeliness.png' },
-      { title: 'Документная дисциплина', file: 'dva-auditor-documents.png' },
     ],
   },
 ];
