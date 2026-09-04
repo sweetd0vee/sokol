@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     database_url: str = ""
     sokol_max_upload_mb: int = 100
+    sokol_docx_max_concurrent: int = 2
+    sokol_docx_max_queue: int = 8
+    sokol_docx_queue_wait_seconds: int = 180
     sokol_cors_origins: str = ""
 
     # Auth (JWT; optional HTTP Basic for local/tools; users in PostgreSQL `users` table)
@@ -69,6 +72,18 @@ class Settings(BaseSettings):
     @property
     def max_upload_bytes(self) -> int:
         return max(1, self.sokol_max_upload_mb) * 1024 * 1024
+
+    @property
+    def docx_max_concurrent(self) -> int:
+        return max(1, self.sokol_docx_max_concurrent)
+
+    @property
+    def docx_max_queue(self) -> int:
+        return max(0, self.sokol_docx_max_queue)
+
+    @property
+    def docx_queue_wait_seconds(self) -> float:
+        return max(0.0, float(self.sokol_docx_queue_wait_seconds))
 
     @property
     def basic_auth_enabled(self) -> bool:

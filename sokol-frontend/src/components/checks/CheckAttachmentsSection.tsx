@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FileUp, Paperclip } from 'lucide-react';
 import { DatePicker } from '../ui/DatePicker';
@@ -14,9 +14,10 @@ import {
 } from '../../utils/checkAttachments';
 import { useEntityAttachments } from '../../hooks/useEntityAttachments';
 import { useAuth } from '../../hooks/useAuth';
+import { useStorageStatus } from '../../hooks/useStorageStatus';
 import { fetchCapabilities } from '../../api/capabilities';
 import { queryKeys } from '../../api/queryKeys';
-import { AttachmentFileList, AttachmentsUnavailableNotice } from '../attachments/AttachmentFileList';
+import { AttachmentFileList, AttachmentsUnavailableNotice, StorageStatusNotice } from '../attachments/AttachmentFileList';
 import {
   DEFAULT_MAX_UPLOAD_BYTES,
   DEFAULT_MAX_UPLOAD_MB,
@@ -79,6 +80,8 @@ type AttachmentFilesModalProps = {
   groups: AttachmentFileGroup[];
   filesBySlot: ReturnType<typeof useEntityAttachments>['filesBySlot'];
   canPersist: boolean;
+  canUploadToStorage: boolean;
+  storageNotice: ReactNode;
   maxUploadBytes: number;
   maxUploadMb: number;
   onAddFiles: (group: AttachmentFileGroup, newFiles: File[]) => void;
@@ -92,6 +95,8 @@ function AttachmentFilesModal({
   groups,
   filesBySlot,
   canPersist,
+  canUploadToStorage,
+  storageNotice,
   maxUploadBytes,
   maxUploadMb,
   onAddFiles,
@@ -101,6 +106,7 @@ function AttachmentFilesModal({
 }: AttachmentFilesModalProps) {
   const inputRefs = useRef<Partial<Record<AttachmentFileGroup, HTMLInputElement | null>>>({});
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const canAddFiles = canPersist && canUploadToStorage;
 
   const handlePickFiles = (group: AttachmentFileGroup) => {
     const input = inputRefs.current[group];
@@ -113,10 +119,11 @@ function AttachmentFilesModal({
   return (
     <Modal title={ATTACHMENT_SLOT_LABELS[slot]} wide onClose={onClose}>
       <div className="mt-4 space-y-6">
+        {storageNotice}
         {!canPersist && (
           <AttachmentsUnavailableNotice message="Сохраните проверку, чтобы прикрепить файлы." />
         )}
-        {canPersist && (
+        {canPersist && canUploadToStorage && (
           <p className="text-sm text-gray-500">
             Максимальный размер одного файла: {formatUploadLimit(maxUploadMb)}.
           </p>
@@ -138,7 +145,7 @@ function AttachmentFilesModal({
                 <Button
                   type="button"
                   variant="secondary"
-                  disabled={!canPersist}
+                  disabled={!canAddFiles}
                   onClick={() => handlePickFiles(group)}
                 >
                   <span className="inline-flex items-center gap-2">
@@ -152,7 +159,7 @@ function AttachmentFilesModal({
                   }}
                   type="file"
                   multiple
-                  disabled={!canPersist}
+                  disabled={!canAddFiles}
                   className="sr-only"
                   onChange={(event) => {
                     const picked = Array.from(event.target.files ?? []);
@@ -175,7 +182,9 @@ function AttachmentFilesModal({
                 canRemoveSaved={canRemoveSaved}
                 emptyMessage={
                   canPersist
-                    ? 'Файлы не прикреплены. Можно загрузить несколько файлов.'
+                    ? canUploadToStorage
+                      ? 'Файлы не прикреплены. Можно загрузить несколько файлов.'
+                      : 'Загрузка файлов недоступна, пока хранилище не восстановится.'
                     : 'После сохранения проверки здесь можно будет прикрепить файлы.'
                 }
               />
@@ -235,6 +244,7 @@ export function CheckAttachmentsSection({
     entityType: 'check',
     entityId: checkId,
   });
+  const storage = useStorageStatus();
   const [openSlot, setOpenSlot] = useState<AttachmentSlot | null>(null);
   const capabilitiesQuery = useQuery({
     queryKey: queryKeys.capabilities,
@@ -261,12 +271,24 @@ export function CheckAttachmentsSection({
     dz: countForSlot('dz') + countForSlot('dz_appendix'),
   };
 
+  const storageNotice = (
+    <StorageStatusNotice
+      availability={storage}
+      onRetry={() => {
+        void storage.refetch();
+      }}
+      isRetrying={storage.isFetching && storage.kind !== 'checking'}
+    />
+  );
+
   return (
     <div className={FORM_SECTION_CLASS}>
       <div className={FORM_SECTION_TITLE_CLASS}>Вложения</div>
 
+      {storageNotice}
+
       {!canPersist && (
-        <div className="mb-4">
+        <div>
           <AttachmentsUnavailableNotice message="Сохраните проверку, чтобы прикрепить файлы." />
         </div>
       )}
@@ -304,6 +326,8 @@ export function CheckAttachmentsSection({
           groups={modalGroups}
           filesBySlot={filesBySlot}
           canPersist={canPersist}
+          canUploadToStorage={storage.canUpload}
+          storageNotice={storageNotice}
           maxUploadBytes={maxUploadBytes}
           maxUploadMb={maxUploadMb}
           onAddFiles={(group, newFiles) => {

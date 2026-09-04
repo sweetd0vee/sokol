@@ -23,8 +23,8 @@
 | БД | PostgreSQL + `create_all` + `migrate_*`. Alembic **не внедрён** |
 | Import | Excel → checks/recommendations; `--replace` в prod только с `--confirm-prod-replace`. Нет dry-run и reject report: неизвестные справочники **досоздаются**, а не отклоняются |
 | Demo | `SOKOL_ENV=prod` запрещает demo load и seed replace. Compose default `SOKOL_LOAD_DEMO_DATA=1` сохранён для local Docker |
-| CI | Workflow `Backend (Python 3.12)` и `Frontend (Node 22)` есть. Required checks в GitHub branch protection ещё нужно включить |
-| Storage UX | Backend `GET /attachments/storage/status` есть. Frontend banner/disabled upload при недоступном MinIO — нет |
+| CI | Workflow `Backend (Python 3.12)` и `Frontend (Node 22)` есть. Merge в default branch блокируется ruleset `CI merge gate` ([docs/CI.md](docs/CI.md)) |
+| Storage UX | Backend `GET /attachments/storage/status` + frontend `useStorageStatus`: banner, disabled upload, retry |
 | Эксплуатация | Документы MinIO/backup есть. UAT URL, пилотные данные, restore drill, runbook сопровождения — не закрыты |
 
 ## Закрыто в августе (не повторяем)
@@ -35,6 +35,12 @@
 | P0-05 | Prod guards: `SOKOL_ENV=prod` блокирует demo load и `--replace` без `--confirm-prod-replace` |
 | P0-08 | HTTP Basic выключен в prod (`SOKOL_ENABLE_BASIC_AUTH`) |
 | P0-09 | `sync_dictionaries` в prod — merge-only, in-use labels не удаляются |
+
+## Закрыто в сентябре (не повторяем)
+
+| ID | Что сделано |
+|----|-------------|
+| P1-01 | Required CI checks: ruleset `CI merge gate` (`Backend (Python 3.12)`, `Frontend (Node 22)`). Поддерживает `.github/workflows/protect-main.yml` |
 
 ## Цель к 15 сентября
 
@@ -81,9 +87,8 @@
 
 | ID | Задача | Почему важно | DoD |
 |----|--------|--------------|-----|
-| P1-01 | Включить required CI checks в branch protection | Workflow есть, без required gate его можно обойти | `Backend (Python 3.12)` и `Frontend (Node 22)` обязательны для merge |
 | P1-02 | Import validation на bulk-загрузке | API CRUD валидирует справочники; import сейчас `ensure_*` (досоздаёт labels) | Import канонизирует и валидирует аудиторов, виды, объекты аудита; неизвестные значения — reject в report, а не silent insert в справочник |
-| P1-03 | Storage status UX для MinIO | Пользователь узнаёт о недоступном MinIO только после действия; endpoint уже есть | UI показывает `storage disabled/unreachable`, upload disabled, есть retry |
+| P1-03 | Storage status UX для MinIO | **сделано** | UI показывает `storage disabled/unreachable`, upload disabled, есть retry |
 | P1-04 | Backup/restore drill MinIO + PostgreSQL | Документы `docs/MINIO.md` и dump-команды есть; операционный drill не подтверждён | Restore PostgreSQL на чистый том успешен; MinIO volume/object backup проверен; сверка `attachments` |
 | P1-05 | UAT deploy checklist | Нужен воспроизводимый запуск в банковском контуре | `.env`/секреты/порты/DNS/TLS/CORS описаны; `/api/v1/status` и UI открываются |
 | P1-06 | Загрузка пилотных данных 10–20 проверок | Ранний контроль маппинга до полной загрузки | 10–20 проверок и рекомендации видны в UI; 3 карточки сверены бизнесом |

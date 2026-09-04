@@ -34,3 +34,5 @@ class Observation:
     name_runs: Optional[List[RunFragment]] = None
     rec_runs: Optional[List[RunFragment]] = None
     rec_entries: Optional[List[RecommendationEntry]] = None
+    audit_object: str = ""
+    manager: str = ""

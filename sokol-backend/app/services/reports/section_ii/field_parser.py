@@ -120,6 +120,39 @@ def extract_deadline_from_text(text: str) -> str:
     return matched
 
 
+_PERSON_INITIALS_RE = r"[А-ЯЁA-Z][а-яёa-z]+\s+[А-ЯЁA-Z]\.\s*[А-ЯЁA-Z]\.?"
+_AUDIT_OBJECT_PAIR_RE = re.compile(
+    rf"Объект\s+аудита:\s*(.+?)\s*Руководитель\s+объекта\s+аудита:\s*"
+    rf"({_PERSON_INITIALS_RE}(?:\s*,\s*{_PERSON_INITIALS_RE})*)",
+    re.IGNORECASE | re.DOTALL,
+)
+_AUDIT_OBJECT_ONLY_RE = re.compile(
+    r"Объект\s+аудита:\s*(.+?)(?=\s*(?:Руководител|Уровень\s+существенности|Аудиторск|Рекомендац|Мероприятия\s+после|Срок\b|$))",
+    re.IGNORECASE | re.DOTALL,
+)
+_MANAGER_ONLY_RE = re.compile(
+    rf"Руководител[ья]\s+объекта\s+аудита:\s*({_PERSON_INITIALS_RE}(?:\s*,\s*{_PERSON_INITIALS_RE})*)",
+    re.IGNORECASE,
+)
+
+
+def extract_audit_object_and_manager(text: str) -> tuple[str, str]:
+    """Объект аудита и руководитель из блока наблюдения (в т.ч. без таблицы Раздела II)."""
+    cleaned = re.sub(r"\s+", " ", (text or "").strip())
+    if not cleaned:
+        return "", ""
+    pair = _AUDIT_OBJECT_PAIR_RE.search(cleaned)
+    if pair:
+        audit_object = re.sub(r"\s+", " ", pair.group(1).strip()).rstrip(" .")
+        manager = re.sub(r"\s+", " ", pair.group(2).strip()).rstrip(".")
+        return audit_object, manager
+    obj_match = _AUDIT_OBJECT_ONLY_RE.search(cleaned)
+    mgr_match = _MANAGER_ONLY_RE.search(cleaned)
+    audit_object = re.sub(r"\s+", " ", obj_match.group(1).strip()).rstrip(" .") if obj_match else ""
+    manager = re.sub(r"\s+", " ", mgr_match.group(1).strip()).rstrip(".") if mgr_match else ""
+    return audit_object, manager
+
+
 def extract_rec_label(text: str) -> str:
     rec_label = "Рекомендация"
     rec_match = REC_LABEL_RE.search(text)
@@ -217,6 +250,7 @@ def parse_text_observations(text: str) -> List[Observation]:
                     chapter_title = " ".join(last.group(2).split()).strip()[:120]
 
         rec_label, recommendations = extract_recommendation_from_text(block)
+        audit_object, manager = extract_audit_object_and_manager(block)
         observations.append(
             Observation(
                 number=obs_num,
@@ -227,6 +261,8 @@ def parse_text_observations(text: str) -> List[Observation]:
                 recommendations=recommendations,
                 deadline=extract_deadline_from_text(block),
                 rec_label=rec_label,
+                audit_object=audit_object,
+                manager=manager,
             )
         )
 

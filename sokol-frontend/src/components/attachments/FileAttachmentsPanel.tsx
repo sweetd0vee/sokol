@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FileUp, Paperclip } from 'lucide-react';
 import type { AttachmentEntityType } from '../../api/attachments';
 import { fetchCapabilities } from '../../api/capabilities';
 import { queryKeys } from '../../api/queryKeys';
 import { useEntityAttachments } from '../../hooks/useEntityAttachments';
+import { useStorageStatus } from '../../hooks/useStorageStatus';
 import { filesWord } from '../../utils/fileAttachments';
 import {
   DEFAULT_MAX_UPLOAD_BYTES,
@@ -15,7 +16,7 @@ import {
 } from '../../utils/uploadLimits';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { AttachmentFileList, AttachmentsUnavailableNotice } from './AttachmentFileList';
+import { AttachmentFileList, AttachmentsUnavailableNotice, StorageStatusNotice } from './AttachmentFileList';
 
 type AttachmentSlotConfig = {
   id: string;
@@ -90,6 +91,8 @@ function AttachmentFilesModal({
   items,
   canPersist,
   canModifyAttachments,
+  canUploadToStorage,
+  storageNotice,
   maxUploadBytes,
   maxUploadMb,
   unavailableMessage,
@@ -102,6 +105,8 @@ function AttachmentFilesModal({
   items: ReturnType<typeof useEntityAttachments>['filesBySlot'][string];
   canPersist: boolean;
   canModifyAttachments: boolean;
+  canUploadToStorage: boolean;
+  storageNotice: ReactNode;
   maxUploadBytes: number;
   maxUploadMb: number;
   unavailableMessage: string;
@@ -112,12 +117,14 @@ function AttachmentFilesModal({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const slotFiles = items ?? [];
+  const canAddFiles = canPersist && canModifyAttachments && canUploadToStorage;
 
   return (
     <Modal title={title} wide onClose={onClose}>
       <div className="mt-4 space-y-3">
+        {storageNotice}
         {!canPersist && <AttachmentsUnavailableNotice message={unavailableMessage} />}
-        {canPersist && (
+        {canPersist && canUploadToStorage && (
           <p className="text-sm text-gray-500">
             Максимальный размер одного файла: {formatUploadLimit(maxUploadMb)}.
           </p>
@@ -132,7 +139,7 @@ function AttachmentFilesModal({
           <Button
             type="button"
             variant="secondary"
-            disabled={!canPersist || !canModifyAttachments}
+            disabled={!canAddFiles}
             onClick={() => {
               if (inputRef.current) {
                 inputRef.current.value = '';
@@ -149,7 +156,7 @@ function AttachmentFilesModal({
             ref={inputRef}
             type="file"
             multiple
-            disabled={!canPersist || !canModifyAttachments}
+            disabled={!canAddFiles}
             className="sr-only"
             onChange={(event) => {
               const picked = Array.from(event.target.files ?? []);
@@ -172,7 +179,9 @@ function AttachmentFilesModal({
           canRemoveSaved={canModifyAttachments}
           emptyMessage={
             canPersist
-              ? 'Файлы не прикреплены.'
+              ? canUploadToStorage
+                ? 'Файлы не прикреплены.'
+                : 'Загрузка файлов недоступна, пока хранилище не восстановится.'
               : 'После сохранения карточки здесь можно будет прикрепить файлы.'
           }
         />
@@ -204,6 +213,7 @@ export function FileAttachmentsPanel({
     entityType,
     entityId,
   });
+  const storage = useStorageStatus();
   const [openSlotId, setOpenSlotId] = useState<string | null>(null);
   const capabilitiesQuery = useQuery({
     queryKey: queryKeys.capabilities,
@@ -214,10 +224,20 @@ export function FileAttachmentsPanel({
   const maxUploadBytes = capabilitiesQuery.data?.max_upload_bytes ?? DEFAULT_MAX_UPLOAD_BYTES;
 
   const openSlot = slots.find((slot) => slot.id === openSlotId);
+  const storageNotice = (
+    <StorageStatusNotice
+      availability={storage}
+      onRetry={() => {
+        void storage.refetch();
+      }}
+      isRetrying={storage.isFetching && storage.kind !== 'checking'}
+    />
+  );
 
   const content = (
     <>
       {title && <div className="text-xl font-semibold text-gray-900">{title}</div>}
+      {storageNotice}
       {!canPersist && !embedded && <AttachmentsUnavailableNotice message={unavailableMessage} />}
       <div className={`grid gap-4 ${columnsClassName}`}>
         {slots.map((slot) => (
@@ -239,6 +259,8 @@ export function FileAttachmentsPanel({
           items={filesBySlot[openSlot.id]}
           canPersist={canPersist}
           canModifyAttachments={canModifyAttachments}
+          canUploadToStorage={storage.canUpload}
+          storageNotice={storageNotice}
           maxUploadBytes={maxUploadBytes}
           maxUploadMb={maxUploadMb}
           unavailableMessage={unavailableMessage}

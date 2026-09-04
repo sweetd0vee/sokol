@@ -1,7 +1,7 @@
 # Код-ревью frontend
 
 **Дата:** 4 сентября 2026  
-**Оценка:** 8.4 / 10 · React 19, TypeScript, Vite, TanStack Query
+**Оценка:** 8.6 / 10 · React 19, TypeScript, Vite, TanStack Query
 
 Сценарии аудитора закрыты: импорт из АЗ с undo, RBAC на delete/вложения, yearly №, конструктор дашбордов. Архитектура: [sokol-frontend/docs/ARCHITECTURE.md](../sokol-frontend/docs/ARCHITECTURE.md).
 
@@ -16,7 +16,7 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 
 **Плюсы:** feature folders, mappers, React Query, `formLayout`, `tableExport/` по форматам.
 
-**Минусы:** нет route lazy loading; storage status UX не подключён; виды проверок в форме/фильтрах — `CHECK_VIEW_OPTIONS`, не `/settings/check_kinds`.
+**Минусы:** нет route lazy loading; виды проверок в форме/фильтрах — `CHECK_VIEW_OPTIONS`, не `/settings/check_kinds`.
 
 ## Блоки
 
@@ -27,13 +27,13 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 | Checks | **8** | Списки &gt;10000; виды не из справочника API |
 | Recommendations | **9** | Списки &gt;10000 |
 | Data layer | **7.8** | Bulk-fetch 10000 |
-| Attachments | **7.5** | Нет banner по `/attachments/storage/status` |
+| Attachments | **10** | — |
 | Analytics | **8.5** | Нет drill-down API |
 | Planning | **8** | Дашборд + visual export + конструктор; нет метки limited |
 | Constructor | **8.5** | Только localStorage, без backend |
 | Tools | **8** | Нет прогресса длинного job |
 | Exports | **7.5** | Таблицы data-driven; дашборды — DOM capture |
-| Tests | **9** | **150** Vitest; Playwright: 5 auth + constructor. CRUD e2e нет; Playwright не в CI |
+| Tests | **9** | **157** Vitest; Playwright: 5 auth + constructor. CRUD e2e нет; Playwright не в CI |
 
 ## State
 
@@ -42,12 +42,6 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 `serial_number` только с API. Профиль: `changePasswordRequest`, аватар локально.
 
 ## Открытые findings
-
-### FE-05 · P1 · Storage status
-
-UI знает лимит через `/capabilities`, не опрашивает `/attachments/storage/status`. `AttachmentsUnavailableNotice` — про «сначала сохраните сущность», не про MinIO.
-
-Нужен `useStorageStatus`: `enabled=false` / `reachable=false` → banner + disabled upload + retry. Tools (DOCX) от MinIO не зависят.
 
 ### P0-03 · Виды проверок
 

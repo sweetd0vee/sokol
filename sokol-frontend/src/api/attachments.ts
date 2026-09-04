@@ -2,6 +2,12 @@ import { api } from './client';
 
 export type AttachmentEntityType = 'check' | 'recommendation';
 
+export type StorageStatus = {
+  enabled: boolean;
+  reachable: boolean;
+  bucket_layout: string;
+};
+
 export type StoredAttachment = {
   id: number;
   entity_type: AttachmentEntityType;
@@ -22,6 +28,11 @@ type AttachmentListResponse = {
 type AttachmentUploadResponse = {
   attachment: StoredAttachment;
 };
+
+export async function fetchStorageStatus(): Promise<StorageStatus> {
+  const { data } = await api.get<StorageStatus>('/api/v1/attachments/storage/status');
+  return data;
+}
 
 export async function fetchAttachments(params: {
   entity_type: AttachmentEntityType;

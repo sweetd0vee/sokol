@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 
 from app.services.reports.section_ii.models import RunFragment
 from app.services.reports.section_ii.patterns import OBS_BLOCK_START_RE, W_NS
+from app.services.reports.section_ii.xml_utils import iter_unwrapped
 
 
 @dataclass(frozen=True)

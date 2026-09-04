@@ -32,6 +32,7 @@ from app.services.reports.control_file.generator import (
 )
 from app.services.reports.memorandum import docx_generator as memorandum_generator
 from app.services.reports.memorandum.parser import parse_az_for_memorandum
+from app.services.reports.docx_queue import docx_job_slot
 from app.services.reports.section_ii import docx_generator
 
 router = APIRouter(prefix="/tools", tags=["tools"])
@@ -83,12 +84,13 @@ async def _generate_section_ii_response(
     input_path = await save_upload_to_temp(file)
     output_path = result_path_with_suffix(input_path, "_section_ii", DOCX_EXT)
     try:
-        result_path, _observations, error = await asyncio.to_thread(
-            docx_generator.process_document,
-            str(input_path),
-            str(output_path),
-            with_hyperlinks,
-        )
+        async with docx_job_slot():
+            result_path, _observations, error = await asyncio.to_thread(
+                docx_generator.process_document,
+                str(input_path),
+                str(output_path),
+                with_hyperlinks,
+            )
         if error:
             raise HTTPException(status_code=400, detail=error)
         if not result_path or not output_path.is_file():
@@ -155,13 +157,14 @@ async def generate_control_file(
     input_path = await save_upload_to_temp(file)
     output_path = result_path_with_suffix(input_path, "_control", XLSX_EXT)
     try:
-        result_path, error = await asyncio.to_thread(
-            generate_control_file_template,
-            str(input_path),
-            str(output_path),
-            check_leader=normalized_check_leader,
-            check_date=normalized_check_date,
-        )
+        async with docx_job_slot():
+            result_path, error = await asyncio.to_thread(
+                generate_control_file_template,
+                str(input_path),
+                str(output_path),
+                check_leader=normalized_check_leader,
+                check_date=normalized_check_date,
+            )
         if error:
             raise HTTPException(status_code=400, detail=error)
         if not result_path or not output_path.is_file():
@@ -189,21 +192,22 @@ async def generate_memorandum(
     input_path = await save_upload_to_temp(file)
     output_path = result_path_with_suffix(input_path, "_dz", DOCX_EXT)
     try:
-        source, error = await asyncio.to_thread(parse_az_for_memorandum, str(input_path))
-        if error:
-            raise HTTPException(status_code=400, detail=error)
-        if source is None:
-            raise HTTPException(
-                status_code=400,
-                detail="Не удалось разобрать рекомендации из аудиторского заключения.",
-            )
-        source = await canonicalize_memorandum_source(session, source)
+        async with docx_job_slot():
+            source, error = await asyncio.to_thread(parse_az_for_memorandum, str(input_path))
+            if error:
+                raise HTTPException(status_code=400, detail=error)
+            if source is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Не удалось разобрать рекомендации из аудиторского заключения.",
+                )
+            source = await canonicalize_memorandum_source(session, source)
 
-        result_path, error = await asyncio.to_thread(
-            memorandum_generator.generate_memorandum,
-            source,
-            str(output_path),
-        )
+            result_path, error = await asyncio.to_thread(
+                memorandum_generator.generate_memorandum,
+                source,
+                str(output_path),
+            )
         if error:
             raise HTTPException(status_code=400, detail=error)
         if not result_path or not output_path.is_file():
@@ -228,7 +232,8 @@ async def parse_recommendations_from_docx_endpoint(
     validate_docx_upload(file)
     input_path = await save_upload_to_temp(file)
     try:
-        items, error = await asyncio.to_thread(parse_recommendations_from_docx, str(input_path))
+        async with docx_job_slot():
+            items, error = await asyncio.to_thread(parse_recommendations_from_docx, str(input_path))
         if error:
             raise HTTPException(status_code=400, detail=error)
         for item in items:

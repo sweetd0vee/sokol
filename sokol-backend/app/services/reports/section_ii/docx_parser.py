@@ -19,6 +19,7 @@ from app.services.reports.section_ii.docx_blocks import (
     runs_to_text,
 )
 from app.services.reports.section_ii.field_parser import (
+    extract_audit_object_and_manager,
     extract_deadline_from_text,
     extract_materiality_from_text,
     extract_rec_label,
@@ -728,5 +729,10 @@ def parse_observations_from_file_with_runs(file_path: str) -> List[Observation]:
         obs.materiality_level = extract_materiality_from_text(block_text)
         obs.deadline = extract_deadline_from_text(block_text)
         obs.rec_label = extract_rec_label(block_text)
+        audit_object, manager = extract_audit_object_and_manager(block_text)
+        if audit_object:
+            obs.audit_object = audit_object
+        if manager:
+            obs.manager = manager
 
     return observations

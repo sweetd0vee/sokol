@@ -15,20 +15,20 @@
 | Ключ проверки | **10** | Backend-only `serial_number`; PATCH синхронизирует rec/attachments и MinIO bucket | Ручной mass-recalc только с бэкапом |
 | Analytics / planning API | **9** | SQL-агрегаты, camelCase, матрицы существенности/статуса, DVA-документы, planning coverage | Analytics читает массив `audit_object`, не junction |
 | DOCX tools | **8** | Раздел II, ссылки, ДЗ, parse, файл контроля | Синхронно, без очереди; хрупко к вёрстке АЗ |
-| Attachments / MinIO | **8.5** | API, compensation, serial-bucket migration, 503/502 | Frontend не показывает storage status до upload |
+| Attachments / MinIO | **10** | API, compensation, serial-bucket, 503/502, FE banner/disabled upload/retry по `/storage/status` | Backup drill не подтверждён |
 | Auth / RBAC | **8.5** | JWT, lookup/`is_active` из БД, `department_head` ∈ admin, Basic off в prod | Нет OIDC и audit log |
 | БД / import | **6** | `create_all` + `migrate_*`; prod guards; merge-only sync | Нет Alembic; Docker demo default on |
 | Frontend домен | **8.5** | Формы, undo импорта из АЗ, yearly №, конструктор дашбордов | `check_kinds` в форме/фильтрах всё ещё hardcoded |
 | Frontend data | **7.5** | API + React Query; списки до 10000 | Нет server pagination |
 | Frontend analytics/export | **8** | Visual export аналитики и планирования; table export разнесён по форматам | DOM capture хрупкий |
-| Тесты / CI | **8.5** | Backend ~200 unittest, frontend **150** Vitest, Playwright auth + constructor | Required checks в GitHub не включены; Playwright не в CI |
+| Тесты / CI | **8.5** | Backend ~200 unittest, frontend **157** Vitest, Playwright auth + constructor | Required checks в GitHub не включены; Playwright не в CI |
 | Документация | **8.5** | Backend/frontend docs и MinIO runbook | Alembic — цель, не факт |
 
-**Вердикт:** пилот на контролируемом объёме возможен. До промышленного контура: Alembic или подписанный migrate-runbook, CI merge gate, MinIO UX/drill, `check_kinds` из API в форме проверок.
+**Вердикт:** пилот на контролируемом объёме возможен. До промышленного контура: Alembic или подписанный migrate-runbook, MinIO backup drill, `check_kinds` из API в форме проверок.
 
 ## Закрыто с августа (не повторять)
 
-Kantsler снят · prod guards demo/replace · HTTP Basic off в prod · prod merge-only `sync_dictionaries` · конструктор дашбордов (только frontend) · visual export планирования · table export split (`utils/tableExport/`) · `seed_demo_attachments`.
+Kantsler снят · prod guards demo/replace · HTTP Basic off в prod · prod merge-only `sync_dictionaries` · конструктор дашбордов (только frontend) · visual export планирования · table export split (`utils/tableExport/`) · `seed_demo_attachments` · FE storage status banner (`useStorageStatus`) · CI merge gate (required checks).
 
 ## Ещё открыто
 
@@ -39,8 +39,6 @@ Kantsler снят · prod guards demo/replace · HTTP Basic off в prod · prod 
 | P0-02 | P0 | Метка limited/beta на `/planning` |
 | P0-03 | P0 | Форма и фильтры проверок читают `/settings/check_kinds` |
 | P0-07 | P0 | Import dry-run + reject report (сейчас `ensure_*`) |
-| FE-05 | P1 | Banner/disabled upload по `/attachments/storage/status` |
-| OPS-01 | P1 | Required CI checks в branch protection |
 | FE-07 | P2 | Visual export всё ещё DOM capture; `exports.ts` — тонкая обёртка над `tableExport/` |
 
 ## Как чинить без регрессий

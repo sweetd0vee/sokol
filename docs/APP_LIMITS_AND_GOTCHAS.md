@@ -13,6 +13,7 @@
 | JWT | default **480 мин** | 401 вне login → logout. |
 | Analytics cache | React Query **60 с** | После правок дашборд может отстать. |
 | Capabilities cache | **5 мин** | Смена лимита upload видна после refetch. |
+| Storage status | **15 с**, refetch on focus | Banner MinIO до upload. |
 | Bundle | Vite warning о размере | Analytics/export/constructor; lazy routes в backlog. |
 
 Audit opinion / Ollama **нет** в продукте.
@@ -49,7 +50,7 @@ GET /api/v1/attachments/storage/status  → enabled, reachable
 
 **Tools** (только `.docx`): section-ii, section-ii-links, memorandum, parse-recommendations. Control-file: вход DOCX, выход XLSX. Результат не пишется в MinIO. Vite proxy timeout рассчитан на длинные запросы.
 
-**Вложения:** metadata в PostgreSQL, байты в MinIO. Не настроено (`SOKOL_MINIO_*` пустые) → **503**. Сбой операции → **502**. Смена serial копирует bucket. Frontend **не** показывает общий banner до попытки upload (открытый P1).
+**Вложения:** metadata в PostgreSQL, байты в MinIO. Не настроено (`SOKOL_MINIO_*` пустые) → **503**. Сбой операции → **502**. Смена serial копирует bucket. Frontend опрашивает `/attachments/storage/status` при открытии секции вложений: `enabled=false` / `reachable=false` → banner + disabled upload + retry. Tools (DOCX) от MinIO не зависят.
 
 ## Auth
 

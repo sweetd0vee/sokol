@@ -10,7 +10,7 @@ components/    # analytics, attachments, auth, checks, lists, layout,
                # planning, profile, recommendations, settings, tabs, tools, ui
 contexts/      # AuthContext, SokolDataProvider
 constants/     # статусы, formLayout.ts, paths, storage, avatars
-hooks/         # auth, lists, analytics filters, attachments, reference options
+hooks/         # auth, lists, analytics filters, attachments, storage status, reference options
 utils/         # dates, personMatch, exports, tableExport, analytics*
 config/env.ts  # API_BASE_URL
 types/
@@ -46,7 +46,7 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 |------|--------|
 | **AuthContext** | JWT, role, display name → `localStorage` (`sokol_auth`) |
 | **SokolDataContext** | checks + recommendations до 10000 строк через React Query |
-| **React Query** | settings, analytics (bootstrap + filtered), users, capabilities, attachments |
+| **React Query** | settings, analytics (bootstrap + filtered), users, capabilities, attachments, storage status |
 | **Component state** | фильтры, пагинация списков (по 50), файлы форм, экспорт |
 | **Constructor library** | именованные дашборды + виджеты в `localStorage` (`sokol.constructor.library.v1`) |
 
@@ -61,7 +61,7 @@ Redux/Zustand нет.
 | `users.ts` | `GET/POST /users` (admin) |
 | `checks.ts`, `recommendations.ts` | CRUD, batch append/replace, batch-delete, parse-recommendations |
 | `analytics.ts` | `/analytics/checks\|recommendations\|monitoring\|dva\|planning` |
-| `attachments.ts` | MinIO через API |
+| `attachments.ts` | MinIO через API; `GET /attachments/storage/status` |
 | `settings.ts` | `makeSettingsCrud` для справочников |
 | `tools.ts` | section-ii, section-ii-links, memorandum, control-file (timeout 600s) |
 | `capabilities.ts` | лимит upload |

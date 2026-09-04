@@ -28,6 +28,8 @@ check-{serial}/
 
 Права: recommendation — владелец или admin; check upload — любой authenticated; check delete — admin only.
 
+Frontend опрашивает `GET /storage/status` при открытии секции вложений (`useStorageStatus`). `enabled=false` или `reachable=false` → banner, upload disabled, retry. Tools (DOCX) от MinIO не зависят.
+
 Хранилище выключено (нет endpoint+keys) → **503**. Сбой MinIO → **502**. Слишком большой файл → **413**. Неподдерживаемый MIME → **415**. Пустое тело / слот → **400**. Нет прав → **403**.
 
 Допустимые MIME: PDF, Office (doc/docx/xls/xlsx/ppt/pptx), jpeg/png/gif/webp, text/plain, zip, `application/octet-stream`.

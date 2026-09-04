@@ -1,5 +1,6 @@
-import { Download, Loader2, Trash2 } from 'lucide-react';
+import { Download, Loader2, RefreshCw, Trash2 } from 'lucide-react';
 import { downloadAttachment } from '../../api/attachments';
+import type { StorageAvailability } from '../../hooks/useStorageStatus';
 import {
   formatFileSize,
   getFileExtension,
@@ -81,5 +82,41 @@ export function AttachmentsUnavailableNotice({ message }: { message: string }) {
     <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
       {message}
     </p>
+  );
+}
+
+export function StorageStatusNotice({
+  availability,
+  onRetry,
+  isRetrying = false,
+}: {
+  availability: StorageAvailability;
+  onRetry: () => void;
+  isRetrying?: boolean;
+}) {
+  if (availability.kind === 'ok' || !availability.message) {
+    return null;
+  }
+
+  const isChecking = availability.kind === 'checking';
+  const toneClass = isChecking
+    ? 'border-gray-200 bg-gray-50 text-gray-700'
+    : 'border-amber-200 bg-amber-50 text-amber-900';
+
+  return (
+    <div className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm ${toneClass}`}>
+      <p>{availability.message}</p>
+      {!isChecking && (
+        <button
+          type="button"
+          onClick={onRetry}
+          disabled={isRetrying}
+          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium transition hover:bg-white/60 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <RefreshCw size={14} className={isRetrying ? 'animate-spin' : ''} />
+          {isRetrying ? 'Проверяем…' : 'Повторить'}
+        </button>
+      )}
+    </div>
   );
 }

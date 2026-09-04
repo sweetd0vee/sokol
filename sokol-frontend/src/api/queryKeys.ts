@@ -5,6 +5,7 @@ export const queryKeys = {
   recommendations: ['recommendations'] as const,
   recommendation: (id: string | number | undefined) => ['recommendation', id] as const,
   capabilities: ['capabilities'] as const,
+  storageStatus: ['attachments', 'storage', 'status'] as const,
   users: ['users'] as const,
   settings: {
     auditors: ['settings', 'auditors'] as const,
