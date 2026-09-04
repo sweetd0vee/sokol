@@ -1,15 +1,13 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import get_db_session
 from app.api.deps import require_admin
+from app.db.session import get_db_session
 from app.models.checks import CheckStatus
 from app.schemas.checks import CheckCreate, CheckListResponse, CheckRead, CheckUpdate
 from app.services import checks_service
-from app.services.crud_errors import ResourceNotFoundError
-from app.services.dictionary_validation import DictionaryRefError
 
 
 router = APIRouter(prefix="/checks", tags=["checks"])
@@ -20,10 +18,7 @@ async def create_check_endpoint(
     check_in: CheckCreate,
     session: AsyncSession = Depends(get_db_session),
 ) -> CheckRead:
-    try:
-        return await checks_service.create_check(session, check_in)
-    except DictionaryRefError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return await checks_service.create_check(session, check_in)
 
 
 @router.get("", response_model=CheckListResponse)
@@ -50,10 +45,7 @@ async def get_check_endpoint(
     check_id: int,
     session: AsyncSession = Depends(get_db_session),
 ) -> CheckRead:
-    try:
-        return await checks_service.get_check(session, check_id)
-    except ResourceNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return await checks_service.get_check(session, check_id)
 
 
 @router.patch("/{check_id}", response_model=CheckRead)
@@ -62,12 +54,7 @@ async def update_check_endpoint(
     check_in: CheckUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> CheckRead:
-    try:
-        return await checks_service.update_check(session, check_id, check_in)
-    except ResourceNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except DictionaryRefError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return await checks_service.update_check(session, check_id, check_in)
 
 
 @router.delete("/{check_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -76,8 +63,4 @@ async def delete_check_endpoint(
     session: AsyncSession = Depends(get_db_session),
     _: object = Depends(require_admin),
 ) -> None:
-    try:
-        await checks_service.delete_check(session, check_id)
-    except ResourceNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return None
+    await checks_service.delete_check(session, check_id)

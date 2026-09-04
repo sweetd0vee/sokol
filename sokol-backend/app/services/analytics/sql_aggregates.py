@@ -593,7 +593,7 @@ async def load_check_serial_numbers(session: AsyncSession, **filters: Any) -> li
 
 async def collect_filter_option_auditors_sql(session: AsyncSession) -> list[str]:
     values: set[str] = set()
-    for column in (Check.check_leader, Recommendation.auditor, Recommendation.manager):
+    for column in (Check.check_leader, Recommendation.auditor):
         values |= await distinct_nonempty_values(session, column)
     return sorted(values, key=lambda value: value.casefold())
 

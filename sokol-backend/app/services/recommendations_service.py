@@ -2,9 +2,10 @@ from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser
+from app.core.current_user import CurrentUser
 from app.core.recommendation_access import user_can_manage_recommendation
 from app.crud import checks_crud, recommendations_crud
+from app.models.checks import Check
 from app.models.recommendations import Recommendation
 from app.schemas.recommendations import (
     RecommendationBatchRequest,
@@ -20,13 +21,39 @@ from app.services.dictionary_validation import (
 )
 
 
+async def _check_by_serial(session: AsyncSession, serial_number: str) -> Check:
+    check = await checks_crud.get_check_by_serial(session, serial_number)
+    if check is None:
+        raise InvalidReferenceError("Проверка с указанным ключом не найдена.")
+    return check
+
+
+def _assert_can_manage(user: CurrentUser, recommendation: Recommendation, *, message: str) -> None:
+    if not user_can_manage_recommendation(
+        role=user.role,
+        username=user.username,
+        auditor=recommendation.auditor,
+    ):
+        raise AccessDeniedError(message)
+
+
+async def _delete_recommendation_and_files(
+    session: AsyncSession,
+    recommendation: Recommendation,
+) -> None:
+    await attachments_service.delete_attachments_for_entity(
+        session,
+        entity_type="recommendation",
+        entity_id=recommendation.id,
+    )
+    await recommendations_crud.delete_recommendation_row(session, recommendation)
+
+
 async def create_recommendation(
     session: AsyncSession,
     recommendation_in: RecommendationCreate,
 ) -> Recommendation:
-    check = await checks_crud.get_check_by_serial(session, recommendation_in.serial_number)
-    if check is None:
-        raise InvalidReferenceError("Проверка с указанным ключом не найдена.")
+    check = await _check_by_serial(session, recommendation_in.serial_number)
     return await recommendations_crud.create_recommendation(
         session,
         recommendation_in,
@@ -38,9 +65,7 @@ async def batch_recommendations(
     session: AsyncSession,
     payload: RecommendationBatchRequest,
 ) -> RecommendationListResponse:
-    check = await checks_crud.get_check_by_serial(session, payload.serial_number)
-    if check is None:
-        raise InvalidReferenceError("Проверка с указанным ключом не найдена.")
+    check = await _check_by_serial(session, payload.serial_number)
 
     normalized_items = []
     for item in payload.items:
@@ -57,12 +82,7 @@ async def batch_recommendations(
         if payload.mode == "replace":
             existing = await recommendations_crud.list_recommendations_for_check(session, check.id)
             for recommendation in existing:
-                await attachments_service.delete_attachments_for_entity(
-                    session,
-                    entity_type="recommendation",
-                    entity_id=recommendation.id,
-                )
-                await recommendations_crud.delete_recommendation_row(session, recommendation)
+                await _delete_recommendation_and_files(session, recommendation)
             next_sequence = 1
         else:
             next_sequence = await recommendations_crud.get_next_sequence_number(session, check.id)
@@ -129,9 +149,7 @@ async def update_recommendation(
 
     check_id: Optional[int] = None
     if recommendation_in.serial_number:
-        check = await checks_crud.get_check_by_serial(session, recommendation_in.serial_number)
-        if check is None:
-            raise InvalidReferenceError("Проверка с указанным ключом не найдена.")
+        check = await _check_by_serial(session, recommendation_in.serial_number)
         check_id = check.id
 
     return await recommendations_crud.update_recommendation(
@@ -148,19 +166,13 @@ async def delete_recommendation(
     user: CurrentUser,
 ) -> None:
     recommendation = await get_recommendation(session, recommendation_id)
-    if not user_can_manage_recommendation(
-        role=user.role,
-        username=user.username,
-        auditor=recommendation.auditor,
-    ):
-        raise AccessDeniedError("Недостаточно прав для удаления этой рекомендации.")
+    _assert_can_manage(
+        user,
+        recommendation,
+        message="Недостаточно прав для удаления этой рекомендации.",
+    )
     try:
-        await attachments_service.delete_attachments_for_entity(
-            session,
-            entity_type="recommendation",
-            entity_id=recommendation.id,
-        )
-        await recommendations_crud.delete_recommendation_row(session, recommendation)
+        await _delete_recommendation_and_files(session, recommendation)
         await recommendations_crud.renumber_recommendations_for_check(session, recommendation.check_id)
         await session.commit()
     except Exception:
@@ -177,23 +189,17 @@ async def delete_recommendations_batch(
     recommendations = []
     for recommendation_id in unique_ids:
         recommendation = await get_recommendation(session, recommendation_id)
-        if not user_can_manage_recommendation(
-            role=user.role,
-            username=user.username,
-            auditor=recommendation.auditor,
-        ):
-            raise AccessDeniedError("Недостаточно прав для удаления одной из рекомендаций.")
+        _assert_can_manage(
+            user,
+            recommendation,
+            message="Недостаточно прав для удаления одной из рекомендаций.",
+        )
         recommendations.append(recommendation)
 
     check_ids: set[int] = set()
     try:
         for recommendation in recommendations:
-            await attachments_service.delete_attachments_for_entity(
-                session,
-                entity_type="recommendation",
-                entity_id=recommendation.id,
-            )
-            await recommendations_crud.delete_recommendation_row(session, recommendation)
+            await _delete_recommendation_and_files(session, recommendation)
             check_ids.add(recommendation.check_id)
 
         for check_id in check_ids:
@@ -202,4 +208,3 @@ async def delete_recommendations_batch(
     except Exception:
         await session.rollback()
         raise
-

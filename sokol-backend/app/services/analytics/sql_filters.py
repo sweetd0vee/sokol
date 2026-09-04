@@ -102,10 +102,7 @@ def check_filter_conditions(
         linked_auditor = exists(
             select(Recommendation.id).where(
                 Recommendation.check_id == Check.id,
-                or_(
-                    Recommendation.auditor.in_(auditor_values),
-                    Recommendation.manager.in_(auditor_values),
-                ),
+                Recommendation.auditor.in_(auditor_values),
             )
         )
         conditions.append(or_(Check.check_leader.in_(auditor_values), linked_auditor))

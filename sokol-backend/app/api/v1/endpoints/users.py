@@ -1,15 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_admin
-from app.core.roles import Role
-from app.crud.auditors_crud import create_auditor
-from app.crud.dictionary_errors import DuplicateDictionaryError
-from app.crud.users_crud import create_user, get_user_by_username, list_users
 from app.db.session import get_db_session
-from app.schemas.auditors import AuditorCreate
 from app.schemas.users import UserCreate, UserListResponse, UserRead
-from app.utils.check_key import get_leader_initials_code
+from app.services import users_service
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -21,10 +16,7 @@ async def list_users_endpoint(
     session: AsyncSession = Depends(get_db_session),
     _: object = Depends(require_admin),
 ) -> UserListResponse:
-    users = await list_users(session)
-    total = len(users)
-    page = users[skip : skip + limit]
-    return UserListResponse(items=[UserRead.model_validate(user) for user in page], total=total)
+    return await users_service.list_users_page(session, skip=skip, limit=limit)
 
 
 @router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
@@ -33,38 +25,5 @@ async def create_user_endpoint(
     session: AsyncSession = Depends(get_db_session),
     _: object = Depends(require_admin),
 ) -> UserRead:
-    if payload.role != Role.AUDITOR:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Через приложение можно создавать только пользователей с ролью аудитора.",
-        )
-
-    username = payload.username.strip()
-    if await get_user_by_username(session, username) is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Пользователь с таким логином уже существует.",
-        )
-
-    user = await create_user(
-        session,
-        username=username,
-        password=payload.password,
-        role=payload.role,
-        display_name=(payload.display_name or username).strip() or username,
-        aliases=payload.aliases,
-    )
-
-    if payload.role == Role.AUDITOR:
-        try:
-            await create_auditor(
-                session,
-                AuditorCreate(
-                    full_name=username,
-                    code=get_leader_initials_code(username),
-                ),
-            )
-        except DuplicateDictionaryError:
-            pass
-
+    user = await users_service.create_auditor_user(session, payload)
     return UserRead.model_validate(user)

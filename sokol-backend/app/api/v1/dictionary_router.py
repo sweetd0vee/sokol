@@ -6,20 +6,15 @@ from dataclasses import dataclass
 from typing import Any, Optional, TypeVar
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Body, Depends, Query, Response, status
 from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_admin
-from app.crud.dictionary_errors import (
-    DictionaryInUseError,
-    DictionaryProtectedError,
-    DuplicateDictionaryError,
-)
+from app.crud.dictionary_crud import DictionaryCrud
 from app.db.session import get_db_session
-from app.services.crud_errors import ResourceNotFoundError
-from app.services.dictionary_service import DictionaryCrud, DictionaryService
+from app.services.dictionary_service import DictionaryService
 
 CreateT = TypeVar("CreateT", bound=BaseModel)
 UpdateT = TypeVar("UpdateT", bound=BaseModel)
@@ -37,7 +32,6 @@ class DictionaryRouterConfig:
     read_schema: type[ReadT]
     list_schema: type[ListT]
     not_found: str
-    handle_duplicates: bool = False
 
 
 def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
@@ -48,21 +42,19 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
     read_schema = config.read_schema
     list_schema = config.list_schema
 
+    def _validate(schema: type[BaseModel], payload: dict[str, Any]) -> BaseModel:
+        try:
+            return schema.model_validate(payload)
+        except ValidationError as exc:
+            raise RequestValidationError(exc.errors()) from exc
+
     @router.post("", response_model=read_schema, status_code=status.HTTP_201_CREATED)
     async def create_endpoint(
         payload: dict[str, Any] = Body(...),
         session: AsyncSession = Depends(get_db_session),
         _: object = Depends(require_admin),
     ) -> Any:
-        try:
-            validated_payload = create_schema.model_validate(payload)
-            return await service.create(session, validated_payload)
-        except ValidationError as exc:
-            raise RequestValidationError(exc.errors()) from exc
-        except DuplicateDictionaryError as exc:
-            if config.handle_duplicates:
-                raise HTTPException(status_code=409, detail=str(exc)) from exc
-            raise
+        return await service.create(session, _validate(create_schema, payload))
 
     @router.get("", response_model=list_schema)
     async def list_endpoint(
@@ -79,10 +71,7 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
         item_id: UUID,
         session: AsyncSession = Depends(get_db_session),
     ) -> Any:
-        try:
-            return await service.get(session, item_id)
-        except ResourceNotFoundError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return await service.get(session, item_id)
 
     @router.patch("/{item_id}", response_model=read_schema)
     async def update_endpoint(
@@ -91,19 +80,7 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
         session: AsyncSession = Depends(get_db_session),
         _: object = Depends(require_admin),
     ) -> Any:
-        try:
-            validated_payload = update_schema.model_validate(payload)
-            return await service.update(session, item_id, validated_payload)
-        except ValidationError as exc:
-            raise RequestValidationError(exc.errors()) from exc
-        except ResourceNotFoundError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-        except DuplicateDictionaryError as exc:
-            if config.handle_duplicates:
-                raise HTTPException(status_code=409, detail=str(exc)) from exc
-            raise
-        except (DictionaryInUseError, DictionaryProtectedError) as exc:
-            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return await service.update(session, item_id, _validate(update_schema, payload))
 
     @router.delete(
         "/{item_id}",
@@ -115,12 +92,7 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
         session: AsyncSession = Depends(get_db_session),
         _: object = Depends(require_admin),
     ) -> Response:
-        try:
-            await service.delete(session, item_id)
-        except ResourceNotFoundError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-        except (DictionaryInUseError, DictionaryProtectedError) as exc:
-            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        await service.delete(session, item_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     return router

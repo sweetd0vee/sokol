@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import re
 from typing import Mapping, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.exceptions import DictionaryRefError
 from app.crud.dictionary_crud import find_dictionary_duplicate_by_label
 from app.models.auditors import Auditor
 from app.models.check_kinds import CheckKind
@@ -15,17 +17,15 @@ from app.models.effectiveness_ratings import EffectivenessRating
 from app.services.dictionary_integrity import EFFECTIVENESS_FIELDS
 from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT, find_dictionary_label_match
 
-
-class DictionaryRefError(ValueError):
-    """Raised when a domain field value is missing from a settings dictionary."""
-
-    def __init__(self, *, field: str, value: str, dictionary: str) -> None:
-        self.field = field
-        self.value = value
-        self.dictionary = dictionary
-        super().__init__(
-            f"Значение «{value}» поля «{field}» отсутствует в справочнике «{dictionary}»."
-        )
+__all__ = [
+    "DictionaryRefError",
+    "canonicalize_audit_objects",
+    "ensure_auditor_name",
+    "ensure_check_kind_label",
+    "ensure_effectiveness_rating_label",
+    "validate_check_dictionary_fields",
+    "validate_recommendation_dictionary_fields",
+]
 
 
 async def _label_exists(
@@ -69,8 +69,6 @@ async def ensure_effectiveness_rating_label(
 
 
 def _split_audit_object_values(value: object) -> list[str]:
-    import re
-
     if isinstance(value, list):
         parts: list[str] = []
         for item in value:

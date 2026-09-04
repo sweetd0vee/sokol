@@ -6,6 +6,9 @@ import unittest
 
 from sqlalchemy.dialects import postgresql
 
+from types import SimpleNamespace
+
+from app.services.analytics.common import collect_analytics_auditors
 from app.services.analytics.sql_filters import (
     audit_object_has_values,
     check_filter_conditions,
@@ -14,7 +17,6 @@ from app.services.analytics.sql_filters import (
 )
 from app.services.analytics.sql_aggregates import department_map_from_pairs
 from app.models.checks import Check
-from app.models.recommendations import Recommendation
 
 
 class AnalyticsSqlFiltersTests(unittest.TestCase):
@@ -39,6 +41,9 @@ class AnalyticsSqlFiltersTests(unittest.TestCase):
             for item in conditions
         )
         self.assertIn("start_date", combined)
+        self.assertIn("check_leader", combined)
+        self.assertIn("auditor", combined)
+        self.assertNotIn("manager", combined)
 
     def test_recommendation_filter_conditions_include_deadline_and_status(self) -> None:
         conditions = recommendation_filter_conditions(
@@ -87,6 +92,18 @@ class AnalyticsSqlFiltersTests(unittest.TestCase):
             selected_departments=["ИТ"],
         )
         self.assertEqual([(item.name, item.value) for item in selected_rows], [("ИТ", 1)])
+
+    def test_collect_analytics_auditors_excludes_recommendation_managers(self) -> None:
+        auditors = collect_analytics_auditors(
+            [SimpleNamespace(check_leader="Ярмошевич И.Н")],
+            [
+                SimpleNamespace(
+                    auditor="Якубович В.В.",
+                    manager="Ярмошевич И.Н., Лавренюк Р.А",
+                )
+            ],
+        )
+        self.assertEqual(auditors, ["Якубович В.В.", "Ярмошевич И.Н"])
 
 
 if __name__ == "__main__":

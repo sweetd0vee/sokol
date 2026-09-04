@@ -17,6 +17,5 @@ router = make_dictionary_router(
         read_schema=DepartmentRead,
         list_schema=DepartmentListResponse,
         not_found="Департамент не найден.",
-        handle_duplicates=True,
     )
 )

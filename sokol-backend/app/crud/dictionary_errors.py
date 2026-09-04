@@ -1,36 +1,17 @@
-"""Errors raised by settings dictionary CRUD."""
+"""Errors raised by settings dictionary CRUD.
 
+Canonical definitions live in ``app.core.exceptions``; this module re-exports them
+so existing imports keep working.
+"""
 
-class DuplicateDictionaryError(ValueError):
-    """Raised when a dictionary label already exists."""
+from app.core.exceptions import (
+    DictionaryInUseError,
+    DictionaryProtectedError,
+    DuplicateDictionaryError,
+)
 
-    def __init__(self, *, dictionary: str, label: str) -> None:
-        self.dictionary = dictionary
-        self.label = label
-        super().__init__(
-            f"Запись «{label}» уже существует в справочнике «{dictionary}»."
-        )
-
-
-class DictionaryInUseError(ValueError):
-    """Raised when a dictionary row is referenced by checks or recommendations."""
-
-    def __init__(self, *, dictionary: str, label: str) -> None:
-        self.dictionary = dictionary
-        self.label = label
-        super().__init__(
-            f"Нельзя удалить «{label}» из справочника «{dictionary}»: "
-            "значение используется в проверках или рекомендациях."
-        )
-
-
-class DictionaryProtectedError(ValueError):
-    """Raised when a system dictionary row cannot be renamed or deleted."""
-
-    def __init__(self, *, dictionary: str, label: str, action: str = "удалить") -> None:
-        self.dictionary = dictionary
-        self.label = label
-        self.action = action
-        super().__init__(
-            f"Системное значение «{label}» нельзя {action} в справочнике «{dictionary}»."
-        )
+__all__ = [
+    "DictionaryInUseError",
+    "DictionaryProtectedError",
+    "DuplicateDictionaryError",
+]

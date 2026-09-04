@@ -79,7 +79,7 @@ export function filterChecksForAnalytics(checks: Check[], filters: CheckAnalytic
       const linked = recommendationsByCheck.get(check.serial_number) ?? [];
       const matchesAuditor =
         auditorSet.has(check.check_leader)
-        || linked.some((item) => auditorSet.has(item.auditor) || auditorSet.has(item.manager));
+        || linked.some((item) => auditorSet.has(item.auditor));
       if (!matchesAuditor) {
         return false;
       }

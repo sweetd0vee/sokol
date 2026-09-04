@@ -1,17 +1,6 @@
-from collections.abc import Sequence
-from typing import Optional
-from uuid import UUID
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud.dictionary_crud import (
-    count_dictionary_items,
-    create_dictionary_item,
-    delete_dictionary_item,
-    get_dictionary_item,
-    list_dictionary_items,
-    update_dictionary_item,
-)
+from app.crud.dictionary_crud import bind_dictionary_crud
 from app.crud.dictionary_errors import DuplicateDictionaryError, DictionaryProtectedError
 from app.models.departments import Department
 from app.schemas.departments import DepartmentCreate, DepartmentUpdate
@@ -19,50 +8,19 @@ from app.services.dictionary_integrity import replace_recommendation_audit_objec
 from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT, normalize_dictionary_label
 
 
-async def create_department(
-    session: AsyncSession, department_in: DepartmentCreate
-) -> Department:
-    return await create_dictionary_item(
-        session,
-        Department,
-        department_in.model_dump(),
-        label_field="name",
-        dictionary_name="departments",
-    )
+_ops = bind_dictionary_crud(
+    model=Department,
+    label_field="name",
+    dictionary_name="departments",
+    order_by=(Department.name.asc(), Department.id.asc()),
+    search_columns=(Department.name,),
+)
 
-
-async def get_department(
-    session: AsyncSession, department_id: UUID
-) -> Optional[Department]:
-    return await get_dictionary_item(session, Department, department_id)
-
-
-async def list_departments(
-    session: AsyncSession,
-    skip: int = 0,
-    limit: int = 50,
-    search: Optional[str] = None,
-) -> Sequence[Department]:
-    return await list_dictionary_items(
-        session,
-        Department,
-        order_by=(Department.name.asc(), Department.id.asc()),
-        skip=skip,
-        limit=limit,
-        search=search,
-        search_columns=(Department.name,),
-    )
-
-
-async def count_departments(
-    session: AsyncSession, search: Optional[str] = None
-) -> int:
-    return await count_dictionary_items(
-        session,
-        Department,
-        search=search,
-        search_columns=(Department.name,),
-    )
+create_department = _ops.create
+get_department = _ops.get
+list_departments = _ops.list
+count_departments = _ops.count
+delete_department = _ops.delete
 
 
 async def update_department(
@@ -86,19 +44,7 @@ async def update_department(
                 session, old_name, normalized
             )
     try:
-        return await update_dictionary_item(
-            session,
-            department,
-            payload,
-            label_field="name",
-            dictionary_name="departments",
-        )
+        return await _ops.update(session, department, department_in)
     except DuplicateDictionaryError:
         await session.rollback()
         raise
-
-
-async def delete_department(
-    session: AsyncSession, department: Department
-) -> None:
-    await delete_dictionary_item(session, department)

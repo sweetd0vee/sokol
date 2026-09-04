@@ -1,10 +1,10 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import get_db_session
 from app.api.deps import CurrentUser, get_current_user
+from app.db.session import get_db_session
 from app.schemas.recommendations import (
     RecommendationBatchDeleteRequest,
     RecommendationBatchRequest,
@@ -14,13 +14,6 @@ from app.schemas.recommendations import (
     RecommendationUpdate,
 )
 from app.services import recommendations_service
-from app.services.crud_errors import (
-    AccessDeniedError,
-    InvalidReferenceError,
-    ResourceNotFoundError,
-    StorageOperationError,
-)
-from app.services.dictionary_validation import DictionaryRefError
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
@@ -30,12 +23,7 @@ async def create_recommendation_endpoint(
     recommendation_in: RecommendationCreate,
     session: AsyncSession = Depends(get_db_session),
 ) -> RecommendationRead:
-    try:
-        return await recommendations_service.create_recommendation(session, recommendation_in)
-    except InvalidReferenceError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except DictionaryRefError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return await recommendations_service.create_recommendation(session, recommendation_in)
 
 
 @router.post("/batch", response_model=RecommendationListResponse, status_code=status.HTTP_201_CREATED)
@@ -43,14 +31,7 @@ async def batch_recommendations_endpoint(
     payload: RecommendationBatchRequest,
     session: AsyncSession = Depends(get_db_session),
 ) -> RecommendationListResponse:
-    try:
-        return await recommendations_service.batch_recommendations(session, payload)
-    except InvalidReferenceError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except DictionaryRefError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except StorageOperationError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return await recommendations_service.batch_recommendations(session, payload)
 
 
 @router.post("/batch-delete", status_code=status.HTTP_204_NO_CONTENT)
@@ -59,15 +40,7 @@ async def batch_delete_recommendations_endpoint(
     session: AsyncSession = Depends(get_db_session),
     user: CurrentUser = Depends(get_current_user),
 ) -> None:
-    try:
-        await recommendations_service.delete_recommendations_batch(session, payload.ids, user)
-    except AccessDeniedError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    except ResourceNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except StorageOperationError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    return None
+    await recommendations_service.delete_recommendations_batch(session, payload.ids, user)
 
 
 @router.get("", response_model=RecommendationListResponse)
@@ -92,10 +65,7 @@ async def get_recommendation_endpoint(
     recommendation_id: int,
     session: AsyncSession = Depends(get_db_session),
 ) -> RecommendationRead:
-    try:
-        return await recommendations_service.get_recommendation(session, recommendation_id)
-    except ResourceNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return await recommendations_service.get_recommendation(session, recommendation_id)
 
 
 @router.patch("/{recommendation_id}", response_model=RecommendationRead)
@@ -104,18 +74,11 @@ async def update_recommendation_endpoint(
     recommendation_in: RecommendationUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> RecommendationRead:
-    try:
-        return await recommendations_service.update_recommendation(
-            session,
-            recommendation_id,
-            recommendation_in,
-        )
-    except ResourceNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except InvalidReferenceError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except DictionaryRefError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return await recommendations_service.update_recommendation(
+        session,
+        recommendation_id,
+        recommendation_in,
+    )
 
 
 @router.delete("/{recommendation_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -124,12 +87,4 @@ async def delete_recommendation_endpoint(
     session: AsyncSession = Depends(get_db_session),
     user: CurrentUser = Depends(get_current_user),
 ) -> None:
-    try:
-        await recommendations_service.delete_recommendation(session, recommendation_id, user)
-    except AccessDeniedError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    except ResourceNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except StorageOperationError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    return None
+    await recommendations_service.delete_recommendation(session, recommendation_id, user)

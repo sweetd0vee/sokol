@@ -231,6 +231,6 @@ Fallback при No-Go: ограниченный read-only/UAT-pilot режим, 
 | [docs/CI.md](docs/CI.md) | Как включить required CI checks |
 | [docs/APP_LIMITS_AND_GOTCHAS.md](docs/APP_LIMITS_AND_GOTCHAS.md) | Лимиты пилотной версии |
 | [sokol-backend/docs/ALEMBIC_AND_DATA.md](sokol-backend/docs/ALEMBIC_AND_DATA.md) | Init/migrate/import/backup |
-| [sokol-backend/docs/DATABASE_SCHEMA.md](sokol-backend/docs/DATABASE_SCHEMA.md) | Подробная схема БД |
+| [sokol-backend/docs/DATA_AND_DB.md](sokol-backend/docs/DATA_AND_DB.md) | Модель данных и схема БД |
 | [sokol-backend/docs/STORAGE.md](sokol-backend/docs/STORAGE.md) | MinIO и вложения |
 | [docs/MINIO.md](docs/MINIO.md) | Бакеты, консоль, backup MinIO |

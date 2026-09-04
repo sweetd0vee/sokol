@@ -1,38 +1,28 @@
 # Backend — документация
 
-## Документы
-
 | Файл | Содержание |
 |------|------------|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, модули, потоки |
-| [API.md](API.md) | HTTP `/api/v1`, контракты |
-| [DATA_AND_DB.md](DATA_AND_DB.md) | Модели, enum'ы, seed |
-| [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) | Подробная схема БД, таблицы, типы, связи, диаграммы |
-| [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md) | БД: init, migrate, import, бэкапы |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, модули, bootstrap |
+| [API.md](API.md) | HTTP `/api/v1` |
+| [DATA_AND_DB.md](DATA_AND_DB.md) | Модель данных, enum'ы, FK, миграции |
+| [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md) | Init, import, бэкапы |
 | [STORAGE.md](STORAGE.md) | MinIO, вложения |
 | [REPORTS.md](REPORTS.md) | Раздел II, ДЗ, файл контроля |
-| [CODE_REVIEW](../../docs/CODE_REVIEW_BACKEND.md) | Код-ревью |
-| [PLAN.md](../../PLAN.md) | Roadmap и приоритеты |
 
-## Кратко о сервисе
+Запуск и env: [../README.md](../README.md). Roadmap: [PLAN.md](../../PLAN.md).
 
-FastAPI + PostgreSQL (async SQLAlchemy):
+## Кратко
 
-- **Auth** — JWT + RBAC (`auditor` / `department_head` / `admin`). `department_head` имеет те же admin-права API, что и `admin`. Публичны health, capabilities и login. HTTP Basic — только dev, если не задан `SOKOL_ENABLE_BASIC_AUTH`. Профиль/аватар на backend нет: `GET /auth/me` возвращает `username`, `display_name`, `role`.
-- **CRUD** — проверки, рекомендации, справочники; validation справочников на create/update; FK на labels. У аудиторов обязателен трёхбуквенный `code` (ключ проверки).
-- **Analytics** — `GET /api/v1/analytics/{checks|recommendations|monitoring|dva|planning}`.
-- **Attachments** — Postgres + MinIO.
+FastAPI + PostgreSQL (async SQLAlchemy) + MinIO:
+
+- **Auth** — JWT + RBAC (`auditor` / `department_head` / `admin`). `department_head` проходит `require_admin`. Публичны `/`, `/status`, `/capabilities`, `POST /auth/login`. HTTP Basic — только development, если не задан `SOKOL_ENABLE_BASIC_AUTH`. Аватаров на backend нет.
+- **CRUD** — проверки, рекомендации, справочники; FK на labels. У аудиторов обязателен трёхбуквенный `code`.
+- **Analytics** — `GET /analytics/{checks|recommendations|monitoring|dva|planning}`. Конструктор дашбордов — только frontend.
+- **Attachments** — Postgres metadata + MinIO.
 - **Tools** — Раздел II, ДЗ, parse-recommendations, файл контроля (XLSX).
 
-**Пока нет:** Alembic (схема через `create_all` + `migrate_*.py`), OIDC, CRUD наблюдений, users PATCH/DELETE, хранение аватаров.
-
-## Стек
+**Нет:** Alembic, OIDC, CRUD наблюдений, users PATCH/DELETE, хранение аватаров, серверные сохранённые отчёты.
 
 Python 3.12 · FastAPI · SQLAlchemy 2 + asyncpg · PostgreSQL 16 · MinIO · python-docx · openpyxl · unittest
 
-## Порты
-
-| Режим | API |
-|-------|-----|
-| Локально | **8802** |
-| Docker | **8800** |
+Локально API **8802**, Docker **8800**.

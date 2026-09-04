@@ -69,9 +69,7 @@ async def load_recommendations(session: AsyncSession) -> list[Recommendation]:
 
 def _check_matches_auditors(check: Check, auditor_set: set[str]) -> bool:
     linked = check.recommendations or []
-    return check.check_leader in auditor_set or any(
-        item.auditor in auditor_set or item.manager in auditor_set for item in linked
-    )
+    return check.check_leader in auditor_set or any(item.auditor in auditor_set for item in linked)
 
 
 def filter_checks(
@@ -171,7 +169,6 @@ def collect_analytics_auditors(checks: list[Check], recommendations: list[Recomm
         {
             *(check.check_leader.strip() for check in checks if check.check_leader.strip()),
             *(item.auditor.strip() for item in recommendations if item.auditor.strip()),
-            *(item.manager.strip() for item in recommendations if item.manager.strip()),
         },
         key=lambda value: value.casefold(),
     )

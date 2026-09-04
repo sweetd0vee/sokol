@@ -7,7 +7,7 @@ from app.crud import (
     departments_crud,
     effectiveness_ratings_crud,
 )
-from app.services.dictionary_service import DictionaryCrud
+from app.crud.dictionary_crud import DictionaryCrud
 
 auditors_crud_service = DictionaryCrud(
     create=auditors_crud.create_auditor,
@@ -53,4 +53,3 @@ effectiveness_ratings_crud_service = DictionaryCrud(
     update=effectiveness_ratings_crud.update_effectiveness_rating,
     delete=effectiveness_ratings_crud.delete_effectiveness_rating,
 )
-

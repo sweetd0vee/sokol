@@ -3,6 +3,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.exception_handlers import register_exception_handlers
 from app.api.router import api_router
 from app.core.config import settings
 from app.core.startup_validation import (
@@ -32,6 +33,7 @@ assert_seed_replace_safe_for_env(
 )
 
 app = FastAPI(title=settings.app_name)
+register_exception_handlers(app)
 cors_origins = settings.cors_origins
 
 app.add_middleware(

@@ -17,6 +17,5 @@ router = make_dictionary_router(
         read_schema=AuditorRead,
         list_schema=AuditorListResponse,
         not_found="Аудитор не найден.",
-        handle_duplicates=True,
     )
 )

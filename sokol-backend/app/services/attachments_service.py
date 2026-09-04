@@ -4,7 +4,7 @@ from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser
+from app.core.current_user import CurrentUser
 from app.core.config import settings
 from app.core.recommendation_access import user_can_manage_recommendation
 from app.crud import attachments_crud, checks_crud, recommendations_crud

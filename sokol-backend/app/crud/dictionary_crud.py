@@ -1,9 +1,11 @@
 """Shared helpers for settings dictionaries (label/code tables)."""
 
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
+from dataclasses import dataclass
 from typing import Any, Optional, TypeVar
 from uuid import UUID
 
+from pydantic import BaseModel
 from sqlalchemy import ColumnElement, Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
@@ -12,6 +14,19 @@ from app.crud.dictionary_errors import DuplicateDictionaryError
 from app.utils.dictionary_text import dictionary_match_key, normalize_dictionary_label
 
 ModelT = TypeVar("ModelT", bound=DeclarativeBase)
+CreateT = TypeVar("CreateT", bound=BaseModel)
+UpdateT = TypeVar("UpdateT", bound=BaseModel)
+EntityT = TypeVar("EntityT")
+
+
+@dataclass(frozen=True)
+class DictionaryCrud:
+    create: Callable[[AsyncSession, CreateT], Awaitable[EntityT]]
+    get: Callable[[AsyncSession, UUID], Awaitable[EntityT | None]]
+    list: Callable[[AsyncSession, int, int, Optional[str]], Awaitable[Sequence[EntityT]]]
+    count: Callable[[AsyncSession, Optional[str]], Awaitable[int]]
+    update: Callable[[AsyncSession, EntityT, UpdateT], Awaitable[EntityT]]
+    delete: Callable[[AsyncSession, EntityT], Awaitable[None]]
 
 
 def apply_ilike_search(
@@ -147,3 +162,69 @@ async def update_dictionary_item(
 async def delete_dictionary_item(session: AsyncSession, item: ModelT) -> None:
     await session.delete(item)
     await session.commit()
+
+
+def bind_dictionary_crud(
+    *,
+    model: type[ModelT],
+    order_by: Sequence[Any],
+    search_columns: Sequence[ColumnElement[Any]],
+    label_field: Optional[str] = None,
+    dictionary_name: Optional[str] = None,
+) -> DictionaryCrud:
+    async def create(session: AsyncSession, payload: BaseModel) -> ModelT:
+        return await create_dictionary_item(
+            session,
+            model,
+            payload.model_dump(),
+            label_field=label_field,
+            dictionary_name=dictionary_name,
+        )
+
+    async def get(session: AsyncSession, item_id: UUID) -> Optional[ModelT]:
+        return await get_dictionary_item(session, model, item_id)
+
+    async def list_items(
+        session: AsyncSession,
+        skip: int = 0,
+        limit: int = 50,
+        search: Optional[str] = None,
+    ) -> Sequence[ModelT]:
+        return await list_dictionary_items(
+            session,
+            model,
+            order_by=order_by,
+            skip=skip,
+            limit=limit,
+            search=search,
+            search_columns=search_columns,
+        )
+
+    async def count(session: AsyncSession, search: Optional[str] = None) -> int:
+        return await count_dictionary_items(
+            session,
+            model,
+            search=search,
+            search_columns=search_columns,
+        )
+
+    async def update(session: AsyncSession, item: ModelT, payload: BaseModel) -> ModelT:
+        return await update_dictionary_item(
+            session,
+            item,
+            payload.model_dump(exclude_unset=True),
+            label_field=label_field,
+            dictionary_name=dictionary_name,
+        )
+
+    async def delete(session: AsyncSession, item: ModelT) -> None:
+        await delete_dictionary_item(session, item)
+
+    return DictionaryCrud(
+        create=create,
+        get=get,
+        list=list_items,
+        count=count,
+        update=update,
+        delete=delete,
+    )

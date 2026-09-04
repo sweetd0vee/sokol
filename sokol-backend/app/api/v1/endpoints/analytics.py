@@ -1,3 +1,5 @@
+from dataclasses import asdict
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,11 +22,9 @@ from app.schemas.analytics import (
 from app.services.analytics.checks_analytics import build_checks_analytics
 from app.services.analytics.dva_analytics import build_dva_analytics
 from app.services.analytics.planning_analytics import build_planning_analytics
-from app.services.analytics.recommendations_analytics import build_recommendations_analytics
-from app.services.analytics.sql_aggregates import (
-    recommendation_completed_during_audit_by_check_sql,
-    recommendation_deadline_extensions_by_check_sql,
-    recommendation_status_matrix_sql,
+from app.services.analytics.recommendations_analytics import (
+    build_monitoring_analytics,
+    build_recommendations_analytics,
 )
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
@@ -35,15 +35,7 @@ async def get_checks_analytics(
     filters: AudiencePeriodFilters = Depends(audience_period_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> ChecksAnalyticsResponse:
-    return await build_checks_analytics(
-        session,
-        granularity=filters.granularity,
-        years=filters.years,
-        quarters=filters.quarters,
-        months=filters.months,
-        auditors=filters.auditors,
-        departments=filters.departments,
-    )
+    return await build_checks_analytics(session, **asdict(filters))
 
 
 @router.get("/recommendations", response_model=RecommendationsAnalyticsResponse)
@@ -51,18 +43,7 @@ async def get_recommendations_analytics(
     filters: RecommendationFilters = Depends(recommendation_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> RecommendationsAnalyticsResponse:
-    return await build_recommendations_analytics(
-        session,
-        granularity=filters.granularity,
-        years=filters.years,
-        quarters=filters.quarters,
-        months=filters.months,
-        auditors=filters.auditors,
-        departments=filters.departments,
-        statuses=filters.statuses,
-        additional_statuses=filters.additional_statuses,
-        materiality_levels=filters.materiality_levels,
-    )
+    return await build_recommendations_analytics(session, **asdict(filters))
 
 
 @router.get("/monitoring", response_model=MonitoringAnalyticsResponse)
@@ -70,46 +51,7 @@ async def get_monitoring_analytics(
     filters: RecommendationFilters = Depends(recommendation_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> MonitoringAnalyticsResponse:
-    full = await build_recommendations_analytics(
-        session,
-        granularity=filters.granularity,
-        years=filters.years,
-        quarters=filters.quarters,
-        months=filters.months,
-        auditors=filters.auditors,
-        departments=filters.departments,
-        statuses=filters.statuses,
-        additional_statuses=filters.additional_statuses,
-        materiality_levels=filters.materiality_levels,
-    )
-    recommendation_filters = {
-        "years": filters.years,
-        "quarters": filters.quarters,
-        "months": filters.months,
-        "auditors": filters.auditors,
-        "departments": filters.departments,
-        "statuses": filters.statuses,
-        "additional_statuses": filters.additional_statuses,
-        "materiality_levels": filters.materiality_levels,
-    }
-    return MonitoringAnalyticsResponse(
-        universe_total=full.universe_total,
-        filtered_total=full.filtered_total,
-        granularity=full.granularity,
-        summary=full.summary,
-        period_series=full.period_series,
-        status_distribution=full.status_distribution,
-        additional_status_distribution=full.additional_status_distribution,
-        indicator_distribution=full.indicator_distribution,
-        status_matrix=await recommendation_status_matrix_sql(session, **recommendation_filters),
-        deadline_extensions_by_check=await recommendation_deadline_extensions_by_check_sql(
-            session, **recommendation_filters
-        ),
-        completed_during_audit_by_check=await recommendation_completed_during_audit_by_check_sql(
-            session, **recommendation_filters
-        ),
-        filter_options=full.filter_options,
-    )
+    return await build_monitoring_analytics(session, **asdict(filters))
 
 
 @router.get("/dva", response_model=DvaAnalyticsResponse)
@@ -117,15 +59,7 @@ async def get_dva_analytics(
     filters: AudiencePeriodFilters = Depends(audience_period_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> DvaAnalyticsResponse:
-    return await build_dva_analytics(
-        session,
-        granularity=filters.granularity,
-        years=filters.years,
-        quarters=filters.quarters,
-        months=filters.months,
-        auditors=filters.auditors,
-        departments=filters.departments,
-    )
+    return await build_dva_analytics(session, **asdict(filters))
 
 
 @router.get("/planning", response_model=PlanningAnalyticsResponse)
@@ -133,11 +67,4 @@ async def get_planning_analytics(
     filters: PlanningFilters = Depends(planning_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> PlanningAnalyticsResponse:
-    return await build_planning_analytics(
-        session,
-        granularity=filters.granularity,
-        years=filters.years,
-        quarters=filters.quarters,
-        months=filters.months,
-        departments=filters.departments,
-    )
+    return await build_planning_analytics(session, **asdict(filters))

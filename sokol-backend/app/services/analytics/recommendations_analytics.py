@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.analytics import (
     ChecksAnalyticsFilterOptions,
+    MonitoringAnalyticsResponse,
     NamedCount,
     PeriodGranularity,
     RecommendationsAnalyticsResponse,
@@ -27,10 +28,13 @@ from app.services.analytics.sql_aggregates import (
     collect_recommendation_anchor_dates_sql,
     count_recommendations,
     recommendation_check_links_sql,
+    recommendation_completed_during_audit_by_check_sql,
+    recommendation_deadline_extensions_by_check_sql,
     recommendation_indicator_distribution_sql,
     recommendation_materiality_matrix_sql,
     recommendation_object_distribution_sql,
     recommendation_period_series_sql,
+    recommendation_status_matrix_sql,
     summarize_recommendations_sql,
 )
 
@@ -46,6 +50,7 @@ __all__ = [
     "STATUS_LABELS",
     "build_additional_status_distribution",
     "build_materiality_distribution",
+    "build_monitoring_analytics",
     "build_recommendations_analytics",
     "build_status_distribution",
 ]
@@ -146,4 +151,59 @@ async def build_recommendations_analytics(
             departments=await collect_filter_option_departments_sql(session),
             anchor_dates=await collect_recommendation_anchor_dates_sql(session),
         ),
+    )
+
+
+async def build_monitoring_analytics(
+    session: AsyncSession,
+    *,
+    granularity: PeriodGranularity = "year",
+    years: list[str] | None = None,
+    quarters: list[str] | None = None,
+    months: list[str] | None = None,
+    auditors: list[str] | None = None,
+    departments: list[str] | None = None,
+    statuses: list[str] | None = None,
+    additional_statuses: list[str] | None = None,
+    materiality_levels: list[str] | None = None,
+) -> MonitoringAnalyticsResponse:
+    full = await build_recommendations_analytics(
+        session,
+        granularity=granularity,
+        years=years,
+        quarters=quarters,
+        months=months,
+        auditors=auditors,
+        departments=departments,
+        statuses=statuses,
+        additional_statuses=additional_statuses,
+        materiality_levels=materiality_levels,
+    )
+    sql_filters = recommendation_params(
+        years=years,
+        quarters=quarters,
+        months=months,
+        auditors=auditors,
+        departments=departments,
+        statuses=statuses,
+        additional_statuses=additional_statuses,
+        materiality_levels=materiality_levels,
+    )
+    return MonitoringAnalyticsResponse(
+        universe_total=full.universe_total,
+        filtered_total=full.filtered_total,
+        granularity=full.granularity,
+        summary=full.summary,
+        period_series=full.period_series,
+        status_distribution=full.status_distribution,
+        additional_status_distribution=full.additional_status_distribution,
+        indicator_distribution=full.indicator_distribution,
+        status_matrix=await recommendation_status_matrix_sql(session, **sql_filters),
+        deadline_extensions_by_check=await recommendation_deadline_extensions_by_check_sql(
+            session, **sql_filters
+        ),
+        completed_during_audit_by_check=await recommendation_completed_during_audit_by_check_sql(
+            session, **sql_filters
+        ),
+        filter_options=full.filter_options,
     )

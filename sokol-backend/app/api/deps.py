@@ -8,7 +8,8 @@ import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.roles import ADMIN_ROLES, Role, is_admin_role
+from app.core.current_user import CurrentUser
+from app.core.roles import ADMIN_ROLES, Role
 from app.core.security import decode_access_token, verify_password
 from app.crud.users_crud import get_user_by_username
 from app.db.session import get_db_session
@@ -16,20 +17,12 @@ from app.db.session import get_db_session
 _bearer = HTTPBearer(auto_error=False)
 _basic = HTTPBasic(auto_error=False)
 
-
-@dataclass(frozen=True)
-class CurrentUser:
-    username: str
-    display_name: str
-    role: Role
-
-    @property
-    def short_name(self) -> str:
-        return self.username
-
-    @property
-    def is_admin(self) -> bool:
-        return is_admin_role(self.role)
+__all__ = [
+    "CurrentUser",
+    "get_current_user",
+    "require_admin",
+    "require_roles",
+]
 
 
 def _user_from_record(user) -> CurrentUser:

@@ -1,41 +1,28 @@
-from collections.abc import Awaitable, Callable, Sequence
-from dataclasses import dataclass
-from typing import Optional, TypeVar
+from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import ResourceNotFoundError
+from app.crud.dictionary_crud import DictionaryCrud
 from app.crud.dictionary_errors import DictionaryInUseError, DictionaryProtectedError
-from app.services.crud_errors import ResourceNotFoundError
 from app.services.dictionary_integrity import (
     dictionary_identity,
     dictionary_item_in_use,
 )
 from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT
 
-CreateT = TypeVar("CreateT", bound=BaseModel)
-UpdateT = TypeVar("UpdateT", bound=BaseModel)
-EntityT = TypeVar("EntityT")
+__all__ = ["DictionaryCrud", "DictionaryService"]
 
 
-@dataclass(frozen=True)
-class DictionaryCrud:
-    create: Callable[[AsyncSession, CreateT], Awaitable[EntityT]]
-    get: Callable[[AsyncSession, UUID], Awaitable[EntityT | None]]
-    list: Callable[[AsyncSession, int, int, Optional[str]], Awaitable[Sequence[EntityT]]]
-    count: Callable[[AsyncSession, Optional[str]], Awaitable[int]]
-    update: Callable[[AsyncSession, EntityT, UpdateT], Awaitable[EntityT]]
-    delete: Callable[[AsyncSession, EntityT], Awaitable[None]]
-
-
-@dataclass(frozen=True)
 class DictionaryService:
-    crud: DictionaryCrud
-    not_found: str
+    def __init__(self, crud: DictionaryCrud, not_found: str) -> None:
+        self.crud = crud
+        self.not_found = not_found
 
-    async def create(self, session: AsyncSession, payload: CreateT) -> EntityT:
+    async def create(self, session: AsyncSession, payload: BaseModel) -> object:
         return await self.crud.create(session, payload)
 
     async def list(
@@ -44,12 +31,12 @@ class DictionaryService:
         skip: int,
         limit: int,
         search: Optional[str],
-    ) -> tuple[list[EntityT], int]:
+    ) -> tuple[list[object], int]:
         items = await self.crud.list(session, skip, limit, search)
         total = await self.crud.count(session, search)
         return list(items), total
 
-    async def get(self, session: AsyncSession, item_id: UUID) -> EntityT:
+    async def get(self, session: AsyncSession, item_id: UUID) -> object:
         item = await self.crud.get(session, item_id)
         if item is None:
             raise ResourceNotFoundError(self.not_found)
@@ -59,8 +46,8 @@ class DictionaryService:
         self,
         session: AsyncSession,
         item_id: UUID,
-        payload: UpdateT,
-    ) -> EntityT:
+        payload: BaseModel,
+    ) -> object:
         item = await self.get(session, item_id)
         return await self.crud.update(session, item, payload)
 
@@ -83,4 +70,3 @@ class DictionaryService:
             await session.rollback()
             dictionary, label = identity or ("dictionary", str(item_id))
             raise DictionaryInUseError(dictionary=dictionary, label=label) from exc
-

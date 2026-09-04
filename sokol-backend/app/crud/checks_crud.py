@@ -7,8 +7,11 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud import auditors_crud
 from app.crud.attachments_crud import list_attachments_by_serial
+from app.crud.check_serial import (
+    CHECK_SERIAL_SOURCE_FIELDS,
+    generate_unique_check_serial_number,
+)
 from app.models.attachments import Attachment
 from app.models.checks import Check, CheckStatus
 from app.models.recommendations import Recommendation
@@ -17,12 +20,10 @@ from app.services.dictionary_integrity import (
     EFFECTIVENESS_FIELDS,
     normalize_optional_dictionary_label,
 )
-from app.services.dictionary_validation import DictionaryRefError, validate_check_dictionary_fields
+from app.services.dictionary_validation import validate_check_dictionary_fields
 from app.services.storage.minio_storage import check_bucket_name, get_storage
-from app.utils.check_key import CheckKeySeed, generate_check_serial_number
 
 logger = logging.getLogger(__name__)
-CHECK_SERIAL_SOURCE_FIELDS = {"check_leader", "start_date", "check_quarter", "check_type"}
 
 
 def _apply_filters(
@@ -47,72 +48,6 @@ def _apply_filters(
     return query
 
 
-async def _existing_key_seeds(
-    session: AsyncSession,
-    *,
-    exclude_check_id: int | None = None,
-) -> list[CheckKeySeed]:
-    query = select(Check.check_leader, Check.start_date, Check.check_type)
-    if exclude_check_id is not None:
-        query = query.where(Check.id != exclude_check_id)
-    result = await session.execute(query)
-    return [
-        CheckKeySeed(leader=row.check_leader, start_date=row.start_date, check_type=row.check_type)
-        for row in result.all()
-    ]
-
-
-async def _existing_serial_numbers(
-    session: AsyncSession,
-    *,
-    exclude_check_id: int | None = None,
-) -> set[str]:
-    query = select(Check.serial_number)
-    if exclude_check_id is not None:
-        query = query.where(Check.id != exclude_check_id)
-    result = await session.execute(query)
-    return {serial for serial in result.scalars().all() if serial}
-
-
-async def _generate_unique_check_serial_number(
-    session: AsyncSession,
-    *,
-    start_date: date,
-    check_quarter: int,
-    check_leader: str,
-    check_type: str,
-    exclude_check_id: int | None = None,
-) -> str:
-    auditor = await auditors_crud.get_auditor_by_full_name(session, check_leader)
-    if auditor is None or not auditor.code:
-        raise DictionaryRefError(
-            field="check_leader",
-            value=check_leader,
-            dictionary="auditors",
-        )
-    seeds = await _existing_key_seeds(session, exclude_check_id=exclude_check_id)
-    existing_serials = await _existing_serial_numbers(session, exclude_check_id=exclude_check_id)
-    serial = generate_check_serial_number(
-        start_date,
-        check_quarter,
-        check_leader,
-        check_type,
-        seeds,
-        leader_code=auditor.code,
-    )
-    while serial in existing_serials:
-        seeds.append(CheckKeySeed(check_leader, start_date, check_type))
-        serial = generate_check_serial_number(
-            start_date,
-            check_quarter,
-            check_leader,
-            check_type,
-            seeds,
-            leader_code=auditor.code,
-        )
-    return serial
-
-
 async def create_check(session: AsyncSession, check_in: CheckCreate) -> Check:
     data = check_in.model_dump()
     data.pop("serial_number", None)
@@ -125,7 +60,7 @@ async def create_check(session: AsyncSession, check_in: CheckCreate) -> Check:
 
     last_integrity_error: IntegrityError | None = None
     for _ in range(2):
-        data["serial_number"] = await _generate_unique_check_serial_number(
+        data["serial_number"] = await generate_unique_check_serial_number(
             session,
             start_date=data["start_date"],
             check_quarter=data["check_quarter"],
@@ -210,7 +145,7 @@ async def update_check(
     for field, value in update_data.items():
         setattr(check, field, value)
     if should_regenerate_serial:
-        check.serial_number = await _generate_unique_check_serial_number(
+        check.serial_number = await generate_unique_check_serial_number(
             session,
             start_date=check.start_date,
             check_quarter=check.check_quarter,

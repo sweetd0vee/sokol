@@ -1,44 +1,43 @@
 # Генерация и разбор документов
 
-HTTP: `app/api/v1/endpoints/instruments_reports.py`. Логика: `app/services/reports/`.
+HTTP: `app/api/v1/endpoints/instruments_reports.py`. Логика: `app/services/reports/`. Нужна авторизация.
 
 ## Общие правила
 
-- DOCX-инструменты принимают только `.docx`, лимит `SOKOL_MAX_UPLOAD_MB` (default 100).
-- Файл контроля отдаёт/принимает XLSX на выходе; вход по-прежнему АЗ в `.docx`.
-- Upload стримится в temp чанками → `asyncio.to_thread` → `FileResponse` + cleanup.
+- Вход DOCX: только `.docx`, лимит `SOKOL_MAX_UPLOAD_MB` (default 100). Upload стримится в temp чанками → `asyncio.to_thread` → `FileResponse` + cleanup.
+- Файл контроля: вход АЗ `.docx`, выход XLSX.
 
-## Раздел II ✅
+## Раздел II
 
-**Endpoints:** `POST /tools/section-ii`, `POST /tools/section-ii-links`
+`POST /tools/section-ii` и `/tools/section-ii-links` — OOXML (ZIP/XML): парсинг Раздела III → таблица после Раздела I. Ссылки: bookmarks/hyperlinks к наблюдениям. Имена: `*_section_ii.docx` / `*_section_ii_links.docx`.
 
-OOXML (ZIP/XML): парсинг Раздела III → таблица после Раздела I. Модули: `section_ii/docx_parser`, `table_builder`, `bookmark_utils`, …
+Модули: `section_ii/docx_parser`, `table_builder`, `bookmark_utils`, …
 
-## Докладная ✅
+## Докладная
 
-**Endpoint:** `POST /tools/memorandum`  
-**Связанный:** `POST /tools/parse-recommendations` — JSON для импорта на форме проверки.
+`POST /tools/memorandum` — ДЗ из АЗ (`*_dz.docx`). Объекты аудита канонизируются по `departments`.
 
-Элемент parse-recommendations: `{ name, observation_name, audit_object: [str], manager, deadline }`.  
-`audit_object` канонизируется по справочнику подразделений.
+`POST /tools/parse-recommendations` — JSON для формы проверки:
 
-## Файл контроля ✅
+```json
+{ "name": "...", "observation_name": "...", "audit_object": ["..."], "manager": "...", "deadline": "YYYY-MM-DD" }
+```
 
-| Method | Path | Поведение |
-|--------|------|-----------|
-| `GET` | `/tools/control-file-template` | Скачать пустой XLSX-шаблон (`data/файл контроля шаблон (шапка).xlsx`) |
-| `POST` | `/tools/control-file` | Собрать файл контроля из АЗ |
+`audit_object` канонизируется по справочнику; неизвестное подразделение → **400**.
 
-`POST` — multipart: `file` (АЗ `.docx`), `check_leader`, `check_date`. Дата принимается как `YYYY-MM-DD` или `DD.MM.YYYY` и пишется в шаблон как `DD.MM.YYYY`. Результат: `*_control.xlsx`.
+## Файл контроля
 
-Код: `services/reports/control_file/` (`generator.py`, `parser.py`, `title_parser.py`). Использует таблицу Раздела II АЗ.
+| Path | Поведение |
+|------|-----------|
+| `GET /tools/control-file-template` | пустой XLSX (`data/файл контроля шаблон (шапка).xlsx`) |
+| `POST /tools/control-file` | из АЗ; form: `file`, `check_leader`, `check_date` |
 
-## Audit opinion — backlog ❌
+Дата: `YYYY-MM-DD` или `DD.MM.YYYY`, в шаблон пишется `DD.MM.YYYY`. Результат: `*_control.xlsx`. Код: `services/reports/control_file/`.
 
-Контракт `POST /tools/audit-opinion` не входит в текущий `API.md`: код, routes и UI отсутствуют. LLM/Ollama не подключены.
+## Ошибки
 
-До реализации — не документировать как рабочий endpoint.
+Парсинг/валидация документа → **400**. Файл не создан → **500**. Слишком большой → **413**. Шаблон контроля отсутствует → **404**.
 
-## Ограничения
+`POST /tools/audit-opinion` нет (backlog). LLM не подключён.
 
-CPU-bound в thread pool · XML всё ещё в RAM во время парсинга · результаты не в storage · хрупкость к нестандартной вёрстке АЗ.
+Ограничения: CPU-bound в thread pool · XML в RAM · результаты не в MinIO · хрупкость к нестандартной вёрстке АЗ.

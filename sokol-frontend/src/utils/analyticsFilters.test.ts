@@ -358,6 +358,54 @@ describe('filterChecksForAnalytics — интерактивность дат', (
 
     expect(filtered.map((item) => item.id)).toEqual(['1']);
   });
+
+  it('фильтр аудитора не учитывает руководителя объекта аудита', () => {
+    const filtered = filterChecksForAnalytics(
+      [
+        makeCheck({ id: '1', serial_number: 'CHK-1', start_date: isoDate(2025, 1), check_leader: 'Лидер 1' }),
+        makeCheck({ id: '2', serial_number: 'CHK-2', start_date: isoDate(2025, 1), check_leader: 'Лидер 2' }),
+      ],
+      {
+        ...emptyCheckFilters,
+        auditors: ['Ярмошевич И.Н., Лавренюк Р.А'],
+        recommendations: [
+          makeRecommendation({
+            id: '1',
+            serial_number: 'CHK-1',
+            deadline: isoDate(2025),
+            auditor: 'Аудитор 1',
+            manager: 'Ярмошевич И.Н., Лавренюк Р.А',
+          }),
+        ],
+      },
+    );
+
+    expect(filtered).toHaveLength(0);
+  });
+
+  it('фильтр аудитора находит проверку по руководителю и аудитору рекомендации', () => {
+    const filtered = filterChecksForAnalytics(
+      [
+        makeCheck({ id: '1', serial_number: 'CHK-1', start_date: isoDate(2025, 1), check_leader: 'Ярмошевич И.Н' }),
+        makeCheck({ id: '2', serial_number: 'CHK-2', start_date: isoDate(2025, 1), check_leader: 'Лидер 2' }),
+      ],
+      {
+        ...emptyCheckFilters,
+        auditors: ['Якубович В.В.'],
+        recommendations: [
+          makeRecommendation({
+            id: '2',
+            serial_number: 'CHK-2',
+            deadline: isoDate(2025),
+            auditor: 'Якубович В.В.',
+            manager: 'Ярмошевич И.Н., Лавренюк Р.А',
+          }),
+        ],
+      },
+    );
+
+    expect(filtered.map((item) => item.id)).toEqual(['2']);
+  });
 });
 
 describe('сквозной сценарий как на дашборде (labels → keys → filter → chart)', () => {
