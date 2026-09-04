@@ -9,7 +9,6 @@ import type { Check } from '../../types/check';
 import {
   CHECK_STATUS_OPTIONS,
   CHECK_TYPE_OPTIONS,
-  CHECK_VIEW_OPTIONS,
   getCheckStatusLabel,
   getCheckTypeLabel,
   getCheckViewLabel,
@@ -23,7 +22,7 @@ import {
 } from '../../utils/checkAttachments';
 import { formatRuDate } from '../../utils/dates';
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
-import { useAuditorOptions } from '../../hooks/useReferenceOptions';
+import { useAuditorOptions, useCheckKindOptions } from '../../hooks/useReferenceOptions';
 import { useSokolData } from '../../contexts/sokolData';
 import {
   LIST_ACTION_BUTTON_CLASS,
@@ -60,6 +59,7 @@ export function ChecksTab() {
   const [isExportingAttachments, setIsExportingAttachments] = useState(false);
   const normalizedMyName = useMemo(() => myName.trim().toLowerCase(), [myName]);
   const { options: leaderOptions } = useAuditorOptions();
+  const { options: checkViewOptions } = useCheckKindOptions();
 
   const {
     checks,
@@ -284,7 +284,7 @@ export function ChecksTab() {
                     <MultiCheckboxSelect
                       value={checkViews}
                       onChange={setCheckViews}
-                      options={CHECK_VIEW_OPTIONS}
+                      options={checkViewOptions}
                       placeholder="Все"
                       inputClassName={listFilterClass(checkViews.length > 0)}
                     />

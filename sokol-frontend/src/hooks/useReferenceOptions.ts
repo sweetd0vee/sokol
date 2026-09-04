@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '../api/queryKeys';
-import { fetchAuditors, fetchEffectivenessRatings } from '../api/settings';
+import { fetchAuditors, fetchCheckKinds, fetchEffectivenessRatings } from '../api/settings';
 
 type SelectOption = { value: string; label: string };
 
@@ -23,6 +23,20 @@ export function useAuditorOptions(extraValue?: string) {
 
   const options = useMemo(
     () => toNameOptions((data ?? []).map((auditor) => auditor.full_name), extraValue),
+    [data, extraValue],
+  );
+
+  return { options, isLoading };
+}
+
+export function useCheckKindOptions(extraValue?: string) {
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.settings.checkKinds,
+    queryFn: fetchCheckKinds,
+  });
+
+  const options = useMemo(
+    () => toNameOptions((data ?? []).map((kind) => kind.label), extraValue),
     [data, extraValue],
   );
 

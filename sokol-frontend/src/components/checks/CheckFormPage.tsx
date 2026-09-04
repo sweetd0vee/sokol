@@ -12,11 +12,11 @@ import { fetchCheck } from '../../api/checks';
 import { getErrorMessage } from '../../api/errors';
 import { queryKeys } from '../../api/queryKeys';
 import { FormPageHeader } from '../forms/FormPageHeader';
-import { CHECK_QUARTER_OPTIONS, CHECK_TYPE_OPTIONS, CHECK_VIEW_OPTIONS } from '../../constants/checks';
+import { CHECK_QUARTER_OPTIONS, CHECK_TYPE_OPTIONS } from '../../constants/checks';
 import { toInputDate, toIsoDate, toStartOfDayMs } from '../../utils/dates';
 import { useSokolData } from '../../contexts/sokolData';
 import { useAuth } from '../../hooks/useAuth';
-import { useAuditorOptions, useEffectivenessRatingOptions } from '../../hooks/useReferenceOptions';
+import { useAuditorOptions, useCheckKindOptions, useEffectivenessRatingOptions } from '../../hooks/useReferenceOptions';
 import { CheckAttachmentsSection } from './CheckAttachmentsSection';
 import { CheckRecommendationsBlock } from './CheckRecommendationsBlock';
 import {
@@ -133,6 +133,7 @@ export function CheckFormPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [hydratedCheckId, setHydratedCheckId] = useState(existing?.id ?? null);
   const { options: leaderOptions } = useAuditorOptions(checkLeader);
+  const { options: checkViewOptions } = useCheckKindOptions(checkView);
   const { options: effectivenessOptions } = useEffectivenessRatingOptions(
     processEffectiveness,
     svkEffectiveness,
@@ -427,7 +428,7 @@ export function CheckFormPage() {
               label="Вид"
               value={checkView}
               onChange={setCheckView}
-              options={CHECK_VIEW_OPTIONS}
+              options={checkViewOptions}
               placeholder="Выберите вид"
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
