@@ -16,8 +16,6 @@
 | Storage status | **15 с**, refetch on focus | Banner MinIO до upload. |
 | Bundle | Vite warning о размере | Analytics/export/constructor; lazy routes в backlog. |
 
-Audit opinion / Ollama **нет** в продукте.
-
 ## Списки
 
 `SokolDataContext` при входе:

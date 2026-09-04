@@ -75,7 +75,7 @@ Redux/Zustand нет.
 
 **Рекомендации** — closure, продления, снятие с контроля, вложения; DELETE — владелец или `isAdmin`.
 
-**Tools** — `DocxToolPanel`: АЗ (Раздел II, с гиперссылками, файл контроля + шаблон xlsx) и ДЗ (приложение 2). Audit opinion не реализован.
+**Tools** — `DocxToolPanel`: АЗ (Раздел II, с гиперссылками, файл контроля + шаблон xlsx) и ДЗ (приложение 2).
 
 **Analytics** — server aggregates, static `react-grid-layout`, visual export ([ANALYTICS.md](ANALYTICS.md)).
 

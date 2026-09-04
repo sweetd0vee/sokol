@@ -40,8 +40,6 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 | Demo / `--replace` | запрещены при `SOKOL_ENV=prod`; replace в prod только с `--confirm-prod-replace` |
 | `sync_dictionaries` | в prod merge-only |
 
-`audit-opinion` / Ollama в API нет.
-
 ## Открытые findings
 
 ### BE-01 · P0 · Нет Alembic

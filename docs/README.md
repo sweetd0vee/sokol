@@ -4,6 +4,7 @@
 
 | Документ | Содержание |
 |----------|------------|
+| [SOKOL_слайд.html](SOKOL_слайд.html) | Слайд-сводка: строки кода, стек, Docker, БД/MinIO, API |
 | [PROJECT_CODE_GUIDE.md](PROJECT_CODE_GUIDE.md) | Карта кода для нового разработчика |
 | [APP_LIMITS_AND_GOTCHAS.md](APP_LIMITS_AND_GOTCHAS.md) | Лимиты, тонкости, типовые ошибки |
 | [MINIO.md](MINIO.md) | Бакеты, консоль, `mc`, бэкап |

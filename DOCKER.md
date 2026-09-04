@@ -1,7 +1,5 @@
 # Docker
 
-Ollama **не** в Docker (зарезервировано для planned audit-opinion).
-
 ## Порты
 
 | Сервис | URL |
@@ -23,8 +21,6 @@ docker compose up --build -d
 
 UI: http://localhost:5180
 
-Ollama (для planned audit-opinion): `ollama serve` + `ollama pull qwen3.5:35b` — **не обязательно** для текущего стека.
-
 Если Postgres уже запущен:
 
 ```powershell
@@ -34,7 +30,7 @@ docker compose up --build -d api ui
 ## Env
 
 - Корневой `.env` — опционально (дефолты в compose).
-- `sokol-backend/docker/app/.env` — обязателен для API (`DATABASE_URL`, `SOKOL_JWT_SECRET`, MinIO, Ollama URL).
+- `sokol-backend/docker/app/.env` — обязателен для API (`DATABASE_URL`, `SOKOL_JWT_SECRET`, MinIO).
 - В prod смените пароли. Файлы `.env` не коммитятся.
 
 ## Данные на диске

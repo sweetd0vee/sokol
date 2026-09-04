@@ -139,8 +139,6 @@ OIDC/Keycloak — **не блокер 15.09**, если банк не выдал
 | BE-42 | MIME/антивирус вложений | 415 по MIME, вируса нет | На банковском контуре — согласовать с ИБ (ClamAV sidecar или внешний шлюз) |
 | BE-43 | Retention вложений | Нет политики удаления | Срок хранения + кто имеет право purge |
 
-`POST /tools/audit-opinion` и Ollama — **вне продукта**. Не обещать в UI.
-
 ### B6. Тесты backend
 
 Сейчас ~200 unittest + DB integration в CI (`SOKOL_RUN_DB_INTEGRATION_TESTS=1`). Нет:
@@ -231,7 +229,6 @@ OIDC/Keycloak — **не блокер 15.09**, если банк не выдал
 | P2 | FK UUID вместо labels | Меньше каскадных rename; миграция данных |
 | P2 | Аналитика с junction, не с массива | Одна правда об объектах аудита |
 | P3 | Интеграция СЭД Канцлер | Маршрут и nav только после контракта |
-| P3 | Audit opinion / LLM | Отдельный продукт, не tools v1 |
 | P3 | Серверный visual export | Стабильные PDF/DOCX без html-to-image |
 | P3 | История статусов в UI | Таймлайн на карточке рекомендации |
 | P3 | Users: роли admin / department_head из UI | Когда RBAC разъедется с «оба = admin» |

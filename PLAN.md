@@ -18,7 +18,7 @@
 | Справочники | Settings CRUD; физические FK на labels; in-use delete → 409. Виды проверок: Settings + форма + фильтры списка читают `/settings/check_kinds` |
 | Аналитика | Серверные SQL-агрегаты: проверки, рекомендации, мониторинг, ДВА, матрицы. Конструктор дашбордов — только frontend (`/constructor`) |
 | Планирование | Дашборд `/planning` + visual export + отправка графиков в конструктор. В UI нет пометки limited/beta |
-| Инструменты | Раздел II, ссылки, докладная, parse-recommendations, control file. Очередь DOCX (`SOKOL_DOCX_MAX_CONCURRENT` / queue). Audit opinion / Ollama — вне scope |
+| Инструменты | Раздел II, ссылки, докладная, parse-recommendations, control file. Очередь DOCX (`SOKOL_DOCX_MAX_CONCURRENT` / queue). |
 | Канцлер | Убран из nav и routes. Неизвестный URL → `/checks` |
 | БД | PostgreSQL + `create_all` + `migrate_*`. Alembic **не внедрён** |
 | Import | Excel → checks/recommendations; `--replace` в prod только с `--confirm-prod-replace`. Нет dry-run и reject report: неизвестные справочники **досоздаются**, а не отклоняются |
@@ -171,7 +171,7 @@ gantt
 |--------|-----|
 | VM / host | Есть CPU/RAM/disk под Postgres, API, UI, MinIO; доступы выданы |
 | DNS / TLS | Пользователи открывают согласованный HTTPS URL |
-| Firewall | Пользователи не ходят напрямую к Postgres/MinIO/Ollama |
+| Firewall | Пользователи не ходят напрямую к Postgres/MinIO |
 | Secrets | JWT, DB, MinIO secrets не лежат в git; prod secret не default |
 | Backup | PostgreSQL dump и MinIO backup запускаются вручную и документированы |
 | Restore | Restore проверен на чистом томе |

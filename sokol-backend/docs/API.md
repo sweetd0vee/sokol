@@ -172,7 +172,7 @@ DOCX — multipart поле **`file`**. Лимит `SOKOL_MAX_UPLOAD_MB` (defaul
 
 ## Чего нет
 
-OIDC · Alembic HTTP · WebSocket · batch Excel через HTTP (CLI `import_seed_data`) · CRUD наблюдений · profile/avatar · users PATCH/DELETE · `POST /tools/audit-opinion` · конструктор аналитики · drill-down / сохранённые серверные отчёты.
+OIDC · Alembic HTTP · WebSocket · batch Excel через HTTP (CLI `import_seed_data`) · CRUD наблюдений · profile/avatar · users PATCH/DELETE · drill-down / сохранённые серверные отчёты.
 
 ---
 
