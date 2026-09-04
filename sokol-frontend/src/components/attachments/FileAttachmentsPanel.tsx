@@ -264,7 +264,12 @@ export function FileAttachmentsPanel({
           maxUploadBytes={maxUploadBytes}
           maxUploadMb={maxUploadMb}
           unavailableMessage={unavailableMessage}
-          onAddFiles={addFiles}
+          onAddFiles={(slotId, files) => {
+            if (!storage.canUpload) {
+              return;
+            }
+            void addFiles(slotId, files);
+          }}
           onRemoveFile={removeFile}
           onClose={() => setOpenSlotId(null)}
         />

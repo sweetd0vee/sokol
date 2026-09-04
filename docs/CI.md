@@ -21,23 +21,14 @@ SOKOL_RUN_DB_INTEGRATION_TESTS=1
 
 ## Обязательный merge gate
 
-Красный CI блокирует merge в default branch.
+YAML только создаёт checks. Чтобы красный CI блокировал merge, в GitHub должен быть ruleset или branch protection.
 
-Это делает GitHub ruleset **CI merge gate** (не YAML CI сам по себе). Его создаёт и поддерживает `.github/workflows/protect-main.yml` при push этого файла / `ci.yml` в `main`/`master` или по `workflow_dispatch`.
+Нужные правила для default branch (`main` / `master`):
 
-Правила:
-
-- merge только через pull request;
-- обязательны checks `Backend (Python 3.12)` и `Frontend (Node 22)`;
-- ветка должна быть up to date с default;
-- force-push и удаление default branch запрещены.
-
-Проверка: `Settings` → `Rules` / `Rulesets` → `CI merge gate`, либо `Settings` → `Branches`.
-
-Если Actions вернул 403 на rulesets API, включить вручную:
-
-1. `Settings` → `Branches` → branch protection для `main`/`master`.
+1. `Settings` → `Rules` → `Rulesets` (предпочтительно) или `Settings` → `Branches` → branch protection.
 2. `Require a pull request before merging`.
 3. `Require status checks to pass before merging`.
 4. Required checks: `Backend (Python 3.12)`, `Frontend (Node 22)`.
 5. `Require branches to be up to date before merging`.
+
+Прямой URL: `https://github.com/sweetd0vee/sokol/settings/rules`.

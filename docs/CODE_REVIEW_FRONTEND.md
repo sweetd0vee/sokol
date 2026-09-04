@@ -27,13 +27,13 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 | Checks | **8** | Списки &gt;10000; виды не из справочника API |
 | Recommendations | **9** | Списки &gt;10000 |
 | Data layer | **7.8** | Bulk-fetch 10000 |
-| Attachments | **10** | — |
+| Attachments | **10** | Banner, disabled upload и retry по `/attachments/storage/status` |
 | Analytics | **8.5** | Нет drill-down API |
 | Planning | **8** | Дашборд + visual export + конструктор; нет метки limited |
 | Constructor | **8.5** | Только localStorage, без backend |
 | Tools | **8** | Нет прогресса длинного job |
 | Exports | **7.5** | Таблицы data-driven; дашборды — DOM capture |
-| Tests | **9** | **157** Vitest; Playwright: 5 auth + constructor. CRUD e2e нет; Playwright не в CI |
+| Tests | **9** | **160** Vitest; Playwright: 5 auth + constructor. CRUD e2e нет; Playwright не в CI |
 
 ## State
 

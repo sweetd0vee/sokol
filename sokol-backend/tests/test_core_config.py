@@ -35,6 +35,18 @@ class SettingsHelperTests(unittest.TestCase):
         self.assertEqual(Settings(sokol_max_upload_mb=0).max_upload_bytes, 1024 * 1024)
         self.assertEqual(Settings(sokol_max_upload_mb=2).max_upload_bytes, 2 * 1024 * 1024)
 
+    def test_docx_queue_limits_floor_at_safe_minimums(self) -> None:
+        tight = Settings(
+            sokol_docx_max_concurrent=0,
+            sokol_docx_max_queue=-1,
+            sokol_docx_queue_wait_seconds=-5,
+        )
+        self.assertEqual(tight.docx_max_concurrent, 1)
+        self.assertEqual(tight.docx_max_queue, 0)
+        self.assertEqual(tight.docx_queue_wait_seconds, 0.0)
+        self.assertEqual(Settings().docx_max_concurrent, 2)
+        self.assertEqual(Settings().docx_max_queue, 8)
+
     def test_basic_auth_defaults_by_env(self) -> None:
         self.assertTrue(Settings(sokol_env="development", sokol_enable_basic_auth=None).basic_auth_enabled)
         self.assertFalse(Settings(sokol_env="prod", sokol_enable_basic_auth=None).basic_auth_enabled)

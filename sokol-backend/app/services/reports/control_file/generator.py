@@ -9,9 +9,9 @@ from openpyxl import load_workbook
 from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 
-from app.services.reports.control_file.parser import parse_section_ii_for_control_file
+from app.services.reports.control_file.parser import ControlFileRow, parse_section_ii_for_control_file
 from app.services.reports.control_file.title_parser import parse_az_title_from_docx
-from app.services.reports.memorandum.parser import document_has_section_ii
+from app.services.reports.memorandum.parser import parse_az_for_memorandum
 from app.utils.paths import get_control_file_template_path
 
 TEMPLATE_PATH = get_control_file_template_path()
@@ -154,19 +154,33 @@ def generate_control_file_template(
     check_leader: str,
     check_date: str,
 ) -> Tuple[Optional[str], Optional[str]]:
-    """Сформировать xlsx-шаблон файла контроля из АЗ с Разделом II."""
-    if not document_has_section_ii(input_path):
-        return (
-            None,
-            "В документе не найден Раздел II. Загрузите АЗ с заполненным Разделом II.",
-        )
-
+    """Сформировать xlsx-шаблон файла контроля из АЗ с Разделом II или из наблюдений."""
     rows, parse_error = parse_section_ii_for_control_file(
         input_path,
         format_responsible_from_pairs=format_responsible_from_pairs,
     )
-    if parse_error or rows is None:
-        return None, parse_error or "Не удалось разобрать таблицу Раздела II."
+    if rows is None:
+        source, fallback_error = parse_az_for_memorandum(input_path)
+        if source is not None:
+            rows = []
+            for group in source.groups:
+                responsible = format_responsible_from_pairs([(group.name, group.manager)])
+                for recommendation in group.recommendations:
+                    text = " ".join(part.strip() for part in recommendation.paragraphs if part.strip())
+                    if not text and not recommendation.deadline:
+                        continue
+                    rows.append(
+                        ControlFileRow(
+                            recommendation_text=text,
+                            deadline=(recommendation.deadline or "").strip(),
+                            responsible=responsible,
+                        )
+                    )
+        if not rows:
+            return None, parse_error or fallback_error or (
+                "В документе не найден Раздел II. Загрузите АЗ с заполненным Разделом II "
+                "или с наблюдениями в разделе III."
+            )
 
     check_name, title_error = parse_az_title_from_docx(input_path)
     if title_error:

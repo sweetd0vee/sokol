@@ -259,8 +259,7 @@ def extract_document_blocks(root: ET.Element) -> Tuple[List[DocumentBlock], List
         return ([], [])
     blocks: List[DocumentBlock] = []
     textboxes: List[TextboxBlock] = []
-    for child in list(body):
-        tag = local_name(child.tag)
+    for tag, child in iter_unwrapped(body, "p", "tbl"):
         if tag == "p":
             p_text, runs = get_paragraph_runs(child)
             has_txbx = has_txbx_contents(child)
@@ -281,13 +280,11 @@ def extract_document_blocks(root: ET.Element) -> Tuple[List[DocumentBlock], List
                 if has_txbx:
                     collect_textboxes_from_element(child, anchor_idx, textboxes)
             continue
-        if tag != "tbl":
-            continue
         table_index = max((block.table_index or 0 for block in blocks if block.table_index is not None), default=-1) + 1
-        for row_idx, tr in enumerate(child.findall(f"./{{{W_NS}}}tr")):
-            tcs = tr.findall(f"./{{{W_NS}}}tc")
+        for row_idx, (_row_tag, tr) in enumerate(iter_unwrapped(child, "tr")):
+            tcs = [tc for _tc_tag, tc in iter_unwrapped(tr, "tc")]
             for tc_idx, tc in enumerate(tcs):
-                for p in tc.findall(f"./{{{W_NS}}}p"):
+                for _p_tag, p in iter_unwrapped(tc, "p"):
                     p_text, runs = get_paragraph_runs(p)
                     has_txbx = has_txbx_contents(p)
                     if p_text != "" or runs or has_txbx:

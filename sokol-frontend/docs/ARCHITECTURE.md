@@ -71,7 +71,7 @@ Redux/Zustand нет.
 
 **Списки** — client-side filter/sort/pagination после bulk-fetch; «Мои»; экспорт таблиц и (для проверок) вложений.
 
-**Проверки** — `serial_number` и yearly № с backend; импорт рекомендаций из АЗ; вложения по слотам; DELETE только `isAdmin`.
+**Проверки** — `serial_number` и yearly № с backend; импорт рекомендаций из АЗ; вложения по слотам; DELETE только `isAdmin`. Недоступный MinIO: banner и disabled upload (`useStorageStatus`).
 
 **Рекомендации** — closure, продления, снятие с контроля, вложения; DELETE — владелец или `isAdmin`.
 

@@ -9,6 +9,7 @@ import {
 } from '../api/attachments';
 import { createAttachmentId, type PersistedAttachmentListItem } from '../utils/fileAttachments';
 import { toApiError } from '../api/errors';
+import { useStorageStatus } from './useStorageStatus';
 
 function storedToItem(stored: StoredAttachment): PersistedAttachmentListItem & { slot: string } {
   return {
@@ -41,6 +42,7 @@ export function useEntityAttachments({
   entityId?: number | string | null;
 }) {
   const canPersist = entityId !== null && entityId !== undefined && entityId !== '' && entityId !== '0';
+  const { canUpload } = useStorageStatus();
   const queryClient = useQueryClient();
   const queryKey = useMemo(
     () => ['attachments', entityType, String(entityId ?? '')],
@@ -91,7 +93,7 @@ export function useEntityAttachments({
 
   const addFiles = useCallback(
     async (slot: string, files: File[]) => {
-      if (!canPersist || files.length === 0) {
+      if (!canPersist || !canUpload || files.length === 0) {
         return;
       }
 
@@ -129,7 +131,7 @@ export function useEntityAttachments({
         }
       }
     },
-    [canPersist, entityId, entityType, queryClient, queryKey, setPendingItemsForEntity],
+    [canPersist, canUpload, entityId, entityType, queryClient, queryKey, setPendingItemsForEntity],
   );
 
   const removeFile = useCallback(

@@ -61,12 +61,24 @@ class MemorandumGeneratorTest(unittest.TestCase):
 
         self.assertEqual(name, "Несвоевременное обновление лимитов кредитования")
 
-    def test_document_without_section_ii_is_rejected(self):
+    def test_parses_memorandum_from_observations_without_section_ii_table(self):
         with tempfile.TemporaryDirectory() as tmp:
             az_path = Path(tmp) / "az_no_ii.docx"
             _build_az_without_section_ii(az_path)
             self.assertFalse(document_has_section_ii(str(az_path)))
 
+            source, error = parse_az_for_memorandum(str(az_path))
+            self.assertIsNone(error, msg=error)
+            self.assertIsNotNone(source)
+            self.assertTrue(source.groups)
+            self.assertIn("контроль сроков", source.groups[0].recommendations[0].paragraphs[0].lower())
+
+    def test_document_without_observations_or_section_ii_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            az_path = Path(tmp) / "empty.docx"
+            doc = Document()
+            doc.add_paragraph("Титульный лист без наблюдений и без Раздела II.")
+            doc.save(az_path)
             source, error = parse_az_for_memorandum(str(az_path))
             self.assertIsNone(source)
             self.assertIn("Раздел II", error or "")

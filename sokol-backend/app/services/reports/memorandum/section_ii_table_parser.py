@@ -70,13 +70,30 @@ def _cell_texts(tr) -> List[str]:
     return [get_cell_text(tc).strip() for tc in _iter_wrapped(tr, "tc")]
 
 
+def _is_section2_header_row(cells: List[str]) -> bool:
+    joined = " ".join(cell for cell in cells if cell.strip())
+    if SECTION2_TABLE_HEADER.lower() in joined.lower():
+        return True
+    if xml_utils.is_sokol_summary_table_text(joined) and not any(
+        REC_ROW_LABEL_RE.match(cell.strip()) for cell in cells if cell.strip()
+    ):
+        return True
+    return False
+
+
 def _find_section_ii_table(body) -> Optional[object]:
     header = SECTION2_TABLE_HEADER.lower()
+    header_match = None
+    summary_match = None
     for el in body.iter(f"{{{W_NS}}}tbl"):
         text = xml_utils.get_text_from_element(el)
-        if header in text.lower():
-            return el
-    return None
+        lowered = text.lower()
+        if header in lowered:
+            header_match = el
+            break
+        if summary_match is None and xml_utils.is_sokol_summary_table_text(text):
+            summary_match = el
+    return header_match or summary_match
 
 
 def _parse_audit_object_header(raw_text: str) -> Tuple[str, str, str]:
@@ -223,7 +240,7 @@ def parse_section_ii_for_memorandum(file_path: str) -> Tuple[Optional[Memorandum
             continue
 
         first_cell = cells[0].strip()
-        if SECTION2_TABLE_HEADER.lower() in first_cell.lower():
+        if _is_section2_header_row(cells):
             continue
         if CHAPTER_ROW_RE.match(first_cell):
             continue

@@ -104,13 +104,18 @@ export function StorageStatusNotice({
     : 'border-amber-200 bg-amber-50 text-amber-900';
 
   return (
-    <div className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm ${toneClass}`}>
+    <div
+      role="status"
+      aria-live="polite"
+      className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm ${toneClass}`}
+    >
       <p>{availability.message}</p>
       {!isChecking && (
         <button
           type="button"
           onClick={onRetry}
           disabled={isRetrying}
+          aria-label="Повторить проверку хранилища"
           className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium transition hover:bg-white/60 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <RefreshCw size={14} className={isRetrying ? 'animate-spin' : ''} />

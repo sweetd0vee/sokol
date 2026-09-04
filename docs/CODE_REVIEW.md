@@ -21,7 +21,7 @@
 | Frontend домен | **8.5** | Формы, undo импорта из АЗ, yearly №, конструктор дашбордов | `check_kinds` в форме/фильтрах всё ещё hardcoded |
 | Frontend data | **7.5** | API + React Query; списки до 10000 | Нет server pagination |
 | Frontend analytics/export | **8** | Visual export аналитики и планирования; table export разнесён по форматам | DOM capture хрупкий |
-| Тесты / CI | **8.5** | Backend ~200 unittest, frontend **157** Vitest, Playwright auth + constructor | Required checks в GitHub не включены; Playwright не в CI |
+| Тесты / CI | **8.5** | Backend ~200 unittest, frontend **160** Vitest, Playwright auth + constructor | Playwright не в CI |
 | Документация | **8.5** | Backend/frontend docs и MinIO runbook | Alembic — цель, не факт |
 
 **Вердикт:** пилот на контролируемом объёме возможен. До промышленного контура: Alembic или подписанный migrate-runbook, MinIO backup drill, `check_kinds` из API в форме проверок.

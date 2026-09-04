@@ -67,12 +67,27 @@ export function resolveStorageAvailability(input: {
   };
 }
 
+export function storageStatusRefetchInterval(query: {
+  state: {
+    status: string;
+    data?: Pick<StorageStatus, 'enabled' | 'reachable'>;
+  };
+}): number | false {
+  const status = query.state.data;
+  if (query.state.status === 'error' || !status?.enabled || !status?.reachable) {
+    return STORAGE_STATUS_POLL_MS;
+  }
+  return false;
+}
+
 export function useStorageStatus() {
   const query = useQuery({
     queryKey: queryKeys.storageStatus,
     queryFn: fetchStorageStatus,
-    staleTime: 15 * 1000,
+    staleTime: STORAGE_STATUS_POLL_MS,
     refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: storageStatusRefetchInterval,
   });
 
   const availability = resolveStorageAvailability({

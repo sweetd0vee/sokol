@@ -288,9 +288,7 @@ export function CheckAttachmentsSection({
       {storageNotice}
 
       {!canPersist && (
-        <div>
-          <AttachmentsUnavailableNotice message="Сохраните проверку, чтобы прикрепить файлы." />
-        </div>
+        <AttachmentsUnavailableNotice message="Сохраните проверку, чтобы прикрепить файлы." />
       )}
 
       <div className={FORM_ROW_4}>
@@ -331,6 +329,9 @@ export function CheckAttachmentsSection({
           maxUploadBytes={maxUploadBytes}
           maxUploadMb={maxUploadMb}
           onAddFiles={(group, newFiles) => {
+            if (!storage.canUpload) {
+              return;
+            }
             void addFiles(group, newFiles);
           }}
           onRemoveFile={(group, clientId) => {

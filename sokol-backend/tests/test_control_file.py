@@ -214,10 +214,33 @@ class ControlFileGeneratorTest(unittest.TestCase):
             self.assertGreater(worksheet.column_dimensions["F"].width or 0, 60)
             self.assertGreaterEqual(worksheet.row_dimensions[first_row].height or 0, 31.5)
 
-    def test_rejects_az_without_section_ii(self):
+    def test_builds_control_file_from_observations_without_section_ii(self):
         with tempfile.TemporaryDirectory() as tmp:
             az_path = Path(tmp) / "az.docx"
             _build_az_without_section_ii(az_path, title="Проверка без Раздела II")
+            output_path = Path(tmp) / "az_control.xlsx"
+
+            generated_path, error = generate_control_file_template(
+                str(az_path),
+                str(output_path),
+                check_leader="Иванов И.И.",
+                check_date="19.08.2026",
+            )
+            self.assertIsNone(error, msg=error)
+            self.assertEqual(generated_path, str(output_path))
+            workbook = load_workbook(output_path)
+            worksheet = workbook.active
+            self.assertIn(
+                "контроль сроков",
+                (worksheet.cell(row=2, column=COL_RECOMMENDATION).value or "").lower(),
+            )
+
+    def test_rejects_az_without_observations_or_section_ii(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            az_path = Path(tmp) / "empty.docx"
+            doc = Document()
+            doc.add_paragraph("Пустой документ без наблюдений.")
+            doc.save(az_path)
             output_path = Path(tmp) / "az_control.xlsx"
 
             generated_path, error = generate_control_file_template(

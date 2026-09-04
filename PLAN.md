@@ -138,7 +138,7 @@ gantt
 
 | Дата | Фокус | Результат к EOD |
 |------|-------|-----------------|
-| 09.09 | UAT env, CORS, TLS/proxy; CI required checks | Login открывается на UAT URL; merge без зелёного CI запрещён |
+| 09.09 | UAT env, CORS, TLS/proxy | Login открывается на UAT URL (CI required checks — P1-01, 04.09) |
 | 10.09 | Пилотная загрузка 10–20 проверок; Storage UX | DATA sign-off по 3 карточкам; upload либо работает, либо явно заблокирован |
 | 11.09 | Полная нормализация Excel + MinIO/PG restore drill | Freeze-файл готов; протокол restore |
 | 12.09 | Полная UAT загрузка + сверка | Count API = count источника; расхождения разобраны |

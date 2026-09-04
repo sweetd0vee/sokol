@@ -10,9 +10,9 @@ from app.services.reports.memorandum.section_ii_table_parser import (
     CHAPTER_ROW_RE,
     OBS_ROW_LABEL_RE,
     REC_ROW_LABEL_RE,
-    SECTION2_TABLE_HEADER,
     _cell_texts,
     _find_section_ii_table,
+    _is_section2_header_row,
     _parse_audit_object_header,
     _split_body_into_recommendations,
     _table_rows,
@@ -74,7 +74,7 @@ def parse_section_ii_for_control_file(
             continue
 
         first_cell = cells[0].strip()
-        if SECTION2_TABLE_HEADER.lower() in first_cell.lower():
+        if _is_section2_header_row(cells):
             continue
         if CHAPTER_ROW_RE.match(first_cell) or OBS_ROW_LABEL_RE.match(first_cell):
             continue
