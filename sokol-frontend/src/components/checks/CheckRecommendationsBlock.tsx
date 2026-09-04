@@ -1,7 +1,6 @@
 import { createPortal } from 'react-dom';
 import { Expand, FileUp, Minimize2, Plus, X } from 'lucide-react';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
-import { ACCEPTED_DOCX } from '../../utils/docx';
 import { pluralRecommendations } from '../../utils/pluralRu';
 import { useCheckRecommendationsImport } from '../../hooks/useCheckRecommendationsImport';
 import { ParsedPreviewTable } from './ParsedPreviewTable';
@@ -34,8 +33,27 @@ export function CheckRecommendationsBlock({
   checkSaved,
   onAddManually,
 }: CheckRecommendationsBlockProps) {
-  const importFlow = useCheckRecommendationsImport({ checkKey, checkLeader, checkSaved });
-  const recommendationWord = pluralRecommendations(importFlow.storedCount);
+  const {
+    fileInput,
+    importAzFileName,
+    parsedPreview,
+    recentUpload,
+    isParsing,
+    isUndoingUpload,
+    parseError,
+    isFullscreen,
+    setIsFullscreen,
+    canAdd,
+    docxFlowActive,
+    canCancelUpload,
+    storedCount,
+    handleLoadFromAz,
+    handleRemovePreview,
+    handleChangePreview,
+    handleCancel,
+    handleAddParsed,
+  } = useCheckRecommendationsImport({ checkKey, checkLeader, checkSaved });
+  const recommendationWord = pluralRecommendations(storedCount);
 
   return (
     <div className={FORM_SECTION_CLASS}>
@@ -57,7 +75,7 @@ export function CheckRecommendationsBlock({
         <button
           type="button"
           onClick={onAddManually}
-          disabled={!importFlow.canAdd}
+          disabled={!canAdd}
           className={addRecommendationButtonClass}
         >
           <Plus size={16} className="shrink-0" />
@@ -65,8 +83,8 @@ export function CheckRecommendationsBlock({
         </button>
         <button
           type="button"
-          onClick={importFlow.handleLoadFromAz}
-          disabled={!importFlow.canAdd || importFlow.isParsing}
+          onClick={handleLoadFromAz}
+          disabled={!canAdd || isParsing}
           className={formSizedBlueActionButtonClass}
         >
           <FileUp size={16} />
@@ -74,31 +92,31 @@ export function CheckRecommendationsBlock({
         </button>
       </div>
 
-      {importFlow.docxFlowActive && (
+      {docxFlowActive && (
         <div className="space-y-4 border-t border-gray-200 pt-5">
-          {importFlow.importAzFileName && !importFlow.isParsing && (
+          {importAzFileName && !isParsing && (
             <p className="text-sm leading-relaxed text-gray-600">
-              Файл: <span className="font-medium text-gray-800">{importFlow.importAzFileName}</span>
+              Файл: <span className="font-medium text-gray-800">{importAzFileName}</span>
             </p>
           )}
-          {importFlow.isParsing && (
+          {isParsing && (
             <LoadingState
               title="Разбор аудиторского заключения"
               description="Большие документы могут обрабатываться несколько минут."
             />
           )}
-          {importFlow.parseError && <ErrorState title="Ошибка" description={importFlow.parseError} />}
-          {importFlow.recentUpload && importFlow.parsedPreview.length === 0 && !importFlow.isParsing && (
+          {parseError && <ErrorState title="Ошибка" description={parseError} />}
+          {recentUpload && parsedPreview.length === 0 && !isParsing && (
             <div className="space-y-3">
               <div className="rounded-xl border border-gray-200 bg-gray-100 px-4 py-3">
                 <p className="text-sm leading-relaxed text-gray-600">
                   В проверку добавлено{' '}
-                  <span className="font-semibold">{importFlow.recentUpload.count}</span>{' '}
-                  {pluralRecommendations(importFlow.recentUpload.count)}
-                  {importFlow.recentUpload.fileName ? (
+                  <span className="font-semibold">{recentUpload.count}</span>{' '}
+                  {pluralRecommendations(recentUpload.count)}
+                  {recentUpload.fileName ? (
                     <>
                       {' '}
-                      из файла <span className="font-medium">{importFlow.recentUpload.fileName}</span>
+                      из файла <span className="font-medium">{recentUpload.fileName}</span>
                     </>
                   ) : null}
                   . Если это произошло по ошибке, можно отменить загрузку — рекомендации будут удалены
@@ -107,25 +125,25 @@ export function CheckRecommendationsBlock({
               </div>
               <button
                 type="button"
-                onClick={() => void importFlow.handleCancel()}
-                disabled={importFlow.isUndoingUpload}
+                onClick={() => void handleCancel()}
+                disabled={isUndoingUpload}
                 className={formSizedBlueActionButtonClass}
               >
-                {importFlow.isUndoingUpload ? 'Отмена загрузки...' : 'Отменить'}
+                {isUndoingUpload ? 'Отмена загрузки...' : 'Отменить'}
               </button>
             </div>
           )}
-          {importFlow.parsedPreview.length > 0 && !importFlow.isParsing && (
+          {parsedPreview.length > 0 && !isParsing && (
             <div className="space-y-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <p className="text-sm leading-relaxed text-gray-600">
                   В документе найдено{' '}
-                  <span className="font-semibold text-gray-800">{importFlow.parsedPreview.length}</span>{' '}
-                  {pluralRecommendations(importFlow.parsedPreview.length)}.
+                  <span className="font-semibold text-gray-800">{parsedPreview.length}</span>{' '}
+                  {pluralRecommendations(parsedPreview.length)}.
                 </p>
                 <button
                   type="button"
-                  onClick={() => importFlow.setIsFullscreen(true)}
+                  onClick={() => setIsFullscreen(true)}
                   className={iconToolbarButtonClass}
                   title="На весь экран"
                   aria-label="На весь экран"
@@ -134,7 +152,7 @@ export function CheckRecommendationsBlock({
                 </button>
               </div>
 
-              {importFlow.isFullscreen ? (
+              {isFullscreen ? (
                 <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-gray-200 text-xs text-gray-400">
                   Открыто на весь экран
                 </div>
@@ -142,29 +160,29 @@ export function CheckRecommendationsBlock({
                 <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                   <div className="max-h-[22rem] overflow-auto">
                     <ParsedPreviewTable
-                      items={importFlow.parsedPreview}
+                      items={parsedPreview}
                       expanded={false}
-                      onRemove={importFlow.handleRemovePreview}
+                      onRemove={handleRemovePreview}
                     />
                   </div>
                 </div>
               )}
 
-              {!importFlow.isFullscreen && (
+              {!isFullscreen && (
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
                   <button
                     type="button"
-                    onClick={() => void importFlow.handleAddParsed()}
-                    disabled={!importFlow.canAdd || importFlow.isUndoingUpload}
+                    onClick={() => void handleAddParsed()}
+                    disabled={!canAdd || isUndoingUpload}
                     className={addRecommendationButtonClass}
                   >
                     <Plus size={16} className="shrink-0" />
-                    Добавить в проверку ({importFlow.parsedPreview.length})
+                    Добавить в проверку ({parsedPreview.length})
                   </button>
                   <button
                     type="button"
-                    onClick={importFlow.handleCancel}
-                    disabled={!importFlow.canCancelUpload || importFlow.isUndoingUpload}
+                    onClick={handleCancel}
+                    disabled={!canCancelUpload || isUndoingUpload}
                     className={formSizedBlueActionButtonClass}
                   >
                     Отменить
@@ -172,11 +190,11 @@ export function CheckRecommendationsBlock({
                 </div>
               )}
 
-              {importFlow.isFullscreen &&
+              {isFullscreen &&
                 createPortal(
                   <div
                     className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-[1px]"
-                    onClick={() => importFlow.setIsFullscreen(false)}
+                    onClick={() => setIsFullscreen(false)}
                     role="presentation"
                   >
                     <div
@@ -189,15 +207,15 @@ export function CheckRecommendationsBlock({
                             Рекомендации из АЗ
                           </h3>
                           <p className="text-sm text-gray-500">
-                            {importFlow.importAzFileName ? `Файл: ${importFlow.importAzFileName}` : null}
-                            {importFlow.importAzFileName ? ' · ' : null}
-                            {importFlow.parsedPreview.length} {pluralRecommendations(importFlow.parsedPreview.length)}
+                            {importAzFileName ? `Файл: ${importAzFileName}` : null}
+                            {importAzFileName ? ' · ' : null}
+                            {parsedPreview.length} {pluralRecommendations(parsedPreview.length)}
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
-                            onClick={() => importFlow.setIsFullscreen(false)}
+                            onClick={() => setIsFullscreen(false)}
                             className={iconToolbarButtonClass}
                             title="Свернуть"
                             aria-label="Свернуть"
@@ -206,7 +224,7 @@ export function CheckRecommendationsBlock({
                           </button>
                           <button
                             type="button"
-                            onClick={() => importFlow.setIsFullscreen(false)}
+                            onClick={() => setIsFullscreen(false)}
                             className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-rose-300 hover:text-rose-600"
                             title="Закрыть"
                             aria-label="Закрыть"
@@ -219,10 +237,10 @@ export function CheckRecommendationsBlock({
                       <div className="min-h-0 flex-1 overflow-auto px-4 pb-2 pt-3">
                         <div className="overflow-hidden rounded-xl border border-gray-200">
                           <ParsedPreviewTable
-                            items={importFlow.parsedPreview}
+                            items={parsedPreview}
                             expanded
-                            onRemove={importFlow.handleRemovePreview}
-                            onChange={importFlow.handleChangePreview}
+                            onRemove={handleRemovePreview}
+                            onChange={handleChangePreview}
                           />
                         </div>
                       </div>
@@ -230,17 +248,17 @@ export function CheckRecommendationsBlock({
                       <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-3 border-t border-gray-100 px-5 py-4">
                         <button
                           type="button"
-                          onClick={() => void importFlow.handleAddParsed()}
-                          disabled={!importFlow.canAdd || importFlow.isUndoingUpload}
+                          onClick={() => void handleAddParsed()}
+                          disabled={!canAdd || isUndoingUpload}
                           className={addRecommendationButtonClass}
                         >
                           <Plus size={16} className="shrink-0" />
-                          Добавить в проверку ({importFlow.parsedPreview.length})
+                          Добавить в проверку ({parsedPreview.length})
                         </button>
                         <button
                           type="button"
-                          onClick={importFlow.handleCancel}
-                          disabled={!importFlow.canCancelUpload || importFlow.isUndoingUpload}
+                          onClick={handleCancel}
+                          disabled={!canCancelUpload || isUndoingUpload}
                           className={formSizedBlueActionButtonClass}
                         >
                           Отменить
@@ -257,12 +275,12 @@ export function CheckRecommendationsBlock({
 
       <p
         className={`text-sm leading-relaxed ${
-          importFlow.storedCount > 0 ? 'text-gray-800' : 'text-gray-500'
+storedCount > 0 ? 'text-gray-800' : 'text-gray-500'
         }`}
       >
-        {importFlow.storedCount > 0 ? (
+        {storedCount > 0 ? (
           <>
-            Всего <span className="font-semibold text-[#003366]">{importFlow.storedCount}</span>{' '}
+            Всего <span className="font-semibold text-[#003366]">{storedCount}</span>{' '}
             {recommendationWord}
           </>
         ) : (
@@ -271,11 +289,11 @@ export function CheckRecommendationsBlock({
       </p>
 
       <input
-        ref={importFlow.fileInputRef}
+        ref={fileInputRef}
         type="file"
         accept={ACCEPTED_DOCX}
         hidden
-        onChange={(event) => importFlow.handleImportFileChange(event.target.files?.[0] ?? null)}
+        onChange={(event) => handleImportFileChange(event.target.files?.[0] ?? null)}
       />
     </div>
   );
