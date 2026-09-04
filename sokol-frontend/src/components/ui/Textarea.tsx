@@ -1,4 +1,5 @@
 import type { ChangeEvent, FocusEvent } from 'react';
+import { cn } from '../../utils/classNames';
 
 interface TextareaProps {
   label?: string;
@@ -25,24 +26,17 @@ export function Textarea({
   rows = 3,
   onBlur,
 }: TextareaProps) {
-  const textareaClasses = [
+  const textareaClasses = cn(
     'min-h-[3rem] w-full resize-y rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 ',
-    readOnly ? 'bg-gray-100 text-gray-800 ' : '',
+    readOnly ? 'bg-gray-100 text-gray-800 ' : undefined,
     inputClassName,
-  ]
-    .filter(Boolean)
-    .join(' ');
+  );
 
   return (
     <div className={className}>
       {label && (
         <label
-          className={[
-            'mb-1 block text-sm font-medium text-gray-700 ',
-            labelClassName,
-          ]
-            .filter(Boolean)
-            .join(' ')}
+          className={cn('mb-1 block text-sm font-medium text-gray-700 ', labelClassName)}
         >
           {label}
         </label>

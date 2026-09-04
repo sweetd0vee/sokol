@@ -1,4 +1,5 @@
 import { useId, type ChangeEvent, type FocusEvent, type ReactNode } from 'react';
+import { cn } from '../../utils/classNames';
 
 interface InputProps {
   label?: string;
@@ -30,25 +31,18 @@ export function Input({
   autoComplete,
 }: InputProps) {
   const inputId = useId();
-  const inputClasses = [
+  const inputClasses = cn(
     'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 ',
-    rightElement ? 'pr-10' : '',
+    rightElement ? 'pr-10' : undefined,
     inputClassName,
-  ]
-    .filter(Boolean)
-    .join(' ');
+  );
 
   return (
     <div className={className}>
       {label && (
         <label
           htmlFor={inputId}
-          className={[
-            'mb-1 block text-sm font-medium text-gray-700 ',
-            labelClassName,
-          ]
-            .filter(Boolean)
-            .join(' ')}
+          className={cn('mb-1 block text-sm font-medium text-gray-700 ', labelClassName)}
         >
           {label}
         </label>

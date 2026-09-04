@@ -1,9 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../api/queryKeys';
-import type { AuditType } from '../../api/settings';
 import {
-  createAuditType,
   createCheckKind,
   createDepartment,
   createEffectivenessRating,
@@ -12,69 +10,33 @@ import {
   deleteCheckKind,
   deleteDepartment,
   deleteEffectivenessRating,
-  fetchAuditTypes,
   fetchCheckKinds,
   fetchDepartments,
   fetchEffectivenessRatings,
-  updateAuditType,
   updateCheckKind,
   updateDepartment,
   updateEffectivenessRating,
 } from '../../api/settings';
 import { useAuth } from '../../hooks/useAuth';
-import { Input } from '../ui/Input';
 import { Modal, ModalActions } from '../ui/Modal';
 import { PageHeader } from '../ui/PageHeader';
 import { SegmentedControl } from '../ui/SegmentedControl';
-import { ActionButtons } from '../settings/ActionButtons';
 import { AuditorDictionaryPanel } from '../settings/AuditorDictionaryPanel';
+import { AuditTypesDictionaryPanel } from '../settings/AuditTypesDictionaryPanel';
 import { SingleFieldDictionaryPanel } from '../settings/SingleFieldDictionaryPanel';
-import { SettingsTableCard, type TableRow } from '../settings/SettingsTableCard';
 import {
   SETTINGS_LIST_OPTIONS,
   type DeleteCandidate,
   type SettingsListKey,
 } from '../settings/settingsConstants';
-import { filterBySearch } from '../settings/settingsHelpers';
 
 type EntityId = string | number;
-
-const getAuditTypeKey = (type: AuditType, index: number) =>
-  String(type.id ?? type.code ?? type.name ?? index);
 
 export function SettingsTab() {
   const queryClient = useQueryClient();
   const { isAdmin } = useAuth();
   const [activeList, setActiveList] = useState<SettingsListKey>('auditors');
   const [deleteCandidate, setDeleteCandidate] = useState<DeleteCandidate | null>(null);
-
-  const [auditTypeSearch, setAuditTypeSearch] = useState('');
-  const [isAddAuditTypeOpen, setIsAddAuditTypeOpen] = useState(false);
-  const [newAuditTypeCode, setNewAuditTypeCode] = useState('');
-  const [newAuditTypeName, setNewAuditTypeName] = useState('');
-  const [editAuditTypeCandidate, setEditAuditTypeCandidate] = useState<{
-    key: string;
-    id?: EntityId;
-    code: string;
-    name: string;
-  } | null>(null);
-  const [editedAuditTypeCode, setEditedAuditTypeCode] = useState('');
-  const [editedAuditTypeName, setEditedAuditTypeName] = useState('');
-
-  const {
-    data: auditTypes,
-    isLoading: auditTypesLoading,
-    error: auditTypesError,
-  } = useQuery({
-    queryKey: queryKeys.settings.auditTypes,
-    queryFn: fetchAuditTypes,
-  });
-
-  const filteredAuditTypes = filterBySearch(
-    auditTypes ?? [],
-    auditTypeSearch,
-    (type) =>`${type.code} ${type.name}`,
-  );
 
   const handleRequestDelete = (entity: SettingsListKey, key: string, id?: EntityId) => {
     setDeleteCandidate({ entity, key, id });
@@ -111,71 +73,6 @@ export function SettingsTab() {
       setDeleteCandidate(null);
     }
   };
-
-  const handleConfirmAddAuditType = async (event?: FormEvent) => {
-    event?.preventDefault();
-    const trimmedCode = newAuditTypeCode.trim();
-    const trimmedName = newAuditTypeName.trim();
-    if (!trimmedCode || !trimmedName) {
-      return;
-    }
-    try {
-      const created = await createAuditType({ code: trimmedCode, name: trimmedName });
-      queryClient.setQueryData<AuditType[]>(['settings', 'audit-types'], (current = []) => [
-        ...current,
-        created,
-      ]);
-      setNewAuditTypeCode('');
-      setNewAuditTypeName('');
-      setIsAddAuditTypeOpen(false);
-    } catch {
-      // keep modal open; user can retry
-    }
-  };
-
-  const handleConfirmEditAuditType = async (event?: FormEvent) => {
-    event?.preventDefault();
-    if (!editAuditTypeCandidate?.id) {
-      return;
-    }
-    const trimmedCode = editedAuditTypeCode.trim();
-    const trimmedName = editedAuditTypeName.trim();
-    if (!trimmedCode || !trimmedName) {
-      return;
-    }
-    try {
-      await updateAuditType(editAuditTypeCandidate.id, { code: trimmedCode, name: trimmedName });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.settings.auditTypes });
-      setEditAuditTypeCandidate(null);
-    } catch {
-      // keep modal open; user can retry
-    }
-  };
-
-  const auditTypeRows: TableRow[] = filteredAuditTypes.map((type, index) => {
-    const key = getAuditTypeKey(type, index);
-    const identifier = type.id;
-    const cells: TableRow['cells'] = [type.code, type.name];
-
-    if (isAdmin) {
-      cells.push(
-        <ActionButtons
-          key={`${key}-actions`}
-          onEdit={() => {
-            setEditedAuditTypeCode(type.code);
-            setEditedAuditTypeName(type.name);
-            setEditAuditTypeCandidate({ key, code: type.code, name: type.name, id: identifier });
-          }}
-          onDelete={() => handleRequestDelete('auditTypes', key, identifier)}
-        />,
-      );
-    }
-
-    return {
-      key,
-      cells,
-    };
-  });
 
   return (
     <div className="w-full space-y-4 text-left">
@@ -243,24 +140,9 @@ export function SettingsTab() {
         )}
 
         {activeList === 'auditTypes' && (
-          <SettingsTableCard
-            title="Вид аудита"
-            columns={isAdmin ? ['Код', 'Название', 'Действия'] : ['Код', 'Название']}
-            rows={auditTypeRows}
-            isLoading={auditTypesLoading}
-            error={auditTypesError}
-            onAdd={
-              isAdmin
-                ? () => {
-                    setNewAuditTypeCode('');
-                    setNewAuditTypeName('');
-                    setIsAddAuditTypeOpen(true);
-                  }
-                : undefined
-            }
-            searchValue={auditTypeSearch}
-            onSearchChange={setAuditTypeSearch}
-            searchPlaceholder="Поиск"
+          <AuditTypesDictionaryPanel
+            canManage={isAdmin}
+            onRequestDelete={(key, id) => handleRequestDelete('auditTypes', key, id)}
           />
         )}
 
@@ -288,52 +170,6 @@ export function SettingsTab() {
           />
         )}
       </div>
-
-      {isAdmin && isAddAuditTypeOpen && (
-        <Modal title="Новый вид аудита">
-          <form onSubmit={handleConfirmAddAuditType} className="mt-4 space-y-4">
-            <Input
-              label="Код"
-              value={newAuditTypeCode}
-              onChange={setNewAuditTypeCode}
-              placeholder="Введите код"
-            />
-            <Input
-              label="Название"
-              value={newAuditTypeName}
-              onChange={setNewAuditTypeName}
-              placeholder="Введите название"
-            />
-            <ModalActions
-              submitDisabled={!newAuditTypeCode.trim() || !newAuditTypeName.trim()}
-              onCancel={() => setIsAddAuditTypeOpen(false)}
-            />
-          </form>
-        </Modal>
-      )}
-
-      {isAdmin && editAuditTypeCandidate && (
-        <Modal title="Редактирование вида аудита">
-          <form onSubmit={handleConfirmEditAuditType} className="mt-4 space-y-4">
-            <Input
-              label="Код"
-              value={editedAuditTypeCode}
-              onChange={setEditedAuditTypeCode}
-              placeholder="Введите код"
-            />
-            <Input
-              label="Название"
-              value={editedAuditTypeName}
-              onChange={setEditedAuditTypeName}
-              placeholder="Введите название"
-            />
-            <ModalActions
-              submitDisabled={!editedAuditTypeCode.trim() || !editedAuditTypeName.trim()}
-              onCancel={() => setEditAuditTypeCandidate(null)}
-            />
-          </form>
-        </Modal>
-      )}
 
       {isAdmin && deleteCandidate && (
         <Modal title="Удаление записи">

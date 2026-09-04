@@ -1,4 +1,5 @@
 import type { ChangeEvent, CSSProperties } from 'react';
+import { cn } from '../../utils/classNames';
 
 interface SelectProps {
   label?: string;
@@ -27,12 +28,7 @@ export function Select({
     <div className={className}>
       {label && (
         <label
-          className={[
-            'mb-1 block text-sm font-medium text-gray-700 ',
-            labelClassName,
-          ]
-            .filter(Boolean)
-            .join(' ')}
+          className={cn('mb-1 block text-sm font-medium text-gray-700 ', labelClassName)}
         >
           {label}
         </label>
@@ -41,12 +37,10 @@ export function Select({
         value={value}
         onChange={(e: ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
         style={inputStyle}
-        className={[
+        className={cn(
           'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 ',
           inputClassName,
-        ]
-          .filter(Boolean)
-          .join(' ')}
+        )}
       >
         {placeholder && (
           <option value="">{placeholder}</option>

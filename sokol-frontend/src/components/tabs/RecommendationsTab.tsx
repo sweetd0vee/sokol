@@ -1,8 +1,5 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import { PencilLine } from 'lucide-react';
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
-import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
 import { EmptyState, ErrorState, LoadingState } from '../ui/StateMessage';
 import type { Recommendation } from '../../types/recommendation';
@@ -16,7 +13,7 @@ import {
   getMaterialityLevelLabel,
   resolveRecommendationAdditionalIndicator,
 } from '../../constants/recommendations';
-import { type ExportFormat, exportRecommendationsTable } from '../../utils/exports';
+import { exportRecommendationsTable } from '../../utils/exports';
 import { formatRuDate } from '../../utils/dates';
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
 import { toNameOptions, useAuditorOptions } from '../../hooks/useReferenceOptions';
@@ -32,7 +29,6 @@ import {
 import { IndicatorGlyph } from '../recommendations/IndicatorGlyph';
 import { RecommendationNameHoverCard } from '../recommendations/RecommendationNameHoverCard';
 import {
-  LIST_ACTION_BUTTON_CLASS,
   LIST_TABLE_COLUMN_HEADER_ROW_CLASS,
   listFilterClass,
 } from '../../constants/formLayout';
@@ -47,10 +43,14 @@ import {
 } from '../../utils/recommendationList';
 import { getErrorMessage } from '../../api/errors';
 import { useClientTable } from '../../hooks/useClientTable';
+import { useListExport } from '../../hooks/useListExport';
 import { EntityListHeader } from '../lists/EntityListHeader';
 import { ListExportControls } from '../lists/ListExportControls';
 import { ListPagination } from '../lists/ListPagination';
 import { ListColumnHeaderCell, ListSortHeader } from '../lists/ListSortHeader';
+import { ListDateRangeFilter, ListFilterCell, ListResetFiltersButton } from '../lists/ListFilterCell';
+import { ListEditActionLink } from '../lists/ListEditActionLink';
+import { ListEmptyNotice, ListFilterCount, ListTableFooter, ListTableShell } from '../lists/ListTableShell';
 
 function ListIndicatorIcon({
   value,
@@ -86,8 +86,7 @@ export function RecommendationsTab() {
   const [showOnlyMe, setShowOnlyMe] = useState(false);
   const [deadlineFrom, setDeadlineFrom] = useState<Date | null>(null);
   const [deadlineTo, setDeadlineTo] = useState<Date | null>(null);
-  const [exportFormat, setExportFormat] = useState<ExportFormat>('xlsx');
-  const [isExporting, setIsExporting] = useState(false);
+  const { format: exportFormat, setFormat: setExportFormat, isExporting, runExport } = useListExport();
   const trimmedMyName = useMemo(() => myName.trim(), [myName]);
   const { options: auditorOptions } = useAuditorOptions();
   const { options: auditObjectOptions } = useAuditObjectOptions();
@@ -198,22 +197,19 @@ export function RecommendationsTab() {
     setShowOnlyMe(false);
   };
 
-  const handleExport = async () => {
+  const handleExport = () => {
     if (sortedRecommendations.length === 0) {
       return;
     }
-    setIsExporting(true);
-    try {
-      await exportRecommendationsTable(
+    return runExport(() =>
+      exportRecommendationsTable(
         sortedRecommendations,
         recommendations,
         checks,
         exportFormat,
         'recommendations',
-      );
-    } finally {
-      setIsExporting(false);
-    }
+      ),
+    );
   };
 
   const renderSortableHeader = (key: RecommendationSortKey, label: ReactNode, className = '') => (
@@ -249,166 +245,186 @@ export function RecommendationsTab() {
         onToggleOnlyMe={() => setShowOnlyMe((value) => !value)}
       />
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <div className="overflow-x-auto">
-          <table className="w-full text-base table-fixed min-w-[1644px]">
-            <colgroup>
-              <col className="w-24" />
-              <col className="w-40" />
-              <col />
-              <col className="w-52" />
-              <col className="w-28" />
-              <col className="w-44" />
-              <col className="w-44" />
-              <col className="w-28" />
-              <col className="w-36" />
-              <col className="w-[140px]" />
-              <col className="w-[190px]" />
-            </colgroup>
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-2 py-2 font-normal">
-                  <Input
-                    value={idFilter}
-                    onChange={setIdFilter}
-                    placeholder="ID"
-                    inputClassName={listFilterClass(Boolean(idFilter.trim()))}
-                  />
-                </th>
-                <th className="px-2 py-2 font-normal">
-                  <Input
-                    value={keyFilter}
-                    onChange={setKeyFilter}
-                    placeholder="Ключ"
-                    inputClassName={listFilterClass(Boolean(keyFilter.trim()))}
-                  />
-                </th>
-                <th className="px-2 py-2 font-normal">
-                  <Input
-                    value={nameFilter}
-                    onChange={setNameFilter}
-                    placeholder="Название"
-                    inputClassName={listFilterClass(Boolean(nameFilter.trim()))}
-                  />
-                </th>
-                <th className="px-2 py-2 font-normal">
-                  <MultiCheckboxSelect
-                    value={auditObjects}
-                    onChange={setAuditObjects}
-                    options={auditObjectOptions}
-                    placeholder="Все"
-                    inputClassName={listFilterClass(auditObjects.length > 0)}
-                  />
-                </th>
-                <th className="px-2 py-2 font-normal">
-                  <MultiCheckboxSelect
-                    value={indicators}
-                    onChange={setIndicators}
-                    options={INDICATOR_OPTIONS}
-                    placeholder="Все"
-                    inputClassName={listFilterClass(indicators.length > 0)}
-                  />
-                </th>
-                <th className="px-2 py-2 font-normal">
-                  <MultiCheckboxSelect
-                    value={additionalIndicators}
-                    onChange={setAdditionalIndicators}
-                    options={ADDITIONAL_INDICATOR_OPTIONS}
-                    placeholder="Все"
-                    inputClassName={listFilterClass(additionalIndicators.length > 0)}
-                  />
-                </th>
-                <th className="px-2 py-2 font-normal">
-                  <div className="flex flex-col gap-1.5">
-                    <DatePicker
-                      selected={deadlineFrom}
-                      onChange={setDeadlineFrom}
-                      placeholder="с"
-                      inputClassName={listFilterClass(Boolean(deadlineFrom))}
-                    />
-                    <DatePicker
-                      selected={deadlineTo}
-                      onChange={setDeadlineTo}
-                      placeholder="по"
-                      inputClassName={listFilterClass(Boolean(deadlineTo))}
-                    />
-                  </div>
-                </th>
-                <th className="px-2 py-2 font-normal">
-                  <MultiCheckboxSelect
-                    value={materialityLevels}
-                    onChange={setMaterialityLevels}
-                    options={MATERIALITY_LEVEL_OPTIONS}
-                    placeholder="Все"
-                    inputClassName={listFilterClass(materialityLevels.length > 0)}
-                  />
-                </th>
-                <th className="px-2 py-2 font-normal">
-                  <MultiCheckboxSelect
-                    value={auditors}
-                    onChange={setAuditors}
-                    options={auditorOptions}
-                    placeholder="Все"
-                    inputClassName={listFilterClass(auditors.length > 0)}
-                  />
-                </th>
-                <th className="px-2 py-2 font-normal">
-                  <MultiCheckboxSelect
-                    value={managers}
-                    onChange={setManagers}
-                    options={managerOptions}
-                    placeholder="Все"
-                    inputClassName={listFilterClass(managers.length > 0)}
-                  />
-                </th>
-                <th className="px-0 pr-4 py-2 font-normal">
-                  <div className="ml-auto flex w-[160px] items-center justify-end">
-                    <button
-                      type="button"
-                      onClick={handleResetFilters}
-                      className="inline-flex h-[38px] w-[160px] items-center justify-center rounded-lg border border-[#003366] px-2 text-sm font-medium text-[#003366] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white"
-                    >
-                      Сбросить фильтры
-                    </button>
-                  </div>
-                </th>
-              </tr>
-              <tr className={`bg-[#003366] text-white ${LIST_TABLE_COLUMN_HEADER_ROW_CLASS}`}>
-                {renderSortableHeader('id', 'ID', 'whitespace-nowrap')}
-                {renderSortableHeader('serial_number', 'Ключ')}
-                {renderSortableHeader('name', 'Название')}
-                {renderSortableHeader('audit_object', 'Объект аудита', 'whitespace-nowrap')}
-                {renderSortableHeader('indicator', 'Индикатор статуса')}
-                {renderSortableHeader(
-                  'additional_indicator',
-                  <>
-                    <span className="whitespace-nowrap">Индикатор</span>
-                    <br />
-                    <span>дополнительного статуса</span>
-                  </>,
-                )}
-                {renderSortableHeader('deadline', 'Срок исполнения')}
-                {renderSortableHeader('materiality_level', 'Уровень')}
-                {renderSortableHeader('auditor', 'Аудитор')}
-                {renderSortableHeader(
-                  'manager',
-                  <>
-                    <span className="whitespace-nowrap">Руководитель</span>
-                    <br />
-                    <span className="whitespace-nowrap">объекта аудита</span>
-                  </>,
-                )}
-                <ListColumnHeaderCell align="center" className="pr-4">Действия</ListColumnHeaderCell>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {pagedRecommendations.map((recommendation) => {
-                const additionalIndicator = resolveRecommendationAdditionalIndicator(
-                  recommendation.additional_status,
-                  recommendation.additional_indicator,
-                );
-                return (
-                  <tr key={recommendation.id} className="hover:bg-gray-50">
+      <ListTableShell
+        className="overflow-hidden rounded-xl border border-gray-200 bg-white"
+        empty={
+          filteredRecommendations.length === 0 ? (
+            <ListEmptyNotice>
+              <EmptyState
+                title="Рекомендации не найдены"
+                description="Измените фильтры или создайте новую рекомендацию."
+              />
+            </ListEmptyNotice>
+          ) : null
+        }
+        footer={
+          <ListTableFooter
+            pagination={
+              <ListPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                rangeLabel={rangeLabel}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
+            }
+          >
+            <ListExportControls
+              onExport={() => void handleExport()}
+              disabled={isExporting || sortedRecommendations.length === 0}
+              isExporting={isExporting}
+              format={exportFormat}
+              onFormatChange={setExportFormat}
+            />
+            <ListFilterCount count={filteredRecommendations.length} />
+          </ListTableFooter>
+        }
+      >
+        <table className="w-full text-base table-fixed min-w-[1644px]">
+          <colgroup>
+            <col className="w-24" />
+            <col className="w-40" />
+            <col />
+            <col className="w-52" />
+            <col className="w-28" />
+            <col className="w-44" />
+            <col className="w-44" />
+            <col className="w-28" />
+            <col className="w-36" />
+            <col className="w-[140px]" />
+            <col className="w-[190px]" />
+          </colgroup>
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-200">
+              <ListFilterCell>
+                <Input
+                  value={idFilter}
+                  onChange={setIdFilter}
+                  placeholder="ID"
+                  inputClassName={listFilterClass(Boolean(idFilter.trim()))}
+                />
+              </ListFilterCell>
+              <ListFilterCell>
+                <Input
+                  value={keyFilter}
+                  onChange={setKeyFilter}
+                  placeholder="Ключ"
+                  inputClassName={listFilterClass(Boolean(keyFilter.trim()))}
+                />
+              </ListFilterCell>
+              <ListFilterCell>
+                <Input
+                  value={nameFilter}
+                  onChange={setNameFilter}
+                  placeholder="Название"
+                  inputClassName={listFilterClass(Boolean(nameFilter.trim()))}
+                />
+              </ListFilterCell>
+              <ListFilterCell>
+                <MultiCheckboxSelect
+                  value={auditObjects}
+                  onChange={setAuditObjects}
+                  options={auditObjectOptions}
+                  placeholder="Все"
+                  inputClassName={listFilterClass(auditObjects.length > 0)}
+                />
+              </ListFilterCell>
+              <ListFilterCell>
+                <MultiCheckboxSelect
+                  value={indicators}
+                  onChange={setIndicators}
+                  options={INDICATOR_OPTIONS}
+                  placeholder="Все"
+                  inputClassName={listFilterClass(indicators.length > 0)}
+                />
+              </ListFilterCell>
+              <ListFilterCell>
+                <MultiCheckboxSelect
+                  value={additionalIndicators}
+                  onChange={setAdditionalIndicators}
+                  options={ADDITIONAL_INDICATOR_OPTIONS}
+                  placeholder="Все"
+                  inputClassName={listFilterClass(additionalIndicators.length > 0)}
+                />
+              </ListFilterCell>
+              <ListFilterCell>
+                <ListDateRangeFilter
+                  from={deadlineFrom}
+                  to={deadlineTo}
+                  onFromChange={setDeadlineFrom}
+                  onToChange={setDeadlineTo}
+                />
+              </ListFilterCell>
+              <ListFilterCell>
+                <MultiCheckboxSelect
+                  value={materialityLevels}
+                  onChange={setMaterialityLevels}
+                  options={MATERIALITY_LEVEL_OPTIONS}
+                  placeholder="Все"
+                  inputClassName={listFilterClass(materialityLevels.length > 0)}
+                />
+              </ListFilterCell>
+              <ListFilterCell>
+                <MultiCheckboxSelect
+                  value={auditors}
+                  onChange={setAuditors}
+                  options={auditorOptions}
+                  placeholder="Все"
+                  inputClassName={listFilterClass(auditors.length > 0)}
+                />
+              </ListFilterCell>
+              <ListFilterCell>
+                <MultiCheckboxSelect
+                  value={managers}
+                  onChange={setManagers}
+                  options={managerOptions}
+                  placeholder="Все"
+                  inputClassName={listFilterClass(managers.length > 0)}
+                />
+              </ListFilterCell>
+              <ListFilterCell alignEnd>
+                <div className="ml-auto flex w-[160px] items-center justify-end">
+                  <ListResetFiltersButton onClick={handleResetFilters} />
+                </div>
+              </ListFilterCell>
+            </tr>
+            <tr className={`bg-[#003366] text-white ${LIST_TABLE_COLUMN_HEADER_ROW_CLASS}`}>
+              {renderSortableHeader('id', 'ID', 'whitespace-nowrap')}
+              {renderSortableHeader('serial_number', 'Ключ')}
+              {renderSortableHeader('name', 'Название')}
+              {renderSortableHeader('audit_object', 'Объект аудита', 'whitespace-nowrap')}
+              {renderSortableHeader('indicator', 'Индикатор статуса')}
+              {renderSortableHeader(
+                'additional_indicator',
+                <>
+                  <span className="whitespace-nowrap">Индикатор</span>
+                  <br />
+                  <span>дополнительного статуса</span>
+                </>,
+              )}
+              {renderSortableHeader('deadline', 'Срок исполнения')}
+              {renderSortableHeader('materiality_level', 'Уровень')}
+              {renderSortableHeader('auditor', 'Аудитор')}
+              {renderSortableHeader(
+                'manager',
+                <>
+                  <span className="whitespace-nowrap">Руководитель</span>
+                  <br />
+                  <span className="whitespace-nowrap">объекта аудита</span>
+                </>,
+              )}
+              <ListColumnHeaderCell align="center" className="pr-4">Действия</ListColumnHeaderCell>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {pagedRecommendations.map((recommendation) => {
+              const additionalIndicator = resolveRecommendationAdditionalIndicator(
+                recommendation.additional_status,
+                recommendation.additional_indicator,
+              );
+              return (
+                <tr key={recommendation.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 whitespace-nowrap">
                     {getRecommendationYearlyId(recommendation, recommendationYearlyNumbers) ?? '—'}
                   </td>
@@ -448,55 +464,17 @@ export function RecommendationsTab() {
                     {recommendation.manager}
                   </td>
                   <td className="px-0 pr-4 py-3">
-                    <div className="ml-auto flex w-[160px] items-center justify-end whitespace-nowrap">
-                      <Link
-                        to={`/recommendations/${recommendation.id}/edit`}
-                        state={{ recommendation }}
-                        className={`${LIST_ACTION_BUTTON_CLASS} border border-[#003366] text-[#003366] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white`}
-                      >
-                        <PencilLine size={14} />
-                        Редактировать
-                      </Link>
-                    </div>
+                    <ListEditActionLink
+                      to={`/recommendations/${recommendation.id}/edit`}
+                      state={{ recommendation }}
+                    />
                   </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {filteredRecommendations.length === 0 && (
-              <div className="border-t border-gray-200 p-6">
-              <EmptyState
-                title="Рекомендации не найдены"
-                description="Измените фильтры или создайте новую рекомендацию."
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-3 border-t border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-            <ListExportControls
-              onExport={() => void handleExport()}
-              disabled={isExporting || sortedRecommendations.length === 0}
-              isExporting={isExporting}
-              format={exportFormat}
-              onFormatChange={setExportFormat}
-            />
-            <span className="whitespace-nowrap">
-              Отработка фильтра: {filteredRecommendations.length} записей
-            </span>
-          </div>
-          <ListPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            rangeLabel={rangeLabel}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setPageSize}
-          />
-        </div>
-      </div>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </ListTableShell>
     </div>
   );
 }
