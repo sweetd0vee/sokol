@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.dictionary_crud import bind_dictionary_crud
 from app.crud.dictionary_errors import DuplicateDictionaryError, DictionaryProtectedError
 from app.models.departments import Department
-from app.schemas.departments import DepartmentCreate, DepartmentUpdate
+from app.schemas.departments import DepartmentUpdate
 from app.services.dictionary_integrity import replace_recommendation_audit_object_label
 from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT, normalize_dictionary_label
 

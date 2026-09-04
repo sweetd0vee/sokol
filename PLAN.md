@@ -1,6 +1,6 @@
 # План оставшихся работ SOKOL до 15.09.2026
 
-**Актуально:** 1 сентября 2026  
+**Актуально:** 4 сентября 2026  
 **Исходный go-live:** 1 сентября 2026 — не уложились, перенос на **один спринт**.  
 **Новый жёсткий go-live:** 15 сентября 2026, 09:00  
 **Окно:** 01.09–14.09 = 14 календарных дней / около 10 рабочих дней.
@@ -11,15 +11,15 @@
 
 Продуктовый контур пилота собран и работает локально / в Docker. Это не go-live, но база для спринта 01.09–15.09.
 
-| Область | Состояние на 01.09 |
+| Область | Состояние на 04.09 |
 |---------|--------------------|
 | Auth | Internal JWT, RBAC `auditor` / `department_head` / `admin`, lookup `is_active` из БД. HTTP Basic в prod выключен. Слабый JWT-секрет в prod блокирует старт |
 | Проверки / рекомендации | CRUD, фильтры, клиентский экспорт таблиц (XLSX/PDF/DOCX/HTML), yearly №, импорт рекомендаций из АЗ с undo, вложения через MinIO API |
 | Справочники | Settings CRUD; физические FK на labels; in-use delete → 409. Виды проверок живут в `check_kinds`, но **форма и фильтры проверок всё ещё на захардкоженном списке** |
-| Аналитика | Серверные SQL-агрегаты: проверки, рекомендации, мониторинг, ДВА. Визуальный экспорт дашбордов. Матрица существенности — в текущей доработке |
-| Планирование | Дашборд `/planning` подключён к `GET /analytics/planning`. Экспорт выключен, в UI нет пометки limited/beta |
+| Аналитика | Серверные SQL-агрегаты: проверки, рекомендации, мониторинг, ДВА, матрицы. Конструктор дашбордов — только frontend (`/constructor`) |
+| Планирование | Дашборд `/planning` + visual export + отправка графиков в конструктор. В UI нет пометки limited/beta |
 | Инструменты | Раздел II, ссылки, докладная, parse-recommendations, control file. Audit opinion / Ollama — вне scope |
-| Канцлер | Убран из nav и routes. Прямой `/kantsler` уходит на `/checks` |
+| Канцлер | Убран из nav и routes. Неизвестный URL → `/checks` |
 | БД | PostgreSQL + `create_all` + `migrate_*`. Alembic **не внедрён** |
 | Import | Excel → checks/recommendations; `--replace` в prod только с `--confirm-prod-replace`. Нет dry-run и reject report: неизвестные справочники **досоздаются**, а не отклоняются |
 | Demo | `SOKOL_ENV=prod` запрещает demo load и seed replace. Compose default `SOKOL_LOAD_DEMO_DATA=1` сохранён для local Docker |
@@ -63,7 +63,6 @@
 - Server-side pagination/search, пока фактический объём не превышает 10000 checks/recommendations.
 - Streaming/queue для DOCX tools.
 - Golden DOCX CI и большой рефакторинг analytics visual export.
-- Planning export.
 - Полная FK-нормализация справочников (UUID вместо label).
 
 ## P0 — сделать до 08.09
@@ -72,7 +71,7 @@
 
 | ID | Задача | Почему критично | DoD |
 |----|--------|-----------------|-----|
-| P0-02 | Явно пометить `Планирование` как limited/beta | Раздел в nav, дашборд рабочий, экспорт выключен — без пометки это выглядит как полноценный модуль | В prod на `/planning` видно, что модуль ограниченный; экспорт не обещается |
+| P0-02 | Явно пометить `Планирование` как limited/beta | Раздел в nav, дашборд и export рабочие — без пометки выглядит как полноценный модуль | На `/planning` видно, что модуль ограниченный |
 | P0-03 | Подключить `check_kinds` к форме и фильтрам проверок | Виды проверок должны браться из справочника, а не из `CHECK_VIEW_OPTIONS` | Форма проверки и фильтры используют `/settings/check_kinds`; новые виды из Settings доступны без релиза frontend |
 | P0-04 | Demo-load не должен быть default на UAT/prod | Compose default всё ещё `SOKOL_LOAD_DEMO_DATA=1`; пустой стенд без `SOKOL_ENV=prod` сам загрузит demo | UAT/prod: `SOKOL_ENV=prod` и `SOKOL_LOAD_DEMO_DATA=0`. Предпочтительно default `0` в root/backend compose; demo только явным opt-in |
 | P0-06 | Alembic baseline или утверждённый временный DB migration gate | Схема = `create_all` + ad-hoc `migrate_*` | Предпочтительно: `alembic upgrade head` на пустой БД. Минимальный fallback: зафиксированный порядок `migrate_*`, проверенный на чистой БД, подписанный runbook |
@@ -216,7 +215,6 @@ Fallback при No-Go: ограниченный read-only/UAT-pilot режим, 
 | P2 | Streaming upload + concurrency limit для DOCX tools |
 | P2 | Golden DOCX CI |
 | P2 | Route lazy loading и split крупных frontend visual-export |
-| P2 | Planning export |
 | P2 | Materialized views/cache для тяжёлой analytics при росте данных |
 | P3 | CRUD наблюдений |
 | P3 | Интеграция с СЭД Канцлер |

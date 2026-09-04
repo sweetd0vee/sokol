@@ -231,9 +231,8 @@ docker compose start minio
 
 | Симптом | Причина | Что делать |
 |---------|---------|------------|
-| 503 на upload | `SOKOL_MINIO_*` не заданы | заполнить endpoint и ключи |
-| 503 на upload | MinIO не настроен (`SOKOL_MINIO_*` пустые) | задать endpoint + keys |
-| 502 на upload | MinIO не запущен или неверный endpoint | `docker compose ps minio`, health `/minio/health/live` |
+| 503 на upload | `SOKOL_MINIO_*` пустые или хранилище выключено | задать endpoint + keys |
+| 502 на upload | MinIO не запущен, неверный endpoint или сбой объекта | `docker compose ps minio`, health `/minio/health/live` |
 | `InvalidBucketName` | имя не по правилам S3 | lowercase, 3–63, без `_` |
 | Access Denied в консоли | неверный пароль | `MINIO_ROOT_PASSWORD` из `.env` |
 | Файл есть в консоли, нет в UI | залит в обход API | грузить через SOKOL; или завести `attachments` вручную (не рекомендуется) |

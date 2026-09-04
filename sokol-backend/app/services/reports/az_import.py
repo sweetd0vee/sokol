@@ -72,7 +72,7 @@ def parse_recommendations_from_docx(input_path: str) -> tuple[list[ParsedRecomme
                     name=name,
                     observation_name=(recommendation.observation_name or "").strip(),
                     audit_object=[((group.name or "").strip() or "Не указан")[:255]],
-                    manager=((group.manager or "").strip() or "Не указан")[:255]],
+                    manager=((group.manager or "").strip() or "Не указан")[:255],
                     deadline=deadline_to_iso(recommendation.deadline),
                 )
             )

@@ -11,7 +11,6 @@ from app.api.http import content_disposition_attachment
 from app.api.uploads import (
     DOCX_EXT,
     DOCX_MIME,
-    UPLOAD_CHUNK_SIZE,
     XLSX_EXT,
     XLSX_MIME,
     cleanup_files,

@@ -18,7 +18,8 @@ os.environ.setdefault("SOKOL_JWT_SECRET", "test-jwt-secret")
 from fastapi import HTTPException, UploadFile
 from fastapi.testclient import TestClient
 
-from app.api.v1.endpoints.instruments_reports import DOCX_MIME, _save_upload_to_temp
+from app.api.uploads import save_upload_to_temp
+from app.api.v1.endpoints.instruments_reports import DOCX_MIME
 from app.core.config import settings
 from app.db.session import get_db_session
 from app.main import app
@@ -29,7 +30,7 @@ class SaveUploadToTempTests(unittest.IsolatedAsyncioTestCase):
     async def test_writes_upload_to_disk(self) -> None:
         payload = b"PK" + b"docx-bytes"
         upload = UploadFile(filename="az.docx", file=io.BytesIO(payload))
-        path = await _save_upload_to_temp(upload)
+        path = await save_upload_to_temp(upload)
         try:
             self.assertEqual(path.read_bytes(), payload)
             self.assertTrue(path.name.endswith(".docx"))
@@ -39,8 +40,8 @@ class SaveUploadToTempTests(unittest.IsolatedAsyncioTestCase):
     async def test_reads_in_chunks(self) -> None:
         payload = b"abcdefghij"
         upload = UploadFile(filename="az.docx", file=io.BytesIO(payload))
-        with patch("app.api.v1.endpoints.instruments_reports.UPLOAD_CHUNK_SIZE", 3):
-            path = await _save_upload_to_temp(upload)
+        with patch("app.api.uploads.UPLOAD_CHUNK_SIZE", 3):
+            path = await save_upload_to_temp(upload)
         try:
             self.assertEqual(path.read_bytes(), payload)
         finally:
@@ -59,13 +60,13 @@ class SaveUploadToTempTests(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch(
-                "app.api.v1.endpoints.instruments_reports.tempfile.NamedTemporaryFile",
+                "app.api.uploads.tempfile.NamedTemporaryFile",
                 side_effect=tracking_ntf,
             ),
             patch.object(type(settings), "max_upload_bytes", new_callable=PropertyMock, return_value=8),
         ):
             with self.assertRaises(HTTPException) as ctx:
-                await _save_upload_to_temp(upload)
+                await save_upload_to_temp(upload)
 
         self.assertEqual(ctx.exception.status_code, 413)
         self.assertTrue(created)
