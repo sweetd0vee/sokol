@@ -107,16 +107,16 @@ export const VALUE_TEAL_SCALE = [
 
 /**
  * Twilight indigo scale for the DVA analytics tab.
- * Sits between Checks blue and Monitoring dusty-lilac: cool iris mist
- * deepens to signature indigo #312E81 so the page has its own identity
- * without leaving the family.
+ * Light stop sits between Checks periwinkle and Monitoring dusty-lilac;
+ * values deepen to signature indigo #312E81 so the page has its own
+ * identity without leaving the family.
  */
 export const DVA_VALUE_SCALE = [
-  '#DDD6F0', // mist iris — smallest
-  '#C0B6E2',
-  '#9E91CE',
-  '#7A6BB8',
-  '#5548A0',
+  '#C8B8E8', // dusty iris — smallest
+  '#AA9CD3',
+  '#8C81BF',
+  '#6D65AA',
+  '#4F4A96',
   '#312E81', // signature indigo — largest
 ] as const;
 
