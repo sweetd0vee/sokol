@@ -28,6 +28,7 @@ import { useSokolData } from '../../contexts/sokolData';
 import {
   LIST_ACTION_BUTTON_CLASS,
   LIST_ACTION_GROUP_CLASS,
+  LIST_TABLE_COLUMN_HEADER_ROW_CLASS,
   listFilterClass,
 } from '../../constants/formLayout';
 import { buildCheckYearlyNumbers, getCheckYearlyId } from '../../utils/checkYearlyNumber';
@@ -333,7 +334,7 @@ export function ChecksTab() {
                     </div>
                   </th>
                 </tr>
-                <tr className="bg-[#003366] text-white">
+                <tr className={`bg-[#003366] text-white ${LIST_TABLE_COLUMN_HEADER_ROW_CLASS}`}>
                   <ListSortHeader
                     label="ID"
                     className="whitespace-nowrap"
@@ -372,7 +373,13 @@ export function ChecksTab() {
                     onClick={() => toggleSort('start_date')}
                   />
                   <ListSortHeader
-                    label="Руководитель проверки"
+                    label={
+                      <>
+                        <span className="whitespace-nowrap">Руководитель</span>
+                        <br />
+                        <span className="whitespace-nowrap">проверки</span>
+                      </>
+                    }
                     active={sortConfig.key === 'check_leader'}
                     direction={sortConfig.direction}
                     onClick={() => toggleSort('check_leader')}
@@ -384,7 +391,7 @@ export function ChecksTab() {
                     direction={sortConfig.direction}
                     onClick={() => toggleSort('status')}
                   />
-                  <th className="px-0 pr-4 py-3 text-center font-medium">Действия</th>
+                  <th className={`px-0 pr-4 py-3 text-center font-medium ${LIST_TABLE_COLUMN_HEADER_ROW_CLASS}`}>Действия</th>
                 </tr>
               </thead>
                 <tbody className="divide-y divide-gray-200">

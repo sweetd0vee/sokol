@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import type { SortDirection } from '../../utils/listTable';
+import { LIST_TABLE_COLUMN_HEADER_ROW_CLASS } from '../../constants/formLayout';
 
 type ListSortHeaderProps = {
   label: ReactNode;
@@ -37,7 +38,7 @@ export function ListSortHeader({
       : 'inline-flex items-center gap-1 text-left text-white/90 transition hover:text-white');
 
   return (
-    <th className={`${align === 'center' ? 'px-0 py-3 text-center font-medium' : `px-4 py-3 text-left font-medium ${className}`}`}>
+    <th className={`${LIST_TABLE_COLUMN_HEADER_ROW_CLASS} ${align === 'center' ? 'px-0 py-3 text-center font-medium' : `px-4 py-3 text-left font-medium ${className}`}`}>
       <button type="button" onClick={onClick} className={alignedButtonClass}>
         <span className="leading-tight">{label}</span>
         <ListSortIcon active={active} direction={direction} />

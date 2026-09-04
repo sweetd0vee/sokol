@@ -56,6 +56,9 @@ export const LIST_ACTION_GROUP_CLASS = 'ml-auto flex w-[334px] items-center just
 /** 1px table card border + action cell pr-4 — keeps header chrome aligned with list buttons. */
 export const LIST_CHROME_RIGHT_INSET_CLASS = 'pr-[17px]';
 
+/** Dark column-title row on list tables: two text lines + py-3. */
+export const LIST_TABLE_COLUMN_HEADER_ROW_CLASS = 'h-16';
+
 /** Base chrome for list table filter controls. */
 const LIST_FILTER_BASE_CLASS = 'py-1.5 text-sm';
 

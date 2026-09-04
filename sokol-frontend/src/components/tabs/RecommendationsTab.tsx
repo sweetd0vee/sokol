@@ -33,6 +33,7 @@ import { IndicatorGlyph } from '../recommendations/IndicatorGlyph';
 import { RecommendationNameHoverCard } from '../recommendations/RecommendationNameHoverCard';
 import {
   LIST_ACTION_BUTTON_CLASS,
+  LIST_TABLE_COLUMN_HEADER_ROW_CLASS,
   listFilterClass,
 } from '../../constants/formLayout';
 import {
@@ -372,7 +373,7 @@ export function RecommendationsTab() {
                   </div>
                 </th>
               </tr>
-              <tr className="bg-[#003366] text-white">
+              <tr className={`bg-[#003366] text-white ${LIST_TABLE_COLUMN_HEADER_ROW_CLASS}`}>
                 {renderSortableHeader('id', 'ID', 'whitespace-nowrap')}
                 {renderSortableHeader('serial_number', 'Ключ')}
                 {renderSortableHeader('name', 'Название')}
@@ -397,7 +398,7 @@ export function RecommendationsTab() {
                     <span className="whitespace-nowrap">объекта аудита</span>
                   </>,
                 )}
-                <th className="px-0 pr-4 py-3 text-center font-medium">Действия</th>
+                <th className={`px-0 pr-4 py-3 text-center font-medium ${LIST_TABLE_COLUMN_HEADER_ROW_CLASS}`}>Действия</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
