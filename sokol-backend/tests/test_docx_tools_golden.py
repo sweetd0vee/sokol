@@ -43,6 +43,9 @@ def _wrap_in_sdt(paragraph) -> None:
 
 def _build_canonical_az(path: Path, *, wrap_headings: bool = False, extra_blanks: bool = False) -> None:
     doc = Document()
+    title = doc.add_paragraph("АУДИТОРСКОЕ ЗАКЛЮЧЕНИЕ")
+    check_title = doc.add_paragraph("Комплексный аудит процессов кредитования")
+    check_title.add_run().add_break(WD_BREAK.PAGE)
     doc.add_paragraph("Содержание")
     doc.add_paragraph("I. Аудиторское мнение")
     doc.add_paragraph("II. Основные результаты")

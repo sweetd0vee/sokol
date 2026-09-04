@@ -250,7 +250,8 @@ class ControlFileGeneratorTest(unittest.TestCase):
                 check_date="19.08.2026",
             )
             self.assertIsNone(generated_path)
-            self.assertIn("Раздел II", error or "")
+            self.assertTrue(error)
+            self.assertIn("не найден", error.lower())
 
     def test_multiple_audit_objects_in_one_recommendation(self):
         with tempfile.TemporaryDirectory() as tmp:

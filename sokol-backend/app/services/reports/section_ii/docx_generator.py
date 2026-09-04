@@ -116,8 +116,12 @@ def _find_body_block_spans(document_xml: str) -> list[tuple[int, int]]:
         if not match:
             break
         qname = match.group("qname")
+        local = _tag_local_name(qname)
+        if local in xml_utils.XML_WRAPPER_TAGS:
+            pos = match.end()
+            continue
         end = _find_matching_element_end(document_xml, match.start(), qname)
-        if _tag_local_name(qname) in {"p", "tbl"}:
+        if local in {"p", "tbl"}:
             spans.append((match.start(), end))
         pos = end
     return spans

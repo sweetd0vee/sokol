@@ -93,7 +93,7 @@ def _find_section_ii_table(body) -> Optional[object]:
             break
         if summary_match is None and xml_utils.is_sokol_summary_table_text(text):
             summary_match = el
-    return header_match or summary_match
+    return header_match if header_match is not None else summary_match
 
 
 def _parse_audit_object_header(raw_text: str) -> Tuple[str, str, str]:
