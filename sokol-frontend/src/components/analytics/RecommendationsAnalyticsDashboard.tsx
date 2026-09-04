@@ -26,7 +26,7 @@ import {
   getMaterialityChartColor,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
-  VALUE_EMERALD_SCALE,
+  VALUE_TEAL_SCALE,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
@@ -436,7 +436,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'statusByPeriod',
-        defaultLayout: { x: 0, y: 13, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 13, w: 7, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Статусы по периодам"
@@ -654,7 +654,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'objects',
-        defaultLayout: { x: 6, y: 13, w: 6, h: 3, minW: 6, minH: 3 },
+        defaultLayout: { x: 7, y: 13, w: 5, h: 3, minW: 4, minH: 3 },
         render: () => (
           <ChartCard
             title="Карта департаментов (ТОП-10)"
@@ -668,9 +668,8 @@ export function RecommendationsAnalyticsDashboard() {
             ) : (
               <FocusableTreemapChart
                 data={objectDistributionTop}
-                palette={VALUE_EMERALD_SCALE}
-                colorByValue
-                colorByRank
+                palette={VALUE_TEAL_SCALE}
+                colorByUniqueValue
               />
             )}
           </ChartCard>

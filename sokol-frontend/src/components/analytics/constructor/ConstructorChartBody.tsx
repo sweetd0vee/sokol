@@ -34,6 +34,7 @@ import {
   VALUE_BLUE_SCALE,
   VALUE_EMERALD_SCALE,
   VALUE_GRAY_SCALE,
+  VALUE_TEAL_SCALE,
 } from '../analyticsPalette';
 import {
   STACKED_HORIZONTAL_CHART_RIGHT_MARGIN,
@@ -351,10 +352,13 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
             ? VALUE_GRAY_SCALE
             : payload.palette === 'emerald'
               ? VALUE_EMERALD_SCALE
-              : VALUE_BLUE_SCALE
+              : payload.palette === 'teal'
+                ? VALUE_TEAL_SCALE
+                : VALUE_BLUE_SCALE
         }
         colorByValue
         colorByRank={payload.palette === 'emerald'}
+        colorByUniqueValue={payload.palette === 'teal'}
       />
     );
   }

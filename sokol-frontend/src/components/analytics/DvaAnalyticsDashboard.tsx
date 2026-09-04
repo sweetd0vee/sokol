@@ -15,7 +15,7 @@ import {
   MONITORING_ADDITIONAL_STATUS_COLORS,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
-  VALUE_EMERALD_SCALE,
+  VALUE_TEAL_SCALE,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
@@ -299,9 +299,8 @@ export function DvaAnalyticsDashboard() {
             ) : (
               <FocusableTreemapChart
                 data={auditorChecksMap}
-                palette={VALUE_EMERALD_SCALE}
-                colorByValue
-                colorByRank
+                palette={VALUE_TEAL_SCALE}
+                colorByUniqueValue
               />
             )}
           </ChartCard>

@@ -93,6 +93,19 @@ export const VALUE_EMERALD_SCALE = [
 ] as const;
 
 /**
+ * Sequential tints of emerald #0E7490 for department / auditor treemaps.
+ * Small values are pale teal; the largest value is #0E7490.
+ */
+export const VALUE_TEAL_SCALE = [
+  '#C3DCE3', // pale tint — smallest
+  '#9FC7D3',
+  '#7AB3C2',
+  '#569EB1',
+  '#3289A1',
+  '#0E7490', // emerald — largest
+] as const;
+
+/**
  * Sequential grey scale for the Recommendations analytics charts.
  * Values move from light to dark so bar/treemap intensity communicates magnitude.
  */
@@ -252,6 +265,46 @@ export function getValueBasedColors(
     const endIndex = Math.min(startIndex + 1, scale.length - 1);
     return interpolateColor(scale[startIndex], scale[endIndex], position - startIndex);
   });
+}
+
+/**
+ * Maps each distinct numeric value onto a sequential scale.
+ * Equal values share a color; larger values are darker. The highest unique
+ * value always gets the last scale color.
+ */
+export function getUniqueValueColors(
+  values: number[],
+  scale: readonly string[] = VALUE_TEAL_SCALE,
+) {
+  if (values.length === 0 || scale.length === 0) {
+    return [];
+  }
+  if (scale.length === 1) {
+    return values.map(() => scale[0]);
+  }
+
+  const unique = [...new Set(values.filter(Number.isFinite))].sort((left, right) => left - right);
+  if (unique.length === 0) {
+    return values.map(() => scale[0] as string);
+  }
+  if (unique.length === 1) {
+    const peak = scale[scale.length - 1] as string;
+    return values.map(() => peak);
+  }
+
+  const colorByValue = new Map<number, string>();
+  unique.forEach((value, index) => {
+    const position = (index / (unique.length - 1)) * (scale.length - 1);
+    const startIndex = Math.floor(position);
+    const endIndex = Math.min(startIndex + 1, scale.length - 1);
+    colorByValue.set(
+      value,
+      interpolateColor(scale[startIndex] as string, scale[endIndex] as string, position - startIndex),
+    );
+  });
+
+  const fallback = scale[0] as string;
+  return values.map((value) => colorByValue.get(value) ?? fallback);
 }
 
 /**

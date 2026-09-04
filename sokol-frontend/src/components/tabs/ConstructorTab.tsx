@@ -18,7 +18,7 @@ import {
 } from '../analytics/constructor/constructorLibrary';
 import { useClientTable } from '../../hooks/useClientTable';
 import { ListPagination } from '../lists/ListPagination';
-import { ListSortHeader } from '../lists/ListSortHeader';
+import { ListColumnHeaderCell, ListSortHeader } from '../lists/ListSortHeader';
 import {
   dashboardSourceKinds,
   dashboardSourceSummary,
@@ -205,7 +205,7 @@ export function ConstructorTab() {
                     direction={sortConfig.direction}
                     onClick={() => toggleSort('createdAt')}
                   />
-                  <th className="px-0 pr-4 py-3 text-center font-medium">Действия</th>
+                  <ListColumnHeaderCell align="center" className="pr-4">Действия</ListColumnHeaderCell>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">

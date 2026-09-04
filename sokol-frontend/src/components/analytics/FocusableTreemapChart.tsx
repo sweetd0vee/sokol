@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ResponsiveContainer, Tooltip, Treemap } from 'recharts';
-import { getRankBasedColors, getValueBasedColors, PALETTE } from './analyticsPalette';
+import { getRankBasedColors, getUniqueValueColors, getValueBasedColors, PALETTE } from './analyticsPalette';
 import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { MATERIALITY_COLORS } from '../../utils/recommendationAnalytics';
 import { formatTreemapExportLabel } from '../../utils/treemapExportLabel';
@@ -23,6 +23,8 @@ type FocusableTreemapChartProps = {
   colorByValue?: boolean;
   /** Assign distinct palette stops by rank so close values stay visually separate. */
   colorByRank?: boolean;
+  /** Sequential unique-value coloring: equal areas share a color, larger areas are darker. */
+  colorByUniqueValue?: boolean;
 };
 
 type TreemapNodeProps = {
@@ -200,18 +202,22 @@ export function FocusableTreemapChart({
   palette = PALETTE,
   colorByValue = false,
   colorByRank = false,
+  colorByUniqueValue = false,
 }: FocusableTreemapChartProps) {
   const [activeName, setActiveName] = useState<string | null>(null);
   const colors = palette.length > 0 ? palette : PALETTE;
   const values = data.map((item) => item.value);
   const valueColors = colorByRank
     ? getRankBasedColors(values, colors)
-    : colorByValue
-      ? getValueBasedColors(values, colors)
-      : [];
+    : colorByUniqueValue
+      ? getUniqueValueColors(values, colors)
+      : colorByValue
+        ? getValueBasedColors(values, colors)
+        : [];
+  const usesValueFill = colorByRank || colorByUniqueValue || colorByValue;
   const chartData = data.map((item, index) => ({
     ...item,
-    fill: item.fill ?? (colorByRank || colorByValue ? valueColors[index] : colors[index % colors.length]),
+    fill: item.fill ?? (usesValueFill ? valueColors[index] : colors[index % colors.length]),
   }));
   const tooltipFormatter = (
     value: unknown,

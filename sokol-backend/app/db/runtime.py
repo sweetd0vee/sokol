@@ -12,7 +12,7 @@ from sqlalchemy.orm import DeclarativeBase
 from app.db.session import engine
 
 OPERATIONAL_TABLES_TRUNCATE_SQL = (
-    "TRUNCATE TABLE recommendation_audit_objects, recommendations, checks "
+    "TRUNCATE TABLE attachments, recommendation_audit_objects, recommendations, checks "
     "RESTART IDENTITY CASCADE"
 )
 

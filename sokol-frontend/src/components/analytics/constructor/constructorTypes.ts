@@ -103,7 +103,7 @@ export type ConstructorPayload =
   | {
       chart: 'treemap';
       data: NamedCount[];
-      palette: 'blue' | 'emerald' | 'gray';
+      palette: 'blue' | 'emerald' | 'gray' | 'teal';
     }
   | {
       chart: 'effectiveness-matrix';

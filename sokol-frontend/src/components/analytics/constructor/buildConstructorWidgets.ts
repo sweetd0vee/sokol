@@ -213,7 +213,7 @@ export function buildRecommendationsConstructorDrafts(
         draft(kind, sectionId, 'Карта департаментов (ТОП-10)', 'Количество рекомендаций за период по департаментам', caption, SIZE.half, {
           chart: 'treemap',
           data: input.objectDistributionTop,
-          palette: 'emerald',
+          palette: 'teal',
         }),
       );
     }
@@ -353,7 +353,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
         draft(kind, sectionId, 'Карта сотрудников по проверкам', 'Количество проверок за период по всем сотрудникам ДВА', caption, SIZE.half, {
           chart: 'treemap',
           data: input.auditorChecksMap,
-          palette: 'emerald',
+          palette: 'teal',
         }),
       );
     } else if (sectionId === 'auditorImpact') {

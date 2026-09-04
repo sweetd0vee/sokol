@@ -50,7 +50,7 @@ import { useClientTable } from '../../hooks/useClientTable';
 import { EntityListHeader } from '../lists/EntityListHeader';
 import { ListExportControls } from '../lists/ListExportControls';
 import { ListPagination } from '../lists/ListPagination';
-import { ListSortHeader } from '../lists/ListSortHeader';
+import { ListColumnHeaderCell, ListSortHeader } from '../lists/ListSortHeader';
 
 function ListIndicatorIcon({
   value,
@@ -398,7 +398,7 @@ export function RecommendationsTab() {
                     <span className="whitespace-nowrap">объекта аудита</span>
                   </>,
                 )}
-                <th className={`px-0 pr-4 py-3 text-center font-medium ${LIST_TABLE_COLUMN_HEADER_ROW_CLASS}`}>Действия</th>
+                <ListColumnHeaderCell align="center" className="pr-4">Действия</ListColumnHeaderCell>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">

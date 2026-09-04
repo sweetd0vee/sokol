@@ -10,8 +10,10 @@ import {
   MONITORING_VALUE_SCALE,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   VALUE_EMERALD_SCALE,
+  VALUE_TEAL_SCALE,
   getMaterialityChartColor,
   getRankBasedColors,
+  getUniqueValueColors,
 } from './analyticsPalette';
 
 describe('applyValueBasedColors', () => {
@@ -70,6 +72,45 @@ describe('VALUE_EMERALD_SCALE', () => {
     expect(colors[1]?.toUpperCase()).toBe('#60A5FA');
     expect(new Set(colors.map((color) => color.toUpperCase())).size).toBe(5);
     expect(lastScaleColor(VALUE_EMERALD_SCALE).toUpperCase()).toBe('#0E7490');
+  });
+});
+
+describe('getUniqueValueColors', () => {
+  function luminance(hex: string) {
+    const normalized = hex.replace('#', '');
+    const red = Number.parseInt(normalized.slice(0, 2), 16);
+    const green = Number.parseInt(normalized.slice(2, 4), 16);
+    const blue = Number.parseInt(normalized.slice(4, 6), 16);
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  }
+
+  it('maps the largest department block to emerald and ties to the same shade', () => {
+    const colors = getUniqueValueColors([87, 57, 52, 51, 50, 49, 49, 49, 49, 48], VALUE_TEAL_SCALE);
+
+    expect(colors[0]?.toUpperCase()).toBe('#0E7490');
+    expect(new Set(colors.slice(5, 9).map((color) => color.toUpperCase())).size).toBe(1);
+    expect(lastScaleColor(VALUE_TEAL_SCALE).toUpperCase()).toBe('#0E7490');
+  });
+
+  it('maps the auditor checks treemap so equal headcounts share a shade', () => {
+    const colors = getUniqueValueColors([7, 5, 5, 4, 4, 2, 1, 1], VALUE_TEAL_SCALE);
+
+    expect(colors[0]?.toUpperCase()).toBe('#0E7490');
+    expect(colors[1]).toBe(colors[2]);
+    expect(colors[3]).toBe(colors[4]);
+    expect(colors[6]).toBe(colors[7]);
+    expect(luminance(colors[1] ?? '')).toBeLessThan(luminance(colors[3] ?? ''));
+    expect(luminance(colors[3] ?? '')).toBeLessThan(luminance(colors[5] ?? ''));
+    expect(luminance(colors[5] ?? '')).toBeLessThan(luminance(colors[6] ?? ''));
+  });
+
+  it('makes larger unique values darker than smaller ones', () => {
+    const colors = getUniqueValueColors([87, 57, 52, 51, 48], VALUE_TEAL_SCALE);
+
+    expect(luminance(colors[0] ?? '')).toBeLessThan(luminance(colors[1] ?? ''));
+    expect(luminance(colors[1] ?? '')).toBeLessThan(luminance(colors[2] ?? ''));
+    expect(luminance(colors[2] ?? '')).toBeLessThan(luminance(colors[3] ?? ''));
+    expect(luminance(colors[3] ?? '')).toBeLessThan(luminance(colors[4] ?? ''));
   });
 });
 

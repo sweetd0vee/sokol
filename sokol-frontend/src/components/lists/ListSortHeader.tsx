@@ -22,6 +22,27 @@ export function ListSortIcon({ active, direction }: { active: boolean; direction
     : <ArrowDown size={14} className="text-white" />;
 }
 
+export function ListColumnHeaderCell({
+  children,
+  className = '',
+  align = 'left',
+}: {
+  children: ReactNode;
+  className?: string;
+  align?: 'left' | 'center';
+}) {
+  const innerAlignClass =
+    align === 'center' ? `justify-center px-0 ${className}` : `px-4 ${className}`;
+
+  return (
+    <th className={`p-0 font-medium ${align === 'center' ? 'text-center' : 'text-left'}`}>
+      <div className={`flex ${LIST_TABLE_COLUMN_HEADER_ROW_CLASS} shrink-0 items-center overflow-hidden ${innerAlignClass}`}>
+        {children}
+      </div>
+    </th>
+  );
+}
+
 export function ListSortHeader({
   label,
   active,
@@ -38,11 +59,11 @@ export function ListSortHeader({
       : 'inline-flex items-center gap-1 text-left text-white/90 transition hover:text-white');
 
   return (
-    <th className={`${LIST_TABLE_COLUMN_HEADER_ROW_CLASS} ${align === 'center' ? 'px-0 py-3 text-center font-medium' : `px-4 py-3 text-left font-medium ${className}`}`}>
+    <ListColumnHeaderCell className={className} align={align}>
       <button type="button" onClick={onClick} className={alignedButtonClass}>
         <span className="leading-tight">{label}</span>
         <ListSortIcon active={active} direction={direction} />
       </button>
-    </th>
+    </ListColumnHeaderCell>
   );
 }
