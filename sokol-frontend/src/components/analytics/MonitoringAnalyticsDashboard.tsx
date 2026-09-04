@@ -279,7 +279,7 @@ export function MonitoringAnalyticsDashboard() {
   };
 
   const handleAddToConstructor = () => {
-    addToConstructor(
+    const added = addToConstructor(
       buildMonitoringConstructorDrafts({
         selectedSections: exportSections.selectedSections,
         filterCaption: buildConstructorFilterCaption({
@@ -300,6 +300,9 @@ export function MonitoringAnalyticsDashboard() {
         statusMatrix,
       }),
     );
+    if (added > 0) {
+      exportSections.clearAll();
+    }
   };
 
   const cards = useMemo<AnalyticsGridCard[]>(

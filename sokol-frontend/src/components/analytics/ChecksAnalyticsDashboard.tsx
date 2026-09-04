@@ -22,7 +22,7 @@ import { ChartCard, CHART_AXIS_TICK, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { EffectivenessMatrixChart } from './EffectivenessMatrixChart';
-import { CHECKS_PALETTE, getValueBasedColors, VALUE_BLUE_SCALE, VALUE_EMERALD_SCALE } from './analyticsPalette';
+import { CHECKS_PALETTE, getValueBasedColors, VALUE_BLUE_SCALE } from './analyticsPalette';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
 import { exportChecksDashboard } from '../../utils/analyticsExport';
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
@@ -249,7 +249,7 @@ export function ChecksAnalyticsDashboard() {
   };
 
   const handleAddToConstructor = () => {
-    addToConstructor(
+    const added = addToConstructor(
       buildChecksConstructorDrafts({
         selectedSections: exportSections.selectedSections,
         filterCaption: buildConstructorFilterCaption({
@@ -271,6 +271,9 @@ export function ChecksAnalyticsDashboard() {
         effectivenessMatrix,
       }),
     );
+    if (added > 0) {
+      exportSections.clearAll();
+    }
   };
 
   const cards = useMemo<AnalyticsGridCard[]>(
@@ -432,7 +435,7 @@ export function ChecksAnalyticsDashboard() {
             ) : (
               <FocusableTreemapChart
                 data={departmentMapTop}
-                palette={VALUE_EMERALD_SCALE}
+                palette={VALUE_BLUE_SCALE}
                 colorByValue
               />
             )}

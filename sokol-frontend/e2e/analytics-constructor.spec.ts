@@ -105,9 +105,12 @@ test('constructor history can create a dashboard and accept charts from analytic
   await expect(page).toHaveURL(/\/analytics$/);
   await expect(page.getByRole('heading', { name: 'Количество проверок' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'В конструктор', exact: true }).first().click();
+  const constructorToggle = page.getByRole('button', { name: 'В конструктор', exact: true }).first();
+  await constructorToggle.click();
+  await expect(constructorToggle).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Добавить в конструктор (1)' }).click();
   await expect(page.getByRole('button', { name: 'Добавлено' })).toBeVisible();
+  await expect(constructorToggle).toHaveAttribute('aria-pressed', 'false');
 
   await page.getByRole('link', { name: 'Конструктор' }).click();
   await expect(page.getByRole('link', { name: 'Отчёт E2E' })).toBeVisible();

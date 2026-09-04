@@ -365,7 +365,7 @@ export function RecommendationsAnalyticsDashboard() {
   };
 
   const handleAddToConstructor = () => {
-    addToConstructor(
+    const added = addToConstructor(
       buildRecommendationsConstructorDrafts({
         selectedSections: exportSections.selectedSections,
         filterCaption: buildConstructorFilterCaption({
@@ -383,6 +383,9 @@ export function RecommendationsAnalyticsDashboard() {
         granularity,
       }),
     );
+    if (added > 0) {
+      exportSections.clearAll();
+    }
   };
 
   const cards = useMemo<AnalyticsGridCard[]>(
@@ -667,6 +670,7 @@ export function RecommendationsAnalyticsDashboard() {
                 data={objectDistributionTop}
                 palette={VALUE_EMERALD_SCALE}
                 colorByValue
+                colorByRank
               />
             )}
           </ChartCard>

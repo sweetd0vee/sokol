@@ -172,7 +172,7 @@ export function PlanningAnalyticsDashboard() {
   };
 
   const handleAddToConstructor = () => {
-    addToConstructor(
+    const added = addToConstructor(
       buildPlanningConstructorDrafts({
         selectedSections: exportSections.selectedSections,
         filterCaption: buildConstructorFilterCaption({
@@ -191,6 +191,9 @@ export function PlanningAnalyticsDashboard() {
         universeRecommendationsTotal,
       }),
     );
+    if (added > 0) {
+      exportSections.clearAll();
+    }
   };
 
   const cards = useMemo<AnalyticsGridCard[]>(

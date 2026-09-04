@@ -346,8 +346,15 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
     return (
       <FocusableTreemapChart
         data={payload.data}
-        palette={payload.palette === 'gray' ? VALUE_GRAY_SCALE : VALUE_EMERALD_SCALE}
+        palette={
+          payload.palette === 'gray'
+            ? VALUE_GRAY_SCALE
+            : payload.palette === 'emerald'
+              ? VALUE_EMERALD_SCALE
+              : VALUE_BLUE_SCALE
+        }
         colorByValue
+        colorByRank={payload.palette === 'emerald'}
       />
     );
   }

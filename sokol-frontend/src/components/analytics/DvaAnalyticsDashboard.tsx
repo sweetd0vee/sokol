@@ -222,7 +222,7 @@ export function DvaAnalyticsDashboard() {
   };
 
   const handleAddToConstructor = () => {
-    addToConstructor(
+    const added = addToConstructor(
       buildDvaConstructorDrafts({
         selectedSections: exportSections.selectedSections,
         filterCaption: buildConstructorFilterCaption({
@@ -245,6 +245,9 @@ export function DvaAnalyticsDashboard() {
         auditorDocuments,
       }),
     );
+    if (added > 0) {
+      exportSections.clearAll();
+    }
   };
 
   const cards = useMemo<AnalyticsGridCard[]>(
@@ -294,7 +297,12 @@ export function DvaAnalyticsDashboard() {
             {auditorChecksMap.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableTreemapChart data={auditorChecksMap} palette={VALUE_EMERALD_SCALE} colorByValue />
+              <FocusableTreemapChart
+                data={auditorChecksMap}
+                palette={VALUE_EMERALD_SCALE}
+                colorByValue
+                colorByRank
+              />
             )}
           </ChartCard>
         ),
