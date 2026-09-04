@@ -45,7 +45,7 @@ class ChecksSerialLifecycleTests(unittest.TestCase):
                     new_callable=AsyncMock,
                 ),
                 patch(
-                    "app.crud.checks_crud._generate_unique_check_serial_number",
+                    "app.crud.checks_crud.generate_unique_check_serial_number",
                     new_callable=AsyncMock,
                     return_value="26PPP1P1",
                 ),

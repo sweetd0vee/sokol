@@ -10,7 +10,7 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import CurrentUser
+from app.core.current_user import CurrentUser
 from app.core.config import settings
 from app.core.roles import Role
 from app.db.catalogs.users import ADMIN_USERNAME

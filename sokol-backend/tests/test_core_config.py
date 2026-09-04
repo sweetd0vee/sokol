@@ -42,7 +42,13 @@ class SettingsHelperTests(unittest.TestCase):
         self.assertFalse(Settings(sokol_env="development", sokol_enable_basic_auth=False).basic_auth_enabled)
 
     def test_minio_enabled_requires_all_credentials(self) -> None:
-        self.assertFalse(Settings(sokol_minio_endpoint="localhost:9000").minio_enabled)
+        self.assertFalse(
+            Settings(
+                sokol_minio_endpoint="localhost:9000",
+                sokol_minio_access_key="",
+                sokol_minio_secret_key="",
+            ).minio_enabled
+        )
         self.assertTrue(
             Settings(
                 sokol_minio_endpoint=" localhost:9000 ",
