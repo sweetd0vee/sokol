@@ -98,4 +98,20 @@ describe('getBlobErrorMessage', () => {
       'В документе не найден Раздел II. Загрузите АЗ с заполненным Разделом II.',
     );
   });
+
+  it('extracts 503 queue detail from blob responses', async () => {
+    const error = new AxiosError('Service Unavailable');
+    error.response = {
+      status: 503,
+      data: new Blob(
+        [JSON.stringify({ detail: 'Сейчас обрабатывается слишком много документов. Повторите через несколько секунд — запрос встанет в очередь.' })],
+        { type: 'application/json' },
+      ),
+      statusText: 'Service Unavailable',
+      headers: {},
+      config: {} as never,
+    };
+
+    await expect(getBlobErrorMessage(error)).resolves.toContain('очеред');
+  });
 });

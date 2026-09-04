@@ -18,12 +18,12 @@
 | Справочники | Settings CRUD; физические FK на labels; in-use delete → 409. Виды проверок живут в `check_kinds`, но **форма и фильтры проверок всё ещё на захардкоженном списке** |
 | Аналитика | Серверные SQL-агрегаты: проверки, рекомендации, мониторинг, ДВА, матрицы. Конструктор дашбордов — только frontend (`/constructor`) |
 | Планирование | Дашборд `/planning` + visual export + отправка графиков в конструктор. В UI нет пометки limited/beta |
-| Инструменты | Раздел II, ссылки, докладная, parse-recommendations, control file. Audit opinion / Ollama — вне scope |
+| Инструменты | Раздел II, ссылки, докладная, parse-recommendations, control file. Очередь DOCX (`SOKOL_DOCX_MAX_CONCURRENT` / queue). Audit opinion / Ollama — вне scope |
 | Канцлер | Убран из nav и routes. Неизвестный URL → `/checks` |
 | БД | PostgreSQL + `create_all` + `migrate_*`. Alembic **не внедрён** |
 | Import | Excel → checks/recommendations; `--replace` в prod только с `--confirm-prod-replace`. Нет dry-run и reject report: неизвестные справочники **досоздаются**, а не отклоняются |
 | Demo | `SOKOL_ENV=prod` запрещает demo load и seed replace. Compose default `SOKOL_LOAD_DEMO_DATA=1` сохранён для local Docker |
-| CI | Workflow `Backend (Python 3.12)` и `Frontend (Node 22)` есть. Merge в default branch блокируется ruleset `CI merge gate` ([docs/CI.md](docs/CI.md)) |
+| CI | Workflow `Backend (Python 3.12)` и `Frontend (Node 22)` есть. Required checks в GitHub branch protection ещё нужно включить |
 | Storage UX | Backend `GET /attachments/storage/status` + frontend `useStorageStatus`: banner, disabled upload, retry |
 | Эксплуатация | Документы MinIO/backup есть. UAT URL, пилотные данные, restore drill, runbook сопровождения — не закрыты |
 
@@ -35,12 +35,6 @@
 | P0-05 | Prod guards: `SOKOL_ENV=prod` блокирует demo load и `--replace` без `--confirm-prod-replace` |
 | P0-08 | HTTP Basic выключен в prod (`SOKOL_ENABLE_BASIC_AUTH`) |
 | P0-09 | `sync_dictionaries` в prod — merge-only, in-use labels не удаляются |
-
-## Закрыто в сентябре (не повторяем)
-
-| ID | Что сделано |
-|----|-------------|
-| P1-01 | Required CI checks: ruleset `CI merge gate` (`Backend (Python 3.12)`, `Frontend (Node 22)`). Поддерживает `.github/workflows/protect-main.yml` |
 
 ## Цель к 15 сентября
 
@@ -67,8 +61,7 @@
 - CRUD наблюдений.
 - Интеграция с СЭД Канцлер.
 - Server-side pagination/search, пока фактический объём не превышает 10000 checks/recommendations.
-- Streaming/queue для DOCX tools.
-- Golden DOCX CI и большой рефакторинг analytics visual export.
+- Большой рефакторинг analytics visual export.
 - Полная FK-нормализация справочников (UUID вместо label).
 
 ## P0 — сделать до 08.09
@@ -87,6 +80,7 @@
 
 | ID | Задача | Почему важно | DoD |
 |----|--------|--------------|-----|
+| P1-01 | Включить required CI checks в branch protection | Workflow есть, без required gate его можно обойти | `Backend (Python 3.12)` и `Frontend (Node 22)` обязательны для merge |
 | P1-02 | Import validation на bulk-загрузке | API CRUD валидирует справочники; import сейчас `ensure_*` (досоздаёт labels) | Import канонизирует и валидирует аудиторов, виды, объекты аудита; неизвестные значения — reject в report, а не silent insert в справочник |
 | P1-03 | Storage status UX для MinIO | **сделано** | UI показывает `storage disabled/unreachable`, upload disabled, есть retry |
 | P1-04 | Backup/restore drill MinIO + PostgreSQL | Документы `docs/MINIO.md` и dump-команды есть; операционный drill не подтверждён | Restore PostgreSQL на чистый том успешен; MinIO volume/object backup проверен; сверка `attachments` |
@@ -138,7 +132,7 @@ gantt
 
 | Дата | Фокус | Результат к EOD |
 |------|-------|-----------------|
-| 09.09 | UAT env, CORS, TLS/proxy | Login открывается на UAT URL (CI required checks — P1-01, 04.09) |
+| 09.09 | UAT env, CORS, TLS/proxy; CI required checks | Login открывается на UAT URL; merge без зелёного CI запрещён |
 | 10.09 | Пилотная загрузка 10–20 проверок; Storage UX | DATA sign-off по 3 карточкам; upload либо работает, либо явно заблокирован |
 | 11.09 | Полная нормализация Excel + MinIO/PG restore drill | Freeze-файл готов; протокол restore |
 | 12.09 | Полная UAT загрузка + сверка | Count API = count источника; расхождения разобраны |
@@ -217,8 +211,6 @@ Fallback при No-Go: ограниченный read-only/UAT-pilot режим, 
 |-----------|--------|
 | P2 | OIDC/Keycloak вместо internal JWT, если банк готов выдать IdP |
 | P2 | Server-side pagination/search и backend export-all при росте сверх 10000 строк |
-| P2 | Streaming upload + concurrency limit для DOCX tools |
-| P2 | Golden DOCX CI |
 | P2 | Route lazy loading и split крупных frontend visual-export |
 | P2 | Materialized views/cache для тяжёлой analytics при росте данных |
 | P3 | CRUD наблюдений |

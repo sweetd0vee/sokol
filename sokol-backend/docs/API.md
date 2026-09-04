@@ -38,7 +38,7 @@ HTTP Basic: в `development` включён; в `SOKOL_ENV=prod` выключе�
 | Method | Path | Ответ |
 |--------|------|--------|
 | `GET` | `/api/v1/status` | `{ "status": "ok" }` |
-| `GET` | `/api/v1/capabilities` | `{ "max_upload_mb", "max_upload_bytes" }` |
+| `GET` | `/api/v1/capabilities` | `{ "max_upload_mb", "max_upload_bytes", "docx_max_concurrent", "docx_max_queue", "docx_queue_wait_seconds" }` |
 | `GET` | `/` | `{ "service": "SOKOL API", "version": "v1" }` |
 
 ---
@@ -157,7 +157,7 @@ Create: `{ username, password, role?: "auditor", display_name?, aliases?: [] }`.
 
 ## Tools — `/api/v1/tools`
 
-DOCX — multipart поле **`file`**. Лимит `SOKOL_MAX_UPLOAD_MB` (default 100). Тяжёлая работа в `asyncio.to_thread`. Подробно: [REPORTS.md](REPORTS.md).
+DOCX — multipart поле **`file`**. Лимит `SOKOL_MAX_UPLOAD_MB` (default 100). Тяжёлая работа в `asyncio.to_thread` под очередью слотов. Переполнение очереди → **503**. Подробно: [REPORTS.md](REPORTS.md).
 
 | Method | Path | Ответ |
 |--------|------|--------|
@@ -188,7 +188,7 @@ OIDC · Alembic HTTP · WebSocket · batch Excel через HTTP (CLI `import_se
 | 409 | дубликат справочника / in-use / «Не указан» / username |
 | 413 | слишком большой upload |
 | 415 | MIME вложения |
-| 503 | MinIO не настроен |
+| 503 | MinIO не настроен; очередь DOCX tools переполнена |
 | 502 | сбой MinIO / операция с объектом |
 
 CORS: origins из env; при `*` credentials отключены.

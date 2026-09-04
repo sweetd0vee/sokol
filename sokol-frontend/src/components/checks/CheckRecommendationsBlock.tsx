@@ -508,7 +508,7 @@ export function CheckRecommendationsBlock({
           {isParsing && (
             <LoadingState
               title="Разбор аудиторского заключения"
-              description="Большие документы могут обрабатываться несколько минут."
+              description="Документ встаёт в очередь на сервере. Большие файлы могут обрабатываться несколько минут."
             />
           )}
           {parseError && <ErrorState title="Ошибка" description={parseError} />}

@@ -49,6 +49,9 @@ Dev-пользователи (если таблица `users` пуста и ср
 | `SOKOL_ADMIN_PASSWORD` / `SOKOL_DEFAULT_USER_PASSWORD` | пароли seed: admin/department_head (`admin`) и аудиторы (`auditor`) |
 | `SOKOL_ENABLE_BASIC_AUTH` | HTTP Basic: в development включён по умолчанию, в prod выключен; явный `true`/`false` перекрывает default |
 | `SOKOL_MAX_UPLOAD_MB` | лимит upload вложений и DOCX-tools (default 100) |
+| `SOKOL_DOCX_MAX_CONCURRENT` | сколько DOCX-jobs крутятся одновременно (default 2) |
+| `SOKOL_DOCX_MAX_QUEUE` | сколько запросов ждут слот (default 8); сверх лимита — 503 |
+| `SOKOL_DOCX_QUEUE_WAIT_SECONDS` | сколько секунд ждать слот (default 180) |
 | `SOKOL_LOAD_DEMO_DATA` / `SOKOL_SEED_REPLACE` | Docker bootstrap: demo Excel и TRUNCATE; в entrypoint demo default on; в `SOKOL_ENV=prod` запрещены |
 | `SOKOL_DESTRUCTIVE_DICTIONARY_SYNC` | в development удаляет лишние справочники/users при sync (default on); в prod всегда merge-only |
 | `SOKOL_MINIO_*` | MinIO — [docs/STORAGE.md](docs/STORAGE.md) |

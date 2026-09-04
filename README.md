@@ -70,7 +70,7 @@ sokol/
 
 ## Проверки качества
 
-CI: `.github/workflows/ci.yml`; merge в default branch блокируется ruleset `CI merge gate` — [docs/CI.md](docs/CI.md).
+CI: `.github/workflows/ci.yml`; required checks для branch protection описаны в [docs/CI.md](docs/CI.md).
 
 ```bash
 cd sokol-frontend && npm run lint && npm test && npm run build

@@ -25,7 +25,7 @@ app/api/v1/endpoints/  →  services/  →  crud/  →  PostgreSQL
 | Recommendations | **10** | Крупный batch без job/progress |
 | Settings | **9** | `audit_types` не связан с `check_type` (КП/ВП/ПП ≠ planned/V/K); FK на labels, не UUID |
 | Analytics | **9** | Читает `audit_object[]`, не junction |
-| DOCX | **8** | Нет очереди / golden DOCX CI |
+| DOCX | **10** | Очередь с лимитом слотов; golden pipeline в unittest |
 | Attachments | **8.5** | Check delete — admin; backup drill не подтверждён |
 | Auth | **8.5** | Нет OIDC/audit log; Basic только development |
 | БД / import | **6** | Нет Alembic; demo default on в Docker; import досоздаёт labels |

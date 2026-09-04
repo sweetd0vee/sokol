@@ -9,7 +9,7 @@
 | Списки checks/recommendations | До **10000** за запрос | Полный набор для пилота. Дальше — server pagination. |
 | Users / справочники | До **200** | Компактные словари; есть `search`. |
 | Upload | `SOKOL_MAX_UPLOAD_MB`, default **100 МБ** | Общий лимит tools и вложений; UI берёт `/api/v1/capabilities`. |
-| DOCX tools | Frontend ждёт **10 минут** | Upload стримится на диск. Нестандартная вёрстка АЗ может упасть. |
+| DOCX tools | Frontend ждёт **10 минут** | Upload стримится на диск. Одновременно крутятся `SOKOL_DOCX_MAX_CONCURRENT` (default 2) документов, остальные ждут очередь. Нестандартная вёрстка АЗ может разобраться неполно. |
 | JWT | default **480 мин** | 401 вне login → logout. |
 | Analytics cache | React Query **60 с** | После правок дашборд может отстать. |
 | Capabilities cache | **5 мин** | Смена лимита upload видна после refetch. |
@@ -42,13 +42,13 @@ Backend `limit` max 10000. Фильтры, сортировка, пагинац�
 
 ```bash
 SOKOL_MAX_UPLOAD_MB=100
-GET /api/v1/capabilities   → max_upload_mb, max_upload_bytes
+GET /api/v1/capabilities   → max_upload_mb, max_upload_bytes, docx_max_concurrent, docx_max_queue, docx_queue_wait_seconds
 GET /api/v1/attachments/storage/status  → enabled, reachable
 ```
 
 Если capabilities ещё не пришли, frontend fallback **100 МБ**.
 
-**Tools** (только `.docx`): section-ii, section-ii-links, memorandum, parse-recommendations. Control-file: вход DOCX, выход XLSX. Результат не пишется в MinIO. Vite proxy timeout рассчитан на длинные запросы.
+**Tools** (только `.docx`): section-ii, section-ii-links, memorandum, parse-recommendations. Control-file: вход DOCX, выход XLSX. Результат не пишется в MinIO. Обработка идёт через in-process очередь (`SOKOL_DOCX_MAX_CONCURRENT` default 2, `SOKOL_DOCX_MAX_QUEUE` default 8); переполнение → **503** + `Retry-After`. Vite proxy timeout рассчитан на длинные запросы. Если таблицы Раздела II нет, ДЗ / parse / файл контроля читают наблюдения раздела III.
 
 **Вложения:** metadata в PostgreSQL, байты в MinIO. Не настроено (`SOKOL_MINIO_*` пустые) → **503**. Сбой операции → **502**. Смена serial копирует bucket. Frontend опрашивает `/attachments/storage/status` при открытии секции вложений: `enabled=false` / `reachable=false` → banner + disabled upload + retry. Tools (DOCX) от MinIO не зависят.
 
@@ -94,7 +94,7 @@ API create/update валидирует labels; физические FK с `ON UP
 
 ## Импорт из АЗ
 
-`parse-recommendations` + `batch`. Нестандартный DOCX может разобраться неполно. Объекты аудита канонизируются по `departments`. Batch атомарный; результат всё равно смотреть глазами.
+`parse-recommendations` + `batch`. Если таблицы Раздела II нет, парсер берёт наблюдения раздела III. Нестандартный DOCX может разобраться неполно. Объекты аудита канонизируются по `departments`. Batch атомарный; результат всё равно смотреть глазами.
 
 ## Похожие ошибки
 
@@ -105,7 +105,8 @@ API create/update валидирует labels; физические FK с `ON UP
 | 413 | размер vs `/capabilities` |
 | 503 вложения | MinIO не настроен |
 | 502 вложения | MinIO не запущен / битый object |
-| DOCX висит | размер, вёрстка АЗ, логи backend |
+| DOCX висит | размер, очередь на сервере, вёрстка АЗ, логи backend |
+| 503 tools | очередь документов переполнена — повторить через несколько секунд |
 | CORS | `SOKOL_CORS_ORIGINS`, restart API |
 | Нет новой строки в таблице | React Query / refetch |
 | Vite chunk warning | ожидаемо, не runtime |

@@ -63,7 +63,7 @@ Redux/Zustand нет.
 | `analytics.ts` | `/analytics/checks\|recommendations\|monitoring\|dva\|planning` |
 | `attachments.ts` | MinIO через API; `GET /attachments/storage/status` |
 | `settings.ts` | `makeSettingsCrud` для справочников |
-| `tools.ts` | section-ii, section-ii-links, memorandum, control-file (timeout 600s) |
+| `tools.ts` | section-ii, section-ii-links, memorandum, control-file (timeout 600s, очередь на backend) |
 | `capabilities.ts` | лимит upload |
 | `mappers.ts` | API ↔ frontend types |
 

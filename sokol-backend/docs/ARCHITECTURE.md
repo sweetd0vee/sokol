@@ -35,7 +35,7 @@ Prefix: `/api/v1`. Auth: `Depends(get_current_user)` на всех роутер�
 
 | Prefix | Домен |
 |--------|-------|
-| `/status`, `/capabilities` | liveness и `max_upload_*` (публичные) |
+| `/status`, `/capabilities` | liveness, `max_upload_*` и лимиты очереди DOCX (публичные) |
 | `/auth` | login, `/me`, смена пароля |
 | `/users` | список и создание `auditor` (admin) |
 | `/checks`, `/recommendations` | домен |

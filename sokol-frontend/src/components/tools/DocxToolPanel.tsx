@@ -91,7 +91,7 @@ export function DocxToolPanel({
       {isProcessing && (
         <LoadingState
           title="Файл обрабатывается"
-          description="Большие документы могут обрабатываться несколько минут."
+          description="Документ встаёт в очередь на сервере. Большие файлы могут обрабатываться несколько минут."
         />
       )}
     </div>

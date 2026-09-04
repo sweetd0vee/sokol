@@ -4,8 +4,8 @@ HTTP: `app/api/v1/endpoints/instruments_reports.py`. Логика: `app/services
 
 ## Общие правила
 
-- Вход DOCX: только `.docx`, лимит `SOKOL_MAX_UPLOAD_MB` (default 100). Upload стримится в temp чанками → `asyncio.to_thread` → `FileResponse` + cleanup.
-- Файл контроля: вход АЗ `.docx`, выход XLSX.
+- Вход DOCX: только `.docx`, лимит `SOKOL_MAX_UPLOAD_MB` (default 100). Upload стримится в temp чанками → очередь слотов (`SOKOL_DOCX_MAX_CONCURRENT` / `SOKOL_DOCX_MAX_QUEUE`) → `asyncio.to_thread` → `FileResponse` + cleanup.
+- Файл контроля: вход АЗ `.docx`, выход XLSX. Если таблицы Раздела II нет, парсер берёт наблюдения раздела III.
 
 ## Раздел II
 
@@ -40,4 +40,4 @@ HTTP: `app/api/v1/endpoints/instruments_reports.py`. Логика: `app/services
 
 `POST /tools/audit-opinion` нет (backlog). LLM не подключён.
 
-Ограничения: CPU-bound в thread pool · XML в RAM · результаты не в MinIO · хрупкость к нестандартной вёрстке АЗ.
+Ограничения: CPU-bound в thread pool под лимитом слотов · XML в RAM · результаты не в MinIO · нестандартная вёрстка АЗ может разобраться неполно, но content-control и таблица/наблюдения имеют запасные пути.
