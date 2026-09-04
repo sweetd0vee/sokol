@@ -80,3 +80,21 @@ export const FORM_ACTION_BUTTON_CLASS = 'w-[160px] justify-center whitespace-now
 export const FORM_OUTLINE_BUTTON_CLASS = `inline-flex items-center rounded-lg border-2 border-[#6699FF] px-3 py-1.5 text-sm font-medium text-[#6699FF] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white ${FORM_ACTION_BUTTON_CLASS}`;
 
 export const FORM_SAVE_BUTTON_CLASS = `inline-flex items-center rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] ${FORM_ACTION_BUTTON_CLASS}`;
+
+export function formControlClass(hasError = false, extra = '') {
+  return [FORM_INPUT_CLASS, hasError ? FORM_FIELD_ERROR_CLASS : '', extra].filter(Boolean).join(' ');
+}
+
+export function formTextareaClass(hasError = false, extra = '') {
+  return [FORM_TEXTAREA_CLASS, hasError ? FORM_FIELD_ERROR_CLASS : '', extra].filter(Boolean).join(' ');
+}
+
+export function formEqualControlClass(hasError = false, extra = '') {
+  return [FORM_EQUAL_CONTROL_CLASS, hasError ? FORM_FIELD_ERROR_CLASS : '', extra].filter(Boolean).join(' ');
+}
+
+export const LIST_RESET_FILTERS_BUTTON_CLASS =
+  'inline-flex h-[38px] w-[160px] items-center justify-center rounded-lg border border-[#003366] px-2 text-sm font-medium text-[#003366] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white';
+
+export const LIST_EDIT_ACTION_CLASS =
+  `${LIST_ACTION_BUTTON_CLASS} border border-[#003366] text-[#003366] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white`;
