@@ -3,7 +3,7 @@
 **Дата:** 4 сентября 2026  
 **Объект:** `sokol-backend`, `sokol-frontend`
 
-Снимок качества текущей реализации. Календарь go-live и UAT — [PLAN.md](../PLAN.md). Оставшиеся код-задачи — [ACTION_PLAN.md](ACTION_PLAN.md).
+Снимок качества текущей реализации. Календарь go-live и UAT — [PLAN.md](../PLAN.md). Оставшиеся код-задачи — [ACTION_PLAN.md](ACTION_PLAN.md). Полный остаток до продакшена — [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
 
 Оценка по блокам: **8–10** — пригодно для пилота; **6–7** — работает, есть эксплуатационный риск; **≤5** — нельзя считать готовым.
 
@@ -18,17 +18,17 @@
 | Attachments / MinIO | **10** | API, compensation, serial-bucket, 503/502, FE banner/disabled upload/retry по `/storage/status` | Backup drill не подтверждён |
 | Auth / RBAC | **8.5** | JWT, lookup/`is_active` из БД, `department_head` ∈ admin, Basic off в prod | Нет OIDC и audit log |
 | БД / import | **6** | `create_all` + `migrate_*`; prod guards; merge-only sync | Нет Alembic; Docker demo default on |
-| Frontend домен | **8.5** | Формы, undo импорта из АЗ, yearly №, конструктор дашбордов | `check_kinds` в форме/фильтрах всё ещё hardcoded |
+| Frontend домен | **9** | Формы, undo импорта из АЗ, yearly №, конструктор дашбордов, виды из API | Списки &gt;10000 |
 | Frontend data | **7.5** | API + React Query; списки до 10000 | Нет server pagination |
 | Frontend analytics/export | **8** | Visual export аналитики и планирования; table export разнесён по форматам | DOM capture хрупкий |
 | Тесты / CI | **8.5** | Backend ~200 unittest, frontend **160** Vitest, Playwright auth + constructor | Required checks в GitHub не включены; Playwright не в CI |
 | Документация | **8.5** | Backend/frontend docs и MinIO runbook | Alembic — цель, не факт |
 
-**Вердикт:** пилот на контролируемом объёме возможен. До промышленного контура: Alembic или подписанный migrate-runbook, CI merge gate, MinIO backup drill, `check_kinds` из API в форме проверок.
+**Вердикт:** пилот на контролируемом объёме возможен. До промышленного контура: Alembic или подписанный migrate-runbook, CI merge gate, MinIO backup drill, метка limited на планировании. Полный остаток: [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
 
 ## Закрыто с августа (не повторять)
 
-Kantsler снят · prod guards demo/replace · HTTP Basic off в prod · prod merge-only `sync_dictionaries` · конструктор дашбордов (только frontend) · visual export планирования · table export split (`utils/tableExport/`) · `seed_demo_attachments` · FE storage status banner (`useStorageStatus`).
+Kantsler снят · prod guards demo/replace · HTTP Basic off в prod · prod merge-only `sync_dictionaries` · конструктор дашбордов (только frontend) · visual export планирования · table export split (`utils/tableExport/`) · `seed_demo_attachments` · FE storage status banner (`useStorageStatus`) · виды проверок из `/settings/check_kinds`.
 
 ## Ещё открыто
 
@@ -37,7 +37,6 @@ Kantsler снят · prod guards demo/replace · HTTP Basic off в prod · prod 
 | BE-01 | P0 | Alembic baseline |
 | BE-01a | P0 · частично | Compose `SOKOL_LOAD_DEMO_DATA=1`; UAT/prod обязаны `SOKOL_ENV=prod` + demo `0` |
 | P0-02 | P0 | Метка limited/beta на `/planning` |
-| P0-03 | P0 | Форма и фильтры проверок читают `/settings/check_kinds` |
 | P0-07 | P0 | Import dry-run + reject report (сейчас `ensure_*`) |
 | OPS-01 | P1 | Required CI checks в branch protection |
 | FE-07 | P2 | Visual export всё ещё DOM capture; `exports.ts` — тонкая обёртка над `tableExport/` |

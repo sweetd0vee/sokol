@@ -26,7 +26,7 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 |------|--------|-------------|
 | Shell / routing | **9** | Нет lazy loading |
 | Auth | **8** | Нет OIDC |
-| Checks | **8** | Списки &gt;10000; виды не из справочника API |
+| Checks | **9** | Списки &gt;10000 |
 | Recommendations | **9** | Списки &gt;10000 |
 | Data layer | **7.8** | Bulk-fetch 10000 |
 | Attachments | **10** | Banner, disabled upload и retry по `/attachments/storage/status` |
@@ -45,9 +45,9 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 
 ## Открытые findings
 
-### P0-03 · Виды проверок
+### P0-03 · Виды проверок — **сделано**
 
-`CheckFormPage` и фильтр в `ChecksTab` используют `CHECK_VIEW_OPTIONS`. Settings уже CRUD-ит `check_kinds`. Новый вид из настроек не попадает в форму без релиза константы.
+`CheckFormPage` и `ChecksTab` читают `/settings/check_kinds` через `useCheckKindOptions`.
 
 ### FE-07 · P2 · Visual export
 
