@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { Expand, FileUp, Minimize2, Plus, X } from 'lucide-react';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
+import { ACCEPTED_DOCX } from '../../utils/docx';
 import { pluralRecommendations } from '../../utils/pluralRu';
 import { useCheckRecommendationsImport } from '../../hooks/useCheckRecommendationsImport';
 import { ParsedPreviewTable } from './ParsedPreviewTable';
@@ -34,7 +35,7 @@ export function CheckRecommendationsBlock({
   onAddManually,
 }: CheckRecommendationsBlockProps) {
   const {
-    fileInput,
+    fileInputRef,
     importAzFileName,
     parsedPreview,
     recentUpload,
@@ -47,6 +48,7 @@ export function CheckRecommendationsBlock({
     docxFlowActive,
     canCancelUpload,
     storedCount,
+    handleImportFileChange,
     handleLoadFromAz,
     handleRemovePreview,
     handleChangePreview,
@@ -275,7 +277,7 @@ export function CheckRecommendationsBlock({
 
       <p
         className={`text-sm leading-relaxed ${
-storedCount > 0 ? 'text-gray-800' : 'text-gray-500'
+          storedCount > 0 ? 'text-gray-800' : 'text-gray-500'
         }`}
       >
         {storedCount > 0 ? (

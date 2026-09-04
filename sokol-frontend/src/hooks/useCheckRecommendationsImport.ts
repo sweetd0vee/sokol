@@ -3,7 +3,7 @@ import { parseRecommendationsFromDocx } from '../api/recommendations';
 import { getErrorMessage } from '../api/errors';
 import { normalizeRecommendationDeadline } from '../utils/recommendationDeadline';
 import { formatRecommendationAuditObjects } from '../utils/auditObjects';
-import { ACCEPTED_DOCX, isDocxFile } from '../utils/docx';
+import { isDocxFile } from '../utils/docx';
 import { useSokolData } from '../contexts/sokolData';
 import {
   buildParsedPreviewItem,
@@ -229,15 +229,7 @@ export function useCheckRecommendationsImport({
   };
 
   return {
-    fileInput: (
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept={ACCEPTED_DOCX}
-        hidden
-        onChange={(event) => handleImportFileChange(event.target.files?.[0] ?? null)}
-      />
-    ),
+    fileInputRef,
     importAzFileName,
     parsedPreview,
     recentUpload,

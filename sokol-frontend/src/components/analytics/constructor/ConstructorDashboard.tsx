@@ -28,9 +28,12 @@ const ROW_HEIGHT = 76;
 function useSheetListReorder(onReorder: (fromIndex: number, toIndex: number) => void) {
   const sessionRef = useRef<{ from: number; over: number } | null>(null);
   const onReorderRef = useRef(onReorder);
-  onReorderRef.current = onReorder;
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    onReorderRef.current = onReorder;
+  }, [onReorder]);
 
   const handlePointerDown = (event: PointerEvent<HTMLElement>, index: number) => {
     if (event.button !== 0) {
@@ -83,7 +86,7 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
     () => dashboards.find((item) => item.id === dashboardId) ?? null,
     [dashboards, dashboardId],
   );
-  const widgets = dashboard?.widgets ?? [];
+  const widgets = useMemo(() => dashboard?.widgets ?? [], [dashboard]);
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('pdf');
   const [isExporting, setIsExporting] = useState(false);
   const [containerWidth, setContainerWidth] = useState(1200);
