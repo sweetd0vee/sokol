@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: analytics-constructor.spec.ts >> constructor history can create a dashboard and accept charts from analytics
-- Location: e2e\analytics-constructor.spec.ts:86:1
+- Name: list-header-height.spec.ts >> checks and recommendations list column headers have the same height
+- Location: e2e\list-header-height.spec.ts:46:1
 
 # Error details
 
