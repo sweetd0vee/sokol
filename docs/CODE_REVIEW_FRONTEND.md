@@ -16,7 +16,9 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 
 **Плюсы:** feature folders, mappers, React Query, `formLayout`, `tableExport/` по форматам.
 
-**Минусы:** нет route lazy loading; виды проверок в форме/фильтрах — `CHECK_VIEW_OPTIONS`, не `/settings/check_kinds`.
+**Минусы:** нет route lazy loading; планирование без метки limited.
+
+## Блоки
 
 ## Блоки
 

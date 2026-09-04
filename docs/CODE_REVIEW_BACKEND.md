@@ -1,7 +1,7 @@
 # Код-ревью backend
 
 **Дата:** 4 сентября 2026  
-**Оценка:** 8.7 / 10 · Python 3.12, FastAPI, SQLAlchemy async, MinIO
+**Оценка:** 8.9 / 10 · Python 3.12, FastAPI, SQLAlchemy async, MinIO
 
 Готов к пилоту: CRUD, SQL-analytics, granular RBAC, FK-справочники, prod-guards. Промышленный контур упирается в Alembic. Контракты: [sokol-backend/docs](../sokol-backend/docs/README.md).
 

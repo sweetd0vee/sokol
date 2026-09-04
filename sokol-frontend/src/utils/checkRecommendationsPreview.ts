@@ -1,6 +1,6 @@
-import type { Recommendation } from '../../types/recommendation';
-import { getRecommendationAuditObjects } from '../../utils/auditObjects';
-import { indicatorFromRecommendationAdditionalStatus, indicatorFromRecommendationStatus } from '../../constants/recommendations';
+import type { Recommendation } from '../types/recommendation';
+import { getRecommendationAuditObjects } from './auditObjects';
+import { indicatorFromRecommendationAdditionalStatus, indicatorFromRecommendationStatus } from '../constants/recommendations';
 
 export type ParsedPreviewItem = Omit<Recommendation, 'audit_object'> & {
   audit_object: string;

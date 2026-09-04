@@ -12,7 +12,7 @@ import {
   type EditablePreviewField,
   type ParsedPreviewItem,
   type RecentUploadSession,
-} from '../components/checks/parsedPreview';
+} from '../utils/checkRecommendationsPreview';
 
 export function useCheckRecommendationsImport({
   checkKey,

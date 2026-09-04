@@ -15,7 +15,7 @@
 |---------|--------------------|
 | Auth | Internal JWT, RBAC `auditor` / `department_head` / `admin`, lookup `is_active` из БД. HTTP Basic в prod выключен. Слабый JWT-секрет в prod блокирует старт |
 | Проверки / рекомендации | CRUD, фильтры, клиентский экспорт таблиц (XLSX/PDF/DOCX/HTML), yearly №, импорт рекомендаций из АЗ с undo, вложения через MinIO API |
-| Справочники | Settings CRUD; физические FK на labels; in-use delete → 409. Виды проверок живут в `check_kinds`, но **форма и фильтры проверок всё ещё на захардкоженном списке** |
+| Справочники | Settings CRUD; физические FK на labels; in-use delete → 409. Виды проверок: Settings + форма + фильтры списка читают `/settings/check_kinds` |
 | Аналитика | Серверные SQL-агрегаты: проверки, рекомендации, мониторинг, ДВА, матрицы. Конструктор дашбордов — только frontend (`/constructor`) |
 | Планирование | Дашборд `/planning` + visual export + отправка графиков в конструктор. В UI нет пометки limited/beta |
 | Инструменты | Раздел II, ссылки, докладная, parse-recommendations, control file. Очередь DOCX (`SOKOL_DOCX_MAX_CONCURRENT` / queue). Audit opinion / Ollama — вне scope |
@@ -71,7 +71,7 @@
 | ID | Задача | Почему критично | DoD |
 |----|--------|-----------------|-----|
 | P0-02 | Явно пометить `Планирование` как limited/beta | Раздел в nav, дашборд и export рабочие — без пометки выглядит как полноценный модуль | На `/planning` видно, что модуль ограниченный |
-| P0-03 | Подключить `check_kinds` к форме и фильтрам проверок | Виды проверок должны браться из справочника, а не из `CHECK_VIEW_OPTIONS` | Форма проверки и фильтры используют `/settings/check_kinds`; новые виды из Settings доступны без релиза frontend |
+| P0-03 | Подключить `check_kinds` к форме и фильтрам проверок | **сделано** (`useCheckKindOptions`) | Форма и фильтры читают `/settings/check_kinds` |
 | P0-04 | Demo-load не должен быть default на UAT/prod | Compose default всё ещё `SOKOL_LOAD_DEMO_DATA=1`; пустой стенд без `SOKOL_ENV=prod` сам загрузит demo | UAT/prod: `SOKOL_ENV=prod` и `SOKOL_LOAD_DEMO_DATA=0`. Предпочтительно default `0` в root/backend compose; demo только явным opt-in |
 | P0-06 | Alembic baseline или утверждённый временный DB migration gate | Схема = `create_all` + ad-hoc `migrate_*` | Предпочтительно: `alembic upgrade head` на пустой БД. Минимальный fallback: зафиксированный порядок `migrate_*`, проверенный на чистой БД, подписанный runbook |
 | P0-07 | Import dry-run + reject report | Сейчас import досоздаёт справочники и пишет в БД без отчёта ошибок | `python -m app.db.import_seed_data --dry-run --report reject_report.csv` не меняет БД и показывает ok/reject counts |
@@ -222,7 +222,8 @@ Fallback при No-Go: ограниченный read-only/UAT-pilot режим, 
 
 | Документ | Для чего |
 |----------|----------|
-| [docs/ACTION_PLAN.md](docs/ACTION_PLAN.md) | Детализация findings из code review |
+| [docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md) | Полный остаток до промышленного контура: backend, frontend, ops |
+| [docs/ACTION_PLAN.md](docs/ACTION_PLAN.md) | Короткий список открытого из code review |
 | [docs/CI.md](docs/CI.md) | Как включить required CI checks |
 | [docs/APP_LIMITS_AND_GOTCHAS.md](docs/APP_LIMITS_AND_GOTCHAS.md) | Лимиты пилотной версии |
 | [sokol-backend/docs/ALEMBIC_AND_DATA.md](sokol-backend/docs/ALEMBIC_AND_DATA.md) | Init/migrate/import/backup |

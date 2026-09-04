@@ -1,6 +1,6 @@
 import { Trash2 } from 'lucide-react';
 import { formatRuDate } from '../../utils/dates';
-import type { EditablePreviewField, ParsedPreviewItem } from './parsedPreview';
+import type { EditablePreviewField, ParsedPreviewItem } from '../../utils/checkRecommendationsPreview';
 
 const cellInputClass =
   'w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm outline-none transition focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/30';

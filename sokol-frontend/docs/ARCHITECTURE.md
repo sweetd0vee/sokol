@@ -71,7 +71,7 @@ Redux/Zustand нет.
 
 **Списки** — client-side filter/sort/pagination после bulk-fetch; «Мои»; экспорт таблиц и (для проверок) вложений.
 
-**Проверки** — `serial_number` и yearly № с backend; импорт рекомендаций из АЗ; вложения по слотам; DELETE только `isAdmin`. Недоступный MinIO: banner и disabled upload (`useStorageStatus`).
+**Проверки** — `serial_number` и yearly № с backend; виды из `/settings/check_kinds`; импорт рекомендаций из АЗ; вложения по слотам; DELETE только `isAdmin`. Недоступный MinIO: banner и disabled upload (`useStorageStatus`).
 
 **Рекомендации** — closure, продления, снятие с контроля, вложения; DELETE — владелец или `isAdmin`.
 
@@ -95,6 +95,7 @@ Login (`admin` / `auditor` или «Фамилия И.О.») → `POST /auth/log
 
 ## Ограничения
 
+- Виды проверок в форме и фильтрах — из `/settings/check_kinds`.
 - Таблицы: client-side filter после bulk-fetch до 10000 строк; server pagination нет.
 - HTML-экспорт дашбордов зависит от DOM-capture (хрупко при off-screen карточках).
 - Drill-down API и сохранённые серверные отчёты не реализованы.

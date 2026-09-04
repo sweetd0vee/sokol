@@ -14,10 +14,11 @@
 
 ## План и ревью
 
-Источник go-live — [PLAN.md](../PLAN.md). Ниже — снимок качества на **04.09.2026**, не календарь спринта.
+Источник go-live — [PLAN.md](../PLAN.md). Что ещё сделать на backend/frontend до промышленного контура — [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md). Ниже — снимок качества на **04.09.2026**, не календарь спринта.
 
 | Документ | Содержание |
 |----------|------------|
+| [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md) | Остаток до продакшена: go-live, промышленный контур, «идеал» |
 | [CODE_REVIEW.md](CODE_REVIEW.md) | Сводка по блокам |
 | [CODE_REVIEW_BACKEND.md](CODE_REVIEW_BACKEND.md) | Backend |
 | [CODE_REVIEW_FRONTEND.md](CODE_REVIEW_FRONTEND.md) | Frontend |
