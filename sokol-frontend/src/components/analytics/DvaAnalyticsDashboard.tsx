@@ -12,10 +12,10 @@ import { AuditorStackedBarChart } from './AuditorStackedBarChart';
 import { AuditorDocumentsMatrixChart } from './AuditorDocumentsMatrixChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
+  DVA_VALUE_SCALE,
   MONITORING_ADDITIONAL_STATUS_COLORS,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
-  VALUE_TEAL_SCALE,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
@@ -260,7 +260,7 @@ export function DvaAnalyticsDashboard() {
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-6">
               <KpiCard label="Проверки" value={checkSummary.total} tone="blue" />
               <KpiCard label="Рекомендации" value={recSummary.total} tone="slate" />
-              <KpiCard label="Аудиторы" value={employeeCount} tone="slate" />
+              <KpiCard label="Аудиторы" value={employeeCount} tone="indigo" />
               <KpiCard
                 label="Высокая существенность"
                 value={highMateriality}
@@ -299,7 +299,7 @@ export function DvaAnalyticsDashboard() {
             ) : (
               <FocusableTreemapChart
                 data={auditorChecksMap}
-                palette={VALUE_TEAL_SCALE}
+                palette={DVA_VALUE_SCALE}
                 colorByUniqueValue
               />
             )}

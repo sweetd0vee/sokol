@@ -43,12 +43,12 @@ export const DVA_EXPORT_SECTIONS = [
     id: 'auditorChecksMap',
     label: 'Карта сотрудников по проверкам',
     sheetName: 'Карта проверки',
-    headerFill: '1D4ED8',
+    headerFill: '312E81',
   },
   { id: 'auditorImpact', label: 'Импакт рекомендаций', sheetName: 'Импакт', headerFill: 'DAAAD1' },
   { id: 'auditorExecution', label: 'Результативность исполнения', sheetName: 'Исполнение', headerFill: '0E7490' },
   { id: 'auditorTimeliness', label: 'Своевременность', sheetName: 'Своевременность', headerFill: 'DAAAD1' },
-  { id: 'auditorDocuments', label: 'Документная дисциплина', sheetName: 'Документы', headerFill: '002B55' },
+  { id: 'auditorDocuments', label: 'Документная дисциплина', sheetName: 'Документы', headerFill: '312E81' },
 ] as const;
 
 export type CheckExportSectionId = (typeof CHECK_EXPORT_SECTIONS)[number]['id'];

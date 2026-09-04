@@ -1,8 +1,29 @@
-import type { ConstructorWidget, ConstructorWidgetLayout } from './constructorTypes';
+import type { ConstructorPayload, ConstructorWidget, ConstructorWidgetLayout } from './constructorTypes';
 
 export type ConstructorSizeHint = Pick<ConstructorWidgetLayout, 'w' | 'h' | 'minW' | 'minH'>;
 
 export const CONSTRUCTOR_GRID_COLS = 12;
+export const CONSTRUCTOR_GRID_MARGIN = 10;
+export const CONSTRUCTOR_ROW_HEIGHT = 76;
+
+const MATRIX_CHARTS: ReadonlySet<ConstructorPayload['chart']> = new Set([
+  'effectiveness-matrix',
+  'materiality-matrix',
+  'status-matrix',
+  'auditor-documents-matrix',
+]);
+
+export function isConstructorMatrixChart(chart: ConstructorPayload['chart']): boolean {
+  return MATRIX_CHARTS.has(chart);
+}
+
+/** Convert a content height in pixels to react-grid-layout row units. */
+export function pixelHeightToGridRows(px: number, minH = 1): number {
+  return Math.max(
+    minH,
+    Math.ceil((px + CONSTRUCTOR_GRID_MARGIN) / (CONSTRUCTOR_ROW_HEIGHT + CONSTRUCTOR_GRID_MARGIN)),
+  );
+}
 
 function clampSize(size: ConstructorSizeHint): ConstructorSizeHint {
   const width = Math.min(Math.max(size.w, 1), CONSTRUCTOR_GRID_COLS);

@@ -1,8 +1,33 @@
 import { describe, expect, it } from 'vitest';
-import { moveArrayItem, packNewLayouts, reorderConstructorWidgets } from './constructorLayout';
+import {
+  isConstructorMatrixChart,
+  moveArrayItem,
+  packNewLayouts,
+  pixelHeightToGridRows,
+  reorderConstructorWidgets,
+} from './constructorLayout';
 import type { ConstructorWidget, ConstructorWidgetLayout } from './constructorTypes';
 import { buildConstructorFilterCaption } from './constructorFilterCaption';
 import { buildChecksConstructorDrafts, buildDvaConstructorDrafts, buildPlanningConstructorDrafts, buildRecommendationsConstructorDrafts } from './buildConstructorWidgets';
+
+describe('pixelHeightToGridRows', () => {
+  it('rounds content height up to the next grid row', () => {
+    expect(pixelHeightToGridRows(1)).toBe(1);
+    expect(pixelHeightToGridRows(420)).toBe(5);
+    expect(pixelHeightToGridRows(421)).toBe(6);
+  });
+
+  it('respects a minimum row count', () => {
+    expect(pixelHeightToGridRows(40, 6)).toBe(6);
+  });
+});
+
+describe('isConstructorMatrixChart', () => {
+  it('detects matrix payloads', () => {
+    expect(isConstructorMatrixChart('effectiveness-matrix')).toBe(true);
+    expect(isConstructorMatrixChart('donut')).toBe(false);
+  });
+});
 
 describe('packNewLayouts', () => {
   it('starts at the origin on an empty board', () => {
@@ -228,6 +253,7 @@ describe('buildConstructorDrafts', () => {
     ]);
     expect(drafts[0]?.payload.chart).toBe('kpi');
     expect(drafts[1]?.payload.chart).toBe('treemap');
+    expect(drafts[1]?.payload).toMatchObject({ palette: 'indigo' });
     expect(drafts[2]?.payload.chart).toBe('auditor-documents-matrix');
   });
 });

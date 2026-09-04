@@ -35,6 +35,7 @@ import {
   VALUE_EMERALD_SCALE,
   VALUE_GRAY_SCALE,
   VALUE_TEAL_SCALE,
+  DVA_VALUE_SCALE,
 } from '../analyticsPalette';
 import {
   STACKED_HORIZONTAL_CHART_RIGHT_MARGIN,
@@ -354,11 +355,13 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
               ? VALUE_EMERALD_SCALE
               : payload.palette === 'teal'
                 ? VALUE_TEAL_SCALE
-                : VALUE_BLUE_SCALE
+                : payload.palette === 'indigo'
+                  ? DVA_VALUE_SCALE
+                  : VALUE_BLUE_SCALE
         }
         colorByValue
         colorByRank={payload.palette === 'emerald'}
-        colorByUniqueValue={payload.palette === 'teal'}
+        colorByUniqueValue={payload.palette === 'teal' || payload.palette === 'indigo'}
       />
     );
   }
@@ -367,28 +370,28 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
     if (payload.rows.length === 0) {
       return <EmptyChart message="Нет данных" />;
     }
-    return <EffectivenessMatrixChart rows={payload.rows} />;
+    return <EffectivenessMatrixChart rows={payload.rows} scrollBody={false} />;
   }
 
   if (payload.chart === 'materiality-matrix') {
     if (payload.rows.length === 0) {
       return <EmptyChart message="Нет данных" />;
     }
-    return <MaterialityMatrixChart rows={payload.rows} />;
+    return <MaterialityMatrixChart rows={payload.rows} scrollBody={false} />;
   }
 
   if (payload.chart === 'status-matrix') {
     if (payload.rows.length === 0) {
       return <EmptyChart message="Нет данных" />;
     }
-    return <StatusMatrixChart rows={payload.rows} />;
+    return <StatusMatrixChart rows={payload.rows} scrollBody={false} />;
   }
 
   if (payload.chart === 'auditor-documents-matrix') {
     if (payload.rows.length === 0) {
       return <EmptyChart message="Нет данных" />;
     }
-    return <AuditorDocumentsMatrixChart rows={payload.rows} />;
+    return <AuditorDocumentsMatrixChart rows={payload.rows} scrollBody={false} />;
   }
 
   if (payload.chart === 'materiality-combined') {

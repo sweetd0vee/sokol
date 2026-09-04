@@ -11,6 +11,7 @@ import {
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   VALUE_EMERALD_SCALE,
   VALUE_TEAL_SCALE,
+  DVA_VALUE_SCALE,
   getMaterialityChartColor,
   getRankBasedColors,
   getUniqueValueColors,
@@ -111,6 +112,26 @@ describe('getUniqueValueColors', () => {
     expect(luminance(colors[1] ?? '')).toBeLessThan(luminance(colors[2] ?? ''));
     expect(luminance(colors[2] ?? '')).toBeLessThan(luminance(colors[3] ?? ''));
     expect(luminance(colors[3] ?? '')).toBeLessThan(luminance(colors[4] ?? ''));
+  });
+});
+
+describe('DVA_VALUE_SCALE', () => {
+  function luminance(hex: string) {
+    const normalized = hex.replace('#', '');
+    const red = Number.parseInt(normalized.slice(0, 2), 16);
+    const green = Number.parseInt(normalized.slice(2, 4), 16);
+    const blue = Number.parseInt(normalized.slice(4, 6), 16);
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  }
+
+  it('maps the largest auditor block to signature indigo', () => {
+    const colors = getUniqueValueColors([7, 5, 5, 4, 4, 2, 1, 1], DVA_VALUE_SCALE);
+
+    expect(colors[0]?.toUpperCase()).toBe('#312E81');
+    expect(colors[1]).toBe(colors[2]);
+    expect(lastScaleColor(DVA_VALUE_SCALE).toUpperCase()).toBe('#312E81');
+    expect(luminance(colors[0] ?? '')).toBeLessThan(luminance(colors[1] ?? ''));
+    expect(luminance(colors[5] ?? '')).toBeLessThan(luminance(colors[6] ?? ''));
   });
 });
 

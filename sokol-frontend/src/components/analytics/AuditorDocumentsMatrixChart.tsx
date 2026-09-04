@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { DvaAuditorDocumentRow, DvaMissingCheckRef } from '../../api/analytics';
 import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
-import { getValueBasedColors, VALUE_BLUE_SCALE } from './analyticsPalette';
+import { DVA_VALUE_SCALE, getValueBasedColors } from './analyticsPalette';
 import { MatrixChartShell, MatrixCountSortHeader, MatrixLegendFooter } from './matrixChartChrome';
 import type { SortDirection } from '../../utils/listTable';
 
@@ -21,7 +21,7 @@ function percentFor(filled: number, total: number) {
 }
 
 function colorForPercent(percent: number) {
-  return getValueBasedColors([0, percent, 100], VALUE_BLUE_SCALE)[1] ?? VALUE_BLUE_SCALE[0];
+  return getValueBasedColors([0, percent, 100], DVA_VALUE_SCALE)[1] ?? DVA_VALUE_SCALE[0];
 }
 
 function ReadinessValue({
@@ -117,7 +117,13 @@ function sortRows(rows: DvaAuditorDocumentRow[], key: SortKey | null, direction:
   });
 }
 
-export function AuditorDocumentsMatrixChart({ rows }: { rows: DvaAuditorDocumentRow[] }) {
+export function AuditorDocumentsMatrixChart({
+  rows,
+  scrollBody = true,
+}: {
+  rows: DvaAuditorDocumentRow[];
+  scrollBody?: boolean;
+}) {
   const [hoveredName, setHoveredName] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -148,12 +154,13 @@ export function AuditorDocumentsMatrixChart({ rows }: { rows: DvaAuditorDocument
   return (
     <MatrixChartShell
       hoveredRow={hoveredRow ? { key: hoveredRow.name, name: `${hoveredRow.checks} проверок` } : null}
+      scrollBody={scrollBody}
       footer={(
         <MatrixLegendFooter
           totalText={`${rows.length} ${rows.length === 1 ? 'сотрудник' : 'сотрудников'}`}
           legend={[
-            { key: 'low', label: 'Низкая готовность', color: VALUE_BLUE_SCALE[0] },
-            { key: 'high', label: 'Полный комплект', color: VALUE_BLUE_SCALE[VALUE_BLUE_SCALE.length - 1] },
+            { key: 'low', label: 'Низкая готовность', color: DVA_VALUE_SCALE[0] },
+            { key: 'high', label: 'Полный комплект', color: DVA_VALUE_SCALE[DVA_VALUE_SCALE.length - 1] },
           ]}
         />
       )}

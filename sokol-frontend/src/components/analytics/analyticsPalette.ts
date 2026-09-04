@@ -106,6 +106,21 @@ export const VALUE_TEAL_SCALE = [
 ] as const;
 
 /**
+ * Twilight indigo scale for the DVA analytics tab.
+ * Sits between Checks blue and Monitoring dusty-lilac: cool iris mist
+ * deepens to signature indigo #312E81 so the page has its own identity
+ * without leaving the family.
+ */
+export const DVA_VALUE_SCALE = [
+  '#DDD6F0', // mist iris — smallest
+  '#C0B6E2',
+  '#9E91CE',
+  '#7A6BB8',
+  '#5548A0',
+  '#312E81', // signature indigo — largest
+] as const;
+
+/**
  * Sequential grey scale for the Recommendations analytics charts.
  * Values move from light to dark so bar/treemap intensity communicates magnitude.
  */

@@ -326,7 +326,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
           items: [
             { label: 'Проверки', value: input.checkTotal, tone: 'blue' },
             { label: 'Рекомендации', value: input.recTotal, tone: 'slate' },
-            { label: 'Аудиторы', value: input.employeeCount, tone: 'slate' },
+            { label: 'Аудиторы', value: input.employeeCount, tone: 'indigo' },
             {
               label: 'Высокая существенность',
               value: input.highMateriality,
@@ -353,7 +353,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
         draft(kind, sectionId, 'Карта сотрудников по проверкам', 'Количество проверок за период по всем сотрудникам ДВА', caption, SIZE.half, {
           chart: 'treemap',
           data: input.auditorChecksMap,
-          palette: 'teal',
+          palette: 'indigo',
         }),
       );
     } else if (sectionId === 'auditorImpact') {

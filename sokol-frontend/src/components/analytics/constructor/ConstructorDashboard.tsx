@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ComponentType, type KeyboardEvent, type PointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type KeyboardEvent, type PointerEvent } from 'react';
 import { GripVertical, LayoutDashboard, Plus, Trash2 } from 'lucide-react';
 import * as ReactGridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -12,6 +12,12 @@ import { ANALYTICS_EXPORT_FORMATS, type AnalyticsExportFormat } from '../../../u
 import { exportConstructorDashboard } from '../../../utils/constructorVisualExport';
 import { useAnalyticsConstructor } from './analyticsConstructorState';
 import { ConstructorWidgetCard } from './ConstructorWidgetCard';
+import {
+  CONSTRUCTOR_GRID_MARGIN,
+  CONSTRUCTOR_ROW_HEIGHT,
+  isConstructorMatrixChart,
+  pixelHeightToGridRows,
+} from './constructorLayout';
 import { CONSTRUCTOR_SOURCE_LABELS } from './constructorTypes';
 import './constructorBoard.css';
 
@@ -22,8 +28,8 @@ type GridLayoutModule = {
 const gridLayoutModule = ReactGridLayout as unknown as GridLayoutModule;
 const BaseGridLayout = (gridLayoutModule.default ?? ReactGridLayout) as ComponentType<Record<string, unknown>>;
 
-const GRID_MARGIN = 10;
-const ROW_HEIGHT = 76;
+const GRID_MARGIN = CONSTRUCTOR_GRID_MARGIN;
+const ROW_HEIGHT = CONSTRUCTOR_ROW_HEIGHT;
 
 function useSheetListReorder(onReorder: (fromIndex: number, toIndex: number) => void) {
   const sessionRef = useRef<{ from: number; over: number } | null>(null);
@@ -129,18 +135,53 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
     [widgets],
   );
 
+  const widgetsRef = useRef(widgets);
+  widgetsRef.current = widgets;
+  const matrixHeightsRef = useRef<Record<string, number>>({});
+
   const layout = useMemo(
     () =>
-      boardWidgets.map((widget) => ({
-        i: widget.instanceId,
-        x: widget.layout.x,
-        y: widget.layout.y,
-        w: widget.layout.w,
-        h: widget.layout.h,
-        minW: widget.layout.minW,
-        minH: widget.layout.minH,
-      })),
+      boardWidgets.map((widget) => {
+        const item = {
+          i: widget.instanceId,
+          x: widget.layout.x,
+          y: widget.layout.y,
+          w: widget.layout.w,
+          h: widget.layout.h,
+          minW: widget.layout.minW,
+          minH: widget.layout.minH,
+        };
+        if (!isConstructorMatrixChart(widget.payload.chart)) {
+          return item;
+        }
+        return { ...item, resizeHandles: ['e'] };
+      }),
     [boardWidgets],
+  );
+
+  const handleMatrixContentHeight = useCallback(
+    (instanceId: string, pixelHeight: number) => {
+      const widget = widgetsRef.current.find((item) => item.instanceId === instanceId);
+      if (!widget || !isConstructorMatrixChart(widget.payload.chart)) {
+        return;
+      }
+      const nextH = pixelHeightToGridRows(pixelHeight, widget.layout.minH);
+      matrixHeightsRef.current[instanceId] = nextH;
+      if (nextH === widget.layout.h) {
+        return;
+      }
+      updateLayout(
+        dashboardId,
+        widgetsRef.current.map((item) => ({
+          i: item.instanceId,
+          x: item.layout.x,
+          y: item.layout.y,
+          w: item.layout.w,
+          h: item.instanceId === instanceId ? nextH : item.layout.h,
+        })),
+      );
+    },
+    [dashboardId, updateLayout],
   );
 
   const rowSpan = useMemo(() => {
@@ -332,7 +373,13 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
                 draggableHandle=".constructor-drag-handle"
                 style={{ minHeight: rowSpan * (ROW_HEIGHT + GRID_MARGIN) }}
                 onLayoutChange={(next: Array<{ i: string; x: number; y: number; w: number; h: number }>) => {
-                  updateLayout(dashboardId, next);
+                  updateLayout(
+                    dashboardId,
+                    next.map((item) => {
+                      const lockedH = matrixHeightsRef.current[item.i];
+                      return lockedH == null ? item : { ...item, h: lockedH };
+                    }),
+                  );
                 }}
               >
                 {boardWidgets.map((widget) => (
@@ -340,6 +387,7 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
                     <ConstructorWidgetCard
                       widget={widget}
                       onRemove={(instanceId) => removeWidget(dashboardId, instanceId)}
+                      onContentHeight={handleMatrixContentHeight}
                     />
                   </div>
                 ))}
@@ -351,6 +399,7 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
                     <ConstructorWidgetCard
                       widget={widget}
                       onRemove={(instanceId) => removeWidget(dashboardId, instanceId)}
+                      onContentHeight={handleMatrixContentHeight}
                     />
                   </div>
                 ))}
