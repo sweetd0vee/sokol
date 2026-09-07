@@ -24,7 +24,7 @@ import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { MaterialityMatrixChart } from './MaterialityMatrixChart';
 import {
   getMaterialityChartColor,
-  getValueBasedColors,
+  getUniqueValueColors,
   lastScaleColor,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
@@ -261,7 +261,7 @@ export function RecommendationsAnalyticsDashboard() {
 
   const viewDistribution = data?.viewDistribution ?? EMPTY_VIEW_DISTRIBUTION;
   const viewColors = useMemo(
-    () => getValueBasedColors(viewDistribution.map((item) => item.value), VALUE_BLUE_SCALE),
+    () => getUniqueValueColors(viewDistribution.map((item) => item.value), VALUE_BLUE_SCALE),
     [viewDistribution],
   );
   const objectDistribution = data?.objectDistribution ?? EMPTY_OBJECT_DISTRIBUTION;
