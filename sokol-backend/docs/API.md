@@ -98,7 +98,7 @@ Search: название, наблюдение, описание, объект �
 | `GET` | `/analytics/checks` | summary статусов, `periodSeries`, `viewDistribution`, `typeDistribution`, `departmentMap`, `effectivenessMatrix`, `filterOptions` |
 | `GET` | `/analytics/recommendations` | summary по статусу/существенности/доп.статусу, серии, `viewDistribution`, `materialityMatrix`, `objectDistribution`, индикаторы, `checkLinks` |
 | `GET` | `/analytics/monitoring` | срез исполнения: status/indicator + `statusMatrix`, `deadlineExtensionsByCheck`, `completedDuringAuditByCheck` |
-| `GET` | `/analytics/dva` | нагрузка/существенность/исполнение/сроки/документы аудиторов, `auditorMatrix`, treemap, `documentReadiness` |
+| `GET` | `/analytics/dva` | нагрузка/существенность/исполнение/сроки/документы аудиторов, `auditorMatrix`, treemap, `documentReadiness`, `checkLifecycle` |
 | `GET` | `/analytics/planning` | покрытие подразделений проверками, high-materiality; **без** `auditors` |
 
 Все ответы: `universeTotal` / `filteredTotal` (у dva/planning — отдельно checks и recommendations), `granularity`, `filterOptions` (`auditors?`, `departments`, `anchorDates`).

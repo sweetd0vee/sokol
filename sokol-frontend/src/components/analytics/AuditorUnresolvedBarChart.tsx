@@ -43,6 +43,7 @@ function UnresolvedChecksPanel({
   row,
   checks,
   pinned,
+  onPin,
   onPinToggle,
   onClose,
   onKeepOpen,
@@ -51,6 +52,7 @@ function UnresolvedChecksPanel({
   row: ChartRow;
   checks: DvaCheckCountRef[];
   pinned: boolean;
+  onPin: () => void;
   onPinToggle: () => void;
   onClose: () => void;
   onKeepOpen: () => void;
@@ -62,11 +64,6 @@ function UnresolvedChecksPanel({
       style={CHART_TOOLTIP_STYLE}
       onMouseEnter={onKeepOpen}
       onMouseLeave={pinned ? undefined : onRequestHide}
-      onWheel={() => {
-        if (!pinned) {
-          onPinToggle();
-        }
-      }}
     >
       <div className="flex shrink-0 items-start gap-2 border-b border-slate-100 px-3 py-2">
         <div className="min-w-0 flex-1">
@@ -101,14 +98,7 @@ function UnresolvedChecksPanel({
           </button>
         ) : null}
       </div>
-      <div
-        className="min-h-0 flex-1 overflow-auto px-3 py-2"
-        onScroll={() => {
-          if (!pinned) {
-            onPinToggle();
-          }
-        }}
-      >
+      <div className="min-h-0 flex-1 overflow-auto px-3 py-2" onPointerDown={onPin}>
         {checks.length === 0 ? (
           <p className="text-sm text-slate-500">Нет данных по проверкам</p>
         ) : (
@@ -207,11 +197,13 @@ export function AuditorUnresolvedBarChart({
       if (rootRef.current?.contains(event.target as Node)) {
         return;
       }
-      closePanel();
+      setPinnedName(null);
+      setActiveName(null);
     };
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        closePanel();
+        setPinnedName(null);
+        setActiveName(null);
       }
     };
     window.addEventListener('mousedown', handlePointer);
@@ -278,6 +270,7 @@ export function AuditorUnresolvedBarChart({
           row={visibleRow}
           checks={visibleChecks}
           pinned={pinnedName === visibleRow.name}
+          onPin={pinVisible}
           onPinToggle={() => {
             if (pinnedName === visibleRow.name) {
               setPinnedName(null);

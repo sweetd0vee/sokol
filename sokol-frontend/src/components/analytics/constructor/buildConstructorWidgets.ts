@@ -386,7 +386,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorExecution') {
       drafts.push(
-        draft(kind, sectionId, 'Результативность исполнения', 'Количество «не решено» и доля от всех рекомендаций сотрудника. При наведении — проверки', caption, SIZE.half, {
+        draft(kind, sectionId, 'Результативность исполнения', 'Количество «не решено» и доля от всех рекомендаций сотрудника. Нажмите столбец, чтобы закрепить список проверок', caption, SIZE.half, {
           chart: 'auditor-unresolved',
           data: input.auditorExecution,
         }),

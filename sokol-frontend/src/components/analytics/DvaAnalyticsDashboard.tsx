@@ -235,6 +235,7 @@ export function DvaAnalyticsDashboard() {
         auditorExecution,
         auditorTimeliness,
         auditorDocuments,
+        checkLifecycle,
       }),
     );
     if (added > 0) {
@@ -315,11 +316,11 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorExecution',
-        defaultLayout: { x: 0, y: 6, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 6, w: 4, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Результативность исполнения"
-            description="Количество «не решено» и доля от всех рекомендаций сотрудника. При наведении — проверки"
+            description="Количество «не решено» и доля от всех рекомендаций сотрудника. Нажмите столбец, чтобы закрепить список проверок"
             exportSectionId="auditorExecution"
             exportSelected={exportSections.isSelected('auditorExecution')}
             onToggleExport={() => exportSections.toggleSection('auditorExecution')}
@@ -334,7 +335,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorChecksMap',
-        defaultLayout: { x: 4, y: 6, w: 8, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 4, y: 6, w: 8, h: 4, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Карта сотрудников по проверкам"
@@ -355,12 +356,34 @@ export function DvaAnalyticsDashboard() {
           </ChartCard>
         ),
       },
+      {
+        id: 'checkLifecycle',
+        defaultLayout: { x: 0, y: 10, w: 12, h: 8, minW: 6, minH: 6 },
+        expandToContent: true,
+        render: () => (
+          <ChartCard
+            title="Жизненный цикл проверки"
+            description="От приказа до ДЗ: программа и АЗ как промежуточные точки. Наведите на отрезок, чтобы увидеть длительность этапа"
+            exportSectionId="checkLifecycle"
+            exportSelected={exportSections.isSelected('checkLifecycle')}
+            onToggleExport={() => exportSections.toggleSection('checkLifecycle')}
+            fitContent
+          >
+            {checkLifecycle.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <CheckLifecycleChart rows={checkLifecycle} />
+            )}
+          </ChartCard>
+        ),
+      },
     ],
     [
       auditorChecksMap,
       auditorExecution,
       auditorImpact,
       auditorTimeliness,
+      checkLifecycle,
       checkSummary.total,
       employeeCount,
       exportSections,

@@ -25,6 +25,7 @@ describe('pixelHeightToGridRows', () => {
 describe('isConstructorMatrixChart', () => {
   it('detects matrix payloads', () => {
     expect(isConstructorMatrixChart('effectiveness-matrix')).toBe(true);
+    expect(isConstructorMatrixChart('check-lifecycle')).toBe(true);
     expect(isConstructorMatrixChart('donut')).toBe(false);
   });
 });
@@ -255,6 +256,7 @@ describe('buildConstructorDrafts', () => {
           missing_dz: [],
         },
       ],
+      checkLifecycle: [],
     });
     expect(drafts.map((item) => item.sectionId)).toEqual([
       'summary',
@@ -264,7 +266,81 @@ describe('buildConstructorDrafts', () => {
     expect(drafts[0]?.payload.chart).toBe('kpi');
     expect(drafts[1]?.payload.chart).toBe('treemap');
     expect(drafts[1]?.payload).toMatchObject({ palette: 'indigo' });
+    expect(drafts[1]?.size).toEqual({ w: 8, h: 4, minW: 4, minH: 3 });
     expect(drafts[2]?.payload.chart).toBe('auditor-documents-matrix');
+  });
+
+  it('sizes the DVA employee checks map like the checks department map', () => {
+    const departmentMap = buildChecksConstructorDrafts({
+      selectedSections: ['departmentMap'],
+      filterCaption: '2025',
+      summary: { total: 0, not_started: 0, in_progress: 0, completed: 0 },
+      universeTotal: 0,
+      completionShare: 0,
+      flowSeries: [],
+      flowColors: [],
+      granularity: 'year',
+      viewDistribution: [],
+      viewColors: [],
+      typeDistribution: [],
+      departmentMapTop: [{ name: 'Казначейство', value: 4 }],
+      effectivenessMatrix: [],
+    });
+    const employeeMap = buildDvaConstructorDrafts({
+      selectedSections: ['auditorChecksMap'],
+      filterCaption: '2025',
+      checkTotal: 0,
+      recTotal: 0,
+      employeeCount: 0,
+      highMateriality: 0,
+      highMaterialityShare: 0,
+      recCompletionRate: 0,
+      recViolationRate: 0,
+      auditorChecksMap: [{ name: 'Иванов', value: 4 }],
+      auditorImpact: [],
+      auditorExecution: [],
+      auditorTimeliness: [],
+      auditorDocuments: [],
+      checkLifecycle: [],
+    });
+    expect(employeeMap[0]?.size).toEqual(departmentMap[0]?.size);
+    expect(employeeMap[0]?.size).toEqual({ w: 8, h: 4, minW: 4, minH: 3 });
+  });
+
+  it('snapshots DVA check lifecycle as a dedicated chart', () => {
+    const drafts = buildDvaConstructorDrafts({
+      selectedSections: ['checkLifecycle'],
+      filterCaption: '2026',
+      checkTotal: 2,
+      recTotal: 0,
+      employeeCount: 1,
+      highMateriality: 0,
+      highMaterialityShare: 0,
+      recCompletionRate: 0,
+      recViolationRate: 0,
+      auditorChecksMap: [],
+      auditorImpact: [],
+      auditorExecution: [],
+      auditorTimeliness: [],
+      auditorDocuments: [],
+      checkLifecycle: [
+        {
+          id: '1',
+          key: 'П-1',
+          shortName: 'Казначейство',
+          auditor: 'Иванов',
+          orderDate: '2026-01-10',
+          programDate: '2026-01-20',
+          azDate: '2026-02-15',
+          dzDate: '2026-02-20',
+        },
+      ],
+    });
+    expect(drafts).toHaveLength(1);
+    expect(drafts[0]?.payload).toMatchObject({
+      chart: 'check-lifecycle',
+      rows: [{ key: 'П-1', shortName: 'Казначейство' }],
+    });
   });
 
   it('snapshots DVA unresolved execution as a dedicated chart', () => {
@@ -293,6 +369,7 @@ describe('buildConstructorDrafts', () => {
       ],
       auditorTimeliness: [],
       auditorDocuments: [],
+      checkLifecycle: [],
     });
     expect(drafts).toHaveLength(1);
     expect(drafts[0]?.payload).toMatchObject({

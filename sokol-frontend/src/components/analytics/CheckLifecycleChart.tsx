@@ -14,11 +14,11 @@ import { DVA_VALUE_SCALE } from './analyticsPalette';
 import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { MatrixLegendFooter } from './matrixChartChrome';
 
-const SEGMENT_STYLE: Record<string, { fill: string; text: string }> = {
+const SEGMENT_STYLE = {
   order_to_program: { fill: DVA_VALUE_SCALE[0], text: DVA_VALUE_SCALE[5] },
   program_to_az: { fill: DVA_VALUE_SCALE[3], text: '#ffffff' },
   az_to_dz: { fill: DVA_VALUE_SCALE[5], text: '#ffffff' },
-};
+} as const;
 
 const POINT_COLOR: Record<string, string> = {
   order: DVA_VALUE_SCALE[0],
@@ -108,13 +108,13 @@ function TimelineTrack({
       ))}
       <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-gray-100" />
       {row.segments.map((segment) => {
-        const style = SEGMENT_STYLE[segment.key] ?? SEGMENT_STYLE.program_to_az;
+        const style = SEGMENT_STYLE[segment.key as keyof typeof SEGMENT_STYLE] ?? SEGMENT_STYLE.program_to_az;
         const showLabel = segment.widthPercent >= 7 && segment.days > 0;
         return (
           <button
             key={segment.key}
             type="button"
-            className="absolute top-1/2 z-[1] flex h-3.5 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full"
+            className="absolute top-1/2 z-[1] flex h-3.5 -translate-y-1/2 cursor-help items-center justify-center overflow-hidden rounded-full border-0 p-0"
             style={{
               left: `${segment.leftPercent}%`,
               width: `${Math.max(segment.widthPercent, 0.35)}%`,
@@ -149,7 +149,7 @@ function TimelineTrack({
         <button
           key={point.key}
           type="button"
-          className="absolute top-1/2 z-[2] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white"
+          className="absolute top-1/2 z-[2] h-3 w-3 -translate-x-1/2 -translate-y-1/2 cursor-help rounded-full border-2 border-white p-0"
           style={{ left: `${point.percent}%`, backgroundColor: POINT_COLOR[point.key] }}
           aria-label={`${point.label}: ${formatRuDate(point.date)}`}
           onMouseEnter={(event) =>
@@ -200,8 +200,16 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
                   {model.ticks.map((tick) => (
                     <span
                       key={`${tick.ms}-${tick.percent}`}
-                      className="absolute top-0 -translate-x-1/2 text-[11px] font-medium tabular-nums text-gray-500"
-                      style={{ left: `${tick.percent}%` }}
+                      className="absolute top-0 text-[11px] font-medium tabular-nums text-gray-500"
+                      style={{
+                        left: `${tick.percent}%`,
+                        transform:
+                          tick.percent <= 1
+                            ? 'translateX(0)'
+                            : tick.percent >= 99
+                              ? 'translateX(-100%)'
+                              : 'translateX(-50%)',
+                      }}
                     >
                       {tick.label}
                     </span>
@@ -213,7 +221,7 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
           <tbody>
             {model.rows.map((row) => (
               <tr key={row.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50">
-                <td className="sticky left-0 z-[1] bg-inherit px-3 py-1.5 font-semibold tabular-nums text-sber-dark">
+                <td className="sticky left-0 z-[1] bg-white px-3 py-1.5 font-semibold tabular-nums text-sber-dark">
                   {row.key}
                 </td>
                 <td className="max-w-[16rem] truncate px-3 py-1.5 text-slate-700" title={row.shortName}>
