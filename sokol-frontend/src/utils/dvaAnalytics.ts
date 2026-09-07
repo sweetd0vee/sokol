@@ -184,19 +184,19 @@ export function buildCheckLifecycleChartModel(rows: DvaCheckLifecycleRow[]): Che
       });
     }
 
-    const byKey = new Map(points.map((point) => [point.key, point]));
     const segments: CheckLifecycleSegment[] = [];
-    for (const stage of CHECK_LIFECYCLE_SEGMENTS) {
-      const from = byKey.get(stage.from);
-      const to = byKey.get(stage.to);
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const from = points[index];
+      const to = points[index + 1];
       if (!from || !to) {
         continue;
       }
+      const stage = CHECK_LIFECYCLE_SEGMENTS.find((item) => item.from === from.key && item.to === to.key);
       const left = Math.min(from.percent, to.percent);
       const right = Math.max(from.percent, to.percent);
       segments.push({
-        key: stage.key,
-        label: stage.label,
+        key: stage?.key ?? `${from.key}_to_${to.key}`,
+        label: stage?.label ?? `${from.label} → ${to.label}`,
         startLabel: from.label,
         endLabel: to.label,
         startDate: from.date,

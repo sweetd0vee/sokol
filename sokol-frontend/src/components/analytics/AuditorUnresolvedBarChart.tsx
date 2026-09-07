@@ -39,6 +39,13 @@ function nameFromChartState(state: { activeLabel?: unknown } | null | undefined)
   return typeof state?.activeLabel === 'string' ? state.activeLabel : null;
 }
 
+function nameFromBarClick(item: { name?: unknown; payload?: { name?: unknown } }): string | null {
+  if (typeof item.payload?.name === 'string') {
+    return item.payload.name;
+  }
+  return typeof item.name === 'string' ? item.name : null;
+}
+
 function UnresolvedChecksPanel({
   row,
   checks,
@@ -233,15 +240,6 @@ export function AuditorUnresolvedBarChart({
             setActiveName((current) => (current === name ? current : name));
           }}
           onMouseLeave={requestHide}
-          onClick={(state) => {
-            const name = nameFromChartState(state);
-            if (!name) {
-              return;
-            }
-            cancelHide();
-            setActiveName(name);
-            setPinnedName((current) => (current === name ? null : name));
-          }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
           <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
@@ -253,6 +251,15 @@ export function AuditorUnresolvedBarChart({
             fill={MONITORING_STATUS_COLORS.unresolved}
             radius={[0, 4, 4, 0]}
             cursor="pointer"
+            onClick={(item) => {
+              const name = nameFromBarClick(item);
+              if (!name) {
+                return;
+              }
+              cancelHide();
+              setActiveName(name);
+              setPinnedName((current) => (current === name ? null : name));
+            }}
           >
             {chartData.map((row) => (
               <Cell

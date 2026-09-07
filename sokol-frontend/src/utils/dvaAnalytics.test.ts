@@ -112,6 +112,24 @@ describe('check lifecycle', () => {
     expect(model.rows[1]?.points).toHaveLength(1);
     expect(model.rows[1]?.segments).toHaveLength(0);
   });
+
+  it('connects available milestones when a middle date is missing', () => {
+    const model = buildCheckLifecycleChartModel([
+      {
+        id: '1',
+        key: 'П-1',
+        shortName: 'Казначейство',
+        auditor: 'Иванов',
+        orderDate: '2026-01-10',
+        programDate: null,
+        azDate: '2026-02-15',
+        dzDate: '2026-02-20',
+      },
+    ]);
+
+    expect(model.rows[0]?.segments.map((segment) => segment.label)).toEqual(['Приказ → АЗ', 'АЗ → ДЗ']);
+    expect(model.rows[0]?.segments[0]?.days).toBe(36);
+  });
 });
 
 
