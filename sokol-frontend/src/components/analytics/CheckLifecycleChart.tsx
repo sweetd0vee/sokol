@@ -13,22 +13,22 @@ import {
   type CheckLifecycleSortKey,
   type CheckLifecycleViewRow,
 } from '../../utils/dvaAnalytics';
-import { DVA_VALUE_SCALE } from './analyticsPalette';
+import { VALUE_TEAL_SCALE } from './analyticsPalette';
 import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { MatrixCountSortHeader, MatrixLegendFooter } from './matrixChartChrome';
 import { cycleSortConfig, type SortConfig } from '../../utils/listTable';
 
 const SEGMENT_STYLE = {
-  order_to_program: DVA_VALUE_SCALE[0],
-  program_to_az: DVA_VALUE_SCALE[3],
-  az_to_dz: DVA_VALUE_SCALE[5],
+  order_to_program: VALUE_TEAL_SCALE[0],
+  program_to_az: VALUE_TEAL_SCALE[3],
+  az_to_dz: VALUE_TEAL_SCALE[5],
 } as const;
 
 const POINT_COLOR: Record<string, string> = {
-  order: DVA_VALUE_SCALE[0],
-  program: DVA_VALUE_SCALE[2],
-  az: DVA_VALUE_SCALE[4],
-  dz: DVA_VALUE_SCALE[5],
+  order: VALUE_TEAL_SCALE[0],
+  program: VALUE_TEAL_SCALE[2],
+  az: VALUE_TEAL_SCALE[4],
+  dz: VALUE_TEAL_SCALE[5],
 };
 
 const LEGEND = [
