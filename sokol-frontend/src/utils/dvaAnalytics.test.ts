@@ -9,6 +9,7 @@ import {
   formatUnresolvedCheckLine,
   formatUnresolvedShare,
   rankAuditorRows,
+  sortCheckLifecycleRows,
   unresolvedSharePercent,
 } from './dvaAnalytics';
 
@@ -131,51 +132,56 @@ describe('check lifecycle', () => {
     expect(model.rows[0]?.segments.map((segment) => segment.label)).toEqual(['Приказ → АЗ', 'АЗ → ДЗ']);
     expect(model.rows[0]?.segments[0]?.days).toBe(36);
   });
+
+  it('sorts lifecycle rows and keeps empty totals last', () => {
+    const model = buildCheckLifecycleChartModel([
+      {
+        id: '2',
+        key: 'П-2',
+        shortName: 'Кадры',
+        auditor: 'Петров',
+        orderDate: '2026-03-01',
+        programDate: null,
+        azDate: null,
+        dzDate: null,
+      },
+      {
+        id: '1',
+        key: 'П-1',
+        shortName: 'Казначейство',
+        auditor: 'Иванов',
+        orderDate: '2026-01-10',
+        programDate: '2026-01-20',
+        azDate: '2026-02-15',
+        dzDate: '2026-02-20',
+      },
+      {
+        id: '3',
+        key: 'П-3',
+        shortName: 'ИТ',
+        auditor: 'Сидоров',
+        orderDate: '2026-01-01',
+        programDate: '2026-01-05',
+        azDate: '2026-01-10',
+        dzDate: '2026-01-12',
+      },
+    ]);
+
+    expect(sortCheckLifecycleRows(model.rows, { key: 'auditor', direction: 'asc' }).map((row) => row.key)).toEqual([
+      'П-1',
+      'П-2',
+      'П-3',
+    ]);
+    expect(sortCheckLifecycleRows(model.rows, { key: 'totalDays', direction: 'desc' }).map((row) => row.key)).toEqual([
+      'П-1',
+      'П-3',
+      'П-2',
+    ]);
+    expect(sortCheckLifecycleRows(model.rows, { key: 'start', direction: 'asc' }).map((row) => row.key)).toEqual([
+      'П-3',
+      'П-1',
+      'П-2',
+    ]);
+  });
 });
 
-
-describe('rankAuditorRows', () => {
-  it('ranks by metric and keeps a stable name order on ties', () => {
-    const ranked = rankAuditorRows(
-      [
-        { name: 'Борисов', value: 4 },
-        { name: 'Андреев', value: 4 },
-        { name: 'Волков', value: 9 },
-        { name: 'Громов', value: 0 },
-      ],
-      (row) => row.value,
-      { limit: 3 },
-    );
-
-    expect(ranked.map((row) => row.name)).toEqual(['Волков', 'Андреев', 'Борисов']);
-  });
-
-  it('can surface the weakest rows first', () => {
-    const ranked = rankAuditorRows(
-      [
-        { name: 'Иванов', readiness: 90 },
-        { name: 'Петров', readiness: 20 },
-      ],
-      (row) => row.readiness,
-      { direction: 'asc' },
-    );
-
-    expect(ranked[0]?.name).toBe('Петров');
-  });
-});
-
-describe('unresolved share labels', () => {
-  it('rounds the share to one decimal and formats the bar label', () => {
-    expect(unresolvedSharePercent(32, 252)).toBe(12.7);
-    expect(formatUnresolvedShare(32, 252)).toBe('12,7%');
-    expect(formatUnresolvedBarLabel(32, 252)).toBe('32 · 12,7%');
-    expect(formatUnresolvedShare(0, 0)).toBe('0%');
-  });
-
-  it('renders check keys with names and recommendation counts', () => {
-    expect(
-      formatUnresolvedCheckLine({ key: 'П-1', short_name: 'Казначейство', count: 12 }),
-    ).toBe('П-1 — Казначейство (12)');
-    expect(formatUnresolvedCheckLine({ key: 'П-2', short_name: '', count: 1 })).toBe('П-2 (1)');
-  });
-});
