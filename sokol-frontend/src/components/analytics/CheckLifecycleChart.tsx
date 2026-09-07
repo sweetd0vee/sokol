@@ -6,13 +6,16 @@ import {
   buildCheckLifecycleChartModel,
   formatDurationDays,
   formatLifecycleChecksCount,
+  sortCheckLifecycleRows,
   type CheckLifecyclePoint,
   type CheckLifecycleSegment,
+  type CheckLifecycleSortKey,
   type CheckLifecycleViewRow,
 } from '../../utils/dvaAnalytics';
 import { DVA_VALUE_SCALE } from './analyticsPalette';
 import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
-import { MatrixLegendFooter } from './matrixChartChrome';
+import { MatrixCountSortHeader, MatrixLegendFooter } from './matrixChartChrome';
+import { cycleSortConfig, type SortConfig } from '../../utils/listTable';
 
 const SEGMENT_STYLE = {
   order_to_program: DVA_VALUE_SCALE[0],
@@ -167,6 +170,17 @@ function TimelineTrack({
 
 export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) {
   const model = useMemo(() => buildCheckLifecycleChartModel(rows), [rows]);
+  const [sortConfig, setSortConfig] = useState<SortConfig<CheckLifecycleSortKey>>({
+    key: null,
+    direction: 'asc',
+  });
+  const sortedRows = useMemo(
+    () => sortCheckLifecycleRows(model.rows, sortConfig),
+    [model.rows, sortConfig],
+  );
+  const cycleSort = (key: CheckLifecycleSortKey) => {
+    setSortConfig((prev) => cycleSortConfig(prev, key));
+  };
 
   return (
     <div data-export-html className="flex min-h-[13rem] flex-col gap-2">
@@ -181,14 +195,68 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
           </colgroup>
           <thead>
             <tr className="border-b border-gray-100">
-              <th className="sticky left-0 z-[2] bg-white px-3 py-2 text-left font-semibold text-sber-dark">
-                Ключ
-              </th>
+              <MatrixCountSortHeader
+                label="Ключ"
+                align="left"
+                className="sticky left-0 z-[2] bg-white"
+                active={sortConfig.key === 'key'}
+                direction={sortConfig.direction}
+                onClick={() => cycleSort('key')}
+              />
+              <MatrixCountSortHeader
+                label="Краткое название"
+                align="left"
+                active={sortConfig.key === 'shortName'}
+                direction={sortConfig.direction}
+                onClick={() => cycleSort('shortName')}
+              />
+              <MatrixCountSortHeader
+                label="Аудитор"
+                align="left"
+                active={sortConfig.key === 'auditor'}
+                direction={sortConfig.direction}
+                onClick={() => cycleSort('auditor')}
+              />
               <th className="bg-white px-3 py-2 text-left font-semibold text-sber-dark">
-                Краткое название
-              </th>
-              <th className="bg-white px-3 py-2 text-left font-semibold text-sber-dark">Аудитор</th>
-              <th className="bg-white px-3 py-2 text-left font-semibold text-sber-dark">
+                <div className="mb-1">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 text-sber-dark transition hover:text-sber"
+                    title={
+                      sortConfig.key !== 'start'
+                        ? 'Сортировать по убыванию: сроки'
+                        : sortConfig.direction === 'desc'
+                          ? 'Сортировать по возрастанию: сроки'
+                          : 'Сбросить сортировку: сроки'
+                    }
+                    aria-label={
+                      sortConfig.key !== 'start'
+                        ? 'Сортировать по убыванию: сроки'
+                        : sortConfig.direction === 'desc'
+                          ? 'Сортировать по возрастанию: сроки'
+                          : 'Сбросить сортировку: сроки'
+                    }
+                    aria-sort={
+                      sortConfig.key === 'start'
+                        ? sortConfig.direction === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : 'none'
+                    }
+                    onClick={() => cycleSort('start')}
+                  >
+                    <span>Сроки</span>
+                    {sortConfig.key === 'start' ? (
+                      sortConfig.direction === 'asc' ? (
+                        <ArrowUp size={14} aria-hidden />
+                      ) : (
+                        <ArrowDown size={14} aria-hidden />
+                      )
+                    ) : (
+                      <ChevronsUpDown size={14} className="text-gray-400" aria-hidden />
+                    )}
+                  </button>
+                </div>
                 <div className="relative h-8">
                   {model.ticks.map((tick) => (
                     <span
@@ -209,11 +277,17 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
                   ))}
                 </div>
               </th>
-              <th className="bg-white px-3 py-2 text-right font-semibold text-sber-dark">Итого</th>
+              <MatrixCountSortHeader
+                label="Итого"
+                align="right"
+                active={sortConfig.key === 'totalDays'}
+                direction={sortConfig.direction}
+                onClick={() => cycleSort('totalDays')}
+              />
             </tr>
           </thead>
           <tbody>
-            {model.rows.map((row) => (
+            {sortedRows.map((row) => (
               <tr key={row.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50">
                 <td className="sticky left-0 z-[1] bg-white px-3 py-1.5 font-semibold tabular-nums text-sber-dark">
                   {row.key}

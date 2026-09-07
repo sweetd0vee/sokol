@@ -7,27 +7,36 @@ export function MatrixCountSortHeader({
   active,
   direction,
   onClick,
+  align = 'center',
+  className = '',
 }: {
   label: string;
   active: boolean;
   direction: SortDirection;
   onClick: () => void;
+  align?: 'left' | 'center' | 'right';
+  className?: string;
 }) {
   const sortLabel = !active
     ? `Сортировать по убыванию: ${label}`
     : direction === 'desc'
       ? `Сортировать по возрастанию: ${label}`
       : `Сбросить сортировку: ${label}`;
+  const alignClass =
+    align === 'left' ? 'text-left' : align === 'right' ? 'text-right' : 'text-center';
+  const justifyClass =
+    align === 'left' ? 'justify-start' : align === 'right' ? 'justify-end' : 'justify-center';
+  const paddingClass = align === 'center' ? 'px-1' : 'px-3';
 
   return (
     <th
-      className="px-1 py-2 text-center font-semibold text-sber-dark"
+      className={`${paddingClass} py-2 font-semibold text-sber-dark ${alignClass} ${className}`}
       aria-sort={active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'}
     >
       <button
         type="button"
         onClick={onClick}
-        className="inline-flex w-full items-center justify-center gap-1 text-sber-dark transition hover:text-sber"
+        className={`inline-flex w-full items-center gap-1 text-sber-dark transition hover:text-sber ${justifyClass}`}
         title={sortLabel}
         aria-label={sortLabel}
       >

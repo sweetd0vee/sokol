@@ -1,5 +1,6 @@
 import type { DvaCheckLifecycleRow } from '../api/analytics';
 import { parseDateValue } from './dates';
+import { compareListValues, type SortConfig } from './listTable';
 import { pluralRu } from './pluralRu';
 
 export const DVA_AUDITOR_BAR_LIMIT = 12;
@@ -65,6 +66,44 @@ export type CheckLifecycleChartModel = {
   rangeEnd: number;
   ticks: CheckLifecycleTick[];
 };
+
+export type CheckLifecycleSortKey = 'key' | 'shortName' | 'auditor' | 'start' | 'totalDays';
+
+export function getCheckLifecycleSortValue(
+  row: CheckLifecycleViewRow,
+  key: CheckLifecycleSortKey,
+): string | number | null {
+  if (key === 'start') {
+    return row.points[0]?.ms ?? null;
+  }
+  return row[key];
+}
+
+export function sortCheckLifecycleRows(
+  rows: CheckLifecycleViewRow[],
+  sortConfig: SortConfig<CheckLifecycleSortKey>,
+): CheckLifecycleViewRow[] {
+  const sortKey = sortConfig.key;
+  if (!sortKey) {
+    return rows;
+  }
+  return [...rows].sort((left, right) => {
+    const leftValue = getCheckLifecycleSortValue(left, sortKey);
+    const rightValue = getCheckLifecycleSortValue(right, sortKey);
+    if ((leftValue === null || leftValue === '') && (rightValue === null || rightValue === '')) {
+      return compareListValues(left.key, right.key);
+    }
+    if (leftValue === null || leftValue === '') {
+      return 1;
+    }
+    if (rightValue === null || rightValue === '') {
+      return -1;
+    }
+    const cmp = compareListValues(leftValue, rightValue);
+    const ordered = sortConfig.direction === 'asc' ? cmp : -cmp;
+    return ordered || compareListValues(left.key, right.key);
+  });
+}
 
 export function calendarDaysBetween(startMs: number, endMs: number): number {
   return Math.round(Math.abs(endMs - startMs) / DAY_MS);
