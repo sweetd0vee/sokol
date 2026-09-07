@@ -273,24 +273,20 @@ export function DvaAnalyticsDashboard() {
         ),
       },
       {
-        id: 'auditorChecksMap',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 4, minW: 4, minH: 2 },
+        id: 'auditorTimeliness',
+        defaultLayout: { x: 0, y: 2, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
-            title="Карта сотрудников по проверкам"
-            description="Количество проверок за период по всем сотрудникам ДВА"
-            exportSectionId="auditorChecksMap"
-            exportSelected={exportSections.isSelected('auditorChecksMap')}
-            onToggleExport={() => exportSections.toggleSection('auditorChecksMap')}
+            title="Своевременность"
+            description="Соблюдение сроков исполнения рекомендаций по сотрудникам"
+            exportSectionId="auditorTimeliness"
+            exportSelected={exportSections.isSelected('auditorTimeliness')}
+            onToggleExport={() => exportSections.toggleSection('auditorTimeliness')}
           >
-            {auditorChecksMap.length === 0 ? (
+            {auditorTimeliness.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <FocusableTreemapChart
-                data={auditorChecksMap}
-                palette={DVA_VALUE_SCALE}
-                colorByUniqueValue
-              />
+              <AuditorStackedBarChart data={auditorTimeliness} series={[...TIMELINESS_SERIES]} totalKey="total" />
             )}
           </ChartCard>
         ),
@@ -334,20 +330,24 @@ export function DvaAnalyticsDashboard() {
         ),
       },
       {
-        id: 'auditorTimeliness',
-        defaultLayout: { x: 6, y: 6, w: 6, h: 4, minW: 3, minH: 3 },
+        id: 'auditorChecksMap',
+        defaultLayout: { x: 6, y: 6, w: 6, h: 4, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
-            title="Своевременность"
-            description="Соблюдение сроков исполнения рекомендаций по сотрудникам"
-            exportSectionId="auditorTimeliness"
-            exportSelected={exportSections.isSelected('auditorTimeliness')}
-            onToggleExport={() => exportSections.toggleSection('auditorTimeliness')}
+            title="Карта сотрудников по проверкам"
+            description="Количество проверок за период по всем сотрудникам ДВА"
+            exportSectionId="auditorChecksMap"
+            exportSelected={exportSections.isSelected('auditorChecksMap')}
+            onToggleExport={() => exportSections.toggleSection('auditorChecksMap')}
           >
-            {auditorTimeliness.length === 0 ? (
+            {auditorChecksMap.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <AuditorStackedBarChart data={auditorTimeliness} series={[...TIMELINESS_SERIES]} totalKey="total" />
+              <FocusableTreemapChart
+                data={auditorChecksMap}
+                palette={DVA_VALUE_SCALE}
+                colorByUniqueValue
+              />
             )}
           </ChartCard>
         ),
