@@ -6,6 +6,7 @@ import type {
   DvaAuditorExecutionRow,
   DvaAuditorMaterialityRow,
   DvaAuditorTimelinessRow,
+  DvaCheckLifecycleRow,
   RecommendationPeriodPoint,
   RecommendationsSummary,
 } from '../../../api/analytics';
@@ -142,6 +143,10 @@ export type ConstructorPayload =
   | {
       chart: 'auditor-unresolved';
       data: DvaAuditorExecutionRow[];
+    }
+  | {
+      chart: 'check-lifecycle';
+      rows: DvaCheckLifecycleRow[];
     };
 
 export type ConstructorWidgetDraft = {
@@ -246,4 +251,5 @@ export type DvaConstructorInput = {
   auditorExecution: DvaAuditorExecutionRow[];
   auditorTimeliness: DvaAuditorTimelinessRow[];
   auditorDocuments: DvaAuditorDocumentRow[];
+  checkLifecycle: DvaCheckLifecycleRow[];
 };

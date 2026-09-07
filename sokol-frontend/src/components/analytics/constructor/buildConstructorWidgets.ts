@@ -361,7 +361,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorChecksMap') {
       drafts.push(
-        draft(kind, sectionId, 'Карта сотрудников по проверкам', 'Количество проверок за период по всем сотрудникам ДВА', caption, SIZE.half, {
+        draft(kind, sectionId, 'Карта сотрудников по проверкам', 'Количество проверок за период по всем сотрудникам ДВА', caption, SIZE.wide, {
           chart: 'treemap',
           data: input.auditorChecksMap,
           palette: 'indigo',
@@ -414,6 +414,21 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
           chart: 'auditor-documents-matrix',
           rows: input.auditorDocuments,
         }),
+      );
+    } else if (sectionId === 'checkLifecycle') {
+      drafts.push(
+        draft(
+          kind,
+          sectionId,
+          'Жизненный цикл проверки',
+          'От приказа до ДЗ: программа и АЗ как промежуточные точки. Наведите на отрезок, чтобы увидеть длительность этапа',
+          caption,
+          SIZE.matrix,
+          {
+            chart: 'check-lifecycle',
+            rows: input.checkLifecycle,
+          },
+        ),
       );
     }
   }

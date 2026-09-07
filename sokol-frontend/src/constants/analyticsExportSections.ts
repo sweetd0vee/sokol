@@ -48,6 +48,12 @@ export const DVA_EXPORT_SECTIONS = [
     sheetName: 'Карта проверки',
     headerFill: '312E81',
   },
+  {
+    id: 'checkLifecycle',
+    label: 'Жизненный цикл проверки',
+    sheetName: 'Жизненный цикл',
+    headerFill: '312E81',
+  },
 ] as const;
 
 export type CheckExportSectionId = (typeof CHECK_EXPORT_SECTIONS)[number]['id'];

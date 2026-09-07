@@ -11,6 +11,7 @@ const MATRIX_CHARTS: ReadonlySet<ConstructorPayload['chart']> = new Set([
   'materiality-matrix',
   'status-matrix',
   'auditor-documents-matrix',
+  'check-lifecycle',
 ]);
 
 export function isConstructorMatrixChart(chart: ConstructorPayload['chart']): boolean {

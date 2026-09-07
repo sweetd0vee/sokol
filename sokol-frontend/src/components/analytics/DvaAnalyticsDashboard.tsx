@@ -10,6 +10,7 @@ import { filterSelectionItem } from './filterSelectionItem';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { AuditorStackedBarChart } from './AuditorStackedBarChart';
 import { AuditorUnresolvedBarChart } from './AuditorUnresolvedBarChart';
+import { CheckLifecycleChart } from './CheckLifecycleChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
   DVA_VALUE_SCALE,
@@ -37,6 +38,7 @@ const EMPTY_AUDITOR_IMPACT: never[] = [];
 const EMPTY_AUDITOR_EXECUTION: never[] = [];
 const EMPTY_AUDITOR_TIMELINESS: never[] = [];
 const EMPTY_AUDITOR_DOCUMENTS: never[] = [];
+const EMPTY_CHECK_LIFECYCLE: never[] = [];
 
 const IMPACT_SERIES = [
   { key: 'high', name: 'Высокий', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий },
@@ -159,6 +161,7 @@ export function DvaAnalyticsDashboard() {
     [data?.auditorTimeliness],
   );
   const auditorDocuments = data?.auditorDocuments ?? EMPTY_AUDITOR_DOCUMENTS;
+  const checkLifecycle = data?.checkLifecycle ?? EMPTY_CHECK_LIFECYCLE;
   const filteredChecksTotal = data?.filteredChecksTotal ?? 0;
   const filteredRecommendationsTotal = data?.filteredRecommendationsTotal ?? 0;
   const universeChecksTotal = data?.universeChecksTotal ?? 0;
@@ -312,7 +315,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorExecution',
-        defaultLayout: { x: 0, y: 6, w: 6, h: 4, minW: 3, minH: 3 },
+        defaultLayout: { x: 0, y: 6, w: 4, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Результативность исполнения"
@@ -331,7 +334,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorChecksMap',
-        defaultLayout: { x: 6, y: 6, w: 6, h: 4, minW: 4, minH: 2 },
+        defaultLayout: { x: 4, y: 6, w: 8, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Карта сотрудников по проверкам"

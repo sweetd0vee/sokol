@@ -27,6 +27,7 @@ import { MaterialityMatrixChart } from '../MaterialityMatrixChart';
 import { StatusMatrixChart } from '../StatusMatrixChart';
 import { AuditorDocumentsMatrixChart } from '../AuditorDocumentsMatrixChart';
 import { AuditorUnresolvedBarChart } from '../AuditorUnresolvedBarChart';
+import { CheckLifecycleChart } from '../CheckLifecycleChart';
 import {
   CHECKS_PALETTE,
   lastScaleColor,
@@ -400,6 +401,13 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
       return <EmptyChart message="Нет данных" />;
     }
     return <AuditorUnresolvedBarChart data={payload.data} />;
+  }
+
+  if (payload.chart === 'check-lifecycle') {
+    if (payload.rows.length === 0) {
+      return <EmptyChart message="Нет данных" />;
+    }
+    return <CheckLifecycleChart rows={payload.rows} />;
   }
 
   if (payload.chart === 'materiality-combined') {
