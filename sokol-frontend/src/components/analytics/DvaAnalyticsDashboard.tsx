@@ -13,10 +13,10 @@ import { AuditorUnresolvedBarChart } from './AuditorUnresolvedBarChart';
 import { CheckLifecycleChart } from './CheckLifecycleChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
-  DVA_VALUE_SCALE,
   MONITORING_ADDITIONAL_STATUS_COLORS,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
+  VALUE_TEAL_SCALE,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
@@ -349,7 +349,7 @@ export function DvaAnalyticsDashboard() {
             ) : (
               <FocusableTreemapChart
                 data={auditorChecksMap}
-                palette={DVA_VALUE_SCALE}
+                palette={VALUE_TEAL_SCALE}
                 colorByUniqueValue
               />
             )}

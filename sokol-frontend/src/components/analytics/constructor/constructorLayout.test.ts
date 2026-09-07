@@ -265,7 +265,7 @@ describe('buildConstructorDrafts', () => {
     ]);
     expect(drafts[0]?.payload.chart).toBe('kpi');
     expect(drafts[1]?.payload.chart).toBe('treemap');
-    expect(drafts[1]?.payload).toMatchObject({ palette: 'indigo' });
+    expect(drafts[1]?.payload).toMatchObject({ palette: 'teal' });
     expect(drafts[1]?.size).toEqual({ w: 8, h: 4, minW: 4, minH: 3 });
     expect(drafts[2]?.payload.chart).toBe('auditor-documents-matrix');
   });

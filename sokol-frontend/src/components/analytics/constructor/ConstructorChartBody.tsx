@@ -320,7 +320,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
     return (
       <FocusableDonutChart
         data={payload.data}
-        palette={VALUE_BLUE_SCALE}
+        palette={VALUE_TEAL_SCALE}
         colorByValue={payload.colorByValue}
         variant={payload.variant}
         labelMode={payload.labelMode ?? 'both'}
