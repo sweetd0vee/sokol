@@ -28,7 +28,7 @@ import {
   lastScaleColor,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
-  VALUE_TEAL_SCALE,
+  VALUE_BLUE_SCALE,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
@@ -261,7 +261,7 @@ export function RecommendationsAnalyticsDashboard() {
 
   const viewDistribution = data?.viewDistribution ?? EMPTY_VIEW_DISTRIBUTION;
   const viewColors = useMemo(
-    () => getValueBasedColors(viewDistribution.map((item) => item.value), VALUE_TEAL_SCALE),
+    () => getValueBasedColors(viewDistribution.map((item) => item.value), VALUE_BLUE_SCALE),
     [viewDistribution],
   );
   const objectDistribution = data?.objectDistribution ?? EMPTY_OBJECT_DISTRIBUTION;
@@ -566,7 +566,7 @@ export function RecommendationsAnalyticsDashboard() {
                     <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
                     <YAxis dataKey="name" type="category" width={92} tick={CHART_AXIS_TICK} />
                     <Tooltip />
-                    <Bar dataKey="value" name="Рекомендации" fill={lastScaleColor(VALUE_TEAL_SCALE)} radius={[0, 6, 6, 0]}>
+                    <Bar dataKey="value" name="Рекомендации" fill={lastScaleColor(VALUE_BLUE_SCALE)} radius={[0, 6, 6, 0]}>
                       {viewDistribution.map((item, index) => (
                         <Cell key={item.name} fill={viewColors[index]} />
                       ))}
@@ -574,7 +574,7 @@ export function RecommendationsAnalyticsDashboard() {
                         dataKey="value"
                         position="right"
                         fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill={lastScaleColor(VALUE_TEAL_SCALE)}
+                        fill={lastScaleColor(VALUE_BLUE_SCALE)}
                       />
                     </Bar>
                   </BarChart>
@@ -600,7 +600,7 @@ export function RecommendationsAnalyticsDashboard() {
             ) : (
               <FocusableTreemapChart
                 data={objectDistributionTop}
-                palette={VALUE_TEAL_SCALE}
+                palette={VALUE_BLUE_SCALE}
                 colorByUniqueValue
               />
             )}

@@ -101,7 +101,7 @@ export function buildChecksConstructorDrafts(input: ChecksConstructorInput): Con
         draft(kind, sectionId, 'Карта департаментов (ТОП-10)', 'Количество проверок за период по департаментам', caption, SIZE.wide, {
           chart: 'treemap',
           data: input.departmentMapTop,
-          palette: 'teal',
+          palette: 'blue',
         }),
       );
     } else if (sectionId === 'effectivenessMatrix') {
@@ -364,7 +364,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
         draft(kind, sectionId, 'Карта сотрудников по проверкам', 'Количество проверок за период по всем сотрудникам ДВА', caption, SIZE.wide, {
           chart: 'treemap',
           data: input.auditorChecksMap,
-          palette: 'teal',
+          palette: 'indigo',
         }),
       );
     } else if (sectionId === 'auditorImpact') {

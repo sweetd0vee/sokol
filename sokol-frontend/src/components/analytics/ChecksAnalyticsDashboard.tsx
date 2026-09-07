@@ -22,7 +22,7 @@ import { ChartCard, CHART_AXIS_TICK, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { EffectivenessMatrixChart } from './EffectivenessMatrixChart';
-import { CHECKS_PALETTE, getValueBasedColors, VALUE_TEAL_SCALE } from './analyticsPalette';
+import { CHECKS_PALETTE, getValueBasedColors, VALUE_BLUE_SCALE } from './analyticsPalette';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
 import { exportChecksDashboard } from '../../utils/analyticsExport';
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
@@ -196,12 +196,12 @@ export function ChecksAnalyticsDashboard() {
     [granularity, rawFlowSeries, selectedPeriodKeys],
   );
   const flowColors = useMemo(
-    () => getValueBasedColors(flowSeries.map((item) => item.total), VALUE_TEAL_SCALE),
+    () => getValueBasedColors(flowSeries.map((item) => item.total)),
     [flowSeries],
   );
   const viewDistribution = data?.viewDistribution ?? EMPTY_VIEW_DISTRIBUTION;
   const viewColors = useMemo(
-    () => getValueBasedColors(viewDistribution.map((item) => item.value), VALUE_TEAL_SCALE),
+    () => getValueBasedColors(viewDistribution.map((item) => item.value)),
     [viewDistribution],
   );
   const typeDistribution = data?.typeDistribution ?? EMPTY_TYPE_DISTRIBUTION;
@@ -410,7 +410,7 @@ export function ChecksAnalyticsDashboard() {
             ) : (
               <FocusableDonutChart
                 data={typeDistribution}
-                palette={VALUE_TEAL_SCALE}
+                palette={VALUE_BLUE_SCALE}
                 colorByValue
                 labelMode="both"
                 legendPercentFirst
@@ -435,8 +435,8 @@ export function ChecksAnalyticsDashboard() {
             ) : (
               <FocusableTreemapChart
                 data={departmentMapTop}
-                palette={VALUE_TEAL_SCALE}
-                colorByUniqueValue
+                palette={VALUE_BLUE_SCALE}
+                colorByValue
               />
             )}
           </ChartCard>

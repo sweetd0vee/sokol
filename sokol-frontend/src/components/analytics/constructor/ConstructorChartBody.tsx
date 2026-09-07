@@ -36,8 +36,6 @@ import {
   VALUE_BLUE_SCALE,
   VALUE_EMERALD_SCALE,
   VALUE_GRAY_SCALE,
-  VALUE_TEAL_SCALE,
-  DVA_VALUE_SCALE,
 } from '../analyticsPalette';
 import {
   STACKED_HORIZONTAL_CHART_RIGHT_MARGIN,
@@ -320,7 +318,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
     return (
       <FocusableDonutChart
         data={payload.data}
-        palette={VALUE_TEAL_SCALE}
+        palette={VALUE_BLUE_SCALE}
         colorByValue={payload.colorByValue}
         variant={payload.variant}
         labelMode={payload.labelMode ?? 'both'}
@@ -355,11 +353,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
             ? VALUE_GRAY_SCALE
             : payload.palette === 'emerald'
               ? VALUE_EMERALD_SCALE
-              : payload.palette === 'teal'
-                ? VALUE_TEAL_SCALE
-                : payload.palette === 'indigo'
-                  ? DVA_VALUE_SCALE
-                  : VALUE_BLUE_SCALE
+              : VALUE_BLUE_SCALE
         }
         colorByValue
         colorByRank={payload.palette === 'emerald'}

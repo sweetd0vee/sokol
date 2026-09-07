@@ -16,7 +16,7 @@ import {
   MONITORING_ADDITIONAL_STATUS_COLORS,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
-  VALUE_TEAL_SCALE,
+  VALUE_BLUE_SCALE,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
@@ -349,7 +349,7 @@ export function DvaAnalyticsDashboard() {
             ) : (
               <FocusableTreemapChart
                 data={auditorChecksMap}
-                palette={VALUE_TEAL_SCALE}
+                palette={VALUE_BLUE_SCALE}
                 colorByUniqueValue
               />
             )}
