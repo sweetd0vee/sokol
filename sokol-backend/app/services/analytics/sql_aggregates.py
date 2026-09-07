@@ -25,6 +25,7 @@ from app.schemas.analytics import (
     DvaAuditorMaterialityRow,
     DvaAuditorTimelinessRow,
     DvaCheckCountRef,
+    DvaCheckLifecycleRow,
     DvaMissingCheckRef,
     DvaPortfolioPoint,
     MaterialityMatrixRow,
@@ -970,6 +971,51 @@ async def dva_auditor_documents_sql(session: AsyncSession, **filters: Any) -> li
         **filters,
     )
     return dva_auditor_documents_from_rows(await fetch_all(session, statement))
+
+
+def _lifecycle_sort_key(row: DvaCheckLifecycleRow) -> tuple:
+    dates = [value for value in (row.order_date, row.program_date, row.az_date, row.dz_date) if value]
+    earliest = min(dates) if dates else date.max
+    return (0 if dates else 1, earliest, row.key)
+
+
+def dva_check_lifecycle_from_rows(rows: Any) -> list[DvaCheckLifecycleRow]:
+    result: list[DvaCheckLifecycleRow] = []
+    for row in rows:
+        serial = str(row.serial_number or "").strip() or WITHOUT_CHECK
+        short_name = str(row.short_name or "").strip() or str(row.check_name or "").strip()
+        check_id = getattr(row, "id", None)
+        result.append(
+            DvaCheckLifecycleRow(
+                id=str(check_id) if check_id is not None else serial,
+                key=serial,
+                short_name=short_name,
+                auditor=_auditor_display_name(row.name, WITHOUT_LEADER),
+                order_date=row.order_document_date,
+                program_date=row.program_document_date,
+                az_date=row.az_document_date,
+                dz_date=row.dz_document_date,
+            )
+        )
+    return sorted(result, key=_lifecycle_sort_key)
+
+
+async def dva_check_lifecycle_sql(session: AsyncSession, **filters: Any) -> list[DvaCheckLifecycleRow]:
+    statement = apply_check_filters(
+        select(
+            Check.id,
+            Check.serial_number,
+            Check.short_name,
+            Check.check_name,
+            Check.check_leader.label("name"),
+            Check.order_document_date,
+            Check.program_document_date,
+            Check.az_document_date,
+            Check.dz_document_date,
+        ).select_from(Check),
+        **filters,
+    )
+    return dva_check_lifecycle_from_rows(await fetch_all(session, statement))
 
 
 async def dva_document_readiness_sql(session: AsyncSession, **filters: Any) -> list[DocumentReadinessRow]:

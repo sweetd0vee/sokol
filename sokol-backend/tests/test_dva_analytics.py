@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import unittest
+from datetime import date
 from types import SimpleNamespace
 
 from app.services.analytics.sql_aggregates import (
     dva_auditor_documents_from_rows,
+    dva_check_lifecycle_from_rows,
     dva_recommendation_profiles_from_rows,
     dva_unresolved_checks_from_rows,
 )
@@ -188,6 +190,54 @@ class DvaAnalyticsMappingTests(unittest.TestCase):
         self.assertEqual(documents[0].missing_program[0].short_name, "Без программы")
         self.assertEqual(documents[1].readiness, 100)
         self.assertEqual(documents[1].missing_dz, [])
+
+    def test_check_lifecycle_maps_dates_and_sorts_by_earliest_milestone(self) -> None:
+        rows = [
+            SimpleNamespace(
+                id=2,
+                serial_number=" П-2 ",
+                short_name="",
+                check_name="Проверка кадров",
+                name=" Петров ",
+                order_document_date=date(2026, 3, 1),
+                program_document_date=date(2026, 3, 10),
+                az_document_date=None,
+                dz_document_date=None,
+            ),
+            SimpleNamespace(
+                id=1,
+                serial_number="П-1",
+                short_name="Казначейство",
+                check_name="Проверка казначейства",
+                name="Иванов",
+                order_document_date=date(2026, 1, 10),
+                program_document_date=date(2026, 1, 20),
+                az_document_date=date(2026, 2, 15),
+                dz_document_date=date(2026, 2, 20),
+            ),
+            SimpleNamespace(
+                id=3,
+                serial_number="П-3",
+                short_name="Без дат",
+                check_name="Пустая",
+                name="",
+                order_document_date=None,
+                program_document_date=None,
+                az_document_date=None,
+                dz_document_date=None,
+            ),
+        ]
+
+        lifecycle = dva_check_lifecycle_from_rows(rows)
+
+        self.assertEqual([row.key for row in lifecycle], ["П-1", "П-2", "П-3"])
+        self.assertEqual(lifecycle[0].short_name, "Казначейство")
+        self.assertEqual(lifecycle[0].auditor, "Иванов")
+        self.assertEqual(lifecycle[0].order_date, date(2026, 1, 10))
+        self.assertEqual(lifecycle[0].dz_date, date(2026, 2, 20))
+        self.assertEqual(lifecycle[1].short_name, "Проверка кадров")
+        self.assertEqual(lifecycle[2].auditor, "Без руководителя")
+        self.assertIsNone(lifecycle[2].order_date)
 
 
 if __name__ == "__main__":

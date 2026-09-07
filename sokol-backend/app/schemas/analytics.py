@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -327,6 +328,19 @@ class DocumentReadinessRow(BaseModel):
     empty: int
 
 
+class DvaCheckLifecycleRow(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    key: str
+    short_name: str = Field(serialization_alias="shortName")
+    auditor: str
+    order_date: date | None = Field(default=None, serialization_alias="orderDate")
+    program_date: date | None = Field(default=None, serialization_alias="programDate")
+    az_date: date | None = Field(default=None, serialization_alias="azDate")
+    dz_date: date | None = Field(default=None, serialization_alias="dzDate")
+
+
 class DvaAnalyticsResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -352,6 +366,9 @@ class DvaAnalyticsResponse(BaseModel):
     )
     auditor_matrix: DvaAuditorMatrix = Field(serialization_alias="auditorMatrix")
     document_readiness: list[DocumentReadinessRow] = Field(serialization_alias="documentReadiness")
+    check_lifecycle: list[DvaCheckLifecycleRow] = Field(
+        default_factory=list, serialization_alias="checkLifecycle"
+    )
     auditor_checks_treemap: list[NamedCount] = Field(serialization_alias="auditorChecksTreemap")
     auditor_recommendations_treemap: list[NamedCount] = Field(
         serialization_alias="auditorRecommendationsTreemap"

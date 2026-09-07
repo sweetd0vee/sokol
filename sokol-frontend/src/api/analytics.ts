@@ -198,6 +198,17 @@ export type DvaAuditorDocumentRow = {
   missing_dz: DvaMissingCheckRef[];
 };
 
+export type DvaCheckLifecycleRow = {
+  id: string;
+  key: string;
+  shortName: string;
+  auditor: string;
+  orderDate: string | null;
+  programDate: string | null;
+  azDate: string | null;
+  dzDate: string | null;
+};
+
 export type DvaAuditorMatrix = {
   periods: Array<{ key: string; label: string; sortKey: number }>;
   rows: Array<{
@@ -222,6 +233,7 @@ export type DvaAnalyticsResponse = {
   auditorExecution: DvaAuditorExecutionRow[];
   auditorTimeliness: DvaAuditorTimelinessRow[];
   auditorDocuments: DvaAuditorDocumentRow[];
+  checkLifecycle: DvaCheckLifecycleRow[];
   auditorMatrix: DvaAuditorMatrix;
   documentReadiness: Array<{ name: string; filled: number; empty: number }>;
   auditorChecksTreemap: NamedCount[];
