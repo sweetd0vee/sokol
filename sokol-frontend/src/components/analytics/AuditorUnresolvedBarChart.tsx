@@ -161,7 +161,7 @@ export function AuditorUnresolvedBarChart({
   const visibleChecks = visibleName ? (checksByName.get(visibleName) ?? []) : [];
 
   const cancelHide = () => {
-    if (hideTimerRef.current != null) {
+    if (hideTimerRef.current !== null) {
       window.clearTimeout(hideTimerRef.current);
       hideTimerRef.current = null;
     }

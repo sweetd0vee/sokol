@@ -15,9 +15,9 @@ import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { MatrixLegendFooter } from './matrixChartChrome';
 
 const SEGMENT_STYLE = {
-  order_to_program: { fill: DVA_VALUE_SCALE[0], text: DVA_VALUE_SCALE[5] },
-  program_to_az: { fill: DVA_VALUE_SCALE[3], text: '#ffffff' },
-  az_to_dz: { fill: DVA_VALUE_SCALE[5], text: '#ffffff' },
+  order_to_program: DVA_VALUE_SCALE[0],
+  program_to_az: DVA_VALUE_SCALE[3],
+  az_to_dz: DVA_VALUE_SCALE[5],
 } as const;
 
 const POINT_COLOR: Record<string, string> = {
@@ -28,9 +28,9 @@ const POINT_COLOR: Record<string, string> = {
 };
 
 const LEGEND = [
-  { key: 'order_to_program', label: 'Приказ → программа', color: SEGMENT_STYLE.order_to_program.fill },
-  { key: 'program_to_az', label: 'Программа → АЗ', color: SEGMENT_STYLE.program_to_az.fill },
-  { key: 'az_to_dz', label: 'АЗ → ДЗ', color: SEGMENT_STYLE.az_to_dz.fill },
+  { key: 'order_to_program', label: 'Приказ → программа', color: SEGMENT_STYLE.order_to_program },
+  { key: 'program_to_az', label: 'Программа → АЗ', color: SEGMENT_STYLE.program_to_az },
+  { key: 'az_to_dz', label: 'АЗ → ДЗ', color: SEGMENT_STYLE.az_to_dz },
 ];
 
 function FloatingTooltip({
@@ -108,18 +108,16 @@ function TimelineTrack({
       ))}
       <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-gray-100" />
       {row.segments.map((segment) => {
-        const style = SEGMENT_STYLE[segment.key as keyof typeof SEGMENT_STYLE] ?? SEGMENT_STYLE.program_to_az;
-        const showLabel = segment.widthPercent >= 7 && segment.days > 0;
+        const fill = SEGMENT_STYLE[segment.key as keyof typeof SEGMENT_STYLE] ?? SEGMENT_STYLE.program_to_az;
         return (
           <button
             key={segment.key}
             type="button"
-            className="absolute top-1/2 z-[1] flex h-3.5 -translate-y-1/2 cursor-help items-center justify-center overflow-hidden rounded-full border-0 p-0"
+            className="absolute top-1/2 z-[1] h-3.5 -translate-y-1/2 cursor-help rounded-full border-0 p-0"
             style={{
               left: `${segment.leftPercent}%`,
               width: `${Math.max(segment.widthPercent, 0.35)}%`,
-              backgroundColor: style.fill,
-              color: style.text,
+              backgroundColor: fill,
             }}
             aria-label={`${segment.label}: ${formatDurationDays(segment.days)}`}
             onMouseEnter={(event) =>
@@ -136,13 +134,7 @@ function TimelineTrack({
               })
             }
             onBlur={() => setTooltip(null)}
-          >
-            {showLabel ? (
-              <span className="px-1 text-[10px] font-semibold tabular-nums leading-none">
-                {segment.days}
-              </span>
-            ) : null}
-          </button>
+          />
         );
       })}
       {row.points.map((point) => (
@@ -179,12 +171,13 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
   return (
     <div data-export-html className="flex min-h-[13rem] flex-col gap-2">
       <div className="overflow-x-auto rounded-lg border border-gray-100">
-        <table className="w-full min-w-[52rem] border-collapse text-sm">
+        <table className="w-full min-w-[58rem] border-collapse text-sm">
           <colgroup>
             <col className="w-[7.5rem]" />
             <col className="w-[16rem]" />
             <col className="w-[11rem]" />
             <col />
+            <col className="w-[7.5rem]" />
           </colgroup>
           <thead>
             <tr className="border-b border-gray-100">
@@ -216,6 +209,7 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
                   ))}
                 </div>
               </th>
+              <th className="bg-white px-3 py-2 text-right font-semibold text-sber-dark">Итого</th>
             </tr>
           </thead>
           <tbody>
@@ -232,6 +226,9 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
                 </td>
                 <td className="px-2 py-0.5">
                   <TimelineTrack row={row} ticks={model.ticks} />
+                </td>
+                <td className="whitespace-nowrap px-3 py-1.5 text-right font-semibold tabular-nums text-sber-dark">
+                  {row.totalDays === null ? '—' : formatDurationDays(row.totalDays)}
                 </td>
               </tr>
             ))}

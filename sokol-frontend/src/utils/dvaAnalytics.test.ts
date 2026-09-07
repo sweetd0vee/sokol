@@ -111,6 +111,7 @@ describe('check lifecycle', () => {
     expect(first?.totalDays).toBe(41);
     expect(model.rows[1]?.points).toHaveLength(1);
     expect(model.rows[1]?.segments).toHaveLength(0);
+    expect(model.rows[1]?.totalDays).toBeNull();
   });
 
   it('connects available milestones when a middle date is missing', () => {
