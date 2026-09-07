@@ -24,6 +24,7 @@ from app.schemas.analytics import (
     DvaAuditorExecutionRow,
     DvaAuditorMaterialityRow,
     DvaAuditorTimelinessRow,
+    DvaCheckCountRef,
     DvaMissingCheckRef,
     DvaPortfolioPoint,
     MaterialityMatrixRow,
@@ -81,7 +82,7 @@ from app.services.analytics.sql_helpers import (
     recommendation_materiality_count_columns,
     recommendation_status_count_columns,
 )
-from app.services.analytics.values import pad_anchor_dates
+from app.services.analytics.values import named_counts, pad_anchor_dates
 
 __all__ = [
     "check_period_series_sql",
@@ -106,6 +107,7 @@ __all__ = [
     "dva_document_readiness_sql",
     "dva_portfolio_series_sql",
     "dva_recommendation_profiles_from_rows",
+    "dva_unresolved_checks_from_rows",
     "grouped_named_counts_sql",
     "load_check_department_pairs",
     "load_check_serial_numbers",
@@ -119,6 +121,8 @@ __all__ = [
     "recommendation_object_distribution_sql",
     "recommendation_period_series_sql",
     "recommendation_status_matrix_sql",
+    "recommendation_view_distribution_from_rows",
+    "recommendation_view_distribution_sql",
     "summarize_checks_sql",
     "summarize_recommendations_sql",
 ]
@@ -524,6 +528,26 @@ async def recommendation_completed_during_audit_by_check_sql(
     return sorted(result, key=lambda item: (-item.value, item.key))
 
 
+def recommendation_view_distribution_from_rows(rows: Any) -> list[NamedCount]:
+    counts: dict[str, int] = defaultdict(int)
+    for row in rows:
+        name = str(row.name or "").strip() or UNSPECIFIED
+        counts[name] += int(row.value or 0)
+    return named_counts(counts)
+
+
+async def recommendation_view_distribution_sql(session: AsyncSession, **filters: Any) -> list[NamedCount]:
+    statement = apply_recommendation_filters(
+        select(Check.check_view.label("name"), func.count().label("value"))
+        .select_from(Recommendation)
+        .join(Check, Check.id == Recommendation.check_id)
+        .group_by(Check.check_view)
+        .order_by(func.count().desc(), Check.check_view.asc()),
+        **filters,
+    )
+    return recommendation_view_distribution_from_rows(await fetch_all(session, statement))
+
+
 async def recommendation_check_links_sql(session: AsyncSession, **filters: Any) -> list[NamedCount]:
     rows = await grouped_named_counts_sql(
         session,
@@ -723,12 +747,42 @@ def _auditor_display_name(raw: Any, fallback: str) -> str:
     return value or fallback
 
 
+def dva_unresolved_checks_from_rows(rows: Any) -> dict[str, list[DvaCheckCountRef]]:
+    grouped: dict[str, dict[str, DvaCheckCountRef]] = {}
+    for row in rows:
+        count = int(row.value or 0)
+        if count <= 0:
+            continue
+        name = _auditor_display_name(row.name, WITHOUT_AUDITOR)
+        identity = check_group_identity(row)
+        by_check = grouped.setdefault(name, {})
+        existing = by_check.get(identity.id)
+        if existing is None:
+            by_check[identity.id] = DvaCheckCountRef(
+                key=identity.key,
+                short_name=identity.short_name or identity.name,
+                count=count,
+            )
+            continue
+        by_check[identity.id] = DvaCheckCountRef(
+            key=existing.key,
+            short_name=existing.short_name,
+            count=existing.count + count,
+        )
+    return {
+        name: sorted(by_check.values(), key=lambda item: (-item.count, item.key))
+        for name, by_check in grouped.items()
+    }
+
+
 def dva_recommendation_profiles_from_rows(
     rows: Any,
+    unresolved_checks_by_auditor: dict[str, list[DvaCheckCountRef]] | None = None,
 ) -> tuple[list[DvaAuditorMaterialityRow], list[DvaAuditorExecutionRow], list[DvaAuditorTimelinessRow]]:
     impact: list[DvaAuditorMaterialityRow] = []
     execution: list[DvaAuditorExecutionRow] = []
     timeliness: list[DvaAuditorTimelinessRow] = []
+    checks_map = unresolved_checks_by_auditor or {}
     for row in rows:
         name = _auditor_display_name(row.name, WITHOUT_AUDITOR)
         total = int(row.total)
@@ -755,6 +809,7 @@ def dva_recommendation_profiles_from_rows(
                 on_control=on_control,
                 unresolved=unresolved,
                 total=total,
+                unresolved_checks=checks_map.get(name, []),
             )
         )
         timeliness.append(
@@ -768,7 +823,7 @@ def dva_recommendation_profiles_from_rows(
             )
         )
     impact.sort(key=lambda item: (-item.high, -item.total, item.name))
-    execution.sort(key=lambda item: (-(item.unresolved + item.in_progress), -item.total, item.name))
+    execution.sort(key=lambda item: (-item.unresolved, -item.total, item.name))
     timeliness.sort(key=lambda item: (-item.deadline_violated, -item.violation_rate, item.name))
     return impact, execution, timeliness
 
@@ -791,7 +846,32 @@ async def dva_auditor_recommendation_profiles_sql(
         .group_by(Recommendation.auditor),
         **filters,
     )
-    return dva_recommendation_profiles_from_rows(await fetch_all(session, statement))
+    check_serial = func.coalesce(Check.serial_number, Recommendation.serial_number)
+    check_statement = apply_recommendation_filters(
+        select(
+            Recommendation.auditor.label("name"),
+            Check.id.label("check_id"),
+            check_serial.label("serial_number"),
+            Check.short_name,
+            Check.check_name,
+            func.count().label("value"),
+        )
+        .select_from(Recommendation)
+        .outerjoin(Check, Check.id == Recommendation.check_id)
+        .group_by(
+            Recommendation.auditor,
+            Check.id,
+            check_serial,
+            Check.short_name,
+            Check.check_name,
+        ),
+        **filters,
+        statuses=["unresolved"],
+    )
+    return dva_recommendation_profiles_from_rows(
+        await fetch_all(session, statement),
+        dva_unresolved_checks_from_rows(await fetch_all(session, check_statement)),
+    )
 
 
 def _document_is_filled(number: Any, date_value: Any) -> bool:

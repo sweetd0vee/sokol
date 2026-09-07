@@ -123,14 +123,8 @@ export function buildRecommendationsConstructorDrafts(
   const drafts: ConstructorWidgetDraft[] = [];
   const { filterCaption: caption } = input;
   const kind = 'recommendations' as const;
-  const selected = new Set(input.selectedSections);
-  if (selected.has('materiality') || selected.has('materialityByPeriod')) {
-    selected.delete('materiality');
-    selected.delete('materialityByPeriod');
-    selected.add('materialityCombined');
-  }
 
-  for (const sectionId of selected) {
+  for (const sectionId of input.selectedSections) {
     if (sectionId === 'summary') {
       drafts.push(
         draft(kind, sectionId, 'Итого', 'Сводка KPI по рекомендациям', caption, SIZE.kpi, {
@@ -167,22 +161,56 @@ export function buildRecommendationsConstructorDrafts(
           ],
         }),
       );
-    } else if (sectionId === 'materialityCombined') {
+    } else if (sectionId === 'materialityByPeriod') {
+      drafts.push(
+        draft(
+          kind,
+          sectionId,
+          'Существенность по периодам',
+          'Распределение уровней существенности внутри периода',
+          caption,
+          SIZE.wide,
+          {
+            chart: 'stacked',
+            data: input.completedPeriodSeries,
+            series: [
+              { key: 'low', name: 'Низкий', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий },
+              { key: 'medium', name: 'Средний', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний },
+              { key: 'high', name: 'Высокий', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий },
+            ],
+            xKey: 'label',
+            showLegend: true,
+            showStackTotal: true,
+            granularity: input.granularity,
+          },
+        ),
+      );
+    } else if (sectionId === 'materiality') {
       drafts.push(
         draft(
           kind,
           sectionId,
           'Существенность',
-          'Распределение уровней существенности рекомендаций: за период и по периодам',
+          'Распределение уровней существенности за период',
           caption,
-          SIZE.full,
+          SIZE.narrow,
           {
-            chart: 'materiality-combined',
-            donut: input.coloredMaterialityDistribution,
-            series: input.completedPeriodSeries,
-            granularity: input.granularity,
+            chart: 'donut',
+            data: input.coloredMaterialityDistribution,
+            labelMode: 'both',
           },
         ),
+      );
+    } else if (sectionId === 'views') {
+      drafts.push(
+        draft(kind, sectionId, 'Виды проверок', 'Количество рекомендаций за период', caption, SIZE.half, {
+          chart: 'bar',
+          variant: 'bars',
+          data: barPointsFromNamed(input.viewDistribution),
+          colors: input.viewColors,
+          seriesName: 'Рекомендации',
+          categoryWidth: 92,
+        }),
       );
     } else if (sectionId === 'materialityMatrix') {
       drafts.push(
@@ -358,20 +386,9 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorExecution') {
       drafts.push(
-        draft(kind, sectionId, 'Результативность исполнения', 'Статус рекомендаций сотрудника: закрытие vs открытый хвост', caption, SIZE.half, {
-          chart: 'stacked',
+        draft(kind, sectionId, 'Результативность исполнения', 'Количество «не решено» и доля от всех рекомендаций сотрудника. При наведении — проверки', caption, SIZE.half, {
+          chart: 'auditor-unresolved',
           data: input.auditorExecution,
-          series: [
-            { key: 'completed', name: 'Исполнено', color: MONITORING_STATUS_COLORS.completed },
-            { key: 'in_progress', name: 'В процессе', color: MONITORING_STATUS_COLORS.in_progress },
-            { key: 'on_control', name: 'На контроле', color: MONITORING_STATUS_COLORS.on_control },
-            { key: 'unresolved', name: 'Не решено', color: MONITORING_STATUS_COLORS.unresolved },
-          ],
-          xKey: 'name',
-          showLegend: true,
-          showStackTotal: true,
-          layout: 'vertical',
-          categoryWidth: 128,
         }),
       );
     } else if (sectionId === 'auditorTimeliness') {

@@ -26,6 +26,7 @@ import { EffectivenessMatrixChart } from '../EffectivenessMatrixChart';
 import { MaterialityMatrixChart } from '../MaterialityMatrixChart';
 import { StatusMatrixChart } from '../StatusMatrixChart';
 import { AuditorDocumentsMatrixChart } from '../AuditorDocumentsMatrixChart';
+import { AuditorUnresolvedBarChart } from '../AuditorUnresolvedBarChart';
 import {
   CHECKS_PALETTE,
   lastScaleColor,
@@ -394,23 +395,16 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
     return <AuditorDocumentsMatrixChart rows={payload.rows} scrollBody={false} />;
   }
 
+  if (payload.chart === 'auditor-unresolved') {
+    if (payload.data.length === 0) {
+      return <EmptyChart message="Нет данных" />;
+    }
+    return <AuditorUnresolvedBarChart data={payload.data} />;
+  }
+
   if (payload.chart === 'materiality-combined') {
     return (
       <div className="relative flex h-full min-h-0 flex-row gap-2">
-        <div className="min-h-0 min-w-0 flex-1">
-          {distributionHasValues(payload.donut) ? (
-            <FocusableDonutChart
-              data={payload.donut}
-              labelMode="both"
-              legendLabelMode="name"
-              showLegend={false}
-              containerClassName="h-full min-h-0"
-              valueLabelColor="#111827"
-            />
-          ) : (
-            <EmptyChart message="Нет данных" heightClass="h-full" />
-          )}
-        </div>
         <div className="min-h-0 min-w-0" style={{ flex: 3 }}>
           {payload.series.length === 0 ? (
             <EmptyChart message="Нет данных" heightClass="h-full" />
@@ -473,6 +467,20 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
                 ))}
               </div>
             </div>
+          )}
+        </div>
+        <div className="min-h-0 min-w-0 flex-1">
+          {distributionHasValues(payload.donut) ? (
+            <FocusableDonutChart
+              data={payload.donut}
+              labelMode="both"
+              legendLabelMode="name"
+              showLegend={false}
+              containerClassName="h-full min-h-0"
+              valueLabelColor="#111827"
+            />
+          ) : (
+            <EmptyChart message="Нет данных" heightClass="h-full" />
           )}
         </div>
       </div>

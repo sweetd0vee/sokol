@@ -13,6 +13,7 @@ export const RECOMMENDATION_EXPORT_SECTIONS = [
   { id: 'summary', label: 'Сводка KPI', sheetName: 'Сводка', headerFill: '312E81' },
   { id: 'materialityByPeriod', label: 'Существенность по периодам', sheetName: 'Сущ по периодам', headerFill: 'BE123C' },
   { id: 'materiality', label: 'Существенность', sheetName: 'Существенность', headerFill: '16A34A' },
+  { id: 'views', label: 'Виды проверок', sheetName: 'Виды проверок', headerFill: '7C3AED' },
   { id: 'objects', label: 'Карта департаментов', sheetName: 'Карта департаментов', headerFill: '0E7490' },
   { id: 'materialityMatrix', label: 'Матрица существенности', sheetName: 'Матрица существенности', headerFill: 'BE123C' },
 ] as const;

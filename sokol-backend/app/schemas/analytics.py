@@ -192,6 +192,7 @@ class RecommendationsAnalyticsResponse(BaseModel):
     period_series: list[RecommendationPeriodCount] = Field(serialization_alias="periodSeries")
     materiality_distribution: list[NamedCount] = Field(serialization_alias="materialityDistribution")
     indicator_distribution: list[NamedCount] = Field(serialization_alias="indicatorDistribution")
+    view_distribution: list[NamedCount] = Field(serialization_alias="viewDistribution")
     check_links: list[NamedCount] = Field(serialization_alias="checkLinks")
     materiality_matrix: list[MaterialityMatrixRow] = Field(serialization_alias="materialityMatrix")
     object_distribution: list[RecommendationObjectCount] = Field(serialization_alias="objectDistribution")
@@ -258,6 +259,12 @@ class DvaAuditorMaterialityRow(BaseModel):
     total: int
 
 
+class DvaCheckCountRef(BaseModel):
+    key: str
+    short_name: str
+    count: int
+
+
 class DvaAuditorExecutionRow(BaseModel):
     name: str
     completed: int
@@ -265,6 +272,7 @@ class DvaAuditorExecutionRow(BaseModel):
     on_control: int
     unresolved: int
     total: int
+    unresolved_checks: list[DvaCheckCountRef] = Field(default_factory=list)
 
 
 class DvaAuditorTimelinessRow(BaseModel):

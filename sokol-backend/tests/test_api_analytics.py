@@ -76,6 +76,7 @@ def _empty_recommendations_payload() -> RecommendationsAnalyticsResponse:
         period_series=[],
         materiality_distribution=[],
         indicator_distribution=[],
+        view_distribution=[],
         check_links=[],
         materiality_matrix=[],
         object_distribution=[],

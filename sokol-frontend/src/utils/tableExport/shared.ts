@@ -11,6 +11,7 @@ import {
 } from '../../constants/recommendations';
 import { formatRecommendationAuditObjects } from '../auditObjects';
 import { getRecommendationExecutionInfo } from '../../constants/recommendationClosure';
+import { buildCheckViewBySerial } from '../recommendationList';
 import type { ExportRow } from './types';
 
 export const HEADER_BLUE = '003366';
@@ -62,6 +63,7 @@ export const RECOMMENDATION_XLSX_COLUMN_WIDTHS: Record<string, number> = {
   'Информация о выполнении': 58,
   'Объект аудита': 34,
   Индикатор: 12,
+  Вид: 16,
   'Срок исполнения': 15,
   'Уровень существенности': 24,
   Аудитор: 24,
@@ -91,6 +93,7 @@ export const RECOMMENDATION_TABLE_COLUMN_KEYS = [
   'Информация о выполнении',
   'Объект аудита',
   'Индикатор',
+  'Вид',
   'Срок исполнения',
   'Уровень существенности',
   'Аудитор',
@@ -174,6 +177,7 @@ export function toRecommendationTableRows(
   const checkNameByKey = new Map(
     checks.map((check) => [check.serial_number, check.check_name?.trim() ?? ''] as const),
   );
+  const checkViewByKey = buildCheckViewBySerial(checks);
 
   return recommendations.map((recommendation) => ({
     ID: getRecommendationYearlyId(recommendation, yearlyNumbers) ?? '',
@@ -184,6 +188,7 @@ export function toRecommendationTableRows(
     'Информация о выполнении': getRecommendationExecutionInfo(recommendation),
     'Объект аудита': formatRecommendationAuditObjects(recommendation.audit_object),
     Индикатор: getIndicatorLabel(recommendation.indicator),
+    Вид: checkViewByKey.get(recommendation.serial_number) ?? '',
     'Срок исполнения': formatCheckDate(recommendation.deadline),
     'Уровень существенности': getMaterialityLevelLabel(recommendation.materiality_level),
     Аудитор: recommendation.auditor,

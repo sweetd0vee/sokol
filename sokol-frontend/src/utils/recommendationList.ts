@@ -1,4 +1,6 @@
+import { getCheckViewLabel } from '../constants/checks';
 import { resolveRecommendationAdditionalIndicator } from '../constants/recommendations';
+import type { Check } from '../types/check';
 import type { Recommendation } from '../types/recommendation';
 import { formatRecommendationAuditObjects, getRecommendationAuditObjects } from './auditObjects';
 import { parseDateValue } from './dates';
@@ -15,6 +17,7 @@ export type RecommendationSortKey =
   | 'name'
   | 'audit_object'
   | 'deadline'
+  | 'check_view'
   | 'indicator'
   | 'additional_indicator'
   | 'materiality_level'
@@ -22,6 +25,21 @@ export type RecommendationSortKey =
   | 'manager'
   | 'status'
   | 'additional_status';
+
+export function buildCheckViewBySerial(
+  checks: Pick<Check, 'serial_number' | 'check_view'>[],
+): Map<string, string> {
+  return new Map(
+    checks.map((check) => [check.serial_number, getCheckViewLabel(check.check_view)] as const),
+  );
+}
+
+export function getRecommendationCheckView(
+  recommendation: Recommendation,
+  checkViewBySerial: Map<string, string>,
+) {
+  return checkViewBySerial.get(recommendation.serial_number) ?? '';
+}
 
 const INDICATOR_ORDER: Record<string, number> = {
   исполнено: 0,
@@ -62,6 +80,7 @@ export function getRecommendationSortValue(
   recommendation: Recommendation,
   key: RecommendationSortKey,
   yearlyNumbers: Map<string, number>,
+  checkViewBySerial: Map<string, string> = new Map(),
 ) {
   switch (key) {
     case 'id':
@@ -72,6 +91,8 @@ export function getRecommendationSortValue(
       return `${recommendation.name} ${recommendation.observation_name ?? ''}`;
     case 'audit_object':
       return formatRecommendationAuditObjects(recommendation.audit_object);
+    case 'check_view':
+      return getRecommendationCheckView(recommendation, checkViewBySerial);
     case 'deadline':
       return parseDateValue(recommendation.deadline);
     case 'indicator':
@@ -108,6 +129,7 @@ export type RecommendationListFilters = {
   additionalIndicators: string[];
   auditObjects: string[];
   indicators: string[];
+  checkViews: string[];
   materialityLevels: string[];
   auditors: string[];
   managers: string[];
@@ -121,6 +143,7 @@ export function filterRecommendations(
   recommendations: Recommendation[],
   yearlyNumbers: Map<string, number>,
   filters: RecommendationListFilters,
+  checkViewBySerial: Map<string, string> = new Map(),
 ) {
   return recommendations.filter((recommendation) => {
     if (filters.idFilter) {
@@ -165,6 +188,14 @@ export function filterRecommendations(
       return false;
     }
     if (!matchesSelected(filters.indicators, recommendation.indicator)) {
+      return false;
+    }
+    if (
+      !matchesSelected(
+        filters.checkViews,
+        getRecommendationCheckView(recommendation, checkViewBySerial),
+      )
+    ) {
       return false;
     }
     if (!matchesSelected(filters.materialityLevels, recommendation.materiality_level)) {

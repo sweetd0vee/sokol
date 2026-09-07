@@ -9,6 +9,7 @@ import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { filterSelectionItem } from './filterSelectionItem';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { AuditorStackedBarChart } from './AuditorStackedBarChart';
+import { AuditorUnresolvedBarChart } from './AuditorUnresolvedBarChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
   DVA_VALUE_SCALE,
@@ -41,13 +42,6 @@ const IMPACT_SERIES = [
   { key: 'high', name: 'Высокий', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий },
   { key: 'medium', name: 'Средний', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний },
   { key: 'low', name: 'Низкий', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий },
-] as const;
-
-const EXECUTION_SERIES = [
-  { key: 'completed', name: 'Исполнено', color: MONITORING_STATUS_COLORS.completed },
-  { key: 'in_progress', name: 'В процессе', color: MONITORING_STATUS_COLORS.in_progress },
-  { key: 'on_control', name: 'На контроле', color: MONITORING_STATUS_COLORS.on_control },
-  { key: 'unresolved', name: 'Не решено', color: MONITORING_STATUS_COLORS.unresolved },
 ] as const;
 
 const TIMELINESS_SERIES = [
@@ -154,11 +148,7 @@ export function DvaAnalyticsDashboard() {
   );
   const auditorExecution = useMemo(
     () =>
-      rankAuditorRows(
-        data?.auditorExecution ?? EMPTY_AUDITOR_EXECUTION,
-        (row) => row.unresolved + row.in_progress,
-        { includeZeros: true },
-      ),
+      rankAuditorRows(data?.auditorExecution ?? EMPTY_AUDITOR_EXECUTION, (row) => row.unresolved),
     [data?.auditorExecution],
   );
   const auditorTimeliness = useMemo(
@@ -330,7 +320,7 @@ export function DvaAnalyticsDashboard() {
         render: () => (
           <ChartCard
             title="Результативность исполнения"
-            description="Статус рекомендаций сотрудника: закрытие vs открытый хвост"
+            description="Количество «не решено» и доля от всех рекомендаций сотрудника. При наведении — проверки"
             exportSectionId="auditorExecution"
             exportSelected={exportSections.isSelected('auditorExecution')}
             onToggleExport={() => exportSections.toggleSection('auditorExecution')}
@@ -338,7 +328,7 @@ export function DvaAnalyticsDashboard() {
             {auditorExecution.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <AuditorStackedBarChart data={auditorExecution} series={[...EXECUTION_SERIES]} totalKey="total" />
+              <AuditorUnresolvedBarChart data={auditorExecution} />
             )}
           </ChartCard>
         ),

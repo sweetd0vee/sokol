@@ -66,6 +66,7 @@ export function buildHtmlCellStyle(header: string, value: unknown) {
 export const HTML_NO_WRAP_HEADERS = new Set([
   'ID',
   'Ключ',
+  'Вид',
   'Срок исполнения',
   'Дата начала',
   'Аудитор',

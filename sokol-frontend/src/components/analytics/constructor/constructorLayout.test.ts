@@ -160,9 +160,9 @@ describe('buildConstructorDrafts', () => {
     expect(drafts[1]?.payload.chart).toBe('donut');
   });
 
-  it('merges materiality export checkboxes into one combined widget', () => {
+  it('keeps materiality charts as separate constructor widgets', () => {
     const drafts = buildRecommendationsConstructorDrafts({
-      selectedSections: ['materiality', 'materialityByPeriod', 'objects'],
+      selectedSections: ['materialityByPeriod', 'materiality', 'views', 'objects'],
       filterCaption: 'Все',
       summary: {
         total: 1,
@@ -177,11 +177,21 @@ describe('buildConstructorDrafts', () => {
       universeTotal: 1,
       completedPeriodSeries: [],
       coloredMaterialityDistribution: [],
+      viewDistribution: [{ name: 'ИТ', value: 3 }],
+      viewColors: ['#0E7490'],
       objectDistributionTop: [{ name: 'ДВА', value: 1 }],
       materialityMatrix: [],
       granularity: 'year',
     });
-    expect(drafts.map((item) => item.sectionId).sort()).toEqual(['materialityCombined', 'objects']);
+    expect(drafts.map((item) => item.sectionId)).toEqual([
+      'materialityByPeriod',
+      'materiality',
+      'views',
+      'objects',
+    ]);
+    expect(drafts[0]?.payload.chart).toBe('stacked');
+    expect(drafts[1]?.payload.chart).toBe('donut');
+    expect(drafts[2]?.payload.chart).toBe('bar');
   });
 
   it('snapshots planning charts including the uncovered-department list', () => {
@@ -255,5 +265,45 @@ describe('buildConstructorDrafts', () => {
     expect(drafts[1]?.payload.chart).toBe('treemap');
     expect(drafts[1]?.payload).toMatchObject({ palette: 'indigo' });
     expect(drafts[2]?.payload.chart).toBe('auditor-documents-matrix');
+  });
+
+  it('snapshots DVA unresolved execution as a dedicated chart', () => {
+    const drafts = buildDvaConstructorDrafts({
+      selectedSections: ['auditorExecution'],
+      filterCaption: '2025',
+      checkTotal: 12,
+      recTotal: 40,
+      employeeCount: 1,
+      highMateriality: 8,
+      highMaterialityShare: 20,
+      recCompletionRate: 55,
+      recViolationRate: 18,
+      auditorChecksMap: [],
+      auditorImpact: [],
+      auditorExecution: [
+        {
+          name: 'Иванов',
+          completed: 4,
+          in_progress: 1,
+          on_control: 2,
+          unresolved: 3,
+          total: 10,
+          unresolved_checks: [{ key: 'П-1', short_name: 'Казначейство', count: 3 }],
+        },
+      ],
+      auditorTimeliness: [],
+      auditorDocuments: [],
+    });
+    expect(drafts).toHaveLength(1);
+    expect(drafts[0]?.payload).toMatchObject({
+      chart: 'auditor-unresolved',
+      data: [
+        {
+          name: 'Иванов',
+          unresolved: 3,
+          unresolved_checks: [{ key: 'П-1', short_name: 'Казначейство', count: 3 }],
+        },
+      ],
+    });
   });
 });

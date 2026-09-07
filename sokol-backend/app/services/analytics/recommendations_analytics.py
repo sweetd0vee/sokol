@@ -35,6 +35,7 @@ from app.services.analytics.sql_aggregates import (
     recommendation_object_distribution_sql,
     recommendation_period_series_sql,
     recommendation_status_matrix_sql,
+    recommendation_view_distribution_sql,
     summarize_recommendations_sql,
 )
 
@@ -141,6 +142,7 @@ async def build_recommendations_analytics(
         period_series=period_series,
         materiality_distribution=build_materiality_distribution(summary),
         indicator_distribution=await recommendation_indicator_distribution_sql(session, **filters),
+        view_distribution=await recommendation_view_distribution_sql(session, **filters),
         check_links=await recommendation_check_links_sql(session, **filters),
         materiality_matrix=await recommendation_materiality_matrix_sql(session, **filters),
         object_distribution=await recommendation_object_distribution_sql(session, **filters),

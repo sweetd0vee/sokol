@@ -99,6 +99,7 @@ export type RecommendationsAnalyticsResponse = {
   periodSeries: RecommendationPeriodPoint[];
   materialityDistribution: NamedCount[];
   indicatorDistribution: NamedCount[];
+  viewDistribution: NamedCount[];
   checkLinks: NamedCount[];
   objectDistribution: RecommendationObjectDistributionItem[];
   materialityMatrix: MaterialityMatrixRow[];
@@ -153,6 +154,12 @@ export type DvaAuditorMaterialityRow = {
   total: number;
 };
 
+export type DvaCheckCountRef = {
+  key: string;
+  short_name: string;
+  count: number;
+};
+
 export type DvaAuditorExecutionRow = {
   name: string;
   completed: number;
@@ -160,6 +167,7 @@ export type DvaAuditorExecutionRow = {
   on_control: number;
   unresolved: number;
   total: number;
+  unresolved_checks?: DvaCheckCountRef[];
 };
 
 export type DvaAuditorTimelinessRow = {

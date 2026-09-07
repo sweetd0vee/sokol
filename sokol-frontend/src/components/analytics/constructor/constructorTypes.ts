@@ -138,6 +138,10 @@ export type ConstructorPayload =
   | {
       chart: 'auditor-documents-matrix';
       rows: DvaAuditorDocumentRow[];
+    }
+  | {
+      chart: 'auditor-unresolved';
+      data: DvaAuditorExecutionRow[];
     };
 
 export type ConstructorWidgetDraft = {
@@ -185,6 +189,8 @@ export type RecommendationsConstructorInput = {
   universeTotal: number;
   completedPeriodSeries: RecommendationPeriodPoint[];
   coloredMaterialityDistribution: DonutDatum[];
+  viewDistribution: NamedCount[];
+  viewColors: string[];
   objectDistributionTop: NamedCount[];
   materialityMatrix: MaterialityMatrixRow[];
   granularity: PeriodGranularity;

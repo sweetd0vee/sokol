@@ -16,7 +16,7 @@ import {
 import { exportRecommendationsTable } from '../../utils/exports';
 import { formatRuDate } from '../../utils/dates';
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
-import { toNameOptions, useAuditorOptions } from '../../hooks/useReferenceOptions';
+import { toNameOptions, useAuditorOptions, useCheckKindOptions } from '../../hooks/useReferenceOptions';
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
 import { useSokolData } from '../../contexts/sokolData';
 import { formatRecommendationAuditObjects } from '../../utils/auditObjects';
@@ -37,7 +37,9 @@ import {
   getRecommendationYearlyId,
 } from '../../utils/recommendationYearlyNumber';
 import {
+  buildCheckViewBySerial,
   filterRecommendations,
+  getRecommendationCheckView,
   getRecommendationSortValue,
   type RecommendationSortKey,
 } from '../../utils/recommendationList';
@@ -80,6 +82,7 @@ export function RecommendationsTab() {
   const [additionalIndicators, setAdditionalIndicators] = useState<string[]>([]);
   const [auditObjects, setAuditObjects] = useState<string[]>([]);
   const [indicators, setIndicators] = useState<string[]>([]);
+  const [checkViews, setCheckViews] = useState<string[]>([]);
   const [materialityLevels, setMaterialityLevels] = useState<string[]>([]);
   const [auditors, setAuditors] = useState<string[]>([]);
   const [managers, setManagers] = useState<string[]>([]);
@@ -90,6 +93,7 @@ export function RecommendationsTab() {
   const trimmedMyName = useMemo(() => myName.trim(), [myName]);
   const { options: auditorOptions } = useAuditorOptions();
   const { options: auditObjectOptions } = useAuditObjectOptions();
+  const { options: checkViewOptions } = useCheckKindOptions();
 
   const {
     recommendations,
@@ -103,6 +107,7 @@ export function RecommendationsTab() {
     () => buildRecommendationYearlyNumbers(recommendations),
     [recommendations],
   );
+  const checkViewBySerial = useMemo(() => buildCheckViewBySerial(checks), [checks]);
   const managerOptions = useMemo(
     () => toNameOptions(recommendations.map((recommendation) => recommendation.manager)),
     [recommendations],
@@ -110,31 +115,39 @@ export function RecommendationsTab() {
 
   const filteredRecommendations = useMemo(
     () =>
-      filterRecommendations(recommendations, recommendationYearlyNumbers, {
-        idFilter,
-        keyFilter,
-        nameFilter,
-        statuses: [],
-        additionalIndicators,
-        auditObjects,
-        indicators,
-        materialityLevels,
-        auditors,
-        managers,
-        showOnlyMe,
-        trimmedMyName,
-        deadlineFrom,
-        deadlineTo,
-      }),
+      filterRecommendations(
+        recommendations,
+        recommendationYearlyNumbers,
+        {
+          idFilter,
+          keyFilter,
+          nameFilter,
+          statuses: [],
+          additionalIndicators,
+          auditObjects,
+          indicators,
+          checkViews,
+          materialityLevels,
+          auditors,
+          managers,
+          showOnlyMe,
+          trimmedMyName,
+          deadlineFrom,
+          deadlineTo,
+        },
+        checkViewBySerial,
+      ),
     [
       recommendations,
       recommendationYearlyNumbers,
+      checkViewBySerial,
       idFilter,
       keyFilter,
       nameFilter,
       additionalIndicators,
       auditObjects,
       indicators,
+      checkViews,
       materialityLevels,
       auditors,
       managers,
@@ -147,8 +160,8 @@ export function RecommendationsTab() {
 
   const getSortValue = useCallback(
     (recommendation: Recommendation, key: RecommendationSortKey) =>
-      getRecommendationSortValue(recommendation, key, recommendationYearlyNumbers),
-    [recommendationYearlyNumbers],
+      getRecommendationSortValue(recommendation, key, recommendationYearlyNumbers, checkViewBySerial),
+    [recommendationYearlyNumbers, checkViewBySerial],
   );
 
   const {
@@ -172,6 +185,7 @@ export function RecommendationsTab() {
       additionalIndicators.join('\u0000'),
       auditObjects.join('\u0000'),
       indicators.join('\u0000'),
+      checkViews.join('\u0000'),
       materialityLevels.join('\u0000'),
       auditors.join('\u0000'),
       managers.join('\u0000'),
@@ -189,6 +203,7 @@ export function RecommendationsTab() {
     setAdditionalIndicators([]);
     setAuditObjects([]);
     setIndicators([]);
+    setCheckViews([]);
     setMaterialityLevels([]);
     setAuditors([]);
     setManagers([]);
@@ -281,7 +296,7 @@ export function RecommendationsTab() {
           </ListTableFooter>
         }
       >
-        <table className="w-full text-base table-fixed min-w-[1644px]">
+        <table className="w-full text-base table-fixed min-w-[1788px]">
           <colgroup>
             <col className="w-24" />
             <col className="w-40" />
@@ -289,6 +304,7 @@ export function RecommendationsTab() {
             <col className="w-52" />
             <col className="w-28" />
             <col className="w-44" />
+            <col className="w-36" />
             <col className="w-44" />
             <col className="w-28" />
             <col className="w-36" />
@@ -349,6 +365,15 @@ export function RecommendationsTab() {
                 />
               </ListFilterCell>
               <ListFilterCell>
+                <MultiCheckboxSelect
+                  value={checkViews}
+                  onChange={setCheckViews}
+                  options={checkViewOptions}
+                  placeholder="Все"
+                  inputClassName={listFilterClass(checkViews.length > 0)}
+                />
+              </ListFilterCell>
+              <ListFilterCell>
                 <ListDateRangeFilter
                   from={deadlineFrom}
                   to={deadlineTo}
@@ -403,6 +428,7 @@ export function RecommendationsTab() {
                   <span>дополнительного статуса</span>
                 </>,
               )}
+              {renderSortableHeader('check_view', 'Вид')}
               {renderSortableHeader('deadline', 'Срок исполнения')}
               {renderSortableHeader('materiality_level', 'Уровень')}
               {renderSortableHeader('auditor', 'Аудитор')}
@@ -423,6 +449,7 @@ export function RecommendationsTab() {
                 recommendation.additional_status,
                 recommendation.additional_indicator,
               );
+              const checkView = getRecommendationCheckView(recommendation, checkViewBySerial);
               return (
                 <tr key={recommendation.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 whitespace-nowrap">
@@ -448,6 +475,12 @@ export function RecommendationsTab() {
                       label={getAdditionalIndicatorLabel(additionalIndicator)}
                       icons={ADDITIONAL_INDICATOR_ICONS}
                     />
+                  </td>
+                  <td
+                    className="px-4 py-3 truncate"
+                    title={checkView || undefined}
+                  >
+                    {checkView || '—'}
                   </td>
                   <td className="px-4 py-3 pr-6">{formatRuDate(recommendation.deadline)}</td>
                   <td className="px-2 py-3 text-center">

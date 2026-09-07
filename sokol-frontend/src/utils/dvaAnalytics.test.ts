@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { rankAuditorRows } from './dvaAnalytics';
+import {
+  formatUnresolvedBarLabel,
+  formatUnresolvedCheckLine,
+  formatUnresolvedShare,
+  rankAuditorRows,
+  unresolvedSharePercent,
+} from './dvaAnalytics';
 
 describe('rankAuditorRows', () => {
   it('ranks by metric and keeps a stable name order on ties', () => {
@@ -28,5 +34,21 @@ describe('rankAuditorRows', () => {
     );
 
     expect(ranked[0]?.name).toBe('Петров');
+  });
+});
+
+describe('unresolved share labels', () => {
+  it('rounds the share to one decimal and formats the bar label', () => {
+    expect(unresolvedSharePercent(32, 252)).toBe(12.7);
+    expect(formatUnresolvedShare(32, 252)).toBe('12,7%');
+    expect(formatUnresolvedBarLabel(32, 252)).toBe('32 · 12,7%');
+    expect(formatUnresolvedShare(0, 0)).toBe('0%');
+  });
+
+  it('renders check keys with names and recommendation counts', () => {
+    expect(
+      formatUnresolvedCheckLine({ key: 'П-1', short_name: 'Казначейство', count: 12 }),
+    ).toBe('П-1 — Казначейство (12)');
+    expect(formatUnresolvedCheckLine({ key: 'П-2', short_name: '', count: 1 })).toBe('П-2 (1)');
   });
 });

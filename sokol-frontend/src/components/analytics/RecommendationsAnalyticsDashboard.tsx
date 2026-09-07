@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   LabelList,
   ResponsiveContainer,
   Tooltip,
@@ -17,12 +18,14 @@ import { AnalyticsDashboardFrame } from './AnalyticsDashboardFrame';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { filterSelectionItem } from './filterSelectionItem';
-import { ChartCard, CHART_AXIS_TICK, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { ChartCard, CHART_AXIS_TICK, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { MaterialityMatrixChart } from './MaterialityMatrixChart';
 import {
   getMaterialityChartColor,
+  getValueBasedColors,
+  lastScaleColor,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   VALUE_TEAL_SCALE,
@@ -48,7 +51,6 @@ import {
   type PeriodGranularity,
 } from '../../utils/recommendationAnalytics';
 import { completeNamedDistribution, distributionHasValues } from '../../utils/analyticsDistribution';
-import { registerDashboardChart } from '../../utils/dashboardChartRegistry';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 import { useAddToConstructor } from './constructor/useAddToConstructor';
 import { buildRecommendationsConstructorDrafts } from './constructor/buildConstructorWidgets';
@@ -61,6 +63,7 @@ import {
 
 const EMPTY_PERIOD_SERIES: RecommendationPeriodPoint[] = [];
 const EMPTY_MATERIALITY_DISTRIBUTION: never[] = [];
+const EMPTY_VIEW_DISTRIBUTION: never[] = [];
 const EMPTY_OBJECT_DISTRIBUTION: never[] = [];
 const EMPTY_MATERIALITY_MATRIX: never[] = [];
 
@@ -256,6 +259,11 @@ export function RecommendationsAnalyticsDashboard() {
     [materialityDistribution],
   );
 
+  const viewDistribution = data?.viewDistribution ?? EMPTY_VIEW_DISTRIBUTION;
+  const viewColors = useMemo(
+    () => getValueBasedColors(viewDistribution.map((item) => item.value), VALUE_TEAL_SCALE),
+    [viewDistribution],
+  );
   const objectDistribution = data?.objectDistribution ?? EMPTY_OBJECT_DISTRIBUTION;
   const objectDistributionTop = useMemo(
     () => [...objectDistribution].sort((left, right) => right.value - left.value).slice(0, 10),
@@ -271,54 +279,6 @@ export function RecommendationsAnalyticsDashboard() {
     materialityMatrixSortRef.current = sortConfig;
   }, []);
   const periodXAxisProps = useMemo(() => getPeriodXAxisProps(granularity), [granularity]);
-
-  // Export needs two separate capture nodes, even though UI now renders them as one card.
-  const materialityByPeriodCaptureRef = useRef<HTMLDivElement>(null);
-  const materialityCaptureRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const cleanupByPeriod = registerDashboardChart({
-      id: 'materialityByPeriod',
-      title: 'Существенность по периодам',
-      description: 'Распределение уровней существенности внутри периода',
-      getNode: () => materialityByPeriodCaptureRef.current,
-    });
-    const cleanupMateriality = registerDashboardChart({
-      id: 'materiality',
-      title: 'Существенность',
-      description: 'Распределение уровней существенности за период',
-      getNode: () => materialityCaptureRef.current,
-    });
-
-    return () => {
-      cleanupByPeriod();
-      cleanupMateriality();
-    };
-  }, []);
-
-  const isMaterialityExportSelected =
-    exportSections.isSelected('materialityByPeriod') && exportSections.isSelected('materiality');
-
-  const toggleMaterialityExport = useCallback(() => {
-    const shouldEnable = !isMaterialityExportSelected;
-
-    if (shouldEnable) {
-      if (!exportSections.isSelected('materialityByPeriod')) {
-        exportSections.toggleSection('materialityByPeriod');
-      }
-      if (!exportSections.isSelected('materiality')) {
-        exportSections.toggleSection('materiality');
-      }
-      return;
-    }
-
-    if (exportSections.isSelected('materialityByPeriod')) {
-      exportSections.toggleSection('materialityByPeriod');
-    }
-    if (exportSections.isSelected('materiality')) {
-      exportSections.toggleSection('materiality');
-    }
-  }, [exportSections, isMaterialityExportSelected]);
 
   const resetFilters = () => {
     resetPeriodSelections();
@@ -369,6 +329,8 @@ export function RecommendationsAnalyticsDashboard() {
         universeTotal,
         completedPeriodSeries,
         coloredMaterialityDistribution,
+        viewDistribution,
+        viewColors,
         objectDistributionTop,
         materialityMatrix,
         granularity,
@@ -426,145 +388,135 @@ export function RecommendationsAnalyticsDashboard() {
         ),
       },
       {
-        id: 'materialityCombined',
-        defaultLayout: { x: 0, y: 2, w: 12, h: 3, minW: 6, minH: 2 },
+        id: 'materialityByPeriod',
+        defaultLayout: { x: 0, y: 2, w: 9, h: 3, minW: 4, minH: 2 },
+        render: () => (
+          <ChartCard
+            title="Существенность по периодам"
+            description="Распределение уровней существенности внутри периода"
+            exportSectionId="materialityByPeriod"
+            exportSelected={exportSections.isSelected('materialityByPeriod')}
+            onToggleExport={() => exportSections.toggleSection('materialityByPeriod')}
+          >
+            {completedPeriodSeries.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <div className="relative h-full min-h-0 pb-6">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={completedPeriodSeries}
+                    margin={{ top: STACKED_PERIOD_CHART_TOP_MARGIN, right: STACKED_PERIOD_CHART_SIDE_MARGIN, left: -10, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
+                    <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
+                    <Tooltip />
+                    <Bar dataKey="low" name="Низкий" stackId="mat" fill={RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий}>
+                      <LabelList
+                        dataKey="low"
+                        content={(props) => (
+                          <StackedBarSegmentValueLabel
+                            {...props}
+                            dataKey="low"
+                            stackKeys={MATERIALITY_STACK_KEYS}
+                            getColor={getMaterialitySegmentColor}
+                            showStackTotal
+                            stackRow={completedPeriodSeries[Number(props.index)]}
+                          />
+                        )}
+                      />
+                    </Bar>
+                    <Bar
+                      dataKey="medium"
+                      name="Средний"
+                      stackId="mat"
+                      fill={RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний}
+                    >
+                      <LabelList
+                        dataKey="medium"
+                        content={(props) => (
+                          <StackedBarSegmentValueLabel
+                            {...props}
+                            dataKey="medium"
+                            stackKeys={MATERIALITY_STACK_KEYS}
+                            getColor={getMaterialitySegmentColor}
+                            showStackTotal
+                            stackRow={completedPeriodSeries[Number(props.index)]}
+                          />
+                        )}
+                      />
+                    </Bar>
+                    <Bar
+                      dataKey="high"
+                      name="Высокий"
+                      stackId="mat"
+                      fill={RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий}
+                    >
+                      <LabelList
+                        dataKey="high"
+                        content={(props) => (
+                          <StackedBarSegmentValueLabel
+                            {...props}
+                            dataKey="high"
+                            stackKeys={MATERIALITY_STACK_KEYS}
+                            getColor={getMaterialitySegmentColor}
+                            showStackTotal
+                            stackRow={completedPeriodSeries[Number(props.index)]}
+                          />
+                        )}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+                <div className="pointer-events-none absolute bottom-1 left-1/2 flex -translate-x-1/2 flex-row items-center justify-center gap-6">
+                  <div className="flex items-center gap-2 text-sm text-black">
+                    <span
+                      className="inline-block h-3.5 w-3.5 rounded-sm"
+                      style={{ backgroundColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий }}
+                    />
+                    Высокий
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-black">
+                    <span
+                      className="inline-block h-3.5 w-3.5 rounded-sm"
+                      style={{ backgroundColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний }}
+                    />
+                    Средний
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-black">
+                    <span
+                      className="inline-block h-3.5 w-3.5 rounded-sm"
+                      style={{ backgroundColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий }}
+                    />
+                    Низкий
+                  </div>
+                </div>
+              </div>
+            )}
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'materiality',
+        defaultLayout: { x: 9, y: 2, w: 3, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Существенность"
-            description="Распределение уровней существенности рекомендаций: за период и по периодам"
-            exportSelected={isMaterialityExportSelected}
-            onToggleExport={toggleMaterialityExport}
+            description="Распределение уровней существенности за период"
+            exportSectionId="materiality"
+            exportSelected={exportSections.isSelected('materiality')}
+            onToggleExport={() => exportSections.toggleSection('materiality')}
           >
-            <div className="relative flex h-full min-h-0 flex-row gap-2">
-              <div
-                ref={materialityCaptureRef}
-                style={{ flex: 1 }}
-                data-analytics-export-capture-id="materiality"
-                data-analytics-export-title="Существенность"
-                data-analytics-export-description="Распределение уровней существенности за период"
-                className="flex-1 min-h-0 min-w-0"
-              >
-                {distributionHasValues(coloredMaterialityDistribution) ? (
-                  <FocusableDonutChart
-                    data={coloredMaterialityDistribution}
-                    labelMode="both"
-                    legendLabelMode="name"
-                    showLegend={false}
-                    containerClassName="h-full min-h-0"
-                    valueLabelColor="#111827"
-                  />
-                ) : (
-                  <EmptyChart message="Нет данных" heightClass="h-full" />
-                )}
-              </div>
-
-              <div
-                ref={materialityByPeriodCaptureRef}
-                style={{ flex: 3 }}
-                data-analytics-export-capture-id="materialityByPeriod"
-                data-analytics-export-title="Существенность по периодам"
-                data-analytics-export-description="Распределение уровней существенности внутри периода"
-                className="flex-1 min-h-0 min-w-0"
-              >
-                {completedPeriodSeries.length === 0 ? (
-                  <EmptyChart message="Нет данных" heightClass="h-full" />
-                ) : (
-                  <div className="h-full min-h-0 pb-6">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={completedPeriodSeries}
-                        margin={{ top: STACKED_PERIOD_CHART_TOP_MARGIN, right: STACKED_PERIOD_CHART_SIDE_MARGIN, left: -10, bottom: 0 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                        <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
-                        <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
-                        <Tooltip />
-                        <Bar dataKey="low" name="Низкий" stackId="mat" fill={RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий}>
-                          <LabelList
-                            dataKey="low"
-                            content={(props) => (
-                              <StackedBarSegmentValueLabel
-                                {...props}
-                                dataKey="low"
-                                stackKeys={MATERIALITY_STACK_KEYS}
-                                getColor={getMaterialitySegmentColor}
-                                showStackTotal
-                                stackRow={completedPeriodSeries[Number(props.index)]}
-                              />
-                            )}
-                          />
-                        </Bar>
-                        <Bar
-                          dataKey="medium"
-                          name="Средний"
-                          stackId="mat"
-                          fill={RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний}
-                        >
-                          <LabelList
-                            dataKey="medium"
-                            content={(props) => (
-                              <StackedBarSegmentValueLabel
-                                {...props}
-                                dataKey="medium"
-                                stackKeys={MATERIALITY_STACK_KEYS}
-                                getColor={getMaterialitySegmentColor}
-                                showStackTotal
-                                stackRow={completedPeriodSeries[Number(props.index)]}
-                              />
-                            )}
-                          />
-                        </Bar>
-                        <Bar
-                          dataKey="high"
-                          name="Высокий"
-                          stackId="mat"
-                          fill={RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий}
-                        >
-                          <LabelList
-                            dataKey="high"
-                            content={(props) => (
-                              <StackedBarSegmentValueLabel
-                                {...props}
-                                dataKey="high"
-                                stackKeys={MATERIALITY_STACK_KEYS}
-                                getColor={getMaterialitySegmentColor}
-                                showStackTotal
-                                stackRow={completedPeriodSeries[Number(props.index)]}
-                              />
-                            )}
-                          />
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-
-                    {/* Custom legend centered across the whole card */}
-                    <div className="pointer-events-none absolute bottom-1 left-1/2 flex -translate-x-1/2 flex-row items-center justify-center gap-6">
-                      <div className="flex items-center gap-2 text-sm text-black">
-                        <span
-                          className="inline-block h-3.5 w-3.5 rounded-sm"
-                          style={{ backgroundColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий }}
-                        />
-                        Высокий
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-black">
-                        <span
-                          className="inline-block h-3.5 w-3.5 rounded-sm"
-                          style={{ backgroundColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний }}
-                        />
-                        Средний
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-black">
-                        <span
-                          className="inline-block h-3.5 w-3.5 rounded-sm"
-                          style={{ backgroundColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий }}
-                        />
-                        Низкий
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            {distributionHasValues(coloredMaterialityDistribution) ? (
+              <FocusableDonutChart
+                data={coloredMaterialityDistribution}
+                labelMode="both"
+                legendLabelMode="name"
+                valueLabelColor="#111827"
+              />
+            ) : (
+              <EmptyChart message="Нет данных" />
+            )}
           </ChartCard>
         ),
       },
@@ -594,8 +546,47 @@ export function RecommendationsAnalyticsDashboard() {
         ),
       },
       {
+        id: 'views',
+        defaultLayout: { x: 0, y: 13, w: 4, h: 3, minW: 3, minH: 2 },
+        render: () => (
+          <ChartCard
+            title="Виды проверок"
+            description="Количество рекомендаций за период"
+            exportSectionId="views"
+            exportSelected={exportSections.isSelected('views')}
+            onToggleExport={() => exportSections.toggleSection('views')}
+          >
+            {viewDistribution.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <div className="h-full min-h-[13rem]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={viewDistribution} layout="vertical" margin={{ top: 8, right: 40, left: 16, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
+                    <YAxis dataKey="name" type="category" width={92} tick={CHART_AXIS_TICK} />
+                    <Tooltip />
+                    <Bar dataKey="value" name="Рекомендации" fill={lastScaleColor(VALUE_TEAL_SCALE)} radius={[0, 6, 6, 0]}>
+                      {viewDistribution.map((item, index) => (
+                        <Cell key={item.name} fill={viewColors[index]} />
+                      ))}
+                      <LabelList
+                        dataKey="value"
+                        position="right"
+                        fontSize={CHART_VALUE_LABEL_SIZE}
+                        fill={lastScaleColor(VALUE_TEAL_SCALE)}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </ChartCard>
+        ),
+      },
+      {
         id: 'objects',
-        defaultLayout: { x: 0, y: 13, w: 12, h: 3, minW: 4, minH: 3 },
+        defaultLayout: { x: 4, y: 13, w: 8, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Карта департаментов (ТОП-10)"
@@ -619,16 +610,16 @@ export function RecommendationsAnalyticsDashboard() {
     ],
     [
       exportSections,
-      isMaterialityExportSelected,
       coloredMaterialityDistribution,
       materialityMatrix,
       handleMaterialityMatrixSortChange,
       objectDistributionTop,
       periodXAxisProps,
       completedPeriodSeries,
-      toggleMaterialityExport,
       universeTotal,
       summary,
+      viewColors,
+      viewDistribution,
     ],
   );
 
