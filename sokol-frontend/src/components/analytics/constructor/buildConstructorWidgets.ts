@@ -5,7 +5,6 @@ import {
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   RECOMMENDATIONS_PALETTE,
 } from '../analyticsPalette';
-import { RECOMMENDATION_STATUS_OPTIONS } from '../../../constants/recommendations';
 import type {
   ChecksConstructorInput,
   ConstructorBarPoint,
@@ -166,22 +165,6 @@ export function buildRecommendationsConstructorDrafts(
               accentColor: MONITORING_STATUS_COLORS.completed,
             },
           ],
-        }),
-      );
-    } else if (sectionId === 'statusByPeriod') {
-      drafts.push(
-        draft(kind, sectionId, 'Статусы по периодам', 'Распределение статусов по периодам', caption, SIZE.half, {
-          chart: 'stacked',
-          xKey: 'label',
-          data: input.completedPeriodSeries as unknown as Array<Record<string, string | number>>,
-          series: RECOMMENDATION_STATUS_OPTIONS.map((status) => ({
-            key: status.value,
-            name: status.label,
-            color: MONITORING_STATUS_COLORS[status.value],
-          })),
-          granularity: input.granularity,
-          showLegend: true,
-          showStackTotal: true,
         }),
       );
     } else if (sectionId === 'materialityCombined') {

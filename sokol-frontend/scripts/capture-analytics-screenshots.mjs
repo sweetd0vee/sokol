@@ -37,7 +37,6 @@ const TABS = [
       { title: 'Итого', file: 'recommendations-summary.png' },
       { title: 'Существенность', file: 'recommendations-materiality.png' },
       { title: 'Матрица существенности', file: 'recommendations-materiality-matrix.png' },
-      { title: 'Статусы по периодам', file: 'recommendations-status-by-period.png' },
       { title: 'Карта департаментов (ТОП-10)', file: 'recommendations-department-map.png' },
     ],
   },

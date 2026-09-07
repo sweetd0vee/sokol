@@ -5,7 +5,6 @@ import {
   BarChart,
   CartesianGrid,
   LabelList,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -18,7 +17,7 @@ import { AnalyticsDashboardFrame } from './AnalyticsDashboardFrame';
 import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
 import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
 import { filterSelectionItem } from './filterSelectionItem';
-import { ChartCard, CHART_AXIS_TICK, ChartRechartsSquareLegend, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { ChartCard, CHART_AXIS_TICK, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { MaterialityMatrixChart } from './MaterialityMatrixChart';
@@ -40,10 +39,7 @@ import {
   RECOMMENDATION_EXPORT_SECTIONS,
   type RecommendationExportSectionId,
 } from '../../constants/analyticsExportSections';
-import {
-  MATERIALITY_LEVEL_OPTIONS,
-  RECOMMENDATION_STATUS_OPTIONS,
-} from '../../constants/recommendations';
+import { MATERIALITY_LEVEL_OPTIONS } from '../../constants/recommendations';
 import { useExportSections } from '../../hooks/useExportSections';
 import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
 import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
@@ -135,12 +131,7 @@ function getPeriodXAxisProps(granularity: PeriodGranularity) {
   return {};
 }
 
-const STATUS_STACK_KEYS = RECOMMENDATION_STATUS_OPTIONS.map((status) => status.value);
 const MATERIALITY_STACK_KEYS = ['low', 'medium', 'high'] as const;
-
-function getStatusSegmentColor(key: string) {
-  return MONITORING_STATUS_COLORS[key as keyof typeof MONITORING_STATUS_COLORS] ?? '#e5e7eb';
-}
 
 function getMaterialitySegmentColor(key: string) {
   if (key === 'low') {
@@ -435,56 +426,6 @@ export function RecommendationsAnalyticsDashboard() {
         ),
       },
       {
-        id: 'statusByPeriod',
-        defaultLayout: { x: 0, y: 13, w: 7, h: 3, minW: 3, minH: 2 },
-        render: () => (
-          <ChartCard
-            title="Статусы по периодам"
-            description="Распределение статусов по периодам"
-            exportSectionId="statusByPeriod"
-            exportSelected={exportSections.isSelected('statusByPeriod')}
-            onToggleExport={() => exportSections.toggleSection('statusByPeriod')}
-          >
-            {completedPeriodSeries.length === 0 ? <EmptyChart message="Нет данных" /> : (
-              <div className="h-full min-h-[13rem]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={completedPeriodSeries} margin={{ top: STACKED_PERIOD_CHART_TOP_MARGIN, right: STACKED_PERIOD_CHART_SIDE_MARGIN, left: -10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps} />
-                    <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
-                    <Tooltip />
-                    <Legend content={<ChartRechartsSquareLegend />} />
-                    {RECOMMENDATION_STATUS_OPTIONS.map((status) => (
-                      <Bar
-                        key={status.value}
-                        dataKey={status.value}
-                        name={status.label}
-                        stackId="status"
-                        fill={MONITORING_STATUS_COLORS[status.value]}
-                      >
-                        <LabelList
-                          dataKey={status.value}
-                          content={(props) => (
-                            <StackedBarSegmentValueLabel
-                              {...props}
-                              dataKey={status.value}
-                              stackKeys={STATUS_STACK_KEYS}
-                              getColor={getStatusSegmentColor}
-                              showStackTotal
-                              stackRow={completedPeriodSeries[Number(props.index)]}
-                            />
-                          )}
-                        />
-                      </Bar>
-                    ))}
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </ChartCard>
-        ),
-      },
-      {
         id: 'materialityCombined',
         defaultLayout: { x: 0, y: 2, w: 12, h: 3, minW: 6, minH: 2 },
         render: () => (
@@ -654,7 +595,7 @@ export function RecommendationsAnalyticsDashboard() {
       },
       {
         id: 'objects',
-        defaultLayout: { x: 7, y: 13, w: 5, h: 3, minW: 4, minH: 3 },
+        defaultLayout: { x: 0, y: 13, w: 12, h: 3, minW: 4, minH: 3 },
         render: () => (
           <ChartCard
             title="Карта департаментов (ТОП-10)"
