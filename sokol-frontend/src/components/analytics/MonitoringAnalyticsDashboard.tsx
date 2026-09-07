@@ -392,7 +392,7 @@ export function MonitoringAnalyticsDashboard() {
       },
       {
         id: 'deadlineExtensions',
-        defaultLayout: { x: 0, y: 5, w: 6, h: 4, minW: 3, minH: 3 },
+        defaultLayout: { x: 6, y: 5, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Перенос срока"
@@ -446,7 +446,7 @@ export function MonitoringAnalyticsDashboard() {
       },
       {
         id: 'completedDuringAudit',
-        defaultLayout: { x: 6, y: 5, w: 6, h: 4, minW: 3, minH: 3 },
+        defaultLayout: { x: 0, y: 5, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Исполнено в ходе аудита"

@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import { ResponsiveContainer, Tooltip, Treemap } from 'recharts';
-import { getRankBasedColors, getUniqueValueColors, getValueBasedColors, PALETTE } from './analyticsPalette';
+import {
+  getRankBasedColors,
+  getUniqueValueColors,
+  getValueBasedColors,
+  PALETTE,
+  RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
+} from './analyticsPalette';
 import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
-import { MATERIALITY_COLORS } from '../../utils/recommendationAnalytics';
 import { formatTreemapExportLabel } from '../../utils/treemapExportLabel';
 
 export type TreemapDatum = {
@@ -234,13 +239,13 @@ export function FocusableTreemapChart({
     return [
       <>
         <div className="font-semibold text-gray-900">Всего: {total}</div>
-        <div className="mt-1 font-medium" style={{ color: MATERIALITY_COLORS.высокий }}>
+        <div className="mt-1 font-medium" style={{ color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий }}>
           Высокий: {materiality.высокий}
         </div>
-        <div className="font-medium" style={{ color: MATERIALITY_COLORS.средний }}>
+        <div className="font-medium" style={{ color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний }}>
           Средний: {materiality.средний}
         </div>
-        <div className="font-medium" style={{ color: MATERIALITY_COLORS.низкий }}>
+        <div className="font-medium" style={{ color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий }}>
           Низкий: {materiality.низкий}
         </div>
       </>,

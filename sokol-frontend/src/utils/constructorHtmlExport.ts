@@ -14,7 +14,7 @@ import {
   namespaceSvgMarkupForEmbed,
   type DashboardChartCapture,
 } from './dashboardChartRegistry';
-import { MATERIALITY_COLORS } from './recommendationAnalytics';
+import { RECOMMENDATIONS_MATERIALITY_CHART_COLORS } from '../components/analytics/analyticsPalette';
 
 function escapeHtml(value: string) {
   return value
@@ -270,9 +270,9 @@ export function buildConstructorDashboardHtml(options: {
         titleEl.textContent = headline;
         tooltip.appendChild(titleEl);
         [
-          ['Высокий', high, '${MATERIALITY_COLORS.высокий}'],
-          ['Средний', medium, '${MATERIALITY_COLORS.средний}'],
-          ['Низкий', low, '${MATERIALITY_COLORS.низкий}']
+          ['Высокий', high, '${RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий}'],
+          ['Средний', medium, '${RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний}'],
+          ['Низкий', low, '${RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий}']
         ].forEach(function (row) {
           var line = document.createElement('div');
           line.style.color = row[2];

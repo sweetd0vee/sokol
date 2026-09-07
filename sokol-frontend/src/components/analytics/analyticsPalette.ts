@@ -93,16 +93,17 @@ export const VALUE_EMERALD_SCALE = [
 ] as const;
 
 /**
- * Sequential tints of emerald #0E7490 for department / auditor treemaps.
- * Small values are pale teal; the largest value is #0E7490.
+ * Sequential teal → azure scale for department / auditor treemaps.
+ * The largest value stays signature teal #0E7490; lighter stops shift hue
+ * toward sky blue so neighbouring blocks stay distinct instead of washing out.
  */
 export const VALUE_TEAL_SCALE = [
-  '#C3DCE3', // pale tint — smallest
-  '#9FC7D3',
-  '#7AB3C2',
-  '#569EB1',
-  '#3289A1',
-  '#0E7490', // emerald — largest
+  '#CBD8EC', // ice blue — smallest
+  '#9CBADE', // powder azure
+  '#6AA3D2', // steel sky
+  '#3792C3', // cerulean
+  '#1D81A5', // teal-blue
+  '#0E7490', // signature teal — largest
 ] as const;
 
 /**
