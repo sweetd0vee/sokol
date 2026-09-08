@@ -173,6 +173,20 @@ export const MONITORING_STATUS_COLORS = {
 } as const;
 
 /**
+ * DVA auditor-checks treemap: same teal ramp as `VALUE_TEAL_SCALE`,
+ * but the lightest stop matches «На контроле» grey so the smallest
+ * headcounts stay muted instead of pale blue.
+ */
+export const DVA_AUDITOR_CHECKS_SCALE = [
+  MONITORING_STATUS_COLORS.on_control, // #DBDBDB — smallest
+  '#9CBADE',
+  '#6AA3D2',
+  '#3792C3',
+  '#1D81A5',
+  '#0E7490', // signature teal — largest
+] as const;
+
+/**
  * Materiality donut / stacked bars / matrix circles on Recommendations —
  * same tones as Monitoring status circles.
  */

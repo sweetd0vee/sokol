@@ -13,10 +13,10 @@ import { AuditorUnresolvedBarChart } from './AuditorUnresolvedBarChart';
 import { CheckLifecycleChart } from './CheckLifecycleChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
+  DVA_AUDITOR_CHECKS_SCALE,
   MONITORING_ADDITIONAL_STATUS_COLORS,
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
-  VALUE_TEAL_SCALE,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
@@ -181,10 +181,6 @@ export function DvaAnalyticsDashboard() {
     if ((filteredChecksTotal === 0 && filteredRecommendationsTotal === 0) || isExporting) {
       return;
     }
-    if (exportSections.selectedSections.length === 0) {
-      window.alert('Выберите хотя бы один дашборд для экспорта');
-      return;
-    }
     setIsExporting(true);
     try {
       await exportGenericAnalyticsDashboard(
@@ -192,7 +188,7 @@ export function DvaAnalyticsDashboard() {
           kind: 'dva',
           documentTitle: 'ДВА: управленческая аналитика',
           filenamePrefix: 'analytics-dva',
-          selectedSections: exportSections.selectedSections,
+          selectedSections: [...exportSections.allIds],
           meta: [
             ['Аудиторы', selectedAuditors.length ? selectedAuditors.join(', ') : 'Все'],
             ['Департаменты', selectedDepartments.length ? selectedDepartments.join(', ') : 'Все'],
@@ -347,7 +343,7 @@ export function DvaAnalyticsDashboard() {
             ) : (
               <FocusableTreemapChart
                 data={auditorChecksMap}
-                palette={VALUE_TEAL_SCALE}
+                palette={DVA_AUDITOR_CHECKS_SCALE}
                 colorByUniqueValue
               />
             )}

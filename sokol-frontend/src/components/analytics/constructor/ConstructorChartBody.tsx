@@ -33,10 +33,10 @@ import {
   lastScaleColor,
   MONITORING_BAR_BLUE_SCALE,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
+  DVA_AUDITOR_CHECKS_SCALE,
   VALUE_BLUE_SCALE,
   VALUE_EMERALD_SCALE,
   VALUE_GRAY_SCALE,
-  VALUE_TEAL_SCALE,
 } from '../analyticsPalette';
 import {
   HORIZONTAL_STRIP_MAX_SIZE,
@@ -360,7 +360,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
             : payload.palette === 'emerald'
               ? VALUE_EMERALD_SCALE
               : payload.palette === 'indigo'
-                ? VALUE_TEAL_SCALE
+                ? DVA_AUDITOR_CHECKS_SCALE
                 : VALUE_BLUE_SCALE
         }
         colorByValue

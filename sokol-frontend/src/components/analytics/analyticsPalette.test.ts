@@ -11,6 +11,7 @@ import {
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   VALUE_EMERALD_SCALE,
   VALUE_TEAL_SCALE,
+  DVA_AUDITOR_CHECKS_SCALE,
   DVA_VALUE_SCALE,
   getMaterialityChartColor,
   getRankBasedColors,
@@ -94,12 +95,13 @@ describe('getUniqueValueColors', () => {
   });
 
   it('maps the auditor checks treemap so equal headcounts share a shade', () => {
-    const colors = getUniqueValueColors([7, 5, 5, 4, 4, 2, 1, 1], VALUE_TEAL_SCALE);
+    const colors = getUniqueValueColors([7, 5, 5, 4, 4, 2, 1, 1], DVA_AUDITOR_CHECKS_SCALE);
 
     expect(colors[0]?.toUpperCase()).toBe('#0E7490');
     expect(colors[1]).toBe(colors[2]);
     expect(colors[3]).toBe(colors[4]);
     expect(colors[6]).toBe(colors[7]);
+    expect(colors[6]?.toUpperCase()).toBe(MONITORING_STATUS_COLORS.on_control.toUpperCase());
     expect(luminance(colors[1] ?? '')).toBeLessThan(luminance(colors[3] ?? ''));
     expect(luminance(colors[3] ?? '')).toBeLessThan(luminance(colors[5] ?? ''));
     expect(luminance(colors[5] ?? '')).toBeLessThan(luminance(colors[6] ?? ''));
