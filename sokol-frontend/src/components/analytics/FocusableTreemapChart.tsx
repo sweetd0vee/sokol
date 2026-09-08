@@ -4,6 +4,7 @@ import {
   getRankBasedColors,
   getUniqueValueColors,
   getValueBasedColors,
+  MONITORING_STATUS_COLORS,
   PALETTE,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
 } from './analyticsPalette';
@@ -244,10 +245,6 @@ export function FocusableTreemapChart({
     const numericValue = typeof value === 'number' ? value : Number(value);
     const total = Number.isFinite(numericValue) ? numericValue : payload?.value ?? 0;
     if (views.length > 0) {
-      const viewColors = getValueBasedColors(
-        views.map((item) => item.value),
-        colors,
-      );
       return [
         <>
           <div className="font-semibold text-gray-900">Всего: {total}</div>
@@ -255,7 +252,7 @@ export function FocusableTreemapChart({
             <div
               key={view.name}
               className={index === 0 ? 'mt-1 font-medium' : 'font-medium'}
-              style={{ color: viewColors[index] }}
+              style={{ color: MONITORING_STATUS_COLORS.completed }}
             >
               {view.name}: {view.value}
             </div>
