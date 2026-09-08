@@ -305,7 +305,7 @@ export function ChecksAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 2, w: 9, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
-            title="Динамика количества проверок"
+            title="Динамика количества проверок по периодам"
             description=""
             exportSectionId="dynamics"
             exportSelected={exportSections.isSelected('dynamics')}

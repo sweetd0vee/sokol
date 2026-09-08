@@ -22,4 +22,13 @@ describe('formatTreemapExportLabel', () => {
       ].join('\n'),
     );
   });
+
+  it('appends check-view counts for employee map tooltips', () => {
+    expect(
+      formatTreemapExportLabel('Важник Д.С.', 7, undefined, [
+        { name: 'ИТ', value: 4 },
+        { name: 'Корпо', value: 3 },
+      ]),
+    ).toBe(['Важник Д.С.: 7', 'ИТ: 4', 'Корпо: 3'].join('\n'));
+  });
 });

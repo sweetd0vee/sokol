@@ -14,7 +14,6 @@ import { CheckLifecycleChart } from './CheckLifecycleChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
   MONITORING_ADDITIONAL_STATUS_COLORS,
-  MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   VALUE_BLUE_SCALE,
 } from './analyticsPalette';
@@ -228,7 +227,6 @@ export function DvaAnalyticsDashboard() {
         employeeCount,
         highMateriality,
         highMaterialityShare,
-        recCompletionRate: recSummary.completionRate,
         recViolationRate: recSummary.violationRate,
         auditorChecksMap,
         auditorImpact,
@@ -250,7 +248,7 @@ export function DvaAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
         render: () => (
           <ChartCard title="Итого по ДВА" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')}>
-            <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-6">
+            <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
               <KpiCard label="Проверки" value={checkSummary.total} tone="blue" />
               <KpiCard label="Рекомендации" value={recSummary.total} tone="slate" />
               <KpiCard label="Аудиторы" value={employeeCount} tone="indigo" />
@@ -259,12 +257,6 @@ export function DvaAnalyticsDashboard() {
                 value={highMateriality}
                 hint={`${highMaterialityShare}% рекомендаций`}
                 accentColor={RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий}
-              />
-              <KpiCard
-                label="Исполнение"
-                value={recSummary.completionRate}
-                suffix="%"
-                accentColor={MONITORING_STATUS_COLORS.completed}
               />
               <KpiCard
                 label="Нарушение сроков"
@@ -278,7 +270,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorTimeliness',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 4, minW: 3, minH: 3 },
+        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Своевременность исполнения по сотрудникам"
@@ -297,7 +289,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorImpact',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 4, minW: 3, minH: 3 },
+        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Существенность рекомендаций по сотрудникам"
@@ -316,7 +308,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorExecution',
-        defaultLayout: { x: 0, y: 6, w: 4, h: 4, minW: 3, minH: 3 },
+        defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Нерешённые рекомендации по сотрудникам"
@@ -335,7 +327,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorChecksMap',
-        defaultLayout: { x: 4, y: 6, w: 8, h: 4, minW: 3, minH: 2 },
+        defaultLayout: { x: 4, y: 5, w: 8, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Карта сотрудников по проверкам"
@@ -358,7 +350,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'checkLifecycle',
-        defaultLayout: { x: 0, y: 10, w: 12, h: 8, minW: 6, minH: 6 },
+        defaultLayout: { x: 0, y: 8, w: 12, h: 8, minW: 6, minH: 6 },
         expandToContent: true,
         render: () => (
           <ChartCard
@@ -450,7 +442,7 @@ export function DvaAnalyticsDashboard() {
       />
       )}
     >
-      <AnalyticsDashboardGrid cards={cards} />
+      <AnalyticsDashboardGrid cards={cards} maxChartArea={440} />
     </AnalyticsDashboardFrame>
   );
 }

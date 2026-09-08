@@ -15,6 +15,7 @@ import {
   ChartRechartsSquareLegend,
 } from './AnalyticsChartPrimitives';
 import {
+  HORIZONTAL_BAR_MAX_SIZE,
   STACKED_HORIZONTAL_CHART_RIGHT_MARGIN,
   StackedBarSegmentValueLabel,
 } from './StackedBarSegmentValueLabel';
@@ -45,12 +46,14 @@ export function AuditorStackedBarChart({
   const colorByKey = Object.fromEntries(series.map((item) => [item.key, item.color]));
 
   return (
-    <div className="h-full min-h-[13rem]">
+    <div className="h-full min-h-[10rem]">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={data}
           layout="vertical"
-          margin={{ top: 8, right: STACKED_HORIZONTAL_CHART_RIGHT_MARGIN, left: 8, bottom: 0 }}
+          barCategoryGap={10}
+          maxBarSize={HORIZONTAL_BAR_MAX_SIZE}
+          margin={{ top: 4, right: STACKED_HORIZONTAL_CHART_RIGHT_MARGIN, left: 8, bottom: 0 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
           <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />

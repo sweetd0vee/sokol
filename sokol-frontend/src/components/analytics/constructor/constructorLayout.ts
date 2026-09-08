@@ -4,7 +4,7 @@ export type ConstructorSizeHint = Pick<ConstructorWidgetLayout, 'w' | 'h' | 'min
 
 export const CONSTRUCTOR_GRID_COLS = 12;
 export const CONSTRUCTOR_GRID_MARGIN = 10;
-export const CONSTRUCTOR_ROW_HEIGHT = 76;
+export const CONSTRUCTOR_ROW_HEIGHT = 56;
 
 const MATRIX_CHARTS: ReadonlySet<ConstructorPayload['chart']> = new Set([
   'effectiveness-matrix',

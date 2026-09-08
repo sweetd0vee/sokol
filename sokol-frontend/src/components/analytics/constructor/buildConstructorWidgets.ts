@@ -21,7 +21,9 @@ import type { ConstructorSizeHint } from './constructorLayout';
 const SIZE = {
   kpi: { w: 12, h: 2, minW: 6, minH: 2 },
   half: { w: 6, h: 4, minW: 3, minH: 3 },
+  compactHalf: { w: 6, h: 3, minW: 3, minH: 2 },
   wide: { w: 8, h: 4, minW: 4, minH: 3 },
+  treemap: { w: 8, h: 3, minW: 3, minH: 2 },
   narrow: { w: 4, h: 4, minW: 3, minH: 3 },
   full: { w: 12, h: 4, minW: 6, minH: 3 },
   matrix: { w: 12, h: 8, minW: 6, minH: 6 },
@@ -65,7 +67,7 @@ export function buildChecksConstructorDrafts(input: ChecksConstructorInput): Con
       );
     } else if (sectionId === 'dynamics') {
       drafts.push(
-        draft(kind, sectionId, 'Динамика количества проверок', caption, SIZE.wide, {
+        draft(kind, sectionId, 'Динамика количества проверок по периодам', caption, SIZE.wide, {
           chart: 'bar',
           variant: 'columns',
           data: input.flowSeries.map((item) => ({ label: item.label, value: item.total })),
@@ -97,7 +99,7 @@ export function buildChecksConstructorDrafts(input: ChecksConstructorInput): Con
       );
     } else if (sectionId === 'departmentMap') {
       drafts.push(
-        draft(kind, sectionId, 'Карта департаментов по проверкам (ТОП-10)', caption, SIZE.wide, {
+        draft(kind, sectionId, 'Карта департаментов по проверкам (ТОП-10)', caption, SIZE.treemap, {
           chart: 'treemap',
           data: input.departmentMapTop,
           palette: 'blue',
@@ -255,12 +257,11 @@ export function buildMonitoringConstructorDrafts(input: MonitoringConstructorInp
       );
     } else if (sectionId === 'additionalStatuses') {
       drafts.push(
-        draft(kind, sectionId, 'Дополнительные статусы за период', caption, SIZE.half, {
+        draft(kind, sectionId, 'Дополнительные статусы за период', caption, SIZE.narrow, {
           chart: 'donut',
           data: input.coloredAdditionalStatusDistribution,
-          variant: 'ring',
           labelMode: 'both',
-          legendLayout: 'row',
+          legendPercentFirst: true,
         }),
       );
     } else if (sectionId === 'deadlineExtensions') {
@@ -308,7 +309,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       drafts.push(
         draft(kind, sectionId, 'Итого по ДВА', caption, SIZE.kpi, {
           chart: 'kpi',
-          columns: 6,
+          columns: 5,
           items: [
             { label: 'Проверки', value: input.checkTotal, tone: 'blue' },
             { label: 'Рекомендации', value: input.recTotal, tone: 'slate' },
@@ -318,12 +319,6 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
               value: input.highMateriality,
               hint: `${input.highMaterialityShare}% рекомендаций`,
               accentColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий,
-            },
-            {
-              label: 'Исполнение',
-              value: input.recCompletionRate,
-              suffix: '%',
-              accentColor: MONITORING_STATUS_COLORS.completed,
             },
             {
               label: 'Нарушение сроков',
@@ -336,7 +331,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorChecksMap') {
       drafts.push(
-        draft(kind, sectionId, 'Карта сотрудников по проверкам', caption, SIZE.wide, {
+        draft(kind, sectionId, 'Карта сотрудников по проверкам', caption, SIZE.treemap, {
           chart: 'treemap',
           data: input.auditorChecksMap,
           palette: 'indigo',
@@ -344,7 +339,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorImpact') {
       drafts.push(
-        draft(kind, sectionId, 'Существенность рекомендаций по сотрудникам', caption, SIZE.half, {
+        draft(kind, sectionId, 'Существенность рекомендаций по сотрудникам', caption, SIZE.compactHalf, {
           chart: 'stacked',
           data: input.auditorImpact,
           series: [
@@ -361,14 +356,14 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorExecution') {
       drafts.push(
-        draft(kind, sectionId, 'Нерешённые рекомендации по сотрудникам', caption, SIZE.half, {
+        draft(kind, sectionId, 'Нерешённые рекомендации по сотрудникам', caption, SIZE.compactHalf, {
           chart: 'auditor-unresolved',
           data: input.auditorExecution,
         }),
       );
     } else if (sectionId === 'auditorTimeliness') {
       drafts.push(
-        draft(kind, sectionId, 'Своевременность исполнения по сотрудникам', caption, SIZE.half, {
+        draft(kind, sectionId, 'Своевременность исполнения по сотрудникам', caption, SIZE.compactHalf, {
           chart: 'stacked',
           data: input.auditorTimeliness,
           series: [

@@ -26,6 +26,10 @@ class RecommendationObjectCount(NamedCount):
     materiality: RecommendationMaterialityCounts
 
 
+class AuditorCheckCount(NamedCount):
+    views: list[NamedCount] = Field(default_factory=list)
+
+
 class ChecksSummary(BaseModel):
     total: int
     not_started: int
@@ -369,7 +373,7 @@ class DvaAnalyticsResponse(BaseModel):
     check_lifecycle: list[DvaCheckLifecycleRow] = Field(
         default_factory=list, serialization_alias="checkLifecycle"
     )
-    auditor_checks_treemap: list[NamedCount] = Field(serialization_alias="auditorChecksTreemap")
+    auditor_checks_treemap: list[AuditorCheckCount] = Field(serialization_alias="auditorChecksTreemap")
     auditor_recommendations_treemap: list[NamedCount] = Field(
         serialization_alias="auditorRecommendationsTreemap"
     )

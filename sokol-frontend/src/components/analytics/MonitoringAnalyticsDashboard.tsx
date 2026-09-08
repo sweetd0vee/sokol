@@ -368,7 +368,7 @@ export function MonitoringAnalyticsDashboard() {
       },
       {
         id: 'additionalStatuses',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 9, y: 2, w: 3, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Дополнительные статусы за период"
@@ -380,9 +380,8 @@ export function MonitoringAnalyticsDashboard() {
             {distributionHasValues(coloredAdditionalStatusDistribution) ? (
               <FocusableDonutChart
                 data={coloredAdditionalStatusDistribution}
-                variant="ring"
                 labelMode="both"
-                legendLayout="row"
+                legendPercentFirst
               />
             ) : (
               <EmptyChart message="Нет данных" />
@@ -392,7 +391,7 @@ export function MonitoringAnalyticsDashboard() {
       },
       {
         id: 'deadlineExtensions',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 3 },
+        defaultLayout: { x: 0, y: 2, w: 9, h: 3, minW: 4, minH: 3 },
         render: () => (
           <ChartCard
             title="Переносы срока по проверкам"

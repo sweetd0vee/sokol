@@ -13,6 +13,7 @@ from app.models.checks import Check
 from app.models.departments import Department
 from app.models.recommendations import Recommendation
 from app.schemas.analytics import (
+    AuditorCheckCount,
     ChecksSummary,
     DeadlineExtensionByCheckRow,
     DocumentReadinessRow,
@@ -99,6 +100,8 @@ __all__ = [
     "count_checks",
     "count_recommendations",
     "department_map_from_pairs",
+    "dva_auditor_checks_treemap_from_rows",
+    "dva_auditor_checks_treemap_sql",
     "dva_auditor_documents_from_rows",
     "dva_auditor_documents_sql",
     "dva_auditor_load_from_counts",
@@ -698,6 +701,38 @@ async def dva_portfolio_series_sql(
         period = period_from_sql_row(row, granularity)
         _ensure_portfolio_point(merged, period).recommendations = int(row.recommendations)
     return sorted(merged.values(), key=lambda row: row.sort_key)
+
+
+def dva_auditor_checks_treemap_from_rows(rows: Any) -> list[AuditorCheckCount]:
+    totals: dict[str, int] = defaultdict(int)
+    views: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    for row in rows:
+        name = _auditor_display_name(row.name, WITHOUT_LEADER)
+        view = str(getattr(row, "check_view", "") or "").strip() or UNSPECIFIED
+        totals[name] += 1
+        views[name][view] += 1
+    return [
+        AuditorCheckCount(
+            name=name,
+            value=value,
+            views=[
+                NamedCount(name=view_name, value=view_count)
+                for view_name, view_count in sorted(
+                    views[name].items(),
+                    key=lambda item: (-item[1], item[0]),
+                )
+            ],
+        )
+        for name, value in sorted(totals.items(), key=lambda item: (-item[1], item[0]))
+        if value > 0
+    ]
+
+
+async def dva_auditor_checks_treemap_sql(session: AsyncSession, **filters: Any) -> list[AuditorCheckCount]:
+    statement = select(Check.check_leader.label("name"), Check.check_view).where(
+        *check_filter_conditions(**filters),
+    )
+    return dva_auditor_checks_treemap_from_rows(await fetch_all(session, statement))
 
 
 def dva_auditor_load_from_counts(

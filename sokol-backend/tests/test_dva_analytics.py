@@ -7,6 +7,7 @@ from datetime import date
 from types import SimpleNamespace
 
 from app.services.analytics.sql_aggregates import (
+    dva_auditor_checks_treemap_from_rows,
     dva_auditor_documents_from_rows,
     dva_check_lifecycle_from_rows,
     dva_recommendation_profiles_from_rows,
@@ -238,6 +239,26 @@ class DvaAnalyticsMappingTests(unittest.TestCase):
         self.assertEqual(lifecycle[1].short_name, "Проверка кадров")
         self.assertEqual(lifecycle[2].auditor, "Без руководителя")
         self.assertIsNone(lifecycle[2].order_date)
+
+    def test_auditor_checks_treemap_breaks_down_views(self) -> None:
+        rows = [
+            SimpleNamespace(name=" Иванов ", check_view="ИТ"),
+            SimpleNamespace(name="Иванов", check_view="ИТ"),
+            SimpleNamespace(name="Иванов", check_view="Корпо"),
+            SimpleNamespace(name="Петров", check_view="Риски"),
+            SimpleNamespace(name="", check_view=""),
+        ]
+
+        treemap = dva_auditor_checks_treemap_from_rows(rows)
+
+        self.assertEqual([row.name for row in treemap], ["Иванов", "Петров", "Без руководителя"])
+        self.assertEqual(treemap[0].value, 3)
+        self.assertEqual(
+            [(item.name, item.value) for item in treemap[0].views],
+            [("ИТ", 2), ("Корпо", 1)],
+        )
+        self.assertEqual(treemap[1].views[0].name, "Риски")
+        self.assertEqual(treemap[2].views[0].name, "Не указан")
 
 
 if __name__ == "__main__":

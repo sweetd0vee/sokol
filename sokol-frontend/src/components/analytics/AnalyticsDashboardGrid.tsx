@@ -33,10 +33,13 @@ export type AnalyticsGridCard = {
 
 type AnalyticsDashboardGridProps = {
   cards: AnalyticsGridCard[];
+  /** Cap for the fitted chart grid when a matrix sits below it. */
+  maxChartArea?: number;
 };
 
 const GRID_MARGIN_Y = 2;
 const MIN_ROW_HEIGHT = 48;
+const DEFAULT_MAX_CHART_AREA = 576;
 
 function shiftYPastStackedCards(
   y: number,
@@ -45,7 +48,10 @@ function shiftYPastStackedCards(
   return stacked.reduce((nextY, band) => (band.y + band.h <= y ? nextY - band.h : nextY), y);
 }
 
-export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
+export function AnalyticsDashboardGrid({
+  cards,
+  maxChartArea = DEFAULT_MAX_CHART_AREA,
+}: AnalyticsDashboardGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const gridAreaRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1200);
@@ -109,7 +115,7 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
     const update = () => {
       setContainerWidth(Math.max(Math.floor(widthNode.getBoundingClientRect().width), 320));
       if (hasStackedCards) {
-        const chartArea = Math.min(576, Math.max(window.innerHeight - 224, 320));
+        const chartArea = Math.min(maxChartArea, Math.max(window.innerHeight - 224, 280));
         const next = Math.floor((chartArea - GRID_MARGIN_Y * Math.max(rowSpan - 1, 0)) / rowSpan);
         setRowHeight(Math.max(MIN_ROW_HEIGHT, next));
         return;
@@ -127,7 +133,7 @@ export function AnalyticsDashboardGrid({ cards }: AnalyticsDashboardGridProps) {
     observer.observe(widthNode);
     observer.observe(heightNode);
     return () => observer.disconnect();
-  }, [hasStackedCards, isDesktop, rowSpan]);
+  }, [hasStackedCards, isDesktop, maxChartArea, rowSpan]);
 
   return (
     <div className={`flex w-full flex-col gap-2.5 ${hasStackedCards ? '' : 'min-h-0 flex-1'}`}>

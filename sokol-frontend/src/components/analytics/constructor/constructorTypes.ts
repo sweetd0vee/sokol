@@ -1,4 +1,5 @@
 import type {
+  AuditorCheckTreemapItem,
   ChecksAnalyticsPeriodPoint,
   ChecksAnalyticsSummary,
   DeadlineExtensionByCheckRow,
@@ -11,6 +12,7 @@ import type {
   RecommendationsSummary,
 } from '../../../api/analytics';
 import type { DonutDatum } from '../FocusableDonutChart';
+import type { TreemapDatum } from '../FocusableTreemapChart';
 import type { EffectivenessMatrixRow, NamedCount, PeriodGranularity } from '../../../utils/checkAnalytics';
 import type { MaterialityMatrixRow } from '../../../utils/materialityMatrix';
 import type { StatusMatrixRow } from '../../../utils/statusMatrix';
@@ -103,7 +105,7 @@ export type ConstructorPayload =
     }
   | {
       chart: 'treemap';
-      data: NamedCount[];
+      data: TreemapDatum[];
       palette: 'blue' | 'emerald' | 'gray' | 'teal' | 'indigo';
     }
   | {
@@ -244,9 +246,8 @@ export type DvaConstructorInput = {
   employeeCount: number;
   highMateriality: number;
   highMaterialityShare: number;
-  recCompletionRate: number;
   recViolationRate: number;
-  auditorChecksMap: NamedCount[];
+  auditorChecksMap: AuditorCheckTreemapItem[];
   auditorImpact: DvaAuditorMaterialityRow[];
   auditorExecution: DvaAuditorExecutionRow[];
   auditorTimeliness: DvaAuditorTimelinessRow[];

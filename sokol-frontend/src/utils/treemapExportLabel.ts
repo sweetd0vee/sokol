@@ -6,7 +6,14 @@ export function formatTreemapExportLabel(
     средний: number;
     высокий: number;
   },
+  views?: Array<{ name: string; value: number }>,
 ) {
+  if (views && views.length > 0) {
+    return [
+      `${name}: ${value}`,
+      ...views.map((view) => `${view.name}: ${view.value}`),
+    ].join('\n');
+  }
   if (!materiality) {
     return `${name}: ${value}`;
   }

@@ -38,6 +38,7 @@ import {
   VALUE_GRAY_SCALE,
 } from '../analyticsPalette';
 import {
+  HORIZONTAL_BAR_MAX_SIZE,
   STACKED_HORIZONTAL_CHART_RIGHT_MARGIN,
   STACKED_PERIOD_CHART_SIDE_MARGIN,
   STACKED_PERIOD_CHART_TOP_MARGIN,
@@ -218,14 +219,16 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
     const isGrouped = payload.grouped === true;
     const showSegmentLabels = payload.showStackTotal === true && !isGrouped;
     return (
-      <div className="h-full min-h-[13rem]">
+      <div className="h-full min-h-[10rem]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={payload.data}
             layout={isVertical ? 'vertical' : 'horizontal'}
+            barCategoryGap={isVertical ? 10 : undefined}
+            maxBarSize={isVertical ? HORIZONTAL_BAR_MAX_SIZE : undefined}
             margin={
               isVertical
-                ? { top: 8, right: showSegmentLabels ? STACKED_HORIZONTAL_CHART_RIGHT_MARGIN : 24, left: 8, bottom: 0 }
+                ? { top: 4, right: showSegmentLabels ? STACKED_HORIZONTAL_CHART_RIGHT_MARGIN : 24, left: 8, bottom: 0 }
                 : {
                     top: STACKED_PERIOD_CHART_TOP_MARGIN,
                     right: STACKED_PERIOD_CHART_SIDE_MARGIN,

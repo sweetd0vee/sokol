@@ -17,6 +17,7 @@ from app.services.analytics.sql_aggregates import (
     completion_share_from_summary,
     count_checks,
     count_recommendations,
+    dva_auditor_checks_treemap_sql,
     dva_auditor_documents_sql,
     dva_auditor_load_from_counts,
     dva_check_lifecycle_sql,
@@ -97,7 +98,7 @@ async def build_dva_analytics(
         ),
         document_readiness=await dva_document_readiness_sql(session, **filters),
         check_lifecycle=await dva_check_lifecycle_sql(session, **filters),
-        auditor_checks_treemap=auditor_checks,
+        auditor_checks_treemap=await dva_auditor_checks_treemap_sql(session, **filters),
         auditor_recommendations_treemap=auditor_recommendations,
         department_map=await recommendation_object_distribution_sql(session, **filters),
         filter_options=ChecksAnalyticsFilterOptions(

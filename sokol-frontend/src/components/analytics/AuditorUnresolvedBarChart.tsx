@@ -23,6 +23,7 @@ import {
   CHART_TOOLTIP_STYLE,
   ChartRechartsSquareLegend,
 } from './AnalyticsChartPrimitives';
+import { HORIZONTAL_BAR_MAX_SIZE } from './StackedBarSegmentValueLabel';
 const BAR_COLOR = '#0E7490';
 const RIGHT_MARGIN = 108;
 const HIDE_DELAY_MS = 220;
@@ -218,12 +219,14 @@ export function AuditorUnresolvedBarChart({
   }, [pinnedName]);
 
   return (
-    <div ref={rootRef} className="relative h-full min-h-[13rem]">
+    <div ref={rootRef} className="relative h-full min-h-[10rem]">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}
           layout="vertical"
-          margin={{ top: 8, right: RIGHT_MARGIN, left: 8, bottom: 0 }}
+          barCategoryGap={10}
+          maxBarSize={HORIZONTAL_BAR_MAX_SIZE}
+          margin={{ top: 4, right: RIGHT_MARGIN, left: 8, bottom: 0 }}
           onMouseMove={(state) => {
             if (pinnedName) {
               return;

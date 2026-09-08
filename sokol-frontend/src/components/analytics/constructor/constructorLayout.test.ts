@@ -13,8 +13,8 @@ import { buildChecksConstructorDrafts, buildDvaConstructorDrafts, buildPlanningC
 describe('pixelHeightToGridRows', () => {
   it('rounds content height up to the next grid row', () => {
     expect(pixelHeightToGridRows(1)).toBe(1);
-    expect(pixelHeightToGridRows(420)).toBe(5);
-    expect(pixelHeightToGridRows(421)).toBe(6);
+    expect(pixelHeightToGridRows(320)).toBe(5);
+    expect(pixelHeightToGridRows(321)).toBe(6);
   });
 
   it('respects a minimum row count', () => {
@@ -235,7 +235,6 @@ describe('buildConstructorDrafts', () => {
       employeeCount: 3,
       highMateriality: 8,
       highMaterialityShare: 20,
-      recCompletionRate: 55,
       recViolationRate: 18,
       auditorChecksMap: [{ name: 'Иванов', value: 4 }],
       auditorImpact: [{ name: 'Иванов', low: 2, medium: 3, high: 5, total: 10 }],
@@ -266,7 +265,7 @@ describe('buildConstructorDrafts', () => {
     expect(drafts[0]?.payload.chart).toBe('kpi');
     expect(drafts[1]?.payload.chart).toBe('treemap');
     expect(drafts[1]?.payload).toMatchObject({ palette: 'indigo' });
-    expect(drafts[1]?.size).toEqual({ w: 8, h: 4, minW: 4, minH: 3 });
+    expect(drafts[1]?.size).toEqual({ w: 8, h: 3, minW: 3, minH: 2 });
     expect(drafts[2]?.payload.chart).toBe('auditor-documents-matrix');
   });
 
@@ -294,7 +293,6 @@ describe('buildConstructorDrafts', () => {
       employeeCount: 0,
       highMateriality: 0,
       highMaterialityShare: 0,
-      recCompletionRate: 0,
       recViolationRate: 0,
       auditorChecksMap: [{ name: 'Иванов', value: 4 }],
       auditorImpact: [],
@@ -304,7 +302,7 @@ describe('buildConstructorDrafts', () => {
       checkLifecycle: [],
     });
     expect(employeeMap[0]?.size).toEqual(departmentMap[0]?.size);
-    expect(employeeMap[0]?.size).toEqual({ w: 8, h: 4, minW: 4, minH: 3 });
+    expect(employeeMap[0]?.size).toEqual({ w: 8, h: 3, minW: 3, minH: 2 });
   });
 
   it('snapshots DVA check lifecycle as a dedicated chart', () => {
@@ -316,7 +314,6 @@ describe('buildConstructorDrafts', () => {
       employeeCount: 1,
       highMateriality: 0,
       highMaterialityShare: 0,
-      recCompletionRate: 0,
       recViolationRate: 0,
       auditorChecksMap: [],
       auditorImpact: [],
@@ -352,7 +349,6 @@ describe('buildConstructorDrafts', () => {
       employeeCount: 1,
       highMateriality: 8,
       highMaterialityShare: 20,
-      recCompletionRate: 55,
       recViolationRate: 18,
       auditorChecksMap: [],
       auditorImpact: [],
@@ -372,6 +368,7 @@ describe('buildConstructorDrafts', () => {
       checkLifecycle: [],
     });
     expect(drafts).toHaveLength(1);
+    expect(drafts[0]?.size).toEqual({ w: 6, h: 3, minW: 3, minH: 2 });
     expect(drafts[0]?.payload).toMatchObject({
       chart: 'auditor-unresolved',
       data: [

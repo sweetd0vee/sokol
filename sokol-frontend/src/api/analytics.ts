@@ -91,6 +91,10 @@ export type RecommendationObjectDistributionItem = NamedCount & {
   materiality: RecommendationMaterialityBreakdown;
 };
 
+export type AuditorCheckTreemapItem = NamedCount & {
+  views: NamedCount[];
+};
+
 export type RecommendationsAnalyticsResponse = {
   universeTotal: number;
   filteredTotal: number;
@@ -236,7 +240,7 @@ export type DvaAnalyticsResponse = {
   checkLifecycle: DvaCheckLifecycleRow[];
   auditorMatrix: DvaAuditorMatrix;
   documentReadiness: Array<{ name: string; filled: number; empty: number }>;
-  auditorChecksTreemap: NamedCount[];
+  auditorChecksTreemap: AuditorCheckTreemapItem[];
   auditorRecommendationsTreemap: NamedCount[];
   departmentMap: NamedCount[];
   filterOptions: AnalyticsFilterOptions & { auditors: string[] };

@@ -10,6 +10,11 @@ import {
 import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { formatTreemapExportLabel } from '../../utils/treemapExportLabel';
 
+export type TreemapViewBreakdown = {
+  name: string;
+  value: number;
+};
+
 export type TreemapDatum = {
   name: string;
   value: number;
@@ -19,6 +24,7 @@ export type TreemapDatum = {
     средний: number;
     высокий: number;
   };
+  views?: TreemapViewBreakdown[];
 };
 
 type FocusableTreemapChartProps = {
@@ -41,6 +47,7 @@ type TreemapNodeProps = {
   value?: number;
   fill?: string;
   materiality?: TreemapDatum['materiality'];
+  views?: TreemapViewBreakdown[];
   activeName?: string | null;
   onActivate?: (name: string | null) => void;
 };
@@ -101,6 +108,7 @@ function TreemapContent({
   value = 0,
   fill = '#2563EB',
   materiality,
+  views,
   activeName = null,
   onActivate,
 }: TreemapNodeProps) {
@@ -140,7 +148,7 @@ function TreemapContent({
   const labelLines = wrapTreemapLabel(name, maxCharsPerLine);
   const firstLabelY = y + 16;
   const valueY = firstLabelY + labelLines.length * labelLineHeight + 2;
-  const exportLabel = formatTreemapExportLabel(name, value, materiality);
+  const exportLabel = formatTreemapExportLabel(name, value, materiality, views);
 
   return (
     <g
@@ -224,6 +232,7 @@ export function FocusableTreemapChart({
     ...item,
     fill: item.fill ?? (usesValueFill ? valueColors[index] : colors[index % colors.length]),
   }));
+  const hasViews = data.some((item) => (item.views?.length ?? 0) > 0);
   const tooltipFormatter = (
     value: unknown,
     _name: unknown,
@@ -231,10 +240,32 @@ export function FocusableTreemapChart({
   ) => {
     const payload = props?.payload;
     const materiality = payload?.materiality;
+    const views = payload?.views ?? [];
     const numericValue = typeof value === 'number' ? value : Number(value);
     const total = Number.isFinite(numericValue) ? numericValue : payload?.value ?? 0;
+    if (views.length > 0) {
+      const viewColors = getValueBasedColors(
+        views.map((item) => item.value),
+        colors,
+      );
+      return [
+        <>
+          <div className="font-semibold text-gray-900">Всего: {total}</div>
+          {views.map((view, index) => (
+            <div
+              key={view.name}
+              className={index === 0 ? 'mt-1 font-medium' : 'font-medium'}
+              style={{ color: viewColors[index] }}
+            >
+              {view.name}: {view.value}
+            </div>
+          ))}
+        </>,
+        'Проверки',
+      ];
+    }
     if (!materiality) {
-      return [total, 'Количество рекомендаций'];
+      return [total, hasViews ? 'Проверки' : 'Количество рекомендаций'];
     }
     return [
       <>
@@ -268,7 +299,7 @@ export function FocusableTreemapChart({
         >
           <Tooltip
             formatter={tooltipFormatter}
-            labelFormatter={(label) => `Департамент: ${label}`}
+            labelFormatter={(label) => `${hasViews ? 'Сотрудник' : 'Департамент'}: ${label}`}
             contentStyle={CHART_TOOLTIP_STYLE}
           />
         </Treemap>
