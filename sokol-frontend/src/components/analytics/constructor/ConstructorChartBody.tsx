@@ -36,9 +36,11 @@ import {
   VALUE_BLUE_SCALE,
   VALUE_EMERALD_SCALE,
   VALUE_GRAY_SCALE,
+  VALUE_TEAL_SCALE,
 } from '../analyticsPalette';
 import {
   HORIZONTAL_BAR_MAX_SIZE,
+  HORIZONTAL_STRIP_MAX_SIZE,
   STACKED_HORIZONTAL_CHART_RIGHT_MARGIN,
   STACKED_PERIOD_CHART_SIDE_MARGIN,
   STACKED_PERIOD_CHART_TOP_MARGIN,
@@ -150,6 +152,8 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
           <BarChart
             data={payload.data}
             layout={isBars ? 'vertical' : 'horizontal'}
+            barCategoryGap={isBars ? '36%' : undefined}
+            maxBarSize={isBars ? HORIZONTAL_STRIP_MAX_SIZE : undefined}
             margin={
               isBars
                 ? { top: 8, right: 40, left: 16, bottom: 0 }
@@ -356,7 +360,9 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
             ? VALUE_GRAY_SCALE
             : payload.palette === 'emerald'
               ? VALUE_EMERALD_SCALE
-              : VALUE_BLUE_SCALE
+              : payload.palette === 'indigo'
+                ? VALUE_TEAL_SCALE
+                : VALUE_BLUE_SCALE
         }
         colorByValue
         colorByRank={payload.palette === 'emerald'}
@@ -503,6 +509,8 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
           <BarChart
             data={payload.data}
             layout={isBars ? 'vertical' : 'horizontal'}
+            barCategoryGap={isBars ? '36%' : undefined}
+            maxBarSize={isBars ? HORIZONTAL_STRIP_MAX_SIZE : undefined}
             margin={isBars ? { top: 8, right: 40, left: 8, bottom: 0 } : { top: 22, right: 16, left: -10, bottom: 28 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />

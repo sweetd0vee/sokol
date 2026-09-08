@@ -15,7 +15,7 @@ import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
   MONITORING_ADDITIONAL_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
-  VALUE_BLUE_SCALE,
+  VALUE_TEAL_SCALE,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
@@ -311,7 +311,7 @@ export function DvaAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Нерешённые рекомендации по сотрудникам"
+            title='Количество и доля рекомендаций со статусом "Не решено"'
             description=""
             exportSectionId="auditorExecution"
             exportSelected={exportSections.isSelected('auditorExecution')}
@@ -341,7 +341,7 @@ export function DvaAnalyticsDashboard() {
             ) : (
               <FocusableTreemapChart
                 data={auditorChecksMap}
-                palette={VALUE_BLUE_SCALE}
+                palette={VALUE_TEAL_SCALE}
                 colorByUniqueValue
               />
             )}

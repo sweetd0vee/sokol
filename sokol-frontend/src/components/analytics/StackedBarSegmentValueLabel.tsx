@@ -13,6 +13,8 @@ export const STACKED_PERIOD_CHART_TOP_MARGIN = 72;
 export const STACKED_PERIOD_CHART_SIDE_MARGIN = 36;
 export const STACKED_HORIZONTAL_CHART_RIGHT_MARGIN = 88;
 export const HORIZONTAL_BAR_MAX_SIZE = 20;
+/** Cap for simple horizontal bars whose labels sit outside the bar. */
+export const HORIZONTAL_STRIP_MAX_SIZE = 12;
 
 const STACKED_CALLOUT_BOX_GAP = 4;
 

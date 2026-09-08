@@ -37,12 +37,8 @@ import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
 import { StatusMatrixChart } from './StatusMatrixChart';
+import { HORIZONTAL_STRIP_MAX_SIZE } from './StackedBarSegmentValueLabel';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
-import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
-import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
-import { useExportSections } from '../../hooks/useExportSections';
-import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
-import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
 import { type PeriodGranularity } from '../../utils/recommendationAnalytics';
 import {
   DEFAULT_STATUS_MATRIX_COUNT_SORT,
@@ -462,6 +458,8 @@ export function MonitoringAnalyticsDashboard() {
                   <BarChart
                     data={completedDuringAuditByCheck}
                     layout="vertical"
+                    barCategoryGap="36%"
+                    maxBarSize={HORIZONTAL_STRIP_MAX_SIZE}
                     margin={{ top: 8, right: 40, left: 8, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
