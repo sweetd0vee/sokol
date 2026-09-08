@@ -49,7 +49,7 @@ describe('applyValueBasedColors', () => {
     );
   });
 
-  it('maps deadline-extension bars from emerald to navy', () => {
+  it('maps deadline-extension bars from pale teal to emerald', () => {
     const colored = applyValueBasedColors(
       [
         { name: 'high', value: 35 },
@@ -58,10 +58,10 @@ describe('applyValueBasedColors', () => {
       MONITORING_BAR_BLUE_SCALE,
     );
 
-    expect(colored.find((item) => item.name === 'high')?.color.toUpperCase()).toBe(
-      lastScaleColor(MONITORING_BAR_BLUE_SCALE).toUpperCase(),
+    expect(colored.find((item) => item.name === 'high')?.color.toUpperCase()).toBe('#0E7490');
+    expect(colored.find((item) => item.name === 'low')?.color.toUpperCase()).toBe(
+      MONITORING_BAR_BLUE_SCALE[0].toUpperCase(),
     );
-    expect(colored.find((item) => item.name === 'low')?.color.toUpperCase()).toBe('#0E7490');
   });
 });
 

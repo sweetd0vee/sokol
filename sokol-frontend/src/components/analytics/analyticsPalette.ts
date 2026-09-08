@@ -187,16 +187,17 @@ export const MONITORING_ADDITIONAL_STATUS_COLORS = {
 } as const;
 
 /**
- * Sequential teal → navy scale for the Monitoring "deadline extensions" bars.
- * Small values are emerald #0E7490; large values go navy.
+ * Sequential light teal → emerald scale for Monitoring bar charts
+ * (deadline extensions, completed during audit).
+ * Small values are pale teal; large values peak at emerald #0E7490.
  */
 export const MONITORING_BAR_BLUE_SCALE = [
-  '#0E7490', // emerald — smallest
-  '#10688C',
-  '#115D87',
-  '#135183',
-  '#14467E',
-  '#163A7A', // deep navy — largest
+  '#A5D8E0', // pale teal — smallest
+  '#7EC4D0',
+  '#57AFC0',
+  '#3699AE',
+  '#1E849B',
+  '#0E7490', // emerald — largest
 ] as const;
 
 export function lastScaleColor(scale: readonly string[], fallback = '#e5e7eb') {
