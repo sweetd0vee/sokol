@@ -1,5 +1,9 @@
-import { useMemo, useState } from 'react';
-import { ChartLegend, CHART_LEGEND_STYLE } from './AnalyticsChartPrimitives';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ChartLegend,
+  CHART_LEGEND_STYLE,
+  CHART_SLICE_PERCENT_FONT_SIZE,
+} from './AnalyticsChartPrimitives';
 import { PALETTE } from './analyticsPalette';
 import { formatChartLegendText } from './chartLegend';
 
@@ -32,7 +36,6 @@ const VIEW_HEIGHT = 68;
 const MAX_RADIUS = 16;
 const CIRCLE_Y = 34;
 const CIRCLE_GAP = 4;
-const LABEL_FONT_SIZE = 3.4;
 
 function packCircleCenters(radii: number[]): number[] {
   if (radii.length === 0) {
@@ -87,6 +90,27 @@ export function FocusableSquareCirclesChart({
   legendLayout = 'column',
 }: SquareCirclesChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  /** ViewBox units that render as CHART_SLICE_PERCENT_FONT_SIZE screen pixels (donut parity). */
+  const [labelFontSize, setLabelFontSize] = useState(CHART_SLICE_PERCENT_FONT_SIZE / 3);
+
+  useEffect(() => {
+    const node = svgRef.current;
+    if (!node || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    const update = () => {
+      const rect = node.getBoundingClientRect();
+      const scale = Math.min(rect.width / VIEW_WIDTH, rect.height / VIEW_HEIGHT);
+      if (scale > 0) {
+        setLabelFontSize(CHART_SLICE_PERCENT_FONT_SIZE / scale);
+      }
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   const legendItems = useMemo(
     () =>
@@ -128,6 +152,7 @@ export function FocusableSquareCirclesChart({
     <div className="flex h-full min-h-[13rem] flex-col overflow-hidden">
       <div className="min-h-0 flex-1 pb-1">
         <svg
+          ref={svgRef}
           className="h-full w-full"
           viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
           preserveAspectRatio="xMidYMid meet"
@@ -168,31 +193,18 @@ export function FocusableSquareCirclesChart({
                 >
                   <title>{tooltip}</title>
                 </circle>
-                <foreignObject
-                  x={item.x - item.radius}
-                  y={CIRCLE_Y - item.radius}
-                  width={item.radius * 2}
-                  height={item.radius * 2}
-                  pointerEvents="none"
-                  overflow="visible"
+                <text
+                  x={item.x}
+                  y={CIRCLE_Y}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fill={contrastLabelColor(fill)}
+                  fontSize={labelFontSize}
+                  fontWeight={700}
+                  style={{ fontVariantNumeric: 'tabular-nums', pointerEvents: 'none' }}
                 >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: `${item.radius * 2}px`,
-                      height: `${item.radius * 2}px`,
-                      color: contrastLabelColor(fill),
-                      fontSize: LABEL_FONT_SIZE,
-                      fontWeight: 700,
-                      lineHeight: 1,
-                      fontVariantNumeric: 'tabular-nums',
-                    }}
-                  >
-                    {roundedPercent}%
-                  </div>
-                </foreignObject>
+                  {roundedPercent}%
+                </text>
               </g>
             );
           })}

@@ -107,7 +107,7 @@ function PieValueLabel({
           fill={labelColor}
           textAnchor="middle"
           dominantBaseline="central"
-          fontSize={15}
+          fontSize={CHART_SLICE_PERCENT_FONT_SIZE}
           fontWeight={700}
         >
           {percentLabel}
