@@ -1,6 +1,7 @@
 import type { Check } from '../types/check';
 import type { MaterialityLevel, Recommendation } from '../types/recommendation';
 import { getMaterialityLevelLabel } from '../constants/recommendations';
+import type { DvaCheckLifecycleRow } from '../api/analytics';
 import {
   buildEffectivenessMatrix,
   type PeriodGranularity,
@@ -56,6 +57,7 @@ export type GenericAnalyticsDashboardExportInput = {
   selectedSections: string[];
   meta: VisualExportMetaRow[];
   statusMatrixOverride?: StatusMatrixRow[];
+  checkLifecycleOverride?: DvaCheckLifecycleRow[];
 };
 
 function formatFilterDate(date: Date | null) {
@@ -109,6 +111,9 @@ export async function exportGenericAnalyticsDashboard(
   const statusMatrix = input.selectedSections.includes('statusMatrix')
     ? input.statusMatrixOverride
     : undefined;
+  const checkLifecycle = input.selectedSections.includes('checkLifecycle')
+    ? input.checkLifecycleOverride
+    : undefined;
   await exportVisualAnalyticsReport({
     format,
     kind: input.kind,
@@ -116,6 +121,7 @@ export async function exportGenericAnalyticsDashboard(
     filenamePrefix: input.filenamePrefix,
     selectedSections: input.selectedSections,
     statusMatrix,
+    checkLifecycle,
     meta: [
       ...input.meta,
       ['Дашбордов в отчёте', String(input.selectedSections.filter((id) => id !== 'source').length)],

@@ -1,5 +1,5 @@
 import type { DvaCheckLifecycleRow } from '../api/analytics';
-import { parseDateValue } from './dates';
+import { parseDateValue, formatRuDate } from './dates';
 import { compareListValues, type SortConfig } from './listTable';
 import { pluralRu } from './pluralRu';
 
@@ -118,6 +118,42 @@ export function formatDurationDays(days: number): string {
 
 export function formatLifecycleChecksCount(count: number): string {
   return `${count} ${pluralRu(count, 'проверка', 'проверки', 'проверок')}`;
+}
+
+export type CheckLifecycleExportRow = {
+  key: string;
+  shortName: string;
+  auditor: string;
+  orderDate: string;
+  programDate: string;
+  azDate: string;
+  dzDate: string;
+  stages: string;
+  totalDays: string;
+};
+
+/** Flat table rows for DOCX export — every check, not a clipped screenshot. */
+export function buildCheckLifecycleExportRows(rows: DvaCheckLifecycleRow[]): CheckLifecycleExportRow[] {
+  const model = buildCheckLifecycleChartModel(rows);
+  const byId = new Map(rows.map((row) => [row.id, row]));
+
+  return model.rows.map((row) => {
+    const source = byId.get(row.id);
+    return {
+      key: row.key,
+      shortName: row.shortName || '—',
+      auditor: row.auditor || '—',
+      orderDate: formatRuDate(source?.orderDate ?? undefined),
+      programDate: formatRuDate(source?.programDate ?? undefined),
+      azDate: formatRuDate(source?.azDate ?? undefined),
+      dzDate: formatRuDate(source?.dzDate ?? undefined),
+      stages:
+        row.segments.length > 0
+          ? row.segments.map((segment) => `${segment.label}: ${formatDurationDays(segment.days)}`).join('; ')
+          : '—',
+      totalDays: row.totalDays === null ? '—' : formatDurationDays(row.totalDays),
+    };
+  });
 }
 
 function toPercent(ms: number, start: number, end: number): number {

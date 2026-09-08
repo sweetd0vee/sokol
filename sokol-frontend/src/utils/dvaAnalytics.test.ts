@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseDateValue } from './dates';
 import {
   buildCheckLifecycleChartModel,
+  buildCheckLifecycleExportRows,
   calendarDaysBetween,
   formatDurationDays,
   formatLifecycleChecksCount,

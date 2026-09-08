@@ -67,7 +67,14 @@ import {
 import {
   getMaterialityChartColor,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
+  VALUE_TEAL_SCALE,
 } from '../components/analytics/analyticsPalette';
+import type { DvaCheckLifecycleRow } from '../api/analytics';
+import {
+  buildCheckLifecycleExportRows,
+  CHECK_LIFECYCLE_SEGMENTS,
+  formatLifecycleChecksCount,
+} from './dvaAnalytics';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
@@ -1921,6 +1928,100 @@ function createStatusMatrixDocxTable(rows: StatusMatrixRow[]): Table {
   });
 }
 
+const CHECK_LIFECYCLE_DOCX_LEGEND = [
+  { label: CHECK_LIFECYCLE_SEGMENTS[0].label, color: VALUE_TEAL_SCALE[0] },
+  { label: CHECK_LIFECYCLE_SEGMENTS[1].label, color: VALUE_TEAL_SCALE[5] },
+  { label: CHECK_LIFECYCLE_SEGMENTS[2].label, color: VALUE_TEAL_SCALE[3] },
+];
+
+function createCheckLifecycleDocxTable(rows: DvaCheckLifecycleRow[]): Table {
+  const cellMargin = 60;
+  const headerFill = '003366';
+  const headerTextColor = 'FFFFFF';
+  const bodyTextColor = '334155';
+  const exportRows = buildCheckLifecycleExportRows(rows);
+  const columnWidths = [10, 18, 12, 9, 9, 9, 9, 16, 8];
+  const headers = [
+    'Ключ',
+    'Краткое название',
+    'Аудитор',
+    'Приказ',
+    'Программа',
+    'АЗ',
+    'ДЗ',
+    'Этапы',
+    'Итого',
+  ];
+
+  const headerRow = new TableRow({
+    children: headers.map((text, index) => {
+      const width = columnWidths[index] ?? 10;
+      return new TableCell({
+        width: { size: width, type: WidthType.PERCENTAGE },
+        margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+        shading: { type: ShadingType.CLEAR, fill: headerFill, color: 'auto' },
+        children: [
+          new Paragraph({
+            alignment: index <= 2 || index === 7 ? AlignmentType.LEFT : AlignmentType.CENTER,
+            children: [new TextRun({ text, bold: true, color: headerTextColor, size: 16 })],
+          }),
+        ],
+      });
+    }),
+  });
+
+  const bodyRows = exportRows.map((row) => {
+    const values = [
+      row.key,
+      row.shortName,
+      row.auditor,
+      row.orderDate,
+      row.programDate,
+      row.azDate,
+      row.dzDate,
+      row.stages,
+      row.totalDays,
+    ];
+    return new TableRow({
+      children: values.map((text, index) => {
+        const width = columnWidths[index] ?? 10;
+        const isKey = index === 0;
+        const isTotal = index === values.length - 1;
+        return new TableCell({
+          width: { size: width, type: WidthType.PERCENTAGE },
+          margins: { top: cellMargin, bottom: cellMargin, left: cellMargin / 2, right: cellMargin / 2 },
+          children: [
+            new Paragraph({
+              alignment: index <= 2 || index === 7 ? AlignmentType.LEFT : AlignmentType.CENTER,
+              children: [
+                new TextRun({
+                  text,
+                  bold: isKey || isTotal,
+                  color: isTotal ? '1E293B' : bodyTextColor,
+                  size: 16,
+                }),
+              ],
+            }),
+          ],
+        });
+      }),
+    });
+  });
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: DOCX_FRAME_BORDER,
+      bottom: DOCX_FRAME_BORDER,
+      left: DOCX_FRAME_BORDER,
+      right: DOCX_FRAME_BORDER,
+      insideHorizontal: DOCX_FRAME_BORDER,
+      insideVertical: DOCX_FRAME_BORDER,
+    },
+    rows: [headerRow, ...bodyRows],
+  });
+}
+
 function materialityShareDocxRows(rows: MaterialityMatrixRow[]) {
   const totals = buildMaterialityMatrixColumnTotals(rows);
   const grandTotal = materialityMatrixGrandTotal(rows);
@@ -1939,8 +2040,18 @@ async function buildVisualDocx(options: {
   effectivenessMatrix?: EffectivenessMatrixRow[];
   materialityMatrix?: MaterialityMatrixRow[];
   statusMatrix?: StatusMatrixRow[];
+  checkLifecycle?: DvaCheckLifecycleRow[];
 }) {
-  const { documentTitle, meta, charts, filenamePrefix, effectivenessMatrix, materialityMatrix, statusMatrix } = options;
+  const {
+    documentTitle,
+    meta,
+    charts,
+    filenamePrefix,
+    effectivenessMatrix,
+    materialityMatrix,
+    statusMatrix,
+    checkLifecycle,
+  } = options;
   const metaTable = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     rows: meta.map(
@@ -2109,6 +2220,47 @@ async function buildVisualDocx(options: {
       };
     }
 
+    const canRenderCheckLifecycle = chart.id === 'checkLifecycle' && Boolean(checkLifecycle?.length);
+    if (canRenderCheckLifecycle) {
+      const baseDescription = chart.description || 'Жизненный цикл проверки: от приказа до ДЗ';
+      const fullDescription = baseDescription.includes('(все строки выборки)')
+        ? baseDescription
+        : `${baseDescription} (все строки выборки)`;
+
+      return {
+        properties: {
+          page: DOCX_LANDSCAPE_PAGE,
+        },
+        children: [
+          new Paragraph({
+            text: chart.title || 'Жизненный цикл проверки: от приказа до ДЗ',
+            heading: HeadingLevel.HEADING_2,
+            spacing: { after: 80 },
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: fullDescription, color: '64748B', size: 20 })],
+            spacing: { after: 40 },
+          }),
+          createCheckLifecycleDocxTable(checkLifecycle!),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `Итого: ${formatLifecycleChecksCount(checkLifecycle!.length)}`,
+                color: '64748B',
+                size: 18,
+              }),
+            ],
+            spacing: { after: 10 },
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: 'Легенда этапов', bold: true, color: '003366', size: 20 })],
+            spacing: { after: 10 },
+          }),
+          createColorLegendDocxTable(CHECK_LIFECYCLE_DOCX_LEGEND),
+        ],
+      };
+    }
+
     const fitted = fitImageSize(
       chart.width,
       chart.height,
@@ -2228,7 +2380,7 @@ function orderChartsBySelection(
 }
 
 function matrixChartPlaceholder(
-  id: 'effectivenessMatrix' | 'materialityMatrix' | 'statusMatrix',
+  id: 'effectivenessMatrix' | 'materialityMatrix' | 'statusMatrix' | 'checkLifecycle',
 ): DashboardChartCapture {
   if (id === 'effectivenessMatrix') {
     return {
@@ -2245,6 +2397,16 @@ function matrixChartPlaceholder(
       id,
       title: 'Матрица существенности',
       description: '',
+      dataUrl: '',
+      width: 960,
+      height: 540,
+    };
+  }
+  if (id === 'checkLifecycle') {
+    return {
+      id,
+      title: 'Жизненный цикл проверки: от приказа до ДЗ',
+      description: 'Жизненный цикл проверки: от приказа до ДЗ',
       dataUrl: '',
       width: 960,
       height: 540,
@@ -2267,11 +2429,12 @@ function ensureMatrixCharts(
     effectiveness: boolean;
     materiality: boolean;
     status: boolean;
+    checkLifecycle: boolean;
   },
 ): DashboardChartCapture[] {
   const next = [...charts];
   const ensure = (
-    id: 'effectivenessMatrix' | 'materialityMatrix' | 'statusMatrix',
+    id: 'effectivenessMatrix' | 'materialityMatrix' | 'statusMatrix' | 'checkLifecycle',
     enabled: boolean,
   ) => {
     if (enabled && !next.some((chart) => chart.id === id)) {
@@ -2281,6 +2444,7 @@ function ensureMatrixCharts(
   ensure('effectivenessMatrix', flags.effectiveness);
   ensure('materialityMatrix', flags.materiality);
   ensure('statusMatrix', flags.status);
+  ensure('checkLifecycle', flags.checkLifecycle);
   return orderChartsBySelection(next, selectedSections);
 }
 
@@ -2982,6 +3146,7 @@ export async function exportVisualAnalyticsReport(options: {
   effectivenessMatrix?: EffectivenessMatrixRow[];
   materialityMatrix?: MaterialityMatrixRow[];
   statusMatrix?: StatusMatrixRow[];
+  checkLifecycle?: DvaCheckLifecycleRow[];
 }) {
   const capturedCharts = await captureDashboardCharts(options.selectedSections, {
     // Keep PNG snapshots for HTML too — several inline SVGs otherwise clash on duplicate ids.
@@ -3010,8 +3175,13 @@ export async function exportVisualAnalyticsReport(options: {
     Boolean(options.effectivenessMatrix?.length) && options.selectedSections.includes('effectivenessMatrix');
   const canRenderStatusMatrixTable =
     Boolean(options.statusMatrix?.length) && options.selectedSections.includes('statusMatrix');
+  const canRenderCheckLifecycleTable =
+    Boolean(options.checkLifecycle?.length) && options.selectedSections.includes('checkLifecycle');
   const canExportMatrixOnly =
-    canRenderEffectivenessMatrixTable || canRenderMaterialityMatrixTable || canRenderStatusMatrixTable;
+    canRenderEffectivenessMatrixTable
+    || canRenderMaterialityMatrixTable
+    || canRenderStatusMatrixTable
+    || canRenderCheckLifecycleTable;
   if (charts.length === 0 && !canExportMatrixOnly) {
     throw new Error(
       'Не удалось снять дашборды вкладки. Убедитесь, что графики видны на экране, и попробуйте снова.',
@@ -3034,6 +3204,7 @@ export async function exportVisualAnalyticsReport(options: {
         effectiveness: canRenderEffectivenessMatrixTable,
         materiality: canRenderMaterialityMatrixTable,
         status: canRenderStatusMatrixTable,
+        checkLifecycle: false,
       },
     );
     if (chartsForPdf.length === 0) {
@@ -3055,16 +3226,18 @@ export async function exportVisualAnalyticsReport(options: {
     const chartsForDocx = ensureMatrixCharts(
       charts.filter(
         (chart) =>
-          chartHasPngPayload(chart.dataUrl)
+          (chartHasPngPayload(chart.dataUrl) && !(canRenderCheckLifecycleTable && chart.id === 'checkLifecycle'))
           || (canRenderEffectivenessMatrixTable && chart.id === 'effectivenessMatrix')
           || (canRenderMaterialityMatrixTable && chart.id === 'materialityMatrix')
-          || (canRenderStatusMatrixTable && chart.id === 'statusMatrix'),
+          || (canRenderStatusMatrixTable && chart.id === 'statusMatrix')
+          || (canRenderCheckLifecycleTable && chart.id === 'checkLifecycle'),
       ),
       options.selectedSections,
       {
         effectiveness: canRenderEffectivenessMatrixTable,
         materiality: canRenderMaterialityMatrixTable,
         status: canRenderStatusMatrixTable,
+        checkLifecycle: canRenderCheckLifecycleTable,
       },
     );
     if (chartsForDocx.length === 0) {
@@ -3080,6 +3253,7 @@ export async function exportVisualAnalyticsReport(options: {
       effectivenessMatrix: options.effectivenessMatrix,
       materialityMatrix: options.materialityMatrix,
       statusMatrix: options.statusMatrix,
+      checkLifecycle: options.checkLifecycle,
     });
     return;
   }

@@ -189,6 +189,7 @@ export function DvaAnalyticsDashboard() {
           documentTitle: 'ДВА: управленческая аналитика',
           filenamePrefix: 'analytics-dva',
           selectedSections: [...exportSections.allIds],
+          checkLifecycleOverride: checkLifecycle,
           meta: [
             ['Аудиторы', selectedAuditors.length ? selectedAuditors.join(', ') : 'Все'],
             ['Департаменты', selectedDepartments.length ? selectedDepartments.join(', ') : 'Все'],
