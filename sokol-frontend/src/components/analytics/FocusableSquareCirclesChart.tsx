@@ -29,10 +29,10 @@ type SquareCirclesChartProps = {
 
 const VIEW_WIDTH = 200;
 const VIEW_HEIGHT = 68;
-const MAX_RADIUS = 19;
+const MAX_RADIUS = 16;
 const CIRCLE_Y = 34;
 const CIRCLE_GAP = 4;
-const LABEL_FONT_SIZE = 4.2;
+const LABEL_FONT_SIZE = 3.4;
 
 function packCircleCenters(radii: number[]): number[] {
   if (radii.length === 0) {

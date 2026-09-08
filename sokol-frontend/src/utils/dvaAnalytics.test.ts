@@ -184,5 +184,25 @@ describe('check lifecycle', () => {
       'П-2',
     ]);
   });
+
+  it('builds a full export table for every check instead of a clipped screenshot', () => {
+    const rows = Array.from({ length: 12 }, (_, index) => ({
+      id: String(index + 1),
+      key: `П-${index + 1}`,
+      shortName: `Проверка ${index + 1}`,
+      auditor: `Аудитор ${index + 1}`,
+      orderDate: '2026-01-01',
+      programDate: '2026-01-11',
+      azDate: '2026-02-01',
+      dzDate: '2026-02-11',
+    }));
+
+    const exported = buildCheckLifecycleExportRows(rows);
+    expect(exported).toHaveLength(12);
+    expect(exported[0]?.key).toBe('П-1');
+    expect(exported[11]?.key).toBe('П-12');
+    expect(exported[0]?.stages).toContain('Приказ → программа');
+    expect(exported[0]?.totalDays).toBe('41 день');
+  });
 });
 
