@@ -17,7 +17,7 @@ from app.db.demo_data import apply_completed_during_audit_indicator, build_recom
 from app.utils.check_key import assign_serial_numbers
 from app.utils.paths import get_repo_data_dir
 
-PRESENTATION_TODAY = date(2026, 8, 12)
+PRESENTATION_TODAY = date(2026, 9, 3)
 
 CHECK_HEADERS = [
     "serial_number", "check_name", "short_name", "check_type", "check_view",
@@ -351,7 +351,7 @@ def generate_presentation_dataset(
     output_dir: Path | None = None,
     checks_2025: int = 18,
     checks_2026: int = 11,
-    seed: int = 20260812,
+    seed: int = 20260903,
     today: date | None = None,
 ) -> tuple[list[dict], list[dict]]:
     today = today or PRESENTATION_TODAY

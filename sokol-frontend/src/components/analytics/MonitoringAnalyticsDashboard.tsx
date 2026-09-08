@@ -39,6 +39,11 @@ import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
 import { StatusMatrixChart } from './StatusMatrixChart';
 import { HORIZONTAL_STRIP_MAX_SIZE } from './StackedBarSegmentValueLabel';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
+import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
+import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
+import { useExportSections } from '../../hooks/useExportSections';
+import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
+import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
 import { type PeriodGranularity } from '../../utils/recommendationAnalytics';
 import {
   DEFAULT_STATUS_MATRIX_COUNT_SORT,

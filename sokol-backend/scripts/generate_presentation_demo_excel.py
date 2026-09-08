@@ -16,7 +16,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate presentation demo XLSX for SOKOL.")
     parser.add_argument("--checks-2025", type=int, default=18)
     parser.add_argument("--checks-2026", type=int, default=11)
-    parser.add_argument("--seed", type=int, default=20260812)
+    parser.add_argument("--seed", type=int, default=20260903)
     parser.add_argument("--today", type=str, default=PRESENTATION_TODAY.isoformat())
     parser.add_argument("--output-dir", type=Path, default=None)
     return parser.parse_args()
