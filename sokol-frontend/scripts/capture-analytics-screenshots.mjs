@@ -17,51 +17,75 @@ const LOGIN_ATTEMPTS = [
   { login: 'Иванов И.О.', password: 'demo' },
 ];
 
+/** Titles must match ChartCard `title` strings in the live dashboards. */
 const TABS = [
   {
     label: 'Проверки',
     file: 'tab-checks.png',
     charts: [
-      { title: 'Итого', file: 'checks-summary.png' },
-      { title: 'Количество проверок', file: 'checks-dynamics.png' },
-      { title: 'Виды проверок', file: 'checks-views.png' },
-      { title: 'Типы проверок', file: 'checks-types.png' },
-      { title: 'Карта департаментов (ТОП-10)', file: 'checks-department-map.png' },
-      { title: 'Оценка эффективности', file: 'checks-effectiveness.png' },
+      { title: 'Итого по проверкам', file: 'checks-summary.png' },
+      { title: 'Динамика количества проверок по периодам', file: 'checks-dynamics.png' },
+      { title: 'Виды проверок за период', file: 'checks-views.png' },
+      { title: 'Типы проверок за период', file: 'checks-types.png' },
+      { title: 'Карта департаментов по проверкам (ТОП-10)', file: 'checks-department-map.png' },
+      { title: 'Матрица оценок эффективности', file: 'checks-effectiveness.png' },
     ],
   },
   {
     label: 'Рекомендации',
     file: 'tab-recommendations.png',
     charts: [
-      { title: 'Итого', file: 'recommendations-summary.png' },
-      { title: 'Существенность по периодам', file: 'recommendations-materiality-by-period.png' },
-      { title: 'Существенность', file: 'recommendations-materiality.png' },
-      { title: 'Матрица существенности', file: 'recommendations-materiality-matrix.png' },
-      { title: 'Карта департаментов (ТОП-10)', file: 'recommendations-department-map.png' },
+      { title: 'Итого по рекомендациям', file: 'recommendations-summary.png' },
+      {
+        title: 'Существенность рекомендаций по периодам',
+        file: 'recommendations-materiality-by-period.png',
+      },
+      { title: 'Существенность рекомендаций за период', file: 'recommendations-materiality.png' },
+      {
+        title: 'Матрица существенности рекомендаций',
+        file: 'recommendations-materiality-matrix.png',
+      },
+      {
+        title: 'Количество рекомендаций по каждому виду проверок',
+        file: 'recommendations-views.png',
+      },
+      {
+        title: 'Карта департаментов по рекомендациям (ТОП-10)',
+        file: 'recommendations-department-map.png',
+      },
     ],
   },
   {
     label: 'Мониторинг',
     file: 'tab-monitoring.png',
     charts: [
-      { title: 'Итого', file: 'monitoring-summary.png' },
-      { title: 'Статусы', file: 'monitoring-statuses.png' },
-      { title: 'Дополнительные статусы', file: 'monitoring-additional-statuses.png' },
-      { title: 'Перенос срока', file: 'monitoring-deadline-extensions.png' },
-      { title: 'Исполнено в ходе аудита', file: 'monitoring-completed-during-audit.png' },
-      { title: 'Матрица статусов', file: 'monitoring-status-matrix.png' },
+      { title: 'Итого по мониторингу', file: 'monitoring-summary.png' },
+      { title: 'Статусы рекомендаций за период', file: 'monitoring-statuses.png' },
+      { title: 'Дополнительные статусы за период', file: 'monitoring-additional-statuses.png' },
+      { title: 'Переносы срока по проверкам', file: 'monitoring-deadline-extensions.png' },
+      { title: 'Исполнено в ходе аудита по проверкам', file: 'monitoring-completed-during-audit.png' },
+      { title: 'Матрица статусов по проверкам', file: 'monitoring-status-matrix.png' },
     ],
   },
   {
     label: 'ДВА',
     file: 'tab-dva.png',
     charts: [
-      { title: 'Итого', file: 'dva-summary.png' },
+      { title: 'Итого по ДВА', file: 'dva-summary.png' },
+      {
+        title: 'Своевременность исполнения рекомендаций по сотрудникам (дополнительный статус)',
+        file: 'dva-auditor-timeliness.png',
+      },
+      { title: 'Существенность рекомендаций по сотрудникам', file: 'dva-auditor-impact.png' },
+      {
+        title: 'Количество и доля рекомендаций со статусом "Не решено"',
+        file: 'dva-auditor-execution.png',
+      },
       { title: 'Карта сотрудников по проверкам', file: 'dva-auditor-checks-map.png' },
-      { title: 'Импакт рекомендаций', file: 'dva-auditor-impact.png' },
-      { title: 'Результативность исполнения', file: 'dva-auditor-execution.png' },
-      { title: 'Своевременность', file: 'dva-auditor-timeliness.png' },
+      {
+        title: 'Жизненный цикл проверки: от приказа до ДЗ',
+        file: 'dva-check-lifecycle.png',
+      },
     ],
   },
 ];
@@ -86,13 +110,13 @@ async function login(page) {
 }
 
 async function waitForDashboard(page) {
-  await page.getByRole('heading', { name: 'Итого', exact: true }).waitFor({ timeout: 30000 });
+  await page.getByRole('heading', { name: /Итого/ }).first().waitFor({ timeout: 30000 });
   await page.getByText('Загрузка').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(2500);
 }
 
 async function screenshotCard(page, title, file) {
-  const heading = page.getByText(title, { exact: true }).first();
+  const heading = page.getByRole('heading', { name: title, exact: true }).first();
   try {
     await heading.waitFor({ state: 'visible', timeout: 8000 });
   } catch {

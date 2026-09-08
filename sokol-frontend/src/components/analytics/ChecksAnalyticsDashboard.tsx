@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
   BarChart,
@@ -11,27 +10,29 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { fetchChecksAnalytics, type ChecksAnalyticsPeriodPoint } from '../../api/analytics';
+import { fetchChecksAnalytics } from '../../api/analytics';
 import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
-import { AnalyticsDashboardFrame } from './AnalyticsDashboardFrame';
-import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
-import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
-import { filterSelectionItem } from './filterSelectionItem';
+import {
+  ANALYTICS_DASHBOARD_MAIN_CLASS,
+  AnalyticsDashboardShell,
+} from './AnalyticsDashboardShell';
 import { ChartCard, CHART_AXIS_TICK, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { EffectivenessMatrixChart } from './EffectivenessMatrixChart';
 import { CHECKS_PALETTE, getValueBasedColors, MONITORING_STATUS_COLORS, VALUE_BLUE_SCALE } from './analyticsPalette';
-import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
+import { useAnalyticsDashboardController } from './useAnalyticsDashboardController';
 import { exportChecksDashboard } from '../../utils/analyticsExport';
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
-import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
-import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
-import { labelFromPeriodKey } from '../../utils/analyticsPeriod';
-import type { PeriodGranularity } from '../../utils/checkAnalytics';
-import { ErrorState, LoadingState } from '../ui/StateMessage';
+import {
+  completeSelectedPeriodPoints,
+  emptyChecksPeriodPoint,
+  withRunningTotal,
+} from '../../utils/analyticsPeriodSeries';
+import { topByValue } from '../../utils/analyticsDistribution';
+import { runAnalyticsExport } from '../../utils/runAnalyticsExport';
 import { useAddToConstructor } from './constructor/useAddToConstructor';
 import { buildChecksConstructorDrafts } from './constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
@@ -44,87 +45,18 @@ const EMPTY_DEPARTMENT_MAP: never[] = [];
 const EMPTY_EFFECTIVENESS_MATRIX: never[] = [];
 const QUARTER_AXIS_TICK = { fontSize: 12 } as const;
 
-function sortKeyFromPeriodKey(key: string, granularity: PeriodGranularity) {
-  if (granularity === 'year') {
-    return Number(key);
-  }
-  if (granularity === 'quarter') {
-    const [year, quarter] = key.split('-Q');
-    return Number(year) * 10 + Number(quarter);
-  }
-  const [year, month] = key.split('-');
-  return Number(year) * 100 + Number(month);
-}
-
-function completeSelectedPeriods(
-  series: ChecksAnalyticsPeriodPoint[],
-  granularity: PeriodGranularity,
-  selectedKeys: string[],
-) {
-  if (selectedKeys.length === 0) {
-    return series;
-  }
-
-  const byKey = new Map(series.map((item) => [item.key, item]));
-  let cumulative = 0;
-
-  return selectedKeys
-    .map((key) => (
-      byKey.get(key) ?? {
-        key,
-        label: labelFromPeriodKey(key, granularity),
-        sortKey: sortKeyFromPeriodKey(key, granularity),
-        total: 0,
-        not_started: 0,
-        in_progress: 0,
-        completed: 0,
-        cumulative: 0,
-      }
-    ))
-    .sort((a, b) => a.sortKey - b.sortKey)
-    .map((item) => {
-      cumulative += item.total;
-      return { ...item, cumulative };
-    });
-}
-
 export function ChecksAnalyticsDashboard() {
   const {
     selectedAuditors,
-    setSelectedAuditors,
     selectedDepartments,
-    setSelectedDepartments,
     exportFormat,
     setExportFormat,
     isExporting,
     setIsExporting,
     removeAuditor,
     removeDepartment,
-    resetEntityFilters,
-  } = useAnalyticsDashboardSession();
-
-  const exportSections = useExportSections(
-    CHECK_EXPORT_SECTIONS.map((section) => section.id) as CheckExportSectionId[],
-  );
-  const { addToConstructor, justAdded } = useAddToConstructor();
-
-  const bootstrapQuery = useQuery({
-    queryKey: queryKeys.analytics.checksBootstrap,
-    queryFn: () =>
-      fetchChecksAnalytics({
-        granularity: 'year',
-        years: [],
-        quarters: [],
-        months: [],
-        auditors: [],
-        departments: [],
-      }),
-    staleTime: 60_000,
-  });
-
-  const anchorDates = useAnalyticsAnchorDates(bootstrapQuery.data?.filterOptions.anchorDates);
-
-  const {
+    setSelectedAuditors,
+    setSelectedDepartments,
     periodSlice,
     selectedYears,
     selectedQuarters,
@@ -137,64 +69,50 @@ export function ChecksAnalyticsDashboard() {
     periodSliceLabel,
     activePeriodValues,
     handlePeriodSliceChange,
-    resetPeriodSelections,
     removeActivePeriodValue,
-  } = useAnalyticsPeriodFilters(anchorDates);
-
-  const granularity: PeriodGranularity = periodSlice;
-  const hasActiveFilters = hasAnalyticsPeriodFilters({
-    yearKeys: selectedYearKeys,
-    quarterKeys: selectedQuarterKeys,
-    monthKeys: [],
-    auditors: selectedAuditors,
-    departments: selectedDepartments,
     granularity,
-  });
-
-  const analyticsQuery = useQuery({
-    queryKey: [
-      'analytics',
-      'checks',
-      granularity,
-      selectedYearKeys,
-      selectedQuarterKeys,
-      selectedAuditors,
-      selectedDepartments,
-    ],
-    queryFn: () =>
+    bootstrapQuery,
+    analyticsQuery,
+    data,
+    auditorOptions,
+    departmentOptions,
+    isWaitingForFilteredData,
+    resetFilters,
+  } = useAnalyticsDashboardController({
+    resource: 'checks',
+    bootstrapQueryKey: queryKeys.analytics.checksBootstrap,
+    fetchBootstrap: () =>
       fetchChecksAnalytics({
-        granularity,
-        years: selectedYearKeys,
-        quarters: selectedQuarterKeys,
+        granularity: 'year',
+        years: [],
+        quarters: [],
         months: [],
-        auditors: selectedAuditors,
-        departments: selectedDepartments,
+        auditors: [],
+        departments: [],
       }),
-    enabled: bootstrapQuery.isSuccess,
-    initialData: !hasActiveFilters ? bootstrapQuery.data : undefined,
-    initialDataUpdatedAt: !hasActiveFilters ? bootstrapQuery.dataUpdatedAt : undefined,
+    fetchFiltered: fetchChecksAnalytics,
+    preferFilteredData: true,
   });
 
-  const data = hasActiveFilters ? analyticsQuery.data : (analyticsQuery.data ?? bootstrapQuery.data);
-  const filterOptionsData = data ?? bootstrapQuery.data;
-  const isWaitingForFilteredData = hasActiveFilters && analyticsQuery.isFetching && !analyticsQuery.data;
-  const auditorOptions = useMemo(
-    () => toAnalyticsSelectOptions(filterOptionsData?.filterOptions.auditors ?? []),
-    [filterOptionsData?.filterOptions.auditors],
+  const exportSections = useExportSections(
+    CHECK_EXPORT_SECTIONS.map((section) => section.id) as CheckExportSectionId[],
   );
-  const departmentOptions = useMemo(
-    () => toAnalyticsSelectOptions(filterOptionsData?.filterOptions.departments ?? []),
-    [filterOptionsData?.filterOptions.departments],
-  );
+  const { addToConstructor, justAdded } = useAddToConstructor();
 
   const summary = data?.summary ?? EMPTY_CHECKS_SUMMARY;
   const completionShare = data?.completionShare ?? 0;
   const rawFlowSeries = data?.periodSeries ?? EMPTY_FLOW_SERIES;
   const selectedPeriodKeys = granularity === 'quarter' ? selectedQuarterKeys : selectedYearKeys;
-  const flowSeries = useMemo(
-    () => completeSelectedPeriods(rawFlowSeries, granularity, selectedPeriodKeys),
-    [granularity, rawFlowSeries, selectedPeriodKeys],
-  );
+  const flowSeries = useMemo(() => {
+    if (selectedPeriodKeys.length === 0) {
+      return rawFlowSeries;
+    }
+    return withRunningTotal(
+      completeSelectedPeriodPoints(rawFlowSeries, selectedPeriodKeys, (key) =>
+        emptyChecksPeriodPoint(key, granularity),
+      ),
+    );
+  }, [granularity, rawFlowSeries, selectedPeriodKeys]);
   const flowColors = useMemo(
     () => getValueBasedColors(flowSeries.map((item) => item.total)),
     [flowSeries],
@@ -206,26 +124,17 @@ export function ChecksAnalyticsDashboard() {
   );
   const typeDistribution = data?.typeDistribution ?? EMPTY_TYPE_DISTRIBUTION;
   const departmentMap = data?.departmentMap ?? EMPTY_DEPARTMENT_MAP;
-  const departmentMapTop = useMemo(
-    () => [...departmentMap].sort((left, right) => right.value - left.value).slice(0, 10),
-    [departmentMap],
-  );
+  const departmentMapTop = useMemo(() => topByValue(departmentMap, 10), [departmentMap]);
   const effectivenessMatrix = data?.effectivenessMatrix ?? EMPTY_EFFECTIVENESS_MATRIX;
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
-
-  const resetFilters = () => {
-    resetPeriodSelections();
-    resetEntityFilters();
-  };
 
   const handleExport = async () => {
     if (filteredTotal === 0 || isExporting || analyticsQuery.isFetching || !data) {
       return;
     }
-    setIsExporting(true);
-    try {
-      await exportChecksDashboard(
+    await runAnalyticsExport(setIsExporting, () =>
+      exportChecksDashboard(
         {
           checks: [],
           filteredChecks: [],
@@ -239,13 +148,8 @@ export function ChecksAnalyticsDashboard() {
           effectivenessMatrixOverride: effectivenessMatrix,
         },
         exportFormat,
-      );
-    } catch (error) {
-      console.error('Analytics export failed', error);
-      window.alert(`Не удалось экспортировать отчёт: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`);
-    } finally {
-      setIsExporting(false);
-    }
+      ),
+    );
   };
 
   const handleAddToConstructor = () => {
@@ -493,74 +397,52 @@ export function ChecksAnalyticsDashboard() {
     ],
   );
 
-  if (bootstrapQuery.isLoading && !data) {
-    return <LoadingState title="Загрузка аналитики проверок…" />;
-  }
-
-  if ((bootstrapQuery.isError || analyticsQuery.isError) && !data) {
-    const error = analyticsQuery.error ?? bootstrapQuery.error;
-    return (
-      <ErrorState
-        title="Не удалось загрузить аналитику проверок"
-        description={error instanceof Error ? error.message : 'неизвестная ошибка'}
-      />
-    );
-  }
-
   return (
-    <AnalyticsDashboardFrame
-      mainClassName="relative flex min-w-0 flex-1 flex-col lg:-mt-[84px] lg:self-start"
-      sidebar={(
-      <AnalyticsFilterSidebar
-        periodSlice={periodSlice}
-        onPeriodSliceChange={handlePeriodSliceChange}
-        yearOptions={yearOptions}
-        quarterOptions={quarterOptions}
-        selectedYears={selectedYears}
-        selectedQuarters={selectedQuarters}
-        onYearsChange={setSelectedYears}
-        onQuartersChange={setSelectedQuarters}
-        auditorOptions={auditorOptions}
-        selectedAuditors={selectedAuditors}
-        onAuditorsChange={setSelectedAuditors}
-        departmentOptions={departmentOptions}
-        selectedDepartments={selectedDepartments}
-        onDepartmentsChange={setSelectedDepartments}
-        onResetFilters={resetFilters}
-        exportFormat={exportFormat}
-        onExportFormatChange={setExportFormat}
-        isExporting={isExporting}
-        canExport={filteredTotal > 0 && !analyticsQuery.isFetching}
-        onExport={handleExport}
-        onAddToConstructor={handleAddToConstructor}
-        canAddToConstructor={exportSections.selectedCount > 0}
-        addToConstructorCount={exportSections.selectedCount}
-        constructorAdded={justAdded}
-        selectionSummary={(
-          <AnalyticsSelectionSummary
-            metrics={[
-              { label: 'Проверок', value: filteredTotal, hint:`из ${universeTotal}` },
-            ]}
-            items={[
-              filterSelectionItem(periodSliceLabel, activePeriodValues, 'Все значения', removeActivePeriodValue),
-              filterSelectionItem('Аудиторы', selectedAuditors, 'Все аудиторы', removeAuditor),
-              filterSelectionItem('Департаменты', selectedDepartments, 'Все департаменты', removeDepartment),
-            ]}
-          />
-        )}
-      />
-      )}
+    <AnalyticsDashboardShell
+      loadingTitle="Загрузка аналитики проверок…"
+      errorTitle="Не удалось загрузить аналитику проверок"
+      bootstrapQuery={bootstrapQuery}
+      analyticsQuery={analyticsQuery}
+      data={data}
+      isWaitingForFilteredData={isWaitingForFilteredData}
+      showFetchingBadge
+      mainClassName={ANALYTICS_DASHBOARD_MAIN_CLASS}
+      selectionMetrics={[{ label: 'Проверок', value: filteredTotal, hint: `из ${universeTotal}` }]}
+      periodSliceLabel={periodSliceLabel}
+      activePeriodValues={activePeriodValues}
+      removeActivePeriodValue={removeActivePeriodValue}
+      selectedAuditors={selectedAuditors}
+      removeAuditor={removeAuditor}
+      selectedDepartments={selectedDepartments}
+      removeDepartment={removeDepartment}
+      filterSidebar={{
+        periodSlice,
+        onPeriodSliceChange: handlePeriodSliceChange,
+        yearOptions,
+        quarterOptions,
+        selectedYears,
+        selectedQuarters,
+        onYearsChange: setSelectedYears,
+        onQuartersChange: setSelectedQuarters,
+        auditorOptions,
+        selectedAuditors,
+        onAuditorsChange: setSelectedAuditors,
+        departmentOptions,
+        selectedDepartments,
+        onDepartmentsChange: setSelectedDepartments,
+        onResetFilters: resetFilters,
+        exportFormat,
+        onExportFormatChange: setExportFormat,
+        isExporting,
+        canExport: filteredTotal > 0 && !analyticsQuery.isFetching,
+        onExport: handleExport,
+        onAddToConstructor: handleAddToConstructor,
+        canAddToConstructor: exportSections.selectedCount > 0,
+        addToConstructorCount: exportSections.selectedCount,
+        constructorAdded: justAdded,
+      }}
     >
-      {analyticsQuery.isFetching ? (
-        <div className="pointer-events-none absolute right-2 top-2 z-10 rounded-md bg-white/90 px-2 py-1 text-xs text-slate-500 shadow-sm">
-          Обновление…
-        </div>
-      ) : null}
-      {isWaitingForFilteredData ? (
-        <LoadingState title="Загрузка аналитики проверок…" />
-      ) : (
-        <AnalyticsDashboardGrid cards={cards} />
-      )}
-    </AnalyticsDashboardFrame>
+      <AnalyticsDashboardGrid cards={cards} />
+    </AnalyticsDashboardShell>
   );
 }

@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
   BarChart,
@@ -14,10 +13,10 @@ import {
 import { fetchRecommendationsAnalytics, type RecommendationPeriodPoint } from '../../api/analytics';
 import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
-import { AnalyticsDashboardFrame } from './AnalyticsDashboardFrame';
-import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
-import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
-import { filterSelectionItem } from './filterSelectionItem';
+import {
+  ANALYTICS_DASHBOARD_MAIN_CLASS,
+  AnalyticsDashboardShell,
+} from './AnalyticsDashboardShell';
 import { ChartCard, CHART_AXIS_TICK, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
@@ -31,7 +30,6 @@ import {
   VALUE_BLUE_SCALE_SOFT,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
-import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
 import {
   STACKED_PERIOD_CHART_SIDE_MARGIN,
   STACKED_PERIOD_CHART_TOP_MARGIN,
@@ -44,14 +42,14 @@ import {
 } from '../../constants/analyticsExportSections';
 import { MATERIALITY_LEVEL_OPTIONS } from '../../constants/recommendations';
 import { useExportSections } from '../../hooks/useExportSections';
-import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
-import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
-import { labelFromPeriodKey } from '../../utils/analyticsPeriod';
+import { completeNamedDistribution, distributionHasValues, topByValue } from '../../utils/analyticsDistribution';
 import {
-  type PeriodGranularity,
-} from '../../utils/recommendationAnalytics';
-import { completeNamedDistribution, distributionHasValues } from '../../utils/analyticsDistribution';
-import { ErrorState, LoadingState } from '../ui/StateMessage';
+  completeSelectedPeriodPoints,
+  emptyRecommendationPeriodPoint,
+  withRecommendationRunningTotals,
+} from '../../utils/analyticsPeriodSeries';
+import { runAnalyticsExport } from '../../utils/runAnalyticsExport';
+import { useAnalyticsDashboardController } from './useAnalyticsDashboardController';
 import { useAddToConstructor } from './constructor/useAddToConstructor';
 import { buildRecommendationsConstructorDrafts } from './constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
@@ -60,62 +58,13 @@ import {
   sortMaterialityMatrixRows,
   type MaterialityMatrixCountSortConfig,
 } from '../../utils/materialityMatrix';
+import type { PeriodGranularity } from '../../utils/recommendationAnalytics';
 
 const EMPTY_PERIOD_SERIES: RecommendationPeriodPoint[] = [];
 const EMPTY_MATERIALITY_DISTRIBUTION: never[] = [];
 const EMPTY_VIEW_DISTRIBUTION: never[] = [];
 const EMPTY_OBJECT_DISTRIBUTION: never[] = [];
 const EMPTY_MATERIALITY_MATRIX: never[] = [];
-
-function sortKeyFromQuarterKey(key: string) {
-  const [year, quarter] = key.split('-Q');
-  return Number(year) * 10 + Number(quarter);
-}
-
-function completeSelectedQuarterPeriods(
-  series: RecommendationPeriodPoint[],
-  selectedQuarterKeys: string[],
-): RecommendationPeriodPoint[] {
-  if (selectedQuarterKeys.length === 0) {
-    return series;
-  }
-
-  const byKey = new Map(series.map((item) => [item.key, item]));
-
-  const ordered = selectedQuarterKeys
-    .map((key) => {
-      return (
-        byKey.get(key) ?? {
-          key,
-          label: labelFromPeriodKey(key, 'quarter'),
-          sortKey: sortKeyFromQuarterKey(key),
-          total: 0,
-          completed: 0,
-          unresolved: 0,
-          on_control: 0,
-          in_progress: 0,
-          low: 0,
-          medium: 0,
-          high: 0,
-          cumulative: 0,
-          cumulativeCompleted: 0,
-        }
-      );
-    })
-    .sort((a, b) => a.sortKey - b.sortKey);
-
-  let running = 0;
-  let completedRunning = 0;
-  return ordered.map((item) => {
-    running += item.total;
-    completedRunning += item.completed;
-    return {
-      ...item,
-      cumulative: running,
-      cumulativeCompleted: completedRunning,
-    };
-  });
-}
 
 function getPeriodXAxisProps(granularity: PeriodGranularity) {
   if (granularity === 'quarter') {
@@ -152,31 +101,15 @@ function getMaterialitySegmentColor(key: string) {
 export function RecommendationsAnalyticsDashboard() {
   const {
     selectedAuditors,
-    setSelectedAuditors,
     selectedDepartments,
-    setSelectedDepartments,
     exportFormat,
     setExportFormat,
     isExporting,
     setIsExporting,
     removeAuditor,
     removeDepartment,
-    resetEntityFilters,
-  } = useAnalyticsDashboardSession();
-
-  const exportSections = useExportSections(
-    RECOMMENDATION_EXPORT_SECTIONS.map((section) => section.id) as RecommendationExportSectionId[],
-  );
-  const { addToConstructor, justAdded } = useAddToConstructor();
-
-  const bootstrapQuery = useQuery({
-    queryKey: queryKeys.analytics.recommendationsBootstrap,
-    queryFn: () => fetchRecommendationsAnalytics({ granularity: 'year' }),
-    staleTime: 60_000,
-  });
-
-  const anchorDates = useAnalyticsAnchorDates(bootstrapQuery.data?.filterOptions.anchorDates);
-  const {
+    setSelectedAuditors,
+    setSelectedDepartments,
     periodSlice,
     selectedYears,
     selectedQuarters,
@@ -184,71 +117,42 @@ export function RecommendationsAnalyticsDashboard() {
     setSelectedQuarters,
     yearOptions,
     quarterOptions,
-    selectedYearKeys,
     selectedQuarterKeys,
     periodSliceLabel,
     activePeriodValues,
     handlePeriodSliceChange,
-    resetPeriodSelections,
     removeActivePeriodValue,
-  } = useAnalyticsPeriodFilters(anchorDates);
-
-  const granularity: PeriodGranularity = periodSlice;
-  const hasActiveFilters = hasAnalyticsPeriodFilters({
-    yearKeys: selectedYearKeys,
-    quarterKeys: selectedQuarterKeys,
-    monthKeys: [],
-    auditors: selectedAuditors,
-    departments: selectedDepartments,
     granularity,
+    bootstrapQuery,
+    analyticsQuery,
+    data,
+    auditorOptions,
+    departmentOptions,
+    resetFilters,
+  } = useAnalyticsDashboardController({
+    resource: 'recommendations',
+    bootstrapQueryKey: queryKeys.analytics.recommendationsBootstrap,
+    fetchBootstrap: () => fetchRecommendationsAnalytics({ granularity: 'year' }),
+    fetchFiltered: fetchRecommendationsAnalytics,
   });
 
-  const analyticsQuery = useQuery({
-    queryKey: [
-      'analytics',
-      'recommendations',
-      granularity,
-      selectedYearKeys,
-      selectedQuarterKeys,
-      selectedAuditors,
-      selectedDepartments,
-    ],
-    queryFn: () =>
-      fetchRecommendationsAnalytics({
-        granularity,
-        years: selectedYearKeys,
-        quarters: selectedQuarterKeys,
-        months: [],
-        auditors: selectedAuditors,
-        departments: selectedDepartments,
-      }),
-    enabled: bootstrapQuery.isSuccess,
-    initialData: !hasActiveFilters ? bootstrapQuery.data : undefined,
-    initialDataUpdatedAt: !hasActiveFilters ? bootstrapQuery.dataUpdatedAt : undefined,
-  });
-
-  const data = analyticsQuery.data ?? bootstrapQuery.data;
-  const auditorOptions = useMemo(
-    () => toAnalyticsSelectOptions(data?.filterOptions.auditors ?? []),
-    [data?.filterOptions.auditors],
+  const exportSections = useExportSections(
+    RECOMMENDATION_EXPORT_SECTIONS.map((section) => section.id) as RecommendationExportSectionId[],
   );
-  const departmentOptions = useMemo(
-    () => toAnalyticsSelectOptions(data?.filterOptions.departments ?? []),
-    [data?.filterOptions.departments],
-  );
+  const { addToConstructor, justAdded } = useAddToConstructor();
 
   const summary = data?.summary ?? EMPTY_RECOMMENDATION_SUMMARY;
   const periodSeries = data?.periodSeries ?? EMPTY_PERIOD_SERIES;
-  const completedPeriodSeries = useMemo(
-    () =>
-      granularity === 'quarter'
-        ? completeSelectedQuarterPeriods(periodSeries, selectedQuarterKeys)
-        : periodSeries,
-    [granularity, periodSeries, selectedQuarterKeys],
-  );
+  const completedPeriodSeries = useMemo(() => {
+    if (granularity !== 'quarter' || selectedQuarterKeys.length === 0) {
+      return periodSeries;
+    }
+    return withRecommendationRunningTotals(
+      completeSelectedPeriodPoints(periodSeries, selectedQuarterKeys, emptyRecommendationPeriodPoint),
+    );
+  }, [granularity, periodSeries, selectedQuarterKeys]);
   const materialityDistribution = data?.materialityDistribution ?? EMPTY_MATERIALITY_DISTRIBUTION;
 
-  // Colorize chart segments by the same tones as the stacked materiality bars.
   const coloredMaterialityDistribution = useMemo(
     () =>
       completeNamedDistribution(
@@ -265,10 +169,7 @@ export function RecommendationsAnalyticsDashboard() {
     [viewDistribution],
   );
   const objectDistribution = data?.objectDistribution ?? EMPTY_OBJECT_DISTRIBUTION;
-  const objectDistributionTop = useMemo(
-    () => [...objectDistribution].sort((left, right) => right.value - left.value).slice(0, 10),
-    [objectDistribution],
-  );
+  const objectDistributionTop = useMemo(() => topByValue(objectDistribution, 10), [objectDistribution]);
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
   const materialityMatrix = data?.materialityMatrix ?? EMPTY_MATERIALITY_MATRIX;
@@ -280,16 +181,12 @@ export function RecommendationsAnalyticsDashboard() {
   }, []);
   const periodXAxisProps = useMemo(() => getPeriodXAxisProps(granularity), [granularity]);
 
-  const resetFilters = () => {
-    resetPeriodSelections();
-    resetEntityFilters();
-  };
-
   const handleExport = async () => {
-    if (filteredTotal === 0 || isExporting) {return;}
-    setIsExporting(true);
-    try {
-      await exportRecommendationsDashboard(
+    if (filteredTotal === 0 || isExporting) {
+      return;
+    }
+    await runAnalyticsExport(setIsExporting, () =>
+      exportRecommendationsDashboard(
         {
           recommendations: [],
           filteredRecommendations: [],
@@ -306,13 +203,8 @@ export function RecommendationsAnalyticsDashboard() {
           ),
         },
         exportFormat,
-      );
-    } catch (error) {
-      console.error('Analytics export failed', error);
-      window.alert(`Не удалось экспортировать отчёт: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`);
-    } finally {
-      setIsExporting(false);
-    }
+      ),
+    );
   };
 
   const handleAddToConstructor = () => {
@@ -623,64 +515,50 @@ export function RecommendationsAnalyticsDashboard() {
     ],
   );
 
-  if (bootstrapQuery.isLoading && !data) {
-    return <LoadingState title="Загрузка аналитики рекомендаций…" />;
-  }
-  if ((bootstrapQuery.isError || analyticsQuery.isError) && !data) {
-    const error = analyticsQuery.error ?? bootstrapQuery.error;
-    return (
-      <ErrorState
-        title="Не удалось загрузить аналитику рекомендаций"
-        description={error instanceof Error ? error.message : 'неизвестная ошибка'}
-      />
-    );
-  }
-
   return (
-    <AnalyticsDashboardFrame
-      mainClassName="relative flex min-w-0 flex-1 flex-col lg:-mt-[84px] lg:self-start"
-      sidebar={(
-      <AnalyticsFilterSidebar
-        periodSlice={periodSlice}
-        onPeriodSliceChange={handlePeriodSliceChange}
-        yearOptions={yearOptions}
-        quarterOptions={quarterOptions}
-        selectedYears={selectedYears}
-        selectedQuarters={selectedQuarters}
-        onYearsChange={setSelectedYears}
-        onQuartersChange={setSelectedQuarters}
-        auditorOptions={auditorOptions}
-        selectedAuditors={selectedAuditors}
-        onAuditorsChange={setSelectedAuditors}
-        departmentOptions={departmentOptions}
-        selectedDepartments={selectedDepartments}
-        onDepartmentsChange={setSelectedDepartments}
-        onResetFilters={resetFilters}
-        exportFormat={exportFormat}
-        onExportFormatChange={setExportFormat}
-        isExporting={isExporting}
-        canExport={filteredTotal > 0}
-        onExport={handleExport}
-        onAddToConstructor={handleAddToConstructor}
-        canAddToConstructor={exportSections.selectedCount > 0}
-        addToConstructorCount={exportSections.selectedCount}
-        constructorAdded={justAdded}
-        selectionSummary={(
-          <AnalyticsSelectionSummary
-            metrics={[
-            { label: 'Рекомендаций', value: filteredTotal, hint:`из ${universeTotal}` },
-            ]}
-            items={[
-              filterSelectionItem(periodSliceLabel, activePeriodValues, 'Все значения', removeActivePeriodValue),
-              filterSelectionItem('Аудиторы', selectedAuditors, 'Все аудиторы', removeAuditor),
-              filterSelectionItem('Департаменты', selectedDepartments, 'Все департаменты', removeDepartment),
-            ]}
-          />
-        )}
-      />
-      )}
+    <AnalyticsDashboardShell
+      loadingTitle="Загрузка аналитики рекомендаций…"
+      errorTitle="Не удалось загрузить аналитику рекомендаций"
+      bootstrapQuery={bootstrapQuery}
+      analyticsQuery={analyticsQuery}
+      data={data}
+      mainClassName={ANALYTICS_DASHBOARD_MAIN_CLASS}
+      selectionMetrics={[{ label: 'Рекомендаций', value: filteredTotal, hint: `из ${universeTotal}` }]}
+      periodSliceLabel={periodSliceLabel}
+      activePeriodValues={activePeriodValues}
+      removeActivePeriodValue={removeActivePeriodValue}
+      selectedAuditors={selectedAuditors}
+      removeAuditor={removeAuditor}
+      selectedDepartments={selectedDepartments}
+      removeDepartment={removeDepartment}
+      filterSidebar={{
+        periodSlice,
+        onPeriodSliceChange: handlePeriodSliceChange,
+        yearOptions,
+        quarterOptions,
+        selectedYears,
+        selectedQuarters,
+        onYearsChange: setSelectedYears,
+        onQuartersChange: setSelectedQuarters,
+        auditorOptions,
+        selectedAuditors,
+        onAuditorsChange: setSelectedAuditors,
+        departmentOptions,
+        selectedDepartments,
+        onDepartmentsChange: setSelectedDepartments,
+        onResetFilters: resetFilters,
+        exportFormat,
+        onExportFormatChange: setExportFormat,
+        isExporting,
+        canExport: filteredTotal > 0,
+        onExport: handleExport,
+        onAddToConstructor: handleAddToConstructor,
+        canAddToConstructor: exportSections.selectedCount > 0,
+        addToConstructorCount: exportSections.selectedCount,
+        constructorAdded: justAdded,
+      }}
     >
       <AnalyticsDashboardGrid cards={cards} />
-    </AnalyticsDashboardFrame>
+    </AnalyticsDashboardShell>
   );
 }

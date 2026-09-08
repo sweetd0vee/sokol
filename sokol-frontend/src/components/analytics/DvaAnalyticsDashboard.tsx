@@ -1,12 +1,8 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { fetchDvaAnalytics } from '../../api/analytics';
 import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
-import { AnalyticsDashboardFrame } from './AnalyticsDashboardFrame';
-import { AnalyticsFilterSidebar } from './AnalyticsFilterSidebar';
-import { AnalyticsSelectionSummary } from './AnalyticsSelectionSummary';
-import { filterSelectionItem } from './filterSelectionItem';
+import { AnalyticsDashboardShell } from './AnalyticsDashboardShell';
 import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { AuditorStackedBarChart } from './AuditorStackedBarChart';
 import { AuditorUnresolvedBarChart } from './AuditorUnresolvedBarChart';
@@ -19,15 +15,12 @@ import {
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
-import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
+import { useAnalyticsDashboardController } from './useAnalyticsDashboardController';
 import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
 import { DVA_EXPORT_SECTIONS, type DvaExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
-import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
-import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
-import type { PeriodGranularity } from '../../utils/checkAnalytics';
 import { rankAuditorRows } from '../../utils/dvaAnalytics';
-import { ErrorState, LoadingState } from '../ui/StateMessage';
+import { runAnalyticsExport } from '../../utils/runAnalyticsExport';
 import { useAddToConstructor } from './constructor/useAddToConstructor';
 import { buildDvaConstructorDrafts } from './constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
@@ -55,29 +48,15 @@ const TIMELINESS_SERIES = [
 export function DvaAnalyticsDashboard() {
   const {
     selectedAuditors,
-    setSelectedAuditors,
     selectedDepartments,
-    setSelectedDepartments,
     exportFormat,
     setExportFormat,
     isExporting,
     setIsExporting,
     removeAuditor,
     removeDepartment,
-    resetEntityFilters,
-  } = useAnalyticsDashboardSession();
-
-  const exportSections = useExportSections(DVA_EXPORT_SECTIONS.map((section) => section.id) as DvaExportSectionId[]);
-  const { addToConstructor, justAdded } = useAddToConstructor();
-
-  const bootstrapQuery = useQuery({
-    queryKey: queryKeys.analytics.dvaBootstrap,
-    queryFn: () => fetchDvaAnalytics({ granularity: 'year' }),
-    staleTime: 60_000,
-  });
-
-  const anchorDates = useAnalyticsAnchorDates(bootstrapQuery.data?.filterOptions.anchorDates);
-  const {
+    setSelectedAuditors,
+    setSelectedDepartments,
     periodSlice,
     selectedYears,
     selectedQuarters,
@@ -85,58 +64,25 @@ export function DvaAnalyticsDashboard() {
     setSelectedQuarters,
     yearOptions,
     quarterOptions,
-    selectedYearKeys,
-    selectedQuarterKeys,
     periodSliceLabel,
     activePeriodValues,
     handlePeriodSliceChange,
-    resetPeriodSelections,
     removeActivePeriodValue,
-  } = useAnalyticsPeriodFilters(anchorDates);
-
-  const granularity: PeriodGranularity = periodSlice;
-  const hasActiveFilters = hasAnalyticsPeriodFilters({
-    yearKeys: selectedYearKeys,
-    quarterKeys: selectedQuarterKeys,
-    monthKeys: [],
-    auditors: selectedAuditors,
-    departments: selectedDepartments,
-    granularity,
+    bootstrapQuery,
+    analyticsQuery,
+    data,
+    auditorOptions,
+    departmentOptions,
+    resetFilters,
+  } = useAnalyticsDashboardController({
+    resource: 'dva',
+    bootstrapQueryKey: queryKeys.analytics.dvaBootstrap,
+    fetchBootstrap: () => fetchDvaAnalytics({ granularity: 'year' }),
+    fetchFiltered: fetchDvaAnalytics,
   });
 
-  const analyticsQuery = useQuery({
-    queryKey: [
-      'analytics',
-      'dva',
-      granularity,
-      selectedYearKeys,
-      selectedQuarterKeys,
-      selectedAuditors,
-      selectedDepartments,
-    ],
-    queryFn: () =>
-      fetchDvaAnalytics({
-        granularity,
-        years: selectedYearKeys,
-        quarters: selectedQuarterKeys,
-        months: [],
-        auditors: selectedAuditors,
-        departments: selectedDepartments,
-      }),
-    enabled: bootstrapQuery.isSuccess,
-    initialData: !hasActiveFilters ? bootstrapQuery.data : undefined,
-    initialDataUpdatedAt: !hasActiveFilters ? bootstrapQuery.dataUpdatedAt : undefined,
-  });
-
-  const data = analyticsQuery.data ?? bootstrapQuery.data;
-  const auditorOptions = useMemo(
-    () => toAnalyticsSelectOptions(data?.filterOptions.auditors ?? []),
-    [data?.filterOptions.auditors],
-  );
-  const departmentOptions = useMemo(
-    () => toAnalyticsSelectOptions(data?.filterOptions.departments ?? []),
-    [data?.filterOptions.departments],
-  );
+  const exportSections = useExportSections(DVA_EXPORT_SECTIONS.map((section) => section.id) as DvaExportSectionId[]);
+  const { addToConstructor, justAdded } = useAddToConstructor();
 
   const checkSummary = data?.checkSummary ?? EMPTY_CHECK_SUMMARY;
   const recSummary = data?.recommendationSummary ?? EMPTY_RECOMMENDATION_SUMMARY;
@@ -172,39 +118,31 @@ export function DvaAnalyticsDashboard() {
     ...auditorDocuments.map((row) => row.name),
   ]).size;
 
-  const resetFilters = () => {
-    resetPeriodSelections();
-    resetEntityFilters();
-  };
-
   const handleExport = async () => {
     if ((filteredChecksTotal === 0 && filteredRecommendationsTotal === 0) || isExporting) {
       return;
     }
-    setIsExporting(true);
-    try {
-      await exportGenericAnalyticsDashboard(
-        {
-          kind: 'dva',
-          documentTitle: 'ДВА: управленческая аналитика',
-          filenamePrefix: 'analytics-dva',
-          selectedSections: [...exportSections.allIds],
-          checkLifecycleOverride: checkLifecycle,
-          meta: [
-            ['Аудиторы', selectedAuditors.length ? selectedAuditors.join(', ') : 'Все'],
-            ['Департаменты', selectedDepartments.length ? selectedDepartments.join(', ') : 'Все'],
-            ['Проверок в выборке', String(filteredChecksTotal)],
-            ['Рекомендаций в выборке', String(filteredRecommendationsTotal)],
-          ],
-        },
-        exportFormat,
-      );
-    } catch (error) {
-      console.error('DVA export failed', error);
-      window.alert(`Не удалось экспортировать отчёт: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`);
-    } finally {
-      setIsExporting(false);
-    }
+    await runAnalyticsExport(
+      setIsExporting,
+      () =>
+        exportGenericAnalyticsDashboard(
+          {
+            kind: 'dva',
+            documentTitle: 'ДВА: управленческая аналитика',
+            filenamePrefix: 'analytics-dva',
+            selectedSections: [...exportSections.allIds],
+            checkLifecycleOverride: checkLifecycle,
+            meta: [
+              ['Аудиторы', selectedAuditors.length ? selectedAuditors.join(', ') : 'Все'],
+              ['Департаменты', selectedDepartments.length ? selectedDepartments.join(', ') : 'Все'],
+              ['Проверок в выборке', String(filteredChecksTotal)],
+              ['Рекомендаций в выборке', String(filteredRecommendationsTotal)],
+            ],
+          },
+          exportFormat,
+        ),
+      'DVA export failed',
+    );
   };
 
   const handleAddToConstructor = () => {
@@ -388,64 +326,52 @@ export function DvaAnalyticsDashboard() {
     ],
   );
 
-  if (bootstrapQuery.isLoading && !data) {
-    return <LoadingState title="Загрузка аналитики ДВА…" />;
-  }
-  if ((bootstrapQuery.isError || analyticsQuery.isError) && !data) {
-    const error = analyticsQuery.error ?? bootstrapQuery.error;
-    return (
-      <ErrorState
-        title="Не удалось загрузить аналитику ДВА"
-        description={error instanceof Error ? error.message : 'неизвестная ошибка'}
-      />
-    );
-  }
-
   return (
-    <AnalyticsDashboardFrame
-      sidebar={(
-      <AnalyticsFilterSidebar
-        periodSlice={periodSlice}
-        onPeriodSliceChange={handlePeriodSliceChange}
-        yearOptions={yearOptions}
-        quarterOptions={quarterOptions}
-        selectedYears={selectedYears}
-        selectedQuarters={selectedQuarters}
-        onYearsChange={setSelectedYears}
-        onQuartersChange={setSelectedQuarters}
-        auditorOptions={auditorOptions}
-        selectedAuditors={selectedAuditors}
-        onAuditorsChange={setSelectedAuditors}
-        departmentOptions={departmentOptions}
-        selectedDepartments={selectedDepartments}
-        onDepartmentsChange={setSelectedDepartments}
-        onResetFilters={resetFilters}
-        exportFormat={exportFormat}
-        onExportFormatChange={setExportFormat}
-        isExporting={isExporting}
-        canExport={filteredChecksTotal > 0 || filteredRecommendationsTotal > 0}
-        onExport={handleExport}
-        onAddToConstructor={handleAddToConstructor}
-        canAddToConstructor={exportSections.selectedCount > 0}
-        addToConstructorCount={exportSections.selectedCount}
-        constructorAdded={justAdded}
-        selectionSummary={(
-          <AnalyticsSelectionSummary
-            metrics={[
-            { label: 'Проверок', value: filteredChecksTotal, hint:`из ${universeChecksTotal}` },
-            { label: 'Рекомендаций', value: filteredRecommendationsTotal, hint:`из ${universeRecommendationsTotal}` },
-            ]}
-            items={[
-              filterSelectionItem(periodSliceLabel, activePeriodValues, 'Все значения', removeActivePeriodValue),
-              filterSelectionItem('Аудиторы', selectedAuditors, 'Все аудиторы', removeAuditor),
-              filterSelectionItem('Департаменты', selectedDepartments, 'Все департаменты', removeDepartment),
-            ]}
-          />
-        )}
-      />
-      )}
+    <AnalyticsDashboardShell
+      loadingTitle="Загрузка аналитики ДВА…"
+      errorTitle="Не удалось загрузить аналитику ДВА"
+      bootstrapQuery={bootstrapQuery}
+      analyticsQuery={analyticsQuery}
+      data={data}
+      selectionMetrics={[
+        { label: 'Проверок', value: filteredChecksTotal, hint: `из ${universeChecksTotal}` },
+        { label: 'Рекомендаций', value: filteredRecommendationsTotal, hint: `из ${universeRecommendationsTotal}` },
+      ]}
+      periodSliceLabel={periodSliceLabel}
+      activePeriodValues={activePeriodValues}
+      removeActivePeriodValue={removeActivePeriodValue}
+      selectedAuditors={selectedAuditors}
+      removeAuditor={removeAuditor}
+      selectedDepartments={selectedDepartments}
+      removeDepartment={removeDepartment}
+      filterSidebar={{
+        periodSlice,
+        onPeriodSliceChange: handlePeriodSliceChange,
+        yearOptions,
+        quarterOptions,
+        selectedYears,
+        selectedQuarters,
+        onYearsChange: setSelectedYears,
+        onQuartersChange: setSelectedQuarters,
+        auditorOptions,
+        selectedAuditors,
+        onAuditorsChange: setSelectedAuditors,
+        departmentOptions,
+        selectedDepartments,
+        onDepartmentsChange: setSelectedDepartments,
+        onResetFilters: resetFilters,
+        exportFormat,
+        onExportFormatChange: setExportFormat,
+        isExporting,
+        canExport: filteredChecksTotal > 0 || filteredRecommendationsTotal > 0,
+        onExport: handleExport,
+        onAddToConstructor: handleAddToConstructor,
+        canAddToConstructor: exportSections.selectedCount > 0,
+        addToConstructorCount: exportSections.selectedCount,
+        constructorAdded: justAdded,
+      }}
     >
       <AnalyticsDashboardGrid cards={cards} maxChartArea={440} />
-    </AnalyticsDashboardFrame>
+    </AnalyticsDashboardShell>
   );
 }

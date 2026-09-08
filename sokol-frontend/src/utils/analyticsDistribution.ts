@@ -18,6 +18,11 @@ export function distributionHasValues(items: Array<{ value: number }>) {
   return items.some((item) => item.value > 0);
 }
 
+/** Top-N items by `value` descending (no "Прочие" bucket). */
+export function topByValue<T extends { value: number }>(items: T[], limit = 10): T[] {
+  return [...items].sort((left, right) => right.value - left.value).slice(0, limit);
+}
+
 export function buildTopNamedDistribution(
   items: Array<{ name: string; value: number }>,
   options?: { topN?: number; othersLabel?: string },

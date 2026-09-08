@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ComponentType, type ReactNode } from 'react';
 import { PageHeader } from '../ui/PageHeader';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { ChecksAnalyticsDashboard } from '../analytics/ChecksAnalyticsDashboard';
@@ -7,16 +7,20 @@ import { MonitoringAnalyticsDashboard } from '../analytics/MonitoringAnalyticsDa
 import { DvaAnalyticsDashboard } from '../analytics/DvaAnalyticsDashboard';
 
 const ANALYTICS_TABS = [
-  { value: 'checks' as const, label: 'Проверки' },
-  { value: 'recommendations' as const, label: 'Рекомендации' },
-  { value: 'monitoring' as const, label: 'Мониторинг' },
-  { value: 'dva' as const, label: 'ДВА' },
-];
+  { value: 'checks' as const, label: 'Проверки', Panel: ChecksAnalyticsDashboard },
+  { value: 'recommendations' as const, label: 'Рекомендации', Panel: RecommendationsAnalyticsDashboard },
+  { value: 'monitoring' as const, label: 'Мониторинг', Panel: MonitoringAnalyticsDashboard },
+  { value: 'dva' as const, label: 'ДВА', Panel: DvaAnalyticsDashboard },
+] satisfies ReadonlyArray<{
+  value: string;
+  label: string;
+  Panel: ComponentType;
+}>;
 
 type AnalyticsTabId = (typeof ANALYTICS_TABS)[number]['value'];
 
-const PRIMARY_ANALYTICS_TABS = ANALYTICS_TABS.slice(0, 2);
-const SECONDARY_ANALYTICS_TABS = ANALYTICS_TABS.slice(2);
+const PRIMARY_ANALYTICS_TABS = ANALYTICS_TABS.slice(0, 2).map(({ value, label }) => ({ value, label }));
+const SECONDARY_ANALYTICS_TABS = ANALYTICS_TABS.slice(2).map(({ value, label }) => ({ value, label }));
 
 function KeepAlivePanel({ active, children }: { active: boolean; children: ReactNode }) {
   return <div className={active ? 'w-full' : 'hidden'}>{children}</div>;
@@ -56,26 +60,13 @@ export function AnalyticsTab() {
         </div>
       </div>
 
-      {visited.has('checks') ? (
-        <KeepAlivePanel active={activeTab === 'checks'}>
-          <ChecksAnalyticsDashboard />
-        </KeepAlivePanel>
-      ) : null}
-      {visited.has('recommendations') ? (
-        <KeepAlivePanel active={activeTab === 'recommendations'}>
-          <RecommendationsAnalyticsDashboard />
-        </KeepAlivePanel>
-      ) : null}
-      {visited.has('monitoring') ? (
-        <KeepAlivePanel active={activeTab === 'monitoring'}>
-          <MonitoringAnalyticsDashboard />
-        </KeepAlivePanel>
-      ) : null}
-      {visited.has('dva') ? (
-        <KeepAlivePanel active={activeTab === 'dva'}>
-          <DvaAnalyticsDashboard />
-        </KeepAlivePanel>
-      ) : null}
+      {ANALYTICS_TABS.map(({ value, Panel }) =>
+        visited.has(value) ? (
+          <KeepAlivePanel key={value} active={activeTab === value}>
+            <Panel />
+          </KeepAlivePanel>
+        ) : null,
+      )}
     </div>
   );
 }
