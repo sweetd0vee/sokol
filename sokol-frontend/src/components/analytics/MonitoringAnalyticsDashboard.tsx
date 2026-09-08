@@ -311,7 +311,7 @@ export function MonitoringAnalyticsDashboard() {
         id: 'summary',
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
         render: () => (
-          <ChartCard title="Итого" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')}>
+          <ChartCard title="Итого по мониторингу" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')}>
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
               <KpiCard
                 label="Исполнено"
@@ -348,8 +348,8 @@ export function MonitoringAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Статусы"
-            description="Распределение статусов за период"
+            title="Статусы рекомендаций за период"
+            description=""
             exportSectionId="statuses"
             exportSelected={exportSections.isSelected('statuses')}
             onToggleExport={() => exportSections.toggleSection('statuses')}
@@ -371,8 +371,8 @@ export function MonitoringAnalyticsDashboard() {
         defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Дополнительные статусы"
-            description="Распределение дополнительных статусов за период"
+            title="Дополнительные статусы за период"
+            description=""
             exportSectionId="additionalStatuses"
             exportSelected={exportSections.isSelected('additionalStatuses')}
             onToggleExport={() => exportSections.toggleSection('additionalStatuses')}
@@ -395,8 +395,8 @@ export function MonitoringAnalyticsDashboard() {
         defaultLayout: { x: 6, y: 5, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
-            title="Перенос срока"
-            description="Количество переносов срока за период"
+            title="Переносы срока по проверкам"
+            description=""
             exportSectionId="deadlineExtensions"
             exportSelected={exportSections.isSelected('deadlineExtensions')}
             onToggleExport={() => exportSections.toggleSection('deadlineExtensions')}
@@ -449,8 +449,8 @@ export function MonitoringAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 5, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
-            title="Исполнено в ходе аудита"
-            description="Количество рекомендаций со статусом «исполнено в ходе аудита» по проверкам за период"
+            title="Исполнено в ходе аудита по проверкам"
+            description=""
             exportSectionId="completedDuringAudit"
             exportSelected={exportSections.isSelected('completedDuringAudit')}
             onToggleExport={() => exportSections.toggleSection('completedDuringAudit')}
@@ -505,8 +505,8 @@ export function MonitoringAnalyticsDashboard() {
         expandToContent: true,
         render: () => (
           <ChartCard
-            title="Матрица статусов"
-            description="Матрица статусов по проверкам за период"
+            title="Матрица статусов по проверкам"
+            description=""
             exportSectionId="statusMatrix"
             exportSelected={exportSections.isSelected('statusMatrix')}
             onToggleExport={() => exportSections.toggleSection('statusMatrix')}

@@ -348,7 +348,7 @@ export function RecommendationsAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
         render: () => (
           <ChartCard
-            title="Итого"
+            title="Итого по рекомендациям"
             description=""
             dense
             exportSectionId="summary"
@@ -392,8 +392,8 @@ export function RecommendationsAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 2, w: 9, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
-            title="Существенность по периодам"
-            description="Распределение уровней существенности внутри периода"
+            title="Существенность рекомендаций по периодам"
+            description=""
             exportSectionId="materialityByPeriod"
             exportSelected={exportSections.isSelected('materialityByPeriod')}
             onToggleExport={() => exportSections.toggleSection('materialityByPeriod')}
@@ -501,8 +501,8 @@ export function RecommendationsAnalyticsDashboard() {
         defaultLayout: { x: 9, y: 2, w: 3, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Существенность"
-            description="Распределение уровней существенности за период"
+            title="Существенность рекомендаций за период"
+            description=""
             exportSectionId="materiality"
             exportSelected={exportSections.isSelected('materiality')}
             onToggleExport={() => exportSections.toggleSection('materiality')}
@@ -526,7 +526,7 @@ export function RecommendationsAnalyticsDashboard() {
         expandToContent: true,
         render: () => (
           <ChartCard
-            title="Матрица существенности"
+            title="Матрица существенности рекомендаций"
             description=""
             exportSectionId="materialityMatrix"
             exportSelected={exportSections.isSelected('materialityMatrix')}
@@ -550,8 +550,8 @@ export function RecommendationsAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 13, w: 4, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Виды проверок"
-            description="Количество рекомендаций за период"
+            title="Виды проверок по рекомендациям"
+            description=""
             exportSectionId="views"
             exportSelected={exportSections.isSelected('views')}
             onToggleExport={() => exportSections.toggleSection('views')}
@@ -589,8 +589,8 @@ export function RecommendationsAnalyticsDashboard() {
         defaultLayout: { x: 4, y: 13, w: 8, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Карта департаментов (ТОП-10)"
-            description="Количество рекомендаций за период по департаментам"
+            title="Карта департаментов по рекомендациям (ТОП-10)"
+            description=""
             exportSectionId="objects"
             exportSelected={exportSections.isSelected('objects')}
             onToggleExport={() => exportSections.toggleSection('objects')}

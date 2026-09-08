@@ -249,7 +249,7 @@ export function DvaAnalyticsDashboard() {
         id: 'summary',
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
         render: () => (
-          <ChartCard title="Итого" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')}>
+          <ChartCard title="Итого по ДВА" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')}>
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-6">
               <KpiCard label="Проверки" value={checkSummary.total} tone="blue" />
               <KpiCard label="Рекомендации" value={recSummary.total} tone="slate" />
@@ -281,8 +281,8 @@ export function DvaAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 2, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
-            title="Своевременность"
-            description="Соблюдение сроков исполнения рекомендаций по сотрудникам"
+            title="Своевременность исполнения по сотрудникам"
+            description=""
             exportSectionId="auditorTimeliness"
             exportSelected={exportSections.isSelected('auditorTimeliness')}
             onToggleExport={() => exportSections.toggleSection('auditorTimeliness')}
@@ -300,8 +300,8 @@ export function DvaAnalyticsDashboard() {
         defaultLayout: { x: 6, y: 2, w: 6, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
-            title="Импакт рекомендаций"
-            description="Существенность находок: кто выявляет наиболее значимые риски"
+            title="Существенность рекомендаций по сотрудникам"
+            description=""
             exportSectionId="auditorImpact"
             exportSelected={exportSections.isSelected('auditorImpact')}
             onToggleExport={() => exportSections.toggleSection('auditorImpact')}
@@ -319,8 +319,8 @@ export function DvaAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 6, w: 4, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
-            title="Результативность исполнения"
-            description="Количество «не решено» и доля от всех рекомендаций сотрудника. Нажмите столбец, чтобы закрепить список проверок"
+            title="Нерешённые рекомендации по сотрудникам"
+            description=""
             exportSectionId="auditorExecution"
             exportSelected={exportSections.isSelected('auditorExecution')}
             onToggleExport={() => exportSections.toggleSection('auditorExecution')}
@@ -339,7 +339,7 @@ export function DvaAnalyticsDashboard() {
         render: () => (
           <ChartCard
             title="Карта сотрудников по проверкам"
-            description="Количество проверок за период по всем сотрудникам ДВА"
+            description=""
             exportSectionId="auditorChecksMap"
             exportSelected={exportSections.isSelected('auditorChecksMap')}
             onToggleExport={() => exportSections.toggleSection('auditorChecksMap')}
@@ -362,8 +362,8 @@ export function DvaAnalyticsDashboard() {
         expandToContent: true,
         render: () => (
           <ChartCard
-            title="Жизненный цикл проверки"
-            description="От приказа до ДЗ: программа и АЗ как промежуточные точки. Наведите на отрезок, чтобы увидеть длительность этапа"
+            title="Жизненный цикл проверки: от приказа до ДЗ"
+            description=""
             exportSectionId="checkLifecycle"
             exportSelected={exportSections.isSelected('checkLifecycle')}
             onToggleExport={() => exportSections.toggleSection('checkLifecycle')}

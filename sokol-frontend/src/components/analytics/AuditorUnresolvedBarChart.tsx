@@ -121,9 +121,6 @@ function UnresolvedChecksPanel({
           </>
         )}
       </div>
-      <p className="shrink-0 border-t border-slate-100 px-3 py-1.5 text-xs text-slate-500">
-        {pinned ? 'Закреплено — можно прокрутить весь список' : 'Нажмите столбец или кнопку, чтобы закрепить'}
-      </p>
     </aside>
   );
 }

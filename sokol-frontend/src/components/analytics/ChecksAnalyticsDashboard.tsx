@@ -283,7 +283,7 @@ export function ChecksAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
         render: () => (
           <ChartCard
-            title="Итого"
+            title="Итого по проверкам"
             description=""
             dense
             exportSectionId="summary"
@@ -305,8 +305,8 @@ export function ChecksAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 2, w: 9, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
-            title="Количество проверок"
-            description="Динамика количества проверок за период"
+            title="Динамика количества проверок"
+            description=""
             exportSectionId="dynamics"
             exportSelected={exportSections.isSelected('dynamics')}
             onToggleExport={() => exportSections.toggleSection('dynamics')}
@@ -360,8 +360,8 @@ export function ChecksAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Виды проверок"
-            description="Количество проверок за период"
+            title="Виды проверок за период"
+            description=""
             exportSectionId="views"
             exportSelected={exportSections.isSelected('views')}
             onToggleExport={() => exportSections.toggleSection('views')}
@@ -399,8 +399,8 @@ export function ChecksAnalyticsDashboard() {
         defaultLayout: { x: 9, y: 2, w: 3, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Типы проверок"
-            description="Распределение плановых, внеплановых и контрольных процедур за период"
+            title="Типы проверок за период"
+            description=""
             exportSectionId="types"
             exportSelected={exportSections.isSelected('types')}
             onToggleExport={() => exportSections.toggleSection('types')}
@@ -424,8 +424,8 @@ export function ChecksAnalyticsDashboard() {
         defaultLayout: { x: 4, y: 5, w: 8, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Карта департаментов (ТОП-10)"
-            description="Количество проверок за период по департаментам"
+            title="Карта департаментов по проверкам (ТОП-10)"
+            description=""
             exportSectionId="departmentMap"
             exportSelected={exportSections.isSelected('departmentMap')}
             onToggleExport={() => exportSections.toggleSection('departmentMap')}
@@ -448,8 +448,8 @@ export function ChecksAnalyticsDashboard() {
         expandToContent: true,
         render: () => (
           <ChartCard
-            title="Оценка эффективности"
-            description="Матрица оценок по проверкам за период"
+            title="Матрица оценок эффективности"
+            description=""
             exportSectionId="effectivenessMatrix"
             exportSelected={exportSections.isSelected('effectivenessMatrix')}
             onToggleExport={() => exportSections.toggleSection('effectivenessMatrix')}

@@ -32,12 +32,11 @@ function draft(
   kind: ConstructorWidgetDraft['kind'],
   sectionId: string,
   title: string,
-  description: string,
   filterCaption: string,
   size: ConstructorSizeHint,
   payload: ConstructorPayload,
 ): ConstructorWidgetDraft {
-  return { kind, sectionId, title, description, filterCaption, size, payload };
+  return { kind, sectionId, title, description: '', filterCaption, size, payload };
 }
 
 function barPointsFromNamed(items: Array<{ name: string; value: number }>): ConstructorBarPoint[] {
@@ -52,7 +51,7 @@ export function buildChecksConstructorDrafts(input: ChecksConstructorInput): Con
   for (const sectionId of input.selectedSections) {
     if (sectionId === 'summary') {
       drafts.push(
-        draft(kind, sectionId, 'Итого', 'Сводка KPI по проверкам', caption, SIZE.kpi, {
+        draft(kind, sectionId, 'Итого по проверкам', caption, SIZE.kpi, {
           chart: 'kpi',
           columns: 5,
           items: [
@@ -66,7 +65,7 @@ export function buildChecksConstructorDrafts(input: ChecksConstructorInput): Con
       );
     } else if (sectionId === 'dynamics') {
       drafts.push(
-        draft(kind, sectionId, 'Количество проверок', 'Динамика количества проверок за период', caption, SIZE.wide, {
+        draft(kind, sectionId, 'Динамика количества проверок', caption, SIZE.wide, {
           chart: 'bar',
           variant: 'columns',
           data: input.flowSeries.map((item) => ({ label: item.label, value: item.total })),
@@ -77,7 +76,7 @@ export function buildChecksConstructorDrafts(input: ChecksConstructorInput): Con
       );
     } else if (sectionId === 'views') {
       drafts.push(
-        draft(kind, sectionId, 'Виды проверок', 'Количество проверок за период', caption, SIZE.half, {
+        draft(kind, sectionId, 'Виды проверок за период', caption, SIZE.half, {
           chart: 'bar',
           variant: 'bars',
           data: barPointsFromNamed(input.viewDistribution),
@@ -88,7 +87,7 @@ export function buildChecksConstructorDrafts(input: ChecksConstructorInput): Con
       );
     } else if (sectionId === 'types') {
       drafts.push(
-        draft(kind, sectionId, 'Типы проверок', 'Распределение плановых, внеплановых и контрольных процедур за период', caption, SIZE.narrow, {
+        draft(kind, sectionId, 'Типы проверок за период', caption, SIZE.narrow, {
           chart: 'donut',
           data: input.typeDistribution,
           colorByValue: true,
@@ -98,7 +97,7 @@ export function buildChecksConstructorDrafts(input: ChecksConstructorInput): Con
       );
     } else if (sectionId === 'departmentMap') {
       drafts.push(
-        draft(kind, sectionId, 'Карта департаментов (ТОП-10)', 'Количество проверок за период по департаментам', caption, SIZE.wide, {
+        draft(kind, sectionId, 'Карта департаментов по проверкам (ТОП-10)', caption, SIZE.wide, {
           chart: 'treemap',
           data: input.departmentMapTop,
           palette: 'blue',
@@ -106,7 +105,7 @@ export function buildChecksConstructorDrafts(input: ChecksConstructorInput): Con
       );
     } else if (sectionId === 'effectivenessMatrix') {
       drafts.push(
-        draft(kind, sectionId, 'Оценка эффективности', 'Матрица оценок по проверкам за период', caption, SIZE.matrix, {
+        draft(kind, sectionId, 'Матрица оценок эффективности', caption, SIZE.matrix, {
           chart: 'effectiveness-matrix',
           rows: input.effectivenessMatrix,
         }),
@@ -127,7 +126,7 @@ export function buildRecommendationsConstructorDrafts(
   for (const sectionId of input.selectedSections) {
     if (sectionId === 'summary') {
       drafts.push(
-        draft(kind, sectionId, 'Итого', 'Сводка KPI по рекомендациям', caption, SIZE.kpi, {
+        draft(kind, sectionId, 'Итого по рекомендациям', caption, SIZE.kpi, {
           chart: 'kpi',
           columns: 5,
           items: [
@@ -163,47 +162,31 @@ export function buildRecommendationsConstructorDrafts(
       );
     } else if (sectionId === 'materialityByPeriod') {
       drafts.push(
-        draft(
-          kind,
-          sectionId,
-          'Существенность по периодам',
-          'Распределение уровней существенности внутри периода',
-          caption,
-          SIZE.wide,
-          {
-            chart: 'stacked',
-            data: input.completedPeriodSeries,
-            series: [
-              { key: 'low', name: 'Низкий', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий },
-              { key: 'medium', name: 'Средний', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний },
-              { key: 'high', name: 'Высокий', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий },
-            ],
-            xKey: 'label',
-            showLegend: true,
-            showStackTotal: true,
-            granularity: input.granularity,
-          },
-        ),
+        draft(kind, sectionId, 'Существенность рекомендаций по периодам', caption, SIZE.wide, {
+          chart: 'stacked',
+          data: input.completedPeriodSeries,
+          series: [
+            { key: 'low', name: 'Низкий', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий },
+            { key: 'medium', name: 'Средний', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний },
+            { key: 'high', name: 'Высокий', color: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий },
+          ],
+          xKey: 'label',
+          showLegend: true,
+          showStackTotal: true,
+          granularity: input.granularity,
+        }),
       );
     } else if (sectionId === 'materiality') {
       drafts.push(
-        draft(
-          kind,
-          sectionId,
-          'Существенность',
-          'Распределение уровней существенности за период',
-          caption,
-          SIZE.narrow,
-          {
-            chart: 'donut',
-            data: input.coloredMaterialityDistribution,
-            labelMode: 'both',
-          },
-        ),
+        draft(kind, sectionId, 'Существенность рекомендаций за период', caption, SIZE.narrow, {
+          chart: 'donut',
+          data: input.coloredMaterialityDistribution,
+          labelMode: 'both',
+        }),
       );
     } else if (sectionId === 'views') {
       drafts.push(
-        draft(kind, sectionId, 'Виды проверок', 'Количество рекомендаций за период', caption, SIZE.half, {
+        draft(kind, sectionId, 'Виды проверок по рекомендациям', caption, SIZE.half, {
           chart: 'bar',
           variant: 'bars',
           data: barPointsFromNamed(input.viewDistribution),
@@ -214,14 +197,14 @@ export function buildRecommendationsConstructorDrafts(
       );
     } else if (sectionId === 'materialityMatrix') {
       drafts.push(
-        draft(kind, sectionId, 'Матрица существенности', '', caption, SIZE.matrix, {
+        draft(kind, sectionId, 'Матрица существенности рекомендаций', caption, SIZE.matrix, {
           chart: 'materiality-matrix',
           rows: input.materialityMatrix,
         }),
       );
     } else if (sectionId === 'objects') {
       drafts.push(
-        draft(kind, sectionId, 'Карта департаментов (ТОП-10)', 'Количество рекомендаций за период по департаментам', caption, SIZE.half, {
+        draft(kind, sectionId, 'Карта департаментов по рекомендациям (ТОП-10)', caption, SIZE.half, {
           chart: 'treemap',
           data: input.objectDistributionTop,
           palette: 'teal',
@@ -241,7 +224,7 @@ export function buildMonitoringConstructorDrafts(input: MonitoringConstructorInp
   for (const sectionId of input.selectedSections) {
     if (sectionId === 'summary') {
       drafts.push(
-        draft(kind, sectionId, 'Итого', 'Сводка KPI по мониторингу', caption, SIZE.kpi, {
+        draft(kind, sectionId, 'Итого по мониторингу', caption, SIZE.kpi, {
           chart: 'kpi',
           columns: 5,
           items: [
@@ -264,7 +247,7 @@ export function buildMonitoringConstructorDrafts(input: MonitoringConstructorInp
       );
     } else if (sectionId === 'statuses') {
       drafts.push(
-        draft(kind, sectionId, 'Статусы', 'Распределение статусов за период', caption, SIZE.half, {
+        draft(kind, sectionId, 'Статусы рекомендаций за период', caption, SIZE.half, {
           chart: 'circles',
           data: input.coloredStatusDistribution,
           legendLayout: 'row',
@@ -272,7 +255,7 @@ export function buildMonitoringConstructorDrafts(input: MonitoringConstructorInp
       );
     } else if (sectionId === 'additionalStatuses') {
       drafts.push(
-        draft(kind, sectionId, 'Дополнительные статусы', 'Распределение дополнительных статусов за период', caption, SIZE.half, {
+        draft(kind, sectionId, 'Дополнительные статусы за период', caption, SIZE.half, {
           chart: 'donut',
           data: input.coloredAdditionalStatusDistribution,
           variant: 'ring',
@@ -282,7 +265,7 @@ export function buildMonitoringConstructorDrafts(input: MonitoringConstructorInp
       );
     } else if (sectionId === 'deadlineExtensions') {
       drafts.push(
-        draft(kind, sectionId, 'Перенос срока', 'Количество переносов срока за период', caption, SIZE.tallHalf, {
+        draft(kind, sectionId, 'Переносы срока по проверкам', caption, SIZE.tallHalf, {
           chart: 'check-bars',
           variant: 'columns',
           data: input.deadlineExtensionsByCheck,
@@ -293,26 +276,18 @@ export function buildMonitoringConstructorDrafts(input: MonitoringConstructorInp
       );
     } else if (sectionId === 'completedDuringAudit') {
       drafts.push(
-        draft(
-          kind,
-          sectionId,
-          'Исполнено в ходе аудита',
-          'Количество рекомендаций со статусом «исполнено в ходе аудита» по проверкам за период',
-          caption,
-          SIZE.tallHalf,
-          {
-            chart: 'check-bars',
-            variant: 'bars',
-            data: input.completedDuringAuditByCheck,
-            colors: input.completedDuringAuditColors,
-            shortNames: input.completedDuringAuditShortNames,
-            seriesName: 'Рекомендаций',
-          },
-        ),
+        draft(kind, sectionId, 'Исполнено в ходе аудита по проверкам', caption, SIZE.tallHalf, {
+          chart: 'check-bars',
+          variant: 'bars',
+          data: input.completedDuringAuditByCheck,
+          colors: input.completedDuringAuditColors,
+          shortNames: input.completedDuringAuditShortNames,
+          seriesName: 'Рекомендаций',
+        }),
       );
     } else if (sectionId === 'statusMatrix') {
       drafts.push(
-        draft(kind, sectionId, 'Матрица статусов', 'Матрица статусов по проверкам за период', caption, SIZE.matrix, {
+        draft(kind, sectionId, 'Матрица статусов по проверкам', caption, SIZE.matrix, {
           chart: 'status-matrix',
           rows: input.statusMatrix,
         }),
@@ -331,7 +306,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
   for (const sectionId of input.selectedSections) {
     if (sectionId === 'summary') {
       drafts.push(
-        draft(kind, sectionId, 'Итого', 'Сводка KPI ДВА', caption, SIZE.kpi, {
+        draft(kind, sectionId, 'Итого по ДВА', caption, SIZE.kpi, {
           chart: 'kpi',
           columns: 6,
           items: [
@@ -361,7 +336,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorChecksMap') {
       drafts.push(
-        draft(kind, sectionId, 'Карта сотрудников по проверкам', 'Количество проверок за период по всем сотрудникам ДВА', caption, SIZE.wide, {
+        draft(kind, sectionId, 'Карта сотрудников по проверкам', caption, SIZE.wide, {
           chart: 'treemap',
           data: input.auditorChecksMap,
           palette: 'indigo',
@@ -369,7 +344,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorImpact') {
       drafts.push(
-        draft(kind, sectionId, 'Импакт рекомендаций', 'Существенность находок: кто выявляет наиболее значимые риски', caption, SIZE.half, {
+        draft(kind, sectionId, 'Существенность рекомендаций по сотрудникам', caption, SIZE.half, {
           chart: 'stacked',
           data: input.auditorImpact,
           series: [
@@ -386,14 +361,14 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorExecution') {
       drafts.push(
-        draft(kind, sectionId, 'Результативность исполнения', 'Количество «не решено» и доля от всех рекомендаций сотрудника. Нажмите столбец, чтобы закрепить список проверок', caption, SIZE.half, {
+        draft(kind, sectionId, 'Нерешённые рекомендации по сотрудникам', caption, SIZE.half, {
           chart: 'auditor-unresolved',
           data: input.auditorExecution,
         }),
       );
     } else if (sectionId === 'auditorTimeliness') {
       drafts.push(
-        draft(kind, sectionId, 'Своевременность', 'Соблюдение сроков исполнения рекомендаций по сотрудникам', caption, SIZE.half, {
+        draft(kind, sectionId, 'Своевременность исполнения по сотрудникам', caption, SIZE.half, {
           chart: 'stacked',
           data: input.auditorTimeliness,
           series: [
@@ -410,25 +385,17 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorDocuments') {
       drafts.push(
-        draft(kind, sectionId, 'Документная дисциплина', 'Готовность приказа, программы, АЗ и ДЗ по проверкам каждого сотрудника', caption, SIZE.matrix, {
+        draft(kind, sectionId, 'Документная дисциплина по сотрудникам', caption, SIZE.matrix, {
           chart: 'auditor-documents-matrix',
           rows: input.auditorDocuments,
         }),
       );
     } else if (sectionId === 'checkLifecycle') {
       drafts.push(
-        draft(
-          kind,
-          sectionId,
-          'Жизненный цикл проверки',
-          'От приказа до ДЗ: программа и АЗ как промежуточные точки. Наведите на отрезок, чтобы увидеть длительность этапа',
-          caption,
-          SIZE.matrix,
-          {
-            chart: 'check-lifecycle',
-            rows: input.checkLifecycle,
-          },
-        ),
+        draft(kind, sectionId, 'Жизненный цикл проверки: от приказа до ДЗ', caption, SIZE.matrix, {
+          chart: 'check-lifecycle',
+          rows: input.checkLifecycle,
+        }),
       );
     }
   }
@@ -446,7 +413,7 @@ export function buildPlanningConstructorDrafts(input: PlanningConstructorInput):
   for (const sectionId of input.selectedSections) {
     if (sectionId === 'summary') {
       drafts.push(
-        draft(kind, sectionId, 'Сводка планирования', '', caption, SIZE.kpi, {
+        draft(kind, sectionId, 'Сводка планирования', caption, SIZE.kpi, {
           chart: 'kpi',
           columns: 4,
           items: [
@@ -464,24 +431,16 @@ export function buildPlanningConstructorDrafts(input: PlanningConstructorInput):
       );
     } else if (sectionId === 'coverage') {
       drafts.push(
-        draft(
-          kind,
-          sectionId,
-          'Охват департаментов',
-          'Неохваченные департаменты за выбранный период',
-          caption,
-          SIZE.tallHalf,
-          {
-            chart: 'list',
-            items: input.coverage.uncoveredDepartments,
-            emptyMessage: 'Все департаменты охвачены проверками за выбранный период',
-            footer: `Не охвачено: ${input.coverage.uncovered} из ${input.coverage.total} (${input.coverage.uncoveredRate}%)`,
-          },
-        ),
+        draft(kind, sectionId, 'Неохваченные департаменты', caption, SIZE.tallHalf, {
+          chart: 'list',
+          items: input.coverage.uncoveredDepartments,
+          emptyMessage: 'Все департаменты охвачены проверками за выбранный период',
+          footer: `Не охвачено: ${input.coverage.uncovered} из ${input.coverage.total} (${input.coverage.uncoveredRate}%)`,
+        }),
       );
     } else if (sectionId === 'departmentAnalytics') {
       drafts.push(
-        draft(kind, sectionId, 'Аналитика департаментов', 'Проверки и рекомендации по подразделениям', caption, SIZE.tallHalf, {
+        draft(kind, sectionId, 'Проверки и рекомендации по департаментам', caption, SIZE.tallHalf, {
           chart: 'stacked',
           data: input.departmentAnalytics.map((item) => ({
             name: item.name,
@@ -501,26 +460,17 @@ export function buildPlanningConstructorDrafts(input: PlanningConstructorInput):
       );
     } else if (sectionId === 'highMateriality') {
       drafts.push(
-        draft(
-          kind,
-          sectionId,
-          'Красные рекомендации по департаментам',
-          'Подразделения с наибольшим числом рекомендаций высокой существенности',
-          caption,
-          SIZE.full,
-          {
-            chart: 'bar',
-            variant: 'bars',
-            data: barPointsFromNamed(input.highMaterialityRanking),
-            colors: input.highMaterialityRanking.map(() => PLANNING_HIGH_MATERIALITY_COLOR),
-            seriesName: 'Высокая существенность',
-            categoryWidth: 140,
-          },
-        ),
+        draft(kind, sectionId, 'Рекомендации высокой существенности по департаментам', caption, SIZE.full, {
+          chart: 'bar',
+          variant: 'bars',
+          data: barPointsFromNamed(input.highMaterialityRanking),
+          colors: input.highMaterialityRanking.map(() => PLANNING_HIGH_MATERIALITY_COLOR),
+          seriesName: 'Высокая существенность',
+          categoryWidth: 140,
+        }),
       );
     }
   }
 
   return drafts;
 }
-

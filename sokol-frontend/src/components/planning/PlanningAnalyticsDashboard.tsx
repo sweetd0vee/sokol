@@ -226,8 +226,8 @@ export function PlanningAnalyticsDashboard() {
           const uncoveredDepartments = coverage.uncoveredDepartments;
           return (
             <ChartCard
-              title="Охват департаментов"
-              description="Неохваченные департаменты за выбранный период"
+              title="Неохваченные департаменты"
+              description=""
               exportSectionId="coverage"
               exportSelected={exportSections.isSelected('coverage')}
               onToggleExport={() => exportSections.toggleSection('coverage')}
@@ -268,8 +268,8 @@ export function PlanningAnalyticsDashboard() {
         defaultLayout: { x: 6, y: 2, w: 6, h: 5, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
-            title="Аналитика департаментов"
-            description="Проверки и рекомендации по подразделениям"
+            title="Проверки и рекомендации по департаментам"
+            description=""
             exportSectionId="departmentAnalytics"
             exportSelected={exportSections.isSelected('departmentAnalytics')}
             onToggleExport={() => exportSections.toggleSection('departmentAnalytics')}
@@ -313,8 +313,8 @@ export function PlanningAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 7, w: 12, h: 4, minW: 6, minH: 3 },
         render: () => (
           <ChartCard
-            title="Красные рекомендации по департаментам"
-            description="Подразделения с наибольшим числом рекомендаций высокой существенности"
+            title="Рекомендации высокой существенности по департаментам"
+            description=""
             exportSectionId="highMateriality"
             exportSelected={exportSections.isSelected('highMateriality')}
             onToggleExport={() => exportSections.toggleSection('highMateriality')}
