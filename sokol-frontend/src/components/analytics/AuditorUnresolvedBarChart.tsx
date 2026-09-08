@@ -23,8 +23,7 @@ import {
   CHART_TOOLTIP_STYLE,
   ChartRechartsSquareLegend,
 } from './AnalyticsChartPrimitives';
-import { MONITORING_STATUS_COLORS } from './analyticsPalette';
-
+const BAR_COLOR = '#0E7490';
 const RIGHT_MARGIN = 108;
 const HIDE_DELAY_MS = 220;
 
@@ -245,7 +244,7 @@ export function AuditorUnresolvedBarChart({
           <Bar
             dataKey="unresolved"
             name="Не решено"
-            fill={MONITORING_STATUS_COLORS.unresolved}
+            fill={BAR_COLOR}
             radius={[0, 4, 4, 0]}
             cursor="pointer"
             onClick={(item) => {
@@ -261,7 +260,7 @@ export function AuditorUnresolvedBarChart({
             {chartData.map((row) => (
               <Cell
                 key={row.name}
-                fill={MONITORING_STATUS_COLORS.unresolved}
+                fill={BAR_COLOR}
                 fillOpacity={visibleName && visibleName !== row.name ? 0.35 : 1}
               />
             ))}
