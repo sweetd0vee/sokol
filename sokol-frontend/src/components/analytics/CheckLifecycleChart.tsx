@@ -20,8 +20,8 @@ import { cycleSortConfig, type SortConfig } from '../../utils/listTable';
 
 const SEGMENT_STYLE = {
   order_to_program: VALUE_TEAL_SCALE[0],
-  program_to_az: VALUE_TEAL_SCALE[3],
-  az_to_dz: VALUE_TEAL_SCALE[5],
+  program_to_az: VALUE_TEAL_SCALE[5],
+  az_to_dz: VALUE_TEAL_SCALE[3],
 } as const;
 
 const POINT_COLOR: Record<string, string> = {

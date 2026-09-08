@@ -22,7 +22,7 @@ import { ChartCard, CHART_AXIS_TICK, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { EffectivenessMatrixChart } from './EffectivenessMatrixChart';
-import { CHECKS_PALETTE, getValueBasedColors, VALUE_BLUE_SCALE } from './analyticsPalette';
+import { CHECKS_PALETTE, getValueBasedColors, MONITORING_STATUS_COLORS, VALUE_BLUE_SCALE } from './analyticsPalette';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
 import { exportChecksDashboard } from '../../utils/analyticsExport';
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
@@ -293,9 +293,22 @@ export function ChecksAnalyticsDashboard() {
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
               <KpiCard label="Всего" value={summary.total} hint={`из ${universeTotal}`} tone="blue" />
               <KpiCard label="Запланировано" value={summary.not_started} tone="slate" />
-              <KpiCard label="В процессе" value={summary.in_progress} tone="amber" />
-              <KpiCard label="Завершено" value={summary.completed} tone="green" />
-              <KpiCard label="Доля завершённых" value={completionShare} suffix="%" tone="green" />
+              <KpiCard
+                label="В процессе"
+                value={summary.in_progress}
+                accentColor={MONITORING_STATUS_COLORS.in_progress}
+              />
+              <KpiCard
+                label="Завершено"
+                value={summary.completed}
+                accentColor={MONITORING_STATUS_COLORS.completed}
+              />
+              <KpiCard
+                label="Доля завершённых"
+                value={completionShare}
+                suffix="%"
+                accentColor={MONITORING_STATUS_COLORS.completed}
+              />
             </div>
           </ChartCard>
         ),

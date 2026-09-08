@@ -14,6 +14,7 @@ import { CheckLifecycleChart } from './CheckLifecycleChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import {
   MONITORING_ADDITIONAL_STATUS_COLORS,
+  MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   VALUE_TEAL_SCALE,
 } from './analyticsPalette';
@@ -247,7 +248,11 @@ export function DvaAnalyticsDashboard() {
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
               <KpiCard label="Проверки" value={checkSummary.total} tone="blue" />
               <KpiCard label="Рекомендации" value={recSummary.total} tone="slate" />
-              <KpiCard label="Аудиторы" value={employeeCount} tone="indigo" />
+              <KpiCard
+                label="Аудиторы"
+                value={employeeCount}
+                accentColor={MONITORING_STATUS_COLORS.completed}
+              />
               <KpiCard
                 label="Высокая существенность"
                 value={highMateriality}
@@ -263,7 +268,7 @@ export function DvaAnalyticsDashboard() {
                 }
                 value={data?.averageCheckDurationDays ?? 0}
                 suffix=" дн."
-                tone="blue"
+                accentColor={MONITORING_STATUS_COLORS.in_progress}
               />
             </div>
           </ChartCard>

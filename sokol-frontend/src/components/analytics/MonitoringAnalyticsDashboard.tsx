@@ -326,7 +326,7 @@ export function MonitoringAnalyticsDashboard() {
               <KpiCard
                 label="На контроле"
                 value={summary.byStatus.on_control}
-                accentColor={MONITORING_STATUS_COLORS.on_control}
+                tone="slate"
               />
               <KpiCard
                 label="Срок нарушен"

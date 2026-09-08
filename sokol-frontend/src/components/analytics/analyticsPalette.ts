@@ -75,6 +75,18 @@ export const VALUE_BLUE_SCALE = [
 ] as const;
 
 /**
+ * Same ramp as `VALUE_BLUE_SCALE` without the deepest navy —
+ * used on Recommendations where #002B55 felt too accented.
+ */
+export const VALUE_BLUE_SCALE_SOFT = [
+  '#93C5FD',
+  '#60A5FA',
+  '#3B82F6',
+  '#0E7490',
+  '#075985',
+] as const;
+
+/**
  * Emerald + blue treemap palette.
  * Stops alternate light blue ↔ deep teal so neighbouring blocks stay distinct.
  * The last color is emerald #0E7490 and is reserved for the largest value.
@@ -187,16 +199,16 @@ export const MONITORING_ADDITIONAL_STATUS_COLORS = {
 } as const;
 
 /**
- * Sequential light teal → emerald scale for Monitoring bar charts
+ * Sequential grey → emerald scale for Monitoring bar charts
  * (deadline extensions, completed during audit).
- * Small values are pale teal; large values peak at emerald #0E7490.
+ * Small values reuse «На контроле» grey; large values peak at emerald #0E7490.
  */
 export const MONITORING_BAR_BLUE_SCALE = [
-  '#A5D8E0', // pale teal — smallest
-  '#7EC4D0',
-  '#57AFC0',
-  '#3699AE',
-  '#1E849B',
+  MONITORING_STATUS_COLORS.on_control, // #DBDBDB — smallest
+  '#B2C6CC',
+  '#89B2BD',
+  '#609DAE',
+  '#37889F',
   '#0E7490', // emerald — largest
 ] as const;
 

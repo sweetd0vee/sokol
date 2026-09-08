@@ -58,9 +58,18 @@ export function buildChecksConstructorDrafts(input: ChecksConstructorInput): Con
           items: [
             { label: 'Всего', value: input.summary.total, hint: `из ${input.universeTotal}`, tone: 'blue' },
             { label: 'Запланировано', value: input.summary.not_started, tone: 'slate' },
-            { label: 'В процессе', value: input.summary.in_progress, tone: 'amber' },
-            { label: 'Завершено', value: input.summary.completed, tone: 'green' },
-            { label: 'Доля завершённых', value: input.completionShare, suffix: '%', tone: 'green' },
+            {
+              label: 'В процессе',
+              value: input.summary.in_progress,
+              accentColor: MONITORING_STATUS_COLORS.in_progress,
+            },
+            { label: 'Завершено', value: input.summary.completed, accentColor: MONITORING_STATUS_COLORS.completed },
+            {
+              label: 'Доля завершённых',
+              value: input.completionShare,
+              suffix: '%',
+              accentColor: MONITORING_STATUS_COLORS.completed,
+            },
           ],
         }),
       );
@@ -135,7 +144,7 @@ export function buildRecommendationsConstructorDrafts(
               label: 'Всего',
               value: input.summary.total,
               hint: `из ${input.universeTotal}`,
-              accentColor: MONITORING_STATUS_COLORS.on_control,
+              tone: 'slate',
             },
             {
               label: 'В процессе',
@@ -187,7 +196,7 @@ export function buildRecommendationsConstructorDrafts(
       );
     } else if (sectionId === 'views') {
       drafts.push(
-        draft(kind, sectionId, 'Виды проверок по рекомендациям', caption, SIZE.half, {
+        draft(kind, sectionId, 'Количество рекомендаций по каждому виду проверок', caption, SIZE.half, {
           chart: 'bar',
           variant: 'bars',
           data: barPointsFromNamed(input.viewDistribution),
@@ -231,7 +240,7 @@ export function buildMonitoringConstructorDrafts(input: MonitoringConstructorInp
           items: [
             { label: 'Исполнено', value: input.summary.byStatus.completed, accentColor: MONITORING_STATUS_COLORS.completed },
             { label: 'В работе', value: input.summary.byStatus.in_progress, accentColor: MONITORING_STATUS_COLORS.in_progress },
-            { label: 'На контроле', value: input.summary.byStatus.on_control, accentColor: MONITORING_STATUS_COLORS.on_control },
+            { label: 'На контроле', value: input.summary.byStatus.on_control, tone: 'slate' },
             {
               label: 'Срок нарушен',
               value: input.summary.byAdditional.deadline_violated,
@@ -312,7 +321,11 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
           items: [
             { label: 'Проверки', value: input.checkTotal, tone: 'blue' },
             { label: 'Рекомендации', value: input.recTotal, tone: 'slate' },
-            { label: 'Аудиторы', value: input.employeeCount, tone: 'indigo' },
+            {
+              label: 'Аудиторы',
+              value: input.employeeCount,
+              accentColor: MONITORING_STATUS_COLORS.completed,
+            },
             {
               label: 'Высокая существенность',
               value: input.highMateriality,
@@ -322,7 +335,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
               label: 'Средняя продолжительность\nпроверки',
               value: input.averageCheckDurationDays,
               suffix: ' дн.',
-              tone: 'blue',
+              accentColor: MONITORING_STATUS_COLORS.in_progress,
             },
           ],
         }),
