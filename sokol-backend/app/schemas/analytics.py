@@ -356,6 +356,7 @@ class DvaAnalyticsResponse(BaseModel):
     check_summary: ChecksSummary = Field(serialization_alias="checkSummary")
     recommendation_summary: RecommendationsSummary = Field(serialization_alias="recommendationSummary")
     completion_share: int = Field(serialization_alias="completionShare")
+    average_check_duration_days: int = Field(serialization_alias="averageCheckDurationDays")
     portfolio_series: list[DvaPortfolioPoint] = Field(serialization_alias="portfolioSeries")
     auditor_load: list[DvaAuditorLoadRow] = Field(serialization_alias="auditorLoad")
     auditor_impact: list[DvaAuditorMaterialityRow] = Field(default_factory=list, serialization_alias="auditorImpact")

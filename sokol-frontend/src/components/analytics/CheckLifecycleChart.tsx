@@ -172,8 +172,8 @@ function TimelineTrack({
 export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) {
   const model = useMemo(() => buildCheckLifecycleChartModel(rows), [rows]);
   const [sortConfig, setSortConfig] = useState<SortConfig<CheckLifecycleSortKey>>({
-    key: null,
-    direction: 'asc',
+    key: 'totalDays',
+    direction: 'desc',
   });
   const sortedRows = useMemo(
     () => sortCheckLifecycleRows(model.rows, sortConfig),

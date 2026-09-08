@@ -231,6 +231,7 @@ export type DvaAnalyticsResponse = {
   checkSummary: ChecksAnalyticsSummary;
   recommendationSummary: RecommendationsSummary;
   completionShare: number;
+  averageCheckDurationDays: number;
   portfolioSeries: DvaPortfolioPoint[];
   auditorLoad: DvaAuditorLoadRow[];
   auditorImpact: DvaAuditorMaterialityRow[];

@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import date
 from typing import Any
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import Integer, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.checks import Check
@@ -90,6 +90,7 @@ __all__ = [
     "check_period_series_sql",
     "check_type_distribution_sql",
     "check_view_distribution_sql",
+    "average_check_duration_days_sql",
     "collect_check_anchor_dates_sql",
     "collect_combined_anchor_dates_sql",
     "collect_filter_option_auditors_sql",
@@ -158,6 +159,26 @@ async def summarize_checks_sql(session: AsyncSession, **filters: Any) -> ChecksS
         in_progress=int(row.in_progress),
         completed=int(row.completed),
     )
+
+
+async def average_check_duration_days_sql(session: AsyncSession, **filters: Any) -> int:
+    """Average calendar days between start_date and end_date for filtered checks."""
+    duration_days = cast(Check.end_date - Check.start_date, Integer)
+    statement = apply_check_filters(
+        select(func.avg(duration_days)).select_from(Check).where(
+            Check.end_date.isnot(None),
+            Check.end_date >= Check.start_date,
+        ),
+        **filters,
+    )
+    value = await fetch_one(session, statement)
+    if value is None:
+        return 0
+    # fetch_one may return a Row or a bare scalar depending on the select shape.
+    scalar = value[0] if hasattr(value, "__getitem__") else value
+    if scalar is None:
+        return 0
+    return int(round(float(scalar)))
 
 
 async def summarize_recommendations_sql(session: AsyncSession, **filters: Any) -> RecommendationsSummary:

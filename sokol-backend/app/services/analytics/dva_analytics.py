@@ -10,6 +10,7 @@ from app.schemas.analytics import (
 )
 from app.services.analytics.params import check_params
 from app.services.analytics.sql_aggregates import (
+    average_check_duration_days_sql,
     collect_combined_anchor_dates_sql,
     collect_filter_option_auditors_sql,
     collect_filter_option_departments_sql,
@@ -72,6 +73,7 @@ async def build_dva_analytics(
         check_summary=check_summary,
         recommendation_summary=rec_summary,
         completion_share=completion_share_from_summary(check_summary),
+        average_check_duration_days=await average_check_duration_days_sql(session, **filters),
         portfolio_series=await dva_portfolio_series_sql(
             session,
             granularity,

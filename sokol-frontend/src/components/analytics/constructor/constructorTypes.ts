@@ -245,8 +245,7 @@ export type DvaConstructorInput = {
   recTotal: number;
   employeeCount: number;
   highMateriality: number;
-  highMaterialityShare: number;
-  recViolationRate: number;
+  averageCheckDurationDays: number;
   auditorChecksMap: AuditorCheckTreemapItem[];
   auditorImpact: DvaAuditorMaterialityRow[];
   auditorExecution: DvaAuditorExecutionRow[];

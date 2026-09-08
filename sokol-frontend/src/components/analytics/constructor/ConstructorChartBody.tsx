@@ -39,7 +39,6 @@ import {
   VALUE_TEAL_SCALE,
 } from '../analyticsPalette';
 import {
-  HORIZONTAL_BAR_MAX_SIZE,
   HORIZONTAL_STRIP_MAX_SIZE,
   STACKED_HORIZONTAL_CHART_RIGHT_MARGIN,
   STACKED_PERIOD_CHART_SIDE_MARGIN,
@@ -228,8 +227,8 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
           <BarChart
             data={payload.data}
             layout={isVertical ? 'vertical' : 'horizontal'}
-            barCategoryGap={isVertical ? 10 : undefined}
-            maxBarSize={isVertical ? HORIZONTAL_BAR_MAX_SIZE : undefined}
+            barCategoryGap={isVertical ? 4 : undefined}
+            maxBarSize={isVertical ? 36 : undefined}
             margin={
               isVertical
                 ? { top: 4, right: showSegmentLabels ? STACKED_HORIZONTAL_CHART_RIGHT_MARGIN : 24, left: 8, bottom: 0 }
@@ -509,8 +508,6 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
           <BarChart
             data={payload.data}
             layout={isBars ? 'vertical' : 'horizontal'}
-            barCategoryGap={isBars ? '36%' : undefined}
-            maxBarSize={isBars ? HORIZONTAL_STRIP_MAX_SIZE : undefined}
             margin={isBars ? { top: 8, right: 40, left: 8, bottom: 0 } : { top: 22, right: 16, left: -10, bottom: 28 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -560,7 +557,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
               dataKey="value"
               name={payload.seriesName}
               fill={lastScaleColor(MONITORING_BAR_BLUE_SCALE)}
-              radius={isBars ? [0, 4, 4, 0] : [4, 4, 0, 0]}
+              radius={isBars ? [0, 6, 6, 0] : [4, 4, 0, 0]}
             >
               {payload.data.map((item, index) => (
                 <Cell key={item.id} fill={payload.colors[index]} />

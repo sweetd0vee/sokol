@@ -276,7 +276,7 @@ export function buildMonitoringConstructorDrafts(input: MonitoringConstructorInp
       );
     } else if (sectionId === 'completedDuringAudit') {
       drafts.push(
-        draft(kind, sectionId, 'Исполнено в ходе аудита по проверкам', caption, SIZE.tallHalf, {
+        draft(kind, sectionId, 'Исполнено в ходе аудита по проверкам', caption, SIZE.half, {
           chart: 'check-bars',
           variant: 'bars',
           data: input.completedDuringAuditByCheck,
@@ -316,14 +316,13 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
             {
               label: 'Высокая существенность',
               value: input.highMateriality,
-              hint: `${input.highMaterialityShare}% рекомендаций`,
               accentColor: RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий,
             },
             {
-              label: 'Нарушение сроков',
-              value: input.recViolationRate,
-              suffix: '%',
-              accentColor: MONITORING_ADDITIONAL_STATUS_COLORS.deadline_violated,
+              label: 'Средняя продолжительность\nпроверки',
+              value: input.averageCheckDurationDays,
+              suffix: ' дн.',
+              tone: 'blue',
             },
           ],
         }),

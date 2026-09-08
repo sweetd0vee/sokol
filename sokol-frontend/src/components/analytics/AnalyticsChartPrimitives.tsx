@@ -543,7 +543,7 @@ export function KpiCard({
   tone = 'blue',
   accentColor,
 }: {
-  label: string;
+  label: ReactNode;
   value: number;
   hint?: string;
   suffix?: string;
@@ -577,8 +577,8 @@ export function KpiCard({
       className={`flex min-h-[5rem] items-center justify-between gap-2 rounded-lg border px-3 py-3.5 ${accentColor ? '' : tones[tone]}`}
       style={accentColor ? kpiAccentStyle(accentColor) : undefined}
     >
-      <div className="min-w-0">
-        <p className="truncate text-sm leading-none opacity-80">{label}</p>
+      <div className="min-w-0 pr-1">
+        <p className="whitespace-pre-line text-sm leading-snug opacity-80">{label}</p>
         {hint ? <p className="mt-0.5 truncate text-xs leading-none opacity-60">{hint}</p> : null}
       </div>
       <p className="shrink-0 text-xl font-semibold leading-none">

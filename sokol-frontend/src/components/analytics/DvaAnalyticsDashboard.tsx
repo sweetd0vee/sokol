@@ -166,9 +166,6 @@ export function DvaAnalyticsDashboard() {
   const universeChecksTotal = data?.universeChecksTotal ?? 0;
   const universeRecommendationsTotal = data?.universeRecommendationsTotal ?? 0;
   const highMateriality = recSummary.byMateriality.высокий;
-  const highMaterialityShare = recSummary.total
-    ? Math.round((highMateriality / recSummary.total) * 100)
-    : 0;
   const employeeCount = new Set([
     ...(data?.auditorLoad ?? []).map((row) => row.name),
     ...auditorDocuments.map((row) => row.name),
@@ -226,8 +223,7 @@ export function DvaAnalyticsDashboard() {
         recTotal: recSummary.total,
         employeeCount,
         highMateriality,
-        highMaterialityShare,
-        recViolationRate: recSummary.violationRate,
+        averageCheckDurationDays: data?.averageCheckDurationDays ?? 0,
         auditorChecksMap,
         auditorImpact,
         auditorExecution,
@@ -255,14 +251,19 @@ export function DvaAnalyticsDashboard() {
               <KpiCard
                 label="Высокая существенность"
                 value={highMateriality}
-                hint={`${highMaterialityShare}% рекомендаций`}
                 accentColor={RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий}
               />
               <KpiCard
-                label="Нарушение сроков"
-                value={recSummary.violationRate}
-                suffix="%"
-                accentColor={MONITORING_ADDITIONAL_STATUS_COLORS.deadline_violated}
+                label={
+                  <>
+                    Средняя продолжительность
+                    <br />
+                    проверки
+                  </>
+                }
+                value={data?.averageCheckDurationDays ?? 0}
+                suffix=" дн."
+                tone="blue"
               />
             </div>
           </ChartCard>
@@ -308,7 +309,7 @@ export function DvaAnalyticsDashboard() {
       },
       {
         id: 'auditorExecution',
-        defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title='Количество и доля рекомендаций со статусом "Не решено"'
@@ -377,10 +378,10 @@ export function DvaAnalyticsDashboard() {
       auditorTimeliness,
       checkLifecycle,
       checkSummary.total,
+      data?.averageCheckDurationDays,
       employeeCount,
       exportSections,
       highMateriality,
-      highMaterialityShare,
       recSummary,
     ],
   );

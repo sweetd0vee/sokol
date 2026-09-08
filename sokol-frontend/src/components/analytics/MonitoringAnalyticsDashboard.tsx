@@ -37,7 +37,6 @@ import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
 import { StatusMatrixChart } from './StatusMatrixChart';
-import { HORIZONTAL_STRIP_MAX_SIZE } from './StackedBarSegmentValueLabel';
 import { useAnalyticsDashboardSession } from './useAnalyticsDashboardSession';
 import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
 import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
@@ -346,7 +345,7 @@ export function MonitoringAnalyticsDashboard() {
       },
       {
         id: 'statuses',
-        defaultLayout: { x: 6, y: 5, w: 6, h: 4, minW: 3, minH: 2 },
+        defaultLayout: { x: 4, y: 5, w: 8, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Статусы рекомендаций за период"
@@ -381,6 +380,7 @@ export function MonitoringAnalyticsDashboard() {
             {distributionHasValues(coloredAdditionalStatusDistribution) ? (
               <FocusableDonutChart
                 data={coloredAdditionalStatusDistribution}
+                variant="ring"
                 labelMode="both"
                 legendPercentFirst
               />
@@ -446,7 +446,7 @@ export function MonitoringAnalyticsDashboard() {
       },
       {
         id: 'completedDuringAudit',
-        defaultLayout: { x: 0, y: 5, w: 6, h: 4, minW: 3, minH: 3 },
+        defaultLayout: { x: 0, y: 5, w: 4, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
             title="Исполнено в ходе аудита по проверкам"
@@ -458,13 +458,11 @@ export function MonitoringAnalyticsDashboard() {
             {completedDuringAuditByCheck.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <div className="h-full min-h-[14rem]">
+              <div className="h-full min-h-[13rem]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={completedDuringAuditByCheck}
                     layout="vertical"
-                    barCategoryGap="36%"
-                    maxBarSize={HORIZONTAL_STRIP_MAX_SIZE}
                     margin={{ top: 8, right: 40, left: 8, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -483,7 +481,7 @@ export function MonitoringAnalyticsDashboard() {
                       formatter={(value) => [value, 'Рекомендаций']}
                       labelFormatter={(label) => checkBarTooltipLabel(label, completedDuringAuditShortNames)}
                     />
-                    <Bar dataKey="value" name="Рекомендаций" fill={lastScaleColor(MONITORING_BAR_BLUE_SCALE)} radius={[0, 4, 4, 0]}>
+                    <Bar dataKey="value" name="Рекомендаций" fill={lastScaleColor(MONITORING_BAR_BLUE_SCALE)} radius={[0, 6, 6, 0]}>
                       {completedDuringAuditByCheck.map((item, index) => (
                         <Cell key={item.id} fill={completedDuringAuditColors[index]} />
                       ))}
@@ -503,7 +501,7 @@ export function MonitoringAnalyticsDashboard() {
       },
       {
         id: 'statusMatrix',
-        defaultLayout: { x: 0, y: 9, w: 12, h: 8, minW: 6, minH: 6 },
+        defaultLayout: { x: 0, y: 8, w: 12, h: 8, minW: 6, minH: 6 },
         expandToContent: true,
         render: () => (
           <ChartCard
