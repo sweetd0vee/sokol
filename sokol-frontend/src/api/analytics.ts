@@ -92,7 +92,7 @@ export type RecommendationObjectDistributionItem = NamedCount & {
 };
 
 export type AuditorCheckTreemapItem = NamedCount & {
-  views: NamedCount[];
+  views?: NamedCount[];
 };
 
 export type RecommendationsAnalyticsResponse = {

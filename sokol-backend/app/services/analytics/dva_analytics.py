@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.checks import Check
 from app.models.recommendations import Recommendation
 from app.schemas.analytics import (
     ChecksAnalyticsFilterOptions,
@@ -30,7 +29,7 @@ from app.services.analytics.sql_aggregates import (
     summarize_checks_sql,
     summarize_recommendations_sql,
 )
-from app.services.analytics.sql_filters import check_filter_conditions, recommendation_filter_conditions
+from app.services.analytics.sql_filters import recommendation_filter_conditions
 
 
 async def build_dva_analytics(
@@ -52,13 +51,7 @@ async def build_dva_analytics(
     )
     check_summary = await summarize_checks_sql(session, **filters)
     rec_summary = await summarize_recommendations_sql(session, **filters)
-    auditor_checks = await grouped_named_counts_sql(
-        session,
-        model=Check,
-        column=Check.check_leader,
-        filters=check_filter_conditions(**filters),
-        positive_only=True,
-    )
+    auditor_checks = await dva_auditor_checks_treemap_sql(session, **filters)
     auditor_recommendations = await grouped_named_counts_sql(
         session,
         model=Recommendation,
@@ -98,7 +91,7 @@ async def build_dva_analytics(
         ),
         document_readiness=await dva_document_readiness_sql(session, **filters),
         check_lifecycle=await dva_check_lifecycle_sql(session, **filters),
-        auditor_checks_treemap=await dva_auditor_checks_treemap_sql(session, **filters),
+        auditor_checks_treemap=auditor_checks,
         auditor_recommendations_treemap=auditor_recommendations,
         department_map=await recommendation_object_distribution_sql(session, **filters),
         filter_options=ChecksAnalyticsFilterOptions(

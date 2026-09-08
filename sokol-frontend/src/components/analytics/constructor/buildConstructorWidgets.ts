@@ -21,7 +21,6 @@ import type { ConstructorSizeHint } from './constructorLayout';
 const SIZE = {
   kpi: { w: 12, h: 2, minW: 6, minH: 2 },
   half: { w: 6, h: 4, minW: 3, minH: 3 },
-  compactHalf: { w: 6, h: 3, minW: 3, minH: 2 },
   wide: { w: 8, h: 4, minW: 4, minH: 3 },
   treemap: { w: 8, h: 3, minW: 3, minH: 2 },
   narrow: { w: 4, h: 4, minW: 3, minH: 3 },
@@ -339,7 +338,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorImpact') {
       drafts.push(
-        draft(kind, sectionId, 'Существенность рекомендаций по сотрудникам', caption, SIZE.compactHalf, {
+        draft(kind, sectionId, 'Существенность рекомендаций по сотрудникам', caption, SIZE.half, {
           chart: 'stacked',
           data: input.auditorImpact,
           series: [
@@ -356,14 +355,14 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorExecution') {
       drafts.push(
-        draft(kind, sectionId, 'Нерешённые рекомендации по сотрудникам', caption, SIZE.compactHalf, {
+        draft(kind, sectionId, 'Нерешённые рекомендации по сотрудникам', caption, SIZE.half, {
           chart: 'auditor-unresolved',
           data: input.auditorExecution,
         }),
       );
     } else if (sectionId === 'auditorTimeliness') {
       drafts.push(
-        draft(kind, sectionId, 'Своевременность исполнения по сотрудникам', caption, SIZE.compactHalf, {
+        draft(kind, sectionId, 'Своевременность исполнения рекомендаций по сотрудникам (дополнительный статус)', caption, SIZE.half, {
           chart: 'stacked',
           data: input.auditorTimeliness,
           series: [

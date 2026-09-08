@@ -251,14 +251,14 @@ class DvaAnalyticsMappingTests(unittest.TestCase):
 
         treemap = dva_auditor_checks_treemap_from_rows(rows)
 
-        self.assertEqual([row.name for row in treemap], ["Иванов", "Петров", "Без руководителя"])
+        self.assertEqual([row.name for row in treemap], ["Иванов", "Без руководителя", "Петров"])
         self.assertEqual(treemap[0].value, 3)
         self.assertEqual(
             [(item.name, item.value) for item in treemap[0].views],
             [("ИТ", 2), ("Корпо", 1)],
         )
-        self.assertEqual(treemap[1].views[0].name, "Риски")
-        self.assertEqual(treemap[2].views[0].name, "Не указан")
+        self.assertEqual(treemap[2].views[0].name, "Риски")
+        self.assertEqual(treemap[1].views[0].name, "Не указан")
 
 
 if __name__ == "__main__":

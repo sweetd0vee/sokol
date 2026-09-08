@@ -273,7 +273,7 @@ export function DvaAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
-            title="Своевременность исполнения по сотрудникам"
+            title="Своевременность исполнения рекомендаций по сотрудникам (дополнительный статус)"
             description=""
             exportSectionId="auditorTimeliness"
             exportSelected={exportSections.isSelected('auditorTimeliness')}

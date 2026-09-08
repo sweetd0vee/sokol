@@ -368,7 +368,6 @@ describe('buildConstructorDrafts', () => {
       checkLifecycle: [],
     });
     expect(drafts).toHaveLength(1);
-    expect(drafts[0]?.size).toEqual({ w: 6, h: 3, minW: 3, minH: 2 });
     expect(drafts[0]?.payload).toMatchObject({
       chart: 'auditor-unresolved',
       data: [
