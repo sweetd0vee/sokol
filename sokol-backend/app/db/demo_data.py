@@ -381,6 +381,45 @@ def build_check_rows(count: int = 100) -> list[dict]:
                 "svik_effectiveness": svik or None,
             }
         )
+
+    # Якоря жизненного цикла до декабря 2026 — для прокрутки оси «Сроки» в аналитике ДВА.
+    lifecycle_anchors = [
+        (date(2026, 4, 8), date(2026, 4, 28), date(2026, 11, 20), date(2026, 12, 8)),
+        (date(2026, 6, 15), date(2026, 7, 5), date(2026, 12, 12), date(2026, 12, 24)),
+    ]
+    for offset, (start, program, end_date, dz) in enumerate(lifecycle_anchors):
+        n = count + offset + 1
+        check_type = CHECK_TYPES[offset % len(CHECK_TYPES)]
+        topic = CHECK_TOPICS[offset % len(CHECK_TOPICS)]
+        leader = LEADERS[offset % len(LEADERS)]
+        created = _add_days(start, -18)
+        rows.append(
+            {
+                "check_name": _build_check_name(check_type, topic, n),
+                "short_name": _build_check_short_name(check_type, topic, n),
+                "check_type": check_type,
+                "check_view": CHECK_VIEWS[offset % len(CHECK_VIEWS)],
+                "check_quarter": (start.month - 1) // 3 + 1,
+                "start_date": start,
+                "end_date": end_date,
+                "check_leader": leader,
+                "status": "completed",
+                "created_at": created,
+                "description": f"Демо-якорь жизненного цикла до декабря 2026 #{n}.",
+                "order_document_number": f"ПР-{n:04d}",
+                "order_document_date": created,
+                "program_document_number": f"ПГ-{n:04d}",
+                "program_document_date": program,
+                "az_document_number": f"АЗ-{n:04d}",
+                "az_document_date": end_date,
+                "dz_document_number": f"ДЗ-{n:04d}",
+                "dz_document_date": dz,
+                "process_effectiveness": "эффективно",
+                "svk_effectiveness": "достаточно эффективно",
+                "sur_effectiveness": "эффективно",
+                "svik_effectiveness": "достаточно эффективно",
+            }
+        )
     return assign_serial_numbers(rows)
 
 

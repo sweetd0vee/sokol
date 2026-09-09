@@ -17,7 +17,7 @@ from app.db.demo_data import apply_completed_during_audit_indicator, build_recom
 from app.utils.check_key import assign_serial_numbers
 from app.utils.paths import get_repo_data_dir
 
-PRESENTATION_TODAY = date(2026, 9, 3)
+PRESENTATION_TODAY = date(2026, 12, 20)
 
 CHECK_HEADERS = [
     "serial_number", "check_name", "short_name", "check_type", "check_view",
@@ -160,7 +160,8 @@ def _schedule_check_dates(year: int, rng: random.Random, today: date) -> tuple[d
     if year == 2025:
         start = date(year, rng.randint(1, 12), rng.randint(1, 28))
     else:
-        month = rng.randint(1, 10)
+        # Cover the full calendar year so lifecycle axis reaches December 2026.
+        month = rng.randint(1, 12)
         day = rng.randint(1, 28)
         start = date(year, month, day)
         if start > today + timedelta(days=30):
@@ -178,6 +179,73 @@ def _schedule_check_dates(year: int, rng: random.Random, today: date) -> tuple[d
         if start <= today:
             start = today + timedelta(days=rng.randint(7, 45))
     return start, end
+
+
+def _year_end_lifecycle_checks(rng: random.Random, start_index: int) -> list[dict]:
+    """Fixed late-2026 checks so the lifecycle dashboard axis always spans through December."""
+    anchors = [
+        {
+            "start": date(2026, 3, 12),
+            "program": date(2026, 4, 2),
+            "end": date(2026, 11, 18),
+            "dz": date(2026, 12, 5),
+            "leader": "Крейзо В.С.",
+            "topic": "закрытия ранее выданных рекомендаций",
+        },
+        {
+            "start": date(2026, 5, 20),
+            "program": date(2026, 6, 10),
+            "end": date(2026, 12, 10),
+            "dz": date(2026, 12, 22),
+            "leader": "Голубицкая А.О.",
+            "topic": "качества отчётности филиальной сети",
+        },
+        {
+            "start": date(2025, 11, 5),
+            "program": date(2025, 12, 1),
+            "end": date(2026, 12, 15),
+            "dz": date(2026, 12, 28),
+            "leader": "Важник Д.С.",
+            "topic": "управления операционными рисками",
+        },
+    ]
+    rows: list[dict] = []
+    for offset, anchor in enumerate(anchors):
+        index = start_index + offset
+        check_type = CHECK_TYPES[offset % len(CHECK_TYPES)]
+        created = anchor["start"] - timedelta(days=rng.randint(14, 28))
+        pe, svk, sur, svik = _pick_effectiveness("completed", rng)
+        rows.append(
+            {
+                "check_name": _check_name(check_type, anchor["topic"], index),
+                "short_name": _short_name(check_type, anchor["topic"], index),
+                "check_type": check_type,
+                "check_view": rng.choice(CHECK_KINDS),
+                "check_quarter": (anchor["start"].month - 1) // 3 + 1,
+                "start_date": anchor["start"],
+                "end_date": anchor["end"],
+                "check_leader": anchor["leader"],
+                "status": "completed",
+                "created_at": created,
+                "description": (
+                    f"Демо-якорь жизненного цикла до декабря 2026: {anchor['topic']}. "
+                    f"Руководитель — {anchor['leader']}."
+                ),
+                "order_document_number": f"ПР-{index:04d}",
+                "order_document_date": created,
+                "program_document_number": f"ПГ-{index:04d}",
+                "program_document_date": anchor["program"],
+                "az_document_number": f"АЗ-{index:04d}",
+                "az_document_date": anchor["end"],
+                "dz_document_number": f"ДЗ-{index:04d}",
+                "dz_document_date": anchor["dz"],
+                "process_effectiveness": pe,
+                "svk_effectiveness": svk,
+                "sur_effectiveness": sur,
+                "svik_effectiveness": svik,
+            }
+        )
+    return rows
 
 
 def build_checks(
@@ -226,6 +294,7 @@ def build_checks(
             row.update(_document_fields(index, status, created, start, end, rng))
             rows.append(row)
 
+    rows.extend(_year_end_lifecycle_checks(rng, start_index=index + 1))
     rows.sort(key=lambda item: item["start_date"])
     return assign_serial_numbers(rows)
 
@@ -350,8 +419,8 @@ def generate_presentation_dataset(
     *,
     output_dir: Path | None = None,
     checks_2025: int = 18,
-    checks_2026: int = 11,
-    seed: int = 20260903,
+    checks_2026: int = 14,
+    seed: int = 20261220,
     today: date | None = None,
 ) -> tuple[list[dict], list[dict]]:
     today = today or PRESENTATION_TODAY
