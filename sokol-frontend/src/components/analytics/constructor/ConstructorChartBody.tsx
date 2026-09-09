@@ -20,6 +20,8 @@ import {
   EmptyChart,
   KpiCard,
 } from '../AnalyticsChartPrimitives';
+import { CheckKeyAxisTick, checkBarTooltipLabel } from '../CheckKeyAxisTick';
+import { getMaterialitySegmentColor, getPeriodXAxisProps, MATERIALITY_STACK_KEYS } from '../analyticsChartAxis';
 import { FocusableDonutChart } from '../FocusableDonutChart';
 import { FocusableSquareCirclesChart } from '../FocusableSquareCirclesChart';
 import { FocusableTreemapChart } from '../FocusableTreemapChart';
@@ -48,74 +50,9 @@ import {
   StackedBarSegmentValueLabel,
 } from '../StackedBarSegmentValueLabel';
 import { distributionHasValues } from '../../../utils/analyticsDistribution';
-import type { PeriodGranularity } from '../../../utils/checkAnalytics';
 import type { ConstructorPayload } from './constructorTypes';
 
 const QUARTER_AXIS_TICK = { fontSize: 12 } as const;
-const MATERIALITY_STACK_KEYS = ['low', 'medium', 'high'] as const;
-
-function periodXAxisProps(granularity?: PeriodGranularity) {
-  if (granularity === 'quarter') {
-    return {
-      interval: 0 as const,
-      height: 40,
-      tickMargin: 8,
-      minTickGap: 0,
-      tick: { ...CHART_AXIS_TICK, fontSize: 12 },
-    };
-  }
-  return {};
-}
-
-function getMaterialitySegmentColor(key: string) {
-  if (key === 'low') {
-    return RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий;
-  }
-  if (key === 'medium') {
-    return RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний;
-  }
-  if (key === 'high') {
-    return RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий;
-  }
-  return '#e5e7eb';
-}
-
-function checkBarTooltipLabel(label: unknown, shortNames: Record<string, string>) {
-  const key = String(label);
-  const shortName = shortNames[key];
-  return shortName && shortName !== key ? `${key} — ${shortName}` : key;
-}
-
-function CheckKeyAxisTick({
-  x = 0,
-  y = 0,
-  payload,
-  shortNames,
-  orientation = 'bottom',
-}: {
-  x?: number | string;
-  y?: number | string;
-  payload?: { value?: string };
-  shortNames: Record<string, string>;
-  orientation?: 'bottom' | 'left';
-}) {
-  const key = String(payload?.value ?? '');
-  const isLeft = orientation === 'left';
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <title>{checkBarTooltipLabel(key, shortNames)}</title>
-      <text
-        x={isLeft ? -4 : 0}
-        dy={isLeft ? 4 : 14}
-        textAnchor={isLeft ? 'end' : 'middle'}
-        fill="#64748B"
-        fontSize={isLeft ? 12 : 11}
-      >
-        {key}
-      </text>
-    </g>
-  );
-}
 
 export function ConstructorChartBody({ payload }: { payload: ConstructorPayload }) {
   if (payload.chart === 'kpi') {
@@ -256,7 +193,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
               </>
             ) : (
               <>
-                <XAxis dataKey={payload.xKey} tick={CHART_AXIS_TICK} {...periodXAxisProps(payload.granularity)} />
+                <XAxis dataKey={payload.xKey} tick={CHART_AXIS_TICK} {...getPeriodXAxisProps(payload.granularity)} />
                 <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
               </>
             )}
@@ -440,7 +377,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
                   }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...periodXAxisProps(payload.granularity)} />
+                  <XAxis dataKey="label" tick={CHART_AXIS_TICK} {...getPeriodXAxisProps(payload.granularity)} />
                   <YAxis allowDecimals={false} tick={CHART_AXIS_TICK} />
                   <Tooltip />
                   {MATERIALITY_STACK_KEYS.map((key) => (

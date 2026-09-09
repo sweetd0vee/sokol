@@ -1,8 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type KeyboardEvent, type PointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { GripVertical, LayoutDashboard, Plus, Trash2 } from 'lucide-react';
-import * as ReactGridLayout from 'react-grid-layout';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
 import { AnalyticsDashboardFrame } from '../AnalyticsDashboardFrame';
 import {
   FORM_OUTLINE_BUTTON_CLASS,
@@ -19,14 +16,8 @@ import {
   pixelHeightToGridRows,
 } from './constructorLayout';
 import { CONSTRUCTOR_SOURCE_LABELS } from './constructorTypes';
+import { BaseGridLayout } from '../reactGridLayout';
 import './constructorBoard.css';
-
-type GridLayoutModule = {
-  default?: ComponentType<Record<string, unknown>>;
-};
-
-const gridLayoutModule = ReactGridLayout as unknown as GridLayoutModule;
-const BaseGridLayout = (gridLayoutModule.default ?? ReactGridLayout) as ComponentType<Record<string, unknown>>;
 
 const GRID_MARGIN = CONSTRUCTOR_GRID_MARGIN;
 const ROW_HEIGHT = CONSTRUCTOR_ROW_HEIGHT;

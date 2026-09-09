@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, Copy, Download, LayoutDashboard, MoreHorizontal, PencilLine, Trash2 } from 'lucide-react';
+import { LayoutDashboard } from 'lucide-react';
 import { PageHeader } from '../ui/PageHeader';
 import { EmptyState } from '../ui/StateMessage';
 import { ConfirmDialog } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import {
-  LIST_ACTION_BUTTON_CLASS,
   LIST_CHROME_RIGHT_INSET_CLASS,
+  LIST_CREATE_BUTTON_CLASS,
   listFilterClass,
 } from '../../constants/formLayout';
 import { useAnalyticsConstructor } from '../analytics/constructor/analyticsConstructorState';
 import { ConstructorNameModal } from '../analytics/constructor/ConstructorNameModal';
+import { ConstructorRowActions } from '../analytics/constructor/ConstructorRowActions';
 import {
   defaultDashboardName,
   type ConstructorDashboardRecord,
@@ -19,6 +20,8 @@ import {
 import { useClientTable } from '../../hooks/useClientTable';
 import { ListPagination } from '../lists/ListPagination';
 import { ListColumnHeaderCell, ListSortHeader } from '../lists/ListSortHeader';
+import { ListFilterCell, ListResetFiltersButton } from '../lists/ListFilterCell';
+import { ListEmptyNotice, ListFilterCount, ListTableFooter, ListTableShell } from '../lists/ListTableShell';
 import {
   dashboardSourceKinds,
   dashboardSourceSummary,
@@ -125,7 +128,7 @@ export function ConstructorTab() {
           <button
             type="button"
             onClick={openCreate}
-            className={`${LIST_ACTION_BUTTON_CLASS} bg-[#90EE90] text-gray-700 transition hover:bg-[#7fdc7f]`}
+            className={LIST_CREATE_BUTTON_CLASS}
           >
             Создать дашборд
           </button>

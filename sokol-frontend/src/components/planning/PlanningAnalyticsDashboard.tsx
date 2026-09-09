@@ -81,6 +81,7 @@ export function PlanningAnalyticsDashboard() {
     analyticsQuery,
     data,
     departmentOptions,
+    auditorOptions,
     resetFilters,
   } = useAnalyticsDashboardController({
     resource: 'planning',
@@ -320,77 +321,62 @@ export function PlanningAnalyticsDashboard() {
     [coverage, departmentAnalytics, exportSections, highMaterialityRanking, highMaterialityTotal],
   );
 
-  if (bootstrapQuery.isLoading && !data) {
-    return <LoadingState title="Загрузка аналитики планирования…" />;
-  }
-  if ((bootstrapQuery.isError || analyticsQuery.isError) && !data) {
-    const error = analyticsQuery.error ?? bootstrapQuery.error;
-    return (
-      <ErrorState
-        title="Не удалось загрузить аналитику планирования"
-        description={error instanceof Error ? error.message : 'неизвестная ошибка'}
-      />
-    );
-  }
-
   return (
-    <AnalyticsFilterCaptionProvider
+    <AnalyticsDashboardShell
+      loadingTitle="Загрузка аналитики планирования…"
+      errorTitle="Не удалось загрузить аналитику планирования"
+      bootstrapQuery={bootstrapQuery}
+      analyticsQuery={analyticsQuery}
+      data={data}
+      mainClassName="flex min-h-0 min-w-0 flex-1 flex-col"
+      includeAuditors={false}
+      selectionMetrics={[
+        { label: 'Проверок', value: filteredChecksTotal, hint: `из ${universeChecksTotal}` },
+        {
+          label: 'Рекомендаций',
+          value: filteredRecommendationsTotal,
+          hint: `из ${universeRecommendationsTotal}`,
+        },
+      ]}
       periodSliceLabel={periodSliceLabel}
-      periods={activePeriodValues}
-      auditors={[]}
-      departments={selectedDepartments}
+      activePeriodValues={activePeriodValues}
+      removeActivePeriodValue={removeActivePeriodValue}
+      selectedAuditors={selectedAuditors}
+      removeAuditor={removeAuditor}
+      selectedDepartments={selectedDepartments}
+      removeDepartment={removeDepartment}
+      filterSidebar={toAnalyticsFilterSidebarProps(
+        {
+          periodSlice,
+          handlePeriodSliceChange,
+          yearOptions,
+          quarterOptions,
+          selectedYears,
+          selectedQuarters,
+          setSelectedYears,
+          setSelectedQuarters,
+          auditorOptions,
+          selectedAuditors,
+          setSelectedAuditors,
+          departmentOptions,
+          selectedDepartments,
+          setSelectedDepartments,
+          resetFilters,
+          exportFormat,
+          setExportFormat,
+          isExporting,
+        },
+        {
+          canExport: Boolean(data),
+          onExport: () => void handleExport(),
+          selectedCount: exportSections.selectedCount,
+          justAdded,
+          onAddToConstructor: handleAddToConstructor,
+          includeAuditors: false,
+        },
+      )}
     >
-      <AnalyticsDashboardFrame
-        mainClassName="flex min-h-0 min-w-0 flex-1 flex-col"
-        sidebar={(
-        <AnalyticsFilterSidebar
-          periodSlice={periodSlice}
-          onPeriodSliceChange={handlePeriodSliceChange}
-          yearOptions={yearOptions}
-          quarterOptions={quarterOptions}
-          selectedYears={selectedYears}
-          selectedQuarters={selectedQuarters}
-          onYearsChange={setSelectedYears}
-          onQuartersChange={setSelectedQuarters}
-          departmentOptions={departmentOptions}
-          selectedDepartments={selectedDepartments}
-          onDepartmentsChange={setSelectedDepartments}
-          onResetFilters={resetFilters}
-          exportFormat={exportFormat}
-          onExportFormatChange={setExportFormat}
-          isExporting={isExporting}
-          canExport={Boolean(data)}
-          onExport={() => void handleExport()}
-          onAddToConstructor={handleAddToConstructor}
-          canAddToConstructor={exportSections.selectedCount > 0}
-          addToConstructorCount={exportSections.selectedCount}
-          constructorAdded={justAdded}
-          selectionSummary={(
-            <AnalyticsSelectionSummary
-              metrics={[
-                { label: 'Проверок', value: filteredChecksTotal, hint: `из ${universeChecksTotal}` },
-                {
-                  label: 'Рекомендаций',
-                  value: filteredRecommendationsTotal,
-                  hint: `из ${universeRecommendationsTotal}`,
-                },
-              ]}
-              items={[
-                filterSelectionItem(periodSliceLabel, activePeriodValues, 'Все значения', removeActivePeriodValue),
-                filterSelectionItem(
-                  'Департаменты',
-                  selectedDepartments,
-                  'Все департаменты',
-                  (value) => setSelectedDepartments((prev) => prev.filter((item) => item !== value)),
-                ),
-              ]}
-            />
-          )}
-        />
-        )}
-      >
-        <AnalyticsDashboardGrid cards={cards} />
-      </AnalyticsDashboardFrame>
-    </AnalyticsFilterCaptionProvider>
+      <AnalyticsDashboardGrid cards={cards} />
+    </AnalyticsDashboardShell>
   );
 }
