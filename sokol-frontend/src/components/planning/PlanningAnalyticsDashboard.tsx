@@ -4,7 +4,6 @@ import {
   BarChart,
   CartesianGrid,
   LabelList,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -18,13 +17,12 @@ import {
   ChartCard,
   CHART_AXIS_TICK,
   CHART_CATEGORY_AXIS_TICK,
-  CHART_LEGEND_STYLE,
   CHART_VALUE_LABEL_SIZE,
   CHART_VALUE_LABEL_WEIGHT,
   EmptyChart,
   KpiCard,
 } from '../analytics/AnalyticsChartPrimitives';
-import { CHECKS_PALETTE, RECOMMENDATIONS_PALETTE } from '../analytics/analyticsPalette';
+import { DepartmentUnresolvedBarChart } from '../analytics/DepartmentUnresolvedBarChart';
 import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
 import { useExportSections } from '../../hooks/useExportSections';
 import { PLANNING_EXPORT_SECTIONS, type PlanningExportSectionId } from '../../constants/analyticsExportSections';
@@ -48,7 +46,7 @@ const EMPTY_COVERAGE = {
   donut: [],
   checksByDepartment: [],
 };
-const EMPTY_DEPARTMENT_ANALYTICS: never[] = [];
+const EMPTY_UNRESOLVED: never[] = [];
 const EMPTY_HIGH_MATERIALITY_RANKING: never[] = [];
 const PLANNING_EXPORT_SECTION_IDS = PLANNING_EXPORT_SECTIONS.map(
   (section) => section.id,
@@ -94,7 +92,7 @@ export function PlanningAnalyticsDashboard() {
   const { addToConstructor, justAdded } = useAddToConstructor();
 
   const coverage = data?.coverage ?? EMPTY_COVERAGE;
-  const departmentAnalytics = data?.departmentAnalytics ?? EMPTY_DEPARTMENT_ANALYTICS;
+  const unresolvedByDepartment = data?.unresolvedByDepartment ?? EMPTY_UNRESOLVED;
   const highMaterialityRanking = data?.highMaterialityByDepartment ?? EMPTY_HIGH_MATERIALITY_RANKING;
   const highMaterialityTotal = data?.highMaterialityTotal ?? 0;
   const filteredChecksTotal = data?.filteredChecksTotal ?? 0;
@@ -141,7 +139,7 @@ export function PlanningAnalyticsDashboard() {
           departments: selectedDepartments,
         }),
         coverage,
-        departmentAnalytics,
+        unresolvedByDepartment,
         highMaterialityRanking,
         highMaterialityTotal,
         filteredChecksTotal,
@@ -172,7 +170,12 @@ export function PlanningAnalyticsDashboard() {
             <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-4">
               <KpiCard label="Охват департаментов" value={coverage.coverageRate} suffix="%" tone="blue" />
               <KpiCard label="С проверками" value={coverage.covered} hint={`из ${coverage.total}`} tone="green" />
-              <KpiCard label="Не охвачено" value={coverage.uncoveredRate} suffix="%" tone="slate" />
+              <KpiCard
+                label="Не охвачено"
+                value={coverage.uncovered}
+                hint={`из ${coverage.total}`}
+                tone="slate"
+              />
               <KpiCard label="Красные рекомендации" value={highMaterialityTotal} tone="red" />
             </div>
           </ChartCard>
@@ -180,7 +183,7 @@ export function PlanningAnalyticsDashboard() {
       },
       {
         id: 'coverage',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
+        defaultLayout: { x: 0, y: 2, w: 5, h: 5, minW: 3, minH: 3 },
         render: () => {
           const uncoveredDepartments = coverage.uncoveredDepartments;
           return (
@@ -223,46 +226,20 @@ export function PlanningAnalyticsDashboard() {
         },
       },
       {
-        id: 'departmentAnalytics',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 5, minW: 3, minH: 3 },
+        id: 'unresolved',
+        defaultLayout: { x: 5, y: 2, w: 7, h: 5, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
-            title="Проверки и рекомендации по департаментам"
+            title="Рекомендации со статусом «Не решено»"
             description=""
-            exportSectionId="departmentAnalytics"
-            exportSelected={exportSections.isSelected('departmentAnalytics')}
-            onToggleExport={() => exportSections.toggleSection('departmentAnalytics')}
+            exportSectionId="unresolved"
+            exportSelected={exportSections.isSelected('unresolved')}
+            onToggleExport={() => exportSections.toggleSection('unresolved')}
           >
-            {departmentAnalytics.length === 0 ? (
-              <EmptyChart message="Нет данных" />
+            {unresolvedByDepartment.length === 0 ? (
+              <EmptyChart message="Нет нерешённых рекомендаций за период" />
             ) : (
-              <div className="h-full min-h-[13rem]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={departmentAnalytics}
-                    layout="vertical"
-                    margin={{ top: 8, right: 24, left: 8, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      width={120}
-                      tick={CHART_CATEGORY_AXIS_TICK}
-                    />
-                    <Tooltip />
-                    <Legend wrapperStyle={CHART_LEGEND_STYLE} />
-                    <Bar dataKey="checks" name="Проверки" fill={CHECKS_PALETTE[8]} radius={[0, 4, 4, 0]} />
-                    <Bar
-                      dataKey="recommendations"
-                      name="Рекомендации"
-                      fill={RECOMMENDATIONS_PALETTE[2]}
-                      radius={[0, 4, 4, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <DepartmentUnresolvedBarChart data={unresolvedByDepartment} />
             )}
           </ChartCard>
         ),
@@ -318,7 +295,7 @@ export function PlanningAnalyticsDashboard() {
         ),
       },
     ],
-    [coverage, departmentAnalytics, exportSections, highMaterialityRanking, highMaterialityTotal],
+    [coverage, exportSections, highMaterialityRanking, highMaterialityTotal, unresolvedByDepartment],
   );
 
   return (

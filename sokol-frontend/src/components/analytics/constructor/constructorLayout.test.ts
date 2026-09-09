@@ -197,7 +197,7 @@ describe('buildConstructorDrafts', () => {
 
   it('snapshots planning charts including the uncovered-department list', () => {
     const drafts = buildPlanningConstructorDrafts({
-      selectedSections: ['summary', 'coverage', 'departmentAnalytics', 'highMateriality'],
+      selectedSections: ['summary', 'coverage', 'unresolved', 'highMateriality'],
       filterCaption: '2025 · Все департаменты',
       coverage: {
         covered: 3,
@@ -207,7 +207,13 @@ describe('buildConstructorDrafts', () => {
         uncoveredRate: 25,
         uncoveredDepartments: ['Казначейство'],
       },
-      departmentAnalytics: [{ name: 'ДВА', checks: 2, recommendations: 5 }],
+      unresolvedByDepartment: [
+        {
+          name: 'ДВА',
+          value: 3,
+          checks: [{ key: 'П-1', short_name: 'Казначейство', count: 3 }],
+        },
+      ],
       highMaterialityRanking: [{ name: 'ДВА', value: 4 }],
       highMaterialityTotal: 4,
       filteredChecksTotal: 2,
@@ -218,12 +224,12 @@ describe('buildConstructorDrafts', () => {
     expect(drafts.map((item) => item.sectionId)).toEqual([
       'summary',
       'coverage',
-      'departmentAnalytics',
+      'unresolved',
       'highMateriality',
     ]);
     expect(drafts[0]?.kind).toBe('planning');
     expect(drafts[1]?.payload.chart).toBe('list');
-    expect(drafts[2]?.payload.chart).toBe('stacked');
+    expect(drafts[2]?.payload.chart).toBe('department-unresolved');
   });
 
   it('snapshots DVA employee dashboards', () => {
