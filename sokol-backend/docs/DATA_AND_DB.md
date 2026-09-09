@@ -195,7 +195,7 @@ Create/batch ищут проверку по `serial_number`. Вход `audit_obj
 | recommendations | status, additional_status, deadline, materiality, indicator, audit_object, auditor + distribution/summary extras |
 | monitoring | то же + extensions / removals / completed-during-audit + summary/series |
 | dva | load/impact/execution/timeliness/documents, treemap, readiness, lifecycle |
-| planning | `coverage`, department analytics, high-materiality; **без** фильтра `auditors` |
+| planning | `coverage`, unresolved-by-department, high-materiality; **без** фильтра `auditors` |
 
 ## Пакет `app/db`
 

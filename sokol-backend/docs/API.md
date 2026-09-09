@@ -99,7 +99,7 @@ Search: название, наблюдение, описание, объект �
 | `GET` | `/analytics/recommendations` | `summary` (+ `withExtensions`, `withCompletionDate`, `completionRate`, `violationRate`), `periodSeries` (в т.ч. `low`/`medium`/`high`, `cumulativeCompleted`), `materialityDistribution`, `statusDistribution`, `additionalStatusDistribution`, `viewDistribution`, `materialityMatrix`, `objectDistribution`, индикаторы, `checkLinks` |
 | `GET` | `/analytics/monitoring` | `summary`, `periodSeries`, `additionalStatusDistribution`, `statusMatrix`, `deadlineExtensionsByCheck`, `completedDuringAuditByCheck`, `filterOptions` |
 | `GET` | `/analytics/dva` | `universeChecksTotal` / `universeRecommendationsTotal` (+ filtered), `checkSummary`, `recommendationSummary`, `completionShare`, `averageCheckDurationDays`, `portfolioSeries`, `auditorLoad` / `auditorImpact` / `auditorExecution` / `auditorTimeliness` / `auditorDocuments`, `auditorMatrix`, treemap'ы, `departmentMap`, `documentReadiness`, `checkLifecycle` |
-| `GET` | `/analytics/planning` | `coverage` (rates, donut, covered/uncovered, `checksByDepartment`), `departmentAnalytics`, `highMaterialityByDepartment`, `highMaterialityTotal`, universe/filtered totals; **без** `auditors` в `filterOptions` |
+| `GET` | `/analytics/planning` | `coverage` (rates, donut, covered/uncovered, `checksByDepartment`), `unresolvedByDepartment`, `highMaterialityByDepartment`, `highMaterialityTotal`, universe/filtered totals; **без** `auditors` в `filterOptions` |
 
 Все ответы: `universeTotal` / `filteredTotal` (у dva/planning — отдельно checks и recommendations), `granularity`, `filterOptions` (`auditors?`, `departments`, `anchorDates`).
 
