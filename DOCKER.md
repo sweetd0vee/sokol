@@ -24,7 +24,7 @@ UI: http://localhost:5180
 Если Postgres уже запущен:
 
 ```powershell
-docker compose up --build -d api ui
+docker compose up --build -d ui
 ```
 
 ## Env
