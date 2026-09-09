@@ -411,6 +411,14 @@ class PlanningDepartmentAnalyticsRow(BaseModel):
     high_materiality: int = Field(serialization_alias="highMateriality")
 
 
+class PlanningUnresolvedDepartmentRow(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str
+    value: int
+    checks: list[DvaCheckCountRef] = Field(default_factory=list)
+
+
 class PlanningAnalyticsFilterOptions(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -427,8 +435,8 @@ class PlanningAnalyticsResponse(BaseModel):
     filtered_recommendations_total: int = Field(serialization_alias="filteredRecommendationsTotal")
     granularity: PeriodGranularity
     coverage: PlanningCoverage
-    department_analytics: list[PlanningDepartmentAnalyticsRow] = Field(
-        serialization_alias="departmentAnalytics"
+    unresolved_by_department: list[PlanningUnresolvedDepartmentRow] = Field(
+        default_factory=list, serialization_alias="unresolvedByDepartment"
     )
     high_materiality_by_department: list[NamedCount] = Field(
         serialization_alias="highMaterialityByDepartment"

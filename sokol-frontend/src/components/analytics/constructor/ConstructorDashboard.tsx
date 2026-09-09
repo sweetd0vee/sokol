@@ -368,7 +368,7 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
                     dashboardId,
                     next.map((item) => {
                       const lockedH = matrixHeightsRef.current[item.i];
-                      return lockedH == null ? item : { ...item, h: lockedH };
+                      return lockedH === undefined ? item : { ...item, h: lockedH };
                     }),
                   );
                 }}

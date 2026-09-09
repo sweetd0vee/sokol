@@ -51,7 +51,6 @@ import {
 } from '../../utils/analyticsPeriodSeries';
 import { runAnalyticsExport } from '../../utils/runAnalyticsExport';
 import { useAnalyticsDashboardController } from './useAnalyticsDashboardController';
-import { toAnalyticsFilterSidebarProps } from './analyticsFilterSidebarProps';
 import { useAddToConstructor } from './constructor/useAddToConstructor';
 import { buildRecommendationsConstructorDrafts } from './constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
@@ -501,35 +500,32 @@ export function RecommendationsAnalyticsDashboard() {
       removeAuditor={removeAuditor}
       selectedDepartments={selectedDepartments}
       removeDepartment={removeDepartment}
-      filterSidebar={toAnalyticsFilterSidebarProps(
-        {
-          periodSlice,
-          handlePeriodSliceChange,
-          yearOptions,
-          quarterOptions,
-          selectedYears,
-          selectedQuarters,
-          setSelectedYears,
-          setSelectedQuarters,
-          auditorOptions,
-          selectedAuditors,
-          setSelectedAuditors,
-          departmentOptions,
-          selectedDepartments,
-          setSelectedDepartments,
-          resetFilters,
-          exportFormat,
-          setExportFormat,
-          isExporting,
-        },
-        {
-          canExport: filteredTotal > 0,
-          onExport: handleExport,
-          selectedCount: exportSections.selectedCount,
-          justAdded,
-          onAddToConstructor: handleAddToConstructor,
-        },
-      )}
+      filterSidebar={{
+        periodSlice,
+        onPeriodSliceChange: handlePeriodSliceChange,
+        yearOptions,
+        quarterOptions,
+        selectedYears,
+        selectedQuarters,
+        onYearsChange: setSelectedYears,
+        onQuartersChange: setSelectedQuarters,
+        auditorOptions,
+        selectedAuditors,
+        onAuditorsChange: setSelectedAuditors,
+        departmentOptions,
+        selectedDepartments,
+        onDepartmentsChange: setSelectedDepartments,
+        onResetFilters: resetFilters,
+        exportFormat,
+        onExportFormatChange: setExportFormat,
+        isExporting,
+        canExport: filteredTotal > 0,
+        onExport: handleExport,
+        onAddToConstructor: handleAddToConstructor,
+        canAddToConstructor: exportSections.selectedCount > 0,
+        addToConstructorCount: exportSections.selectedCount,
+        constructorAdded: justAdded,
+      }}
     >
       <AnalyticsDashboardGrid cards={cards} />
     </AnalyticsDashboardShell>

@@ -4,16 +4,22 @@ from collections import defaultdict
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.recommendations import RecommendationStatus
 from app.schemas.analytics import (
+    DvaCheckCountRef,
     NamedCount,
     PeriodGranularity,
     PlanningAnalyticsFilterOptions,
     PlanningAnalyticsResponse,
     PlanningCoverage,
     PlanningCoverageDonutSlice,
-    PlanningDepartmentAnalyticsRow,
+    PlanningUnresolvedDepartmentRow,
 )
-from app.services.analytics.constants import PLANNING_TOP_DEPARTMENTS, WITHOUT_DEPARTMENT
+from app.services.analytics.constants import (
+    PLANNING_TOP_DEPARTMENTS,
+    UNSPECIFIED,
+    WITHOUT_DEPARTMENT,
+)
 from app.services.analytics.departments import (
     build_department_lookup,
     check_canonical_department_distribution_from_links,
@@ -26,15 +32,30 @@ from app.services.analytics.sql_aggregates import (
     count_checks,
     count_recommendations,
     load_check_serial_numbers,
+    load_planning_recommendation_rows,
     load_recommendation_department_rows,
 )
+
+_COVERAGE_SKIP = {UNSPECIFIED, WITHOUT_DEPARTMENT, ""}
+_UNRESOLVED_STATUS = RecommendationStatus.UNRESOLVED.value
+
+
+def _coverage_universe(all_departments: list[str]) -> list[str]:
+    return sorted(
+        {
+            name.strip()
+            for name in all_departments
+            if name and name.strip() not in _COVERAGE_SKIP
+        },
+        key=lambda value: value.casefold(),
+    )
 
 
 def _build_coverage(
     all_departments: list[str],
     check_counts: dict[str, int],
 ) -> PlanningCoverage:
-    universe = sorted({name for name in all_departments if name}, key=lambda value: value.casefold())
+    universe = _coverage_universe(all_departments)
     covered_list = [name for name in universe if check_counts.get(name, 0) > 0]
     uncovered_list = [name for name in universe if check_counts.get(name, 0) <= 0]
     covered = len(covered_list)
@@ -63,51 +84,51 @@ def _build_coverage(
     )
 
 
-def _count_recommendations_by_department(
-    recommendation_rows: list[tuple[str, str | list[str], str]],
+def _unresolved_by_department(
+    rows: list[tuple[str, str | list[str], str, str]],
     department_lookup: dict[str, str],
-) -> tuple[dict[str, int], dict[str, int]]:
-    rec_by_dept: dict[str, int] = defaultdict(int)
-    high_by_dept: dict[str, int] = defaultdict(int)
-    for _serial, audit_object, materiality_level in recommendation_rows:
+    *,
+    selected_departments: list[str] | None = None,
+) -> list[PlanningUnresolvedDepartmentRow]:
+    selected = {name.strip() for name in (selected_departments or []) if name.strip()}
+    counts: dict[str, int] = defaultdict(int)
+    checks: dict[str, dict[str, DvaCheckCountRef]] = defaultdict(dict)
+    for serial, audit_object, status, short_name in rows:
+        if status != _UNRESOLVED_STATUS:
+            continue
+        serial_key = (serial or "").strip()
+        display_short = (short_name or "").strip()
         for name in matched_departments_or_fallback(audit_object, department_lookup):
-            rec_by_dept[name] += 1
-            if materiality_level == "высокий":
-                high_by_dept[name] += 1
-    return rec_by_dept, high_by_dept
-
-
-def _department_analytics(
-    check_serials: list[str],
-    recommendation_rows: list[tuple[str, str | list[str], str]],
-    all_recommendation_links: list[tuple[str, str | list[str], str]],
-    all_departments: list[str],
-    department_lookup: dict[str, str],
-) -> list[PlanningDepartmentAnalyticsRow]:
-    check_by_dept = check_canonical_department_distribution_from_links(
-        check_serials,
-        [(serial, audit_object) for serial, audit_object, _materiality in all_recommendation_links],
-        all_departments,
-    )
-    rec_by_dept, high_by_dept = _count_recommendations_by_department(
-        recommendation_rows,
-        department_lookup,
-    )
-    names = set(check_by_dept) | set(rec_by_dept)
-    rows = [
-        PlanningDepartmentAnalyticsRow(
+            if name in _COVERAGE_SKIP:
+                continue
+            if selected and name not in selected:
+                continue
+            counts[name] += 1
+            if not serial_key:
+                continue
+            existing = checks[name].get(serial_key)
+            if existing is None:
+                checks[name][serial_key] = DvaCheckCountRef(
+                    key=serial_key,
+                    short_name=display_short,
+                    count=1,
+                )
+                continue
+            checks[name][serial_key] = DvaCheckCountRef(
+                key=existing.key,
+                short_name=existing.short_name or display_short,
+                count=existing.count + 1,
+            )
+    ranking = [
+        PlanningUnresolvedDepartmentRow(
             name=name,
-            checks=check_by_dept.get(name, 0),
-            recommendations=rec_by_dept.get(name, 0),
-            high_materiality=high_by_dept.get(name, 0),
+            value=value,
+            checks=sorted(checks.get(name, {}).values(), key=lambda item: (-item.count, item.key)),
         )
-        for name in names
-        if name != WITHOUT_DEPARTMENT
+        for name, value in counts.items()
+        if value > 0
     ]
-    return sorted(
-        rows,
-        key=lambda row: (-(row.checks + row.recommendations), row.name),
-    )[:PLANNING_TOP_DEPARTMENTS]
+    return sorted(ranking, key=lambda row: (-row.value, row.name.casefold()))
 
 
 def _high_materiality_by_department(
@@ -119,6 +140,8 @@ def _high_materiality_by_department(
         if materiality_level != "высокий":
             continue
         for name in matched_departments_or_fallback(audit_object, department_lookup):
+            if name in _COVERAGE_SKIP:
+                continue
             counts[name] += 1
     return [
         NamedCount(name=name, value=value)
@@ -150,37 +173,44 @@ async def build_planning_analytics(
     all_departments = await load_department_names(session)
     department_lookup = build_department_lookup(all_departments)
 
-    filtered_check_serials = await load_check_serial_numbers(session, **filters)
     coverage_check_serials = await load_check_serial_numbers(session, **coverage_filters)
-    filtered_recommendation_rows = await load_recommendation_department_rows(session, **filters)
-    all_recommendation_rows = await load_recommendation_department_rows(session)
+    coverage_recommendation_rows = await load_planning_recommendation_rows(session, **coverage_filters)
+    if departments:
+        unresolved_recommendation_rows = await load_planning_recommendation_rows(session, **filters)
+        filtered_check_serials = await load_check_serial_numbers(session, **filters)
+    else:
+        unresolved_recommendation_rows = coverage_recommendation_rows
+        filtered_check_serials = coverage_check_serials
+    deadline_recommendation_rows = await load_recommendation_department_rows(session, **filters)
 
     check_counts = {
         name: count
         for name, count in check_canonical_department_distribution_from_links(
             coverage_check_serials,
-            [(serial, audit_object) for serial, audit_object, _materiality in all_recommendation_rows],
+            [(serial, audit_object) for serial, audit_object, _materiality, _status, _short in coverage_recommendation_rows],
             all_departments,
         ).items()
-        if name != WITHOUT_DEPARTMENT
+        if name not in _COVERAGE_SKIP
     }
     coverage = _build_coverage(all_departments, check_counts)
-    high_ranking = _high_materiality_by_department(filtered_recommendation_rows, department_lookup)
+    unresolved_ranking = _unresolved_by_department(
+        [
+            (serial, audit_object, status, short_name)
+            for serial, audit_object, _materiality, status, short_name in unresolved_recommendation_rows
+        ],
+        department_lookup,
+        selected_departments=departments,
+    )
+    high_ranking = _high_materiality_by_department(deadline_recommendation_rows, department_lookup)
 
     return PlanningAnalyticsResponse(
         universe_checks_total=await count_checks(session, filtered=False),
         universe_recommendations_total=await count_recommendations(session, filtered=False),
         filtered_checks_total=len(filtered_check_serials),
-        filtered_recommendations_total=len(filtered_recommendation_rows),
+        filtered_recommendations_total=len(unresolved_recommendation_rows),
         granularity=granularity,
         coverage=coverage,
-        department_analytics=_department_analytics(
-            filtered_check_serials,
-            filtered_recommendation_rows,
-            all_recommendation_rows,
-            all_departments,
-            department_lookup,
-        ),
+        unresolved_by_department=unresolved_ranking,
         high_materiality_by_department=high_ranking,
         high_materiality_total=sum(item.value for item in high_ranking),
         filter_options=PlanningAnalyticsFilterOptions(

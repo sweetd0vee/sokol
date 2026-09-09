@@ -1,14 +1,6 @@
+import { checkBarTooltipLabel } from './checkBarTooltip';
+
 type ShortNameLookup = Map<string, string> | Record<string, string>;
-
-function lookupShortName(names: ShortNameLookup, key: string) {
-  return names instanceof Map ? names.get(key) : names[key];
-}
-
-export function checkBarTooltipLabel(label: unknown, shortNames: ShortNameLookup) {
-  const key = String(label);
-  const shortName = lookupShortName(shortNames, key);
-  return shortName && shortName !== key ? `${key} — ${shortName}` : key;
-}
 
 export function CheckKeyAxisTick({
   x = 0,
@@ -25,7 +17,7 @@ export function CheckKeyAxisTick({
   shortNames?: Record<string, string>;
   orientation?: 'bottom' | 'left' | 'top' | 'right';
 }) {
-  const names = shortNameByKey ?? shortNames ?? {};
+  const names: ShortNameLookup = shortNameByKey ?? shortNames ?? {};
   const key = String(payload?.value ?? '');
   const isLeft = orientation === 'left';
   return (

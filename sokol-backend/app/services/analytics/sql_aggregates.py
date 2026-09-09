@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.checks import Check
 from app.models.departments import Department
-from app.models.recommendations import Recommendation
+from app.models.recommendations import Recommendation, RecommendationStatus
 from app.schemas.analytics import (
     AuditorCheckCount,
     ChecksSummary,
@@ -117,6 +117,7 @@ __all__ = [
     "load_check_department_pairs",
     "load_check_serial_numbers",
     "load_effectiveness_matrix_rows",
+    "load_planning_recommendation_rows",
     "load_recommendation_department_rows",
     "recommendation_check_links_sql",
     "recommendation_completed_during_audit_by_check_sql",
@@ -612,6 +613,60 @@ async def load_check_department_pairs(
     )
     rows = await fetch_all(session, statement)
     return [(int(row.check_id), list(row.audit_object or [])) for row in rows if row.check_id is not None]
+
+
+def _recommendation_status_value(value: Any) -> str:
+    if isinstance(value, RecommendationStatus):
+        return value.value
+    raw = getattr(value, "value", value)
+    return str(raw or "").strip()
+
+
+async def load_planning_recommendation_rows(
+    session: AsyncSession,
+    **filters: Any,
+) -> list[tuple[str, list[str], str, str, str]]:
+    """Recommendations of period-filtered checks: serial, audit_object, materiality, status, short_name."""
+    checks_subquery = apply_check_filters(
+        select(
+            Check.id,
+            Check.serial_number,
+            Check.short_name,
+            Check.check_name,
+        ),
+        years=filters.get("years"),
+        quarters=filters.get("quarters"),
+        months=filters.get("months"),
+        auditors=filters.get("auditors"),
+        departments=filters.get("departments"),
+    ).subquery()
+    statement = select(
+        checks_subquery.c.serial_number,
+        Recommendation.audit_object,
+        Recommendation.materiality_level,
+        Recommendation.status,
+        checks_subquery.c.short_name,
+        checks_subquery.c.check_name,
+    ).select_from(
+        checks_subquery.join(
+            Recommendation,
+            Recommendation.check_id == checks_subquery.c.id,
+        )
+    )
+    rows = await fetch_all(session, statement)
+    result: list[tuple[str, list[str], str, str, str]] = []
+    for row in rows:
+        short_name = str(row.short_name or "").strip() or str(row.check_name or "").strip()
+        result.append(
+            (
+                str(row.serial_number or "").strip(),
+                list(row.audit_object or []),
+                str(row.materiality_level or ""),
+                _recommendation_status_value(row.status),
+                short_name,
+            )
+        )
+    return result
 
 
 async def load_recommendation_department_rows(

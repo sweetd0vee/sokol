@@ -38,7 +38,10 @@ export function useRecommendationForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const navigationState = (location.state as RecommendationFormLocationState | null) ?? {};
+  const navigationState = useMemo(
+    () => (location.state as RecommendationFormLocationState | null) ?? {},
+    [location.state],
+  );
   const { checks, recommendations, addRecommendation, updateRecommendation, deleteRecommendation, updateCheck } =
     useSokolData();
   const { isAdmin } = useAuth();
@@ -89,6 +92,7 @@ export function useRecommendationForm() {
     navigationState.checkLeader,
     navigationState.checkFormDraft?.checkLeader,
     location.key,
+    navigationState,
   ]);
 
   const resolvedSerialNumber = fields.serialNumber.trim() || source?.serial_number?.trim() || '';

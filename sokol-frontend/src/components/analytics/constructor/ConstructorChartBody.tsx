@@ -20,7 +20,8 @@ import {
   EmptyChart,
   KpiCard,
 } from '../AnalyticsChartPrimitives';
-import { CheckKeyAxisTick, checkBarTooltipLabel } from '../CheckKeyAxisTick';
+import { CheckKeyAxisTick } from '../CheckKeyAxisTick';
+import { checkBarTooltipLabel } from '../checkBarTooltip';
 import { getMaterialitySegmentColor, getPeriodXAxisProps, MATERIALITY_STACK_KEYS } from '../analyticsChartAxis';
 import { FocusableDonutChart } from '../FocusableDonutChart';
 import { FocusableSquareCirclesChart } from '../FocusableSquareCirclesChart';
