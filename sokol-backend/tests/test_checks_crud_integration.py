@@ -197,12 +197,43 @@ class ChecksCrudIntegrationTests(unittest.TestCase):
             json={"full_name": "Иванов И.И."},
         )
 
-    def _create_check(self) -> dict[str, Any]:
+    def test_changing_auditor_code_rewrites_check_serial(self) -> None:
+        created = self._create_check(check_type="planned")
+        old_serial = created["serial_number"]
+        self.assertIn("III", old_serial)
+
+        auditors = self.client.get("/api/v1/settings/auditors").json()["items"]
+        leader = next(item for item in auditors if item["full_name"] == "Иванов И.И.")
+
+        patched = self.client.patch(
+            f"/api/v1/settings/auditors/{leader['id']}",
+            json={"code": "ZZZ"},
+        )
+        self.assertEqual(patched.status_code, 200)
+        self.assertEqual(patched.json()["code"], "ZZZ")
+
+        updated_check = self.client.get(f"/api/v1/checks/{created['id']}")
+        self.assertEqual(updated_check.status_code, 200)
+        new_serial = updated_check.json()["serial_number"]
+        self.assertNotEqual(new_serial, old_serial)
+        self.assertIn("ZZZ", new_serial)
+        self.assertNotIn("III", new_serial)
+        # YY + quarter/type/N stay the same; only the 3-letter code changes.
+        self.assertEqual(new_serial[:2] + new_serial[5:], old_serial[:2] + old_serial[5:])
+
+        self.client.delete(f"/api/v1/checks/{created['id']}")
+        restored = self.client.patch(
+            f"/api/v1/settings/auditors/{leader['id']}",
+            json={"code": "III"},
+        )
+        self.assertEqual(restored.status_code, 200)
+
+    def _create_check(self, *, check_type: str = "internal") -> dict[str, Any]:
         response = self.client.post(
             "/api/v1/checks",
             json={
                 "check_name": "Интеграционная проверка",
-                "check_type": "internal",
+                "check_type": check_type,
                 "check_view": "Комплексная проверка",
                 "check_quarter": 1,
                 "start_date": "2026-01-15",

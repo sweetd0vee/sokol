@@ -7,6 +7,11 @@ from app.crud.dictionary_crud import bind_dictionary_crud, find_dictionary_dupli
 from app.crud.dictionary_errors import DuplicateDictionaryError
 from app.models.auditors import Auditor
 from app.schemas.auditors import AuditorCreate, AuditorUpdate
+from app.services.check_serial_cascade import (
+    cascade_auditor_code_in_check_keys,
+    cleanup_old_serial_buckets,
+)
+from app.utils.dictionary_text import normalize_dictionary_label
 
 
 _ops = bind_dictionary_crud(
@@ -45,14 +50,55 @@ async def get_auditor_by_full_name(
 async def update_auditor(
     session: AsyncSession, auditor: Auditor, auditor_in: AuditorUpdate
 ) -> Auditor:
-    if auditor_in.code is not None:
-        duplicate = await find_dictionary_duplicate_by_label(
+    payload = auditor_in.model_dump(exclude_unset=True)
+    old_code = auditor.code
+    old_name = auditor.full_name
+
+    if "full_name" in payload and payload["full_name"] is not None:
+        payload["full_name"] = normalize_dictionary_label(str(payload["full_name"]))
+        duplicate_name = await find_dictionary_duplicate_by_label(
+            session,
+            Auditor,
+            Auditor.full_name,
+            payload["full_name"],
+            exclude_id=auditor.id,
+        )
+        if duplicate_name is not None:
+            raise DuplicateDictionaryError(
+                dictionary="auditors",
+                label=payload["full_name"],
+            )
+
+    if "code" in payload and payload["code"] is not None:
+        payload["code"] = str(payload["code"]).strip().upper()
+        duplicate_code = await find_dictionary_duplicate_by_label(
             session,
             Auditor,
             Auditor.code,
-            auditor_in.code,
+            payload["code"],
             exclude_id=auditor.id,
         )
-        if duplicate is not None:
-            raise DuplicateDictionaryError(dictionary="auditors", label=auditor_in.code)
-    return await _ops.update(session, auditor, auditor_in)
+        if duplicate_code is not None:
+            raise DuplicateDictionaryError(dictionary="auditors", label=payload["code"])
+
+    for field, value in payload.items():
+        setattr(auditor, field, value)
+
+    rewrites = []
+    new_code = auditor.code
+    if "code" in payload and new_code != old_code:
+        # Checks still reference the previous full_name until this transaction commits
+        # (ON UPDATE CASCADE runs at commit), so look up by the pre-update name.
+        rewrites = await cascade_auditor_code_in_check_keys(
+            session,
+            check_leader=old_name,
+            old_code=old_code,
+            new_code=new_code,
+        )
+
+    session.add(auditor)
+    await session.commit()
+    await session.refresh(auditor)
+    if rewrites:
+        await cleanup_old_serial_buckets(rewrites)
+    return auditor
