@@ -1,14 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { toPng, toSvg } from 'html-to-image';
-import { Check, Clipboard, Expand, FileDown, Image, Minimize2, MoreHorizontal, X } from 'lucide-react';
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
-import type { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { toPng } from 'html-to-image';
+import { Check, Clipboard, Expand, Minimize2, X } from 'lucide-react';
 import { registerDashboardChart } from '../../utils/dashboardChartRegistry';
+import { useAnalyticsFilterCaption } from './analyticsFilterCaptionContext';
 import { kpiAccentStyle } from './analyticsPalette';
-
-pdfMake.addVirtualFileSystem(pdfFonts);
 
 /** Shared Recharts typography for analytics dashboards. */
 export const CHART_AXIS_TICK = { fontSize: 15 } as const;
@@ -87,34 +83,73 @@ export function ChartRechartsSquareLegend({
   );
 }
 
-function slugifyFilename(value: string) {
-  return (
-    value
-      .trim()
-      .toLowerCase()
-      .replace(/[^\p{L}\p{N}]+/gu, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 60) || 'dashboard'
-  );
-}
-
-function downloadDataUrl(dataUrl: string, filename: string) {
-  const link = document.createElement('a');
-  link.download = filename;
-  link.href = dataUrl;
-  link.click();
-}
-
-async function captureNode(node: HTMLElement, format: 'png' | 'svg') {
-  const options = {
+function captureNodePng(node: HTMLElement) {
+  return toPng(node, {
     cacheBust: true,
     pixelRatio: 2,
     backgroundColor: '#ffffff',
-  };
-  if (format === 'svg') {
-    return toSvg(node, options);
+  });
+}
+
+function loadImage(dataUrl: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Не удалось подготовить изображение графика'));
+    image.src = dataUrl;
+  });
+}
+
+async function captureChartPngWithFilters(
+  chartNode: HTMLElement,
+  title: string,
+  filterCaption: string,
+) {
+  const chartDataUrl = await captureNodePng(chartNode);
+  const chartImage = await loadImage(chartDataUrl);
+  const chartWidth = Math.max(1, Math.round(chartNode.getBoundingClientRect().width));
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = [
+    'position:fixed',
+    'left:-10000px',
+    'top:0',
+    'z-index:-1',
+    'box-sizing:border-box',
+    `width:${chartWidth + 24}px`,
+    'background:#ffffff',
+    'padding:12px',
+    'font-family:system-ui,-apple-system,sans-serif',
+  ].join(';');
+
+  const banner = document.createElement('div');
+  banner.style.cssText = 'box-sizing:border-box;padding:0 0 10px;margin:0 0 10px;border-bottom:1px solid #e5e7eb;';
+
+  const titleEl = document.createElement('div');
+  titleEl.textContent = title;
+  titleEl.style.cssText = 'font-size:14px;font-weight:600;line-height:1.3;color:#003366;';
+  banner.appendChild(titleEl);
+
+  if (filterCaption) {
+    const captionEl = document.createElement('div');
+    captionEl.textContent = filterCaption;
+    captionEl.style.cssText =
+      'margin-top:4px;font-size:12px;line-height:1.35;color:#64748b;white-space:pre-wrap;';
+    banner.appendChild(captionEl);
   }
-  return toPng(node, options);
+
+  chartImage.alt = title;
+  chartImage.style.cssText = `display:block;width:${chartWidth}px;height:auto;max-width:none;`;
+
+  wrapper.appendChild(banner);
+  wrapper.appendChild(chartImage);
+  document.body.appendChild(wrapper);
+
+  try {
+    return await captureNodePng(wrapper);
+  } finally {
+    wrapper.remove();
+  }
 }
 
 function ChartToolbar({
@@ -123,10 +158,9 @@ function ChartToolbar({
   isFullscreen,
   onToggleFullscreen,
   isBusy,
-  isDownloadOpen,
-  onToggleDownload,
+  isCopyOpen,
+  onToggleCopy,
   menuRef,
-  onDownload,
   onCopyPng,
 }: {
   exportSelected?: boolean;
@@ -134,11 +168,10 @@ function ChartToolbar({
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   isBusy: boolean;
-  isDownloadOpen: boolean;
-  onToggleDownload: () => void;
+  isCopyOpen: boolean;
+  onToggleCopy: () => void;
   menuRef: React.RefObject<HTMLDivElement | null>;
-  onDownload: (format: 'png' | 'svg' | 'pdf') => void;
-  onCopyPng: () => void;
+  onCopyPng: (includeFilters: boolean) => void;
 }) {
   return (
     <div data-chart-toolbar className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
@@ -177,59 +210,36 @@ function ChartToolbar({
       <div className="relative" ref={menuRef}>
         <button
           type="button"
-          onClick={onToggleDownload}
+          onClick={onToggleCopy}
           disabled={isBusy}
           className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark disabled:opacity-50"
-          title={isBusy ? 'Сохранение…' : 'Ещё'}
-          aria-label="Ещё"
+          title={isBusy ? 'Копирование…' : 'Скопировать PNG'}
+          aria-label="Скопировать PNG"
           aria-haspopup="menu"
-          aria-expanded={isDownloadOpen}
+          aria-expanded={isCopyOpen}
         >
-          <MoreHorizontal className="h-3.5 w-3.5" />
+          <Clipboard className="h-3.5 w-3.5" />
         </button>
-        {isDownloadOpen ? (
+        {isCopyOpen ? (
           <div
             role="menu"
-            className="absolute right-0 z-30 mt-1 w-44 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+            className="absolute right-0 z-30 mt-1 w-48 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
           >
-            <div className="px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-400">
-              Скачать
-            </div>
             <button
               type="button"
               role="menuitem"
-              onClick={() => onDownload('png')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+              onClick={() => onCopyPng(true)}
+              className="flex w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
             >
-              <Image className="h-3.5 w-3.5 text-sky-600" />
-              PNG
+              С фильтрами
             </button>
             <button
               type="button"
               role="menuitem"
-              onClick={() => onDownload('svg')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+              onClick={() => onCopyPng(false)}
+              className="flex w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
             >
-              <Image className="h-3.5 w-3.5 text-violet-600" />
-              SVG
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => onDownload('pdf')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
-            >
-              <FileDown className="h-3.5 w-3.5 text-rose-600" />
-              PDF
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={onCopyPng}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
-            >
-              <Clipboard className="h-3.5 w-3.5 text-emerald-600" />
-              PNG в буфер
+              Без фильтров
             </button>
           </div>
         ) : null}
@@ -265,13 +275,14 @@ export function ChartCard({
   const captureRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isDownloadOpen, setIsDownloadOpen] = useState(false);
+  const [isCopyOpen, setIsCopyOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
+  const filterCaption = useAnalyticsFilterCaption();
   const exportCaptureAttributes = exportSectionId
     ? {
         'data-analytics-export-capture-id': exportSectionId,
         'data-analytics-export-title': title,
-        'data-analytics-export-description': description,
+        'data-analytics-export-description': description || filterCaption,
       }
     : {};
 
@@ -282,7 +293,7 @@ export function ChartCard({
     return registerDashboardChart({
       id: exportSectionId,
       title,
-      description,
+      description: description || filterCaption,
       getNode: () => {
         const capture = captureRef.current;
         const card = exportCardRef.current;
@@ -294,7 +305,7 @@ export function ChartCard({
         return capture ?? card;
       },
     });
-  }, [exportSectionId, title, description]);
+  }, [exportSectionId, title, description, filterCaption]);
 
   useEffect(() => {
     if (!isFullscreen) {
@@ -305,7 +316,7 @@ export function ChartCard({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsFullscreen(false);
-        setIsDownloadOpen(false);
+        setIsCopyOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -316,7 +327,7 @@ export function ChartCard({
   }, [isFullscreen]);
 
   useEffect(() => {
-    if (!isDownloadOpen) {
+    if (!isCopyOpen) {
       return undefined;
     }
     const handlePointer = (event: MouseEvent) => {
@@ -324,65 +335,13 @@ export function ChartCard({
       if (target && menuRef.current?.contains(target)) {
         return;
       }
-      setIsDownloadOpen(false);
+      setIsCopyOpen(false);
     };
     window.addEventListener('mousedown', handlePointer);
     return () => window.removeEventListener('mousedown', handlePointer);
-  }, [isDownloadOpen]);
+  }, [isCopyOpen]);
 
-  const handleDownload = async (format: 'png' | 'svg' | 'pdf') => {
-    const node = captureRef.current;
-    if (!node || isBusy) {
-      return;
-    }
-    setIsBusy(true);
-    setIsDownloadOpen(false);
-    try {
-      const baseName =`sokol-${slugifyFilename(title)}`;
-      if (format === 'pdf') {
-        const dataUrl = await captureNode(node, 'png');
-        const docDefinition: TDocumentDefinitions = {
-          pageSize: 'A4',
-          pageOrientation: 'landscape',
-          pageMargins: [24, 28, 24, 28],
-          content: [
-            {
-              text: title,
-              fontSize: 16,
-              bold: true,
-              color: '#003366',
-              margin: [0, 0, 0, 4],
-            },
-            {
-              text: description,
-              fontSize: 10,
-              color: '#64748B',
-              margin: [0, 0, 0, 12],
-            },
-            {
-              image: dataUrl,
-              width: 740,
-            },
-          ],
-          defaultStyle: { font: 'Roboto' },
-        };
-        pdfMake.createPdf(docDefinition).download(`${baseName}.pdf`);
-        return;
-      }
-
-      const dataUrl = await captureNode(node, format);
-      downloadDataUrl(dataUrl,`${baseName}.${format}`);
-    } catch (error) {
-      console.error('Chart download failed', error);
-      window.alert(
-`Не удалось скачать график: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`,
-      );
-    } finally {
-      setIsBusy(false);
-    }
-  };
-
-  const handleCopyPng = async () => {
+  const handleCopyPng = async (includeFilters: boolean) => {
     const node = captureRef.current;
     if (!node || isBusy) {
       return;
@@ -392,15 +351,18 @@ export function ChartCard({
       return;
     }
     setIsBusy(true);
-    setIsDownloadOpen(false);
+    setIsCopyOpen(false);
+
     try {
-      const dataUrl = await captureNode(node, 'png');
+      const dataUrl = includeFilters
+        ? await captureChartPngWithFilters(node, title, filterCaption)
+        : await captureNodePng(node);
       const blob = await (await fetch(dataUrl)).blob();
       await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
     } catch (error) {
       console.error('Chart copy failed', error);
       window.alert(
-`Не удалось скопировать график: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`,
+        `Не удалось скопировать график: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`,
       );
     } finally {
       setIsBusy(false);
@@ -414,14 +376,11 @@ export function ChartCard({
       isFullscreen={isFullscreen}
       onToggleFullscreen={() => setIsFullscreen((value) => !value)}
       isBusy={isBusy}
-      isDownloadOpen={isDownloadOpen}
-      onToggleDownload={() => setIsDownloadOpen((value) => !value)}
+      isCopyOpen={isCopyOpen}
+      onToggleCopy={() => setIsCopyOpen((value) => !value)}
       menuRef={menuRef}
-      onDownload={(format) => {
-        void handleDownload(format);
-      }}
-      onCopyPng={() => {
-        void handleCopyPng();
+      onCopyPng={(includeFilters) => {
+        void handleCopyPng(includeFilters);
       }}
     />
   );

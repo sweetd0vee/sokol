@@ -9,6 +9,7 @@ import {
   AnalyticsSelectionSummary,
   type AnalyticsSelectionSummaryMetric,
 } from './AnalyticsSelectionSummary';
+import { AnalyticsFilterCaptionProvider } from './analyticsFilterCaptionContext';
 import { filterSelectionItem } from './filterSelectionItem';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
 
@@ -76,40 +77,47 @@ export function AnalyticsDashboardShell({
   }
 
   return (
-    <AnalyticsDashboardFrame
-      {...(mainClassName !== undefined ? { mainClassName } : {})}
-      sidebar={(
-        <AnalyticsFilterSidebar
-          {...filterSidebar}
-          selectionSummary={(
-            <AnalyticsSelectionSummary
-              metrics={selectionMetrics}
-              items={[
-                filterSelectionItem(
-                  periodSliceLabel,
-                  activePeriodValues,
-                  'Все значения',
-                  removeActivePeriodValue,
-                ),
-                filterSelectionItem('Аудиторы', selectedAuditors, 'Все аудиторы', removeAuditor),
-                filterSelectionItem(
-                  'Департаменты',
-                  selectedDepartments,
-                  'Все департаменты',
-                  removeDepartment,
-                ),
-              ]}
-            />
-          )}
-        />
-      )}
+    <AnalyticsFilterCaptionProvider
+      periodSliceLabel={periodSliceLabel}
+      periods={activePeriodValues}
+      auditors={selectedAuditors}
+      departments={selectedDepartments}
     >
-      {showFetchingBadge && analyticsQuery.isFetching ? (
-        <div className="pointer-events-none absolute right-2 top-2 z-10 rounded-md bg-white/90 px-2 py-1 text-xs text-slate-500 shadow-sm">
-          Обновление…
-        </div>
-      ) : null}
-      {isWaitingForFilteredData ? <LoadingState title={loadingTitle} /> : children}
-    </AnalyticsDashboardFrame>
+      <AnalyticsDashboardFrame
+        {...(mainClassName !== undefined ? { mainClassName } : {})}
+        sidebar={(
+          <AnalyticsFilterSidebar
+            {...filterSidebar}
+            selectionSummary={(
+              <AnalyticsSelectionSummary
+                metrics={selectionMetrics}
+                items={[
+                  filterSelectionItem(
+                    periodSliceLabel,
+                    activePeriodValues,
+                    'Все значения',
+                    removeActivePeriodValue,
+                  ),
+                  filterSelectionItem('Аудиторы', selectedAuditors, 'Все аудиторы', removeAuditor),
+                  filterSelectionItem(
+                    'Департаменты',
+                    selectedDepartments,
+                    'Все департаменты',
+                    removeDepartment,
+                  ),
+                ]}
+              />
+            )}
+          />
+        )}
+      >
+        {showFetchingBadge && analyticsQuery.isFetching ? (
+          <div className="pointer-events-none absolute right-2 top-2 z-10 rounded-md bg-white/90 px-2 py-1 text-xs text-slate-500 shadow-sm">
+            Обновление…
+          </div>
+        ) : null}
+        {isWaitingForFilteredData ? <LoadingState title={loadingTitle} /> : children}
+      </AnalyticsDashboardFrame>
+    </AnalyticsFilterCaptionProvider>
   );
 }
