@@ -261,7 +261,7 @@ export function ChecksAnalyticsDashboard() {
                         dataKey="total"
                         position="top"
                         fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill={CHECKS_PALETTE[0]}
+                        fill="#000000"
                         offset={8}
                       />
                     </Bar>
@@ -301,7 +301,7 @@ export function ChecksAnalyticsDashboard() {
                         dataKey="value"
                         position="right"
                         fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill={CHECKS_PALETTE[0]}
+                        fill="#000000"
                       />
                     </Bar>
                   </BarChart>

@@ -466,7 +466,7 @@ export function RecommendationsAnalyticsDashboard() {
                         dataKey="value"
                         position="right"
                         fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill={lastScaleColor(RECOMMENDATIONS_DEPARTMENT_MAP_SCALE)}
+                        fill="#000000"
                       />
                     </Bar>
                   </BarChart>
