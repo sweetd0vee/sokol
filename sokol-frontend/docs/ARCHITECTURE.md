@@ -1,18 +1,19 @@
 # Архитектура frontend
 
-SPA для внутреннего аудита: CRUD, analytics, planning, tools, settings.
+SPA для внутреннего аудита: CRUD, analytics, planning, tools, settings, constructor.
 
 ## Структура `src/`
 
 ```
 api/           # axios + domain clients + mappers + queryKeys
-components/    # analytics, attachments, auth, checks, lists, layout,
+components/    # analytics, attachments, auth, checks, forms, lists, layout,
                # planning, profile, recommendations, settings, tabs, tools, ui
 contexts/      # AuthContext, SokolDataProvider
 constants/     # статусы, formLayout.ts, paths, storage, avatars
-hooks/         # auth, lists, analytics filters, attachments, storage status, reference options
-utils/         # dates, personMatch, exports, tableExport, analytics*
+hooks/         # auth, lists, forms, analytics filters, attachments, export, storage status
+utils/         # dates, personMatch, exports, tableExport, analytics*, dvaAnalytics
 config/env.ts  # API_BASE_URL
+assets/
 types/
 ```
 
@@ -31,8 +32,8 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 | Route | Компонент |
 |-------|-----------|
 | `/checks`, `/recommendations` | списки + form pages (`/new`, `/:id/edit`) |
-| `/analytics` | `AnalyticsTab` (4 вкладки) |
-| `/planning` | `PlanningTab` |
+| `/analytics` | `AnalyticsTab` (4 вкладки, keep-alive посещённых панелей) |
+| `/planning` | `PlanningTab` → `PlanningAnalyticsDashboard` |
 | `/constructor`, `/constructor/:id` | история дашбордов и холст ([CONSTRUCTOR.md](CONSTRUCTOR.md)) |
 | `/tools` | `ToolsTab` (АЗ / ДЗ) |
 | `/settings` | `SettingsTab` (mutate — `isAdmin`) |
@@ -77,9 +78,9 @@ Redux/Zustand нет.
 
 **Tools** — `DocxToolPanel`: АЗ (Раздел II, с гиперссылками, файл контроля + шаблон xlsx) и ДЗ (приложение 2).
 
-**Analytics** — server aggregates, static `react-grid-layout`, visual export ([ANALYTICS.md](ANALYTICS.md)).
+**Analytics** — server aggregates, static `react-grid-layout`, keep-alive вкладок, visual export ([ANALYTICS.md](ANALYTICS.md)). Карточки: чекбокс «В конструктор», PNG в буфер обмена, fullscreen; часть матриц/lifecycle — `expandToContent`.
 
-**Planning** — `GET /analytics/planning`, visual export отключён; графики можно отправить в конструктор ([PLANNING.md](PLANNING.md)).
+**Planning** — `GET /analytics/planning`, visual export **включён**; графики можно отправить в конструктор ([PLANNING.md](PLANNING.md)).
 
 **Constructor** — история дашбордов и холст из снимков аналитики/планирования ([CONSTRUCTOR.md](CONSTRUCTOR.md)).
 
@@ -89,7 +90,7 @@ Redux/Zustand нет.
 
 ## Auth flow
 
-Login (`admin` / `auditor` или «Фамилия И.О.») → `POST /auth/login` → token в localStorage → Bearer на все запросы.
+Login (ФИО или alias `admin`) → `POST /auth/login` → token в localStorage → Bearer на все запросы.
 
 `isAdmin` = роль `admin` или `department_head`.
 
@@ -97,7 +98,7 @@ Login (`admin` / `auditor` или «Фамилия И.О.») → `POST /auth/log
 
 - Виды проверок в форме и фильтрах — из `/settings/check_kinds`.
 - Таблицы: client-side filter после bulk-fetch до 10000 строк; server pagination нет.
-- HTML-экспорт дашбордов зависит от DOM-capture (хрупко при off-screen карточках).
+- HTML-экспорт дашбордов зависит от DOM-capture (хрупко при off-screen карточках); lifecycle в DOCX дополнительно отдаёт табличные строки.
 - Drill-down API и сохранённые серверные отчёты не реализованы.
 
 Backend-контракты: [API.md](../../sokol-backend/docs/API.md).

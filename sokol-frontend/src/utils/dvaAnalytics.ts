@@ -121,6 +121,27 @@ export function formatLifecycleChecksCount(count: number): string {
   return `${count} ${pluralRu(count, 'проверка', 'проверки', 'проверок')}`;
 }
 
+/** «по 1 проверке» / «по 34 проверкам» — для подписи среднего по выборке. */
+export function formatLifecycleChecksByCount(count: number): string {
+  return `по ${count} ${pluralRu(count, 'проверке', 'проверкам', 'проверкам')}`;
+}
+
+/** Mean of non-null lifecycle totals (приказ → last milestone) for the given rows, rounded days. */
+export function averageLifecycleDurationDays(
+  rows: Array<{ totalDays: number | null }>,
+): { averageDays: number; sampleSize: number } | null {
+  const values = rows
+    .map((row) => row.totalDays)
+    .filter((days): days is number => days !== null);
+  if (values.length === 0) {
+    return null;
+  }
+  return {
+    averageDays: Math.round(values.reduce((sum, days) => sum + days, 0) / values.length),
+    sampleSize: values.length,
+  };
+}
+
 export type CheckLifecycleExportRow = {
   key: string;
   shortName: string;
@@ -168,13 +189,17 @@ function pad2(value: number): string {
   return String(value).padStart(2, '0');
 }
 
-/** Compact numeric axis labels: `15.03` for short spans, `03.26` for monthly. */
-function formatTickLabel(ms: number, spanMs: number): string {
+/** Compact numeric axis labels: `15.03` for short spans; monthly uses `MM`, with `MM.YY` only in January. */
+function formatTickLabel(ms: number, spanMs: number, opts?: { showYear?: boolean }): string {
   const date = new Date(ms);
   if (spanMs <= 45 * DAY_MS) {
     return `${date.getDate()}.${pad2(date.getMonth() + 1)}`;
   }
-  return `${pad2(date.getMonth() + 1)}.${String(date.getFullYear()).slice(-2)}`;
+  const month = pad2(date.getMonth() + 1);
+  if (opts?.showYear) {
+    return `${month}.${String(date.getFullYear()).slice(-2)}`;
+  }
+  return month;
 }
 
 function dedupeSortedMs(values: number[]): number[] {
@@ -225,40 +250,28 @@ export function buildLifecycleAxisTicks(rangeStart: number, rangeEnd: number): C
     }
     raw = filtered;
   } else {
+    // One label per calendar month at the 1st — never clamp to range edges (avoids smashed first labels).
     const start = new Date(rangeStart);
     let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-    while (cursor.getTime() <= rangeEnd) {
-      if (cursor.getTime() >= rangeStart) {
-        raw.push(cursor.getTime());
-      }
+    if (cursor.getTime() < rangeStart) {
       cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
     }
-    if (raw.length === 0 || raw[0]! > rangeStart) {
-      raw.unshift(rangeStart);
-    }
-    const lastMonth = raw[raw.length - 1];
-    if (lastMonth === undefined) {
-      raw.push(rangeEnd);
-    } else {
-      const lastDate = new Date(lastMonth);
-      const endDate = new Date(rangeEnd);
-      const sameMonth =
-        lastDate.getFullYear() === endDate.getFullYear()
-        && lastDate.getMonth() === endDate.getMonth();
-      if (sameMonth) {
-        raw[raw.length - 1] = rangeEnd;
-      } else if (rangeEnd - lastMonth > DAY_MS) {
-        raw.push(rangeEnd);
-      }
+    while (cursor.getTime() <= rangeEnd) {
+      raw.push(cursor.getTime());
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
     }
     raw = dedupeSortedMs(raw);
   }
 
-  return raw.map((ms) => ({
-    ms,
-    label: formatTickLabel(ms, span),
-    percent: toPercent(ms, rangeStart, rangeEnd),
-  }));
+  return raw.map((ms) => {
+    const date = new Date(ms);
+    const showYear = date.getMonth() === 0;
+    return {
+      ms,
+      label: formatTickLabel(ms, span, { showYear }),
+      percent: toPercent(ms, rangeStart, rangeEnd),
+    };
+  });
 }
 
 function paddedRange(values: number[]): { start: number; end: number } | null {

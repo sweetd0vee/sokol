@@ -1,5 +1,7 @@
 # Код-ревью backend
 
+> **Исторический снимок (04.09.2026).** Актуальные контракты: [sokol-backend/docs](../sokol-backend/docs/README.md).
+
 **Дата:** 4 сентября 2026  
 **Оценка:** 8.9 / 10 · Python 3.12, FastAPI, SQLAlchemy async, MinIO
 

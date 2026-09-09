@@ -109,7 +109,7 @@ function CheckKeyAxisTick({
         dy={isLeft ? 4 : 14}
         textAnchor={isLeft ? 'end' : 'middle'}
         fill="#64748B"
-        fontSize={isLeft ? 11 : 9}
+        fontSize={isLeft ? 12 : 11}
       >
         {key}
       </text>

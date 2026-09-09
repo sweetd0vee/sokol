@@ -172,7 +172,7 @@ export function AnalyticsDashboardGrid({
             </div>
           ) : null}
           {stackedCards.map((card) => (
-            <div key={card.id} className="w-full shrink-0">
+            <div key={card.id} className="w-full min-w-0 shrink-0">
               {card.render()}
             </div>
           ))}
@@ -183,7 +183,7 @@ export function AnalyticsDashboardGrid({
             <div key={card.id}>{card.render()}</div>
           ))}
           {stackedCards.map((card) => (
-            <div key={card.id}>{card.render()}</div>
+            <div key={card.id} className="min-w-0">{card.render()}</div>
           ))}
         </div>
       )}

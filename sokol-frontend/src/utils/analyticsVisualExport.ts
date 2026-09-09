@@ -72,8 +72,11 @@ import {
 } from '../components/analytics/analyticsPalette';
 import type { DvaCheckLifecycleRow } from '../api/analytics';
 import {
+  averageLifecycleDurationDays,
+  buildCheckLifecycleChartModel,
   buildCheckLifecycleExportRows,
   CHECK_LIFECYCLE_SEGMENTS,
+  formatDurationDays,
   formatLifecycleChecksCount,
 } from './dvaAnalytics';
 
@@ -2246,7 +2249,17 @@ async function buildVisualDocx(options: {
           new Paragraph({
             children: [
               new TextRun({
-                text: `Итого: ${formatLifecycleChecksCount(checkLifecycle!.length)}`,
+                text: (() => {
+                  const lifecycleModel = buildCheckLifecycleChartModel(checkLifecycle!);
+                  const averageLifecycle = averageLifecycleDurationDays(lifecycleModel.rows);
+                  const parts = [`Итого: ${formatLifecycleChecksCount(checkLifecycle!.length)}`];
+                  if (averageLifecycle !== null) {
+                    parts.push(
+                      `Средняя продолжительность жизненного цикла: ${formatDurationDays(averageLifecycle.averageDays)}`,
+                    );
+                  }
+                  return parts.join(' · ');
+                })(),
                 color: '64748B',
                 size: 18,
               }),

@@ -130,15 +130,15 @@
 
 ## Состояния
 
-`LoadingState` — спиннер `sber-dark`. `ErrorState` — `border-red-200 bg-red-50`. `EmptyState` — `bg-gray-50`, по центру.
+`LoadingState` / `ErrorState` / `EmptyState` — экспорты из `src/components/ui/StateMessage.tsx`. Спиннер `sber-dark`; ошибка — `border-red-200 bg-red-50`; пусто — `bg-gray-50`, по центру.
 
 ## Аналитика и планирование
 
 Каркас: `AnalyticsDashboardFrame` — сайдбар фильтров + основная колонка (`lg:-mt-[84px]`, чтобы сетка поднялась к уровню шапки).
 
-- Фильтры: год / квартал (`MultiCheckboxSelect`), аудиторы, департаменты; сброс — outline; экспорт — save + select формата.
+- Фильтры: год / квартал (`MultiCheckboxSelect`), аудиторы, департаменты; сброс — outline; экспорт вкладки — save + select формата; кнопка **«Добавить в конструктор (N)»**.
 - Сетка: `react-grid-layout`, карточки `static` (без drag). KPI-сводка («Итого») над сеткой.
-- `ChartCard`: `rounded-lg border bg-white shadow-sm`, тулбар (экспорт секции, fullscreen, PNG/SVG/PDF).
+- `ChartCard`: `rounded-lg border bg-white shadow-sm`; тулбар — чекбокс **«В конструктор»**, **PNG в буфер обмена** (с фильтрами / без), fullscreen. SVG/PDF с карточки нет.
 - `KpiCard`: цветная заливка по `tone` / `accentColor`.
 - Матрицы: `MatrixChartShell`, сортируемые заголовки navy.
 
@@ -146,6 +146,6 @@
 
 ## Компоненты UI kit
 
-`src/components/ui/`: `Button`, `Input`, `Select`, `MultiCheckboxSelect`, `Textarea`, `DatePicker`, `Modal` / `ModalActions` / `ConfirmDialog`, `PageHeader`, `SegmentedControl`, `LoadingState` / `ErrorState` / `EmptyState`.
+`src/components/ui/`: `Button`, `Input`, `Select`, `MultiCheckboxSelect`, `Textarea`, `DatePicker`, `Modal` / `ModalActions` / `ConfirmDialog`, `PageHeader`, `SegmentedControl`, `StateMessage` (`LoadingState` / `ErrorState` / `EmptyState`).
 
-Рядом, не kit, но общие: `FormPageHeader`, `EntityListHeader`, list-контролы, `ActionButtons`, `ChartCard` / `KpiCard`.
+Рядом, не kit, но общие: `FormPageHeader`, `FormPageShell`, `FormValidationBanner`, `EntityListHeader`, list-контролы, `ActionButtons`, `ChartCard` / `KpiCard`.

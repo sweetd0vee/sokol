@@ -30,8 +30,10 @@
 sokol/
 ├── README.md · DOCKER.md · PLAN.md
 ├── docs/
+├── data/                 # Excel seed (checks / recommendations)
 ├── sokol-backend/
-└── sokol-frontend/
+├── sokol-frontend/
+└── sokol-instruments/    # legacy Streamlit
 ```
 
 ## Backend
@@ -87,7 +89,7 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 | Tools | `tabs/ToolsTab.tsx`, `api/tools.ts` | `instruments_reports.py`, `services/reports/` |
 | Справочники | `tabs/SettingsTab.tsx` | `/settings/*` |
 
-`serial_number` frontend не считает. Виды проверок в Settings — с API; в форме/фильтрах списка пока `CHECK_VIEW_OPTIONS`.
+`serial_number` frontend не считает. Виды проверок в Settings, форме проверки и фильтрах списка — из `/settings/check_kinds` (`useCheckKindOptions`).
 
 ## Новая CRUD-фича
 
@@ -95,12 +97,12 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 
 ## Запуск
 
-```powershell
+```bash
 # backend
 cd sokol-backend
-.\venv\Scripts\Activate.ps1
+python3.12 -m venv venv && source venv/bin/activate   # Windows: .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-copy .secrets\sokol.env.example .secrets\sokol.env
+cp .secrets/sokol.env.example .secrets/sokol.env
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8802
 
 # frontend
@@ -111,14 +113,14 @@ npm run dev
 
 UI: `http://localhost:5180`. Swagger: `http://localhost:8802/docs`.
 
-Dev-логины (после seed, если `users` пуста): `Админ А.А.` / `admin`, `Ковалев С.С.` / `admin` (department_head), аудиторы / `auditor`.
+Dev-логины (после seed, если `users` пуста): `Админ А.А.` / `admin` (alias `admin`), `Ковалев С.С.` / `admin` (department_head), аудиторы (ФИО) / `auditor`.
 
-```powershell
-cd sokol-frontend; npm run lint; npm test; npm run build
-cd sokol-backend; python -m compileall app tests; py -3.12 -m unittest discover -s tests
+```bash
+cd sokol-frontend && npm run lint && npm test && npm run build
+cd sokol-backend && python -m compileall app tests && python -m unittest discover -s tests
 ```
 
-Playwright (не в CI): `cd sokol-frontend; npm run test:e2e`.
+Playwright (не в CI): `cd sokol-frontend && npm run test:e2e`.
 
 ## С чего начать
 

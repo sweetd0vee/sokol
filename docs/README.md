@@ -4,7 +4,6 @@
 
 | Документ | Содержание |
 |----------|------------|
-| [SOKOL_слайд.html](SOKOL_слайд.html) | Слайд-сводка: строки кода, стек, Docker, БД/MinIO, API |
 | [PROJECT_CODE_GUIDE.md](PROJECT_CODE_GUIDE.md) | Карта кода для нового разработчика |
 | [APP_LIMITS_AND_GOTCHAS.md](APP_LIMITS_AND_GOTCHAS.md) | Лимиты, тонкости, типовые ошибки |
 | [MINIO.md](MINIO.md) | Бакеты, консоль, `mc`, бэкап |
@@ -13,16 +12,17 @@
 | [../sokol-frontend/docs/README.md](../sokol-frontend/docs/README.md) | Frontend: архитектура, analytics, constructor |
 | [../README.md](../README.md) · [../DOCKER.md](../DOCKER.md) | Быстрый старт |
 
-## План и ревью
+Бизнес-описание дашбордов: [SOKOL_Аналитика.docx](SOKOL_Аналитика.docx) (также копия и скриншоты в `sokol-frontend/docs/`).
 
-Источник go-live — [PLAN.md](../PLAN.md). Что ещё сделать на backend/frontend до промышленного контура — [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md). Ниже — снимок качества на **04.09.2026**, не календарь спринта.
+## План и ревью (исторические снимки)
+
+Документы ниже — снимок качества и go-live-плана на **04.09.2026**, не текущий статус продукта. Источник календаря того спринта — [PLAN.md](../PLAN.md). Открытые инженерные пункты из того снимка по-прежнему полезны как backlog: Alembic / migrate-runbook, demo default в compose, метка limited на planning, import dry-run, required CI checks, restore drill.
 
 | Документ | Содержание |
 |----------|------------|
-| [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md) | Остаток до продакшена: go-live, промышленный контур, «идеал» |
-| [CODE_REVIEW.md](CODE_REVIEW.md) | Сводка по блокам |
+| [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md) | Остаток до продакшена (снимок 04.09) |
+| [CODE_REVIEW.md](CODE_REVIEW.md) | Сводка по блокам (снимок 04.09) |
 | [CODE_REVIEW_BACKEND.md](CODE_REVIEW_BACKEND.md) | Backend |
 | [CODE_REVIEW_FRONTEND.md](CODE_REVIEW_FRONTEND.md) | Frontend |
-| [ACTION_PLAN.md](ACTION_PLAN.md) | Что ещё открыто из ревью (без дубля календаря PLAN.md) |
-
-Бизнес-описание дашбордов: [SOKOL_Аналитика.docx](SOKOL_Аналитика.docx).
+| [ACTION_PLAN.md](ACTION_PLAN.md) | Что ещё открыто из ревью |
+| [../PLAN.md](../PLAN.md) | Go-live план 01–15.09.2026 |

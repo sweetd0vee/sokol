@@ -1,5 +1,7 @@
 # Код-ревью frontend
 
+> **Исторический снимок (04.09.2026).** Актуальная архитектура: [sokol-frontend/docs/ARCHITECTURE.md](../sokol-frontend/docs/ARCHITECTURE.md).
+
 **Дата:** 4 сентября 2026  
 **Оценка:** 8.6 / 10 · React 19, TypeScript, Vite, TanStack Query
 
@@ -20,8 +22,6 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 
 ## Блоки
 
-## Блоки
-
 | Блок | Оценка | Ограничение |
 |------|--------|-------------|
 | Shell / routing | **9** | Нет lazy loading |
@@ -35,7 +35,7 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 | Constructor | **8.5** | Только localStorage, без backend |
 | Tools | **8** | Нет прогресса длинного job |
 | Exports | **7.5** | Таблицы data-driven; дашборды — DOM capture |
-| Tests | **9** | **160** Vitest; Playwright: 5 auth + constructor. CRUD e2e нет; Playwright не в CI |
+| Tests | **9** | На 04.09: **160** Vitest (сейчас ~199); Playwright: auth + constructor. CRUD e2e нет; Playwright не в CI |
 
 ## State
 

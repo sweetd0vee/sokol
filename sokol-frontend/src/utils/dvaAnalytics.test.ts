@@ -4,9 +4,11 @@ import {
   buildCheckLifecycleChartModel,
   buildCheckLifecycleExportRows,
   buildLifecycleAxisTicks,
+  averageLifecycleDurationDays,
   calendarDaysBetween,
   formatDurationDays,
   formatLifecycleChecksCount,
+  formatLifecycleChecksByCount,
   formatUnresolvedBarLabel,
   formatUnresolvedCheckLine,
   formatUnresolvedShare,
@@ -70,23 +72,26 @@ describe('check lifecycle', () => {
     expect(formatLifecycleChecksCount(1)).toBe('1 проверка');
     expect(formatLifecycleChecksCount(3)).toBe('3 проверки');
     expect(formatLifecycleChecksCount(11)).toBe('11 проверок');
+    expect(formatLifecycleChecksByCount(1)).toBe('по 1 проверке');
+    expect(formatLifecycleChecksByCount(34)).toBe('по 34 проверкам');
   });
 
   it('counts calendar days between local dates', () => {
     expect(calendarDaysBetween(parseDateValue('2026-01-10') ?? 0, parseDateValue('2026-01-27') ?? 0)).toBe(17);
   });
 
-  it('labels lifecycle months as MM.YY and keeps every month on the axis', () => {
+  it('labels lifecycle months compactly and keeps every month on the axis', () => {
     const start = new Date(2024, 10, 15).getTime();
     const end = new Date(2025, 2, 20).getTime();
     const ticks = buildLifecycleAxisTicks(start, end);
+    // Mid-November range start → first tick is December 1 (no edge-clamped smash).
     expect(ticks.map((tick) => tick.label)).toEqual([
-      '11.24',
-      '12.24',
+      '12',
       '01.25',
-      '02.25',
-      '03.25',
+      '02',
+      '03',
     ]);
+    expect(ticks[0]?.percent).toBeGreaterThan(0);
   });
 
   it('builds four milestones and three stage segments on a shared axis', () => {
@@ -128,6 +133,7 @@ describe('check lifecycle', () => {
     expect(model.rows[1]?.points).toHaveLength(1);
     expect(model.rows[1]?.segments).toHaveLength(0);
     expect(model.rows[1]?.totalDays).toBeNull();
+    expect(averageLifecycleDurationDays(model.rows)).toEqual({ averageDays: 41, sampleSize: 1 });
   });
 
   it('connects available milestones when a middle date is missing', () => {

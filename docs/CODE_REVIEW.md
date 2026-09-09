@@ -1,9 +1,11 @@
 # SOKOL — код-ревью
 
+> **Исторический снимок качества (04.09.2026),** не живая архитектура. Актуальные контракты: [sokol-backend/docs](../sokol-backend/docs/README.md), [sokol-frontend/docs](../sokol-frontend/docs/README.md).
+
 **Дата:** 4 сентября 2026  
 **Объект:** `sokol-backend`, `sokol-frontend`
 
-Снимок качества текущей реализации. Календарь go-live и UAT — [PLAN.md](../PLAN.md). Оставшиеся код-задачи — [ACTION_PLAN.md](ACTION_PLAN.md). Полный остаток до продакшена — [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
+Снимок качества на дату ревью. Календарь go-live и UAT того спринта — [PLAN.md](../PLAN.md). Оставшиеся код-задачи — [ACTION_PLAN.md](ACTION_PLAN.md). Полный остаток до продакшена — [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
 
 Оценка по блокам: **8–10** — пригодно для пилота; **6–7** — работает, есть эксплуатационный риск; **≤5** — нельзя считать готовым.
 
@@ -21,7 +23,7 @@
 | Frontend домен | **9** | Формы, undo импорта из АЗ, yearly №, конструктор дашбордов, виды из API | Списки &gt;10000 |
 | Frontend data | **7.5** | API + React Query; списки до 10000 | Нет server pagination |
 | Frontend analytics/export | **8** | Visual export аналитики и планирования; table export разнесён по форматам | DOM capture хрупкий |
-| Тесты / CI | **8.5** | Backend ~200 unittest, frontend **160** Vitest, Playwright auth + constructor | Required checks в GitHub не включены; Playwright не в CI |
+| Тесты / CI | **8.5** | Backend ~200 unittest, frontend **160** Vitest (на 04.09; сейчас ~221 / ~199), Playwright auth + constructor | Required checks в GitHub не включены; Playwright не в CI |
 | Документация | **8.5** | Backend/frontend docs и MinIO runbook | Alembic — цель, не факт |
 
 **Вердикт:** пилот на контролируемом объёме возможен. До промышленного контура: Alembic или подписанный migrate-runbook, CI merge gate, MinIO backup drill, метка limited на планировании. Полный остаток: [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).

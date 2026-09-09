@@ -210,27 +210,8 @@ export function DvaAnalyticsDashboard() {
         ),
       },
       {
-        id: 'auditorTimeliness',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 3 },
-        render: () => (
-          <ChartCard
-            title="Количество рекомендаций по сотрудникам (дополнительный статус)"
-            description=""
-            exportSectionId="auditorTimeliness"
-            exportSelected={exportSections.isSelected('auditorTimeliness')}
-            onToggleExport={() => exportSections.toggleSection('auditorTimeliness')}
-          >
-            {auditorTimeliness.length === 0 ? (
-              <EmptyChart message="Нет данных" />
-            ) : (
-              <AuditorStackedBarChart data={auditorTimeliness} series={[...TIMELINESS_SERIES]} totalKey="total" />
-            )}
-          </ChartCard>
-        ),
-      },
-      {
         id: 'auditorImpact',
-        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 3 },
+        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Количество рекомендаций по сотрудникам (существенность)"
@@ -243,6 +224,25 @@ export function DvaAnalyticsDashboard() {
               <EmptyChart message="Нет данных" />
             ) : (
               <AuditorStackedBarChart data={auditorImpact} series={[...IMPACT_SERIES]} totalKey="total" />
+            )}
+          </ChartCard>
+        ),
+      },
+      {
+        id: 'auditorTimeliness',
+        defaultLayout: { x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 3 },
+        render: () => (
+          <ChartCard
+            title="Количество рекомендаций по сотрудникам (дополнительный статус)"
+            description=""
+            exportSectionId="auditorTimeliness"
+            exportSelected={exportSections.isSelected('auditorTimeliness')}
+            onToggleExport={() => exportSections.toggleSection('auditorTimeliness')}
+          >
+            {auditorTimeliness.length === 0 ? (
+              <EmptyChart message="Нет данных" />
+            ) : (
+              <AuditorStackedBarChart data={auditorTimeliness} series={[...TIMELINESS_SERIES]} totalKey="total" />
             )}
           </ChartCard>
         ),

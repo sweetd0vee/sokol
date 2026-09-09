@@ -23,7 +23,7 @@
 - `GET /api/v1/checks?limit=10000`
 - `GET /api/v1/recommendations?limit=10000`
 
-Backend `limit` max 10000. Фильтры, сортировка, пагинация таблицы (по 50) и экспорт таблиц — по загруженному набору. Banner «показано N из M» нет.
+Backend `limit` max 10000. Фильтры, сортировка, пагинация таблицы (по 50) и экспорт таблиц — по загруженному набору. Пагинация показывает «Показано X–Y из Z» для **загруженного** набора; отдельного предупреждения, что в БД больше 10000 строк, нет.
 
 Если данных станет больше 10000: server-side pagination/search; export «страница / все через backend»; формы — lookup по id/serial, не весь список.
 
@@ -88,7 +88,7 @@ OIDC нет. Смена пароля — `POST /auth/change-password`. Ават�
 
 API create/update валидирует labels; физические FK с `ON UPDATE CASCADE`. Import Excel **досоздаёт** неизвестные labels (`ensure_*`), в отличие от UI.
 
-`serial_number` только backend. Смена даты / квартала / руководителя / типа пересчитывает ключ, rec serial, attachments и MinIO bucket. Квартал (`check_quarter` 1–4) участвует в ключе.
+`serial_number` только backend. Смена даты / квартала / руководителя / типа пересчитывает ключ, rec serial, attachments и MinIO bucket. Смена `auditors.code` также каскадно переписывает ключи проверок этого руководителя и MinIO buckets. Квартал (`check_quarter` 1–4) участвует в ключе.
 
 ## Импорт из АЗ
 

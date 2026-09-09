@@ -450,7 +450,7 @@ export function ChartCard({
             ? 'h-full min-h-0 overflow-auto rounded-lg bg-white p-2'
             : 'h-full min-h-0 overflow-auto rounded-lg bg-white p-2 [&>*]:!h-full [&_.recharts-responsive-container]:!h-full'
           : fitContent
-            ? 'rounded-lg bg-white'
+            ? 'min-w-0 rounded-lg bg-white'
             : 'min-h-[13rem] rounded-lg bg-white lg:min-h-0 lg:flex-1 lg:[&>*]:!h-full lg:[&_.recharts-responsive-container]:!h-full'
       }
     >
@@ -479,7 +479,7 @@ export function ChartCard({
     return (
       <section
         ref={exportCardRef}
-        className={`${fitContent ? 'flex w-full flex-col' : 'flex h-full flex-col'} rounded-lg border bg-white p-1.5 shadow-sm ${accentClassName} ${className}`}
+        className={`${fitContent ? 'flex w-full min-w-0 flex-col' : 'flex h-full flex-col'} rounded-lg border bg-white p-1.5 shadow-sm ${accentClassName} ${className}`}
       >
         <div className="mb-0.5 flex items-start justify-between gap-1.5">
           <div className="min-w-0 space-y-0">

@@ -12,7 +12,7 @@ UI и бизнес-логика **не ходят в MinIO напрямую**: �
 |-----|------------|
 | S3 API | http://localhost:9000 |
 | Консоль (браузер) | http://localhost:9001 |
-| Данные на диске (Windows) | `%USERPROFILE%\docker-share\minio-data-sokol` |
+| Данные на диске | `~/docker-share/minio-data-sokol` (Windows: `%USERPROFILE%\docker-share\minio-data-sokol`) |
 | Из контейнера API | `minio:9000` |
 
 Логин консоли — `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (в `.env`, по умолчанию `sokol` / `change-me`). Те же значения обычно стоят в `SOKOL_MINIO_ACCESS_KEY` / `SOKOL_MINIO_SECRET_KEY`: backend ходит в MinIO как root-пользователь инстанса.

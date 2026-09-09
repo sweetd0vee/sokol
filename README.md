@@ -1,13 +1,13 @@
 # SOKOL
 
-Внутренний инструмент аудита: React UI + FastAPI API + PostgreSQL.
+Внутренний инструмент аудита: React UI + FastAPI API + PostgreSQL + MinIO.
 
 ## Порты
 
-| Режим | UI | API / Swagger | Postgres |
-|-------|-----|---------------|----------|
-| Локальная разработка | http://localhost:5180 | http://localhost:8802/docs | localhost:5433 |
-| Docker | http://localhost:5180 | http://localhost:8800/docs | localhost:5433 |
+| Режим | UI | API / Swagger | Postgres | MinIO |
+|-------|-----|---------------|----------|-------|
+| Локальная разработка | http://localhost:5180 | http://localhost:8802/docs | localhost:5433 | 9000 / 9001 |
+| Docker | http://localhost:5180 | http://localhost:8800/docs | localhost:5433 | 9000 / 9001 |
 
 Локально API слушает **8802**, фронт проксирует `/api` туда же. В Docker API на **8800**.
 
@@ -17,11 +17,13 @@
 
 **Локально** — два терминала:
 
-```powershell
+```bash
 # 1. Backend
 cd sokol-backend
-.\venv\Scripts\Activate.ps1   # после venv + pip install -r requirements.txt
-copy .secrets\sokol.env.example .secrets\sokol.env
+python3.12 -m venv venv
+source venv/bin/activate   # Windows: .\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+cp .secrets/sokol.env.example .secrets/sokol.env   # Windows: copy ...
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8802
 ```
 
@@ -34,13 +36,18 @@ npm run dev
 
 Откройте http://localhost:5180. Подробности: [sokol-backend/README.md](sokol-backend/README.md), [sokol-frontend/README.md](sokol-frontend/README.md).
 
+Dev-логины (после seed, если `users` пуста): `Админ А.А.` / `admin` (или alias `admin`), `Ковалев С.С.` / `admin` (`department_head`), аудиторы (ФИО) / `auditor`.
+
 ## Структура репозитория
 
 ```
 sokol/
 ├── docker-compose.yml
 ├── DOCKER.md
-├── PLAN.md                 # план развития
+├── PLAN.md                 # исторический go-live план (04.09.2026)
+├── docs/                   # гайд, лимиты, MinIO, CI, снимки ревью
+├── data/                   # Excel seed (checks.xlsx, recommendations.xlsx)
+├── .github/workflows/      # CI
 ├── sokol-backend/          # FastAPI
 ├── sokol-frontend/         # React + Vite
 └── sokol-instruments/      # legacy Streamlit (не основной стек)
@@ -50,23 +57,26 @@ sokol/
 
 | Раздел | Содержание |
 |--------|------------|
-| [docs/README.md](docs/README.md) | Код-ревью и план действий |
+| [docs/README.md](docs/README.md) | Индекс: живые доки и исторические снимки |
+| [docs/PROJECT_CODE_GUIDE.md](docs/PROJECT_CODE_GUIDE.md) | Карта кода для нового разработчика |
 | [docs/APP_LIMITS_AND_GOTCHAS.md](docs/APP_LIMITS_AND_GOTCHAS.md) | Лимиты, тонкости и типовые проблемы |
-| [docs/CI.md](docs/CI.md) | CI workflow и обязательный GitHub gate |
+| [docs/CI.md](docs/CI.md) | CI workflow и GitHub merge gate |
 | [sokol-backend/README.md](sokol-backend/README.md) | Запуск, env, тесты |
 | [sokol-backend/docs/](sokol-backend/docs/README.md) | Архитектура, API, БД, reports |
 | [sokol-frontend/README.md](sokol-frontend/README.md) | Скрипты, маршруты, env |
 | [sokol-frontend/docs/](sokol-frontend/docs/README.md) | Архитектура, аналитика, UI |
-| [PLAN.md](PLAN.md) | Roadmap и go-live |
+| [PLAN.md](PLAN.md) | Исторический roadmap / go-live (не «текущий статус») |
 
 ## Возможности
 
-- **Auth** — JWT (`POST /api/v1/auth/login`), роли `auditor` / `admin`. Dev: `admin`/`admin`, `auditor`/`auditor`.
+- **Auth** — JWT (`POST /api/v1/auth/login`), роли `auditor` / `department_head` / `admin`. `department_head` входит в admin-права (`require_admin` / UI `isAdmin`).
 - **Проверки и рекомендации** — CRUD, фильтры, экспорт таблиц, вложения (MinIO), импорт рекомендаций из АЗ.
 - **Аналитика** — `GET /api/v1/analytics/{checks|recommendations|monitoring|dva|planning}`.
-- **Инструменты** — Раздел II АЗ, докладная записка, парсинг рекомендаций.
-- **Настройки** — справочники (mutate — только `admin`).
-- **Канцлер** — заглушка «в разработке».
+- **Планирование / конструктор** — `/planning` (visual export) и `/constructor` (снимки в localStorage).
+- **Инструменты** — Раздел II АЗ, докладная записка, парсинг рекомендаций, файл контроля.
+- **Настройки** — справочники (mutate — admin / department_head).
+
+Маршрута «Канцлер» нет; неизвестный URL → `/checks`.
 
 ## Проверки качества
 
@@ -74,11 +84,11 @@ CI: `.github/workflows/ci.yml`; required checks для branch protection опи�
 
 ```bash
 cd sokol-frontend && npm run lint && npm test && npm run build
-cd sokol-backend && py -3.12 -m unittest discover -s tests
+cd sokol-backend && python -m unittest discover -s tests   # Python 3.12+
 ```
 
 ## Частые проблемы
 
 - **500 / proxy в «Инструменты»** — бэкенд не на **8802** или не запущен.
 - **CORS** — `SOKOL_CORS_ORIGINS=http://localhost:5180` в `sokol-backend/.secrets/sokol.env`.
-- **Порт занят** — `netstat -ano | findstr :8802` → `taskkill /PID <pid> /F` (аналогично для 5180, 8800).
+- **Порт занят** — macOS/Linux: `lsof -i :8802`; Windows: `netstat -ano | findstr :8802`.
