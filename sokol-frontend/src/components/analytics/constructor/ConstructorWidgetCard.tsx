@@ -78,13 +78,19 @@ export function ConstructorWidgetCard({
               >
                 <GripVertical className="h-3.5 w-3.5" />
               </button>
-              <h3 className="truncate text-sm font-semibold leading-snug text-sber-dark" title={widget.filterCaption}>
-                {widget.title}
-              </h3>
+              <h3 className="truncate text-sm font-semibold leading-snug text-sber-dark">{widget.title}</h3>
               <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${SOURCE_BADGE[widget.kind]}`}>
                 {CONSTRUCTOR_SOURCE_LABELS[widget.kind]}
               </span>
             </div>
+            {widget.description ? (
+              <p className="ml-7 truncate text-xs leading-snug text-gray-500">{widget.description}</p>
+            ) : null}
+            {widget.filterCaption ? (
+              <p className="ml-7 truncate text-[11px] leading-snug text-gray-400" title={widget.filterCaption}>
+                {widget.filterCaption}
+              </p>
+            ) : null}
           </div>
           <button
             type="button"
