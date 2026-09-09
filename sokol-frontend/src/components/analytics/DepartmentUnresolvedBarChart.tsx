@@ -1,15 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pin, X } from 'lucide-react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  LabelList,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import type { PlanningUnresolvedDepartmentRow } from '../../api/analytics';
 import { formatUnresolvedCheckLine } from '../../utils/dvaAnalytics';
 import {
@@ -21,114 +11,26 @@ import {
 } from './AnalyticsChartPrimitives';
 import { MONITORING_STATUS_COLORS } from './analyticsPalette';
 
-const LABEL_SHARE = 0.55;
-const MIN_CATEGORY_WIDTH = 280;
-const MIN_PLOT_WIDTH = 140;
-const CHART_LEFT_MARGIN = 4;
-const CHART_RIGHT_MARGIN = 36;
-const AVG_CHAR_PX = 8.2;
-const NAME_MAX_LINES = 2;
-const LABEL_LINE_HEIGHT = 15;
 const HIDE_DELAY_MS = 220;
 const BAR_COLOR = MONITORING_STATUS_COLORS.unresolved;
+const GRID_COLUMNS = 'minmax(0,1fr) minmax(0,1fr)';
 
-function categoryWidthFromContainer(containerWidth: number) {
-  if (containerWidth <= 0) {
-    return 360;
+function niceMax(value: number) {
+  if (value <= 0) {
+    return 5;
   }
-  const reserved = CHART_LEFT_MARGIN + CHART_RIGHT_MARGIN + MIN_PLOT_WIDTH;
-  const maxAllowed = Math.max(160, containerWidth - reserved);
-  const byShare = Math.round(containerWidth * LABEL_SHARE);
-  return Math.min(Math.max(byShare, Math.min(MIN_CATEGORY_WIDTH, maxAllowed)), maxAllowed);
+  const step = value <= 10 ? 2 : 5;
+  const rounded = Math.ceil(value / step) * step;
+  return rounded === value ? rounded + step : rounded;
 }
 
-function wrapDepartmentName(name: string, maxCharsPerLine: number, maxLines = NAME_MAX_LINES) {
-  const limit = Math.max(8, maxCharsPerLine);
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let current = '';
-
-  const pushWord = (word: string) => {
-    const next = current ? `${current} ${word}` : word;
-    if (next.length <= limit) {
-      current = next;
-      return;
-    }
-    if (current) {
-      lines.push(current);
-    }
-    current = word;
-  };
-
-  words.forEach((word) => {
-    if (word.length <= limit) {
-      pushWord(word);
-      return;
-    }
-    for (let start = 0; start < word.length; start += limit) {
-      pushWord(word.slice(start, start + limit));
-    }
-  });
-
-  if (current) {
-    lines.push(current);
+function axisTicks(max: number) {
+  const step = max <= 10 ? 2 : 5;
+  const ticks: number[] = [];
+  for (let value = 0; value <= max; value += step) {
+    ticks.push(value);
   }
-
-  if (lines.length <= maxLines) {
-    return lines.length > 0 ? lines : [name];
-  }
-
-  const kept = lines.slice(0, maxLines);
-  const last = kept[maxLines - 1] ?? '';
-  kept[maxLines - 1] = last.endsWith('…')
-    ? last
-    : `${last.slice(0, Math.max(1, limit - 1))}…`;
-  return kept;
-}
-
-function nameFromChartState(state: { activeLabel?: unknown } | null | undefined): string | null {
-  return typeof state?.activeLabel === 'string' ? state.activeLabel : null;
-}
-
-function nameFromBarClick(item: { name?: unknown; payload?: { name?: unknown } }): string | null {
-  if (typeof item.payload?.name === 'string') {
-    return item.payload.name;
-  }
-  return typeof item.name === 'string' ? item.name : null;
-}
-
-function DepartmentAxisTick({
-  x = 0,
-  y = 0,
-  payload,
-  maxCharsPerLine = 40,
-}: {
-  x?: number | string;
-  y?: number | string;
-  payload?: { value?: string };
-  maxCharsPerLine?: number;
-}) {
-  const full = String(payload?.value ?? '');
-  const lines = wrapDepartmentName(full, maxCharsPerLine);
-  const startDy = lines.length === 1 ? 4 : 4 - ((lines.length - 1) * LABEL_LINE_HEIGHT) / 2;
-
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <title>{full}</title>
-      <text
-        x={-4}
-        textAnchor="end"
-        fill="#64748B"
-        fontSize={CHART_CATEGORY_AXIS_TICK.fontSize}
-      >
-        {lines.map((line, index) => (
-          <tspan key={`${line}-${index}`} x={-4} dy={index === 0 ? startDy : LABEL_LINE_HEIGHT}>
-            {line}
-          </tspan>
-        ))}
-      </text>
-    </g>
-  );
+  return ticks;
 }
 
 function UnresolvedChecksPanel({
@@ -206,6 +108,20 @@ function UnresolvedChecksPanel({
   );
 }
 
+function BarGridLines({ ticks, max }: { ticks: number[]; max: number }) {
+  return (
+    <div className="pointer-events-none absolute inset-0" aria-hidden>
+      {ticks.map((tick) => (
+        <div
+          key={tick}
+          className="absolute inset-y-0 border-l border-dashed border-slate-200"
+          style={{ left: `${(tick / max) * 100}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function DepartmentUnresolvedBarChart({
   data,
 }: {
@@ -213,15 +129,16 @@ export function DepartmentUnresolvedBarChart({
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<number | null>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
   const [activeName, setActiveName] = useState<string | null>(null);
   const [pinnedName, setPinnedName] = useState<string | null>(null);
 
   const chartData = useMemo(() => data.filter((row) => row.value > 0), [data]);
   const rowsByName = useMemo(() => new Map(chartData.map((row) => [row.name, row])), [chartData]);
-  const categoryWidth = categoryWidthFromContainer(containerWidth);
-  const maxCharsPerLine = Math.max(12, Math.floor((categoryWidth - 12) / AVG_CHAR_PX));
-  const chartHeight = Math.max(208, chartData.length * 44 + 16);
+  const maxValue = useMemo(
+    () => niceMax(Math.max(0, ...chartData.map((row) => row.value))),
+    [chartData],
+  );
+  const ticks = useMemo(() => axisTicks(maxValue), [maxValue]);
 
   const visibleName = pinnedName ?? activeName;
   const visibleRow = visibleName ? (rowsByName.get(visibleName) ?? null) : null;
@@ -258,23 +175,16 @@ export function DepartmentUnresolvedBarChart({
     setActiveName(null);
   };
 
-  useEffect(() => {
-    return () => cancelHide();
-  }, []);
+  const showRow = (name: string) => {
+    if (pinnedName) {
+      return;
+    }
+    cancelHide();
+    setActiveName((current) => (current === name ? current : name));
+  };
 
   useEffect(() => {
-    const node = rootRef.current;
-    if (!node) {
-      return undefined;
-    }
-    const update = () => setContainerWidth(node.clientWidth);
-    update();
-    if (typeof ResizeObserver === 'undefined') {
-      return undefined;
-    }
-    const observer = new ResizeObserver(update);
-    observer.observe(node);
-    return () => observer.disconnect();
+    return () => cancelHide();
   }, []);
 
   useEffect(() => {
@@ -303,70 +213,76 @@ export function DepartmentUnresolvedBarChart({
   }, [pinnedName]);
 
   return (
-    <div ref={rootRef} className="relative h-full min-h-[13rem]">
-      <div className="h-full overflow-auto">
-        <div style={{ height: chartHeight, minHeight: '100%' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              layout="vertical"
-              barCategoryGap={8}
-              maxBarSize={28}
-              margin={{ top: 8, right: CHART_RIGHT_MARGIN, left: CHART_LEFT_MARGIN, bottom: 0 }}
-              onMouseMove={(state) => {
-                if (pinnedName) {
-                  return;
-                }
-                const name = nameFromChartState(state);
-                if (!name) {
-                  return;
-                }
-                cancelHide();
-                setActiveName((current) => (current === name ? current : name));
-              }}
-              onMouseLeave={requestHide}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
-              <YAxis
-                type="category"
-                dataKey="name"
-                width={categoryWidth}
-                interval={0}
-                tick={(props) => <DepartmentAxisTick {...props} maxCharsPerLine={maxCharsPerLine} />}
-              />
-              <Bar
-                dataKey="value"
-                name="Не решено"
-                fill={BAR_COLOR}
-                radius={[0, 6, 6, 0]}
-                cursor="pointer"
-                onClick={(item) => {
-                  const name = nameFromBarClick(item);
-                  if (!name) {
-                    return;
-                  }
+    <div ref={rootRef} className="relative flex h-full min-h-[13rem] flex-col">
+      <div className="min-h-0 flex-1 overflow-auto px-4" onMouseLeave={requestHide}>
+        <div className="flex flex-col">
+          {chartData.map((row) => {
+            const isActive = visibleName === row.name;
+            const muted = Boolean(visibleName) && !isActive;
+            const barWidth = `${(row.value / maxValue) * 100}%`;
+            return (
+              <div
+                key={row.name}
+                className="grid cursor-pointer items-center gap-x-4 py-1.5"
+                style={{ gridTemplateColumns: GRID_COLUMNS }}
+                onMouseEnter={() => showRow(row.name)}
+                onClick={() => {
                   cancelHide();
-                  setActiveName(name);
-                  setPinnedName((current) => (current === name ? null : name));
+                  setActiveName(row.name);
+                  setPinnedName((current) => (current === row.name ? null : row.name));
                 }}
               >
-                {chartData.map((row) => (
-                  <Cell
-                    key={row.name}
-                    fill={BAR_COLOR}
-                    fillOpacity={visibleName && visibleName !== row.name ? 0.35 : 1}
+                <p
+                  className="text-right leading-snug text-slate-500"
+                  style={{ fontSize: CHART_CATEGORY_AXIS_TICK.fontSize }}
+                >
+                  {row.name}
+                </p>
+                <div
+                  className="relative flex min-h-[1.75rem] items-center border-l border-slate-200"
+                  style={{ backgroundColor: isActive ? 'rgba(15, 23, 42, 0.04)' : undefined }}
+                >
+                  <BarGridLines ticks={ticks} max={maxValue} />
+                  <div
+                    className="relative z-[1] h-7 rounded-r-md"
+                    style={{
+                      width: barWidth,
+                      backgroundColor: BAR_COLOR,
+                      opacity: muted ? 0.35 : 1,
+                    }}
                   />
-                ))}
-                <LabelList
-                  dataKey="value"
-                  position="right"
-                  fontSize={CHART_VALUE_LABEL_SIZE}
-                  fontWeight={CHART_VALUE_LABEL_WEIGHT}
-                />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+                  <span
+                    className="absolute z-[1] -translate-y-1/2 text-slate-600"
+                    style={{
+                      top: '50%',
+                      left: `calc(${barWidth} + 6px)`,
+                      fontSize: CHART_VALUE_LABEL_SIZE,
+                      fontWeight: CHART_VALUE_LABEL_WEIGHT,
+                    }}
+                  >
+                    {row.value}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div
+        className="grid shrink-0 gap-x-4 px-4 pb-1 pt-0.5"
+        style={{ gridTemplateColumns: GRID_COLUMNS }}
+      >
+        <div />
+        <div className="relative h-6 border-l border-slate-200">
+          {ticks.map((tick) => (
+            <span
+              key={tick}
+              className="absolute top-0 -translate-x-1/2 text-slate-500 first:translate-x-0 last:translate-x-[-100%]"
+              style={{ left: `${(tick / maxValue) * 100}%`, fontSize: CHART_AXIS_TICK.fontSize }}
+            >
+              {tick}
+            </span>
+          ))}
         </div>
       </div>
       {visibleRow ? (
