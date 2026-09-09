@@ -55,6 +55,8 @@ erDiagram
 
 При смене `start_date` / `check_quarter` / `check_leader` / `check_type` backend пересчитывает ключ, обновляет `recommendations.serial_number` и `attachments.check_serial_number`/`bucket`, копирует объекты MinIO в новый bucket и удаляет старый. Массово: `python -m app.db.recalculate_check_serial_numbers`.
 
+Смена `auditors.code` запускает тот же каскад для всех проверок руководителя (`app/services/check_serial_cascade.py`).
+
 `check_type` — код ключа, не FK на `audit_types` (КП/ВП/ПП).
 
 ## Валидация справочников
@@ -112,7 +114,8 @@ List search: `check_name`, `check_leader`, `serial_number`.
 | `status` / `additional_status` | enum | |
 | `created_at` | date | |
 | `actual_completion_date` | date? | |
-| `extension_1_*`, `extension_2_*` | mixed | legacy-поля первого/второго переноса |
+| `extension_1_*` | mixed | legacy первого переноса (`date` / `reason` / `comment`) |
+| `extension_2_reason`, `extension_2_comment` | mixed | legacy второго переноса (**без** `extension_2_date`) |
 | `remove_from_control_*` | mixed | legacy снятия с контроля |
 | `deadline_extensions`, `control_removals` | JSON | список `{date?, comment?}`; `create_all` → `JSON`, migrate на живой БД может дать `JSONB` |
 | `closure_verification_status` | varchar(64)? | |
@@ -142,7 +145,7 @@ Create/batch ищут проверку по `serial_number`. Вход `audit_obj
 |------|-----|-------|
 | `id` | UUID PK | |
 | `username` | varchar(255) UK | логин |
-| `password_hash` | varchar(255) | |
+| `password_hash` | varchar(255) | PBKDF2-SHA256; legacy plaintext verify на login |
 | `role` | varchar(32) | `admin` / `department_head` / `auditor`; `ADMIN_ROLES` = первые два |
 | `display_name` | varchar(255) | |
 | `aliases` | varchar(500)? | варианты имени через запятую; login/lookup матчит username и aliases |
@@ -180,19 +183,19 @@ Create/batch ищут проверку по `serial_number`. Вход `audit_obj
 
 Из моделей: PK, unique `serial_number` / labels / username / auditor code, FK indexes (`check_id`, `check_leader`, `auditor`, entity lookup).
 
-Из `migrate_analytics_indexes` (bootstrap): `ix_checks_start_date`, `ix_checks_status`, `ix_recommendations_deadline`, GIN `audit_object`, `ix_recommendations_status`, `ix_recommendations_materiality_level`, `ix_recommendations_deadline_status`. Плюс `ix_attachments_entity_lookup`.
+Из `migrate_analytics_indexes` (bootstrap): `ix_checks_start_date`, `ix_checks_status`, `ix_checks_check_leader`, `ix_recommendations_deadline`, `ix_recommendations_auditor`, GIN `audit_object` (`ix_recommendations_audit_object_gin`), `ix_recommendations_status`, `ix_recommendations_materiality_level`, `ix_recommendations_deadline_status`. Плюс `ix_attachments_entity_lookup` из migrate attachments.
 
 ## Аналитика
 
-Отдельного data mart нет. Период проверок — `checks.start_date`.
+Отдельного data mart нет. Период проверок — `checks.start_date`. Контракт ответов — [API.md](API.md) / `app/schemas/analytics.py`.
 
 | Endpoint | Поля |
 |----------|------|
-| checks | status, type, view, leader, effectiveness, объекты через rec |
-| recommendations | status, additional_status, deadline, materiality, indicator, audit_object, auditor |
-| monitoring | то же + extensions / removals / completed-during-audit |
-| dva | нагрузка/документы аудиторов, treemap, готовность приказ/программа/АЗ/ДЗ |
-| planning | покрытие `departments` проверками; **без** фильтра `auditors` |
+| checks | status, type, view, leader, effectiveness, `completionShare`, объекты через rec |
+| recommendations | status, additional_status, deadline, materiality, indicator, audit_object, auditor + distribution/summary extras |
+| monitoring | то же + extensions / removals / completed-during-audit + summary/series |
+| dva | load/impact/execution/timeliness/documents, treemap, readiness, lifecycle |
+| planning | `coverage`, department analytics, high-materiality; **без** фильтра `auditors` |
 
 ## Пакет `app/db`
 
@@ -220,4 +223,4 @@ Bootstrap-миграции (порядок):
 9. `migrate_recommendation_additional_indicator`
 10. `migrate_analytics_indexes`
 
-Остальные `migrate_*` (short_name, recommendation fields, closure, audit_object array/canonical, statuses, materiality) — только для стендов, поднятых до появления полей в `create_all`. `migrate_recommendation_indicators` — одноразовый remap индикаторов/статусов, **не** для живой БД.
+Остальные `migrate_*` (short_name, recommendation fields, closure lists, audit_object array/canonical, statuses, materiality) — только для стендов, поднятых до появления полей в `create_all`. `migrate_recommendation_indicators` — одноразовый remap индикаторов/статусов, **не** для живой БД. Import при необходимости досоздаёт labels через `ensure_dictionary_refs`.

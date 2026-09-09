@@ -55,7 +55,7 @@ HTTP Basic: в `development` включён; в `SOKOL_ENV=prod` выключе�
 
 **Query list:** `skip` (≥0, default 0), `limit` (1…10000, default 200), `search?` (min 1; имя / руководитель / ключ), `status?` (`not_started` \| `in_progress` \| `completed`), `check_type?` (`planned` \| `unscheduled` \| `thematic`).
 
-**Create:** `check_name`, `short_name?`, `check_type`, `check_view`, **`check_quarter`** (1–4), `start_date`, `end_date?`, `check_leader`, `status`, `created_at?` (default сегодня), `description?`, `*_effectiveness?`, документы приказа/программы/АЗ/ДЗ. `serial_number` клиент не шлёт: backend генерирует и пересчитывает при смене `start_date` / `check_quarter` / `check_leader` / `check_type` (синхронизация rec serial + MinIO bucket).
+**Create:** `check_name`, `short_name?`, `check_type` (строка ≤32; в ключе: `planned`→P, `unscheduled`→V, `thematic`→K, иначе пустой type-code), `check_view`, **`check_quarter`** (1–4), `start_date`, `end_date?`, `check_leader`, `status`, `created_at?` (default сегодня), `description?`, `*_effectiveness?`, документы приказа/программы/АЗ/ДЗ. `serial_number` клиент не шлёт: backend генерирует и пересчитывает при смене `start_date` / `check_quarter` / `check_leader` / `check_type` (синхронизация rec serial + MinIO bucket).
 
 **Read:** те же поля + `id`, `serial_number`, `created_at`.
 
@@ -68,7 +68,7 @@ HTTP Basic: в `development` включён; в `SOKOL_ENV=prod` выключе�
 | Method | Path | Описание |
 |--------|------|----------|
 | `POST` | `/recommendations` | 201; проверка ищется по `serial_number` |
-| `POST` | `/recommendations/batch` | atomic append/replace для проверки; `mode` = `append` \| `replace`, 1…200 items; 201 `{ items, total }` |
+| `POST` | `/recommendations/batch` | atomic append/replace для проверки; body `{ serial_number, mode: append\|replace, items: [...] }`, 1…200 items; `serial_number` item'ов перезаписывается с проверки; 201 `{ items, total }`. **Ownership не проверяется** (в отличие от DELETE / batch-delete). `mode=replace` удаляет существующие рекомендации **и их MinIO-вложения** |
 | `POST` | `/recommendations/batch-delete` | 204, 1…200 ids; та же модель владения, что `DELETE` |
 | `GET` | `/recommendations` | список |
 | `GET` | `/recommendations/{id}` | одна |
@@ -91,20 +91,20 @@ Search: название, наблюдение, описание, объект �
 
 ## Analytics — `/api/v1/analytics`
 
-Агрегаты по всей БД, без лимита list API. Ответы в **camelCase** (`serialization_alias`). Отдельных таблиц нет. Конструктор дашбордов на backend **нет**.
+Агрегаты по всей БД, без лимита list API. Ответы в **camelCase** (`serialization_alias`). Отдельных таблиц нет. Конструктор дашбордов на backend **нет**. Схемы: `app/schemas/analytics.py`.
 
-| Method | Path | Что в ответе |
+| Method | Path | Что в ответе (основные блоки) |
 |--------|------|----------------|
-| `GET` | `/analytics/checks` | summary статусов, `periodSeries`, `viewDistribution`, `typeDistribution`, `departmentMap`, `effectivenessMatrix`, `filterOptions` |
-| `GET` | `/analytics/recommendations` | summary по статусу/существенности/доп.статусу, серии, `viewDistribution`, `materialityMatrix`, `objectDistribution`, индикаторы, `checkLinks` |
-| `GET` | `/analytics/monitoring` | срез исполнения: status/indicator + `statusMatrix`, `deadlineExtensionsByCheck`, `completedDuringAuditByCheck` |
-| `GET` | `/analytics/dva` | нагрузка/существенность/исполнение/сроки/документы аудиторов, `auditorMatrix`, treemap, `documentReadiness`, `checkLifecycle` |
-| `GET` | `/analytics/planning` | покрытие подразделений проверками, high-materiality; **без** `auditors` |
+| `GET` | `/analytics/checks` | `summary`, `completionShare`, `periodSeries`, `viewDistribution`, `typeDistribution`, `departmentMap`, `effectivenessMatrix`, `filterOptions` |
+| `GET` | `/analytics/recommendations` | `summary` (+ `withExtensions`, `withCompletionDate`, `completionRate`, `violationRate`), `periodSeries` (в т.ч. `low`/`medium`/`high`, `cumulativeCompleted`), `materialityDistribution`, `statusDistribution`, `additionalStatusDistribution`, `viewDistribution`, `materialityMatrix`, `objectDistribution`, индикаторы, `checkLinks` |
+| `GET` | `/analytics/monitoring` | `summary`, `periodSeries`, `additionalStatusDistribution`, `statusMatrix`, `deadlineExtensionsByCheck`, `completedDuringAuditByCheck`, `filterOptions` |
+| `GET` | `/analytics/dva` | `universeChecksTotal` / `universeRecommendationsTotal` (+ filtered), `checkSummary`, `recommendationSummary`, `completionShare`, `averageCheckDurationDays`, `portfolioSeries`, `auditorLoad` / `auditorImpact` / `auditorExecution` / `auditorTimeliness` / `auditorDocuments`, `auditorMatrix`, treemap'ы, `departmentMap`, `documentReadiness`, `checkLifecycle` |
+| `GET` | `/analytics/planning` | `coverage` (rates, donut, covered/uncovered, `checksByDepartment`), `departmentAnalytics`, `highMaterialityByDepartment`, `highMaterialityTotal`, universe/filtered totals; **без** `auditors` в `filterOptions` |
 
 Все ответы: `universeTotal` / `filteredTotal` (у dva/planning — отдельно checks и recommendations), `granularity`, `filterOptions` (`auditors?`, `departments`, `anchorDates`).
 
 **Query:** `granularity` (`year` \| `quarter` \| `month`, default `year`); `years`, `quarters`, `months` — ключи (`2025`, `2025-Q1`, `2025-08`), OR между измерениями; `auditors`, `departments`.  
-Recommendations/monitoring: `statuses`, `additionalStatuses`, `materialityLevels`.
+Recommendations/monitoring: `statuses` / `additional_statuses` / `materiality_levels` (есть camelCase-алиасы `additionalStatuses`, `materialityLevels`).
 
 UI-контракт: [ANALYTICS.md](../../sokol-frontend/docs/ANALYTICS.md), [PLANNING.md](../../sokol-frontend/docs/PLANNING.md).
 
@@ -148,9 +148,9 @@ List: `skip` (default 0), `limit` (1…200, default 50), `search?`.
 | Method | Path | Описание |
 |--------|------|----------|
 | `GET` | `/users` | admin; `skip`/`limit` 1…200 (default 50); пагинация в памяти |
-| `POST` | `/users` | admin; только роль `auditor` иначе **400**; дубликат username → **409**. Upsert в `auditors` (`full_name` = username, `code` = инициалы). PATCH/DELETE нет |
+| `POST` | `/users` | admin; только роль `auditor` иначе **400**; дубликат username → **409**. При create пытается добавить строку в `auditors` (`full_name` = username, `code` = инициалы); дубликат аудитора игнорируется. PATCH/DELETE нет |
 
-Create: `{ username, password, role?: "auditor", display_name?, aliases?: [] }`.  
+Create: `username`, `password` (min 4), опционально `role` (`auditor`), `display_name`, `aliases`.  
 Ответ: `{ id, username, display_name, role, aliases, is_active }`.
 
 ---

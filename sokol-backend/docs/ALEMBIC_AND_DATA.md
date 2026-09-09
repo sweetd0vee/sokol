@@ -2,11 +2,19 @@
 
 Схема: `create_all` + `python -m app.db.migrate_*`. Alembic **не внедрён**. Модель: [DATA_AND_DB.md](DATA_AND_DB.md). Перед `--replace` и ручными migrate на shared/prod — **бэкап**.
 
+## Пути к данным
+
+| Что | Где |
+|-----|-----|
+| Excel seed (`checks.xlsx`, `recommendations.xlsx`) | корневой `sokol/data/` (или `SOKOL_DATA_DIR`) |
+| Шаблон файла контроля, картинки существенности | `sokol-backend/data/` |
+| Резолв путей | `app/utils/paths.py` (`get_repo_data_dir`, `SOKOL_DATA_DIR`) |
+
 ## Инициализация
 
-```powershell
+```bash
 cd sokol-backend
-.\venv\Scripts\Activate.ps1
+source venv/bin/activate   # Windows: .\venv\Scripts\Activate.ps1
 
 python -c "import asyncio; from app.db.init_db import init_db; asyncio.run(init_db())"
 python -m app.db.seed_auditors
@@ -17,7 +25,7 @@ python -m app.db.seed_effectiveness_ratings
 python -m app.db.seed_users
 ```
 
-`seed_users`: `Админ А.А.` (`admin`), `Ковалев С.С.` (`department_head`), аудиторы. Пароли: `SOKOL_ADMIN_PASSWORD` (default `admin`) для admin/department_head, `SOKOL_DEFAULT_USER_PASSWORD` (default `auditor`) для аудиторов. Lookup логина матчит `username` и `aliases`.
+`seed_users`: `Админ А.А.` (`admin`, alias `admin`), `Ковалев С.С.` (`department_head`), аудиторы. Пароли: `SOKOL_ADMIN_PASSWORD` (default `admin`) для admin/department_head, `SOKOL_DEFAULT_USER_PASSWORD` (default `auditor`) для аудиторов. Lookup логина матчит `username` и `aliases`.
 
 После pull с новыми полями — нужные `migrate_*`. Docker entrypoint уже гоняет `BOOTSTRAP_MIGRATIONS` (список в [DATA_AND_DB.md](DATA_AND_DB.md)).
 
@@ -25,12 +33,13 @@ python -m app.db.seed_users
 
 ## Загрузка данных
 
-**Excel → checks/recommendations** (`data/checks.xlsx`, `data/recommendations.xlsx`):
+**Excel → checks/recommendations** (файлы из корневого `data/` или явные пути):
 
-```powershell
+```bash
 python -m app.db.import_seed_data              # добавить новые serial_number
 python -m app.db.import_seed_data --replace    # TRUNCATE — только с бэкапом
-# при SOKOL_ENV=prod нужен ещё --confirm-prod-replace
+# при SOKOL_ENV=prod|production нужен ещё --confirm-prod-replace
+python -m app.db.import_seed_data --checks PATH --recommendations PATH
 ```
 
 Неизвестные labels import **досоздаёт**. После импорта при MinIO: `python -m app.db.sync_check_buckets`.
@@ -44,8 +53,10 @@ python -m app.db.import_seed_data --replace    # TRUNCATE — только с б
 
 `--check-id` / `--replace` у `seed_demo_attachments` — выбрать проверку и перезалить слоты.
 
-**Docker demo:** `SOKOL_LOAD_DEMO_DATA` в entrypoint default **on** (если checks уже есть и нет `SOKOL_SEED_REPLACE` — skip).  
-`SOKOL_ENV=prod` запрещает demo load; `--replace` без `--confirm-prod-replace` тоже.  
+Полезные скрипты в `sokol-backend/scripts/`: генераторы Excel/demo (`generate_*_excel.py`, `generate_import_templates.py`, `generate_seed_excel.py`), `import_catalog_excel.py`, `check_db_tables.py`, `delete_check_by_name.py`.
+
+**Docker demo:** `SOKOL_LOAD_DEMO_DATA` в entrypoint default **on** (если checks уже есть и нет `SOKOL_SEED_REPLACE` — skip). Compose обычно `SOKOL_LOAD_DEMO_DATA:-1`.  
+`SOKOL_ENV=prod` / `production` запрещает demo load; `--replace` без `--confirm-prod-replace` тоже.  
 `sync_dictionaries` в prod — merge-only. В development destructive prune включён по умолчанию (`SOKOL_DESTRUCTIVE_DICTIONARY_SYNC`).
 
 ## Новый стенд
@@ -59,14 +70,14 @@ python -m app.db.import_seed_data --replace    # TRUNCATE — только с б
 
 ## Бэкапы
 
-```powershell
-$env:PGPASSWORD = "postgres"
+```bash
+export PGPASSWORD=postgres
 pg_dump -h 127.0.0.1 -p 5433 -U postgres -d sokol_db -F c -f sokol_db.dump
 pg_restore -h 127.0.0.1 -p 5433 -U postgres -d sokol_db --clean --if-exists sokol_db.dump
 ```
 
 Dump **не** включает MinIO — бэкапьте volume или `mc mirror` ([docs/MINIO.md](../../docs/MINIO.md)). После restore: `sync_check_buckets`, сверка `attachments`.
 
-```powershell
+```bash
 python scripts/check_db_tables.py
 ```

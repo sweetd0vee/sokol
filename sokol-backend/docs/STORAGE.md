@@ -6,7 +6,7 @@
 
 ## Layout
 
-Один bucket на проверку: `check-{serial_number}` (lowercase, 3–63 символа). При смене ключа проверки backend копирует объекты в новый bucket и удаляет старый.
+Один bucket на проверку: `check-{serial_number}` (lowercase, 3–63 символа). При смене ключа проверки **или** `auditors.code` backend копирует объекты в новый bucket и удаляет старый (`check_serial_cascade`). При удалении проверки — объекты и bucket удаляются.
 
 ```
 check-{serial}/
@@ -15,6 +15,8 @@ check-{serial}/
 ```
 
 Слоты рекомендаций: `recommendation_files`, `control_removal_files`.
+
+Bucket создаётся при `create_check`, если MinIO включён (сбой ensure логируется, проверка всё равно коммитится). Пустые проверки также получают bucket через `sync_check_buckets` или при первом upload.
 
 ## API
 
@@ -26,13 +28,13 @@ check-{serial}/
 | GET | `/api/v1/attachments/{id}/download` |
 | DELETE | `/api/v1/attachments/{id}` |
 
-Права: recommendation — владелец или admin; check upload — любой authenticated; check delete — admin only.
+Права: recommendation upload/delete — владелец или admin; check upload — любой authenticated; check delete — admin only. List/download — любой authenticated.
 
 Frontend опрашивает `GET /storage/status` при открытии секции вложений (`useStorageStatus`). `enabled=false` или `reachable=false` → banner, upload disabled, retry. Tools (DOCX) от MinIO не зависят.
 
 Хранилище выключено (нет endpoint+keys) → **503**. Сбой MinIO → **502**. Слишком большой файл → **413**. Неподдерживаемый MIME → **415**. Пустое тело / слот → **400**. Нет прав → **403**.
 
-Допустимые MIME: PDF, Office (doc/docx/xls/xlsx/ppt/pptx), jpeg/png/gif/webp, text/plain, zip, `application/octet-stream`.
+Допустимые MIME: PDF, Office (doc/docx/xls/xlsx/ppt/pptx), jpeg/png/gif/webp, text/plain, `application/zip`, `application/x-zip-compressed`, `application/octet-stream`.
 
 ## Env
 
@@ -44,12 +46,12 @@ Frontend опрашивает `GET /storage/status` при открытии се
 | `SOKOL_MINIO_REGION` | опционально |
 | `SOKOL_MAX_UPLOAD_MB` | лимит (default 100) |
 
-Включено, только если заданы endpoint + access key + secret key.
+Включено, только если заданы endpoint + access key + secret key. `SOKOL_DATA_DIR` относится к Excel/templates, не к MinIO.
 
 Docker: MinIO 9000/9001, том `~/docker-share/minio-data-sokol`.
 
 ## Код
 
-`app/services/storage/minio_storage.py` · `app/services/attachments_service.py` · `app/crud/attachments_crud.py` · `app/api/v1/endpoints/attachments.py`
+`app/services/storage/minio_storage.py` · `app/services/attachments_service.py` · `app/services/check_serial_cascade.py` · `app/crud/attachments_crud.py` · `app/api/v1/endpoints/attachments.py`
 
-Bucket создаётся при создании проверки; `python -m app.db.sync_check_buckets` — для существующих. Демо-файлы во все слоты: `python -m app.db.seed_demo_attachments`.
+`python -m app.db.sync_check_buckets` — для существующих проверок. Демо-файлы во все слоты: `python -m app.db.seed_demo_attachments`.
