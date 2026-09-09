@@ -7,7 +7,8 @@ export const DVA_AUDITOR_BAR_LIMIT = 12;
 
 const DAY_MS = 86_400_000;
 const LIFECYCLE_RANGE_PAD_RATIO = 0.04;
-const LIFECYCLE_MIN_TICK_GAP_RATIO = 0.08;
+/** Weekly ticks only — monthly axis shows every month with compact numeric labels. */
+const LIFECYCLE_MIN_WEEKLY_TICK_GAP_RATIO = 0.08;
 
 export const CHECK_LIFECYCLE_MILESTONES = [
   { key: 'order', dateKey: 'orderDate', label: 'Приказ' },
@@ -163,12 +164,29 @@ function toPercent(ms: number, start: number, end: number): number {
   return ((ms - start) / (end - start)) * 100;
 }
 
+function pad2(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+/** Compact numeric axis labels: `15.03` for short spans, `03.26` for monthly. */
 function formatTickLabel(ms: number, spanMs: number): string {
   const date = new Date(ms);
   if (spanMs <= 45 * DAY_MS) {
-    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    return `${date.getDate()}.${pad2(date.getMonth() + 1)}`;
   }
-  return date.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' });
+  return `${pad2(date.getMonth() + 1)}.${String(date.getFullYear()).slice(-2)}`;
+}
+
+function dedupeSortedMs(values: number[]): number[] {
+  const result: number[] = [];
+  for (const ms of values) {
+    const previous = result[result.length - 1];
+    if (previous !== undefined && Math.abs(ms - previous) < DAY_MS) {
+      continue;
+    }
+    result.push(ms);
+  }
+  return result;
 }
 
 export function buildLifecycleAxisTicks(rangeStart: number, rangeEnd: number): CheckLifecycleTick[] {
@@ -176,43 +194,67 @@ export function buildLifecycleAxisTicks(rangeStart: number, rangeEnd: number): C
     return [];
   }
   const span = rangeEnd - rangeStart;
-  const raw: number[] = [rangeStart];
+  let raw: number[] = [];
+
   if (span <= 45 * DAY_MS) {
+    raw = [rangeStart];
     const cursor = new Date(rangeStart);
     cursor.setDate(cursor.getDate() + 7);
     while (cursor.getTime() < rangeEnd - DAY_MS) {
       raw.push(cursor.getTime());
       cursor.setDate(cursor.getDate() + 7);
     }
+    raw.push(rangeEnd);
+
+    const minGap = span * LIFECYCLE_MIN_WEEKLY_TICK_GAP_RATIO;
+    const filtered: number[] = [];
+    for (const ms of raw) {
+      const previous = filtered[filtered.length - 1];
+      if (previous !== undefined && ms - previous < minGap) {
+        continue;
+      }
+      filtered.push(ms);
+    }
+    const last = filtered[filtered.length - 1];
+    if (last !== rangeEnd) {
+      if (last !== undefined && rangeEnd - last < minGap && filtered.length > 1) {
+        filtered[filtered.length - 1] = rangeEnd;
+      } else {
+        filtered.push(rangeEnd);
+      }
+    }
+    raw = filtered;
   } else {
     const start = new Date(rangeStart);
-    let cursor = new Date(start.getFullYear(), start.getMonth() + 1, 1);
-    while (cursor.getTime() < rangeEnd - 2 * DAY_MS) {
-      raw.push(cursor.getTime());
+    let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    while (cursor.getTime() <= rangeEnd) {
+      if (cursor.getTime() >= rangeStart) {
+        raw.push(cursor.getTime());
+      }
       cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
     }
-  }
-  raw.push(rangeEnd);
-
-  const minGap = span * LIFECYCLE_MIN_TICK_GAP_RATIO;
-  const filtered: number[] = [];
-  for (const ms of raw) {
-    const previous = filtered[filtered.length - 1];
-    if (previous !== undefined && ms - previous < minGap) {
-      continue;
+    if (raw.length === 0 || raw[0]! > rangeStart) {
+      raw.unshift(rangeStart);
     }
-    filtered.push(ms);
-  }
-  const last = filtered[filtered.length - 1];
-  if (last !== rangeEnd) {
-    if (last !== undefined && rangeEnd - last < minGap && filtered.length > 1) {
-      filtered[filtered.length - 1] = rangeEnd;
+    const lastMonth = raw[raw.length - 1];
+    if (lastMonth === undefined) {
+      raw.push(rangeEnd);
     } else {
-      filtered.push(rangeEnd);
+      const lastDate = new Date(lastMonth);
+      const endDate = new Date(rangeEnd);
+      const sameMonth =
+        lastDate.getFullYear() === endDate.getFullYear()
+        && lastDate.getMonth() === endDate.getMonth();
+      if (sameMonth) {
+        raw[raw.length - 1] = rangeEnd;
+      } else if (rangeEnd - lastMonth > DAY_MS) {
+        raw.push(rangeEnd);
+      }
     }
+    raw = dedupeSortedMs(raw);
   }
 
-  return filtered.map((ms) => ({
+  return raw.map((ms) => ({
     ms,
     label: formatTickLabel(ms, span),
     percent: toPercent(ms, rangeStart, rangeEnd),

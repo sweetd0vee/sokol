@@ -3,6 +3,7 @@ import { parseDateValue } from './dates';
 import {
   buildCheckLifecycleChartModel,
   buildCheckLifecycleExportRows,
+  buildLifecycleAxisTicks,
   calendarDaysBetween,
   formatDurationDays,
   formatLifecycleChecksCount,
@@ -73,6 +74,19 @@ describe('check lifecycle', () => {
 
   it('counts calendar days between local dates', () => {
     expect(calendarDaysBetween(parseDateValue('2026-01-10') ?? 0, parseDateValue('2026-01-27') ?? 0)).toBe(17);
+  });
+
+  it('labels lifecycle months as MM.YY and keeps every month on the axis', () => {
+    const start = new Date(2024, 10, 15).getTime();
+    const end = new Date(2025, 2, 20).getTime();
+    const ticks = buildLifecycleAxisTicks(start, end);
+    expect(ticks.map((tick) => tick.label)).toEqual([
+      '11.24',
+      '12.24',
+      '01.25',
+      '02.25',
+      '03.25',
+    ]);
   });
 
   it('builds four milestones and three stage segments on a shared axis', () => {

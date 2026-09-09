@@ -73,10 +73,10 @@ const TABS = [
     charts: [
       { title: 'Итого по ДВА', file: 'dva-summary.png' },
       {
-        title: 'Своевременность исполнения рекомендаций по сотрудникам (дополнительный статус)',
+        title: 'Количество рекомендаций по сотрудникам (дополнительный статус)',
         file: 'dva-auditor-timeliness.png',
       },
-      { title: 'Существенность рекомендаций по сотрудникам', file: 'dva-auditor-impact.png' },
+      { title: 'Количество рекомендаций по сотрудникам (существенность)', file: 'dva-auditor-impact.png' },
       {
         title: 'Количество и доля рекомендаций со статусом "Не решено"',
         file: 'dva-auditor-execution.png',

@@ -187,11 +187,11 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
   return (
     <div data-export-html className="flex min-h-[13rem] flex-col gap-2">
       <div className="overflow-x-auto rounded-lg border border-gray-100">
-        <table className="w-full min-w-[58rem] border-collapse text-sm">
+        <table className="w-full min-w-[54rem] border-collapse text-sm">
           <colgroup>
             <col className="w-[7.5rem]" />
-            <col className="w-[16rem]" />
             <col className="w-[11rem]" />
+            <col className="w-[10rem]" />
             <col />
             <col className="w-[7.5rem]" />
           </colgroup>
@@ -200,7 +200,7 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
               <MatrixCountSortHeader
                 label="Ключ"
                 align="left"
-                className="sticky left-0 z-[2] bg-white"
+                className="sticky left-0 z-[2] align-top bg-white"
                 active={sortConfig.key === 'key'}
                 direction={sortConfig.direction}
                 onClick={() => cycleSort('key')}
@@ -208,6 +208,7 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
               <MatrixCountSortHeader
                 label="Краткое название"
                 align="left"
+                className="align-top"
                 active={sortConfig.key === 'shortName'}
                 direction={sortConfig.direction}
                 onClick={() => cycleSort('shortName')}
@@ -215,12 +216,13 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
               <MatrixCountSortHeader
                 label="Аудитор"
                 align="left"
+                className="align-top"
                 active={sortConfig.key === 'auditor'}
                 direction={sortConfig.direction}
                 onClick={() => cycleSort('auditor')}
               />
-              <th className="bg-white px-3 py-2 text-left font-semibold text-sber-dark">
-                <div className="mb-1">
+              <th className="align-top bg-white px-3 py-2 text-left font-semibold text-sber-dark">
+                <div className="mb-2">
                   <button
                     type="button"
                     className="inline-flex items-center gap-1 text-sber-dark transition hover:text-sber"
@@ -259,11 +261,11 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
                     )}
                   </button>
                 </div>
-                <div className="relative h-8">
+                <div className="relative h-4 overflow-visible">
                   {model.ticks.map((tick) => (
                     <span
                       key={`${tick.ms}-${tick.percent}`}
-                      className="absolute top-0 text-[11px] font-medium tabular-nums text-gray-500"
+                      className="absolute top-0 whitespace-nowrap text-[10px] font-medium tabular-nums leading-none text-gray-500"
                       style={{
                         left: `${tick.percent}%`,
                         transform:
@@ -282,6 +284,7 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
               <MatrixCountSortHeader
                 label="Итого"
                 align="right"
+                className="align-top"
                 active={sortConfig.key === 'totalDays'}
                 direction={sortConfig.direction}
                 onClick={() => cycleSort('totalDays')}
@@ -294,10 +297,10 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
                 <td className="sticky left-0 z-[1] bg-white px-3 py-1.5 font-semibold tabular-nums text-sber-dark">
                   {row.key}
                 </td>
-                <td className="max-w-[16rem] truncate px-3 py-1.5 text-slate-700" title={row.shortName}>
+                <td className="max-w-[11rem] truncate px-3 py-1.5 text-slate-700" title={row.shortName}>
                   {row.shortName || '—'}
                 </td>
-                <td className="max-w-[11rem] truncate px-3 py-1.5 text-slate-700" title={row.auditor}>
+                <td className="max-w-[10rem] truncate px-3 py-1.5 text-slate-700" title={row.auditor}>
                   {row.auditor}
                 </td>
                 <td className="px-2 py-0.5">

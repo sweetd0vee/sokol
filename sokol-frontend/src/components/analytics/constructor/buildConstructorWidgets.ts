@@ -350,7 +350,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorImpact') {
       drafts.push(
-        draft(kind, sectionId, 'Существенность рекомендаций по сотрудникам', caption, SIZE.half, {
+        draft(kind, sectionId, 'Количество рекомендаций по сотрудникам (существенность)', caption, SIZE.half, {
           chart: 'stacked',
           data: input.auditorImpact,
           series: [
@@ -374,7 +374,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorTimeliness') {
       drafts.push(
-        draft(kind, sectionId, 'Своевременность исполнения рекомендаций по сотрудникам (дополнительный статус)', caption, SIZE.half, {
+        draft(kind, sectionId, 'Количество рекомендаций по сотрудникам (дополнительный статус)', caption, SIZE.half, {
           chart: 'stacked',
           data: input.auditorTimeliness,
           series: [

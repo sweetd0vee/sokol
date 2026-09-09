@@ -39,8 +39,8 @@ export const MONITORING_EXPORT_SECTIONS = [
 
 export const DVA_EXPORT_SECTIONS = [
   { id: 'summary', label: 'Сводка KPI', sheetName: 'Сводка', headerFill: '312E81' },
-  { id: 'auditorTimeliness', label: 'Своевременность', sheetName: 'Своевременность', headerFill: 'DAAAD1' },
-  { id: 'auditorImpact', label: 'Импакт рекомендаций', sheetName: 'Импакт', headerFill: 'DAAAD1' },
+  { id: 'auditorTimeliness', label: 'Количество по доп. статусу', sheetName: 'Доп. статус', headerFill: 'DAAAD1' },
+  { id: 'auditorImpact', label: 'Количество по существенности', sheetName: 'Существенность', headerFill: 'DAAAD1' },
   { id: 'auditorExecution', label: 'Результативность исполнения', sheetName: 'Исполнение', headerFill: '0E7490' },
   {
     id: 'auditorChecksMap',
