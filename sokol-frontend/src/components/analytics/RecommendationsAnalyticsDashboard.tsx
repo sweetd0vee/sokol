@@ -60,7 +60,6 @@ import {
   sortMaterialityMatrixRows,
   type MaterialityMatrixCountSortConfig,
 } from '../../utils/materialityMatrix';
-import type { PeriodGranularity } from '../../utils/recommendationAnalytics';
 
 const EMPTY_PERIOD_SERIES: RecommendationPeriodPoint[] = [];
 const EMPTY_MATERIALITY_DISTRIBUTION: never[] = [];

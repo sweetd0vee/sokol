@@ -55,20 +55,17 @@ const PLANNING_EXPORT_SECTION_IDS = PLANNING_EXPORT_SECTIONS.map(
 ) as PlanningExportSectionId[];
 
 export function PlanningAnalyticsDashboard() {
-  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('html');
-  const [isExporting, setIsExporting] = useState(false);
-  const exportSections = useExportSections(PLANNING_EXPORT_SECTION_IDS);
-  const { addToConstructor, justAdded } = useAddToConstructor();
-
-  const bootstrapQuery = useQuery({
-    queryKey: queryKeys.analytics.planningBootstrap,
-    queryFn: () => fetchPlanningAnalytics({ granularity: 'year' }),
-    staleTime: 60_000,
-  });
-
-  const anchorDates = useAnalyticsAnchorDates(bootstrapQuery.data?.filterOptions.anchorDates);
   const {
+    selectedAuditors,
+    selectedDepartments,
+    exportFormat,
+    setExportFormat,
+    isExporting,
+    setIsExporting,
+    setSelectedAuditors,
+    setSelectedDepartments,
+    removeAuditor,
+    removeDepartment,
     periodSlice,
     selectedYears,
     selectedQuarters,
@@ -76,51 +73,24 @@ export function PlanningAnalyticsDashboard() {
     setSelectedQuarters,
     yearOptions,
     quarterOptions,
-    selectedYearKeys,
-    selectedQuarterKeys,
     periodSliceLabel,
     activePeriodValues,
     handlePeriodSliceChange,
-    resetPeriodSelections,
     removeActivePeriodValue,
-  } = useAnalyticsPeriodFilters(anchorDates);
-
-  const granularity: PeriodGranularity = periodSlice;
-  const hasActiveFilters = hasAnalyticsPeriodFilters({
-    yearKeys: selectedYearKeys,
-    quarterKeys: selectedQuarterKeys,
-    monthKeys: [],
-    departments: selectedDepartments,
-    granularity,
+    bootstrapQuery,
+    analyticsQuery,
+    data,
+    departmentOptions,
+    resetFilters,
+  } = useAnalyticsDashboardController({
+    resource: 'planning',
+    bootstrapQueryKey: queryKeys.analytics.planningBootstrap,
+    fetchBootstrap: () => fetchPlanningAnalytics({ granularity: 'year' }),
+    fetchFiltered: fetchPlanningAnalytics,
+    includeAuditors: false,
   });
-
-  const analyticsQuery = useQuery({
-    queryKey: [
-      'analytics',
-      'planning',
-      granularity,
-      selectedYearKeys,
-      selectedQuarterKeys,
-      selectedDepartments,
-    ],
-    queryFn: () =>
-      fetchPlanningAnalytics({
-        granularity,
-        years: selectedYearKeys,
-        quarters: selectedQuarterKeys,
-        months: [],
-        departments: selectedDepartments,
-      }),
-    enabled: bootstrapQuery.isSuccess,
-    initialData: !hasActiveFilters ? bootstrapQuery.data : undefined,
-    initialDataUpdatedAt: !hasActiveFilters ? bootstrapQuery.dataUpdatedAt : undefined,
-  });
-
-  const data = analyticsQuery.data ?? bootstrapQuery.data;
-  const departmentOptions = useMemo(
-    () => toAnalyticsSelectOptions(data?.filterOptions.departments ?? []),
-    [data?.filterOptions.departments],
-  );
+  const exportSections = useExportSections(PLANNING_EXPORT_SECTION_IDS);
+  const { addToConstructor, justAdded } = useAddToConstructor();
 
   const coverage = data?.coverage ?? EMPTY_COVERAGE;
   const departmentAnalytics = data?.departmentAnalytics ?? EMPTY_DEPARTMENT_ANALYTICS;
@@ -131,40 +101,32 @@ export function PlanningAnalyticsDashboard() {
   const universeChecksTotal = data?.universeChecksTotal ?? 0;
   const universeRecommendationsTotal = data?.universeRecommendationsTotal ?? 0;
 
-  const resetFilters = () => {
-    resetPeriodSelections();
-    setSelectedDepartments([]);
-  };
-
   const handleExport = async () => {
     if (isExporting || !data) {
       return;
     }
-    setIsExporting(true);
-    try {
-      await exportGenericAnalyticsDashboard(
-        {
-          kind: 'planning',
-          documentTitle: 'Планирование',
-          filenamePrefix: 'analytics-planning',
-          selectedSections: [...PLANNING_EXPORT_SECTION_IDS],
-          meta: [
-            ['Группировка', periodSlice === 'quarter' ? 'По кварталам' : 'По годам'],
-            ...(activePeriodValues.map((label) => ['Период', label] as [string, string])),
-            ['Департаменты', selectedDepartments.length ? selectedDepartments.join(', ') : 'Все'],
-            ['Проверок в выборке', String(filteredChecksTotal)],
-            ['Рекомендаций в выборке', String(filteredRecommendationsTotal)],
-            ['Охват департаментов', `${coverage.coverageRate}% (${coverage.covered} из ${coverage.total})`],
-          ],
-        },
-        exportFormat,
-      );
-    } catch (error) {
-      console.error('Planning export failed', error);
-      window.alert(`Не удалось экспортировать отчёт: ${error instanceof Error ? error.message : 'неизвестная ошибка'}`);
-    } finally {
-      setIsExporting(false);
-    }
+    await runAnalyticsExport(
+      setIsExporting,
+      () =>
+        exportGenericAnalyticsDashboard(
+          {
+            kind: 'planning',
+            documentTitle: 'Планирование',
+            filenamePrefix: 'analytics-planning',
+            selectedSections: [...PLANNING_EXPORT_SECTION_IDS],
+            meta: [
+              ['Группировка', periodSlice === 'quarter' ? 'По кварталам' : 'По годам'],
+              ...(activePeriodValues.map((label) => ['Период', label] as [string, string])),
+              ['Департаменты', selectedDepartments.length ? selectedDepartments.join(', ') : 'Все'],
+              ['Проверок в выборке', String(filteredChecksTotal)],
+              ['Рекомендаций в выборке', String(filteredRecommendationsTotal)],
+              ['Охват департаментов', `${coverage.coverageRate}% (${coverage.covered} из ${coverage.total})`],
+            ],
+          },
+          exportFormat,
+        ),
+      'Planning export failed',
+    );
   };
 
   const handleAddToConstructor = () => {
