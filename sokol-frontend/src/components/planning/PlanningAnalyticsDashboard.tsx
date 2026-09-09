@@ -203,7 +203,7 @@ export function PlanningAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
         render: () => (
           <ChartCard
-            title="Сводка планирования"
+            title="Итого планирования"
             description=""
             dense
             exportSectionId="summary"

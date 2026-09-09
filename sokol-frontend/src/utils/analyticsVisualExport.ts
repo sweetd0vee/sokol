@@ -67,6 +67,7 @@ import {
 import {
   getMaterialityChartColor,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
+  VALUE_BLUE_SCALE,
   VALUE_TEAL_SCALE,
 } from '../components/analytics/analyticsPalette';
 import type { DvaCheckLifecycleRow } from '../api/analytics';
@@ -1929,9 +1930,9 @@ function createStatusMatrixDocxTable(rows: StatusMatrixRow[]): Table {
 }
 
 const CHECK_LIFECYCLE_DOCX_LEGEND = [
-  { label: CHECK_LIFECYCLE_SEGMENTS[0].label, color: VALUE_TEAL_SCALE[0] },
+  { label: CHECK_LIFECYCLE_SEGMENTS[0].label, color: VALUE_BLUE_SCALE[0] },
   { label: CHECK_LIFECYCLE_SEGMENTS[1].label, color: VALUE_TEAL_SCALE[5] },
-  { label: CHECK_LIFECYCLE_SEGMENTS[2].label, color: VALUE_TEAL_SCALE[3] },
+  { label: CHECK_LIFECYCLE_SEGMENTS[2].label, color: VALUE_BLUE_SCALE[5] },
 ];
 
 function createCheckLifecycleDocxTable(rows: DvaCheckLifecycleRow[]): Table {

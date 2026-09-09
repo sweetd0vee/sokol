@@ -13,22 +13,23 @@ import {
   type CheckLifecycleSortKey,
   type CheckLifecycleViewRow,
 } from '../../utils/dvaAnalytics';
-import { VALUE_TEAL_SCALE } from './analyticsPalette';
+import { VALUE_BLUE_SCALE, VALUE_TEAL_SCALE } from './analyticsPalette';
 import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { MatrixCountSortHeader, MatrixLegendFooter } from './matrixChartChrome';
 import { cycleSortConfig, type SortConfig } from '../../utils/listTable';
 
+/** Same stops as Checks type donut (VALUE_BLUE_SCALE); center keeps signature teal. */
 const SEGMENT_STYLE = {
-  order_to_program: VALUE_TEAL_SCALE[0],
-  program_to_az: VALUE_TEAL_SCALE[5],
-  az_to_dz: VALUE_TEAL_SCALE[3],
+  order_to_program: VALUE_BLUE_SCALE[0], // #93C5FD — light sky
+  program_to_az: VALUE_TEAL_SCALE[5], // #0E7490 — signature teal
+  az_to_dz: VALUE_BLUE_SCALE[5], // #002B55 — deep navy
 } as const;
 
 const POINT_COLOR: Record<string, string> = {
-  order: VALUE_TEAL_SCALE[0],
-  program: VALUE_TEAL_SCALE[2],
-  az: VALUE_TEAL_SCALE[4],
-  dz: VALUE_TEAL_SCALE[5],
+  order: VALUE_BLUE_SCALE[0],
+  program: VALUE_TEAL_SCALE[5],
+  az: VALUE_TEAL_SCALE[5],
+  dz: VALUE_BLUE_SCALE[5],
 };
 
 const LEGEND = [

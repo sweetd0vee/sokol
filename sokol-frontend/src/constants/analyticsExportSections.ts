@@ -62,7 +62,7 @@ export type MonitoringExportSectionId = (typeof MONITORING_EXPORT_SECTIONS)[numb
 export type DvaExportSectionId = (typeof DVA_EXPORT_SECTIONS)[number]['id'];
 
 export const PLANNING_EXPORT_SECTIONS = [
-  { id: 'summary', label: 'Сводка планирования', sheetName: 'Сводка', headerFill: '1D4ED8' },
+  { id: 'summary', label: 'Итого планирования', sheetName: 'Итого', headerFill: '1D4ED8' },
   { id: 'coverage', label: 'Охват департаментов', sheetName: 'Охват', headerFill: '0E7490' },
   { id: 'departmentAnalytics', label: 'Аналитика департаментов', sheetName: 'Департаменты', headerFill: '003366' },
   { id: 'highMateriality', label: 'Красные рекомендации', sheetName: 'Красные рекоменд', headerFill: 'BE123C' },

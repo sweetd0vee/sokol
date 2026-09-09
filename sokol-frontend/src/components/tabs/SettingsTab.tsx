@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { getErrorMessage } from '../../api/errors';
 import { queryKeys } from '../../api/queryKeys';
 import {
   createCheckKind,
@@ -37,21 +38,32 @@ export function SettingsTab() {
   const { isAdmin } = useAuth();
   const [activeList, setActiveList] = useState<SettingsListKey>('auditors');
   const [deleteCandidate, setDeleteCandidate] = useState<DeleteCandidate | null>(null);
+  const [deleteError, setDeleteError] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const closeDeleteModal = () => {
+    setDeleteCandidate(null);
+    setDeleteError('');
+    setIsDeleting(false);
+  };
 
   const handleRequestDelete = (entity: SettingsListKey, key: string, id?: EntityId) => {
+    setDeleteError('');
     setDeleteCandidate({ entity, key, id });
   };
 
   const handleConfirmDelete = async (event?: FormEvent) => {
     event?.preventDefault();
-    if (!deleteCandidate) {
+    if (!deleteCandidate || isDeleting) {
       return;
     }
     const { entity, id } = deleteCandidate;
     if (id === undefined || id === null || id === '') {
-      setDeleteCandidate(null);
+      closeDeleteModal();
       return;
     }
+    setIsDeleting(true);
+    setDeleteError('');
     try {
       if (entity === 'auditors') {
         await deleteAuditor(id);
@@ -69,8 +81,10 @@ export function SettingsTab() {
         await deleteEffectivenessRating(id);
         await queryClient.invalidateQueries({ queryKey: queryKeys.settings.effectivenessRatings });
       }
-    } finally {
-      setDeleteCandidate(null);
+      closeDeleteModal();
+    } catch (error) {
+      setDeleteError(getErrorMessage(error, 'Не удалось удалить запись.'));
+      setIsDeleting(false);
     }
   };
 
@@ -172,15 +186,21 @@ export function SettingsTab() {
       </div>
 
       {isAdmin && deleteCandidate && (
-        <Modal title="Удаление записи">
+        <Modal title="Удаление записи" onClose={closeDeleteModal}>
           <form onSubmit={handleConfirmDelete} className="mt-2 space-y-6">
             <p className="text-sm text-gray-600">
               Вы уверены, что хотите удалить запись из таблицы?
             </p>
+            {deleteError ? (
+              <p className="text-sm text-red-600" role="alert">
+                {deleteError}
+              </p>
+            ) : null}
             <ModalActions
               submitLabel="Да"
               cancelLabel="Нет"
-              onCancel={() => setDeleteCandidate(null)}
+              submitDisabled={isDeleting}
+              onCancel={closeDeleteModal}
             />
           </form>
         </Modal>

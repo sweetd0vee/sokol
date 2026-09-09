@@ -419,7 +419,7 @@ export function buildPlanningConstructorDrafts(input: PlanningConstructorInput):
   for (const sectionId of input.selectedSections) {
     if (sectionId === 'summary') {
       drafts.push(
-        draft(kind, sectionId, 'Сводка планирования', caption, SIZE.kpi, {
+        draft(kind, sectionId, 'Итого планирования', caption, SIZE.kpi, {
           chart: 'kpi',
           columns: 4,
           items: [
