@@ -4,7 +4,7 @@ import { Check, Clipboard, Expand, Minimize2, X } from 'lucide-react';
 import { registerDashboardChart } from '../../utils/dashboardChartRegistry';
 import { useAnalyticsFilterCaption } from './analyticsFilterCaptionContext';
 import { kpiAccentStyle } from './analyticsPalette';
-import { captureChartPngWithFilters } from './chartPngCapture';
+import { captureChartPngWithFilters, captureNodePng } from './chartPngCapture';
 
 /** Shared Recharts typography for analytics dashboards. */
 export const CHART_AXIS_TICK = { fontSize: 15 } as const;

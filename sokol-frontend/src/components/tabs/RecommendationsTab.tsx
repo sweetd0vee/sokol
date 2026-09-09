@@ -20,13 +20,8 @@ import { toNameOptions, useAuditorOptions, useCheckKindOptions } from '../../hoo
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
 import { useSokolData } from '../../contexts/sokolData';
 import { formatRecommendationAuditObjects } from '../../utils/auditObjects';
-import {
-  ADDITIONAL_INDICATOR_ICONS,
-  INDICATOR_ICONS,
-  type IndicatorIconKey,
-  type IndicatorIconMeta,
-} from '../recommendations/indicatorIcons';
-import { IndicatorGlyph } from '../recommendations/IndicatorGlyph';
+import { ADDITIONAL_INDICATOR_ICONS } from '../recommendations/indicatorIcons';
+import { ListIndicatorIcon } from '../recommendations/ListIndicatorIcon';
 import { RecommendationNameHoverCard } from '../recommendations/RecommendationNameHoverCard';
 import {
   LIST_TABLE_COLUMN_HEADER_ROW_CLASS,
@@ -53,26 +48,6 @@ import { ListColumnHeaderCell, ListSortHeader } from '../lists/ListSortHeader';
 import { ListDateRangeFilter, ListFilterCell, ListResetFiltersButton } from '../lists/ListFilterCell';
 import { ListEditActionLink } from '../lists/ListEditActionLink';
 import { ListEmptyNotice, ListFilterCount, ListTableFooter, ListTableShell } from '../lists/ListTableShell';
-
-function ListIndicatorIcon({
-  value,
-  label,
-  icons = INDICATOR_ICONS,
-}: {
-  value: IndicatorIconKey | undefined;
-  label: string;
-  icons?: Partial<Record<IndicatorIconKey, IndicatorIconMeta>>;
-}) {
-  const meta = value ? icons[value] : undefined;
-  if (!meta) {
-    return <span className="text-gray-400">—</span>;
-  }
-  return (
-    <span className="inline-flex items-center justify-center" title={label}>
-      <IndicatorGlyph meta={meta} size={18} />
-    </span>
-  );
-}
 
 export function RecommendationsTab() {
   const myName = useCurrentUserName();

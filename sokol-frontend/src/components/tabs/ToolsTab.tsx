@@ -26,6 +26,7 @@ import {
 } from '../../utils/uploadLimits';
 import { toIsoDate } from '../../utils/dates';
 import { useAuditorOptions } from '../../hooks/useReferenceOptions';
+import { useDocxToolJob } from '../../hooks/useDocxToolJob';
 import {
   FORM_SECTION_CLASS,
   FORM_SECTION_TITLE_CLASS,
@@ -39,32 +40,21 @@ const TOOL_TABS = [
   { value: 'dz' as const, label: 'ДЗ' },
 ];
 
-const TOOLS_SECTION_CLASS =`${FORM_SECTION_CLASS} w-full border-0`;
-const TOOLS_SECTION_TITLE_CLASS =`${FORM_SECTION_TITLE_CLASS}`;
+const TOOLS_SECTION_CLASS = `${FORM_SECTION_CLASS} w-full border-0`;
+const TOOLS_SECTION_TITLE_CLASS = `${FORM_SECTION_TITLE_CLASS}`;
 
 const buildSectionIIOutputName = (name: string, withHyperlinks = false) =>
-`${name.replace(/\.docx$/i, '')}${withHyperlinks ? '_section_ii_links' : '_section_ii'}.docx`;
-const buildMemorandumOutputName = (name: string) =>`${name.replace(/\.docx$/i, '')}_dz.docx`;
-const buildControlFileOutputName = (name: string) =>`${name.replace(/\.docx$/i, '')}_control.xlsx`;
+  `${name.replace(/\.docx$/i, '')}${withHyperlinks ? '_section_ii_links' : '_section_ii'}.docx`;
+const buildMemorandumOutputName = (name: string) => `${name.replace(/\.docx$/i, '')}_dz.docx`;
+const buildControlFileOutputName = (name: string) => `${name.replace(/\.docx$/i, '')}_control.xlsx`;
 const CONTROL_FILE_TEMPLATE_NAME = 'файл контроля шаблон (шапка).xlsx';
+const FALLBACK_PROCESS_ERROR = 'Не удалось обработать файл. Проверьте подключение к API.';
 
 export function ToolsTab() {
   const [activeTab, setActiveTab] = useState<'az' | 'dz'>('az');
-  const [azFile, setAzFile] = useState<File | null>(null);
-  const [azLinksFile, setAzLinksFile] = useState<File | null>(null);
-  const [azControlFile, setAzControlFile] = useState<File | null>(null);
   const [azControlLeader, setAzControlLeader] = useState('');
   const [azControlDate, setAzControlDate] = useState<Date | null>(null);
-  const [dzFile, setDzFile] = useState<File | null>(null);
-  const [azError, setAzError] = useState<string | null>(null);
-  const [azLinksError, setAzLinksError] = useState<string | null>(null);
-  const [azControlError, setAzControlError] = useState<string | null>(null);
-  const [dzError, setDzError] = useState<string | null>(null);
-  const [isAzProcessing, setIsAzProcessing] = useState(false);
-  const [isAzLinksProcessing, setIsAzLinksProcessing] = useState(false);
-  const [isAzControlProcessing, setIsAzControlProcessing] = useState(false);
   const [isControlTemplateDownloading, setIsControlTemplateDownloading] = useState(false);
-  const [isDzProcessing, setIsDzProcessing] = useState(false);
   const capabilitiesQuery = useQuery({
     queryKey: queryKeys.capabilities,
     queryFn: fetchCapabilities,
@@ -87,111 +77,45 @@ export function ToolsTab() {
     return null;
   };
 
-  const handleAzFileChange = (file: File | null) => {
-    setAzError(null);
-    const validationError = validateDocxFile(file);
-    if (validationError) {
-      setAzFile(null);
-      setAzError(validationError);
-      return;
-    }
-    setAzFile(file);
-  };
-
-  const handleAzLinksFileChange = (file: File | null) => {
-    setAzLinksError(null);
-    const validationError = validateDocxFile(file);
-    if (validationError) {
-      setAzLinksFile(null);
-      setAzLinksError(validationError);
-      return;
-    }
-    setAzLinksFile(file);
-  };
-
-  const handleDzFileChange = (file: File | null) => {
-    setDzError(null);
-    const validationError = validateDocxFile(file);
-    if (validationError) {
-      setDzFile(null);
-      setDzError(validationError);
-      return;
-    }
-    setDzFile(file);
-  };
-
-  const handleAzControlFileChange = (file: File | null) => {
-    setAzControlError(null);
-    const validationError = validateDocxFile(file);
-    if (validationError) {
-      setAzControlFile(null);
-      setAzControlError(validationError);
-      return;
-    }
-    setAzControlFile(file);
-  };
-
-  const handleGenerateSectionII = async () => {
-    if (!azFile) {
-      setAzError('Выберите файл .docx для обработки.');
-      return;
-    }
-    setAzError(null);
-    setIsAzProcessing(true);
-    try {
-      const blob = await generateSectionIITemplate(azFile);
-      downloadBlob(blob, buildSectionIIOutputName(azFile.name));
-    } catch (err) {
-      setAzError(getErrorMessage(err, 'Не удалось обработать файл. Проверьте подключение к API.'));
-    } finally {
-      setIsAzProcessing(false);
-    }
-  };
-
-  const handleGenerateSectionIIWithLinks = async () => {
-    if (!azLinksFile) {
-      setAzLinksError('Выберите файл .docx для обработки.');
-      return;
-    }
-    setAzLinksError(null);
-    setIsAzLinksProcessing(true);
-    try {
-      const blob = await generateSectionIIWithLinks(azLinksFile);
-      downloadBlob(blob, buildSectionIIOutputName(azLinksFile.name, true));
-    } catch (err) {
-      setAzLinksError(
-        getErrorMessage(err, 'Не удалось обработать файл. Проверьте подключение к API.'),
-      );
-    } finally {
-      setIsAzLinksProcessing(false);
-    }
-  };
-
-  const handleGenerateMemorandum = async () => {
-    if (!dzFile) {
-      setDzError('Выберите файл .docx для обработки.');
-      return;
-    }
-    setDzError(null);
-    setIsDzProcessing(true);
-    try {
-      const blob = await generateMemorandum(dzFile);
-      downloadBlob(blob, buildMemorandumOutputName(dzFile.name));
-    } catch (err) {
-      setDzError(getErrorMessage(err, 'Не удалось сгенерировать докладную записку. Проверьте подключение к API.'));
-    } finally {
-      setIsDzProcessing(false);
-    }
-  };
+  const azJob = useDocxToolJob({
+    process: generateSectionIITemplate,
+    outputName: (name) => buildSectionIIOutputName(name),
+    fallbackError: FALLBACK_PROCESS_ERROR,
+    validate: validateDocxFile,
+  });
+  const azLinksJob = useDocxToolJob({
+    process: generateSectionIIWithLinks,
+    outputName: (name) => buildSectionIIOutputName(name, true),
+    fallbackError: FALLBACK_PROCESS_ERROR,
+    validate: validateDocxFile,
+  });
+  const dzJob = useDocxToolJob({
+    process: generateMemorandum,
+    outputName: buildMemorandumOutputName,
+    fallbackError: 'Не удалось сгенерировать докладную записку. Проверьте подключение к API.',
+    validate: validateDocxFile,
+  });
+  const azControlJob = useDocxToolJob({
+    process: (file) => {
+      const checkDate = toIsoDate(azControlDate);
+      return generateControlFile(file, {
+        checkLeader: azControlLeader,
+        checkDate: checkDate ?? '',
+      });
+    },
+    outputName: buildControlFileOutputName,
+    fallbackError: 'Не удалось сформировать файл контроля. Проверьте подключение к API.',
+    validate: validateDocxFile,
+  });
 
   const handleDownloadControlTemplate = async () => {
-    setAzControlError(null);
+    azControlJob.setError(null);
     setIsControlTemplateDownloading(true);
     try {
       const blob = await downloadControlFileTemplate();
       downloadBlob(blob, CONTROL_FILE_TEMPLATE_NAME);
     } catch (err) {
-      setAzControlError(
+      azControlJob.setError(
         getErrorMessage(err, 'Не удалось скачать шаблон файла контроля. Проверьте подключение к API.'),
       );
     } finally {
@@ -200,34 +124,19 @@ export function ToolsTab() {
   };
 
   const handleGenerateControlFile = async () => {
-    if (!azControlFile) {
-      setAzControlError('Выберите файл .docx для обработки.');
+    if (!azControlJob.file) {
+      azControlJob.setError('Выберите файл .docx для обработки.');
       return;
     }
     if (!azControlLeader) {
-      setAzControlError('Выберите руководителя проверки.');
+      azControlJob.setError('Выберите руководителя проверки.');
       return;
     }
-    const checkDate = toIsoDate(azControlDate);
-    if (!checkDate) {
-      setAzControlError('Выберите дату проверки.');
+    if (!toIsoDate(azControlDate)) {
+      azControlJob.setError('Выберите дату проверки.');
       return;
     }
-    setAzControlError(null);
-    setIsAzControlProcessing(true);
-    try {
-      const blob = await generateControlFile(azControlFile, {
-        checkLeader: azControlLeader,
-        checkDate,
-      });
-      downloadBlob(blob, buildControlFileOutputName(azControlFile.name));
-    } catch (err) {
-      setAzControlError(
-        getErrorMessage(err, 'Не удалось сформировать файл контроля. Проверьте подключение к API.'),
-      );
-    } finally {
-      setIsAzControlProcessing(false);
-    }
+    await azControlJob.run();
   };
 
   return (
@@ -244,34 +153,34 @@ export function ToolsTab() {
               <DocxToolPanel
                 title="1. Парсинг Раздела II Аудиторского Заключения"
                 description="Загрузите Аудиторское Заключение в формате .docx без Раздела II, чтобы собрать таблицу с основными результатами аудита и аудиторскими рекомендациями."
-                file={azFile}
-                onFileChange={handleAzFileChange}
-                onProcess={handleGenerateSectionII}
-                isProcessing={isAzProcessing}
-                error={azError}
+                file={azJob.file}
+                onFileChange={azJob.onFileChange}
+                onProcess={() => void azJob.run()}
+                isProcessing={azJob.isProcessing}
+                error={azJob.error}
               />
               <DocxToolPanel
                 title="2. Парсинг Раздела II Аудиторского Заключения (с гиперссылками)"
                 description="То же, что в пункте 1, но название каждого наблюдения в таблице будет гиперссылкой на это наблюдение в тексте документа."
-                file={azLinksFile}
-                onFileChange={handleAzLinksFileChange}
-                onProcess={handleGenerateSectionIIWithLinks}
-                isProcessing={isAzLinksProcessing}
-                error={azLinksError}
+                file={azLinksJob.file}
+                onFileChange={azLinksJob.onFileChange}
+                onProcess={() => void azLinksJob.run()}
+                isProcessing={azLinksJob.isProcessing}
+                error={azLinksJob.error}
               />
               <DocxToolPanel
                 title="3. Парсинг Аудиторского Заключения под форму файла контроля"
                 description="Загрузите Аудиторское заключение с Разделом II, чтобы заполнить шаблон для файла контроля."
-                file={azControlFile}
-                onFileChange={handleAzControlFileChange}
+                file={azControlJob.file}
+                onFileChange={azControlJob.onFileChange}
                 onTemplateDownload={handleDownloadControlTemplate}
                 isTemplateDownloading={isControlTemplateDownloading}
-                onProcess={handleGenerateControlFile}
-                isProcessing={isAzControlProcessing}
+                onProcess={() => void handleGenerateControlFile()}
+                isProcessing={azControlJob.isProcessing}
                 isProcessDisabled={!azControlLeader || !azControlDate}
                 extraFieldsClassName="w-full"
                 hideTemplateButton
-                error={azControlError}
+                error={azControlJob.error}
               >
                 <div className="flex items-end gap-4">
                   <Select
@@ -294,7 +203,7 @@ export function ToolsTab() {
                   />
                   <button
                     type="button"
-                    onClick={handleDownloadControlTemplate}
+                    onClick={() => void handleDownloadControlTemplate()}
                     disabled={isControlTemplateDownloading}
                     className="inline-flex h-[38px] w-[288px] shrink-0 items-center justify-center gap-2 rounded-lg border border-sber-light px-5 py-2.5 text-sm font-medium text-sber-light transition hover:bg-sber-light hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -313,11 +222,11 @@ export function ToolsTab() {
             <DocxToolPanel
               title="1. Парсинг Приложения 2 к ДЗ"
               description="Загрузите Аудиторское Заключение в формате .docx с Разделом II, чтобы сгенерировать Приложение 2 к Докладной Записке."
-              file={dzFile}
-              onFileChange={handleDzFileChange}
-              onProcess={handleGenerateMemorandum}
-              isProcessing={isDzProcessing}
-              error={dzError}
+              file={dzJob.file}
+              onFileChange={dzJob.onFileChange}
+              onProcess={() => void dzJob.run()}
+              isProcessing={dzJob.isProcessing}
+              error={dzJob.error}
             />
           </div>
         )}

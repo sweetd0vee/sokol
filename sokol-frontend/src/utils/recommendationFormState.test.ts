@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import type { Recommendation } from '../types/recommendation';
-import { createEmptyRecommendationClosure } from '../constants/recommendationClosure';
 import {
   emptyRecommendationFormFields,
   recommendationFormFieldsFromSource,
@@ -39,7 +38,10 @@ describe('recommendationFormState', () => {
     expect(fields.auditor).toBe('Иванов');
     expect(fields.checkLeader).toBe('Лидер');
     expect(fields.description).toBe('');
-    expect(fields.closure).toEqual(createEmptyRecommendationClosure());
+    expect(fields.closure.closureInformation).toBe('');
+    expect(fields.closure.actualCompletionDate).toBe('');
+    expect(fields.closure.extensions).toHaveLength(1);
+    expect(fields.closure.removals).toHaveLength(1);
   });
 
   it('hydrates fields from a saved recommendation', () => {

@@ -1,6 +1,6 @@
 import { toPng } from 'html-to-image';
 
-function captureNodePng(node: HTMLElement) {
+export function captureNodePng(node: HTMLElement) {
   return toPng(node, {
     cacheBust: true,
     pixelRatio: 2,

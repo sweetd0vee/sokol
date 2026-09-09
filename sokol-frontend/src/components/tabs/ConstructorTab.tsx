@@ -141,205 +141,154 @@ export function ConstructorTab() {
           description="Создайте лист или добавьте график из аналитики / планирования — появится черновик в этой истории."
         />
       ) : (
-        <div className="rounded-xl border border-gray-200 bg-white">
-          <table className="min-w-full table-fixed text-left text-base">
-              <colgroup>
-                <col className="w-[36%]" />
-                <col className="w-[8%]" />
-                <col className="w-[18%]" />
-                <col className="w-[15%]" />
-                <col className="w-[15%]" />
-                <col className="w-[8%]" />
-              </colgroup>
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-2 py-2 font-normal">
-                    <Input
-                      value={nameFilter}
-                      onChange={setNameFilter}
-                      placeholder="Название"
-                      inputClassName={listFilterClass(Boolean(nameFilter.trim()))}
-                    />
-                  </th>
-                  <th className="px-2 py-2 font-normal" />
-                  <th className="px-2 py-2 font-normal" />
-                  <th className="px-2 py-2 font-normal" />
-                  <th className="px-2 py-2 font-normal" />
-                  <th className="px-0 pr-4 py-2 font-normal">
-                    <div className="ml-auto flex w-[160px] items-center justify-end">
-                      <button
-                        type="button"
-                        onClick={handleResetFilters}
-                        className="inline-flex h-[38px] w-[160px] items-center justify-center rounded-lg border border-[#003366] px-2 text-sm font-medium text-[#003366] transition hover:bg-[#3B82F6] hover:border-[#3B82F6] hover:text-white"
-                      >
-                        Сбросить фильтры
-                      </button>
-                    </div>
-                  </th>
-                </tr>
-                <tr className="bg-[#003366] text-white">
-                  <ListSortHeader
-                    label="Название"
-                    active={sortConfig.key === 'name'}
-                    direction={sortConfig.direction}
-                    onClick={() => toggleSort('name')}
-                  />
-                  <ListSortHeader
-                    label="Графиков"
-                    active={sortConfig.key === 'charts'}
-                    direction={sortConfig.direction}
-                    onClick={() => toggleSort('charts')}
-                  />
-                  <ListSortHeader
-                    label="Источники"
-                    active={sortConfig.key === 'sources'}
-                    direction={sortConfig.direction}
-                    onClick={() => toggleSort('sources')}
-                  />
-                  <ListSortHeader
-                    label="Изменён"
-                    active={sortConfig.key === 'updatedAt'}
-                    direction={sortConfig.direction}
-                    onClick={() => toggleSort('updatedAt')}
-                  />
-                  <ListSortHeader
-                    label="Создан"
-                    active={sortConfig.key === 'createdAt'}
-                    direction={sortConfig.direction}
-                    onClick={() => toggleSort('createdAt')}
-                  />
-                  <ListColumnHeaderCell align="center" className="pr-4">Действия</ListColumnHeaderCell>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {pagedDashboards.map((dashboard) => {
-                  const kinds = dashboardSourceKinds(dashboard);
-                  const isActive = dashboard.id === activeDashboardId;
-                  return (
-                    <tr key={dashboard.id} className="hover:bg-gray-50">
-                      <td className="min-w-0 px-4 py-3">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <LayoutDashboard className="h-4 w-4 shrink-0 text-sber-dark" />
-                          <Link
-                            to={`/constructor/${dashboard.id}`}
-                            className="font-medium text-sber-dark hover:underline"
-                          >
-                            {dashboard.name}
-                          </Link>
-                          {isActive ? (
-                            <span className="shrink-0 rounded-full bg-sber-dark/10 px-2 py-0.5 text-[11px] font-medium text-sber-dark">
-                              Текущий
-                            </span>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">{dashboard.widgets.length}</td>
-                      <td className="px-4 py-3 text-gray-600">{dashboardSourceSummary(kinds)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-gray-600">{formatDateTime(dashboard.updatedAt)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-gray-600">{formatDateTime(dashboard.createdAt)}</td>
-                      <td className="overflow-visible px-0 pr-4 py-3">
-                        <div className="relative ml-auto flex w-20 items-center justify-end gap-1">
-                          <Link
-                            to={`/constructor/${dashboard.id}`}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#003366] transition hover:bg-gray-100"
-                            aria-label={`Редактировать «${dashboard.name}»`}
-                            title="Редактировать"
-                          >
-                            <PencilLine size={16} />
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setOpenMenuId((current) => (current === dashboard.id ? null : dashboard.id));
-                            }}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#003366] transition hover:bg-gray-100"
-                            aria-expanded={openMenuId === dashboard.id}
-                            aria-label={`Ещё действия для «${dashboard.name}»`}
-                            title="Ещё"
-                          >
-                            <MoreHorizontal size={16} />
-                          </button>
-                          {openMenuId === dashboard.id ? (
-                            <div
-                              className="absolute right-0 top-9 z-30 w-52 rounded-lg border border-gray-200 bg-white py-1 text-gray-900 shadow-lg"
-                              onClick={(event) => event.stopPropagation()}
-                            >
-                              {isActive ? null : (
-                                <button
-                                  type="button"
-                                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
-                                  onClick={() => {
-                                    setActiveDashboard(dashboard.id);
-                                    setOpenMenuId(null);
-                                  }}
-                                >
-                                  <Check size={14} />
-                                  <span>Сделать текущим</span>
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
-                                onClick={() => {
-                                  setSaveAsId(dashboard.id);
-                                  setSaveAsName(`${dashboard.name} (копия)`);
-                                  setOpenMenuId(null);
-                                }}
-                              >
-                                <Copy size={14} />
-                                <span>Копировать</span>
-                              </button>
-                              <Link
-                                to={`/constructor/${dashboard.id}`}
-                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
-                                onClick={() => setOpenMenuId(null)}
-                              >
-                                <Download size={14} />
-                                <span>Экспорт</span>
-                              </Link>
-                              <button
-                                type="button"
-                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50"
-                                onClick={() => {
-                                  setDeleteId(dashboard.id);
-                                  setOpenMenuId(null);
-                                }}
-                              >
-                                <Trash2 size={14} />
-                                <span>Удалить</span>
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {filteredDashboards.length === 0 && (
-              <div className="border-t border-gray-200 p-6">
+        <ListTableShell
+          scrollClassName="overflow-visible"
+          empty={
+            filteredDashboards.length === 0 ? (
+              <ListEmptyNotice>
                 <EmptyState
                   title="Дашборды не найдены"
                   description="Измените название в фильтре или создайте новый дашборд."
                 />
-              </div>
-            )}
-          <div className="flex flex-col gap-3 border-t border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <span className="whitespace-nowrap text-sm text-gray-600">
-              Отработка фильтра: {filteredDashboards.length} записей
-            </span>
-            <ListPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              pageSize={pageSize}
-              rangeLabel={rangeLabel}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
-            />
-          </div>
-        </div>
+              </ListEmptyNotice>
+            ) : null
+          }
+          footer={
+            <ListTableFooter
+              pagination={
+                <ListPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  rangeLabel={rangeLabel}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                />
+              }
+            >
+              <ListFilterCount count={filteredDashboards.length} />
+            </ListTableFooter>
+          }
+        >
+          <table className="min-w-full table-fixed text-left text-base">
+            <colgroup>
+              <col className="w-[36%]" />
+              <col className="w-[8%]" />
+              <col className="w-[18%]" />
+              <col className="w-[15%]" />
+              <col className="w-[15%]" />
+              <col className="w-[8%]" />
+            </colgroup>
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <ListFilterCell>
+                  <Input
+                    value={nameFilter}
+                    onChange={setNameFilter}
+                    placeholder="Название"
+                    inputClassName={listFilterClass(Boolean(nameFilter.trim()))}
+                  />
+                </ListFilterCell>
+                <ListFilterCell />
+                <ListFilterCell />
+                <ListFilterCell />
+                <ListFilterCell />
+                <ListFilterCell alignEnd>
+                  <div className="ml-auto flex w-[160px] items-center justify-end">
+                    <ListResetFiltersButton onClick={handleResetFilters} />
+                  </div>
+                </ListFilterCell>
+              </tr>
+              <tr className="bg-[#003366] text-white">
+                <ListSortHeader
+                  label="Название"
+                  active={sortConfig.key === 'name'}
+                  direction={sortConfig.direction}
+                  onClick={() => toggleSort('name')}
+                />
+                <ListSortHeader
+                  label="Графиков"
+                  active={sortConfig.key === 'charts'}
+                  direction={sortConfig.direction}
+                  onClick={() => toggleSort('charts')}
+                />
+                <ListSortHeader
+                  label="Источники"
+                  active={sortConfig.key === 'sources'}
+                  direction={sortConfig.direction}
+                  onClick={() => toggleSort('sources')}
+                />
+                <ListSortHeader
+                  label="Изменён"
+                  active={sortConfig.key === 'updatedAt'}
+                  direction={sortConfig.direction}
+                  onClick={() => toggleSort('updatedAt')}
+                />
+                <ListSortHeader
+                  label="Создан"
+                  active={sortConfig.key === 'createdAt'}
+                  direction={sortConfig.direction}
+                  onClick={() => toggleSort('createdAt')}
+                />
+                <ListColumnHeaderCell align="center" className="pr-4">Действия</ListColumnHeaderCell>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {pagedDashboards.map((dashboard) => {
+                const kinds = dashboardSourceKinds(dashboard);
+                const isActive = dashboard.id === activeDashboardId;
+                return (
+                  <tr key={dashboard.id} className="hover:bg-gray-50">
+                    <td className="min-w-0 px-4 py-3">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <LayoutDashboard className="h-4 w-4 shrink-0 text-sber-dark" />
+                        <Link
+                          to={`/constructor/${dashboard.id}`}
+                          className="font-medium text-sber-dark hover:underline"
+                        >
+                          {dashboard.name}
+                        </Link>
+                        {isActive ? (
+                          <span className="shrink-0 rounded-full bg-sber-dark/10 px-2 py-0.5 text-[11px] font-medium text-sber-dark">
+                            Текущий
+                          </span>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">{dashboard.widgets.length}</td>
+                    <td className="px-4 py-3 text-gray-600">{dashboardSourceSummary(kinds)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-600">{formatDateTime(dashboard.updatedAt)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-600">{formatDateTime(dashboard.createdAt)}</td>
+                    <td className="overflow-visible px-0 pr-4 py-3">
+                      <ConstructorRowActions
+                        dashboardId={dashboard.id}
+                        dashboardName={dashboard.name}
+                        isActive={isActive}
+                        menuOpen={openMenuId === dashboard.id}
+                        onToggleMenu={() =>
+                          setOpenMenuId((current) => (current === dashboard.id ? null : dashboard.id))
+                        }
+                        onMakeCurrent={() => {
+                          setActiveDashboard(dashboard.id);
+                          setOpenMenuId(null);
+                        }}
+                        onCopy={() => {
+                          setSaveAsId(dashboard.id);
+                          setSaveAsName(`${dashboard.name} (копия)`);
+                          setOpenMenuId(null);
+                        }}
+                        onDelete={() => {
+                          setDeleteId(dashboard.id);
+                          setOpenMenuId(null);
+                        }}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </ListTableShell>
       )}
 
       {isCreateOpen ? (

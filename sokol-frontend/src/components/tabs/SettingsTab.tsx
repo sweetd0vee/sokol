@@ -33,6 +33,17 @@ import {
 
 type EntityId = string | number;
 
+const SETTINGS_DELETE_ACTIONS: Record<
+  SettingsListKey,
+  { remove: (id: EntityId) => Promise<void>; queryKey: readonly unknown[] }
+> = {
+  auditors: { remove: deleteAuditor, queryKey: queryKeys.settings.auditors },
+  departments: { remove: deleteDepartment, queryKey: queryKeys.settings.departments },
+  auditTypes: { remove: deleteAuditType, queryKey: queryKeys.settings.auditTypes },
+  checkKinds: { remove: deleteCheckKind, queryKey: queryKeys.settings.checkKinds },
+  ratings: { remove: deleteEffectivenessRating, queryKey: queryKeys.settings.effectivenessRatings },
+};
+
 export function SettingsTab() {
   const queryClient = useQueryClient();
   const { isAdmin } = useAuth();
@@ -65,22 +76,9 @@ export function SettingsTab() {
     setIsDeleting(true);
     setDeleteError('');
     try {
-      if (entity === 'auditors') {
-        await deleteAuditor(id);
-        await queryClient.invalidateQueries({ queryKey: queryKeys.settings.auditors });
-      } else if (entity === 'departments') {
-        await deleteDepartment(id);
-        await queryClient.invalidateQueries({ queryKey: queryKeys.settings.departments });
-      } else if (entity === 'auditTypes') {
-        await deleteAuditType(id);
-        await queryClient.invalidateQueries({ queryKey: queryKeys.settings.auditTypes });
-      } else if (entity === 'checkKinds') {
-        await deleteCheckKind(id);
-        await queryClient.invalidateQueries({ queryKey: queryKeys.settings.checkKinds });
-      } else if (entity === 'ratings') {
-        await deleteEffectivenessRating(id);
-        await queryClient.invalidateQueries({ queryKey: queryKeys.settings.effectivenessRatings });
-      }
+      const action = SETTINGS_DELETE_ACTIONS[entity];
+      await action.remove(id);
+      await queryClient.invalidateQueries({ queryKey: action.queryKey });
       closeDeleteModal();
     } catch (error) {
       setDeleteError(getErrorMessage(error, 'Не удалось удалить запись.'));

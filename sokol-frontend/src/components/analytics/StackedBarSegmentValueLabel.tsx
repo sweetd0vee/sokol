@@ -18,8 +18,6 @@ export const HORIZONTAL_BAR_MAX_SIZE = 28;
 /** Cap for simple horizontal bars whose labels sit outside the bar. */
 export const HORIZONTAL_STRIP_MAX_SIZE = 12;
 
-const STACKED_CALLOUT_BOX_GAP = 4;
-
 type StackedSegmentLabelView = {
   x?: number | string;
   y?: number | string;

@@ -7,7 +7,7 @@ export function ListFilterCell({
   colSpan,
   alignEnd = false,
 }: {
-  children: ReactNode;
+  children?: ReactNode;
   colSpan?: number;
   alignEnd?: boolean;
 }) {
