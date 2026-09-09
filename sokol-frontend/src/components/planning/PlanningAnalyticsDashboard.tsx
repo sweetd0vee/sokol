@@ -221,7 +221,7 @@ export function PlanningAnalyticsDashboard() {
       },
       {
         id: 'coverage',
-        defaultLayout: { x: 0, y: 2, w: 6, h: 5, minW: 3, minH: 3 },
+        defaultLayout: { x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
         render: () => {
           const uncoveredDepartments = coverage.uncoveredDepartments;
           return (
