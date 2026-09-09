@@ -573,7 +573,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
                 dataKey="value"
                 position={isBars ? 'right' : 'top'}
                 fontSize={CHART_VALUE_LABEL_SIZE}
-                fill={lastScaleColor(MONITORING_BAR_BLUE_SCALE)}
+                fill="#000000"
                 offset={isBars ? 0 : 8}
               />
             </Bar>

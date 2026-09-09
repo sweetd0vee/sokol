@@ -340,7 +340,7 @@ export function MonitoringAnalyticsDashboard() {
                         dataKey="value"
                         position="top"
                         fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill={lastScaleColor(MONITORING_BAR_BLUE_SCALE)}
+                        fill="#000000"
                         offset={8}
                       />
                     </Bar>
@@ -396,7 +396,7 @@ export function MonitoringAnalyticsDashboard() {
                         dataKey="value"
                         position="right"
                         fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill={lastScaleColor(MONITORING_BAR_BLUE_SCALE)}
+                        fill="#000000"
                       />
                     </Bar>
                   </BarChart>

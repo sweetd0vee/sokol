@@ -3,6 +3,7 @@ import {
   ChartLegend,
   CHART_LEGEND_STYLE,
   CHART_SLICE_PERCENT_FONT_SIZE,
+  CHART_VALUE_LABEL_WEIGHT,
 } from './AnalyticsChartPrimitives';
 import { PALETTE } from './analyticsPalette';
 import { formatChartLegendText } from './chartLegend';
@@ -200,7 +201,7 @@ export function FocusableSquareCirclesChart({
                   dominantBaseline="central"
                   fill={contrastLabelColor(fill)}
                   fontSize={labelFontSize}
-                  fontWeight={700}
+                  fontWeight={CHART_VALUE_LABEL_WEIGHT}
                   style={{ fontVariantNumeric: 'tabular-nums', pointerEvents: 'none' }}
                 >
                   {roundedPercent}%

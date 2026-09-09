@@ -87,7 +87,7 @@ export function ConstructorWidgetCard({
               <p className="ml-7 truncate text-xs leading-snug text-gray-500">{widget.description}</p>
             ) : null}
             {widget.filterCaption ? (
-              <p className="ml-7 truncate text-[11px] leading-snug text-gray-400" title={widget.filterCaption}>
+              <p className="ml-7 break-words text-[11px] leading-snug text-gray-400">
                 {widget.filterCaption}
               </p>
             ) : null}

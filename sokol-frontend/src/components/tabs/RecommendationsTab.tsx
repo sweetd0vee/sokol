@@ -302,13 +302,13 @@ export function RecommendationsTab() {
             <col className="w-40" />
             <col />
             <col className="w-52" />
-            <col className="w-28" />
+            <col className="w-36" />
             <col className="w-44" />
             <col className="w-36" />
             <col className="w-44" />
             <col className="w-28" />
             <col className="w-36" />
-            <col className="w-[140px]" />
+            <col className="w-[156px]" />
             <col className="w-[190px]" />
           </colgroup>
           <thead>

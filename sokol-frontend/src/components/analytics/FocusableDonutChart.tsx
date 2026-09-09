@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { getValueBasedColors, PALETTE } from './analyticsPalette';
-import { ChartLegend, CHART_LEGEND_STYLE, CHART_SLICE_PERCENT_FONT_SIZE, CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
+import { ChartLegend, CHART_LEGEND_STYLE, CHART_SLICE_PERCENT_FONT_SIZE, CHART_TOOLTIP_STYLE, CHART_VALUE_LABEL_WEIGHT } from './AnalyticsChartPrimitives';
 import { formatChartLegendText } from './chartLegend';
 
 export type DonutDatum = {
@@ -108,7 +108,7 @@ function PieValueLabel({
           textAnchor="middle"
           dominantBaseline="central"
           fontSize={CHART_SLICE_PERCENT_FONT_SIZE}
-          fontWeight={700}
+          fontWeight={CHART_VALUE_LABEL_WEIGHT}
         >
           {percentLabel}
         </text>
@@ -119,7 +119,7 @@ function PieValueLabel({
           textAnchor="middle"
           dominantBaseline="central"
           fontSize={12}
-          fontWeight={600}
+          fontWeight={CHART_VALUE_LABEL_WEIGHT}
         >
           {value}
         </text>
@@ -136,7 +136,7 @@ function PieValueLabel({
         textAnchor="middle"
         dominantBaseline="central"
           fontSize={labelMode === 'percent' ? CHART_SLICE_PERCENT_FONT_SIZE : 16}
-        fontWeight={700}
+        fontWeight={CHART_VALUE_LABEL_WEIGHT}
       >
         {labelMode === 'percent' ? percentLabel : value}
       </text>

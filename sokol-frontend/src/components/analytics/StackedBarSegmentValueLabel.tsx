@@ -1,3 +1,5 @@
+import { CHART_VALUE_LABEL_WEIGHT } from './AnalyticsChartPrimitives';
+
 const STACKED_LABEL_MIN_INSIDE_HEIGHT = 14;
 const STACKED_LABEL_CHAR_WIDTH = 0.62;
 const STACKED_NOTE_FONT_SIZE = 11;
@@ -185,7 +187,7 @@ export function StackedBarSegmentValueLabel({
         textAnchor="start"
         dominantBaseline="middle"
         fontSize={STACKED_TOTAL_FONT_SIZE}
-        fontWeight={700}
+        fontWeight={CHART_VALUE_LABEL_WEIGHT}
         fill="#111827"
         style={{ pointerEvents: 'none' }}
       >
@@ -198,7 +200,7 @@ export function StackedBarSegmentValueLabel({
         textAnchor="middle"
         dominantBaseline="middle"
         fontSize={STACKED_TOTAL_FONT_SIZE}
-        fontWeight={700}
+        fontWeight={CHART_VALUE_LABEL_WEIGHT}
         fill="#111827"
         style={{ pointerEvents: 'none' }}
       >
@@ -215,7 +217,7 @@ export function StackedBarSegmentValueLabel({
         textAnchor="middle"
         dominantBaseline="middle"
         fontSize={h >= 20 ? 13 : 12}
-        fontWeight={700}
+        fontWeight={CHART_VALUE_LABEL_WEIGHT}
         fill="#111827"
         style={{ pointerEvents: 'none' }}
       >
@@ -302,7 +304,7 @@ export function StackedBarSegmentValueLabel({
           textAnchor="middle"
           dominantBaseline="middle"
           fontSize={STACKED_NOTE_FONT_SIZE}
-          fontWeight={700}
+          fontWeight={CHART_VALUE_LABEL_WEIGHT}
           fill="#111827"
         >
           {roundedStr}
@@ -370,7 +372,7 @@ export function StackedBarSegmentValueLabel({
         textAnchor="middle"
         dominantBaseline="middle"
         fontSize={STACKED_NOTE_FONT_SIZE}
-        fontWeight={700}
+        fontWeight={CHART_VALUE_LABEL_WEIGHT}
         fill="#111827"
       >
         {roundedStr}

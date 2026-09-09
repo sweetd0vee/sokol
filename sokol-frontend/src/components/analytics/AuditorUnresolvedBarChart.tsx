@@ -21,6 +21,7 @@ import {
   CHART_AXIS_TICK,
   CHART_CATEGORY_AXIS_TICK,
   CHART_TOOLTIP_STYLE,
+  CHART_VALUE_LABEL_WEIGHT,
   ChartRechartsSquareLegend,
 } from './AnalyticsChartPrimitives';
 const BAR_COLOR = '#0E7490';
@@ -266,7 +267,13 @@ export function AuditorUnresolvedBarChart({
                 fillOpacity={visibleName && visibleName !== row.name ? 0.35 : 1}
               />
             ))}
-            <LabelList dataKey="label" position="right" fill="#111827" fontSize={13} fontWeight={700} />
+            <LabelList
+              dataKey="label"
+              position="right"
+              fill="#111827"
+              fontSize={13}
+              fontWeight={CHART_VALUE_LABEL_WEIGHT}
+            />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
