@@ -32,7 +32,7 @@ function ColumnShareSquares({ shares }: { shares: EffectivenessColumnShare[] }) 
             title={`${share.label}: ${share.percent}% (${share.count})`}
             aria-label={`${share.label}: ${share.percent}% (${share.count})`}
           >
-            <span className="text-xs font-semibold tabular-nums">{share.percent}%</span>
+            <span className="text-xs font-normal tabular-nums">{share.percent}%</span>
           </span>
         </li>
       ))}

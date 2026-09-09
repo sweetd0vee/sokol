@@ -15,6 +15,7 @@ import {
   CHART_LEGEND_STYLE,
   CHART_TOOLTIP_STYLE,
   CHART_VALUE_LABEL_SIZE,
+  CHART_VALUE_LABEL_WEIGHT,
   ChartRechartsSquareLegend,
   EmptyChart,
   KpiCard,
@@ -203,6 +204,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
                 dataKey="value"
                 position={isBars ? 'right' : 'top'}
                 fontSize={CHART_VALUE_LABEL_SIZE}
+                fontWeight={CHART_VALUE_LABEL_WEIGHT}
                 fill={CHECKS_PALETTE[0]}
                 offset={isBars ? 0 : 8}
               />
@@ -573,6 +575,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
                 dataKey="value"
                 position={isBars ? 'right' : 'top'}
                 fontSize={CHART_VALUE_LABEL_SIZE}
+                fontWeight={CHART_VALUE_LABEL_WEIGHT}
                 fill="#000000"
                 offset={isBars ? 0 : 8}
               />
@@ -597,10 +600,21 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
           <Tooltip />
           <Legend wrapperStyle={CHART_LEGEND_STYLE} />
           <Bar dataKey="filled" name="Готово" stackId="docs" fill="#22C55E">
-            <LabelList dataKey="filled" position="center" fontSize={CHART_VALUE_LABEL_SIZE} fill="#fff" />
+            <LabelList
+              dataKey="filled"
+              position="center"
+              fontSize={CHART_VALUE_LABEL_SIZE}
+              fontWeight={CHART_VALUE_LABEL_WEIGHT}
+              fill="#fff"
+            />
           </Bar>
           <Bar dataKey="empty" name="Не готово" stackId="docs" fill="#CBD5E1">
-            <LabelList dataKey="empty" position="center" fontSize={CHART_VALUE_LABEL_SIZE} />
+            <LabelList
+              dataKey="empty"
+              position="center"
+              fontSize={CHART_VALUE_LABEL_SIZE}
+              fontWeight={CHART_VALUE_LABEL_WEIGHT}
+            />
           </Bar>
         </BarChart>
       </ResponsiveContainer>

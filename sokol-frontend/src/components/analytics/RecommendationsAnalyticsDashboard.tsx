@@ -17,7 +17,7 @@ import {
   ANALYTICS_DASHBOARD_MAIN_CLASS,
   AnalyticsDashboardShell,
 } from './AnalyticsDashboardShell';
-import { ChartCard, CHART_AXIS_TICK, CHART_VALUE_LABEL_SIZE, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
+import { ChartCard, CHART_AXIS_TICK, CHART_VALUE_LABEL_SIZE, CHART_VALUE_LABEL_WEIGHT, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { MaterialityMatrixChart } from './MaterialityMatrixChart';
@@ -466,6 +466,7 @@ export function RecommendationsAnalyticsDashboard() {
                         dataKey="value"
                         position="right"
                         fontSize={CHART_VALUE_LABEL_SIZE}
+                        fontWeight={CHART_VALUE_LABEL_WEIGHT}
                         fill="#000000"
                       />
                     </Bar>

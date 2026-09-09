@@ -35,10 +35,10 @@ function ReadinessValue({
 }) {
   return (
     <div className="flex flex-col items-center leading-tight">
-      <span className="text-sm font-semibold tabular-nums" style={{ color: colorForPercent(percent) }}>
+      <span className="text-sm font-normal tabular-nums" style={{ color: colorForPercent(percent) }}>
         {percent}%
       </span>
-      <span className="text-xs font-medium tabular-nums text-gray-500">
+      <span className="text-xs font-normal tabular-nums text-gray-500">
         {filled}/{total}
       </span>
     </div>

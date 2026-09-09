@@ -24,6 +24,7 @@ import {
   CHART_CATEGORY_AXIS_TICK,
   CHART_LEGEND_STYLE,
   CHART_VALUE_LABEL_SIZE,
+  CHART_VALUE_LABEL_WEIGHT,
   EmptyChart,
   KpiCard,
 } from '../analytics/AnalyticsChartPrimitives';
@@ -345,7 +346,12 @@ export function PlanningAnalyticsDashboard() {
                       fill={PLANNING_HIGH_MATERIALITY_COLOR}
                       radius={[0, 6, 6, 0]}
                     >
-                      <LabelList dataKey="value" position="right" fontSize={CHART_VALUE_LABEL_SIZE} />
+                      <LabelList
+                        dataKey="value"
+                        position="right"
+                        fontSize={CHART_VALUE_LABEL_SIZE}
+                        fontWeight={CHART_VALUE_LABEL_WEIGHT}
+                      />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>

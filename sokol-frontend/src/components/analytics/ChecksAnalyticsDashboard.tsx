@@ -261,6 +261,7 @@ export function ChecksAnalyticsDashboard() {
                         dataKey="total"
                         position="top"
                         fontSize={CHART_VALUE_LABEL_SIZE}
+                        fontWeight={CHART_VALUE_LABEL_WEIGHT}
                         fill="#000000"
                         offset={8}
                       />
@@ -301,6 +302,7 @@ export function ChecksAnalyticsDashboard() {
                         dataKey="value"
                         position="right"
                         fontSize={CHART_VALUE_LABEL_SIZE}
+                        fontWeight={CHART_VALUE_LABEL_WEIGHT}
                         fill="#000000"
                       />
                     </Bar>

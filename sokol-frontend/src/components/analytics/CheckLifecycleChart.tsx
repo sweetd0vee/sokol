@@ -67,7 +67,7 @@ function SegmentTooltip({ segment }: { segment: CheckLifecycleSegment }) {
   return (
     <div className="space-y-0.5">
       <p className="text-xs font-semibold text-sber-dark">{segment.label}</p>
-      <p className="text-sm font-semibold tabular-nums text-slate-800">{formatDurationDays(segment.days)}</p>
+      <p className="text-sm font-normal tabular-nums text-slate-800">{formatDurationDays(segment.days)}</p>
       <p className="text-xs text-slate-500">
         {formatRuDate(segment.startDate)} — {formatRuDate(segment.endDate)}
       </p>
@@ -303,7 +303,7 @@ export function CheckLifecycleChart({ rows }: { rows: DvaCheckLifecycleRow[] }) 
                 <td className="px-2 py-0.5">
                   <TimelineTrack row={row} ticks={model.ticks} />
                 </td>
-                <td className="whitespace-nowrap px-3 py-1.5 text-right font-semibold tabular-nums text-sber-dark">
+                <td className="whitespace-nowrap px-3 py-1.5 text-right font-normal tabular-nums text-sber-dark">
                   {row.totalDays === null ? '—' : formatDurationDays(row.totalDays)}
                 </td>
               </tr>

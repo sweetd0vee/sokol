@@ -22,6 +22,7 @@ import {
   CHART_AXIS_TICK,
   CHART_TOOLTIP_STYLE,
   CHART_VALUE_LABEL_SIZE,
+  CHART_VALUE_LABEL_WEIGHT,
   EmptyChart,
   KpiCard,
 } from './AnalyticsChartPrimitives';
@@ -340,6 +341,7 @@ export function MonitoringAnalyticsDashboard() {
                         dataKey="value"
                         position="top"
                         fontSize={CHART_VALUE_LABEL_SIZE}
+                        fontWeight={CHART_VALUE_LABEL_WEIGHT}
                         fill="#000000"
                         offset={8}
                       />
@@ -396,6 +398,7 @@ export function MonitoringAnalyticsDashboard() {
                         dataKey="value"
                         position="right"
                         fontSize={CHART_VALUE_LABEL_SIZE}
+                        fontWeight={CHART_VALUE_LABEL_WEIGHT}
                         fill="#000000"
                       />
                     </Bar>

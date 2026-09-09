@@ -112,7 +112,7 @@ export function StatusMatrixChart({ rows, onSortConfigChange, scrollBody = true 
                     title={`${column.label}: ${count}`}
                     aria-label={`${column.label}: ${count}`}
                   >
-                    <span className="text-sm font-semibold tabular-nums text-slate-800">
+                    <span className="text-sm font-normal tabular-nums text-slate-800">
                       {count}
                     </span>
                   </td>
@@ -136,10 +136,10 @@ export function StatusMatrixChart({ rows, onSortConfigChange, scrollBody = true 
                 <td key={column.key} className="px-1 py-3 text-center align-top">
                   <div className="flex flex-col items-center gap-0.5">
                     <span className="text-sm font-semibold text-sber-dark">{column.label}</span>
-                    <span className="text-sm font-semibold tabular-nums text-slate-800">
+                    <span className="text-sm font-normal tabular-nums text-slate-800">
                       {count}
                     </span>
-                    <span className="text-sm font-medium tabular-nums text-gray-700">{percent}%</span>
+                    <span className="text-sm font-normal tabular-nums text-gray-700">{percent}%</span>
                   </div>
                 </td>
               );
