@@ -17,7 +17,7 @@ export const CHECK_LIFECYCLE_MILESTONES = [
 ] as const;
 
 export const CHECK_LIFECYCLE_SEGMENTS = [
-  { key: 'order_to_program', from: 'order', to: 'program', label: 'Приказ → программа' },
+  { key: 'order_to_program', from: 'order', to: 'program', label: 'Приказ → Программа' },
   { key: 'program_to_az', from: 'program', to: 'az', label: 'Программа → АЗ' },
   { key: 'az_to_dz', from: 'az', to: 'dz', label: 'АЗ → ДЗ' },
 ] as const;

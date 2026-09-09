@@ -201,7 +201,7 @@ describe('check lifecycle', () => {
     expect(exported).toHaveLength(12);
     expect(exported[0]?.key).toBe('П-1');
     expect(exported[11]?.key).toBe('П-12');
-    expect(exported[0]?.stages).toContain('Приказ → программа');
+    expect(exported[0]?.stages).toContain('Приказ → Программа');
     expect(exported[0]?.totalDays).toBe('41 день');
   });
 });

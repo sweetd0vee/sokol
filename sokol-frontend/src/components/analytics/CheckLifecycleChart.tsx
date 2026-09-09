@@ -33,7 +33,7 @@ const POINT_COLOR: Record<string, string> = {
 };
 
 const LEGEND = [
-  { key: 'order_to_program', label: 'Приказ → программа', color: SEGMENT_STYLE.order_to_program },
+  { key: 'order_to_program', label: 'Приказ → Программа', color: SEGMENT_STYLE.order_to_program },
   { key: 'program_to_az', label: 'Программа → АЗ', color: SEGMENT_STYLE.program_to_az },
   { key: 'az_to_dz', label: 'АЗ → ДЗ', color: SEGMENT_STYLE.az_to_dz },
 ];
