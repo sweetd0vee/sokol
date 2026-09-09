@@ -13,7 +13,7 @@ const STACKED_TOTAL_RESERVE = STACKED_TOTAL_FONT_SIZE + STACKED_TOTAL_OFFSET;
 
 export const STACKED_PERIOD_CHART_TOP_MARGIN = 72;
 export const STACKED_PERIOD_CHART_SIDE_MARGIN = 36;
-export const STACKED_HORIZONTAL_CHART_RIGHT_MARGIN = 88;
+export const STACKED_HORIZONTAL_CHART_RIGHT_MARGIN = 48;
 export const HORIZONTAL_BAR_MAX_SIZE = 28;
 /** Cap for simple horizontal bars whose labels sit outside the bar. */
 export const HORIZONTAL_STRIP_MAX_SIZE = 12;
@@ -107,12 +107,30 @@ function segmentFitsInsideLabel(segmentHeight: number, segmentWidth: number, val
     return false;
   }
   const roundedStr = String(Math.round(value));
-  const fontSizeBase = segmentHeight >= 20 ? 13 : 12;
-  const maxFontSizeByWidth =
-    segmentWidth > 0 ? Math.floor((segmentWidth - 6) / (roundedStr.length * STACKED_LABEL_CHAR_WIDTH)) : 0;
-  const fontSize = Math.max(9, Math.min(fontSizeBase, maxFontSizeByWidth));
+  const fontSize = fittingInsideFontSize(segmentWidth, segmentHeight, roundedStr);
+  if (fontSize === null) {
+    return false;
+  }
   const estimatedTextWidth = roundedStr.length * fontSize * STACKED_LABEL_CHAR_WIDTH;
-  return segmentWidth >= estimatedTextWidth + 4 && fontSize >= 9;
+  return segmentWidth >= estimatedTextWidth + 2;
+}
+
+/** Shrink label font to fit the segment; null only when the box is essentially empty. */
+function fittingInsideFontSize(
+  segmentWidth: number,
+  segmentHeight: number,
+  text: string,
+): number | null {
+  if (segmentWidth < 6 || segmentHeight < STACKED_LABEL_MIN_INSIDE_HEIGHT || text.length === 0) {
+    return null;
+  }
+  const fontSizeBase = segmentHeight >= 20 ? 13 : segmentHeight >= 16 ? 12 : 10;
+  const maxByWidth = Math.floor((segmentWidth - 2) / (text.length * STACKED_LABEL_CHAR_WIDTH));
+  const fontSize = Math.min(fontSizeBase, maxByWidth);
+  if (fontSize < 7) {
+    return null;
+  }
+  return fontSize;
 }
 
 function estimateTextWidth(text: string, fontSize: number) {
@@ -129,6 +147,8 @@ export function StackedBarSegmentValueLabel({
   showStackTotal = false,
   stackRow,
   layout = 'horizontal',
+  /** When true, never draw outside callouts — label stays inside the segment or is omitted. */
+  labelsInsideOnly = false,
   ...view
 }: {
   stackKeys: readonly string[];
@@ -137,6 +157,7 @@ export function StackedBarSegmentValueLabel({
   stackRow?: unknown;
   /** Recharts BarChart layout: `horizontal` = vertical columns, `vertical` = horizontal bars. */
   layout?: 'horizontal' | 'vertical';
+  labelsInsideOnly?: boolean;
   [key: string]: unknown;
 }) {
   const labelView = view as StackedSegmentLabelView;
@@ -170,6 +191,7 @@ export function StackedBarSegmentValueLabel({
   const stackIndex = Math.max(0, stackKeys.indexOf(key));
   const hasPayloadValues = stackValues.some((stackValue) => stackValue > 0);
   const isHorizontalBar = layout === 'vertical';
+  const insideOnly = labelsInsideOnly || isHorizontalBar;
   const alongValue = isHorizontalBar ? w : h;
   const pxPerUnit = alongValue > 0 && (numericValue ?? 0) > 0 ? alongValue / (numericValue as number) : 0;
   const valueAfter = hasPayloadValues
@@ -177,8 +199,15 @@ export function StackedBarSegmentValueLabel({
     : 0;
   const barTopY = pxPerUnit > 0 ? y - valueAfter * pxPerUnit : y;
   const barRightX = pxPerUnit > 0 ? x + w + valueAfter * pxPerUnit : x + w;
+  const insideFontSize =
+    numericValue !== undefined && numericValue > 0
+      ? fittingInsideFontSize(w, h, roundedStr) ?? (insideOnly && w >= 4 && h >= 10 ? 7 : null)
+      : null;
   const canPlaceInside =
-    numericValue !== undefined && numericValue > 0 && segmentFitsInsideLabel(h, w, numericValue);
+    numericValue !== undefined
+    && numericValue > 0
+    && insideFontSize !== null
+    && (insideOnly || segmentFitsInsideLabel(h, w, numericValue));
   const totalLabel = shouldRenderTotal ? (
     isHorizontalBar ? (
       <text
@@ -209,14 +238,14 @@ export function StackedBarSegmentValueLabel({
     )
   ) : null;
 
-  if (canPlaceInside) {
+  if (canPlaceInside && insideFontSize !== null) {
     const segmentLabel = (
       <text
         x={cx}
         y={cy}
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize={h >= 20 ? 13 : 12}
+        fontSize={insideFontSize}
         fontWeight={CHART_VALUE_LABEL_WEIGHT}
         fill="#111827"
         style={{ pointerEvents: 'none' }}
@@ -235,7 +264,7 @@ export function StackedBarSegmentValueLabel({
     );
   }
 
-  if (numericValue === undefined || numericValue <= 0) {
+  if (insideOnly || numericValue === undefined || numericValue <= 0) {
     return totalLabel;
   }
 
@@ -265,53 +294,7 @@ export function StackedBarSegmentValueLabel({
   const halfBox = boxWidth / 2;
 
   if (isHorizontalBar) {
-    const totalReserve = showStackTotal
-      ? estimateTextWidth(String(Math.round(stackTotal)), STACKED_TOTAL_FONT_SIZE) + STACKED_TOTAL_OFFSET + 4
-      : 0;
-    const calloutStartX = barRightX + totalReserve + STACKED_NOTE_ANCHOR_GAP;
-    const xOffset = outsideKeys.slice(0, Math.max(0, outsideIndex)).reduce((sum, stackKey) => {
-      const stackValue = stackValues[stackKeys.indexOf(stackKey)] ?? 0;
-      return sum + calloutBoxWidth(stackValue) + STACKED_CALLOUT_BOX_GAP;
-    }, 0);
-    const labelCx = calloutStartX + xOffset + halfBox;
-    const boxX = labelCx - halfBox;
-    const boxY = cy - STACKED_NOTE_BOX_HEIGHT / 2;
-    const lineStartX = boxX;
-
-    return (
-      <g style={{ pointerEvents: 'none' }}>
-        <line
-          x1={cx}
-          y1={cy}
-          x2={lineStartX}
-          y2={cy}
-          stroke={segmentColor}
-          strokeWidth={1.25}
-        />
-        <rect
-          x={boxX}
-          y={boxY}
-          width={boxWidth}
-          height={STACKED_NOTE_BOX_HEIGHT}
-          rx={6}
-          fill="#ffffff"
-          stroke={segmentColor}
-          strokeWidth={1.25}
-        />
-        <text
-          x={labelCx}
-          y={cy}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontSize={STACKED_NOTE_FONT_SIZE}
-          fontWeight={CHART_VALUE_LABEL_WEIGHT}
-          fill="#111827"
-        >
-          {roundedStr}
-        </text>
-        {totalLabel}
-      </g>
-    );
+    return totalLabel;
   }
 
   const outsideCount = Math.max(outsideKeys.length, 1);
