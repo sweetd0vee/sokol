@@ -27,7 +27,7 @@ const TABS = [
       { title: 'Динамика количества проверок по периодам', file: 'checks-dynamics.png' },
       { title: 'Виды проверок за период', file: 'checks-views.png' },
       { title: 'Типы проверок за период', file: 'checks-types.png' },
-      { title: 'Карта департаментов по проверкам (ТОП-10)', file: 'checks-department-map.png' },
+      { title: 'Карта департаментов по количеству проверок (ТОП-10)', file: 'checks-department-map.png' },
       { title: 'Матрица оценок эффективности', file: 'checks-effectiveness.png' },
     ],
   },
@@ -46,11 +46,11 @@ const TABS = [
         file: 'recommendations-materiality-matrix.png',
       },
       {
-        title: 'Количество рекомендаций по каждому виду проверок',
+        title: 'Количество рекомендаций по видам проверок',
         file: 'recommendations-views.png',
       },
       {
-        title: 'Карта департаментов по рекомендациям (ТОП-10)',
+        title: 'Карта департаментов по количеству рекомендаций (ТОП-10)',
         file: 'recommendations-department-map.png',
       },
     ],

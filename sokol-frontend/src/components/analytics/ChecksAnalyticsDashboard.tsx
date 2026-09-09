@@ -341,7 +341,7 @@ export function ChecksAnalyticsDashboard() {
         defaultLayout: { x: 4, y: 5, w: 8, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Карта департаментов по проверкам (ТОП-10)"
+            title="Карта департаментов по количеству проверок (ТОП-10)"
             description=""
             exportSectionId="departmentMap"
             exportSelected={exportSections.isSelected('departmentMap')}

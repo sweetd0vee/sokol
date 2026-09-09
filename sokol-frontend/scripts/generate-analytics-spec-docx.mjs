@@ -340,7 +340,7 @@ const CHECKS_CHARTS = [
     ],
   },
   {
-    title: 'Карта департаментов по проверкам (ТОП-10)',
+    title: 'Карта департаментов по количеству проверок (ТОП-10)',
     type: 'Tree map (прямоугольники, площадь = объём)',
     screenshot: 'checks-department-map.png',
     meaning:
@@ -446,7 +446,7 @@ const RECOMMENDATIONS_CHARTS = [
     ],
   },
   {
-    title: 'Количество рекомендаций по каждому виду проверок',
+    title: 'Количество рекомендаций по видам проверок',
     type: 'Горизонтальная столбчатая диаграмма',
     screenshot: 'recommendations-views.png',
     screenshotFallback: ['checks-views.png'],
@@ -462,7 +462,7 @@ const RECOMMENDATIONS_CHARTS = [
     ],
   },
   {
-    title: 'Карта департаментов по рекомендациям (ТОП-10)',
+    title: 'Карта департаментов по количеству рекомендаций (ТОП-10)',
     type: 'Tree map',
     screenshot: 'recommendations-department-map.png',
     meaning:

@@ -26,8 +26,8 @@ import {
   getUniqueValueColors,
   lastScaleColor,
   MONITORING_STATUS_COLORS,
+  RECOMMENDATIONS_DEPARTMENT_MAP_SCALE,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
-  VALUE_BLUE_SCALE_SOFT,
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import {
@@ -165,7 +165,7 @@ export function RecommendationsAnalyticsDashboard() {
 
   const viewDistribution = data?.viewDistribution ?? EMPTY_VIEW_DISTRIBUTION;
   const viewColors = useMemo(
-    () => getUniqueValueColors(viewDistribution.map((item) => item.value), VALUE_BLUE_SCALE_SOFT),
+    () => getUniqueValueColors(viewDistribution.map((item) => item.value), RECOMMENDATIONS_DEPARTMENT_MAP_SCALE),
     [viewDistribution],
   );
   const objectDistribution = data?.objectDistribution ?? EMPTY_OBJECT_DISTRIBUTION;
@@ -442,7 +442,7 @@ export function RecommendationsAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 13, w: 4, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Количество рекомендаций по каждому виду проверок"
+            title="Количество рекомендаций по видам проверок"
             description=""
             exportSectionId="views"
             exportSelected={exportSections.isSelected('views')}
@@ -458,7 +458,7 @@ export function RecommendationsAnalyticsDashboard() {
                     <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
                     <YAxis dataKey="name" type="category" width={92} tick={CHART_AXIS_TICK} />
                     <Tooltip />
-                    <Bar dataKey="value" name="Рекомендации" fill={lastScaleColor(VALUE_BLUE_SCALE_SOFT)} radius={[0, 6, 6, 0]}>
+                    <Bar dataKey="value" name="Рекомендации" fill={lastScaleColor(RECOMMENDATIONS_DEPARTMENT_MAP_SCALE)} radius={[0, 6, 6, 0]}>
                       {viewDistribution.map((item, index) => (
                         <Cell key={item.name} fill={viewColors[index]} />
                       ))}
@@ -466,7 +466,7 @@ export function RecommendationsAnalyticsDashboard() {
                         dataKey="value"
                         position="right"
                         fontSize={CHART_VALUE_LABEL_SIZE}
-                        fill={lastScaleColor(VALUE_BLUE_SCALE_SOFT)}
+                        fill={lastScaleColor(RECOMMENDATIONS_DEPARTMENT_MAP_SCALE)}
                       />
                     </Bar>
                   </BarChart>
@@ -481,7 +481,7 @@ export function RecommendationsAnalyticsDashboard() {
         defaultLayout: { x: 4, y: 13, w: 8, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Карта департаментов по рекомендациям (ТОП-10)"
+            title="Карта департаментов по количеству рекомендаций (ТОП-10)"
             description=""
             exportSectionId="objects"
             exportSelected={exportSections.isSelected('objects')}
@@ -492,7 +492,7 @@ export function RecommendationsAnalyticsDashboard() {
             ) : (
               <FocusableTreemapChart
                 data={objectDistributionTop}
-                palette={VALUE_BLUE_SCALE_SOFT}
+                palette={RECOMMENDATIONS_DEPARTMENT_MAP_SCALE}
                 colorByUniqueValue
               />
             )}

@@ -107,7 +107,7 @@ export function buildChecksConstructorDrafts(input: ChecksConstructorInput): Con
       );
     } else if (sectionId === 'departmentMap') {
       drafts.push(
-        draft(kind, sectionId, 'Карта департаментов по проверкам (ТОП-10)', caption, SIZE.treemap, {
+        draft(kind, sectionId, 'Карта департаментов по количеству проверок (ТОП-10)', caption, SIZE.treemap, {
           chart: 'treemap',
           data: input.departmentMapTop,
           palette: 'blue',
@@ -196,7 +196,7 @@ export function buildRecommendationsConstructorDrafts(
       );
     } else if (sectionId === 'views') {
       drafts.push(
-        draft(kind, sectionId, 'Количество рекомендаций по каждому виду проверок', caption, SIZE.half, {
+        draft(kind, sectionId, 'Количество рекомендаций по видам проверок', caption, SIZE.half, {
           chart: 'bar',
           variant: 'bars',
           data: barPointsFromNamed(input.viewDistribution),
@@ -214,10 +214,10 @@ export function buildRecommendationsConstructorDrafts(
       );
     } else if (sectionId === 'objects') {
       drafts.push(
-        draft(kind, sectionId, 'Карта департаментов по рекомендациям (ТОП-10)', caption, SIZE.half, {
+        draft(kind, sectionId, 'Карта департаментов по количеству рекомендаций (ТОП-10)', caption, SIZE.half, {
           chart: 'treemap',
           data: input.objectDistributionTop,
-          palette: 'teal',
+          palette: 'blue-muted',
         }),
       );
     }

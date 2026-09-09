@@ -87,6 +87,18 @@ export const VALUE_BLUE_SCALE_SOFT = [
 ] as const;
 
 /**
+ * Softer mid/light stops for the Recommendations department treemap
+ * so mid-range tiles stay muted instead of electric sky.
+ */
+export const RECOMMENDATIONS_DEPARTMENT_MAP_SCALE = [
+  '#B7D0EF', // muted ice — smallest
+  '#8BB0D6', // powder azure
+  '#5A8FBF', // steel blue
+  '#0E7490',
+  '#075985',
+] as const;
+
+/**
  * Emerald + blue treemap palette.
  * Stops alternate light blue ↔ deep teal so neighbouring blocks stay distinct.
  * The last color is emerald #0E7490 and is reserved for the largest value.

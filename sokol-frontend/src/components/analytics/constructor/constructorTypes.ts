@@ -106,7 +106,7 @@ export type ConstructorPayload =
   | {
       chart: 'treemap';
       data: TreemapDatum[];
-      palette: 'blue' | 'emerald' | 'gray' | 'teal' | 'indigo';
+      palette: 'blue' | 'blue-muted' | 'emerald' | 'gray' | 'teal' | 'indigo';
     }
   | {
       chart: 'effectiveness-matrix';

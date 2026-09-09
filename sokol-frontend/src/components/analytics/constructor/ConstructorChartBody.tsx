@@ -32,6 +32,7 @@ import {
   CHECKS_PALETTE,
   lastScaleColor,
   MONITORING_BAR_BLUE_SCALE,
+  RECOMMENDATIONS_DEPARTMENT_MAP_SCALE,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
   DVA_AUDITOR_CHECKS_SCALE,
   VALUE_BLUE_SCALE,
@@ -361,11 +362,17 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
               ? VALUE_EMERALD_SCALE
               : payload.palette === 'indigo'
                 ? DVA_AUDITOR_CHECKS_SCALE
-                : VALUE_BLUE_SCALE
+                : payload.palette === 'blue-muted'
+                  ? RECOMMENDATIONS_DEPARTMENT_MAP_SCALE
+                  : VALUE_BLUE_SCALE
         }
         colorByValue
         colorByRank={payload.palette === 'emerald'}
-        colorByUniqueValue={payload.palette === 'teal' || payload.palette === 'indigo'}
+        colorByUniqueValue={
+          payload.palette === 'teal' ||
+          payload.palette === 'indigo' ||
+          payload.palette === 'blue-muted'
+        }
       />
     );
   }
