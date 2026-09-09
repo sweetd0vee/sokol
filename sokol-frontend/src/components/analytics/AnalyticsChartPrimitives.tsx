@@ -100,6 +100,32 @@ function loadImage(dataUrl: string) {
   });
 }
 
+function wrapText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+) {
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length === 0) {
+    return [''];
+  }
+
+  const lines: string[] = [];
+  let current = words[0] ?? '';
+  for (let index = 1; index < words.length; index += 1) {
+    const word = words[index] ?? '';
+    const next = `${current} ${word}`;
+    if (context.measureText(next).width <= maxWidth) {
+      current = next;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+  }
+  lines.push(current);
+  return lines;
+}
+
 async function captureChartPngWithFilters(
   chartNode: HTMLElement,
   title: string,
@@ -107,49 +133,73 @@ async function captureChartPngWithFilters(
 ) {
   const chartDataUrl = await captureNodePng(chartNode);
   const chartImage = await loadImage(chartDataUrl);
-  const chartWidth = Math.max(1, Math.round(chartNode.getBoundingClientRect().width));
+  const pixelRatio = 2;
+  const padding = 12 * pixelRatio;
+  const gap = 10 * pixelRatio;
+  const titleSize = 14 * pixelRatio;
+  const captionSize = 12 * pixelRatio;
+  const contentWidth = chartImage.naturalWidth;
+  const textMaxWidth = Math.max(1, contentWidth - padding * 2);
 
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = [
-    'position:fixed',
-    'left:-10000px',
-    'top:0',
-    'z-index:-1',
-    'box-sizing:border-box',
-    `width:${chartWidth + 24}px`,
-    'background:#ffffff',
-    'padding:12px',
-    'font-family:system-ui,-apple-system,sans-serif',
-  ].join(';');
-
-  const banner = document.createElement('div');
-  banner.style.cssText = 'box-sizing:border-box;padding:0 0 10px;margin:0 0 10px;border-bottom:1px solid #e5e7eb;';
-
-  const titleEl = document.createElement('div');
-  titleEl.textContent = title;
-  titleEl.style.cssText = 'font-size:14px;font-weight:600;line-height:1.3;color:#003366;';
-  banner.appendChild(titleEl);
-
-  if (filterCaption) {
-    const captionEl = document.createElement('div');
-    captionEl.textContent = filterCaption;
-    captionEl.style.cssText =
-      'margin-top:4px;font-size:12px;line-height:1.35;color:#64748b;white-space:pre-wrap;';
-    banner.appendChild(captionEl);
+  const measure = document.createElement('canvas').getContext('2d');
+  if (!measure) {
+    throw new Error('Canvas недоступен для сборки снимка');
   }
 
-  chartImage.alt = title;
-  chartImage.style.cssText = `display:block;width:${chartWidth}px;height:auto;max-width:none;`;
+  measure.font = `600 ${titleSize}px system-ui, -apple-system, sans-serif`;
+  const titleLines = wrapText(measure, title, textMaxWidth);
+  measure.font = `400 ${captionSize}px system-ui, -apple-system, sans-serif`;
+  const captionLines = filterCaption ? wrapText(measure, filterCaption, textMaxWidth) : [];
 
-  wrapper.appendChild(banner);
-  wrapper.appendChild(chartImage);
-  document.body.appendChild(wrapper);
+  const titleBlockHeight = titleLines.length * Math.round(titleSize * 1.3);
+  const captionBlockHeight = captionLines.length > 0
+    ? 4 * pixelRatio + captionLines.length * Math.round(captionSize * 1.35)
+    : 0;
+  const bannerHeight = titleBlockHeight + captionBlockHeight + gap;
+  const canvasWidth = contentWidth + padding * 2;
+  const canvasHeight = padding + bannerHeight + chartImage.naturalHeight + padding;
 
-  try {
-    return await captureNodePng(wrapper);
-  } finally {
-    wrapper.remove();
+  const canvas = document.createElement('canvas');
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    throw new Error('Canvas недоступен для сборки снимка');
   }
+
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvasWidth, canvasHeight);
+
+  let textY = padding + titleSize;
+  context.fillStyle = '#003366';
+  context.font = `600 ${titleSize}px system-ui, -apple-system, sans-serif`;
+  context.textBaseline = 'alphabetic';
+  for (const line of titleLines) {
+    context.fillText(line, padding, textY);
+    textY += Math.round(titleSize * 1.3);
+  }
+
+  if (captionLines.length > 0) {
+    textY = padding + titleBlockHeight + 4 * pixelRatio + captionSize * 0.85;
+    context.fillStyle = '#64748b';
+    context.font = `400 ${captionSize}px system-ui, -apple-system, sans-serif`;
+    for (const line of captionLines) {
+      context.fillText(line, padding, textY);
+      textY += Math.round(captionSize * 1.35);
+    }
+  }
+
+  const dividerY = padding + bannerHeight - gap / 2;
+  context.strokeStyle = '#e5e7eb';
+  context.lineWidth = Math.max(1, pixelRatio / 2);
+  context.beginPath();
+  context.moveTo(padding, dividerY);
+  context.lineTo(canvasWidth - padding, dividerY);
+  context.stroke();
+
+  context.drawImage(chartImage, padding, padding + bannerHeight);
+
+  return canvas.toDataURL('image/png');
 }
 
 function ChartToolbar({
@@ -197,16 +247,6 @@ function ChartToolbar({
         </button>
       ) : null}
 
-      <button
-        type="button"
-        onClick={onToggleFullscreen}
-        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark"
-        title={isFullscreen ? 'Свернуть' : 'На весь экран'}
-        aria-label={isFullscreen ? 'Свернуть' : 'На весь экран'}
-      >
-        {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Expand className="h-3.5 w-3.5" />}
-      </button>
-
       <div className="relative" ref={menuRef}>
         <button
           type="button"
@@ -223,8 +263,11 @@ function ChartToolbar({
         {isCopyOpen ? (
           <div
             role="menu"
-            className="absolute right-0 z-30 mt-1 w-48 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+            className="absolute right-0 z-30 mt-1 w-52 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
           >
+            <div className="px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-400">
+              PNG в буфер обмена
+            </div>
             <button
               type="button"
               role="menuitem"
@@ -244,6 +287,16 @@ function ChartToolbar({
           </div>
         ) : null}
       </div>
+
+      <button
+        type="button"
+        onClick={onToggleFullscreen}
+        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-sber-dark/40 hover:text-sber-dark"
+        title={isFullscreen ? 'Свернуть' : 'На весь экран'}
+        aria-label={isFullscreen ? 'Свернуть' : 'На весь экран'}
+      >
+        {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Expand className="h-3.5 w-3.5" />}
+      </button>
     </div>
   );
 }
