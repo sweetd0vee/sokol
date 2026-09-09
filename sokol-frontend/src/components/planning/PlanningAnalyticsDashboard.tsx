@@ -183,7 +183,7 @@ export function PlanningAnalyticsDashboard() {
       },
       {
         id: 'coverage',
-        defaultLayout: { x: 0, y: 2, w: 5, h: 5, minW: 3, minH: 3 },
+        defaultLayout: { x: 0, y: 2, w: 5, h: 6, minW: 3, minH: 3 },
         render: () => {
           const uncoveredDepartments = coverage.uncoveredDepartments;
           return (
@@ -227,7 +227,7 @@ export function PlanningAnalyticsDashboard() {
       },
       {
         id: 'unresolved',
-        defaultLayout: { x: 5, y: 2, w: 7, h: 5, minW: 3, minH: 3 },
+        defaultLayout: { x: 5, y: 2, w: 7, h: 6, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Рекомендации со статусом «Не решено»"
@@ -246,7 +246,7 @@ export function PlanningAnalyticsDashboard() {
       },
       {
         id: 'highMateriality',
-        defaultLayout: { x: 0, y: 7, w: 12, h: 4, minW: 6, minH: 3 },
+        defaultLayout: { x: 0, y: 8, w: 12, h: 4, minW: 6, minH: 3 },
         render: () => (
           <ChartCard
             title="Рекомендации высокой существенности по департаментам"

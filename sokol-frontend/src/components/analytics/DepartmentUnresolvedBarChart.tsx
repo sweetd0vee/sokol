@@ -99,40 +99,43 @@ export function DepartmentUnresolvedBarChart({
   data: PlanningUnresolvedDepartmentRow[];
 }) {
   const chartData = useMemo(() => data.filter((row) => row.value > 0), [data]);
+  const chartHeight = Math.max(208, chartData.length * 34 + 16);
 
   return (
-    <div className="h-full min-h-[13rem]">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={chartData}
-          layout="vertical"
-          barCategoryGap={6}
-          maxBarSize={32}
-          margin={{ top: 8, right: 36, left: 8, bottom: 0 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-          <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
-          <YAxis
-            type="category"
-            dataKey="name"
-            width={CATEGORY_WIDTH}
-            interval={0}
-            tick={<DepartmentAxisTick />}
-          />
-          <Tooltip
-            cursor={{ fill: 'rgba(15, 23, 42, 0.04)' }}
-            content={<UnresolvedDepartmentTooltip />}
-          />
-          <Bar dataKey="value" name="Не решено" fill={BAR_COLOR} radius={[0, 6, 6, 0]}>
-            <LabelList
-              dataKey="value"
-              position="right"
-              fontSize={CHART_VALUE_LABEL_SIZE}
-              fontWeight={CHART_VALUE_LABEL_WEIGHT}
+    <div className="h-full min-h-[13rem] overflow-auto">
+      <div style={{ height: chartHeight, minHeight: '100%' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            barCategoryGap={6}
+            maxBarSize={32}
+            margin={{ top: 8, right: 36, left: 8, bottom: 0 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+            <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={CATEGORY_WIDTH}
+              interval={0}
+              tick={<DepartmentAxisTick />}
             />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+            <Tooltip
+              cursor={{ fill: 'rgba(15, 23, 42, 0.04)' }}
+              content={<UnresolvedDepartmentTooltip />}
+            />
+            <Bar dataKey="value" name="Не решено" fill={BAR_COLOR} radius={[0, 6, 6, 0]}>
+              <LabelList
+                dataKey="value"
+                position="right"
+                fontSize={CHART_VALUE_LABEL_SIZE}
+                fontWeight={CHART_VALUE_LABEL_WEIGHT}
+              />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

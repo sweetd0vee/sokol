@@ -368,14 +368,12 @@ def _recommendation_status(
         else:
             status = "unresolved"
     else:
-        if roll < 0.40:
+        if roll < 0.42:
             status = "completed"
-        elif roll < 0.70:
+        elif roll < 0.74:
             status = "in_progress"
-        elif roll < 0.90:
-            status = "on_control"
         else:
-            status = "unresolved"
+            status = "on_control"
 
     if status == "completed":
         additional = "deadline_violated" if rng.random() < 0.22 else "on_time"

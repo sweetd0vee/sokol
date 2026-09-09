@@ -440,7 +440,7 @@ export function buildPlanningConstructorDrafts(input: PlanningConstructorInput):
       );
     } else if (sectionId === 'coverage') {
       drafts.push(
-        draft(kind, sectionId, 'Неохваченные департаменты', caption, { w: 6, h: 3, minW: 3, minH: 2 }, {
+        draft(kind, sectionId, 'Неохваченные департаменты', caption, { w: 5, h: 6, minW: 3, minH: 3 }, {
           chart: 'list',
           items: input.coverage.uncoveredDepartments,
           emptyMessage: 'Все департаменты охвачены проверками за выбранный период',
@@ -449,7 +449,7 @@ export function buildPlanningConstructorDrafts(input: PlanningConstructorInput):
       );
     } else if (sectionId === 'unresolved') {
       drafts.push(
-        draft(kind, sectionId, 'Рекомендации со статусом «Не решено»', caption, SIZE.tallHalf, {
+        draft(kind, sectionId, 'Рекомендации со статусом «Не решено»', caption, { w: 7, h: 6, minW: 3, minH: 3 }, {
           chart: 'department-unresolved',
           data: input.unresolvedByDepartment,
         }),
