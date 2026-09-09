@@ -8,6 +8,7 @@ import type {
   DvaAuditorMaterialityRow,
   DvaAuditorTimelinessRow,
   DvaCheckLifecycleRow,
+  PlanningUnresolvedDepartmentRow,
   RecommendationPeriodPoint,
   RecommendationsSummary,
 } from '../../../api/analytics';
@@ -147,6 +148,10 @@ export type ConstructorPayload =
       data: DvaAuditorExecutionRow[];
     }
   | {
+      chart: 'department-unresolved';
+      data: PlanningUnresolvedDepartmentRow[];
+    }
+  | {
       chart: 'check-lifecycle';
       rows: DvaCheckLifecycleRow[];
     };
@@ -229,7 +234,7 @@ export type PlanningConstructorInput = {
     uncoveredRate: number;
     uncoveredDepartments: string[];
   };
-  departmentAnalytics: Array<{ name: string; checks: number; recommendations: number }>;
+  unresolvedByDepartment: PlanningUnresolvedDepartmentRow[];
   highMaterialityRanking: NamedCount[];
   highMaterialityTotal: number;
   filteredChecksTotal: number;

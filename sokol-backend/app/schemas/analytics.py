@@ -402,15 +402,6 @@ class PlanningCoverage(BaseModel):
     checks_by_department: list[NamedCount] = Field(serialization_alias="checksByDepartment")
 
 
-class PlanningDepartmentAnalyticsRow(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    name: str
-    checks: int
-    recommendations: int
-    high_materiality: int = Field(serialization_alias="highMateriality")
-
-
 class PlanningUnresolvedDepartmentRow(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 

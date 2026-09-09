@@ -430,7 +430,12 @@ export function buildPlanningConstructorDrafts(input: PlanningConstructorInput):
               hint: `из ${input.coverage.total}`,
               tone: 'green',
             },
-            { label: 'Не охвачено', value: input.coverage.uncoveredRate, suffix: '%', tone: 'slate' },
+            {
+              label: 'Не охвачено',
+              value: input.coverage.uncovered,
+              hint: `из ${input.coverage.total}`,
+              tone: 'slate',
+            },
             { label: 'Красные рекомендации', value: input.highMaterialityTotal, tone: 'red' },
           ],
         }),
@@ -444,24 +449,11 @@ export function buildPlanningConstructorDrafts(input: PlanningConstructorInput):
           footer: `Не охвачено: ${input.coverage.uncovered} из ${input.coverage.total} (${input.coverage.uncoveredRate}%)`,
         }),
       );
-    } else if (sectionId === 'departmentAnalytics') {
+    } else if (sectionId === 'unresolved') {
       drafts.push(
-        draft(kind, sectionId, 'Проверки и рекомендации по департаментам', caption, SIZE.tallHalf, {
-          chart: 'stacked',
-          data: input.departmentAnalytics.map((item) => ({
-            name: item.name,
-            checks: item.checks,
-            recommendations: item.recommendations,
-          })),
-          series: [
-            { key: 'checks', name: 'Проверки', color: CHECKS_PALETTE[8] },
-            { key: 'recommendations', name: 'Рекомендации', color: RECOMMENDATIONS_PALETTE[2] },
-          ],
-          xKey: 'name',
-          showLegend: true,
-          layout: 'vertical',
-          grouped: true,
-          categoryWidth: 120,
+        draft(kind, sectionId, 'Рекомендации со статусом «Не решено»', caption, SIZE.tallHalf, {
+          chart: 'department-unresolved',
+          data: input.unresolvedByDepartment,
         }),
       );
     } else if (sectionId === 'highMateriality') {

@@ -319,11 +319,10 @@ def build_checks(
     return assign_serial_numbers(rows)
 
 
-def _coverable_pool_for_year(year: int, rng: random.Random) -> list[str]:
+def _coverable_pool_for_year(rng: random.Random) -> list[str]:
     secondary = [name for name in COVERABLE_DEPARTMENTS if name not in PLANNING_CORE_DEPARTMENTS]
     holdout_count = min(3, len(secondary))
-    year_rng = random.Random(f"planning-holdout-{year}-{rng.randrange(1 << 30)}")
-    holdout = set(year_rng.sample(secondary, holdout_count)) if holdout_count else set()
+    holdout = set(rng.sample(secondary, holdout_count)) if holdout_count else set()
     return [name for name in COVERABLE_DEPARTMENTS if name not in holdout]
 
 
@@ -405,10 +404,18 @@ def _check_deadline_extension_sequences(rec_count: int, rng: random.Random) -> d
 def build_recommendations(checks: list[dict], rng: random.Random, today: date) -> list[dict]:
     rows: list[dict] = []
     materiality_weights = [("низкий", 28), ("средний", 48), ("высокий", 24)]
+    pool_by_year: dict[int, list[str]] = {}
+    check_departments: dict[str, list[str]] = {}
+    for check in checks:
+        year = check["start_date"].year
+        if year not in pool_by_year:
+            pool_by_year[year] = _coverable_pool_for_year(rng)
+        check_departments[check["serial_number"]] = _departments_for_check(pool_by_year[year], rng)
 
     for check in checks:
         rec_count = rng.randint(30, 50)
         extension_by_sequence = _check_deadline_extension_sequences(rec_count, rng)
+        departments = check_departments[check["serial_number"]]
         for sequence in range(1, rec_count + 1):
             materiality = rng.choices([m for m, _ in materiality_weights], weights=[w for _, w in materiality_weights], k=1)[0]
             topic = rng.choice(TOPICS)
@@ -416,7 +423,17 @@ def build_recommendations(checks: list[dict], rng: random.Random, today: date) -
             observation_name = rng.choice(OBSERVATION_TEMPLATES).format(topic=topic)
             created = check["start_date"] + timedelta(days=rng.randint(5, 35))
             deadline = created + timedelta(days=rng.choice([45, 60, 75, 90, 120, 150]))
-            status, additional_status = _recommendation_status(rng, deadline, today)
+            audit_object = _pick_audit_object(departments, rng)
+            unresolved_bias = any(
+                part.strip() in PLANNING_UNRESOLVED_FOCUS_DEPARTMENTS
+                for part in audit_object.split(";")
+            )
+            status, additional_status = _recommendation_status(
+                rng,
+                deadline,
+                today,
+                unresolved_bias=unresolved_bias,
+            )
             closure = build_recommendation_closure_fields(
                 status=status,
                 created=created,
@@ -440,7 +457,7 @@ def build_recommendations(checks: list[dict], rng: random.Random, today: date) -
                 ),
                 "indicator": STATUS_TO_INDICATOR[status],
                 "materiality_level": materiality,
-                "audit_object": _pick_audit_object(rng),
+                "audit_object": audit_object,
                 "deadline": deadline,
                 "auditor": check["check_leader"],
                 "manager": rng.choice(MANAGERS),
@@ -505,6 +522,16 @@ def generate_presentation_dataset(
     )
     dual = sum(1 for row in recommendations if ";" in row["audit_object"])
     print(f"Dual-department recommendations: {dual}")
+    covered = {
+        part.strip()
+        for row in recommendations
+        for part in str(row["audit_object"]).split(";")
+        if part.strip()
+    }
+    real_departments = [name for name in DEPARTMENTS if name != "Не указан"]
+    uncovered = [name for name in real_departments if name not in covered]
+    print(f"Covered departments: {len(covered)} / {len(real_departments)}")
+    print(f"Uncovered departments ({len(uncovered)}): {', '.join(uncovered)}")
     recs_with_extensions = [
         row for row in recommendations if row.get("deadline_extensions")
     ]

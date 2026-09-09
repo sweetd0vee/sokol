@@ -259,6 +259,12 @@ export type PlanningCoverage = {
   checksByDepartment: NamedCount[];
 };
 
+export type PlanningUnresolvedDepartmentRow = {
+  name: string;
+  value: number;
+  checks: DvaCheckCountRef[];
+};
+
 export type PlanningAnalyticsResponse = {
   universeChecksTotal: number;
   universeRecommendationsTotal: number;
@@ -266,12 +272,7 @@ export type PlanningAnalyticsResponse = {
   filteredRecommendationsTotal: number;
   granularity: PeriodGranularity;
   coverage: PlanningCoverage;
-  departmentAnalytics: Array<{
-    name: string;
-    checks: number;
-    recommendations: number;
-    highMateriality: number;
-  }>;
+  unresolvedByDepartment: PlanningUnresolvedDepartmentRow[];
   highMaterialityByDepartment: NamedCount[];
   highMaterialityTotal: number;
   filterOptions: AnalyticsFilterOptions;
