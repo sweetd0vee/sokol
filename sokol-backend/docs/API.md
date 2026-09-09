@@ -4,7 +4,7 @@
 
 Auth: **JWT Bearer**. Публичны `GET /`, `GET /api/v1/status`, `GET /api/v1/capabilities`, `POST /api/v1/auth/login`.  
 `GET /auth/me` и `POST /auth/change-password` требуют авторизации.  
-HTTP Basic: в `development` включён; в `SOKOL_ENV=prod` выключен, пока не `SOKOL_ENABLE_BASIC_AUTH=true`.  
+HTTP Basic: в non-prod включён по умолчанию; при `SOKOL_ENV` ∈ `{prod, production}` выключен, пока не `SOKOL_ENABLE_BASIC_AUTH=true`.  
 Роль берётся из БД при каждом запросе, не из JWT. Неактивные пользователи (и login по `aliases`) не проходят. Login матчит `username` и `aliases`.
 
 **Роли:** `auditor`, `department_head`, `admin`.  

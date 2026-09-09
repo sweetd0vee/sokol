@@ -13,16 +13,16 @@ Python 3.12, async SQLAlchemy, PostgreSQL.
 
 ## Локальный запуск
 
-```powershell
+```bash
 cd sokol-backend
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+python3.12 -m venv venv
+source venv/bin/activate          # Windows: .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-copy .secrets\sokol.env.example .secrets\sokol.env
+cp .secrets/sokol.env.example .secrets/sokol.env
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8802
 ```
 
-Linux/macOS: `python3.12 -m venv venv`, `source venv/bin/activate`, затем та же команда uvicorn.
+Settings читает `.env` и `.secrets/sokol.env`.
 
 ### Минимальный `.secrets/sokol.env`
 
@@ -32,11 +32,11 @@ SOKOL_CORS_ORIGINS=http://localhost:5180
 SOKOL_JWT_SECRET=sokol-dev-jwt-secret-change-me
 ```
 
-Dev-пользователи (если таблица `users` пуста и срабатывает seed): `Админ А.А.`/`admin`, `Ковалев С.С.`/`admin` (роль `department_head`), аудиторы/`auditor`.
+Dev-пользователи (если таблица `users` пуста и срабатывает seed): `Админ А.А.` / `admin` (alias `admin`), `Ковалев С.С.` / `admin` (`department_head`), аудиторы (ФИО) / `auditor`.
 
 ## Docker
 
-Полный стек — [DOCKER.md](../DOCKER.md). Backend-only: `docker/app/docker-compose.yml`.
+Полный стек — [DOCKER.md](../DOCKER.md). Backend-only: `docker/app/docker-compose.yml`. Compose может поднимать Mailhog с profile `extras` — API его не использует.
 
 ## Переменные окружения
 
@@ -44,7 +44,8 @@ Dev-пользователи (если таблица `users` пуста и ср
 |------------|------------|
 | `DATABASE_URL` | async SQLAlchemy URL (обязателен) |
 | `SOKOL_CORS_ORIGINS` | origins фронта через запятую |
-| `SOKOL_ENV` | `development` (default) или `prod` — в prod weak/default JWT secret, demo load и seed `--replace` блокируют старт |
+| `SOKOL_ENV` | `development` (default) или `prod` / `production` — в prod weak/default JWT secret, demo load и seed replace блокируют старт |
+| `SOKOL_DATA_DIR` | каталог Excel seed / data (Docker: `/app/data`; иначе корневой `sokol/data`) |
 | `SOKOL_JWT_SECRET` / `SOKOL_JWT_EXPIRE_MINUTES` | JWT (default TTL 480 мин) |
 | `SOKOL_ADMIN_PASSWORD` / `SOKOL_DEFAULT_USER_PASSWORD` | пароли seed: admin/department_head (`admin`) и аудиторы (`auditor`) |
 | `SOKOL_ENABLE_BASIC_AUTH` | HTTP Basic: в development включён по умолчанию, в prod выключен; явный `true`/`false` перекрывает default |
@@ -52,13 +53,13 @@ Dev-пользователи (если таблица `users` пуста и ср
 | `SOKOL_DOCX_MAX_CONCURRENT` | сколько DOCX-jobs крутятся одновременно (default 2) |
 | `SOKOL_DOCX_MAX_QUEUE` | сколько запросов ждут слот (default 8); сверх лимита — 503 |
 | `SOKOL_DOCX_QUEUE_WAIT_SECONDS` | сколько секунд ждать слот (default 180) |
-| `SOKOL_LOAD_DEMO_DATA` / `SOKOL_SEED_REPLACE` | Docker bootstrap: demo Excel и TRUNCATE; в entrypoint demo default on; в `SOKOL_ENV=prod` запрещены |
+| `SOKOL_LOAD_DEMO_DATA` / `SOKOL_SEED_REPLACE` | Docker bootstrap: demo Excel и TRUNCATE; в entrypoint demo default on; в prod запрещены |
 | `SOKOL_DESTRUCTIVE_DICTIONARY_SYNC` | в development удаляет лишние справочники/users при sync (default on); в prod всегда merge-only |
-| `SOKOL_MINIO_*` | MinIO — [docs/STORAGE.md](docs/STORAGE.md) |
+| `SOKOL_MINIO_ENDPOINT` / `ACCESS_KEY` / `SECRET_KEY` / `SECURE` / `REGION` | MinIO — [docs/STORAGE.md](docs/STORAGE.md) |
 
 ## Инициализация БД
 
-```powershell
+```bash
 python -c "import asyncio; from app.db.init_db import init_db; asyncio.run(init_db())"
 python -m app.db.seed_auditors
 python -m app.db.seed_departments
@@ -68,7 +69,7 @@ python -m app.db.seed_effectiveness_ratings
 python -m app.db.seed_users
 ```
 
-Seed/import/бэкапы: [docs/ALEMBIC_AND_DATA.md](docs/ALEMBIC_AND_DATA.md).
+Seed/import/бэкапы: [docs/ALEMBIC_AND_DATA.md](docs/ALEMBIC_AND_DATA.md). Excel seed лежит в корневом `data/`, не в `sokol-backend/data/`.
 
 ## Инструменты
 
@@ -85,7 +86,7 @@ Seed/import/бэкапы: [docs/ALEMBIC_AND_DATA.md](docs/ALEMBIC_AND_DATA.md).
 
 ## Документация
 
-Каталог [docs/README.md](docs/README.md): архитектура, API, БД, хранилище, reports. План — [PLAN.md](../PLAN.md).
+Каталог [docs/README.md](docs/README.md): архитектура, API, БД, хранилище, reports. Исторический план — [PLAN.md](../PLAN.md).
 
 ## Тесты
 
@@ -103,4 +104,5 @@ python -m unittest discover -s tests   # Python 3.12+
 | `DATABASE_URL is required` | скопировать `.secrets/sokol.env.example` |
 | CORS | `SOKOL_CORS_ORIGINS=http://localhost:5180` |
 | 502 на tools | проверить backend и логи DOCX-пайплайна |
-| Порт занят | `netstat -ano \| findstr :8802` → `taskkill /PID <pid> /F` |
+| 503 на tools | очередь DOCX переполнена — повторить позже |
+| Порт занят | `lsof -i :8802` / `netstat -ano \| findstr :8802` |
