@@ -91,6 +91,37 @@ class PlanningAnalyticsTests(unittest.TestCase):
         self.assertEqual(coverage.covered_departments, ["А"])
         self.assertEqual(coverage.uncovered_departments, ["Б", "В"])
 
+    def test_build_coverage_skips_placeholder_departments(self) -> None:
+        coverage = planning._build_coverage(
+            all_departments=["Не указан", "Финансы", "Риски", "Без департамента"],
+            check_counts={"Финансы": 1, "Не указан": 0, "Риски": 0},
+        )
+
+        self.assertEqual(coverage.total, 2)
+        self.assertEqual(coverage.covered_departments, ["Финансы"])
+        self.assertEqual(coverage.uncovered_departments, ["Риски"])
+
+    def test_unresolved_by_department_counts_keys_and_sorts(self) -> None:
+        lookup = build_department_lookup(["Финансы", "Риски", "ИТ"])
+        ranking = planning._unresolved_by_department(
+            [
+                ("П-1", "Финансы", "unresolved", "Казначейство"),
+                ("П-1", "Финансы", "unresolved", "Казначейство"),
+                ("П-2", "Финансы; Риски", "unresolved", "Кредиты"),
+                ("П-3", "ИТ", "completed", "ИТ-аудит"),
+                ("П-4", "Риски", "unresolved", "ОР"),
+            ],
+            lookup,
+        )
+
+        self.assertEqual([row.name for row in ranking], ["Финансы", "Риски"])
+        self.assertEqual(ranking[0].value, 3)
+        self.assertEqual(ranking[0].checks[0].key, "П-1")
+        self.assertEqual(ranking[0].checks[0].count, 2)
+        self.assertEqual(ranking[0].checks[1].key, "П-2")
+        self.assertEqual(ranking[1].value, 2)
+        self.assertEqual({item.key for item in ranking[1].checks}, {"П-2", "П-4"})
+
     def test_high_materiality_by_department_filters_and_sorts(self) -> None:
         lookup = build_department_lookup(["Финансы", "Риски"])
         recommendations = [
@@ -102,10 +133,9 @@ class PlanningAnalyticsTests(unittest.TestCase):
 
         ranking = planning._high_materiality_by_department(recommendations, lookup)
 
+        self.assertEqual(len(ranking), 1)
         self.assertEqual(ranking[0].name, "Финансы")
         self.assertEqual(ranking[0].value, 2)
-        self.assertEqual(ranking[1].name, "Без департамента")
-        self.assertEqual(ranking[1].value, 1)
 
 
 if __name__ == "__main__":

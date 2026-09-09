@@ -13,7 +13,11 @@ from openpyxl.styles import Font, PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.db.catalogs import AUDITORS, CHECK_KINDS, DEPARTMENTS
-from app.db.demo_data import apply_completed_during_audit_indicator, build_recommendation_closure_fields
+from app.db.demo_data import (
+    DEMO_UNCOVERED_DEPARTMENTS,
+    apply_completed_during_audit_indicator,
+    build_recommendation_closure_fields,
+)
 from app.utils.check_key import assign_serial_numbers
 from app.utils.paths import get_repo_data_dir
 
@@ -102,6 +106,22 @@ EFFECTIVENESS_VALUES = [
     "эффективно", "достаточно эффективно", "недостаточно эффективно",
     "неэффективно", "не оценивалось",
 ]
+
+# Typical audit wave: 4–5 objects per check, a handful of units never in the annual plan.
+PLANNING_CORE_DEPARTMENTS = (
+    "Департамент ИТ",
+    "Департамент информационной безопасности",
+    "Департамент комплаенса",
+    "Департамент рисков",
+    "Департамент кредитного риска",
+    "Кредитный департамент",
+    "Финансовый департамент",
+    "Департамент розничного бизнеса",
+    "Департамент корпоративного бизнеса",
+    "Департамент операционных рисков",
+)
+PLANNING_UNRESOLVED_FOCUS_DEPARTMENTS = frozenset(PLANNING_CORE_DEPARTMENTS[:8])
+COVERABLE_DEPARTMENTS = [name for name in DEPARTMENTS if name not in DEMO_UNCOVERED_DEPARTMENTS]
 
 
 def _check_name(check_type: str, topic: str, index: int) -> str:
@@ -299,23 +319,64 @@ def build_checks(
     return assign_serial_numbers(rows)
 
 
-def _pick_audit_object(rng: random.Random) -> str:
-    if rng.random() < 0.14:
-        first, second = rng.sample(DEPARTMENTS, 2)
+def _coverable_pool_for_year(year: int, rng: random.Random) -> list[str]:
+    secondary = [name for name in COVERABLE_DEPARTMENTS if name not in PLANNING_CORE_DEPARTMENTS]
+    holdout_count = min(3, len(secondary))
+    year_rng = random.Random(f"planning-holdout-{year}-{rng.randrange(1 << 30)}")
+    holdout = set(year_rng.sample(secondary, holdout_count)) if holdout_count else set()
+    return [name for name in COVERABLE_DEPARTMENTS if name not in holdout]
+
+
+def _departments_for_check(pool: list[str], rng: random.Random) -> list[str]:
+    if not pool:
+        return list(COVERABLE_DEPARTMENTS[:4])
+    target = rng.choice([4, 4, 5, 5, 5])
+    target = min(target, len(pool))
+    core_in_pool = [name for name in PLANNING_CORE_DEPARTMENTS if name in pool]
+    chosen: list[str] = []
+    if core_in_pool:
+        core_take = min(len(core_in_pool), rng.choice([2, 3, 3]), target)
+        chosen.extend(rng.sample(core_in_pool, core_take))
+    leftover = [name for name in pool if name not in chosen]
+    remaining = target - len(chosen)
+    if remaining > 0 and leftover:
+        chosen.extend(rng.sample(leftover, min(remaining, len(leftover))))
+    return chosen
+
+
+def _pick_audit_object(pool: list[str], rng: random.Random) -> str:
+    if len(pool) >= 2 and rng.random() < 0.22:
+        first, second = rng.sample(pool, 2)
         return f"{first}; {second}"
-    return rng.choice(DEPARTMENTS)
+    return rng.choice(pool)
 
 
-def _recommendation_status(rng: random.Random, deadline: date, today: date) -> tuple[str, str]:
+def _recommendation_status(
+    rng: random.Random,
+    deadline: date,
+    today: date,
+    *,
+    unresolved_bias: bool = False,
+) -> tuple[str, str]:
     roll = rng.random()
-    if roll < 0.38:
-        status = "completed"
-    elif roll < 0.68:
-        status = "in_progress"
-    elif roll < 0.86:
-        status = "on_control"
+    if unresolved_bias:
+        if roll < 0.30:
+            status = "completed"
+        elif roll < 0.54:
+            status = "in_progress"
+        elif roll < 0.72:
+            status = "on_control"
+        else:
+            status = "unresolved"
     else:
-        status = "unresolved"
+        if roll < 0.40:
+            status = "completed"
+        elif roll < 0.70:
+            status = "in_progress"
+        elif roll < 0.90:
+            status = "on_control"
+        else:
+            status = "unresolved"
 
     if status == "completed":
         additional = "deadline_violated" if rng.random() < 0.22 else "on_time"

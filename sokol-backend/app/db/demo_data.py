@@ -46,7 +46,18 @@ MANAGERS = [
     "Федорова Н.К.",
 ]
 
-AUDIT_OBJECTS = list(DEPARTMENTS)
+# Placeholder and rarely-audited units stay out of demo coverage
+# so the planning dashboard keeps a realistic uncovered list.
+DEMO_UNCOVERED_DEPARTMENTS = (
+    "Не указан",
+    "Департамент мотивации и льгот",
+    "Архивный отдел",
+    "Департамент маркетинга",
+    "Департамент закупок и АХД",
+    "Центр обработки данных",
+    "Департамент трансформации",
+)
+AUDIT_OBJECTS = [name for name in DEPARTMENTS if name not in DEMO_UNCOVERED_DEPARTMENTS]
 
 # Названия ≥3 предложений, по типу проверки; длина ≤255 (лимит БД/схемы).
 CHECK_NAME_TEMPLATES_BY_TYPE: dict[str, tuple[str, ...]] = {
