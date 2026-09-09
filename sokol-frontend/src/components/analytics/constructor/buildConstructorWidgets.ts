@@ -172,7 +172,7 @@ export function buildRecommendationsConstructorDrafts(
       );
     } else if (sectionId === 'materialityByPeriod') {
       drafts.push(
-        draft(kind, sectionId, 'Существенность рекомендаций по периодам', caption, SIZE.wide, {
+        draft(kind, sectionId, 'Динамика количества рекомендаций по периодам (существенность)', caption, SIZE.wide, {
           chart: 'stacked',
           data: input.completedPeriodSeries,
           series: [

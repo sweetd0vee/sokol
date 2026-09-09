@@ -284,7 +284,7 @@ export function RecommendationsAnalyticsDashboard() {
         defaultLayout: { x: 0, y: 2, w: 9, h: 3, minW: 4, minH: 2 },
         render: () => (
           <ChartCard
-            title="Существенность рекомендаций по периодам"
+            title="Динамика количества рекомендаций по периодам (существенность)"
             description=""
             exportSectionId="materialityByPeriod"
             exportSelected={exportSections.isSelected('materialityByPeriod')}

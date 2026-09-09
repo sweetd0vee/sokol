@@ -396,7 +396,7 @@ const RECOMMENDATIONS_CHARTS = [
     ],
   },
   {
-    title: 'Существенность рекомендаций по периодам',
+    title: 'Динамика количества рекомендаций по периодам (существенность)',
     type: 'Накопленные столбцы по периодам',
     screenshot: 'recommendations-materiality-by-period.png',
     screenshotFallback: ['recommendations-status-by-period.png'],

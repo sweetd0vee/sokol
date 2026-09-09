@@ -37,7 +37,7 @@ const TABS = [
     charts: [
       { title: 'Итого по рекомендациям', file: 'recommendations-summary.png' },
       {
-        title: 'Существенность рекомендаций по периодам',
+        title: 'Динамика количества рекомендаций по периодам (существенность)',
         file: 'recommendations-materiality-by-period.png',
       },
       { title: 'Существенность рекомендаций за период', file: 'recommendations-materiality.png' },
