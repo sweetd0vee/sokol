@@ -22,6 +22,7 @@ type UseAnalyticsDashboardControllerOptions<TData extends { filterOptions: Analy
    * query returns (checks dashboard behaviour).
    */
   preferFilteredData?: boolean;
+  includeAuditors?: boolean;
 };
 
 export function useAnalyticsDashboardController<TData extends { filterOptions: AnalyticsFilterOptionsShape }>({
@@ -30,6 +31,7 @@ export function useAnalyticsDashboardController<TData extends { filterOptions: A
   fetchBootstrap,
   fetchFiltered,
   preferFilteredData = false,
+  includeAuditors = true,
 }: UseAnalyticsDashboardControllerOptions<TData>) {
   const session = useAnalyticsDashboardSession();
   const {
@@ -66,7 +68,7 @@ export function useAnalyticsDashboardController<TData extends { filterOptions: A
     yearKeys: selectedYearKeys,
     quarterKeys: selectedQuarterKeys,
     monthKeys: [],
-    auditors: selectedAuditors,
+    ...(includeAuditors ? { auditors: selectedAuditors } : {}),
     departments: selectedDepartments,
     granularity,
   });
@@ -78,7 +80,7 @@ export function useAnalyticsDashboardController<TData extends { filterOptions: A
       granularity,
       selectedYearKeys,
       selectedQuarterKeys,
-      selectedAuditors,
+      ...(includeAuditors ? [selectedAuditors] : []),
       selectedDepartments,
     ],
     queryFn: () =>
@@ -87,7 +89,7 @@ export function useAnalyticsDashboardController<TData extends { filterOptions: A
         years: selectedYearKeys,
         quarters: selectedQuarterKeys,
         months: [],
-        auditors: selectedAuditors,
+        ...(includeAuditors ? { auditors: selectedAuditors } : {}),
         departments: selectedDepartments,
       }),
     enabled: bootstrapQuery.isSuccess,

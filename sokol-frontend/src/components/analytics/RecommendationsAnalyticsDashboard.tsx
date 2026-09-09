@@ -17,6 +17,7 @@ import {
   ANALYTICS_DASHBOARD_MAIN_CLASS,
   AnalyticsDashboardShell,
 } from './AnalyticsDashboardShell';
+import { getPeriodXAxisProps, getMaterialitySegmentColor, MATERIALITY_STACK_KEYS } from './analyticsChartAxis';
 import { ChartCard, CHART_AXIS_TICK, CHART_VALUE_LABEL_SIZE, CHART_VALUE_LABEL_WEIGHT, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
@@ -50,6 +51,7 @@ import {
 } from '../../utils/analyticsPeriodSeries';
 import { runAnalyticsExport } from '../../utils/runAnalyticsExport';
 import { useAnalyticsDashboardController } from './useAnalyticsDashboardController';
+import { toAnalyticsFilterSidebarProps } from './analyticsFilterSidebarProps';
 import { useAddToConstructor } from './constructor/useAddToConstructor';
 import { buildRecommendationsConstructorDrafts } from './constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
@@ -65,38 +67,6 @@ const EMPTY_MATERIALITY_DISTRIBUTION: never[] = [];
 const EMPTY_VIEW_DISTRIBUTION: never[] = [];
 const EMPTY_OBJECT_DISTRIBUTION: never[] = [];
 const EMPTY_MATERIALITY_MATRIX: never[] = [];
-
-function getPeriodXAxisProps(granularity: PeriodGranularity) {
-  if (granularity === 'quarter') {
-    return {
-      interval: 0 as const,
-      height: 40,
-      tickMargin: 8,
-      minTickGap: 0,
-      tick: {
-        ...CHART_AXIS_TICK,
-        fontSize: 12,
-      },
-    };
-  }
-
-  return {};
-}
-
-const MATERIALITY_STACK_KEYS = ['low', 'medium', 'high'] as const;
-
-function getMaterialitySegmentColor(key: string) {
-  if (key === 'low') {
-    return RECOMMENDATIONS_MATERIALITY_CHART_COLORS.низкий;
-  }
-  if (key === 'medium') {
-    return RECOMMENDATIONS_MATERIALITY_CHART_COLORS.средний;
-  }
-  if (key === 'high') {
-    return RECOMMENDATIONS_MATERIALITY_CHART_COLORS.высокий;
-  }
-  return '#e5e7eb';
-}
 
 export function RecommendationsAnalyticsDashboard() {
   const {
@@ -532,32 +502,35 @@ export function RecommendationsAnalyticsDashboard() {
       removeAuditor={removeAuditor}
       selectedDepartments={selectedDepartments}
       removeDepartment={removeDepartment}
-      filterSidebar={{
-        periodSlice,
-        onPeriodSliceChange: handlePeriodSliceChange,
-        yearOptions,
-        quarterOptions,
-        selectedYears,
-        selectedQuarters,
-        onYearsChange: setSelectedYears,
-        onQuartersChange: setSelectedQuarters,
-        auditorOptions,
-        selectedAuditors,
-        onAuditorsChange: setSelectedAuditors,
-        departmentOptions,
-        selectedDepartments,
-        onDepartmentsChange: setSelectedDepartments,
-        onResetFilters: resetFilters,
-        exportFormat,
-        onExportFormatChange: setExportFormat,
-        isExporting,
-        canExport: filteredTotal > 0,
-        onExport: handleExport,
-        onAddToConstructor: handleAddToConstructor,
-        canAddToConstructor: exportSections.selectedCount > 0,
-        addToConstructorCount: exportSections.selectedCount,
-        constructorAdded: justAdded,
-      }}
+      filterSidebar={toAnalyticsFilterSidebarProps(
+        {
+          periodSlice,
+          handlePeriodSliceChange,
+          yearOptions,
+          quarterOptions,
+          selectedYears,
+          selectedQuarters,
+          setSelectedYears,
+          setSelectedQuarters,
+          auditorOptions,
+          selectedAuditors,
+          setSelectedAuditors,
+          departmentOptions,
+          selectedDepartments,
+          setSelectedDepartments,
+          resetFilters,
+          exportFormat,
+          setExportFormat,
+          isExporting,
+        },
+        {
+          canExport: filteredTotal > 0,
+          onExport: handleExport,
+          selectedCount: exportSections.selectedCount,
+          justAdded,
+          onAddToConstructor: handleAddToConstructor,
+        },
+      )}
     >
       <AnalyticsDashboardGrid cards={cards} />
     </AnalyticsDashboardShell>

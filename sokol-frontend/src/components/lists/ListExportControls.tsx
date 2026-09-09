@@ -1,3 +1,4 @@
+import { LIST_EXPORT_BUTTON_CLASS } from '../../constants/formLayout';
 import { EXPORT_FORMATS, type ExportFormat } from '../../utils/exports';
 
 type ListExportControlsProps = {
@@ -23,7 +24,7 @@ export function ListExportControls({
         type="button"
         onClick={onExport}
         disabled={disabled}
-        className="inline-flex w-[160px] items-center justify-center whitespace-nowrap rounded-lg bg-[#90EE90] px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-[#7fdc7f] disabled:cursor-not-allowed disabled:opacity-50"
+        className={LIST_EXPORT_BUTTON_CLASS}
       >
         {isExporting ? 'Экспорт...' : 'Экспорт'}
       </button>

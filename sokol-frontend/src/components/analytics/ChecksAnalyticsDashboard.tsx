@@ -23,6 +23,7 @@ import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { EffectivenessMatrixChart } from './EffectivenessMatrixChart';
 import { CHECKS_PALETTE, getValueBasedColors, MONITORING_STATUS_COLORS, VALUE_BLUE_SCALE } from './analyticsPalette';
 import { useAnalyticsDashboardController } from './useAnalyticsDashboardController';
+import { toAnalyticsFilterSidebarProps } from './analyticsFilterSidebarProps';
 import { exportChecksDashboard } from '../../utils/analyticsExport';
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
@@ -417,32 +418,35 @@ export function ChecksAnalyticsDashboard() {
       removeAuditor={removeAuditor}
       selectedDepartments={selectedDepartments}
       removeDepartment={removeDepartment}
-      filterSidebar={{
-        periodSlice,
-        onPeriodSliceChange: handlePeriodSliceChange,
-        yearOptions,
-        quarterOptions,
-        selectedYears,
-        selectedQuarters,
-        onYearsChange: setSelectedYears,
-        onQuartersChange: setSelectedQuarters,
-        auditorOptions,
-        selectedAuditors,
-        onAuditorsChange: setSelectedAuditors,
-        departmentOptions,
-        selectedDepartments,
-        onDepartmentsChange: setSelectedDepartments,
-        onResetFilters: resetFilters,
-        exportFormat,
-        onExportFormatChange: setExportFormat,
-        isExporting,
-        canExport: filteredTotal > 0 && !analyticsQuery.isFetching,
-        onExport: handleExport,
-        onAddToConstructor: handleAddToConstructor,
-        canAddToConstructor: exportSections.selectedCount > 0,
-        addToConstructorCount: exportSections.selectedCount,
-        constructorAdded: justAdded,
-      }}
+      filterSidebar={toAnalyticsFilterSidebarProps(
+        {
+          periodSlice,
+          handlePeriodSliceChange,
+          yearOptions,
+          quarterOptions,
+          selectedYears,
+          selectedQuarters,
+          setSelectedYears,
+          setSelectedQuarters,
+          auditorOptions,
+          selectedAuditors,
+          setSelectedAuditors,
+          departmentOptions,
+          selectedDepartments,
+          setSelectedDepartments,
+          resetFilters,
+          exportFormat,
+          setExportFormat,
+          isExporting,
+        },
+        {
+          canExport: filteredTotal > 0 && !analyticsQuery.isFetching,
+          onExport: handleExport,
+          selectedCount: exportSections.selectedCount,
+          justAdded,
+          onAddToConstructor: handleAddToConstructor,
+        },
+      )}
     >
       <AnalyticsDashboardGrid cards={cards} />
     </AnalyticsDashboardShell>

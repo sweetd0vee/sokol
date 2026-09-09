@@ -1,4 +1,3 @@
-import { Trash2 } from 'lucide-react';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
@@ -7,7 +6,7 @@ import { ErrorState, LoadingState } from '../ui/StateMessage';
 import { ConfirmDialog } from '../ui/Modal';
 import { getErrorMessage } from '../../api/errors';
 import { FormPageShell } from '../forms/FormPageShell';
-import { FormValidationBanner } from '../forms/FormValidationBanner';
+import { FormActionFooter } from '../forms/FormActionFooter';
 import { CHECK_QUARTER_OPTIONS, CHECK_TYPE_OPTIONS } from '../../constants/checks';
 import { useCheckForm } from '../../hooks/useCheckForm';
 import { CheckAttachmentsSection } from './CheckAttachmentsSection';
@@ -17,10 +16,8 @@ import {
   FORM_FIELD_SPAN_2_CLASS,
   FORM_INPUT_CLASS,
   FORM_LABEL_CLASS,
-  FORM_OUTLINE_BUTTON_CLASS,
   FORM_ROW_3,
   FORM_ROW_4,
-  FORM_SAVE_BUTTON_CLASS,
   FORM_SECTION_CLASS,
   FORM_SECTION_TITLE_CLASS,
   FORM_SERVICE_INPUT_CLASS,
@@ -249,30 +246,14 @@ export function CheckFormPage() {
           onAddManually={form.handleNavigateToNewRecommendation}
         />
 
-        <div className="space-y-5">
-          <FormValidationBanner visible={showValidationErrors && requiredFieldErrors.hasErrors} />
-          {form.saveError && <ErrorState description={form.saveError} />}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <button
-              type="submit"
-              disabled={form.isSaving || form.isDeleting}
-              className={`${FORM_SAVE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
-            >
-              {form.isSaving ? 'Сохранение...' : 'Сохранить'}
-            </button>
-            {form.isEditMode && form.existing?.id && form.isAdmin && (
-              <button
-                type="button"
-                onClick={() => form.setDeleteConfirmOpen(true)}
-                disabled={form.isSaving || form.isDeleting}
-                className={`${FORM_OUTLINE_BUTTON_CLASS} gap-2 disabled:cursor-not-allowed disabled:opacity-50`}
-              >
-                <Trash2 size={14} />
-                {form.isDeleting ? 'Удаление...' : 'Удалить'}
-              </button>
-            )}
-          </div>
-        </div>
+        <FormActionFooter
+          showValidation={showValidationErrors && requiredFieldErrors.hasErrors}
+          saveError={form.saveError}
+          isSaving={form.isSaving}
+          isDeleting={form.isDeleting}
+          deleteVisible={Boolean(form.isEditMode && form.existing?.id && form.isAdmin)}
+          onDelete={() => form.setDeleteConfirmOpen(true)}
+        />
       </form>
       {form.deleteConfirmOpen && form.existing && (
         <ConfirmDialog

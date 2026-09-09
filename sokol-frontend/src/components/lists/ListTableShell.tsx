@@ -2,18 +2,20 @@ import type { ReactNode } from 'react';
 
 export function ListTableShell({
   className = 'rounded-xl border border-gray-200 bg-white',
+  scrollClassName = 'overflow-x-auto',
   children,
   empty,
   footer,
 }: {
   className?: string;
+  scrollClassName?: string;
   children: ReactNode;
   empty?: ReactNode;
   footer: ReactNode;
 }) {
   return (
     <div className={className}>
-      <div className="overflow-x-auto">
+      <div className={scrollClassName}>
         {children}
         {empty}
       </div>

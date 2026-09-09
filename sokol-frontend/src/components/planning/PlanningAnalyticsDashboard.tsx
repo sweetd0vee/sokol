@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import {
   Bar,
   BarChart,
@@ -14,10 +13,7 @@ import {
 import { fetchPlanningAnalytics } from '../../api/analytics';
 import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from '../analytics/AnalyticsDashboardGrid';
-import { AnalyticsDashboardFrame } from '../analytics/AnalyticsDashboardFrame';
-import { AnalyticsFilterSidebar } from '../analytics/AnalyticsFilterSidebar';
-import { AnalyticsSelectionSummary } from '../analytics/AnalyticsSelectionSummary';
-import { filterSelectionItem } from '../analytics/filterSelectionItem';
+import { AnalyticsDashboardShell } from '../analytics/AnalyticsDashboardShell';
 import {
   ChartCard,
   CHART_AXIS_TICK,
@@ -29,17 +25,15 @@ import {
   KpiCard,
 } from '../analytics/AnalyticsChartPrimitives';
 import { CHECKS_PALETTE, RECOMMENDATIONS_PALETTE } from '../analytics/analyticsPalette';
-import { exportGenericAnalyticsDashboard, type AnalyticsExportFormat } from '../../utils/analyticsExport';
-import { toAnalyticsSelectOptions, useAnalyticsPeriodFilters } from '../../hooks/useAnalyticsPeriodFilters';
-import { hasAnalyticsPeriodFilters, useAnalyticsAnchorDates } from '../../hooks/useAnalyticsAnchorDates';
-import { ErrorState, LoadingState } from '../ui/StateMessage';
-import type { PeriodGranularity } from '../../utils/checkAnalytics';
+import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
 import { useExportSections } from '../../hooks/useExportSections';
 import { PLANNING_EXPORT_SECTIONS, type PlanningExportSectionId } from '../../constants/analyticsExportSections';
 import { useAddToConstructor } from '../analytics/constructor/useAddToConstructor';
 import { buildPlanningConstructorDrafts } from '../analytics/constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from '../analytics/constructor/constructorFilterCaption';
-import { AnalyticsFilterCaptionProvider } from '../analytics/analyticsFilterCaptionContext';
+import { useAnalyticsDashboardController } from '../analytics/useAnalyticsDashboardController';
+import { toAnalyticsFilterSidebarProps } from '../analytics/analyticsFilterSidebarProps';
+import { runAnalyticsExport } from '../../utils/runAnalyticsExport';
 
 const PLANNING_HIGH_MATERIALITY_COLOR = '#FF4347';
 

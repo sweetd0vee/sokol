@@ -1,10 +1,9 @@
 import { Link } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
 import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
-import { ErrorState, LoadingState } from '../ui/StateMessage';
+import { LoadingState } from '../ui/StateMessage';
 import { ConfirmDialog } from '../ui/Modal';
 import type {
   MaterialityLevel,
@@ -25,7 +24,8 @@ import { IndicatorSelect } from './IndicatorSelect';
 import { ADDITIONAL_INDICATOR_ICONS } from './indicatorIcons';
 import { CollapsibleFormBlock, RecommendationClosureSection } from './RecommendationClosureSection';
 import { FileAttachmentsPanel } from '../attachments/FileAttachmentsPanel';
-import { FormValidationBanner } from '../forms/FormValidationBanner';
+import { FormPageShell } from '../forms/FormPageShell';
+import { FormActionFooter } from '../forms/FormActionFooter';
 import { useRecommendationForm } from '../../hooks/useRecommendationForm';
 import { RECOMMENDATION_ATTACHMENT_SLOTS } from '../../constants/recommendationClosure';
 import {
@@ -35,10 +35,8 @@ import {
   FORM_INPUT_CLASS,
   FORM_LABEL_CLASS,
   FORM_OUTLINE_BUTTON_CLASS,
-  FORM_PAGE_CLASS,
   FORM_ROW_3,
   FORM_ROW_4,
-  FORM_SAVE_BUTTON_CLASS,
   FORM_SECTION_CLASS,
   FORM_SECTION_INNER_STACK_CLASS,
   FORM_SECTION_TITLE_CLASS,
@@ -52,7 +50,7 @@ import {
 
 export function RecommendationFormPage() {
   const form = useRecommendationForm();
-  const { requiredFieldErrors, showValidationErrors } = form;
+  const { fields, setField, requiredFieldErrors, showValidationErrors } = form;
 
   if (form.isEditMode && form.isFetching && !form.source) {
     return (
@@ -63,9 +61,9 @@ export function RecommendationFormPage() {
   }
 
   return (
-    <div className={`${FORM_PAGE_CLASS} ${FORM_STACK_CLASS}`}>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-xl font-bold text-sber-dark">{form.heading}</h2>
+    <FormPageShell
+      title={form.heading}
+      actions={(
         <div className="flex flex-wrap items-center gap-2">
           {(form.fromCheckForm || (form.isEditMode && form.backToCheckPath)) && (
             form.fromCheckForm ? (
@@ -92,8 +90,8 @@ export function RecommendationFormPage() {
             </Link>
           )}
         </div>
-      </div>
-
+      )}
+    >
       <form onSubmit={form.handleSubmit} className={FORM_STACK_CLASS}>
         <div className={FORM_SECTION_CLASS}>
           <div className={FORM_SECTION_TITLE_CLASS}>Проверка</div>
@@ -101,7 +99,7 @@ export function RecommendationFormPage() {
             {form.isKeyLocked ? (
               <Input
                 label="Ключ"
-                value={form.serialNumber}
+                value={fields.serialNumber}
                 onChange={() => undefined}
                 readOnly
                 placeholder="Не указан"
@@ -112,13 +110,13 @@ export function RecommendationFormPage() {
             ) : (
               <Select
                 label="Ключ"
-                value={form.serialNumber}
-                onChange={form.setSerialNumber}
+                value={fields.serialNumber}
+                onChange={(value) => setField('serialNumber', value)}
                 options={form.checkKeyOptions}
                 placeholder="Выберите ключ"
                 className={FORM_FIELD_CLASS}
                 labelClassName={FORM_LABEL_CLASS}
-                inputClassName={formControlClass(showValidationErrors && !form.serialNumber)}
+                inputClassName={formControlClass(showValidationErrors && !fields.serialNumber)}
               />
             )}
           </div>
@@ -128,7 +126,7 @@ export function RecommendationFormPage() {
             value={form.checkDisplayName}
             onChange={() => undefined}
             readOnly
-            placeholder={form.serialNumber ? 'Не указано' : 'Выберите ключ проверки'}
+            placeholder={fields.serialNumber ? 'Не указано' : 'Выберите ключ проверки'}
             rows={4}
             labelClassName={FORM_LABEL_CLASS}
             inputClassName={`${FORM_TEXTAREA_CLASS} text-gray-800`}
@@ -138,8 +136,8 @@ export function RecommendationFormPage() {
         <div className={FORM_SECTION_CLASS}>
           <div className={FORM_SECTION_TITLE_CLASS}>Наблюдение</div>
           <Textarea
-            value={form.observationName}
-            onChange={form.setObservationName}
+            value={fields.observationName}
+            onChange={(value) => setField('observationName', value)}
             placeholder="Название наблюдения"
             rows={3}
             labelClassName={FORM_LABEL_CLASS}
@@ -163,8 +161,8 @@ export function RecommendationFormPage() {
           </div>
 
           <Textarea
-            value={form.description}
-            onChange={form.setDescription}
+            value={fields.description}
+            onChange={(value) => setField('description', value)}
             placeholder="Текст рекомендации"
             rows={4}
             labelClassName={FORM_LABEL_CLASS}
@@ -174,38 +172,38 @@ export function RecommendationFormPage() {
           <div className={FORM_ROW_4}>
             <Select
               label="Статус"
-              value={form.status}
+              value={fields.status}
               onChange={form.handleStatusChange}
               options={RECOMMENDATION_STATUS_OPTIONS}
               placeholder="Выберите статус"
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
               inputClassName={FORM_EQUAL_CONTROL_CLASS}
-              inputStyle={getRecommendationStatusFieldStyle(form.status)}
+              inputStyle={getRecommendationStatusFieldStyle(fields.status)}
             />
             <IndicatorSelect
               label="Индикатор статуса"
-              value={form.indicator}
-              onChange={(value) => form.setIndicator(value as RecommendationIndicator)}
+              value={fields.indicator}
+              onChange={(value) => setField('indicator', value as RecommendationIndicator)}
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
               inputClassName={formEqualControlClass(showValidationErrors && requiredFieldErrors.indicator)}
             />
             <Select
               label="Дополнительный статус"
-              value={form.additionalStatus}
+              value={fields.additionalStatus}
               onChange={form.handleAdditionalStatusChange}
               options={RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS}
               placeholder="Выберите дополнительный статус"
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
               inputClassName={FORM_EQUAL_CONTROL_CLASS}
-              inputStyle={getRecommendationAdditionalStatusFieldStyle(form.additionalStatus)}
+              inputStyle={getRecommendationAdditionalStatusFieldStyle(fields.additionalStatus)}
             />
             <IndicatorSelect
               label="Индикатор дополнительного статуса"
-              value={form.additionalIndicator}
-              onChange={(value) => form.setAdditionalIndicator(value as RecommendationAdditionalIndicator)}
+              value={fields.additionalIndicator}
+              onChange={(value) => setField('additionalIndicator', value as RecommendationAdditionalIndicator)}
               options={ADDITIONAL_INDICATOR_OPTIONS}
               icons={ADDITIONAL_INDICATOR_ICONS}
               className={FORM_FIELD_CLASS}
@@ -217,8 +215,8 @@ export function RecommendationFormPage() {
           <div className={FORM_ROW_3}>
             <Select
               label="Аудитор"
-              value={form.auditor}
-              onChange={form.setAuditor}
+              value={fields.auditor}
+              onChange={(value) => setField('auditor', value)}
               options={form.auditorOptions}
               placeholder="Выберите аудитора"
               className={FORM_FIELD_CLASS}
@@ -227,8 +225,8 @@ export function RecommendationFormPage() {
             />
             <Select
               label="Объект аудита"
-              value={form.auditObject}
-              onChange={form.setAuditObject}
+              value={fields.auditObject}
+              onChange={(value) => setField('auditObject', value)}
               options={form.auditObjectOptions}
               placeholder="Выберите объект аудита"
               className={FORM_FIELD_CLASS}
@@ -237,8 +235,8 @@ export function RecommendationFormPage() {
             />
             <DatePicker
               label="Срок контроля"
-              selected={form.deadline}
-              onChange={form.setDeadline}
+              selected={fields.deadline}
+              onChange={(value) => setField('deadline', value)}
               placeholder="Выберите дату"
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
@@ -249,8 +247,8 @@ export function RecommendationFormPage() {
           <div className={FORM_ROW_3}>
             <Select
               label="Руководитель проверки"
-              value={form.checkLeader}
-              onChange={form.setCheckLeader}
+              value={fields.checkLeader}
+              onChange={(value) => setField('checkLeader', value)}
               options={form.leaderOptions}
               placeholder="Выберите руководителя"
               className={FORM_FIELD_CLASS}
@@ -259,8 +257,8 @@ export function RecommendationFormPage() {
             />
             <Select
               label="Руководитель объекта аудита"
-              value={form.manager}
-              onChange={form.setManager}
+              value={fields.manager}
+              onChange={(value) => setField('manager', value)}
               options={form.managerOptions}
               placeholder="Выберите руководителя"
               className={FORM_FIELD_CLASS}
@@ -269,8 +267,8 @@ export function RecommendationFormPage() {
             />
             <MaterialitySelect
               label="Уровень существенности"
-              value={form.materialityLevel}
-              onChange={(value) => form.setMaterialityLevel(value as MaterialityLevel)}
+              value={fields.materialityLevel}
+              onChange={(value) => setField('materialityLevel', value as MaterialityLevel)}
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
               inputClassName={FORM_INPUT_CLASS}
@@ -291,7 +289,7 @@ export function RecommendationFormPage() {
               <div className={`${FORM_ROW_3} items-start`}>
                 <div className={`${FORM_FIELD_CLASS} space-y-5`}>
                   <DatePicker
-                    selected={toInputDate(form.closure.actualCompletionDate)}
+                    selected={toInputDate(fields.closure.actualCompletionDate)}
                     onChange={(date) =>
                       form.setClosure((current) => ({
                         ...current,
@@ -315,7 +313,7 @@ export function RecommendationFormPage() {
                 </div>
                 <div className={`${FORM_FIELD_WIDE_CLASS} flex flex-col self-stretch`}>
                   <Textarea
-                    value={form.closure.closureInformation}
+                    value={fields.closure.closureInformation}
                     onChange={(closureInformation) =>
                       form.setClosure((current) => ({ ...current, closureInformation }))
                     }
@@ -335,7 +333,7 @@ export function RecommendationFormPage() {
               hideClosureInformation
               hideActualCompletionDate
               recommendationId={form.recommendationId}
-              value={form.closure}
+              value={fields.closure}
               onChange={form.setClosure}
               canModifyAttachments={form.canManageRecommendation}
               errorFields={
@@ -350,40 +348,24 @@ export function RecommendationFormPage() {
           </div>
         </div>
 
-        <div className="space-y-5">
-          <FormValidationBanner visible={showValidationErrors && requiredFieldErrors.hasErrors} />
-          {form.saveError && <ErrorState description={form.saveError} />}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap justify-start gap-3">
-              <button
-                type="submit"
-                disabled={form.isSaving || form.isDeleting}
-                className={`${FORM_SAVE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
-              >
-                {form.isSaving ? 'Сохранение...' : 'Сохранить'}
-              </button>
-              <button
-                type="button"
-                onClick={() => void form.handleCreateAnotherCheckOnly()}
-                disabled={form.isSaving || form.isDeleting}
-                className={`${FORM_OUTLINE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
-              >
-                Создать еще
-              </button>
-            </div>
-            {form.isEditMode && form.recommendationId && form.canManageRecommendation && (
-              <button
-                type="button"
-                onClick={() => form.setDeleteConfirmOpen(true)}
-                disabled={form.isSaving || form.isDeleting}
-                className={`${FORM_OUTLINE_BUTTON_CLASS} gap-2 disabled:cursor-not-allowed disabled:opacity-50`}
-              >
-                <Trash2 size={14} />
-                {form.isDeleting ? 'Удаление...' : 'Удалить'}
-              </button>
-            )}
-          </div>
-        </div>
+        <FormActionFooter
+          showValidation={showValidationErrors && requiredFieldErrors.hasErrors}
+          saveError={form.saveError}
+          isSaving={form.isSaving}
+          isDeleting={form.isDeleting}
+          deleteVisible={Boolean(form.isEditMode && form.recommendationId && form.canManageRecommendation)}
+          onDelete={() => form.setDeleteConfirmOpen(true)}
+          extraLeft={(
+            <button
+              type="button"
+              onClick={() => void form.handleCreateAnotherCheckOnly()}
+              disabled={form.isSaving || form.isDeleting}
+              className={`${FORM_OUTLINE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
+            >
+              Создать еще
+            </button>
+          )}
+        />
       </form>
       {form.deleteConfirmOpen && form.source && (
         <ConfirmDialog
@@ -393,6 +375,6 @@ export function RecommendationFormPage() {
           onCancel={() => form.setDeleteConfirmOpen(false)}
         />
       )}
-    </div>
+    </FormPageShell>
   );
 }

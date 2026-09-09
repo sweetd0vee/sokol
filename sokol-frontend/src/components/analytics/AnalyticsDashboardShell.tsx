@@ -35,6 +35,7 @@ type AnalyticsDashboardShellProps = {
   removeAuditor: (value: string) => void;
   selectedDepartments: string[];
   removeDepartment: (value: string) => void;
+  includeAuditors?: boolean;
   filterSidebar: Omit<
     AnalyticsFilterSidebarProps,
     'selectionSummary' | 'children'
@@ -59,6 +60,7 @@ export function AnalyticsDashboardShell({
   removeAuditor,
   selectedDepartments,
   removeDepartment,
+  includeAuditors = true,
   filterSidebar,
   children,
 }: AnalyticsDashboardShellProps) {
@@ -98,7 +100,9 @@ export function AnalyticsDashboardShell({
                     'Все значения',
                     removeActivePeriodValue,
                   ),
-                  filterSelectionItem('Аудиторы', selectedAuditors, 'Все аудиторы', removeAuditor),
+                  ...(includeAuditors
+                    ? [filterSelectionItem('Аудиторы', selectedAuditors, 'Все аудиторы', removeAuditor)]
+                    : []),
                   filterSelectionItem(
                     'Департаменты',
                     selectedDepartments,

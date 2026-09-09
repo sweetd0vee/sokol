@@ -16,6 +16,7 @@ import {
 } from './analyticsPalette';
 import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardController } from './useAnalyticsDashboardController';
+import { toAnalyticsFilterSidebarProps } from './analyticsFilterSidebarProps';
 import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
 import { DVA_EXPORT_SECTIONS, type DvaExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
@@ -344,32 +345,35 @@ export function DvaAnalyticsDashboard() {
       removeAuditor={removeAuditor}
       selectedDepartments={selectedDepartments}
       removeDepartment={removeDepartment}
-      filterSidebar={{
-        periodSlice,
-        onPeriodSliceChange: handlePeriodSliceChange,
-        yearOptions,
-        quarterOptions,
-        selectedYears,
-        selectedQuarters,
-        onYearsChange: setSelectedYears,
-        onQuartersChange: setSelectedQuarters,
-        auditorOptions,
-        selectedAuditors,
-        onAuditorsChange: setSelectedAuditors,
-        departmentOptions,
-        selectedDepartments,
-        onDepartmentsChange: setSelectedDepartments,
-        onResetFilters: resetFilters,
-        exportFormat,
-        onExportFormatChange: setExportFormat,
-        isExporting,
-        canExport: filteredChecksTotal > 0 || filteredRecommendationsTotal > 0,
-        onExport: handleExport,
-        onAddToConstructor: handleAddToConstructor,
-        canAddToConstructor: exportSections.selectedCount > 0,
-        addToConstructorCount: exportSections.selectedCount,
-        constructorAdded: justAdded,
-      }}
+      filterSidebar={toAnalyticsFilterSidebarProps(
+        {
+          periodSlice,
+          handlePeriodSliceChange,
+          yearOptions,
+          quarterOptions,
+          selectedYears,
+          selectedQuarters,
+          setSelectedYears,
+          setSelectedQuarters,
+          auditorOptions,
+          selectedAuditors,
+          setSelectedAuditors,
+          departmentOptions,
+          selectedDepartments,
+          setSelectedDepartments,
+          resetFilters,
+          exportFormat,
+          setExportFormat,
+          isExporting,
+        },
+        {
+          canExport: filteredChecksTotal > 0 || filteredRecommendationsTotal > 0,
+          onExport: handleExport,
+          selectedCount: exportSections.selectedCount,
+          justAdded,
+          onAddToConstructor: handleAddToConstructor,
+        },
+      )}
     >
       <AnalyticsDashboardGrid cards={cards} maxChartArea={440} />
     </AnalyticsDashboardShell>

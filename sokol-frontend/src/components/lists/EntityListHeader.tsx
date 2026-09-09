@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom';
 import { User } from 'lucide-react';
-import { LIST_ACTION_BUTTON_CLASS, LIST_CHROME_RIGHT_INSET_CLASS } from '../../constants/formLayout';
+import {
+  LIST_ACTION_BUTTON_CLASS,
+  LIST_CHROME_RIGHT_INSET_CLASS,
+  LIST_CREATE_BUTTON_CLASS,
+} from '../../constants/formLayout';
 
 type EntityListHeaderProps = {
   title: string;
@@ -34,7 +38,7 @@ export function EntityListHeader({
           </button>
           <Link
             to={createTo}
-            className={`${LIST_ACTION_BUTTON_CLASS} bg-[#90EE90] text-gray-700 transition hover:bg-[#7fdc7f]`}
+            className={LIST_CREATE_BUTTON_CLASS}
           >
             Создать
           </Link>
