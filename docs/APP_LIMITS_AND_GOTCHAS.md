@@ -80,7 +80,7 @@ OIDC нет. Смена пароля — `POST /auth/change-password`. Ават�
 
 ## Analytics, planning, constructor
 
-Агрегаты с backend, `staleTime` ~60 с. Visual export (html/pdf/docx/xlsx) — DOM capture. **Планирование экспортируется.** Конструктор — `/constructor`, снимки в localStorage, без backend API.
+Агрегаты с backend, `staleTime` ~60 с. Visual export (html/pdf/docx/xlsx) — DOM capture. **Планирование экспортируется.** Конструктор — `/constructor`, снимки в localStorage, без backend API. Подробно: [ANALYTICS.md](ANALYTICS.md).
 
 Виды проверок в Settings, формах и фильтрах списков — из API (`/settings/check_kinds`).
 

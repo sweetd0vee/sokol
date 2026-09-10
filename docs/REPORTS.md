@@ -1,6 +1,6 @@
 # Генерация и разбор документов
 
-HTTP: `app/api/v1/endpoints/instruments_reports.py`. Логика: `app/services/reports/`. Общий upload: `app/api/uploads.py`. Нужна авторизация.
+HTTP: `app/api/v1/endpoints/instruments_reports.py`. Логика: `app/services/reports/`. Общий upload: `app/api/uploads.py`. Нужна авторизация. Очередь слотов: `docx_queue.py`.
 
 ## Общие правила
 
