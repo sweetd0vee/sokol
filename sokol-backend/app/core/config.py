@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core.startup_validation import DEFAULT_JWT_SECRET, is_production_env
@@ -27,6 +29,8 @@ class Settings(BaseSettings):
     sokol_enable_basic_auth: bool | None = None
     sokol_admin_password: str = "admin"
     sokol_default_user_password: str = "auditor"
+    sokol_log_level: str = "INFO"
+    sokol_log_json: bool | None = None
 
     # MinIO / S3-compatible object storage
     sokol_minio_endpoint: str = ""
@@ -96,6 +100,17 @@ class Settings(BaseSettings):
     def cors_origins(self) -> list[str]:
         """Comma-separated SOKOL_CORS_ORIGINS; empty → allow all (`*`)."""
         return parse_cors_origins(self.sokol_cors_origins)
+
+    @property
+    def log_level(self) -> int:
+        raw = (self.sokol_log_level or "INFO").strip().upper()
+        return getattr(logging, raw, logging.INFO)
+
+    @property
+    def log_json(self) -> bool:
+        if self.sokol_log_json is not None:
+            return self.sokol_log_json
+        return self.is_production
 
 
 settings = Settings()

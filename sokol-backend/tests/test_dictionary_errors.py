@@ -2,7 +2,7 @@
 
 import unittest
 
-from app.crud.dictionary_errors import (
+from app.core.exceptions import (
     DictionaryInUseError,
     DictionaryProtectedError,
     DuplicateDictionaryError,

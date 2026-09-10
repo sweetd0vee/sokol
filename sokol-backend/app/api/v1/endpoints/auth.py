@@ -20,9 +20,12 @@ async def login(
 @router.get("/me", response_model=UserRead)
 async def me(user: CurrentUser = Depends(get_current_user)) -> UserRead:
     return UserRead(
+        id=user.id,
         username=user.username,
         display_name=user.display_name,
         role=user.role,
+        aliases=user.aliases,
+        is_active=user.is_active,
     )
 
 

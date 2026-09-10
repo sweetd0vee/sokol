@@ -45,13 +45,13 @@ sokol/
 | `app/api/v1/endpoints/` | HTTP домена (checks, rec, analytics, attachments, auth, users, tools) |
 | `app/api/v1/dictionary_registry.py` | factory `/settings/*` (нет отдельных endpoint-файлов справочников) |
 | `app/api/deps.py` | JWT / Basic, `require_admin` |
-| `app/core/` | config, роли, JWT, `person_match`, prod guards |
+| `app/core/` | config, роли, JWT, logging/metrics/request_id, `person_match`, prod guards |
 | `app/services/` | домен, `dictionary_*`, analytics, reports, MinIO, status scheduler |
 | `app/crud/` | SQL; словари — `DictionaryCrud` |
 | `app/models/` · `app/schemas/` | ORM и Pydantic |
 | `app/db/` | init, seed (`label_rows`), migrate, import |
 
-Типовой запрос: `endpoints` → `services` → `crud` → модель.
+Типовой запрос: `endpoints` → `services` → `crud` → модель. CRUD — SQL (`flush`); валидация словарей, overlay статусов, MinIO и `commit` — в service.
 
 **Сущности:** `Check` (`serial_number` только backend), `Recommendation` (`check_id` + денормализованный serial), `Attachment` (MinIO + metadata), справочники (auditors с `code` из 3 букв, departments, check_kinds, ratings, audit_types), `User`. Открытые rec-статусы пересчитывает in-process scheduler (00:05 МСК).
 

@@ -138,6 +138,10 @@ class RecommendationsServiceTests(unittest.TestCase):
                     new_callable=AsyncMock,
                     return_value=created,
                 ) as mock_add,
+                patch(
+                    "app.services.recommendations_service.sync_recommendation_audit_objects",
+                    new_callable=AsyncMock,
+                ),
             ):
                 result = await recommendations_service.batch_recommendations(
                     session,

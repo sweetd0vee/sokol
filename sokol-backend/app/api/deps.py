@@ -25,9 +25,12 @@ __all__ = [
 
 def _user_from_record(user) -> CurrentUser:
     return CurrentUser(
+        id=user.id,
         username=user.username,
         display_name=user.display_name,
         role=Role(user.role),
+        aliases=user.aliases,
+        is_active=user.is_active,
     )
 
 

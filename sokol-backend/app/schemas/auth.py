@@ -1,6 +1,14 @@
 from pydantic import BaseModel, Field
 
 from app.core.roles import Role
+from app.schemas.users import UserRead
+
+__all__ = [
+    "ChangePasswordRequest",
+    "LoginRequest",
+    "TokenResponse",
+    "UserRead",
+]
 
 
 class LoginRequest(BaseModel):
@@ -11,12 +19,6 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    username: str
-    display_name: str
-    role: Role
-
-
-class UserRead(BaseModel):
     username: str
     display_name: str
     role: Role

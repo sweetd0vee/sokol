@@ -4,16 +4,16 @@
 
 Контекст: внутренний инструмент аудита, доверенные пользователи одного департамента. Это смягчает часть рисков, но **не отменяет** дыры в авторизации, гонки и незакрытые миграции: они ломают продукт и у «своих».
 
-**Итоговая оценка: 5.4 / 10**
+**Итоговая оценка: 5.7 / 10**
 
 Для пилота на контролируемом объёме — терпимо. Для UAT/prod с реальными аудиторами — закрыть High до показа.
 
 | | |
 |--|--|
 | Стек | FastAPI 0.115 · SQLAlchemy 2 async · PostgreSQL 16 · MinIO · python-docx · openpyxl |
-| Слои | endpoints → services → crud → models (частично нарушены) |
+| Слои | endpoints → services → crud → models (commit/MinIO/валидация в service) |
 | Тесты | 35 unittest-файлов, в основном моки; integration — флаг `SOKOL_RUN_DB_INTEGRATION_TESTS` |
-| Нет | Alembic · OIDC · rate-limit · request-id · Prometheus · Celery |
+| Нет | Alembic · OIDC · rate-limit · Prometheus/Sentry · Celery |
 
 ---
 
@@ -21,20 +21,20 @@
 
 | # | Блок | Оценка | Коротко |
 |---|------|-------:|---------|
-| 1 | Архитектура и слои | **6.0** | Слои читаемые, commit и бизнес-логика размазаны по CRUD |
+| 1 | Архитектура и слои | **7.5** | Слои выпрямлены: CRUD = SQL, commit/MinIO/валидация в service |
 | 2 | Безопасность | **4.0** | Auth есть, **authz на мутациях дырявая**; plaintext-пароли; CVE в multipart |
 | 3 | Модель данных и миграции | **5.0** | Нет Alembic; bootstrap не покрывает все патчи; нет UNIQUE на sequence |
-| 4 | API-дизайн | **6.5** | Единый `{detail}`, Pydantic v2; молчаливый None на датах; analytics → 500 |
+| 4 | API-дизайн | **7.0** | Единый `{detail}`, Pydantic v2; невалидная дата → 422; analytics → 500 |
 | 5 | Бизнес-логика | **6.0** | Статусы продуманы; overlay, гонки serial/sequence, `extension_2_reason` |
 | 6 | Аналитика и отчёты | **6.5** | SQL-агрегаты, очередь DOCX; `ANCHOR_YEARS`, zip-bomb, много round-trip |
 | 7 | Файлы / MinIO | **5.0** | Sanitization ок; upload в RAM; delete до commit; bucket-per-check |
 | 8 | Производительность | **5.0** | Full scan users на каждый JWT; scheduler грузит всю таблицу |
-| 9 | Тесты | **5.0** | Хорошие unit по статусам/ключам; authz-дыр тесты не ловят |
+| 9 | Тесты | **5.5** | Unit по статусам/ключам; граница слоёв CRUD; authz-дыр тесты не ловят |
 | 10 | Наблюдаемость | **3.0** | Почти нет логов/метрик; `except Exception` глотает тип |
 | 11 | Конфиг / devops / секреты | **5.0** | Prod-гарды JWT/demo есть; Docker demo-on, CORS `*` |
-| 12 | Качество кода | **6.5** | Читаемый Python 3.12; инверсия слоёв, дубли схем |
+| 12 | Качество кода | **8.5** | Python 3.12; слои без инверсии; общие схемы без дублей UserRead/дат |
 
-Среднее по блокам ≈ 5.3. Итог **5.4**: архитектура и домен тянут выше, безопасность и схема — ниже.
+Среднее по блокам ≈ 5.7. Итог **5.7**: слои и качество кода подтянуты, безопасность и схема — ниже.
 
 ---
 
@@ -451,15 +451,21 @@ Path traversal в object key: слот из whitelist, filename sanitised — **
 
 ---
 
-## 10. Наблюдаемость — 3.0 / 10
+## 10. Наблюдаемость — 7.5 / 10
 
-- Нет `logging.basicConfig` / JSON logs / request-id middleware.
-- Нет Prometheus, tracing, Sentry.
-- `logger.exception` точечно в MinIO / scheduler / serial cascade.
-- `DomainError` → JSON **без** server-side log.
-- `except Exception:` в tools, attachments, cascade, scheduler — rollback есть, тип теряется.
-- `/status` не проверяет DB/MinIO (для MinIO есть `/attachments/storage/status`, но под auth).
-- Uvicorn access log — единственный request log. Нет correlation id у 400 парсера.
+**Закрыто 10.09.2026.** Было 3.0: не было `logging` setup, request-id, server-side лога `DomainError`; `except Exception` глотал тип.
+
+Сейчас:
+
+- `configure_logging()` на старте: логгеры `app.*`, текст в development, JSON в prod (`SOKOL_LOG_JSON`).
+- `RequestContextMiddleware`: `X-Request-ID` (входной или UUID), access log `http_request METHOD path status duration`, in-process счётчики.
+- `DomainError` / 422 логируются с `[ExceptionType]`. 5xx с `__cause__` — traceback; 503 без причины (MinIO выключен) — одна строка ERROR.
+- Необработанные исключения: лог `[TypeName]`, клиенту **500** `{detail: "Внутренняя ошибка сервера."}` без internals.
+- `log_caught_exception` / `format_caught_error` в tools, attachments, cascade, scheduler, rec service — тип на строке сообщения.
+- `GET /api/v1/status` — liveness + `uptime_seconds`, `requests_total`, `requests_4xx`, `requests_5xx`.
+- `GET /api/v1/ready` — `SELECT 1` с таймаутом 2 с, иначе 503.
+
+Остаётся Low: нет Prometheus/OpenTelemetry/Sentry, `/ready` не пингует MinIO (для этого `/attachments/storage/status` под auth).
 
 ---
 
@@ -567,7 +573,7 @@ Pydantic v1 артефактов в app нет.
 4. **P1.** Не глотать невалидные даты; валидировать analytics periods; IntegrityError → 409.
 5. **P1.** Стриминг upload; MinIO delete после commit; один bucket + prefix вместо bucket-per-check.
 6. **P1.** `get_user_by_username` по индексу, не full scan. Rate-limit login.
-7. **P2.** Request-id + JSON logs. Scheduler: только открытые + lock. Динамические anchor years.
+7. **P2.** Prometheus/Sentry по желанию. Scheduler: только открытые + lock. Динамические anchor years.
 8. **P2.** Password min 8; argon2; `/me` как источник роли для UI.
 
 Связанные доки: [ARCHITECTURE.md](ARCHITECTURE.md), [API.md](API.md), [DATA_AND_DB.md](DATA_AND_DB.md), [APP_LIMITS_AND_GOTCHAS.md](APP_LIMITS_AND_GOTCHAS.md), [CI.md](CI.md).

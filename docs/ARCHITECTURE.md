@@ -2,22 +2,23 @@
 
 React SPA + FastAPI + PostgreSQL 16 + MinIO. DOCX/XLSX и MinIO-I/O — в `asyncio.to_thread`. Тяжёлые DOCX-jobs — in-process очередь слотов (`services/reports/docx_queue.py`), не Celery.
 
-Цепочка: UI → `src/api` → endpoint → service → CRUD → Postgres/MinIO.
+Цепочка: UI → `src/api` → endpoint → service → CRUD → Postgres/MinIO. Commit, MinIO и доменная валидация — в service; CRUD не импортирует `app.services`.
 
 ## Backend
 
 ```
 app/
-├── main.py                 # FastAPI, CORS, prod guards, lifespan-scheduler
+├── main.py                 # FastAPI, CORS, request-id, prod guards, lifespan-scheduler
 ├── api/deps.py             # JWT / Basic, require_admin
-├── api/exception_handlers.py  # DomainError → {detail}
+├── api/middleware.py       # X-Request-ID, access log, in-process counters
+├── api/exception_handlers.py  # DomainError / 422 / 500 → {detail}, лог с типом
 ├── api/uploads.py          # лимит upload / temp files
 ├── api/v1/
 │   ├── router.py
 │   ├── dictionary_router.py / dictionary_registry.py  # factory /settings/*
 │   ├── analytics_deps.py   # query-фильтры дашбордов
 │   └── endpoints/          # checks, recommendations, analytics, attachments, auth, users, tools, health
-├── core/                   # config, JWT, roles, person_match, recommendation_access, startup_validation
+├── core/                   # config, JWT, roles, logging, metrics, request_id, person_match, recommendation_access, startup_validation
 ├── crud/                   # SQL; словари — DictionaryCrud
 ├── db/                     # session, init_db, catalogs, seeds, migrate_*, bootstrap
 ├── models/ · schemas/
@@ -32,11 +33,11 @@ app/
 └── utils/                  # check_key, paths, dictionary_text
 ```
 
-Prefix `/api/v1`. Auth на всех роутерах, кроме `/`, `/status`, `/capabilities`, `POST /auth/login`. HTTP Basic: on в non-prod, off в prod, пока не `SOKOL_ENABLE_BASIC_AUTH=true`. Роль читается из БД на каждый запрос, не из JWT.
+Prefix `/api/v1`. Auth на всех роутерах, кроме `/`, `/status`, `/ready`, `/capabilities`, `POST /auth/login`. HTTP Basic: on в non-prod, off в prod, пока не `SOKOL_ENABLE_BASIC_AUTH=true`. Роль читается из БД на каждый запрос, не из JWT.
 
 | Prefix | Домен |
 |--------|-------|
-| `/status`, `/capabilities` | liveness, лимиты upload и очереди DOCX (публичные) |
+| `/status`, `/ready`, `/capabilities` | liveness + счётчики, DB readiness, лимиты upload и очереди DOCX (публичные) |
 | `/auth` | login, `/me`, смена пароля |
 | `/users` | список и создание `auditor` (admin) |
 | `/checks`, `/recommendations` | домен |

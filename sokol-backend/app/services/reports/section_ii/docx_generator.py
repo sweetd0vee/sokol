@@ -6,6 +6,7 @@ ZIP-подход: копируем документ побайтово, заме
 Уровень существенности выводится текстом.
 """
 
+import logging
 import os
 import re
 import shutil
@@ -16,6 +17,7 @@ from typing import List, Optional
 
 import xml.etree.ElementTree as ET
 
+from app.core.logging import format_caught_error, log_caught_exception
 from app.utils.paths import get_materiality_images_dir
 from app.services.reports.section_ii.docx_parser import (
     parse_observations_from_file_with_runs,
@@ -31,6 +33,8 @@ from app.services.reports.section_ii.bookmark_utils import (
 )
 from app.services.reports.section_ii.observation_links import ensure_observation_bookmarks
 from app.services.reports.section_ii.patterns import DEFAULT_SECTION2_HEADING
+
+logger = logging.getLogger(__name__)
 
 
 W_NS = xml_utils.W_NS
@@ -632,5 +636,6 @@ def process_document(
             raise
 
         return (output_path, observations, None)
-    except Exception as e:
-        return (None, [], str(e))
+    except Exception as exc:
+        log_caught_exception(logger, "Section II generation failed for %s", input_path)
+        return (None, [], format_caught_error(exc))

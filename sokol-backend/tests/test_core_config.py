@@ -80,6 +80,18 @@ class SettingsHelperTests(unittest.TestCase):
             ["http://localhost:5180"],
         )
 
+    def test_log_json_defaults_to_production_only(self) -> None:
+        self.assertFalse(Settings(sokol_env="development", sokol_log_json=None).log_json)
+        self.assertTrue(Settings(sokol_env="prod", sokol_log_json=None).log_json)
+        self.assertTrue(Settings(sokol_env="development", sokol_log_json=True).log_json)
+        self.assertFalse(Settings(sokol_env="prod", sokol_log_json=False).log_json)
+
+    def test_log_level_parses_name(self) -> None:
+        import logging
+
+        self.assertEqual(Settings(sokol_log_level="DEBUG").log_level, logging.DEBUG)
+        self.assertEqual(Settings(sokol_log_level="nope").log_level, logging.INFO)
+
 
 if __name__ == "__main__":
     unittest.main()

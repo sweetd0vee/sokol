@@ -13,6 +13,7 @@ manual additional statuses (on_time / deadline_violated) are left untouched.
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
@@ -102,21 +103,24 @@ def compute_auto_status_fields(
     return updates
 
 
+DateLike = date | datetime | str | None
+
+
 def control_zone_execution_date(
     *,
-    actual_completion_date: object = None,
-    deadline_extensions: object = None,
-    extension_1_date: object = None,
-    extension_2_reason: object = None,
+    actual_completion_date: DateLike = None,
+    deadline_extensions: Sequence[Mapping[str, Any]] | Sequence[Any] | None = None,
+    extension_1_date: DateLike = None,
+    extension_2_reason: DateLike = None,
 ) -> date | None:
     """Срок исполнения from control zone: actual completion, else latest postponement."""
     actual = _as_date(actual_completion_date)
     if actual:
         return actual
     dates: list[date] = []
-    if isinstance(deadline_extensions, list):
+    if deadline_extensions is not None:
         for item in deadline_extensions:
-            raw = item.get("date") if isinstance(item, dict) else None
+            raw = item.get("date") if isinstance(item, Mapping) else getattr(item, "date", None)
             parsed = _as_date(raw)
             if parsed:
                 dates.append(parsed)

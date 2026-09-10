@@ -19,7 +19,7 @@ from app.db.session import get_db_session
 from app.main import app
 from app.models.recommendations import RecommendationAdditionalStatus, RecommendationStatus
 from app.schemas.recommendations import RecommendationListResponse, RecommendationRead
-from app.services.crud_errors import StorageOperationError
+from app.core.exceptions import StorageOperationError
 from tests.auth_test_utils import override_current_user
 
 

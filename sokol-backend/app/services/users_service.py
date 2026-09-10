@@ -49,6 +49,7 @@ async def create_auditor_user(session: AsyncSession, payload: UserCreate) -> Use
                 code=get_leader_initials_code(username),
             ),
         )
+        await session.commit()
     except DuplicateDictionaryError:
         pass
 

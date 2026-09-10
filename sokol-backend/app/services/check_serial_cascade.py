@@ -12,6 +12,7 @@ from app.models.attachments import Attachment
 from app.models.checks import Check
 from app.models.recommendations import Recommendation
 from app.services.storage.minio_storage import check_bucket_name, get_storage
+from app.core.logging import log_caught_exception
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +63,8 @@ async def apply_serial_rewrites(
             try:
                 await storage.copy_check_bucket_objects(item.old_serial, item.new_serial)
             except Exception:  # noqa: BLE001
-                logger.exception(
+                log_caught_exception(
+                    logger,
                     "Failed to migrate MinIO bucket for check serial %s -> %s",
                     item.old_serial,
                     item.new_serial,
@@ -114,7 +116,7 @@ async def cleanup_old_serial_buckets(rewrites: list[SerialRewrite]) -> None:
         try:
             await storage.delete_check_bucket(item.old_serial)
         except Exception:  # noqa: BLE001
-            logger.exception("Failed to delete old MinIO bucket for check %s", item.old_serial)
+            log_caught_exception(logger, "Failed to delete old MinIO bucket for check %s", item.old_serial)
 
 
 async def cascade_auditor_code_in_check_keys(

@@ -84,7 +84,7 @@ async def create_dictionary_item(
                 )
     item = model(**payload)
     session.add(item)
-    await session.commit()
+    await session.flush()
     await session.refresh(item)
     return item
 
@@ -154,14 +154,14 @@ async def update_dictionary_item(
     for field, value in payload.items():
         setattr(item, field, value)
     session.add(item)
-    await session.commit()
+    await session.flush()
     await session.refresh(item)
     return item
 
 
 async def delete_dictionary_item(session: AsyncSession, item: ModelT) -> None:
     await session.delete(item)
-    await session.commit()
+    await session.flush()
 
 
 def bind_dictionary_crud(

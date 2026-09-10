@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from typing import Mapping, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,7 +14,11 @@ from app.models.check_kinds import CheckKind
 from app.models.departments import Department
 from app.models.effectiveness_ratings import EffectivenessRating
 from app.services.dictionary_integrity import EFFECTIVENESS_FIELDS
-from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT, find_dictionary_label_match
+from app.utils.dictionary_text import (
+    UNSPECIFIED_AUDIT_OBJECT,
+    find_dictionary_label_match,
+    split_audit_object_values,
+)
 
 __all__ = [
     "DictionaryRefError",
@@ -68,24 +71,13 @@ async def ensure_effectiveness_rating_label(
         )
 
 
-def _split_audit_object_values(value: object) -> list[str]:
-    if isinstance(value, list):
-        parts: list[str] = []
-        for item in value:
-            parts.extend(_split_audit_object_values(item))
-        return parts
-    if value is None:
-        return []
-    return [part.strip() for part in re.split(r"[;,]", str(value)) if part.strip()]
-
-
 async def _department_names(session: AsyncSession) -> list[str]:
     result = await session.execute(select(Department.name).order_by(Department.name.asc()))
     return [name for name in result.scalars().all() if name and name.strip()]
 
 
 async def canonicalize_audit_objects(session: AsyncSession, value: object) -> list[str]:
-    parts = _split_audit_object_values(value)
+    parts = split_audit_object_values(value)
     if not parts:
         return [UNSPECIFIED_AUDIT_OBJECT]
 

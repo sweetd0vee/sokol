@@ -23,6 +23,7 @@ from app.services.check_serial_cascade import (
     SerialRewrite,
     replace_auditor_code_in_serial,
 )
+from app.services.dictionary_service import DictionaryService
 
 
 class ReplaceAuditorCodeInSerialTests(unittest.TestCase):
@@ -37,63 +38,17 @@ class ReplaceAuditorCodeInSerialTests(unittest.TestCase):
 
 
 class UpdateAuditorCodeCascadeTests(unittest.TestCase):
-    def test_update_auditor_rewrites_check_and_related_serials(self) -> None:
+    def test_update_auditor_sql_only_does_not_commit(self) -> None:
         session = AsyncMock()
         session.add = MagicMock()
-        session.flush = AsyncMock()
-        session.commit = AsyncMock()
-        session.refresh = AsyncMock()
-
         auditor = Auditor(full_name="Гуль Е.Г.", code="GEG")
         auditor.id = uuid4()
 
-        check = Check(
-            id=42,
-            check_name="Проверка",
-            check_type="planned",
-            check_view="Комплексная проверка",
-            check_quarter=1,
-            start_date=date(2026, 1, 15),
-            end_date=None,
-            check_leader="Гуль Е.Г.",
-            status=CheckStatus.NOT_STARTED,
-            created_at=date(2026, 1, 10),
-            serial_number="26GEG1P1",
-        )
-
-        async def execute(statement):  # noqa: ANN001
-            result = MagicMock()
-            sql = str(statement).lower()
-            if "from checks" in sql or "from checks" in sql.replace("\n", " "):
-                # first select(Check) in cascade, second after rewrites for in_
-                result.scalars.return_value = [check]
-                result.scalars.return_value.all = lambda: [check]
-                return result
-            return result
-
-        # Simpler: patch cascade helpers and find_dictionary_duplicate
         async def run() -> None:
-            with (
-                patch(
-                    "app.crud.auditors_crud.find_dictionary_duplicate_by_label",
-                    new_callable=AsyncMock,
-                    return_value=None,
-                ),
-                patch(
-                    "app.crud.auditors_crud.cascade_auditor_code_in_check_keys",
-                    new_callable=AsyncMock,
-                    return_value=[
-                        SerialRewrite(
-                            check_id=42,
-                            old_serial="26GEG1P1",
-                            new_serial="26ABC1P1",
-                        )
-                    ],
-                ) as cascade,
-                patch(
-                    "app.crud.auditors_crud.cleanup_old_serial_buckets",
-                    new_callable=AsyncMock,
-                ) as cleanup,
+            with patch(
+                "app.crud.auditors_crud.find_dictionary_duplicate_by_label",
+                new_callable=AsyncMock,
+                return_value=None,
             ):
                 updated = await update_auditor(
                     session,
@@ -102,6 +57,40 @@ class UpdateAuditorCodeCascadeTests(unittest.TestCase):
                 )
 
             self.assertEqual(updated.code, "ABC")
+            session.flush.assert_awaited()
+            session.commit.assert_not_awaited()
+
+        asyncio.run(run())
+
+    def test_service_update_rewrites_check_serials(self) -> None:
+        session = AsyncMock()
+        auditor = Auditor(full_name="Гуль Е.Г.", code="GEG")
+        auditor.id = uuid4()
+        updated = Auditor(full_name="Гуль Е.Г.", code="ABC")
+        updated.id = auditor.id
+        crud = MagicMock()
+        crud.get = AsyncMock(return_value=auditor)
+        crud.update = AsyncMock(return_value=updated)
+        service = DictionaryService(crud=crud, not_found="Аудитор не найден.")
+        rewrites = [
+            SerialRewrite(check_id=42, old_serial="26GEG1P1", new_serial="26ABC1P1")
+        ]
+
+        async def run() -> None:
+            with (
+                patch(
+                    "app.services.dictionary_service.cascade_auditor_code_in_check_keys",
+                    new_callable=AsyncMock,
+                    return_value=rewrites,
+                ) as cascade,
+                patch(
+                    "app.services.dictionary_service.cleanup_old_serial_buckets",
+                    new_callable=AsyncMock,
+                ) as cleanup,
+            ):
+                result = await service.update(session, auditor.id, AuditorUpdate(code="ABC"))
+
+            self.assertEqual(result.code, "ABC")
             cascade.assert_awaited_once_with(
                 session,
                 check_leader="Гуль Е.Г.",
@@ -109,37 +98,35 @@ class UpdateAuditorCodeCascadeTests(unittest.TestCase):
                 new_code="ABC",
             )
             session.commit.assert_awaited_once()
-            cleanup.assert_awaited_once()
+            cleanup.assert_awaited_once_with(rewrites)
 
         asyncio.run(run())
 
-    def test_full_name_only_update_skips_code_cascade(self) -> None:
+    def test_service_full_name_only_update_skips_code_cascade(self) -> None:
         session = AsyncMock()
-        session.add = MagicMock()
-        session.commit = AsyncMock()
-        session.refresh = AsyncMock()
         auditor = Auditor(full_name="Гуль Е.Г.", code="GEG")
         auditor.id = uuid4()
+        updated = Auditor(full_name="Гуль Е.Г. (обновлён)", code="GEG")
+        updated.id = auditor.id
+        crud = MagicMock()
+        crud.get = AsyncMock(return_value=auditor)
+        crud.update = AsyncMock(return_value=updated)
+        service = DictionaryService(crud=crud, not_found="Аудитор не найден.")
 
         async def run() -> None:
             with (
                 patch(
-                    "app.crud.auditors_crud.find_dictionary_duplicate_by_label",
-                    new_callable=AsyncMock,
-                    return_value=None,
-                ),
-                patch(
-                    "app.crud.auditors_crud.cascade_auditor_code_in_check_keys",
+                    "app.services.dictionary_service.cascade_auditor_code_in_check_keys",
                     new_callable=AsyncMock,
                 ) as cascade,
                 patch(
-                    "app.crud.auditors_crud.cleanup_old_serial_buckets",
+                    "app.services.dictionary_service.cleanup_old_serial_buckets",
                     new_callable=AsyncMock,
                 ) as cleanup,
             ):
-                await update_auditor(
+                await service.update(
                     session,
-                    auditor,
+                    auditor.id,
                     AuditorUpdate(full_name="Гуль Е.Г. (обновлён)"),
                 )
 

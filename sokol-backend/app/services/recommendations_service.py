@@ -1,8 +1,12 @@
 from typing import Optional
 
+import logging
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.current_user import CurrentUser
+from app.core.exceptions import AccessDeniedError, DomainError, InvalidReferenceError, ResourceNotFoundError
+from app.core.logging import log_caught_exception
 from app.core.recommendation_access import user_can_manage_recommendation
 from app.crud import checks_crud, recommendations_crud
 from app.models.checks import Check
@@ -14,11 +18,14 @@ from app.schemas.recommendations import (
     RecommendationUpdate,
 )
 from app.services import attachments_service
-from app.core.exceptions import AccessDeniedError, InvalidReferenceError, ResourceNotFoundError
+from app.services.dictionary_integrity import sync_recommendation_audit_objects
 from app.services.dictionary_validation import (
     canonicalize_audit_objects,
     validate_recommendation_dictionary_fields,
 )
+from app.services.recommendation_status import overlay_computed_status_fields, today_moscow
+
+logger = logging.getLogger(__name__)
 
 
 async def _check_by_serial(session: AsyncSession, serial_number: str) -> Check:
@@ -35,6 +42,39 @@ def _assert_can_manage(user: CurrentUser, recommendation: Recommendation, *, mes
         auditor=recommendation.auditor,
     ):
         raise AccessDeniedError(message)
+
+
+async def _prepare_create_payload(session: AsyncSession, data: dict) -> dict:
+    payload = dict(data)
+    payload["audit_object"] = await canonicalize_audit_objects(session, payload.get("audit_object"))
+    await validate_recommendation_dictionary_fields(
+        session,
+        {"auditor": payload.get("auditor")},
+    )
+    if not payload.get("created_at"):
+        payload["created_at"] = today_moscow()
+    return overlay_computed_status_fields(payload)
+
+
+async def _insert_recommendation(
+    session: AsyncSession,
+    data: dict,
+    *,
+    check_id: int,
+    sequence_number: int,
+) -> Recommendation:
+    recommendation = await recommendations_crud.add_recommendation_row(
+        session,
+        data,
+        check_id=check_id,
+        sequence_number=sequence_number,
+    )
+    await sync_recommendation_audit_objects(
+        session,
+        recommendation.id,
+        recommendation.audit_object,
+    )
+    return recommendation
 
 
 async def _delete_recommendation_and_files(
@@ -54,11 +94,24 @@ async def create_recommendation(
     recommendation_in: RecommendationCreate,
 ) -> Recommendation:
     check = await _check_by_serial(session, recommendation_in.serial_number)
-    return await recommendations_crud.create_recommendation(
-        session,
-        recommendation_in,
-        check_id=check.id,
-    )
+    data = await _prepare_create_payload(session, recommendation_in.model_dump())
+    try:
+        recommendation = await _insert_recommendation(
+            session,
+            data,
+            check_id=check.id,
+            sequence_number=await recommendations_crud.get_next_sequence_number(session, check.id),
+        )
+        await session.commit()
+        await session.refresh(recommendation)
+        return recommendation
+    except DomainError:
+        await session.rollback()
+        raise
+    except Exception:
+        log_caught_exception(logger, "Failed to create recommendation for check %s", check.serial_number)
+        await session.rollback()
+        raise
 
 
 async def batch_recommendations(
@@ -69,13 +122,8 @@ async def batch_recommendations(
 
     normalized_items = []
     for item in payload.items:
-        data = item.model_dump()
+        data = await _prepare_create_payload(session, item.model_dump())
         data["serial_number"] = check.serial_number
-        data["audit_object"] = await canonicalize_audit_objects(session, data.get("audit_object"))
-        await validate_recommendation_dictionary_fields(
-            session,
-            {"auditor": data.get("auditor")},
-        )
         normalized_items.append(data)
 
     try:
@@ -90,7 +138,7 @@ async def batch_recommendations(
         created = []
         for index, data in enumerate(normalized_items, start=next_sequence):
             created.append(
-                await recommendations_crud.add_recommendation_row(
+                await _insert_recommendation(
                     session,
                     data,
                     check_id=check.id,
@@ -102,7 +150,11 @@ async def batch_recommendations(
         for recommendation in created:
             await session.refresh(recommendation)
         return RecommendationListResponse(items=list(created), total=len(created))
+    except DomainError:
+        await session.rollback()
+        raise
     except Exception:
+        log_caught_exception(logger, "Failed to batch recommendations for check %s", check.serial_number)
         await session.rollback()
         raise
 
@@ -152,12 +204,54 @@ async def update_recommendation(
         check = await _check_by_serial(session, recommendation_in.serial_number)
         check_id = check.id
 
-    return await recommendations_crud.update_recommendation(
-        session,
-        recommendation,
-        recommendation_in,
-        check_id=check_id,
+    update_data = overlay_computed_status_fields(
+        recommendation_in.model_dump(exclude_unset=True),
+        existing=recommendation,
     )
+    if "audit_object" in update_data:
+        update_data["audit_object"] = await canonicalize_audit_objects(
+            session,
+            update_data.get("audit_object"),
+        )
+    await validate_recommendation_dictionary_fields(
+        session,
+        {key: update_data[key] for key in ("auditor",) if key in update_data},
+    )
+    previous_check_id = recommendation.check_id
+
+    try:
+        if check_id is not None:
+            update_data["check_id"] = check_id
+        await recommendations_crud.update_recommendation_fields(
+            session,
+            recommendation,
+            update_data,
+        )
+        if "audit_object" in update_data:
+            await sync_recommendation_audit_objects(
+                session,
+                recommendation.id,
+                recommendation.audit_object,
+            )
+
+        if check_id is not None and check_id != previous_check_id:
+            await recommendations_crud.renumber_recommendations_for_check(session, previous_check_id)
+            recommendation.sequence_number = await recommendations_crud.get_next_sequence_number(
+                session, check_id
+            )
+            session.add(recommendation)
+            await session.flush()
+
+        await session.commit()
+        await session.refresh(recommendation)
+        return recommendation
+    except DomainError:
+        await session.rollback()
+        raise
+    except Exception:
+        log_caught_exception(logger, "Failed to update recommendation %s", recommendation_id)
+        await session.rollback()
+        raise
 
 
 async def delete_recommendation(
@@ -175,7 +269,11 @@ async def delete_recommendation(
         await _delete_recommendation_and_files(session, recommendation)
         await recommendations_crud.renumber_recommendations_for_check(session, recommendation.check_id)
         await session.commit()
+    except DomainError:
+        await session.rollback()
+        raise
     except Exception:
+        log_caught_exception(logger, "Failed to delete recommendation %s", recommendation_id)
         await session.rollback()
         raise
 
@@ -205,6 +303,10 @@ async def delete_recommendations_batch(
         for check_id in check_ids:
             await recommendations_crud.renumber_recommendations_for_check(session, check_id)
         await session.commit()
+    except DomainError:
+        await session.rollback()
+        raise
     except Exception:
+        log_caught_exception(logger, "Failed to batch-delete %s recommendations", len(unique_ids))
         await session.rollback()
         raise

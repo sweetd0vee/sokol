@@ -11,7 +11,7 @@ from app.crud.dictionary_crud import (
     create_dictionary_item,
     find_dictionary_duplicate_by_label,
 )
-from app.crud.dictionary_errors import DuplicateDictionaryError
+from app.core.exceptions import DuplicateDictionaryError
 from app.models.auditors import Auditor
 
 

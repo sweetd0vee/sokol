@@ -3,6 +3,8 @@
 
 from typing import Optional, Tuple
 
+import logging
+
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 from docx.oxml import OxmlElement
@@ -11,6 +13,9 @@ from docx.shared import Cm, Pt, Twips
 
 from app.services.reports.memorandum.models import MemorandumRecommendation, MemorandumSource
 from app.services.reports.memorandum.section_ii_table_parser import format_group_heading
+from app.core.logging import format_caught_error, log_caught_exception
+
+logger = logging.getLogger(__name__)
 
 FONT_NAME = "Times New Roman"
 # В шаблоне w:sz=28 → 14 pt
@@ -181,4 +186,5 @@ def generate_memorandum(source: MemorandumSource, output_path: str) -> Tuple[Opt
         doc.save(output_path)
         return output_path, None
     except Exception as exc:
-        return None, str(exc)
+        log_caught_exception(logger, "Memorandum generation failed for %s", output_path)
+        return None, format_caught_error(exc)

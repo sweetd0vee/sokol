@@ -22,7 +22,7 @@ from app.core.security import create_access_token, hash_password
 from app.db.session import get_db_session
 from app.main import app
 from app.models.users import User
-from app.services.crud_errors import ResourceNotFoundError
+from app.core.exceptions import ResourceNotFoundError
 
 
 def _admin_user() -> User:

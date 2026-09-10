@@ -6,7 +6,7 @@ import asyncio
 import os
 import unittest
 from datetime import date
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 os.environ.setdefault(
     "DATABASE_URL",
@@ -14,16 +14,15 @@ os.environ.setdefault(
 )
 os.environ.setdefault("SOKOL_JWT_SECRET", "test-jwt-secret")
 
-from app.crud import checks_crud
 from app.models.checks import Check, CheckStatus
 from app.schemas.checks import CheckUpdate
+from app.services import checks_service
+from app.services.check_serial_cascade import SerialRewrite
 
 
 class ChecksSerialLifecycleTests(unittest.TestCase):
     def test_update_check_migrates_bucket_and_cascades_serial(self) -> None:
         session = AsyncMock()
-        session.add = MagicMock()
-        storage = AsyncMock()
         check = Check(
             id=1,
             check_name="Проверка",
@@ -38,31 +37,61 @@ class ChecksSerialLifecycleTests(unittest.TestCase):
             serial_number="26IVP1P1",
         )
 
+        async def _apply_rewrites(_session, rewrites, *, commit: bool = False) -> None:
+            check.serial_number = rewrites[0].new_serial
+
         async def run() -> None:
             with (
                 patch(
-                    "app.crud.checks_crud.validate_check_dictionary_fields",
+                    "app.services.checks_service.get_check",
+                    new_callable=AsyncMock,
+                    return_value=check,
+                ),
+                patch(
+                    "app.services.checks_service.validate_check_dictionary_fields",
                     new_callable=AsyncMock,
                 ),
                 patch(
-                    "app.crud.checks_crud.generate_unique_check_serial_number",
+                    "app.services.checks_service.checks_crud.update_check",
+                    new_callable=AsyncMock,
+                    return_value=check,
+                ),
+                patch(
+                    "app.services.checks_service.generate_unique_check_serial_number",
                     new_callable=AsyncMock,
                     return_value="26PPP1P1",
                 ),
-                patch("app.crud.checks_crud.get_storage", return_value=storage),
+                patch(
+                    "app.services.checks_service.apply_serial_rewrites",
+                    new_callable=AsyncMock,
+                    side_effect=_apply_rewrites,
+                ) as apply,
+                patch(
+                    "app.services.checks_service.cleanup_old_serial_buckets",
+                    new_callable=AsyncMock,
+                ) as cleanup,
             ):
-                updated = await checks_crud.update_check(
+                updated = await checks_service.update_check(
                     session,
-                    check,
+                    1,
                     CheckUpdate(check_leader="Петров П.П."),
                 )
 
             self.assertEqual(updated.serial_number, "26PPP1P1")
-            storage.copy_check_bucket_objects.assert_awaited_once_with("26IVP1P1", "26PPP1P1")
-            storage.delete_check_bucket.assert_awaited_once_with("26IVP1P1")
-            self.assertEqual(session.execute.await_count, 2)
+            apply.assert_awaited_once()
+            rewrites = apply.await_args.args[1]
+            self.assertEqual(
+                rewrites,
+                [
+                    SerialRewrite(
+                        check_id=1,
+                        old_serial="26IVP1P1",
+                        new_serial="26PPP1P1",
+                    )
+                ],
+            )
             session.commit.assert_awaited_once()
-            session.refresh.assert_awaited_once_with(check)
+            cleanup.assert_awaited_once_with(rewrites)
 
         asyncio.run(run())
 

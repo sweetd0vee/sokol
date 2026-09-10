@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.common import ListResponse
+
 
 class DepartmentBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
@@ -22,6 +24,5 @@ class DepartmentRead(DepartmentBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class DepartmentListResponse(BaseModel):
-    items: list[DepartmentRead]
-    total: int
+class DepartmentListResponse(ListResponse[DepartmentRead]):
+    pass

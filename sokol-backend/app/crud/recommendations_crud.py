@@ -1,17 +1,9 @@
-from datetime import date
 from typing import Optional, Sequence
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.recommendations import Recommendation
-from app.schemas.recommendations import RecommendationCreate, RecommendationUpdate
-from app.services.dictionary_integrity import sync_recommendation_audit_objects
-from app.services.dictionary_validation import (
-    canonicalize_audit_objects,
-    validate_recommendation_dictionary_fields,
-)
-from app.services.recommendation_status import overlay_computed_status_fields
 
 
 def _apply_filters(
@@ -77,9 +69,7 @@ async def add_recommendation_row(
     check_id: int,
     sequence_number: int,
 ) -> Recommendation:
-    payload = overlay_computed_status_fields(dict(data))
-    if not payload.get("created_at"):
-        payload["created_at"] = date.today()
+    payload = dict(data)
     payload["sequence_number"] = sequence_number
     recommendation = Recommendation(
         check_id=check_id,
@@ -87,11 +77,6 @@ async def add_recommendation_row(
     )
     session.add(recommendation)
     await session.flush()
-    await sync_recommendation_audit_objects(
-        session,
-        recommendation.id,
-        recommendation.audit_object,
-    )
     return recommendation
 
 
@@ -101,28 +86,6 @@ async def delete_recommendation_row(
 ) -> None:
     await session.delete(recommendation)
     await session.flush()
-
-
-async def create_recommendation(
-    session: AsyncSession,
-    recommendation_in: RecommendationCreate,
-    check_id: int,
-) -> Recommendation:
-    data = recommendation_in.model_dump()
-    data["audit_object"] = await canonicalize_audit_objects(session, data.get("audit_object"))
-    await validate_recommendation_dictionary_fields(
-        session,
-        {"auditor": data.get("auditor")},
-    )
-    recommendation = await add_recommendation_row(
-        session,
-        data,
-        check_id=check_id,
-        sequence_number=await get_next_sequence_number(session, check_id),
-    )
-    await session.commit()
-    await session.refresh(recommendation)
-    return recommendation
 
 
 async def get_recommendation(session: AsyncSession, recommendation_id: int) -> Optional[Recommendation]:
@@ -161,53 +124,13 @@ async def count_recommendations(
     return int(result.scalar_one())
 
 
-async def update_recommendation(
+async def update_recommendation_fields(
     session: AsyncSession,
     recommendation: Recommendation,
-    recommendation_in: RecommendationUpdate,
-    check_id: Optional[int] = None,
+    update_data: dict,
 ) -> Recommendation:
-    update_data = overlay_computed_status_fields(
-        recommendation_in.model_dump(exclude_unset=True),
-        existing=recommendation,
-    )
-    if "audit_object" in update_data:
-        update_data["audit_object"] = await canonicalize_audit_objects(
-            session,
-            update_data.get("audit_object"),
-        )
-    await validate_recommendation_dictionary_fields(
-        session,
-        {key: update_data[key] for key in ("auditor",) if key in update_data},
-    )
-    previous_check_id = recommendation.check_id
-
-    if check_id is not None:
-        recommendation.check_id = check_id
     for field, value in update_data.items():
         setattr(recommendation, field, value)
-
     session.add(recommendation)
     await session.flush()
-    if "audit_object" in update_data:
-        await sync_recommendation_audit_objects(
-            session,
-            recommendation.id,
-            recommendation.audit_object,
-        )
-
-    if check_id is not None and check_id != previous_check_id:
-        await renumber_recommendations_for_check(session, previous_check_id)
-        recommendation.sequence_number = await get_next_sequence_number(session, check_id)
-        session.add(recommendation)
-
-    await session.commit()
-    await session.refresh(recommendation)
     return recommendation
-
-
-async def delete_recommendation(session: AsyncSession, recommendation: Recommendation) -> None:
-    check_id = recommendation.check_id
-    await delete_recommendation_row(session, recommendation)
-    await renumber_recommendations_for_check(session, check_id)
-    await session.commit()

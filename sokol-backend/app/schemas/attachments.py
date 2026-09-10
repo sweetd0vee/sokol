@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.common import ListResponse
+
 AttachmentEntityTypeLiteral = Literal["check", "recommendation"]
 
 CHECK_ATTACHMENT_SLOTS = frozenset({"order", "program", "az", "dz", "dz_appendix"})
@@ -23,9 +25,8 @@ class AttachmentRead(BaseModel):
     created_at: datetime
 
 
-class AttachmentListResponse(BaseModel):
-    items: list[AttachmentRead]
-    total: int
+class AttachmentListResponse(ListResponse[AttachmentRead]):
+    pass
 
 
 class AttachmentUploadResponse(BaseModel):

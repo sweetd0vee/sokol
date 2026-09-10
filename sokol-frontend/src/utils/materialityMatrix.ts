@@ -166,16 +166,16 @@ export function buildMaterialityMatrixHtmlMarkup(rows: MaterialityMatrixRow[]): 
         <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
           <span style="font-size:14px;font-weight:600;color:#003366">${escapeHtml(column.label)}</span>
           <span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:#fff;border:4px solid ${getMaterialityChartColor(column.level)};color:#111827;text-align:center;line-height:1.15" title="${escapeHtml(`${column.label}: ${percent}% (${count})`)}">
-            <span style="font-size:12px;font-weight:600">${percent}%</span>
+            <span style="font-size:12px;font-weight:700">${percent}%</span>
           </span>
-          <span style="font-size:14px;font-weight:500;color:#374151;font-variant-numeric:tabular-nums">${count}</span>
+          <span style="font-size:14px;font-weight:700;color:#374151;font-variant-numeric:tabular-nums">${count}</span>
         </div>
       </td>`;
     }),
     `<td style="padding:12px 4px;text-align:center;vertical-align:top">
       <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
         <span style="font-size:14px;font-weight:600;color:#003366">Всего</span>
-        <span style="font-size:14px;font-weight:500;color:#374151;font-variant-numeric:tabular-nums">${grandTotal}</span>
+        <span style="font-size:14px;font-weight:700;color:#374151;font-variant-numeric:tabular-nums">${grandTotal}</span>
       </div>
     </td>`,
   ].join('');

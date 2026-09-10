@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.common import ListResponse
+
 
 class AuditorBase(BaseModel):
     full_name: str = Field(..., min_length=1, max_length=255)
@@ -34,6 +36,5 @@ class AuditorRead(AuditorBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class AuditorListResponse(BaseModel):
-    items: list[AuditorRead]
-    total: int
+class AuditorListResponse(ListResponse[AuditorRead]):
+    pass

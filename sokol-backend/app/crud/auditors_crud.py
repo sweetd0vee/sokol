@@ -7,10 +7,6 @@ from app.core.exceptions import DuplicateDictionaryError
 from app.crud.dictionary_crud import DictionaryCrud, bind_dictionary_crud, find_dictionary_duplicate_by_label
 from app.models.auditors import Auditor
 from app.schemas.auditors import AuditorCreate, AuditorUpdate
-from app.services.check_serial_cascade import (
-    cascade_auditor_code_in_check_keys,
-    cleanup_old_serial_buckets,
-)
 from app.utils.dictionary_text import normalize_dictionary_label
 
 
@@ -51,8 +47,6 @@ async def update_auditor(
     session: AsyncSession, auditor: Auditor, auditor_in: AuditorUpdate
 ) -> Auditor:
     payload = auditor_in.model_dump(exclude_unset=True)
-    old_code = auditor.code
-    old_name = auditor.full_name
 
     if "full_name" in payload and payload["full_name"] is not None:
         payload["full_name"] = normalize_dictionary_label(str(payload["full_name"]))
@@ -84,23 +78,9 @@ async def update_auditor(
     for field, value in payload.items():
         setattr(auditor, field, value)
 
-    rewrites = []
-    new_code = auditor.code
-    if "code" in payload and new_code != old_code:
-        # Checks still reference the previous full_name until this transaction commits
-        # (ON UPDATE CASCADE runs at commit), so look up by the pre-update name.
-        rewrites = await cascade_auditor_code_in_check_keys(
-            session,
-            check_leader=old_name,
-            old_code=old_code,
-            new_code=new_code,
-        )
-
     session.add(auditor)
-    await session.commit()
+    await session.flush()
     await session.refresh(auditor)
-    if rewrites:
-        await cleanup_old_serial_buckets(rewrites)
     return auditor
 
 

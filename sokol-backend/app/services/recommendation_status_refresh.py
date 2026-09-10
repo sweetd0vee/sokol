@@ -16,6 +16,7 @@ from app.services.recommendation_status import (
     seconds_until_next_moscow_run,
     today_moscow,
 )
+from app.core.logging import log_caught_exception
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ async def run_recommendation_status_scheduler() -> None:
         except asyncio.CancelledError:
             raise
         except Exception:
-            logger.exception("Recommendation status refresh failed")
+            log_caught_exception(logger, "Recommendation status refresh failed")
         try:
             await asyncio.sleep(seconds_until_next_moscow_run())
         except asyncio.CancelledError:

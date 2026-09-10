@@ -1,17 +1,14 @@
 """Factory for settings dictionary CRUD routers."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import Any, Optional, TypeVar
+from typing import Optional, TypeVar
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, Query, Response, status
-from fastapi.exceptions import RequestValidationError
-from pydantic import BaseModel, ValidationError
+from fastapi import APIRouter, Depends, Query, Response, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import require_admin
+from app.api.deps import CurrentUser, require_admin
 from app.crud.dictionary_crud import DictionaryCrud
 from app.db.session import get_db_session
 from app.services.dictionary_service import DictionaryService
@@ -42,57 +39,59 @@ def make_dictionary_router(config: DictionaryRouterConfig) -> APIRouter:
     read_schema = config.read_schema
     list_schema = config.list_schema
 
-    def _validate(schema: type[BaseModel], payload: dict[str, Any]) -> BaseModel:
-        try:
-            return schema.model_validate(payload)
-        except ValidationError as exc:
-            raise RequestValidationError(exc.errors()) from exc
-
-    @router.post("", response_model=read_schema, status_code=status.HTTP_201_CREATED)
     async def create_endpoint(
-        payload: dict[str, Any] = Body(...),
+        payload: create_schema,
         session: AsyncSession = Depends(get_db_session),
-        _: object = Depends(require_admin),
-    ) -> Any:
-        return await service.create(session, _validate(create_schema, payload))
+        _: CurrentUser = Depends(require_admin),
+    ) -> ReadT:
+        return await service.create(session, payload)
 
-    @router.get("", response_model=list_schema)
     async def list_endpoint(
         skip: int = Query(0, ge=0),
         limit: int = Query(50, ge=1, le=200),
         search: Optional[str] = Query(None, min_length=1),
         session: AsyncSession = Depends(get_db_session),
-    ) -> Any:
+    ) -> ListT:
         items, total = await service.list(session, skip, limit, search)
         return list_schema(items=list(items), total=total)
 
-    @router.get("/{item_id}", response_model=read_schema)
     async def get_endpoint(
         item_id: UUID,
         session: AsyncSession = Depends(get_db_session),
-    ) -> Any:
+    ) -> ReadT:
         return await service.get(session, item_id)
 
-    @router.patch("/{item_id}", response_model=read_schema)
     async def update_endpoint(
         item_id: UUID,
-        payload: dict[str, Any] = Body(...),
+        payload: update_schema,
         session: AsyncSession = Depends(get_db_session),
-        _: object = Depends(require_admin),
-    ) -> Any:
-        return await service.update(session, item_id, _validate(update_schema, payload))
+        _: CurrentUser = Depends(require_admin),
+    ) -> ReadT:
+        return await service.update(session, item_id, payload)
 
-    @router.delete(
-        "/{item_id}",
-        status_code=status.HTTP_204_NO_CONTENT,
-        response_class=Response,
-    )
     async def delete_endpoint(
         item_id: UUID,
         session: AsyncSession = Depends(get_db_session),
-        _: object = Depends(require_admin),
+        _: CurrentUser = Depends(require_admin),
     ) -> Response:
         await service.delete(session, item_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+    router.add_api_route(
+        "",
+        create_endpoint,
+        methods=["POST"],
+        response_model=read_schema,
+        status_code=status.HTTP_201_CREATED,
+    )
+    router.add_api_route("", list_endpoint, methods=["GET"], response_model=list_schema)
+    router.add_api_route("/{item_id}", get_endpoint, methods=["GET"], response_model=read_schema)
+    router.add_api_route("/{item_id}", update_endpoint, methods=["PATCH"], response_model=read_schema)
+    router.add_api_route(
+        "/{item_id}",
+        delete_endpoint,
+        methods=["DELETE"],
+        status_code=status.HTTP_204_NO_CONTENT,
+        response_class=Response,
+    )
     return router

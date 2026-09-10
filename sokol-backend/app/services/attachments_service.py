@@ -27,6 +27,7 @@ from app.core.exceptions import (
     StorageOperationError,
     UnsupportedAttachmentContentTypeError,
 )
+from app.core.logging import log_caught_exception
 from app.services.storage.minio_storage import get_storage, require_storage
 
 logger = logging.getLogger(__name__)
@@ -162,7 +163,7 @@ async def upload_attachment(
             recommendation_id=recommendation_id if entity_type == "recommendation" else None,
         )
     except Exception as exc:  # noqa: BLE001
-        logger.exception("MinIO upload failed for check %s slot %s", serial_number, slot)
+        log_caught_exception(logger, "MinIO upload failed for check %s slot %s", serial_number, slot)
         raise StorageOperationError("Не удалось сохранить файл в хранилище.") from exc
 
     row = Attachment(
@@ -179,10 +180,21 @@ async def upload_attachment(
     try:
         saved = await attachments_crud.create_attachment(session, row)
     except Exception:
+        log_caught_exception(
+            logger,
+            "Failed to persist attachment metadata for %s/%s",
+            stored.bucket,
+            stored.object_key,
+        )
         try:
             await storage.delete_object(stored.bucket, stored.object_key)
         except Exception:  # noqa: BLE001
-            logger.exception("Failed to compensate orphan upload %s/%s", stored.bucket, stored.object_key)
+            log_caught_exception(
+                logger,
+                "Failed to compensate orphan upload %s/%s",
+                stored.bucket,
+                stored.object_key,
+            )
         raise
     return AttachmentUploadResponse(attachment=saved)
 
@@ -202,7 +214,7 @@ async def download_attachment(
     try:
         payload, content_type = await storage.download(attachment.bucket, attachment.object_key)
     except Exception as exc:  # noqa: BLE001
-        logger.exception("MinIO download failed for attachment %s", attachment_id)
+        log_caught_exception(logger, "MinIO download failed for attachment %s", attachment_id)
         raise StorageOperationError("Не удалось прочитать файл из хранилища.") from exc
 
     return attachment, payload, content_type or attachment.content_type
@@ -232,7 +244,7 @@ async def delete_attachment(
     try:
         await storage.delete_object(attachment.bucket, attachment.object_key)
     except Exception as exc:  # noqa: BLE001
-        logger.exception("MinIO delete failed for attachment %s", attachment_id)
+        log_caught_exception(logger, "MinIO delete failed for attachment %s", attachment_id)
         raise StorageOperationError("Не удалось удалить файл из хранилища.") from exc
 
     await attachments_crud.delete_attachment(session, attachment)
@@ -255,7 +267,7 @@ async def delete_attachments_for_entity(
             try:
                 await storage.delete_object(attachment.bucket, attachment.object_key)
             except Exception as exc:  # noqa: BLE001
-                logger.exception("MinIO delete failed for attachment %s", attachment.id)
+                log_caught_exception(logger, "MinIO delete failed for attachment %s", attachment.id)
                 raise StorageOperationError("Не удалось удалить файл из хранилища.") from exc
         await attachments_crud.delete_attachment(session, attachment, commit=False)
 

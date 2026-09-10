@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import re
 from datetime import date
 from pathlib import Path
@@ -34,6 +35,9 @@ from app.services.reports.memorandum import docx_generator as memorandum_generat
 from app.services.reports.memorandum.parser import parse_az_for_memorandum
 from app.services.reports.docx_queue import docx_job_slot
 from app.services.reports.section_ii import docx_generator
+from app.core.logging import log_caught_exception
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/tools", tags=["tools"])
 
@@ -102,7 +106,11 @@ async def _generate_section_ii_response(
             media_type=DOCX_MIME,
             download_name=download_name,
         )
+    except HTTPException:
+        cleanup_files(str(input_path), str(output_path))
+        raise
     except Exception:
+        log_caught_exception(logger, "Section II tool failed")
         cleanup_files(str(input_path), str(output_path))
         raise
 
@@ -176,7 +184,11 @@ async def generate_control_file(
             media_type=XLSX_MIME,
             download_name=download_name,
         )
+    except HTTPException:
+        cleanup_files(str(input_path), str(output_path))
+        raise
     except Exception:
+        log_caught_exception(logger, "Control-file tool failed")
         cleanup_files(str(input_path), str(output_path))
         raise
 
@@ -219,7 +231,11 @@ async def generate_memorandum(
             media_type=DOCX_MIME,
             download_name=download_name,
         )
+    except HTTPException:
+        cleanup_files(str(input_path), str(output_path))
+        raise
     except Exception:
+        log_caught_exception(logger, "Memorandum tool failed")
         cleanup_files(str(input_path), str(output_path))
         raise
 

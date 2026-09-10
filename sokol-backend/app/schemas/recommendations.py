@@ -5,26 +5,18 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.recommendations import RecommendationAdditionalStatus, RecommendationStatus
+from app.schemas.common import ListResponse, parse_optional_date
+from app.utils.dictionary_text import normalize_audit_object_input
 
 
 class ClosureDateCommentItem(BaseModel):
     date: Optional[Date] = None
     comment: Optional[str] = None
 
-    @field_validator('date', mode='before')
+    @field_validator("date", mode="before")
     @classmethod
     def empty_date_to_none(cls, value: object) -> object:
-        if value is None:
-            return None
-        if isinstance(value, str):
-            cleaned = value.strip()
-            if not cleaned:
-                return None
-            try:
-                return Date.fromisoformat(cleaned[:10])
-            except ValueError:
-                return None
-        return value
+        return parse_optional_date(value)
 
 
 def _normalize_closure_items(value: object) -> object:
@@ -33,18 +25,6 @@ def _normalize_closure_items(value: object) -> object:
     if not isinstance(value, list):
         return []
     return value
-
-
-def _normalize_audit_object(value: object) -> list[str]:
-    if isinstance(value, list):
-        parts = [str(item).strip() for item in value if str(item).strip()]
-    elif isinstance(value, str):
-        import re
-
-        parts = [part.strip() for part in re.split(r"[;,]", value) if part.strip()]
-    else:
-        parts = []
-    return parts or ["Не указан"]
 
 
 class RecommendationBase(BaseModel):
@@ -77,48 +57,37 @@ class RecommendationBase(BaseModel):
     closure_verification_status: Optional[str] = Field(None, max_length=64)
     closure_information: Optional[str] = None
 
-    @field_validator('additional_indicator', mode='before')
+    @field_validator("additional_indicator", mode="before")
     @classmethod
     def empty_additional_indicator(cls, value: object) -> object:
         if value is None:
-            return 'не указан'
+            return "не указан"
         if isinstance(value, str) and not value.strip():
-            return 'не указан'
+            return "не указан"
         return value
 
     @field_validator(
-        'deadline',
-        'execution_deadline',
-        'created_at',
-        'actual_completion_date',
-        'extension_1_date',
-        'remove_from_control_date',
-        mode='before',
+        "deadline",
+        "execution_deadline",
+        "created_at",
+        "actual_completion_date",
+        "extension_1_date",
+        "remove_from_control_date",
+        mode="before",
     )
     @classmethod
     def empty_date_to_none(cls, value: object) -> object:
-        if value is None:
-            return None
-        if isinstance(value, str):
-            cleaned = value.strip()
-            if not cleaned:
-                return None
-            try:
-                Date.fromisoformat(cleaned[:10])
-            except ValueError:
-                return None
-            return cleaned[:10]
-        return value
+        return parse_optional_date(value)
 
-    @field_validator('deadline_extensions', 'control_removals', mode='before')
+    @field_validator("deadline_extensions", "control_removals", mode="before")
     @classmethod
     def normalize_closure_lists(cls, value: object) -> object:
         return _normalize_closure_items(value)
 
-    @field_validator('audit_object', mode='before')
+    @field_validator("audit_object", mode="before")
     @classmethod
     def normalize_audit_object(cls, value: object) -> list[str]:
-        return _normalize_audit_object(value)
+        return normalize_audit_object_input(value)
 
 
 class RecommendationCreate(RecommendationBase):
@@ -155,39 +124,28 @@ class RecommendationUpdate(BaseModel):
     closure_information: Optional[str] = None
 
     @field_validator(
-        'deadline',
-        'execution_deadline',
-        'actual_completion_date',
-        'extension_1_date',
-        'remove_from_control_date',
-        mode='before',
+        "deadline",
+        "execution_deadline",
+        "actual_completion_date",
+        "extension_1_date",
+        "remove_from_control_date",
+        mode="before",
     )
     @classmethod
     def empty_date_to_none(cls, value: object) -> object:
-        if value is None:
-            return None
-        if isinstance(value, str):
-            cleaned = value.strip()
-            if not cleaned:
-                return None
-            try:
-                Date.fromisoformat(cleaned[:10])
-            except ValueError:
-                return None
-            return cleaned[:10]
-        return value
+        return parse_optional_date(value)
 
-    @field_validator('deadline_extensions', 'control_removals', mode='before')
+    @field_validator("deadline_extensions", "control_removals", mode="before")
     @classmethod
     def normalize_closure_lists(cls, value: object) -> object:
         return _normalize_closure_items(value)
 
-    @field_validator('audit_object', mode='before')
+    @field_validator("audit_object", mode="before")
     @classmethod
     def normalize_audit_object(cls, value: object) -> list[str] | None:
         if value is None:
             return None
-        return _normalize_audit_object(value)
+        return normalize_audit_object_input(value)
 
 
 class RecommendationRead(RecommendationBase):
@@ -198,9 +156,8 @@ class RecommendationRead(RecommendationBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class RecommendationListResponse(BaseModel):
-    items: list[RecommendationRead]
-    total: int
+class RecommendationListResponse(ListResponse[RecommendationRead]):
+    pass
 
 
 class RecommendationBatchRequest(BaseModel):

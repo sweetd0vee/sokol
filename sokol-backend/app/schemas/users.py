@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.roles import Role
+from app.schemas.common import ListResponse
 
 
 class UserCreate(BaseModel):
@@ -25,6 +26,5 @@ class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserListResponse(BaseModel):
-    items: list[UserRead]
-    total: int
+class UserListResponse(ListResponse[UserRead]):
+    pass

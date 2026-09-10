@@ -2,7 +2,7 @@
 
 Базовый prefix: **`/api/v1`**. Swagger: `http://127.0.0.1:8802/docs`.
 
-Auth: **JWT Bearer**. Публичны `GET /`, `GET /api/v1/status`, `GET /api/v1/capabilities`, `POST /api/v1/auth/login`.  
+Auth: **JWT Bearer**. Публичны `GET /`, `GET /api/v1/status`, `GET /api/v1/ready`, `GET /api/v1/capabilities`, `POST /api/v1/auth/login`.  
 `GET /auth/me` и `POST /auth/change-password` требуют авторизации.  
 HTTP Basic: в non-prod включён по умолчанию; при `SOKOL_ENV` ∈ `{prod, production}` выключен, пока не `SOKOL_ENABLE_BASIC_AUTH=true`.  
 Роль берётся из БД при каждом запросе, не из JWT. Неактивные пользователи (и login по `aliases`) не проходят. Login матчит `username` и `aliases`.
@@ -37,9 +37,12 @@ HTTP Basic: в non-prod включён по умолчанию; при `SOKOL_EN
 
 | Method | Path | Ответ |
 |--------|------|--------|
-| `GET` | `/api/v1/status` | `{ "status": "ok" }` |
+| `GET` | `/api/v1/status` | Liveness + счётчики: `{ status, uptime_seconds, requests_total, requests_4xx, requests_5xx }` |
+| `GET` | `/api/v1/ready` | Readiness: `{ status, database }`. DB недоступна → **503** |
 | `GET` | `/api/v1/capabilities` | `{ "max_upload_mb", "max_upload_bytes", "docx_max_concurrent", "docx_max_queue", "docx_queue_wait_seconds" }` |
 | `GET` | `/` | `{ "service": "SOKOL API", "version": "v1" }` |
+
+Ответ всегда несёт заголовок `X-Request-ID` (входной или сгенерированный). Корреляция ошибок в логах — по этому id. 4xx `DomainError` пишутся в лог с именем класса (`[ResourceNotFoundError]`); необработанные исключения → **500** `{ "detail": "Внутренняя ошибка сервера." }` без утечки traceback клиенту.
 
 ---
 

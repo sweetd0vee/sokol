@@ -4,9 +4,9 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import DictionaryRefError
 from app.crud import auditors_crud
 from app.models.checks import Check
-from app.services.dictionary_validation import DictionaryRefError
 from app.utils.check_key import CheckKeySeed, generate_check_serial_number
 
 CHECK_SERIAL_SOURCE_FIELDS = {"check_leader", "start_date", "check_quarter", "check_type"}

@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
-from app.crud.dictionary_errors import DictionaryInUseError, DictionaryProtectedError
+from app.core.exceptions import DictionaryInUseError, DictionaryProtectedError
 from app.db.ensure_dictionary_refs import allocate_auditor_code
 from app.models.auditors import Auditor
 from app.models.check_kinds import CheckKind

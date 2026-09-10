@@ -1,17 +1,21 @@
 # -*- coding: utf-8 -*-
 """Парсинг докладной записки (ДЗ) — «Приложение 2. Перечень аудиторских рекомендаций»."""
 
+import logging
 import re
 from typing import List, Optional, Tuple
 
 from docx import Document
 
+from app.core.logging import format_caught_error, log_caught_exception
 from app.services.reports.memorandum.models import (
     MemorandumAuditObject,
     MemorandumRecommendation,
     MemorandumSource,
 )
 from app.services.reports.memorandum.section_ii_table_parser import _group_key, _normalize_deadline
+
+logger = logging.getLogger(__name__)
 
 RECOMMENDATIONS_TITLE = "Перечень аудиторских рекомендаций"
 GROUP_HEADING_RE = re.compile(
@@ -49,7 +53,8 @@ def parse_recommendations_from_memorandum(file_path: str) -> Tuple[Optional[Memo
     try:
         doc = Document(file_path)
     except Exception as exc:
-        return None, f"Не удалось прочитать документ: {exc}"
+        log_caught_exception(logger, "Failed to open memorandum document %s", file_path)
+        return None, f"Не удалось прочитать документ: {format_caught_error(exc)}"
 
     groups: List[MemorandumAuditObject] = []
     group_index: dict = {}

@@ -28,7 +28,7 @@
 
 FastAPI + PostgreSQL (async SQLAlchemy) + MinIO:
 
-- **Auth** — JWT + RBAC (`auditor` / `department_head` / `admin`). `department_head` проходит `require_admin`. Публичны `/`, `/status`, `/capabilities`, `POST /auth/login`. HTTP Basic: **on** в non-prod, **off** в prod; явный `SOKOL_ENABLE_BASIC_AUTH` перекрывает. Аватаров на backend нет.
+- **Auth** — JWT + RBAC (`auditor` / `department_head` / `admin`). `department_head` проходит `require_admin`. Публичны `/`, `/status`, `/ready`, `/capabilities`, `POST /auth/login`. HTTP Basic: **on** в non-prod, **off** в prod; явный `SOKOL_ENABLE_BASIC_AUTH` перекрывает. Аватаров на backend нет.
 - **CRUD** — проверки, рекомендации; FK на labels. У аудиторов обязателен трёхбуквенный `code`; смена `code` каскадно переписывает ключи проверок и MinIO buckets.
 - **Settings** — `/settings/{auditors,departments,audit_types,check_kinds,effectiveness_ratings}` из одного factory (`dictionary_registry.py`).
 - **Analytics** — `GET /analytics/{checks|recommendations|monitoring|dva|planning}`, SQL-агрегаты. Конструктор дашбордов — только frontend.

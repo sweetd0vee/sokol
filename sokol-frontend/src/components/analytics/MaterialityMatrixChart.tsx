@@ -46,9 +46,9 @@ function ColumnShareCircle({
         title={`${column.label}: ${percent}% (${count})`}
         aria-label={`${column.label}: ${percent}% (${count})`}
       >
-        <span className="text-xs font-normal tabular-nums">{percent}%</span>
+        <span className="text-xs font-bold tabular-nums">{percent}%</span>
       </span>
-      <span className="text-sm font-normal tabular-nums text-gray-700">{count}</span>
+      <span className="text-sm font-bold tabular-nums text-gray-700">{count}</span>
     </div>
   );
 }
@@ -191,7 +191,7 @@ export function MaterialityMatrixChart({
                 <td className="px-1 py-3 text-center align-top">
                   <div className="flex flex-col items-center gap-1.5">
                     <span className="text-sm font-semibold text-sber-dark">Всего</span>
-                    <span className="text-sm font-normal tabular-nums text-gray-700">{grandTotal}</span>
+                    <span className="text-sm font-bold tabular-nums text-gray-700">{grandTotal}</span>
                   </div>
                 </td>
               </tr>

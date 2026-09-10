@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.checks import CheckStatus
+from app.schemas.common import ListResponse
 
 
 class CheckBase(BaseModel):
@@ -69,6 +70,5 @@ class CheckRead(CheckBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class CheckListResponse(BaseModel):
-    items: list[CheckRead]
-    total: int
+class CheckListResponse(ListResponse[CheckRead]):
+    pass

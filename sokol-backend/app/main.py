@@ -6,8 +6,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.exception_handlers import register_exception_handlers
+from app.api.middleware import RequestContextMiddleware
 from app.api.router import api_router
 from app.core.config import settings
+from app.core.logging import configure_logging
 from app.core.startup_validation import assert_app_startup_safe, env_flag_enabled
 from app.services.recommendation_status_refresh import (
     run_recommendation_status_scheduler,
@@ -15,6 +17,7 @@ from app.services.recommendation_status_refresh import (
 )
 
 
+configure_logging()
 assert_app_startup_safe(
     database_url=settings.database_url,
     jwt_secret=settings.sokol_jwt_secret,
@@ -45,6 +48,7 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 register_exception_handlers(app)
+app.add_middleware(RequestContextMiddleware)
 cors_origins = settings.cors_origins
 
 app.add_middleware(

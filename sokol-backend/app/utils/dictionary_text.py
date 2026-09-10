@@ -10,6 +10,23 @@ from app.utils.lookalikes import LATIN_TO_CYRILLIC
 UNSPECIFIED_AUDIT_OBJECT = "Не указан"
 
 
+def split_audit_object_values(value: object) -> list[str]:
+    """Split a list or ``;``/``,``-delimited string into non-empty audit-object parts."""
+    if isinstance(value, list):
+        parts: list[str] = []
+        for item in value:
+            parts.extend(split_audit_object_values(item))
+        return parts
+    if value is None:
+        return []
+    return [part.strip() for part in re.split(r"[;,]", str(value)) if part.strip()]
+
+
+def normalize_audit_object_input(value: object) -> list[str]:
+    """Coerce API input into a non-empty list; empty input becomes «Не указан»."""
+    return split_audit_object_values(value) or [UNSPECIFIED_AUDIT_OBJECT]
+
+
 def normalize_dictionary_label(value: str) -> str:
     """Trim, collapse spaces, normalize hyphens, and map Latin homoglyphs to Cyrillic."""
     collapsed = " ".join(value.strip().split())

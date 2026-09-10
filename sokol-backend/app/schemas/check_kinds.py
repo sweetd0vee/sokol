@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.common import ListResponse
+
 
 class CheckKindBase(BaseModel):
     label: str = Field(..., min_length=1, max_length=255)
@@ -22,6 +24,5 @@ class CheckKindRead(CheckKindBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class CheckKindListResponse(BaseModel):
-    items: list[CheckKindRead]
-    total: int
+class CheckKindListResponse(ListResponse[CheckKindRead]):
+    pass
