@@ -15,7 +15,7 @@ import { useAuth } from './useAuth';
 import { useCurrentUserName } from './useCurrentUserName';
 import { toNameOptions, useAuditorOptions } from './useReferenceOptions';
 import { useAuditObjectOptions } from './useAuditObjectOptions';
-import { toIsoDate } from '../utils/dates';
+import { computeRecommendationAutoStatus } from '../utils/recommendationAutoStatus';
 import { auditorMatchesCurrentUser } from '../utils/personMatch';
 import { resolveRecommendationYearlyDisplayNumber } from '../utils/recommendationYearlyNumber';
 import {
@@ -136,7 +136,25 @@ export function useRecommendationForm() {
     key: K,
     value: RecommendationFormFields[K],
   ) => {
-    setFields((prev) => ({ ...prev, [key]: value }));
+    setFields((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key !== 'deadline' && key !== 'executionDeadline') {
+        return next;
+      }
+      const auto = computeRecommendationAutoStatus({
+        controlDeadline: next.deadline,
+        executionDeadline: next.executionDeadline,
+        currentStatus: next.status,
+        currentAdditionalStatus: next.additionalStatus,
+      });
+      return {
+        ...next,
+        status: auto.status ?? next.status,
+        indicator: auto.indicator ?? next.indicator,
+        additionalStatus: auto.additionalStatus ?? next.additionalStatus,
+        additionalIndicator: auto.additionalIndicator ?? next.additionalIndicator,
+      };
+    });
   }, []);
 
   const setClosure = useCallback((value: SetStateAction<RecommendationClosureForm>) => {
@@ -263,6 +281,7 @@ export function useRecommendationForm() {
       observationName: fields.observationName,
       auditObject: fields.auditObject,
       deadline: fields.deadline,
+      executionDeadline: fields.executionDeadline,
       auditor: fields.auditor,
       checkLeader: fields.checkLeader,
       navigationAuditor: navigationState.auditor,

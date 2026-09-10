@@ -51,6 +51,7 @@ export type ApiRecommendation = {
   materiality_level: string;
   audit_object: string[] | string;
   deadline?: string | null;
+  execution_deadline?: string | null;
   auditor: string;
   manager: string;
   status: RecommendationStatus;
@@ -153,6 +154,7 @@ export function mapRecommendationFromApi(api: ApiRecommendation): Recommendation
     materiality_level: normalizeMaterialityLevel(api.materiality_level),
     audit_object: getRecommendationAuditObjects(api.audit_object),
     deadline: api.deadline ?? '',
+    execution_deadline: api.execution_deadline ?? '',
     auditor: api.auditor,
     manager: api.manager,
     status: normalizeRecommendationStatus(api.status),
@@ -190,6 +192,7 @@ export function mapRecommendationToCreate(
     materiality_level: recommendation.materiality_level,
     audit_object: recommendation.audit_object,
     deadline: recommendation.deadline || null,
+    execution_deadline: recommendation.execution_deadline || null,
     auditor: recommendation.auditor,
     manager: recommendation.manager,
     status: recommendation.status,

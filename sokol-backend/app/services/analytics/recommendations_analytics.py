@@ -91,6 +91,7 @@ def build_additional_status_distribution(summary: RecommendationsSummary) -> lis
             "on_time": summary.by_additional.on_time,
             "deadline_violated": summary.by_additional.deadline_violated,
             "on_control": summary.by_additional.on_control,
+            "in_progress": summary.by_additional.in_progress,
         },
         ADDITIONAL_STATUS_LABELS,
         ADDITIONAL_STATUS_COLORS,

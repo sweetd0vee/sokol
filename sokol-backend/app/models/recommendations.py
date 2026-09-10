@@ -30,6 +30,7 @@ class RecommendationAdditionalStatus(str, Enum):
     ON_TIME = "on_time"
     DEADLINE_VIOLATED = "deadline_violated"
     ON_CONTROL = "on_control"
+    IN_PROGRESS = "in_progress"
 
 
 class Recommendation(Base):
@@ -47,6 +48,7 @@ class Recommendation(Base):
     materiality_level: Mapped[str] = mapped_column(String(32), nullable=False, default="средний")
     audit_object: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
     deadline: Mapped[date | None] = optional_date()
+    execution_deadline: Mapped[date | None] = optional_date()
     auditor: Mapped[str] = auditor_fk("fk_recommendations_auditor", index=True)
     manager: Mapped[str] = required_string()
     status: Mapped[RecommendationStatus] = value_enum_column(

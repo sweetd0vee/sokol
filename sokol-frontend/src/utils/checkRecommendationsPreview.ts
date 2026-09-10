@@ -1,5 +1,6 @@
 import type { Recommendation } from '../types/recommendation';
 import { getRecommendationAuditObjects } from './auditObjects';
+import { computeRecommendationAutoStatus } from './recommendationAutoStatus';
 import { indicatorFromRecommendationAdditionalStatus, indicatorFromRecommendationStatus } from '../constants/recommendations';
 
 export type ParsedPreviewItem = Omit<Recommendation, 'audit_object'> & {
@@ -40,6 +41,13 @@ export function buildParsedPreviewItem(
   checkKey: string,
   storedCount: number,
 ): ParsedPreviewItem {
+  const auto = computeRecommendationAutoStatus({
+    controlDeadline: draft.deadline,
+    currentStatus: draft.status,
+    currentAdditionalStatus: draft.additional_status,
+  });
+  const status = auto.status ?? draft.status;
+  const additionalStatus = auto.additionalStatus ?? draft.additional_status;
   return {
     previewKey: `preview-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
     id: '0',
@@ -48,15 +56,16 @@ export function buildParsedPreviewItem(
     name: draft.name.trim(),
     observation_name: draft.observation_name?.trim() || undefined,
     description: draft.name.trim(),
-    indicator: indicatorFromRecommendationStatus(draft.status),
+    indicator: auto.indicator ?? indicatorFromRecommendationStatus(status),
     materiality_level: 'средний',
     audit_object: (draft.audit_object.trim() || 'Не указан').slice(0, 255),
     deadline: draft.deadline,
     auditor: (draft.auditor.trim() || 'Не указан').slice(0, 255),
     manager: (draft.manager.trim() || 'Не указан').slice(0, 255),
-    status: draft.status,
-    additional_status: draft.additional_status,
-    additional_indicator: indicatorFromRecommendationAdditionalStatus(draft.additional_status),
+    status,
+    additional_status: additionalStatus,
+    additional_indicator:
+      auto.additionalIndicator ?? indicatorFromRecommendationAdditionalStatus(additionalStatus),
     created_at: new Date().toISOString().slice(0, 10),
   };
 }
@@ -71,7 +80,21 @@ export function patchPreviewItem(
     return { ...item, name: value, description: value.trim() };
   }
   if (field === 'deadline') {
-    return { ...item, deadline: normalizeDeadline(value) || value };
+    const deadline = normalizeDeadline(value) || value;
+    const auto = computeRecommendationAutoStatus({
+      controlDeadline: deadline,
+      executionDeadline: item.execution_deadline,
+      currentStatus: item.status,
+      currentAdditionalStatus: item.additional_status,
+    });
+    return {
+      ...item,
+      deadline,
+      status: auto.status ?? item.status,
+      indicator: auto.indicator ?? item.indicator,
+      additional_status: auto.additionalStatus ?? item.additional_status,
+      additional_indicator: auto.additionalIndicator ?? item.additional_indicator,
+    };
   }
   if (field === 'observation_name') {
     return { ...item, observation_name: value };

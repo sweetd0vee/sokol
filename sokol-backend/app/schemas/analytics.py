@@ -154,6 +154,7 @@ class RecommendationsSummaryByAdditional(BaseModel):
     on_time: int
     deadline_violated: int
     on_control: int
+    in_progress: int = 0
 
 
 class RecommendationsSummary(BaseModel):
@@ -285,6 +286,7 @@ class DvaAuditorTimelinessRow(BaseModel):
     on_time: int
     deadline_violated: int
     on_control: int
+    in_progress: int = 0
     total: int
     violation_rate: int
 
@@ -410,6 +412,15 @@ class PlanningUnresolvedDepartmentRow(BaseModel):
     checks: list[DvaCheckCountRef] = Field(default_factory=list)
 
 
+class PlanningHighMaterialityDepartmentRow(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str
+    value: int
+    total: int
+    checks: list[DvaCheckCountRef] = Field(default_factory=list)
+
+
 class PlanningAnalyticsFilterOptions(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -429,7 +440,7 @@ class PlanningAnalyticsResponse(BaseModel):
     unresolved_by_department: list[PlanningUnresolvedDepartmentRow] = Field(
         default_factory=list, serialization_alias="unresolvedByDepartment"
     )
-    high_materiality_by_department: list[NamedCount] = Field(
+    high_materiality_by_department: list[PlanningHighMaterialityDepartmentRow] = Field(
         serialization_alias="highMaterialityByDepartment"
     )
     high_materiality_total: int = Field(serialization_alias="highMaterialityTotal")

@@ -42,7 +42,7 @@ erDiagram
 |------|----------|
 | `check_status` | `not_started`, `in_progress`, `completed` |
 | `recommendation_status` | `completed`, `unresolved`, `on_control`, `in_progress` |
-| `recommendation_additional_status` | `on_time`, `deadline_violated`, `on_control` |
+| `recommendation_additional_status` | `on_time`, `deadline_violated`, `on_control`, `in_progress` |
 | `users.role` | `admin`, `department_head`, `auditor` |
 
 Переходы статусов API не ограничивает.
@@ -108,7 +108,8 @@ List search: `check_name`, `check_leader`, `serial_number`.
 | `indicator`, `additional_indicator` | varchar(32) | default `не указан` |
 | `materiality_level` | varchar(32) | default `средний` |
 | `audit_object` | `text[]` | GIN; FK-целостность в junction |
-| `deadline` | date? | |
+| `deadline` | date? | срок контроля (из АЗ) |
+| `execution_deadline` | date? | срок исполнения (аудитор) |
 | `auditor` | varchar(255) | FK `auditors.full_name` |
 | `manager` | varchar(255) | свободный текст |
 | `status` / `additional_status` | enum | |

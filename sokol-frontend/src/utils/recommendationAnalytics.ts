@@ -65,6 +65,7 @@ export const ADDITIONAL_STATUS_COLORS: Record<RecommendationAdditionalStatus, st
   on_time: MATERIALITY_COLORS.низкий,
   deadline_violated: MATERIALITY_COLORS.высокий,
   on_control: '#64748B',
+  in_progress: MATERIALITY_COLORS.средний,
 };
 
 export const INDICATOR_COLORS: Record<RecommendationIndicator, string> = {

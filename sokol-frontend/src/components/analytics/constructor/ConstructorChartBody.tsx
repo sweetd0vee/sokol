@@ -32,6 +32,7 @@ import { StatusMatrixChart } from '../StatusMatrixChart';
 import { AuditorDocumentsMatrixChart } from '../AuditorDocumentsMatrixChart';
 import { AuditorUnresolvedBarChart } from '../AuditorUnresolvedBarChart';
 import { DepartmentUnresolvedBarChart } from '../DepartmentUnresolvedBarChart';
+import { DepartmentHighMaterialityBarChart } from '../DepartmentHighMaterialityBarChart';
 import { CheckLifecycleChart } from '../CheckLifecycleChart';
 import {
   CHECKS_PALETTE,
@@ -360,6 +361,13 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
       return <EmptyChart message="Нет нерешённых рекомендаций за период" />;
     }
     return <DepartmentUnresolvedBarChart data={payload.data} />;
+  }
+
+  if (payload.chart === 'department-high-materiality') {
+    if (payload.data.length === 0) {
+      return <EmptyChart message="Нет красных рекомендаций за период" />;
+    }
+    return <DepartmentHighMaterialityBarChart data={payload.data} />;
   }
 
   if (payload.chart === 'check-lifecycle') {

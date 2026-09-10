@@ -34,6 +34,7 @@ ADDITIONAL_STATUS_LABELS = {
     "on_time": "В срок",
     "deadline_violated": "Срок нарушен",
     "on_control": "На контроле",
+    "in_progress": "В процессе",
 }
 MATERIALITY_LABELS = {
     "низкий": "Низкий",
@@ -62,6 +63,7 @@ ADDITIONAL_STATUS_COLORS = {
     "on_time": "#22C55E",
     "deadline_violated": "#EF4444",
     "on_control": "#64748B",
+    "in_progress": "#F59E0B",
 }
 MATERIALITY_COLORS = {
     "низкий": "#22C55E",

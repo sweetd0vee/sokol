@@ -169,7 +169,7 @@ describe('buildConstructorDrafts', () => {
         total: 1,
         byStatus: { completed: 0, unresolved: 0, on_control: 0, in_progress: 1 },
         byMateriality: { низкий: 1, средний: 0, высокий: 0 },
-        byAdditional: { on_time: 1, deadline_violated: 0, on_control: 0 },
+        byAdditional: { on_time: 1, deadline_violated: 0, on_control: 0, in_progress: 0 },
         withExtensions: 0,
         withCompletionDate: 0,
         completionRate: 0,
@@ -214,7 +214,14 @@ describe('buildConstructorDrafts', () => {
           checks: [{ key: 'П-1', short_name: 'Казначейство', count: 3 }],
         },
       ],
-      highMaterialityRanking: [{ name: 'ДВА', value: 4 }],
+      highMaterialityRanking: [
+        {
+          name: 'ДВА',
+          value: 4,
+          total: 10,
+          checks: [{ key: 'П-1', short_name: 'Казначейство', count: 4 }],
+        },
+      ],
       highMaterialityTotal: 4,
       filteredChecksTotal: 2,
       filteredRecommendationsTotal: 5,
@@ -239,6 +246,7 @@ describe('buildConstructorDrafts', () => {
     });
     expect(drafts[1]?.payload.chart).toBe('list');
     expect(drafts[2]?.payload.chart).toBe('department-unresolved');
+    expect(drafts[3]?.payload.chart).toBe('department-high-materiality');
   });
 
   it('snapshots DVA employee dashboards', () => {

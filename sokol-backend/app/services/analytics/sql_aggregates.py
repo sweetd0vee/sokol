@@ -191,6 +191,7 @@ async def summarize_recommendations_sql(session: AsyncSession, **filters: Any) -
             count_if(Recommendation.additional_status == "on_time", "on_time"),
             count_if(Recommendation.additional_status == "deadline_violated", "deadline_violated"),
             count_if(Recommendation.additional_status == "on_control", "add_on_control"),
+            count_if(Recommendation.additional_status == "in_progress", "add_in_progress"),
             count_if(recommendation_has_extensions(), "with_extensions"),
             count_if(Recommendation.actual_completion_date.isnot(None), "with_completion_date"),
         ).select_from(Recommendation),
@@ -217,6 +218,7 @@ async def summarize_recommendations_sql(session: AsyncSession, **filters: Any) -
             on_time=int(row.on_time),
             deadline_violated=deadline_violated,
             on_control=int(row.add_on_control),
+            in_progress=int(row.add_in_progress),
         ),
         with_extensions=int(row.with_extensions),
         with_completion_date=int(row.with_completion_date),
@@ -910,6 +912,7 @@ def dva_recommendation_profiles_from_rows(
         on_time = int(row.on_time)
         deadline_violated = int(row.deadline_violated)
         add_on_control = int(row.add_on_control)
+        add_in_progress = int(getattr(row, "add_in_progress", 0) or 0)
         impact.append(
             DvaAuditorMaterialityRow(name=name, low=low, medium=medium, high=high, total=total)
         )
@@ -930,6 +933,7 @@ def dva_recommendation_profiles_from_rows(
                 on_time=on_time,
                 deadline_violated=deadline_violated,
                 on_control=add_on_control,
+                in_progress=add_in_progress,
                 total=total,
                 violation_rate=round((deadline_violated / total) * 100) if total else 0,
             )
@@ -953,6 +957,7 @@ async def dva_auditor_recommendation_profiles_sql(
             count_if(Recommendation.additional_status == "on_time", "on_time"),
             count_if(Recommendation.additional_status == "deadline_violated", "deadline_violated"),
             count_if(Recommendation.additional_status == "on_control", "add_on_control"),
+            count_if(Recommendation.additional_status == "in_progress", "add_in_progress"),
         )
         .select_from(Recommendation)
         .group_by(Recommendation.auditor),

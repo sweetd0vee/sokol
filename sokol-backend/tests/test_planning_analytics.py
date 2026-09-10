@@ -122,20 +122,47 @@ class PlanningAnalyticsTests(unittest.TestCase):
         self.assertEqual(ranking[1].value, 2)
         self.assertEqual({item.key for item in ranking[1].checks}, {"П-2", "П-4"})
 
-    def test_high_materiality_by_department_filters_and_sorts(self) -> None:
+    def test_high_materiality_by_department_counts_checks_and_share(self) -> None:
         lookup = build_department_lookup(["Финансы", "Риски"])
         recommendations = [
-            ("SN-1", "Финансы", "высокий"),
-            ("SN-2", "Финансы", "высокий"),
-            ("SN-3", "Риски", "средний"),
-            ("SN-4", "", "высокий"),
+            ("П-1", "Финансы", "высокий", "unresolved", "Казначейство"),
+            ("П-1", "Финансы", "высокий", "unresolved", "Казначейство"),
+            ("П-2", "Финансы", "средний", "completed", "Казначейство"),
+            ("П-3", "Риски", "средний", "completed", "ОР"),
+            ("П-4", "", "высокий", "unresolved", "Прочее"),
+            ("П-5", "Риски", "высокий", "unresolved", "ОР"),
         ]
 
-        ranking = planning._high_materiality_by_department(recommendations, lookup)
+        ranking, total = planning._high_materiality_by_department(recommendations, lookup)
 
+        self.assertEqual(total, 3)
+        self.assertEqual([row.name for row in ranking], ["Финансы", "Риски"])
+        self.assertEqual(ranking[0].value, 2)
+        self.assertEqual(ranking[0].total, 3)
+        self.assertEqual(ranking[0].checks[0].key, "П-1")
+        self.assertEqual(ranking[0].checks[0].count, 2)
+        self.assertEqual(ranking[0].checks[0].short_name, "Казначейство")
+        self.assertEqual(ranking[1].value, 1)
+        self.assertEqual(ranking[1].total, 2)
+        self.assertEqual(ranking[1].checks[0].key, "П-5")
+
+    def test_high_materiality_by_department_respects_selected_departments(self) -> None:
+        lookup = build_department_lookup(["Финансы", "Риски"])
+        recommendations = [
+            ("П-1", "Финансы; Риски", "высокий", "unresolved", "Смежная"),
+            ("П-2", "Риски", "высокий", "unresolved", "ОР"),
+        ]
+
+        ranking, total = planning._high_materiality_by_department(
+            recommendations,
+            lookup,
+            selected_departments=["Финансы"],
+        )
+
+        self.assertEqual(total, 1)
         self.assertEqual(len(ranking), 1)
         self.assertEqual(ranking[0].name, "Финансы")
-        self.assertEqual(ranking[0].value, 2)
+        self.assertEqual(ranking[0].value, 1)
 
 
 if __name__ == "__main__":

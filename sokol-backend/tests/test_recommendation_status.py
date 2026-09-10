@@ -1,0 +1,102 @@
+"""Unit tests for date-driven recommendation status calculation."""
+
+from __future__ import annotations
+
+import os
+import unittest
+from datetime import date, datetime, timezone
+from types import SimpleNamespace
+
+os.environ.setdefault(
+    "DATABASE_URL",
+    "postgresql+asyncpg://postgres:postgres@127.0.0.1:5433/sokol_db",
+)
+
+from app.models.recommendations import RecommendationAdditionalStatus, RecommendationStatus
+from app.services.recommendation_status import (
+    MOSCOW_TZ,
+    compute_auto_status_fields,
+    overlay_computed_status_fields,
+    seconds_until_next_moscow_run,
+    status_phase,
+    today_moscow,
+)
+
+
+TODAY = date(2026, 9, 10)
+
+
+class RecommendationStatusCalcTests(unittest.TestCase):
+    def test_phase_is_on_control_before_anchor_and_in_progress_on_or_after(self) -> None:
+        self.assertEqual(status_phase(date(2026, 9, 11), TODAY), "on_control")
+        self.assertEqual(status_phase(date(2026, 9, 10), TODAY), "in_progress")
+        self.assertEqual(status_phase(date(2026, 9, 9), TODAY), "in_progress")
+        self.assertIsNone(status_phase(None, TODAY))
+
+    def test_control_deadline_drives_status_and_indicator(self) -> None:
+        future = compute_auto_status_fields(control_deadline=date(2026, 10, 1), today=TODAY)
+        self.assertEqual(future["status"], RecommendationStatus.ON_CONTROL)
+        self.assertEqual(future["indicator"], "на контроле")
+        self.assertEqual(future["additional_status"], RecommendationAdditionalStatus.ON_CONTROL)
+        self.assertEqual(future["additional_indicator"], "на контроле")
+
+        due = compute_auto_status_fields(control_deadline=date(2026, 9, 1), today=TODAY)
+        self.assertEqual(due["status"], RecommendationStatus.IN_PROGRESS)
+        self.assertEqual(due["indicator"], "в процессе")
+        self.assertEqual(due["additional_status"], RecommendationAdditionalStatus.IN_PROGRESS)
+        self.assertEqual(due["additional_indicator"], "в процессе")
+
+    def test_execution_deadline_drives_additional_status_independently(self) -> None:
+        updates = compute_auto_status_fields(
+            control_deadline=date(2026, 8, 1),
+            execution_deadline=date(2026, 12, 1),
+            today=TODAY,
+        )
+        self.assertEqual(updates["status"], RecommendationStatus.IN_PROGRESS)
+        self.assertEqual(updates["additional_status"], RecommendationAdditionalStatus.ON_CONTROL)
+
+    def test_terminal_and_manual_statuses_are_preserved(self) -> None:
+        completed = compute_auto_status_fields(
+            control_deadline=date(2026, 8, 1),
+            current_status=RecommendationStatus.COMPLETED,
+            current_additional_status=RecommendationAdditionalStatus.ON_TIME,
+            today=TODAY,
+        )
+        self.assertNotIn("status", completed)
+        self.assertNotIn("additional_status", completed)
+
+        unresolved = compute_auto_status_fields(
+            control_deadline=date(2026, 8, 1),
+            current_status=RecommendationStatus.UNRESOLVED,
+            current_additional_status=RecommendationAdditionalStatus.DEADLINE_VIOLATED,
+            today=TODAY,
+        )
+        self.assertNotIn("status", unresolved)
+        self.assertNotIn("additional_status", unresolved)
+
+    def test_overlay_uses_existing_row_when_payload_omits_dates(self) -> None:
+        existing = SimpleNamespace(
+            deadline=date(2026, 12, 1),
+            execution_deadline=None,
+            status=RecommendationStatus.IN_PROGRESS,
+            additional_status=RecommendationAdditionalStatus.IN_PROGRESS,
+        )
+        payload = overlay_computed_status_fields(
+            {"name": "Рекомендация"},
+            existing=existing,
+            today=TODAY,
+        )
+        self.assertEqual(payload["status"], RecommendationStatus.ON_CONTROL)
+        self.assertEqual(payload["additional_status"], RecommendationAdditionalStatus.ON_CONTROL)
+
+    def test_today_moscow_uses_utc_plus_three(self) -> None:
+        just_after_midnight = datetime(2026, 9, 11, 0, 10, tzinfo=MOSCOW_TZ)
+        self.assertEqual(today_moscow(just_after_midnight), date(2026, 9, 11))
+        still_tenth = datetime(2026, 9, 10, 20, 50, tzinfo=timezone.utc)
+        self.assertEqual(today_moscow(still_tenth), date(2026, 9, 10))
+
+    def test_next_run_is_after_moscow_midnight(self) -> None:
+        now = datetime(2026, 9, 10, 18, 0, tzinfo=MOSCOW_TZ)
+        delay = seconds_until_next_moscow_run(now)
+        target = datetime(2026, 9, 11, 0, 5, tzinfo=MOSCOW_TZ)
+        self.assertAlmostEqual(delay, (target - now).total_seconds(), places=0)

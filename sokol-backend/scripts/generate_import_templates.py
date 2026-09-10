@@ -129,11 +129,12 @@ RECOMMENDATION_COLUMN_META: list[tuple[str, bool, str]] = [
     ("indicator", False, "не указан | в процессе | на контроле | не решено | исполнено | исполнено в ходе аудита"),
     ("materiality_level", False, "низкий | средний | высокий (по умолчанию средний)"),
     ("audit_object", True, "Объект аудита / подразделение"),
-    ("deadline", False, "Срок исполнения YYYY-MM-DD"),
+    ("deadline", False, "Срок контроля YYYY-MM-DD (из АЗ)"),
+    ("execution_deadline", False, "Срок исполнения YYYY-MM-DD (выставляет аудитор)"),
     ("auditor", True, "ФИО аудитора"),
     ("manager", True, "ФИО менеджера / ответственного"),
     ("status", True, "completed | unresolved | on_control | in_progress"),
-    ("additional_status", True, "on_time | deadline_violated | on_control"),
+    ("additional_status", True, "on_time | deadline_violated | on_control | in_progress"),
     ("created_at", False, "Дата создания YYYY-MM-DD"),
     ("actual_completion_date", False, "Фактическая дата исполнения YYYY-MM-DD"),
     ("extension_1_reason", False, "Причина 1-го продления срока"),
@@ -207,7 +208,7 @@ def _write_guides_sheet(workbook: Workbook, years: list[int]) -> None:
         ("check_type", "planned=Плановая, unscheduled=Внеплановая, thematic=Контрольная"),
         ("status (проверка)", "not_started=Запланировано, in_progress=В процессе, completed=Завершено"),
         ("status (рекомендация)", "completed | unresolved | on_control | in_progress"),
-        ("additional_status", "on_time | deadline_violated | on_control"),
+        ("additional_status", "on_time | deadline_violated | on_control | in_progress"),
     ]
     for row_index, (left, right) in enumerate(lines, start=1):
         sheet.cell(row_index, 1, left).font = Font(
@@ -295,15 +296,15 @@ def _add_recommendation_validations(sheet) -> None:
     )
     additional_dv = DataValidation(
         type="list",
-        formula1='"on_time,deadline_violated,on_control"',
+        formula1='"on_time,deadline_violated,on_control,in_progress"',
         allow_blank=True,
     )
     for dv in (indicator_dv, materiality_dv, status_dv, additional_dv):
         sheet.add_data_validation(dv)
     indicator_dv.add("E2:E5000")
     materiality_dv.add("F2:F5000")
-    status_dv.add("K2:K5000")
-    additional_dv.add("L2:L5000")
+    status_dv.add("L2:L5000")
+    additional_dv.add("M2:M5000")
 
 
 def build_checks_workbook(years: list[int]) -> Workbook:

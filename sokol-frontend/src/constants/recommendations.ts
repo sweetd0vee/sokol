@@ -42,6 +42,7 @@ const ADDITIONAL_STATUS_TO_INDICATOR: Record<
   on_time: 'в срок',
   deadline_violated: 'срок нарушен',
   on_control: 'на контроле',
+  in_progress: 'в процессе',
 };
 
 export function indicatorFromRecommendationAdditionalStatus(
@@ -60,6 +61,7 @@ export const RECOMMENDATION_ADDITIONAL_STATUS_OPTIONS: {
   { value: 'on_time', label: 'В срок' },
   { value: 'deadline_violated', label: 'Срок нарушен' },
   { value: 'on_control', label: 'На контроле' },
+  { value: 'in_progress', label: 'В процессе' },
 ];
 
 export function getRecommendationStatusLabel(value: RecommendationStatus) {
@@ -97,6 +99,8 @@ export function getRecommendationAdditionalStatusBadgeClass(
       return 'bg-red-100 text-gray-800';
     case 'on_control':
       return 'bg-gray-200 text-gray-800';
+    case 'in_progress':
+      return 'bg-yellow-100 text-gray-800';
     default:
       return 'bg-white text-gray-900';
   }
@@ -130,6 +134,8 @@ export function getRecommendationAdditionalStatusFieldStyle(
       return { backgroundColor: '#fee2e2' };
     case 'on_control':
       return { backgroundColor: '#e5e7eb' };
+    case 'in_progress':
+      return { backgroundColor: '#fef9c3' };
     default:
       return undefined;
   }
@@ -163,6 +169,8 @@ export function normalizeRecommendationAdditionalStatus(
     case 'on_control':
     case 'pending_review':
       return 'on_control';
+    case 'in_progress':
+      return 'in_progress';
     case 'removed_control':
     case 'none':
       return 'on_time';
@@ -233,6 +241,7 @@ export const ADDITIONAL_INDICATOR_OPTIONS: {
   { value: 'в срок', label: 'В срок', dotClassName: 'bg-[rgb(37,235,103)]' },
   { value: 'срок нарушен', label: 'Срок нарушен', dotClassName: 'bg-[#FF4347]' },
   { value: 'на контроле', label: 'На контроле', dotClassName: 'bg-gray-200' },
+  { value: 'в процессе', label: 'В процессе', dotClassName: 'bg-[#FBEB8D]' },
 ];
 
 export function getAdditionalIndicatorLabel(
@@ -255,6 +264,9 @@ export function normalizeRecommendationAdditionalIndicator(
     case 'на контроле':
     case 'on_control':
       return 'на контроле';
+    case 'в процессе':
+    case 'in_progress':
+      return 'в процессе';
     case 'не указан':
     case '':
     default:

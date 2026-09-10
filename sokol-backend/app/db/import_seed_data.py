@@ -41,6 +41,7 @@ _ADDITIONAL_INDICATOR_BY_STATUS = {
     "on_time": "в срок",
     "deadline_violated": "срок нарушен",
     "on_control": "на контроле",
+    "in_progress": "в процессе",
 }
 
 
@@ -201,6 +202,7 @@ async def import_seed_data(
                 "materiality_level": str(row.get("materiality_level") or "средний").strip(),
                 "audit_object": await canonicalize_audit_objects(session, row["audit_object"]),
                 "deadline": parse_date(row.get("deadline")),
+                "execution_deadline": parse_date(row.get("execution_deadline")),
                 "auditor": str(row["auditor"]).strip(),
                 "manager": str(row["manager"]).strip(),
                 "status": RecommendationStatus(str(row["status"]).strip()),

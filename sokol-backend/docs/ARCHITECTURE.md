@@ -59,6 +59,7 @@ HTTP Basic выключен при `SOKOL_ENV` ∈ `{prod, production}`, есл�
 - `RecommendationAuditObject` — junction rec ↔ `departments.name`; массив `audit_object` для аналитики
 - `Attachment` — entity + bucket `check-{serial}`
 - `User` — локальный логин (PBKDF2-SHA256 + legacy plaintext verify); аватары не хранятся
+- Статусы открытых рекомендаций (`on_control` / `in_progress` и индикаторы) считаются от `deadline` / `execution_deadline` и обновляются in-process каждый день в 00:05 Europe/Moscow (`services/recommendation_status.py`). `SOKOL_STATUS_SCHEDULER=0` выключает цикл.
 
 Поля и enum'ы: [DATA_AND_DB.md](DATA_AND_DB.md). Отчёты: [REPORTS.md](REPORTS.md).
 
@@ -69,7 +70,7 @@ HTTP Basic выключен при `SOKOL_ENV` ∈ `{prod, production}`, есл�
 3. CORS из `SOKOL_CORS_ORIGINS` (пусто → `*`, credentials выключены).
 4. Роутер `/api/v1` + `DomainError` → HTTP `{detail}`.
 
-Docker entrypoint (`app.db.bootstrap`): `init_db` → bootstrap-миграции → seed справочников (audit_types / check_kinds / ratings) → `sync_auditors` / `sync_departments` / `sync_users` → `sync_check_buckets` → опциональный Excel demo (`SOKOL_LOAD_DEMO_DATA`, default on).
+Docker entrypoint (`app.db.bootstrap`): `init_db` → bootstrap-миграции → seed справочников (audit_types / check_kinds / ratings) → `sync_auditors` / `sync_departments` / `sync_users` → `sync_check_buckets` → опциональный Excel demo (`SOKOL_LOAD_DEMO_DATA`, default on). После старта API in-process цикл раз в сутки пересчитывает статусы открытых рекомендаций.
 
 ## Non-goals
 

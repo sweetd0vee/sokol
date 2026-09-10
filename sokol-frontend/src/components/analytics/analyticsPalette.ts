@@ -222,6 +222,7 @@ export const MONITORING_ADDITIONAL_STATUS_COLORS = {
   on_time: MONITORING_STATUS_COLORS.completed,
   deadline_violated: MONITORING_STATUS_COLORS.unresolved,
   on_control: MONITORING_STATUS_COLORS.on_control,
+  in_progress: MONITORING_STATUS_COLORS.in_progress,
 } as const;
 
 /**

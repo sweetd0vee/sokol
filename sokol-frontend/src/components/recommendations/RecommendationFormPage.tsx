@@ -212,7 +212,7 @@ export function RecommendationFormPage() {
             />
           </div>
 
-          <div className={FORM_ROW_3}>
+          <div className={FORM_ROW_4}>
             <Select
               label="Аудитор"
               value={fields.auditor}
@@ -241,6 +241,15 @@ export function RecommendationFormPage() {
               className={FORM_FIELD_CLASS}
               labelClassName={FORM_LABEL_CLASS}
               inputClassName={formControlClass(showValidationErrors && requiredFieldErrors.deadline)}
+            />
+            <DatePicker
+              label="Срок исполнения"
+              selected={fields.executionDeadline}
+              onChange={(value) => setField('executionDeadline', value)}
+              placeholder="Выберите дату"
+              className={FORM_FIELD_CLASS}
+              labelClassName={FORM_LABEL_CLASS}
+              inputClassName={FORM_EQUAL_CONTROL_CLASS}
             />
           </div>
 
@@ -280,7 +289,7 @@ export function RecommendationFormPage() {
           <div className={FORM_SECTION_TITLE_CLASS}>Контрольная зона</div>
           <div className={FORM_SECTION_INNER_STACK_CLASS}>
             <CollapsibleFormBlock
-              title="Срок исполнения"
+              title="Фактическое исполнение"
               titleClassName={FORM_SECTION_TITLE_CLASS}
               open={form.isExecutionDeadlineOpen}
               onToggle={() => form.setIsExecutionDeadlineOpen((current) => !current)}

@@ -57,6 +57,7 @@ class RecommendationBase(BaseModel):
     materiality_level: str = Field(default="средний", max_length=32)
     audit_object: list[str] = Field(..., min_length=1)
     deadline: Optional[Date] = None
+    execution_deadline: Optional[Date] = None
     auditor: str = Field(..., min_length=1, max_length=255)
     manager: str = Field(..., min_length=1, max_length=255)
     status: RecommendationStatus
@@ -87,6 +88,7 @@ class RecommendationBase(BaseModel):
 
     @field_validator(
         'deadline',
+        'execution_deadline',
         'created_at',
         'actual_completion_date',
         'extension_1_date',
@@ -133,6 +135,7 @@ class RecommendationUpdate(BaseModel):
     materiality_level: Optional[str] = Field(None, max_length=32)
     audit_object: Optional[list[str]] = Field(None, min_length=1)
     deadline: Optional[Date] = None
+    execution_deadline: Optional[Date] = None
     auditor: Optional[str] = Field(None, min_length=1, max_length=255)
     manager: Optional[str] = Field(None, min_length=1, max_length=255)
     status: Optional[RecommendationStatus] = None
@@ -153,6 +156,7 @@ class RecommendationUpdate(BaseModel):
 
     @field_validator(
         'deadline',
+        'execution_deadline',
         'actual_completion_date',
         'extension_1_date',
         'remove_from_control_date',

@@ -407,8 +407,6 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
   return drafts;
 }
 
-const PLANNING_HIGH_MATERIALITY_COLOR = '#FF4347';
-
 export function buildPlanningConstructorDrafts(input: PlanningConstructorInput): ConstructorWidgetDraft[] {
   const drafts: ConstructorWidgetDraft[] = [];
   const { filterCaption: caption } = input;
@@ -450,13 +448,9 @@ export function buildPlanningConstructorDrafts(input: PlanningConstructorInput):
       );
     } else if (sectionId === 'highMateriality') {
       drafts.push(
-        draft(kind, sectionId, 'Рекомендации высокой существенности по департаментам', caption, SIZE.full, {
-          chart: 'bar',
-          variant: 'bars',
-          data: barPointsFromNamed(input.highMaterialityRanking),
-          colors: input.highMaterialityRanking.map(() => PLANNING_HIGH_MATERIALITY_COLOR),
-          seriesName: 'Высокая существенность',
-          categoryWidth: 140,
+        draft(kind, sectionId, 'Количество и доля красных рекомендаций по департаментам', caption, { w: 12, h: 5, minW: 6, minH: 4 }, {
+          chart: 'department-high-materiality',
+          data: input.highMaterialityRanking,
         }),
       );
     }

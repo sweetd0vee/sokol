@@ -271,7 +271,7 @@ export function RecommendationsTab() {
           </ListTableFooter>
         }
       >
-        <table className="w-full text-base table-fixed min-w-[1788px]">
+        <table className="w-full text-base table-fixed min-w-[1964px]">
           <colgroup>
             <col className="w-24" />
             <col className="w-40" />
@@ -280,6 +280,7 @@ export function RecommendationsTab() {
             <col className="w-36" />
             <col className="w-44" />
             <col className="w-36" />
+            <col className="w-44" />
             <col className="w-44" />
             <col className="w-28" />
             <col className="w-36" />
@@ -356,6 +357,7 @@ export function RecommendationsTab() {
                   onToChange={setDeadlineTo}
                 />
               </ListFilterCell>
+              <ListFilterCell />
               <ListFilterCell>
                 <MultiCheckboxSelect
                   value={materialityLevels}
@@ -404,7 +406,8 @@ export function RecommendationsTab() {
                 </>,
               )}
               {renderSortableHeader('check_view', 'Вид')}
-              {renderSortableHeader('deadline', 'Срок исполнения')}
+              {renderSortableHeader('deadline', 'Срок контроля')}
+              {renderSortableHeader('execution_deadline', 'Срок исполнения')}
               {renderSortableHeader('materiality_level', 'Уровень')}
               {renderSortableHeader('auditor', 'Аудитор')}
               {renderSortableHeader(
@@ -458,6 +461,7 @@ export function RecommendationsTab() {
                     {checkView || '—'}
                   </td>
                   <td className="px-4 py-3 pr-6">{formatRuDate(recommendation.deadline)}</td>
+                  <td className="px-4 py-3 pr-6">{formatRuDate(recommendation.execution_deadline)}</td>
                   <td className="px-2 py-3 text-center">
                     <span
                       className={`inline-block h-[18px] w-[18px] rounded-full ${getMaterialityDotClassName(recommendation.materiality_level)}`}

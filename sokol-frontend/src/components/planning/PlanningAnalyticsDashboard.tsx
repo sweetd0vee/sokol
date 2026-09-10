@@ -1,28 +1,15 @@
 import { useMemo } from 'react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  LabelList,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import { fetchPlanningAnalytics } from '../../api/analytics';
 import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from '../analytics/AnalyticsDashboardGrid';
 import { AnalyticsDashboardShell } from '../analytics/AnalyticsDashboardShell';
 import {
   ChartCard,
-  CHART_AXIS_TICK,
-  CHART_CATEGORY_AXIS_TICK,
-  CHART_VALUE_LABEL_SIZE,
-  CHART_VALUE_LABEL_WEIGHT,
   EmptyChart,
   KpiCard,
 } from '../analytics/AnalyticsChartPrimitives';
 import { DepartmentUnresolvedBarChart } from '../analytics/DepartmentUnresolvedBarChart';
+import { DepartmentHighMaterialityBarChart } from '../analytics/DepartmentHighMaterialityBarChart';
 import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
 import { useExportSections } from '../../hooks/useExportSections';
 import { PLANNING_EXPORT_SECTIONS, type PlanningExportSectionId } from '../../constants/analyticsExportSections';
@@ -32,8 +19,6 @@ import { buildConstructorFilterCaption } from '../analytics/constructor/construc
 import { useAnalyticsDashboardController } from '../analytics/useAnalyticsDashboardController';
 import { toAnalyticsFilterSidebarProps } from '../analytics/analyticsFilterSidebarProps';
 import { runAnalyticsExport } from '../../utils/runAnalyticsExport';
-
-const PLANNING_HIGH_MATERIALITY_COLOR = '#FF4347';
 
 const EMPTY_COVERAGE = {
   covered: 0,
@@ -245,52 +230,19 @@ export function PlanningAnalyticsDashboard() {
       },
       {
         id: 'highMateriality',
-        defaultLayout: { x: 0, y: 6, w: 12, h: 4, minW: 6, minH: 3 },
-        expandToContent: true,
+        defaultLayout: { x: 0, y: 6, w: 12, h: 5, minW: 6, minH: 4 },
         render: () => (
           <ChartCard
-            title="Рекомендации высокой существенности по департаментам"
+            title="Количество и доля красных рекомендаций по департаментам"
             description=""
             exportSectionId="highMateriality"
             exportSelected={exportSections.isSelected('highMateriality')}
             onToggleExport={() => exportSections.toggleSection('highMateriality')}
-            fitContent
           >
             {highMaterialityRanking.length === 0 ? (
               <EmptyChart message="Нет красных рекомендаций за период" />
             ) : (
-              <div className="h-[16rem]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={highMaterialityRanking}
-                    layout="vertical"
-                    margin={{ top: 8, right: 36, left: 8, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      width={140}
-                      tick={CHART_CATEGORY_AXIS_TICK}
-                    />
-                    <Tooltip />
-                    <Bar
-                      dataKey="value"
-                      name="Высокая существенность"
-                      fill={PLANNING_HIGH_MATERIALITY_COLOR}
-                      radius={[0, 6, 6, 0]}
-                    >
-                      <LabelList
-                        dataKey="value"
-                        position="right"
-                        fontSize={CHART_VALUE_LABEL_SIZE}
-                        fontWeight={CHART_VALUE_LABEL_WEIGHT}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <DepartmentHighMaterialityBarChart data={highMaterialityRanking} />
             )}
           </ChartCard>
         ),
@@ -354,7 +306,7 @@ export function PlanningAnalyticsDashboard() {
         },
       )}
     >
-      <AnalyticsDashboardGrid cards={cards} maxChartArea={360} />
+      <AnalyticsDashboardGrid cards={cards} maxChartArea={440} />
     </AnalyticsDashboardShell>
   );
 }

@@ -8,6 +8,7 @@ import type {
   DvaAuditorMaterialityRow,
   DvaAuditorTimelinessRow,
   DvaCheckLifecycleRow,
+  PlanningHighMaterialityDepartmentRow,
   PlanningUnresolvedDepartmentRow,
   RecommendationPeriodPoint,
   RecommendationsSummary,
@@ -152,6 +153,10 @@ export type ConstructorPayload =
       data: PlanningUnresolvedDepartmentRow[];
     }
   | {
+      chart: 'department-high-materiality';
+      data: PlanningHighMaterialityDepartmentRow[];
+    }
+  | {
       chart: 'check-lifecycle';
       rows: DvaCheckLifecycleRow[];
     };
@@ -235,7 +240,7 @@ export type PlanningConstructorInput = {
     uncoveredDepartments: string[];
   };
   unresolvedByDepartment: PlanningUnresolvedDepartmentRow[];
-  highMaterialityRanking: NamedCount[];
+  highMaterialityRanking: PlanningHighMaterialityDepartmentRow[];
   highMaterialityTotal: number;
   filteredChecksTotal: number;
   filteredRecommendationsTotal: number;

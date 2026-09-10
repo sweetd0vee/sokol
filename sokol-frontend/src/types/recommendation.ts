@@ -1,6 +1,6 @@
 export type RecommendationStatus = 'completed' | 'unresolved' | 'on_control' | 'in_progress';
 
-export type RecommendationAdditionalStatus = 'on_time' | 'deadline_violated' | 'on_control';
+export type RecommendationAdditionalStatus = 'on_time' | 'deadline_violated' | 'on_control' | 'in_progress';
 
 export type MaterialityLevel = 'низкий' | 'средний' | 'высокий';
 
@@ -16,7 +16,8 @@ export type RecommendationAdditionalIndicator =
   | 'не указан'
   | 'в срок'
   | 'срок нарушен'
-  | 'на контроле';
+  | 'на контроле'
+  | 'в процессе';
 
 export interface Recommendation {
   id: string;
@@ -30,6 +31,7 @@ export interface Recommendation {
   materiality_level: MaterialityLevel;
   audit_object: string[];
   deadline: string;
+  execution_deadline?: string;
   auditor: string;
   manager: string;
   status: RecommendationStatus;

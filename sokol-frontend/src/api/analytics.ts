@@ -58,6 +58,7 @@ export type RecommendationsSummary = {
     on_time: number;
     deadline_violated: number;
     on_control: number;
+    in_progress: number;
   };
   withExtensions: number;
   withCompletionDate: number;
@@ -179,6 +180,7 @@ export type DvaAuditorTimelinessRow = {
   on_time: number;
   deadline_violated: number;
   on_control: number;
+  in_progress: number;
   total: number;
   violation_rate: number;
 };
@@ -265,6 +267,13 @@ export type PlanningUnresolvedDepartmentRow = {
   checks: DvaCheckCountRef[];
 };
 
+export type PlanningHighMaterialityDepartmentRow = {
+  name: string;
+  value: number;
+  total: number;
+  checks: DvaCheckCountRef[];
+};
+
 export type PlanningAnalyticsResponse = {
   universeChecksTotal: number;
   universeRecommendationsTotal: number;
@@ -273,7 +282,7 @@ export type PlanningAnalyticsResponse = {
   granularity: PeriodGranularity;
   coverage: PlanningCoverage;
   unresolvedByDepartment: PlanningUnresolvedDepartmentRow[];
-  highMaterialityByDepartment: NamedCount[];
+  highMaterialityByDepartment: PlanningHighMaterialityDepartmentRow[];
   highMaterialityTotal: number;
   filterOptions: AnalyticsFilterOptions;
 };

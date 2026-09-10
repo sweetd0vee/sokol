@@ -81,9 +81,11 @@ Search: название, наблюдение, описание, объект �
 | Поле | Значения |
 |------|----------|
 | `status` | `completed`, `unresolved`, `on_control`, `in_progress` |
-| `additional_status` | `on_time`, `deadline_violated`, `on_control` |
+| `additional_status` | `on_time`, `deadline_violated`, `on_control`, `in_progress` |
 
-Ещё: `sequence_number` (сервер), `description`, `observation_name`, `indicator` / `additional_indicator` (default `не указан`), `materiality_level` (default `средний`), `audit_object: list[str]` (строка с `,`/`;` тоже принимается), продления и снятие с контроля, `deadline_extensions` / `control_removals` (`{date?, comment?}`), `closure_*`.
+Ещё: `sequence_number` (сервер), `description`, `observation_name`, `indicator` / `additional_indicator` (default `не указан`), `materiality_level` (default `средний`), `audit_object: list[str]` (строка с `,`/`;` тоже принимается), `deadline` (срок контроля), `execution_deadline` (срок исполнения), продления и снятие с контроля, `deadline_extensions` / `control_removals` (`{date?, comment?}`), `closure_*`.
+
+Открытые рекомендации (`on_control` / `in_progress`) пересчитываются от этих дат при create/update и ежедневно в 00:05 Europe/Moscow. `completed` / `unresolved` и `on_time` / `deadline_violated` не трогаются.
 
 `auditor` ∈ auditors, иначе **400**. `manager` — свободный текст. `audit_object` канонизируется по `departments`; неизвестное → **400**. Нет проверки → **400**. Сбой MinIO при delete/replace → **502**.
 
@@ -99,7 +101,7 @@ Search: название, наблюдение, описание, объект �
 | `GET` | `/analytics/recommendations` | `summary` (+ `withExtensions`, `withCompletionDate`, `completionRate`, `violationRate`), `periodSeries` (в т.ч. `low`/`medium`/`high`, `cumulativeCompleted`), `materialityDistribution`, `statusDistribution`, `additionalStatusDistribution`, `viewDistribution`, `materialityMatrix`, `objectDistribution`, индикаторы, `checkLinks` |
 | `GET` | `/analytics/monitoring` | `summary`, `periodSeries`, `additionalStatusDistribution`, `statusMatrix`, `deadlineExtensionsByCheck`, `completedDuringAuditByCheck`, `filterOptions` |
 | `GET` | `/analytics/dva` | `universeChecksTotal` / `universeRecommendationsTotal` (+ filtered), `checkSummary`, `recommendationSummary`, `completionShare`, `averageCheckDurationDays`, `portfolioSeries`, `auditorLoad` / `auditorImpact` / `auditorExecution` / `auditorTimeliness` / `auditorDocuments`, `auditorMatrix`, treemap'ы, `departmentMap`, `documentReadiness`, `checkLifecycle` |
-| `GET` | `/analytics/planning` | `coverage` (rates, donut, covered/uncovered, `checksByDepartment`), `unresolvedByDepartment`, `highMaterialityByDepartment`, `highMaterialityTotal`, universe/filtered totals; **без** `auditors` в `filterOptions` |
+| `GET` | `/analytics/planning` | `coverage` (rates, donut, covered/uncovered, `checksByDepartment`), `unresolvedByDepartment`, `highMaterialityByDepartment` (красные рекомендации, доля от рекомендаций департамента, проверки), `highMaterialityTotal`, universe/filtered totals; **без** `auditors` в `filterOptions` |
 
 Все ответы: `universeTotal` / `filteredTotal` (у dva/planning — отдельно checks и recommendations), `granularity`, `filterOptions` (`auditors?`, `departments`, `anchorDates`).
 

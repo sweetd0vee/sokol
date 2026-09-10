@@ -11,6 +11,7 @@ from app.services.dictionary_validation import (
     canonicalize_audit_objects,
     validate_recommendation_dictionary_fields,
 )
+from app.services.recommendation_status import overlay_computed_status_fields
 
 
 def _apply_filters(
@@ -76,7 +77,7 @@ async def add_recommendation_row(
     check_id: int,
     sequence_number: int,
 ) -> Recommendation:
-    payload = dict(data)
+    payload = overlay_computed_status_fields(dict(data))
     if not payload.get("created_at"):
         payload["created_at"] = date.today()
     payload["sequence_number"] = sequence_number
@@ -166,7 +167,10 @@ async def update_recommendation(
     recommendation_in: RecommendationUpdate,
     check_id: Optional[int] = None,
 ) -> Recommendation:
-    update_data = recommendation_in.model_dump(exclude_unset=True)
+    update_data = overlay_computed_status_fields(
+        recommendation_in.model_dump(exclude_unset=True),
+        existing=recommendation,
+    )
     if "audit_object" in update_data:
         update_data["audit_object"] = await canonicalize_audit_objects(
             session,

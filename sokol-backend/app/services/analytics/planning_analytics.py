@@ -13,6 +13,7 @@ from app.schemas.analytics import (
     PlanningAnalyticsResponse,
     PlanningCoverage,
     PlanningCoverageDonutSlice,
+    PlanningHighMaterialityDepartmentRow,
     PlanningUnresolvedDepartmentRow,
 )
 from app.services.analytics.constants import (
@@ -33,7 +34,6 @@ from app.services.analytics.sql_aggregates import (
     count_recommendations,
     load_check_serial_numbers,
     load_planning_recommendation_rows,
-    load_recommendation_department_rows,
 )
 
 _COVERAGE_SKIP = {UNSPECIFIED, WITHOUT_DEPARTMENT, ""}
@@ -132,21 +132,55 @@ def _unresolved_by_department(
 
 
 def _high_materiality_by_department(
-    recommendation_rows: list[tuple[str, str | list[str], str]],
+    rows: list[tuple[str, str | list[str], str, str, str]],
     department_lookup: dict[str, str],
-) -> list[NamedCount]:
-    counts: dict[str, int] = defaultdict(int)
-    for _serial, audit_object, materiality_level in recommendation_rows:
-        if materiality_level != "высокий":
-            continue
+    *,
+    selected_departments: list[str] | None = None,
+) -> tuple[list[PlanningHighMaterialityDepartmentRow], int]:
+    selected = {name.strip() for name in (selected_departments or []) if name.strip()}
+    totals: dict[str, int] = defaultdict(int)
+    highs: dict[str, int] = defaultdict(int)
+    checks: dict[str, dict[str, DvaCheckCountRef]] = defaultdict(dict)
+    for serial, audit_object, materiality_level, _status, short_name in rows:
+        serial_key = (serial or "").strip()
+        display_short = (short_name or "").strip()
+        is_high = materiality_level == "высокий"
         for name in matched_departments_or_fallback(audit_object, department_lookup):
             if name in _COVERAGE_SKIP:
                 continue
-            counts[name] += 1
-    return [
-        NamedCount(name=name, value=value)
-        for name, value in sorted(counts.items(), key=lambda row: (-row[1], row[0]))[:PLANNING_TOP_DEPARTMENTS]
+            if selected and name not in selected:
+                continue
+            totals[name] += 1
+            if not is_high:
+                continue
+            highs[name] += 1
+            if not serial_key:
+                continue
+            existing = checks[name].get(serial_key)
+            if existing is None:
+                checks[name][serial_key] = DvaCheckCountRef(
+                    key=serial_key,
+                    short_name=display_short,
+                    count=1,
+                )
+                continue
+            checks[name][serial_key] = DvaCheckCountRef(
+                key=existing.key,
+                short_name=existing.short_name or display_short,
+                count=existing.count + 1,
+            )
+    ranking = [
+        PlanningHighMaterialityDepartmentRow(
+            name=name,
+            value=value,
+            total=totals.get(name, value),
+            checks=sorted(checks.get(name, {}).values(), key=lambda item: (-item.count, item.key)),
+        )
+        for name, value in highs.items()
+        if value > 0
     ]
+    ranking.sort(key=lambda row: (-row.value, row.name.casefold()))
+    return ranking[:PLANNING_TOP_DEPARTMENTS], sum(highs.values())
 
 
 async def build_planning_analytics(
@@ -181,8 +215,6 @@ async def build_planning_analytics(
     else:
         unresolved_recommendation_rows = coverage_recommendation_rows
         filtered_check_serials = coverage_check_serials
-    deadline_recommendation_rows = await load_recommendation_department_rows(session, **filters)
-
     check_counts = {
         name: count
         for name, count in check_canonical_department_distribution_from_links(
@@ -201,7 +233,11 @@ async def build_planning_analytics(
         department_lookup,
         selected_departments=departments,
     )
-    high_ranking = _high_materiality_by_department(deadline_recommendation_rows, department_lookup)
+    high_ranking, high_total = _high_materiality_by_department(
+        unresolved_recommendation_rows,
+        department_lookup,
+        selected_departments=departments,
+    )
 
     return PlanningAnalyticsResponse(
         universe_checks_total=await count_checks(session, filtered=False),
@@ -212,7 +248,7 @@ async def build_planning_analytics(
         coverage=coverage,
         unresolved_by_department=unresolved_ranking,
         high_materiality_by_department=high_ranking,
-        high_materiality_total=sum(item.value for item in high_ranking),
+        high_materiality_total=high_total,
         filter_options=PlanningAnalyticsFilterOptions(
             departments=all_departments,
             anchor_dates=await collect_combined_anchor_dates_sql(session),

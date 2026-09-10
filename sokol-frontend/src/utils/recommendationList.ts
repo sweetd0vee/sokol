@@ -17,6 +17,7 @@ export type RecommendationSortKey =
   | 'name'
   | 'audit_object'
   | 'deadline'
+  | 'execution_deadline'
   | 'check_view'
   | 'indicator'
   | 'additional_indicator'
@@ -54,7 +55,8 @@ const ADDITIONAL_INDICATOR_ORDER: Record<string, number> = {
   'в срок': 0,
   'срок нарушен': 1,
   'на контроле': 2,
-  'не указан': 3,
+  'в процессе': 3,
+  'не указан': 4,
 };
 
 const MATERIALITY_ORDER: Record<string, number> = {
@@ -74,6 +76,7 @@ const ADDITIONAL_STATUS_ORDER: Record<string, number> = {
   on_time: 0,
   deadline_violated: 1,
   on_control: 2,
+  in_progress: 3,
 };
 
 export function getRecommendationSortValue(
@@ -95,6 +98,8 @@ export function getRecommendationSortValue(
       return getRecommendationCheckView(recommendation, checkViewBySerial);
     case 'deadline':
       return parseDateValue(recommendation.deadline);
+    case 'execution_deadline':
+      return parseDateValue(recommendation.execution_deadline);
     case 'indicator':
       return INDICATOR_ORDER[recommendation.indicator] ?? 999;
     case 'additional_indicator':

@@ -9,6 +9,9 @@ from collections.abc import Awaitable, Callable
 from app.db.migrations.auditor_codes import migrate as migrate_auditor_codes
 from app.db.migrations.dictionary_foreign_keys import migrate as migrate_dictionary_foreign_keys
 from app.db.migrations.dictionary_uniqueness import migrate as migrate_dictionary_uniqueness
+from app.db.migrations.recommendation_execution_deadline import (
+    migrate as migrate_recommendation_execution_deadline,
+)
 from app.db.migrations.patches import (
     ANALYTICS_INDEXES,
     ATTACHMENTS,
@@ -32,6 +35,7 @@ BOOTSTRAP_MIGRATIONS: tuple[MigrateFn, ...] = (
     RECOMMENDATION_INDICATOR_ON_CONTROL.migrate,
     RECOMMENDATION_ADDITIONAL_INDICATOR.migrate,
     ANALYTICS_INDEXES.migrate,
+    migrate_recommendation_execution_deadline,
 )
 
 

@@ -1,4 +1,6 @@
+import asyncio
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +13,10 @@ from app.core.startup_validation import (
     assert_jwt_secret_safe_for_env,
     assert_seed_replace_safe_for_env,
     env_flag_enabled,
+)
+from app.services.recommendation_status_refresh import (
+    run_recommendation_status_scheduler,
+    status_scheduler_enabled,
 )
 
 
@@ -32,7 +38,26 @@ assert_seed_replace_safe_for_env(
     replace=env_flag_enabled(os.getenv("SOKOL_SEED_REPLACE"), default=False),
 )
 
-app = FastAPI(title=settings.app_name)
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    task: asyncio.Task[None] | None = None
+    if status_scheduler_enabled():
+        task = asyncio.create_task(
+            run_recommendation_status_scheduler(),
+            name="recommendation-status-scheduler",
+        )
+    try:
+        yield
+    finally:
+        if task is not None:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
 register_exception_handlers(app)
 cors_origins = settings.cors_origins
 
