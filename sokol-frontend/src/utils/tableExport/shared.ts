@@ -10,7 +10,10 @@ import {
   getRecommendationStatusLabel,
 } from '../../constants/recommendations';
 import { formatRecommendationAuditObjects } from '../auditObjects';
-import { getRecommendationExecutionInfo } from '../../constants/recommendationClosure';
+import {
+  getControlZoneExecutionDate,
+  getRecommendationExecutionInfo,
+} from '../../constants/recommendationClosure';
 import { buildCheckViewBySerial } from '../recommendationList';
 import type { ExportRow } from './types';
 
@@ -190,7 +193,7 @@ export function toRecommendationTableRows(
     Индикатор: getIndicatorLabel(recommendation.indicator),
     Вид: checkViewByKey.get(recommendation.serial_number) ?? '',
     'Срок контроля': formatCheckDate(recommendation.deadline),
-    'Срок исполнения': formatCheckDate(recommendation.execution_deadline),
+    'Срок исполнения': formatCheckDate(getControlZoneExecutionDate(recommendation)),
     'Уровень существенности': getMaterialityLevelLabel(recommendation.materiality_level),
     Аудитор: recommendation.auditor,
     'Руководитель объекта аудита': recommendation.manager,

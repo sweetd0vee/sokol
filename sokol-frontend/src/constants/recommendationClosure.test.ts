@@ -1,5 +1,38 @@
 import { describe, expect, it } from 'vitest';
-import { getRecommendationExecutionInfo } from './recommendationClosure';
+import { getControlZoneExecutionDate, getRecommendationExecutionInfo } from './recommendationClosure';
+
+describe('getControlZoneExecutionDate', () => {
+  it('takes actual completion date from the control zone first', () => {
+    expect(
+      getControlZoneExecutionDate({
+        actual_completion_date: '2026-08-10',
+        deadline_extensions: [{ date: '2026-12-01' }],
+      }),
+    ).toBe('2026-08-10');
+  });
+
+  it('falls back to the latest postponement when actual completion is empty', () => {
+    expect(
+      getControlZoneExecutionDate({
+        deadline_extensions: [{ date: '2026-10-01' }, { date: '2026-12-15' }],
+        extension_1_date: '2026-09-01',
+      }),
+    ).toBe('2026-12-15');
+  });
+
+  it('reads the same dates from the recommendation form closure', () => {
+    expect(
+      getControlZoneExecutionDate({
+        actualCompletionDate: '',
+        extensions: [{ date: '2026-11-02' }],
+      }),
+    ).toBe('2026-11-02');
+  });
+
+  it('returns undefined when the control zone has no execution date', () => {
+    expect(getControlZoneExecutionDate({})).toBeUndefined();
+  });
+});
 
 describe('getRecommendationExecutionInfo', () => {
   it('joins comments from execution deadline and control removal', () => {

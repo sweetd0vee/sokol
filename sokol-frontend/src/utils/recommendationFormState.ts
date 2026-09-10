@@ -24,7 +24,6 @@ export type RecommendationFormFields = {
   description: string;
   auditObject: string;
   deadline: Date | null;
-  executionDeadline: Date | null;
   auditor: string;
   checkLeader: string;
   manager: string;
@@ -51,7 +50,6 @@ export function emptyRecommendationFormFields(
     description: '',
     auditObject: '',
     deadline: null,
-    executionDeadline: null,
     auditor: prefill.auditor ?? '',
     checkLeader: prefill.checkLeader ?? '',
     manager: '',
@@ -74,7 +72,6 @@ export function recommendationFormFieldsFromSource(
     description: source.description || source.name,
     auditObject: formatRecommendationAuditObjects(source.audit_object),
     deadline: toInputDate(source.deadline),
-    executionDeadline: toInputDate(source.execution_deadline),
     auditor: source.auditor,
     checkLeader,
     manager: source.manager,

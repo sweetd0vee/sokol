@@ -83,7 +83,6 @@ export function patchPreviewItem(
     const deadline = normalizeDeadline(value) || value;
     const auto = computeRecommendationAutoStatus({
       controlDeadline: deadline,
-      executionDeadline: item.execution_deadline,
       currentStatus: item.status,
       currentAdditionalStatus: item.additional_status,
     });

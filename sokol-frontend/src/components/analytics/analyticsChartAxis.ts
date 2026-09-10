@@ -1,7 +1,6 @@
-import { CHART_AXIS_TICK } from './AnalyticsChartPrimitives';
+import { CHART_AXIS_TICK } from './chartTokens';
 import { RECOMMENDATIONS_MATERIALITY_CHART_COLORS } from './analyticsPalette';
-import type { PeriodGranularity } from '../../utils/checkAnalytics';
-import { displayPeriodLabel } from '../../utils/analyticsPeriod';
+import { displayPeriodLabel, type PeriodGranularity } from '../../utils/analyticsPeriod';
 
 export const MATERIALITY_STACK_KEYS = ['low', 'medium', 'high'] as const;
 

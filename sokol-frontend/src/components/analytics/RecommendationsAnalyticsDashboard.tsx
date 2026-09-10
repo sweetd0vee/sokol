@@ -18,6 +18,7 @@ import {
   AnalyticsDashboardShell,
 } from './AnalyticsDashboardShell';
 import { getPeriodXAxisProps, getMaterialitySegmentColor, MATERIALITY_STACK_KEYS } from './analyticsChartAxis';
+import { toAnalyticsFilterSidebarProps } from './analyticsFilterSidebarProps';
 import { ChartCard, CHART_AXIS_TICK, CHART_VALUE_LABEL_SIZE, CHART_VALUE_LABEL_WEIGHT, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
@@ -502,32 +503,35 @@ export function RecommendationsAnalyticsDashboard() {
       removeAuditor={removeAuditor}
       selectedDepartments={selectedDepartments}
       removeDepartment={removeDepartment}
-      filterSidebar={{
-        periodSlice,
-        onPeriodSliceChange: handlePeriodSliceChange,
-        yearOptions,
-        quarterOptions,
-        selectedYears,
-        selectedQuarters,
-        onYearsChange: setSelectedYears,
-        onQuartersChange: setSelectedQuarters,
-        auditorOptions,
-        selectedAuditors,
-        onAuditorsChange: setSelectedAuditors,
-        departmentOptions,
-        selectedDepartments,
-        onDepartmentsChange: setSelectedDepartments,
-        onResetFilters: resetFilters,
-        exportFormat,
-        onExportFormatChange: setExportFormat,
-        isExporting,
-        canExport: filteredTotal > 0,
-        onExport: handleExport,
-        onAddToConstructor: handleAddToConstructor,
-        canAddToConstructor: exportSections.selectedCount > 0,
-        addToConstructorCount: exportSections.selectedCount,
-        constructorAdded: justAdded,
-      }}
+      filterSidebar={toAnalyticsFilterSidebarProps(
+        {
+          periodSlice,
+          handlePeriodSliceChange,
+          yearOptions,
+          quarterOptions,
+          selectedYears,
+          selectedQuarters,
+          setSelectedYears,
+          setSelectedQuarters,
+          auditorOptions,
+          selectedAuditors,
+          setSelectedAuditors,
+          departmentOptions,
+          selectedDepartments,
+          setSelectedDepartments,
+          resetFilters,
+          exportFormat,
+          setExportFormat,
+          isExporting,
+        },
+        {
+          canExport: filteredTotal > 0,
+          onExport: handleExport,
+          selectedCount: exportSections.selectedCount,
+          justAdded,
+          onAddToConstructor: handleAddToConstructor,
+        },
+      )}
     >
       <AnalyticsDashboardGrid cards={cards} />
     </AnalyticsDashboardShell>

@@ -23,7 +23,11 @@ import {
   type CheckFormLocationState,
   type RecommendationFormLocationState,
 } from '../utils/checkFormNavigation';
-import { hasIncompleteClosureRows, type RecommendationClosureForm } from '../constants/recommendationClosure';
+import {
+  getControlZoneExecutionDate,
+  hasIncompleteClosureRows,
+  type RecommendationClosureForm,
+} from '../constants/recommendationClosure';
 import {
   buildRecommendationPayload,
   getRecommendationRequiredFieldErrors,
@@ -133,37 +137,43 @@ export function useRecommendationForm() {
     navigationState.checkFormDraft?.checkLeader,
   ]);
 
+  const applyAutoStatus = useCallback((next: RecommendationFormFields): RecommendationFormFields => {
+    const auto = computeRecommendationAutoStatus({
+      controlDeadline: next.deadline,
+      executionDeadline: getControlZoneExecutionDate(next.closure),
+      currentStatus: next.status,
+      currentAdditionalStatus: next.additionalStatus,
+    });
+    return {
+      ...next,
+      status: auto.status ?? next.status,
+      indicator: auto.indicator ?? next.indicator,
+      additionalStatus: auto.additionalStatus ?? next.additionalStatus,
+      additionalIndicator: auto.additionalIndicator ?? next.additionalIndicator,
+    };
+  }, []);
+
   const setField = useCallback(<K extends keyof RecommendationFormFields>(
     key: K,
     value: RecommendationFormFields[K],
   ) => {
     setFields((prev) => {
       const next = { ...prev, [key]: value };
-      if (key !== 'deadline' && key !== 'executionDeadline') {
+      if (key !== 'deadline') {
         return next;
       }
-      const auto = computeRecommendationAutoStatus({
-        controlDeadline: next.deadline,
-        executionDeadline: next.executionDeadline,
-        currentStatus: next.status,
-        currentAdditionalStatus: next.additionalStatus,
-      });
-      return {
-        ...next,
-        status: auto.status ?? next.status,
-        indicator: auto.indicator ?? next.indicator,
-        additionalStatus: auto.additionalStatus ?? next.additionalStatus,
-        additionalIndicator: auto.additionalIndicator ?? next.additionalIndicator,
-      };
+      return applyAutoStatus(next);
     });
-  }, []);
+  }, [applyAutoStatus]);
 
   const setClosure = useCallback((value: SetStateAction<RecommendationClosureForm>) => {
-    setFields((prev) => ({
-      ...prev,
-      closure: typeof value === 'function' ? value(prev.closure) : value,
-    }));
-  }, []);
+    setFields((prev) =>
+      applyAutoStatus({
+        ...prev,
+        closure: typeof value === 'function' ? value(prev.closure) : value,
+      }),
+    );
+  }, [applyAutoStatus]);
 
   const checkDisplayName = useMemo(() => {
     if (fromCheckForm && navigationState.checkFormDraft?.checkName.trim()) {
@@ -282,7 +292,6 @@ export function useRecommendationForm() {
       observationName: fields.observationName,
       auditObject: fields.auditObject,
       deadline: fields.deadline,
-      executionDeadline: fields.executionDeadline,
       auditor: fields.auditor,
       checkLeader: fields.checkLeader,
       navigationAuditor: navigationState.auditor,

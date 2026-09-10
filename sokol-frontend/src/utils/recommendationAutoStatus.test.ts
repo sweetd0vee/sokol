@@ -30,7 +30,7 @@ describe('computeRecommendationAutoStatus', () => {
     });
   });
 
-  it('считает дополнительный статус от срока исполнения, если он задан', () => {
+  it('считает дополнительный статус от даты из контрольной зоны, если она задана', () => {
     expect(
       computeRecommendationAutoStatus({
         controlDeadline: '2026-08-01',

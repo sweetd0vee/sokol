@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pin, X } from 'lucide-react';
+import { useMemo } from 'react';
 import {
   Bar,
   BarChart,
@@ -20,13 +19,14 @@ import {
 import {
   CHART_AXIS_TICK,
   CHART_CATEGORY_AXIS_TICK,
-  CHART_TOOLTIP_STYLE,
   CHART_VALUE_LABEL_WEIGHT,
-  ChartRechartsSquareLegend,
-} from './AnalyticsChartPrimitives';
+} from './chartTokens';
+import { ChartRechartsSquareLegend } from './ChartLegend';
+import { PinnedChartAside } from './PinnedChartAside';
+import { usePinnedChartPanel } from './usePinnedChartPanel';
+
 const BAR_COLOR = '#0E7490';
 const RIGHT_MARGIN = 108;
-const HIDE_DELAY_MS = 220;
 
 type ChartRow = {
   name: string;
@@ -66,62 +66,37 @@ function UnresolvedChecksPanel({
   onRequestHide: () => void;
 }) {
   return (
-    <aside
-      className="absolute right-1 top-1 z-20 flex max-h-[calc(100%-0.5rem)] w-[min(100%-0.5rem,20rem)] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg"
-      style={CHART_TOOLTIP_STYLE}
-      onMouseEnter={onKeepOpen}
-      onMouseLeave={pinned ? undefined : onRequestHide}
-    >
-      <div className="flex shrink-0 items-start gap-2 border-b border-slate-100 px-3 py-2">
-        <div className="min-w-0 flex-1">
+    <PinnedChartAside
+      pinned={pinned}
+      onPin={onPin}
+      onPinToggle={onPinToggle}
+      onClose={onClose}
+      onKeepOpen={onKeepOpen}
+      onRequestHide={onRequestHide}
+      header={
+        <>
           <p className="text-sm font-semibold text-sber-dark">{row.name}</p>
           <p className="text-sm text-slate-700">
             Не решено: {row.unresolved} из {row.total} ({formatUnresolvedShare(row.unresolved, row.total)})
           </p>
-        </div>
-        <button
-          type="button"
-          className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition ${
-            pinned
-              ? 'bg-sber-dark/10 text-sber-dark'
-              : 'text-slate-500 hover:bg-slate-100 hover:text-sber-dark'
-          }`}
-          aria-label={pinned ? 'Открепить список проверок' : 'Закрепить список проверок'}
-          aria-pressed={pinned}
-          title={pinned ? 'Открепить' : 'Закрепить'}
-          onClick={onPinToggle}
-        >
-          <Pin className="h-3.5 w-3.5" fill={pinned ? 'currentColor' : 'none'} />
-        </button>
-        {pinned ? (
-          <button
-            type="button"
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-sber-dark"
-            aria-label="Закрыть список проверок"
-            title="Закрыть"
-            onClick={onClose}
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        ) : null}
-      </div>
-      <div className="min-h-0 flex-1 overflow-auto px-3 py-2" onPointerDown={onPin}>
-        {checks.length === 0 ? (
-          <p className="text-sm text-slate-500">Нет данных по проверкам</p>
-        ) : (
-          <>
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Проверки</p>
-            <ul className="space-y-1">
-              {checks.map((item) => (
-                <li key={item.key} className="text-sm leading-snug text-slate-700">
-                  {formatUnresolvedCheckLine(item)}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
-    </aside>
+        </>
+      }
+    >
+      {checks.length === 0 ? (
+        <p className="text-sm text-slate-500">Нет данных по проверкам</p>
+      ) : (
+        <>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Проверки</p>
+          <ul className="space-y-1">
+            {checks.map((item) => (
+              <li key={item.key} className="text-sm leading-snug text-slate-700">
+                {formatUnresolvedCheckLine(item)}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </PinnedChartAside>
   );
 }
 
@@ -132,10 +107,18 @@ export function AuditorUnresolvedBarChart({
   data: DvaAuditorExecutionRow[];
   categoryWidth?: number;
 }) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const hideTimerRef = useRef<number | null>(null);
-  const [activeName, setActiveName] = useState<string | null>(null);
-  const [pinnedName, setPinnedName] = useState<string | null>(null);
+  const {
+    rootRef,
+    pinnedName,
+    visibleName,
+    cancelHide,
+    requestHide,
+    pinVisible,
+    unpin,
+    closePanel,
+    showRow,
+    togglePinnedName,
+  } = usePinnedChartPanel();
 
   const checksByName = useMemo(
     () => new Map(data.map((row) => [row.name, row.unresolved_checks ?? []])),
@@ -152,71 +135,8 @@ export function AuditorUnresolvedBarChart({
     [data],
   );
   const rowsByName = useMemo(() => new Map(chartData.map((row) => [row.name, row])), [chartData]);
-
-  const visibleName = pinnedName ?? activeName;
   const visibleRow = visibleName ? (rowsByName.get(visibleName) ?? null) : null;
   const visibleChecks = visibleName ? (checksByName.get(visibleName) ?? []) : [];
-
-  const cancelHide = () => {
-    if (hideTimerRef.current !== null) {
-      window.clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = null;
-    }
-  };
-
-  const requestHide = () => {
-    if (pinnedName) {
-      return;
-    }
-    cancelHide();
-    hideTimerRef.current = window.setTimeout(() => {
-      setActiveName(null);
-    }, HIDE_DELAY_MS);
-  };
-
-  const pinVisible = () => {
-    if (!visibleName) {
-      return;
-    }
-    cancelHide();
-    setPinnedName(visibleName);
-    setActiveName(visibleName);
-  };
-
-  const closePanel = () => {
-    cancelHide();
-    setPinnedName(null);
-    setActiveName(null);
-  };
-
-  useEffect(() => {
-    return () => cancelHide();
-  }, []);
-
-  useEffect(() => {
-    if (!pinnedName) {
-      return undefined;
-    }
-    const handlePointer = (event: MouseEvent) => {
-      if (rootRef.current?.contains(event.target as Node)) {
-        return;
-      }
-      setPinnedName(null);
-      setActiveName(null);
-    };
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setPinnedName(null);
-        setActiveName(null);
-      }
-    };
-    window.addEventListener('mousedown', handlePointer);
-    window.addEventListener('keydown', handleKey);
-    return () => {
-      window.removeEventListener('mousedown', handlePointer);
-      window.removeEventListener('keydown', handleKey);
-    };
-  }, [pinnedName]);
 
   return (
     <div ref={rootRef} className="relative h-full min-h-[10rem]">
@@ -228,15 +148,11 @@ export function AuditorUnresolvedBarChart({
           maxBarSize={36}
           margin={{ top: 4, right: RIGHT_MARGIN, left: 8, bottom: 0 }}
           onMouseMove={(state) => {
-            if (pinnedName) {
-              return;
-            }
             const name = nameFromChartState(state);
             if (!name) {
               return;
             }
-            cancelHide();
-            setActiveName((current) => (current === name ? current : name));
+            showRow(name);
           }}
           onMouseLeave={requestHide}
         >
@@ -255,9 +171,7 @@ export function AuditorUnresolvedBarChart({
               if (!name) {
                 return;
               }
-              cancelHide();
-              setActiveName(name);
-              setPinnedName((current) => (current === name ? null : name));
+              togglePinnedName(name);
             }}
           >
             {chartData.map((row) => (
@@ -285,7 +199,7 @@ export function AuditorUnresolvedBarChart({
           onPin={pinVisible}
           onPinToggle={() => {
             if (pinnedName === visibleRow.name) {
-              setPinnedName(null);
+              unpin();
               return;
             }
             pinVisible();

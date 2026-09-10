@@ -105,6 +105,56 @@ function toStoredItems(rows: ClosureDateCommentRow[]): ClosureListItem[] {
     .filter((item) => item.date || item.comment);
 }
 
+type ControlZoneDateSource = {
+  actual_completion_date?: string | null;
+  deadline_extensions?: ClosureListItem[] | null;
+  extension_1_date?: string | null;
+  extension_2_reason?: string | null;
+  actualCompletionDate?: string | null;
+  extensions?: Pick<ClosureDateCommentRow, 'date'>[] | null;
+};
+
+function isoDateOrNull(value?: string | null): string | undefined {
+  const cleaned = value?.trim().slice(0, 10) ?? '';
+  return /^\d{4}-\d{2}-\d{2}$/.test(cleaned) ? cleaned : undefined;
+}
+
+/**
+ * Срок исполнения из контрольной зоны: дата фактического исполнения,
+ * иначе последний перенос срока. Не отдельное поле карточки.
+ */
+export function getControlZoneExecutionDate(
+  source?: ControlZoneDateSource | null,
+): string | undefined {
+  if (!source) {
+    return undefined;
+  }
+  const actual = isoDateOrNull(source.actual_completion_date ?? source.actualCompletionDate);
+  if (actual) {
+    return actual;
+  }
+  const dates: string[] = [];
+  const extensionRows = source.deadline_extensions ?? source.extensions ?? [];
+  for (const item of extensionRows) {
+    const date = isoDateOrNull(item.date);
+    if (date) {
+      dates.push(date);
+    }
+  }
+  const legacyFirst = isoDateOrNull(source.extension_1_date);
+  if (legacyFirst) {
+    dates.push(legacyFirst);
+  }
+  const legacySecond = isoDateOrNull(source.extension_2_reason);
+  if (legacySecond) {
+    dates.push(legacySecond);
+  }
+  if (!dates.length) {
+    return undefined;
+  }
+  return dates.sort()[dates.length - 1];
+}
+
 /** Comments from «Срок исполнения» and «Снять с контроля» — информация о выполнении. */
 export function getRecommendationExecutionInfo(
   source?: Parameters<typeof closureFromRecommendation>[0],

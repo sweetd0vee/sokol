@@ -15,6 +15,7 @@ import {
 } from '../../constants/recommendations';
 import { exportRecommendationsTable } from '../../utils/exports';
 import { formatRuDate } from '../../utils/dates';
+import { getControlZoneExecutionDate } from '../../constants/recommendationClosure';
 import { useCurrentUserName } from '../../hooks/useCurrentUserName';
 import { toNameOptions, useAuditorOptions, useCheckKindOptions } from '../../hooks/useReferenceOptions';
 import { useAuditObjectOptions } from '../../hooks/useAuditObjectOptions';
@@ -461,7 +462,7 @@ export function RecommendationsTab() {
                     {checkView || '—'}
                   </td>
                   <td className="px-4 py-3 pr-6">{formatRuDate(recommendation.deadline)}</td>
-                  <td className="px-4 py-3 pr-6">{formatRuDate(recommendation.execution_deadline)}</td>
+                  <td className="px-4 py-3 pr-6">{formatRuDate(getControlZoneExecutionDate(recommendation))}</td>
                   <td className="px-2 py-3 text-center">
                     <span
                       className={`inline-block h-[18px] w-[18px] rounded-full ${getMaterialityDotClassName(recommendation.materiality_level)}`}

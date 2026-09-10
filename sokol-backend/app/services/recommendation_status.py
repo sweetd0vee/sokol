@@ -1,8 +1,10 @@
 """Date-driven recommendation status and indicator calculation.
 
 Status / indicator follow ``deadline`` (срок контроля from AZ).
-Additional status / indicator follow ``execution_deadline`` (срок исполнения,
-auditor-set), falling back to the control date when execution is empty.
+Additional status / indicator follow the control-zone execution date:
+``actual_completion_date`` (фактическое исполнение) or the latest
+``deadline_extensions`` date (перенос срока), falling back to the control
+date when that is empty.
 
 Open items switch ``on_control`` ↔ ``in_progress`` as the Moscow calendar day
 moves across the anchor date. Terminal statuses (completed / unresolved) and
@@ -100,6 +102,40 @@ def compute_auto_status_fields(
     return updates
 
 
+def control_zone_execution_date(
+    *,
+    actual_completion_date: object = None,
+    deadline_extensions: object = None,
+    extension_1_date: object = None,
+    extension_2_reason: object = None,
+) -> date | None:
+    """Срок исполнения from control zone: actual completion, else latest postponement."""
+    actual = _as_date(actual_completion_date)
+    if actual:
+        return actual
+    dates: list[date] = []
+    if isinstance(deadline_extensions, list):
+        for item in deadline_extensions:
+            raw = item.get("date") if isinstance(item, dict) else None
+            parsed = _as_date(raw)
+            if parsed:
+                dates.append(parsed)
+    for raw in (extension_1_date, extension_2_reason):
+        parsed = _as_date(raw)
+        if parsed:
+            dates.append(parsed)
+    return max(dates) if dates else None
+
+
+def _payload_control_zone_execution(data: dict[str, Any], existing: Any | None) -> date | None:
+    return control_zone_execution_date(
+        actual_completion_date=_payload_value(data, "actual_completion_date", existing),
+        deadline_extensions=_payload_value(data, "deadline_extensions", existing),
+        extension_1_date=_payload_value(data, "extension_1_date", existing),
+        extension_2_reason=_payload_value(data, "extension_2_reason", existing),
+    )
+
+
 def overlay_computed_status_fields(
     data: dict[str, Any],
     *,
@@ -108,7 +144,7 @@ def overlay_computed_status_fields(
 ) -> dict[str, Any]:
     """Merge auto-calculated fields into a create/update payload dict."""
     control = _payload_date(data, "deadline", existing)
-    execution = _payload_date(data, "execution_deadline", existing)
+    execution = _payload_control_zone_execution(data, existing)
     current_status = data["status"] if "status" in data else getattr(existing, "status", None)
     current_additional = (
         data["additional_status"]
@@ -135,7 +171,12 @@ def apply_computed_status_to_recommendation(
     """Write computed fields onto an ORM row. Returns True when anything changed."""
     updates = compute_auto_status_fields(
         control_deadline=getattr(recommendation, "deadline", None),
-        execution_deadline=getattr(recommendation, "execution_deadline", None),
+        execution_deadline=control_zone_execution_date(
+            actual_completion_date=getattr(recommendation, "actual_completion_date", None),
+            deadline_extensions=getattr(recommendation, "deadline_extensions", None),
+            extension_1_date=getattr(recommendation, "extension_1_date", None),
+            extension_2_reason=getattr(recommendation, "extension_2_reason", None),
+        ),
         current_status=getattr(recommendation, "status", None),
         current_additional_status=getattr(recommendation, "additional_status", None),
         today=today,
@@ -168,10 +209,14 @@ def _coerce_additional(
         return None
 
 
-def _payload_date(data: dict[str, Any], key: str, existing: Any | None) -> date | None:
+def _payload_value(data: dict[str, Any], key: str, existing: Any | None) -> Any:
     if key in data:
-        return _as_date(data.get(key))
-    return _as_date(getattr(existing, key, None))
+        return data.get(key)
+    return getattr(existing, key, None)
+
+
+def _payload_date(data: dict[str, Any], key: str, existing: Any | None) -> date | None:
+    return _as_date(_payload_value(data, key, existing))
 
 
 def _as_date(value: object) -> date | None:

@@ -1,37 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pin, X } from 'lucide-react';
+import { useMemo } from 'react';
 import type { PlanningUnresolvedDepartmentRow } from '../../api/analytics';
 import { formatUnresolvedCheckLine } from '../../utils/dvaAnalytics';
 import {
   CHART_AXIS_TICK,
   CHART_CATEGORY_AXIS_TICK,
-  CHART_TOOLTIP_STYLE,
   CHART_VALUE_LABEL_SIZE,
   CHART_VALUE_LABEL_WEIGHT,
-} from './AnalyticsChartPrimitives';
+} from './chartTokens';
 import { MONITORING_STATUS_COLORS } from './analyticsPalette';
+import { CssBarPlotGrid } from './CssBarPlotGrid';
+import { axisTicks, niceMax } from './cssBarChartScale';
+import { PinnedChartAside } from './PinnedChartAside';
+import { usePinnedChartPanel } from './usePinnedChartPanel';
 
-const HIDE_DELAY_MS = 220;
 const BAR_COLOR = MONITORING_STATUS_COLORS.unresolved;
 const GRID_COLUMNS = 'minmax(0,1fr) minmax(0,1fr)';
-
-function niceMax(value: number) {
-  if (value <= 0) {
-    return 5;
-  }
-  const step = value <= 10 ? 2 : 5;
-  const rounded = Math.ceil(value / step) * step;
-  return rounded === value ? rounded + step : rounded;
-}
-
-function axisTicks(max: number) {
-  const step = max <= 10 ? 2 : 5;
-  const ticks: number[] = [];
-  for (let value = 0; value <= max; value += step) {
-    ticks.push(value);
-  }
-  return ticks;
-}
 
 function UnresolvedChecksPanel({
   row,
@@ -51,76 +34,35 @@ function UnresolvedChecksPanel({
   onRequestHide: () => void;
 }) {
   return (
-    <aside
-      className="absolute right-1 top-1 z-20 flex max-h-[calc(100%-0.5rem)] w-[min(100%-0.5rem,20rem)] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg"
-      style={CHART_TOOLTIP_STYLE}
-      onMouseEnter={onKeepOpen}
-      onMouseLeave={pinned ? undefined : onRequestHide}
-    >
-      <div className="flex shrink-0 items-start gap-2 border-b border-slate-100 px-3 py-2">
-        <div className="min-w-0 flex-1">
+    <PinnedChartAside
+      pinned={pinned}
+      onPin={onPin}
+      onPinToggle={onPinToggle}
+      onClose={onClose}
+      onKeepOpen={onKeepOpen}
+      onRequestHide={onRequestHide}
+      header={
+        <>
           <p className="text-sm font-semibold text-sber-dark">{row.name}</p>
           <p className="text-sm text-slate-700">Не решено: {row.value}</p>
-        </div>
-        <button
-          type="button"
-          className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition ${
-            pinned
-              ? 'bg-sber-dark/10 text-sber-dark'
-              : 'text-slate-500 hover:bg-slate-100 hover:text-sber-dark'
-          }`}
-          aria-label={pinned ? 'Открепить список проверок' : 'Закрепить список проверок'}
-          aria-pressed={pinned}
-          title={pinned ? 'Открепить' : 'Закрепить'}
-          onClick={onPinToggle}
-        >
-          <Pin className="h-3.5 w-3.5" fill={pinned ? 'currentColor' : 'none'} />
-        </button>
-        {pinned ? (
-          <button
-            type="button"
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-sber-dark"
-            aria-label="Закрыть список проверок"
-            title="Закрыть"
-            onClick={onClose}
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        ) : null}
-      </div>
-      <div className="min-h-0 flex-1 overflow-auto px-3 py-2" onPointerDown={onPin}>
-        {row.checks.length === 0 ? (
-          <p className="text-sm text-slate-500">Нет ключей проверок</p>
-        ) : (
-          <>
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Проверки</p>
-            <ul className="space-y-1">
-              {row.checks.map((item) => (
-                <li key={item.key} className="text-sm leading-snug text-slate-700">
-                  {formatUnresolvedCheckLine(item)}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
-    </aside>
-  );
-}
-
-function PlotGrid({ ticks, max }: { ticks: number[]; max: number }) {
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-      {ticks.map((tick) =>
-        tick === 0 ? null : (
-          <div
-            key={tick}
-            className="absolute inset-y-0 w-px bg-slate-200/70"
-            style={{ left: `${(tick / max) * 100}%` }}
-          />
-        ),
+        </>
+      }
+    >
+      {row.checks.length === 0 ? (
+        <p className="text-sm text-slate-500">Нет ключей проверок</p>
+      ) : (
+        <>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Проверки</p>
+          <ul className="space-y-1">
+            {row.checks.map((item) => (
+              <li key={item.key} className="text-sm leading-snug text-slate-700">
+                {formatUnresolvedCheckLine(item)}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
-    </div>
+    </PinnedChartAside>
   );
 }
 
@@ -129,10 +71,18 @@ export function DepartmentUnresolvedBarChart({
 }: {
   data: PlanningUnresolvedDepartmentRow[];
 }) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const hideTimerRef = useRef<number | null>(null);
-  const [activeName, setActiveName] = useState<string | null>(null);
-  const [pinnedName, setPinnedName] = useState<string | null>(null);
+  const {
+    rootRef,
+    pinnedName,
+    visibleName,
+    cancelHide,
+    requestHide,
+    pinVisible,
+    unpin,
+    closePanel,
+    showRow,
+    togglePinnedName,
+  } = usePinnedChartPanel();
 
   const chartData = useMemo(() => data.filter((row) => row.value > 0), [data]);
   const rowsByName = useMemo(() => new Map(chartData.map((row) => [row.name, row])), [chartData]);
@@ -141,78 +91,7 @@ export function DepartmentUnresolvedBarChart({
     [chartData],
   );
   const ticks = useMemo(() => axisTicks(maxValue), [maxValue]);
-
-  const visibleName = pinnedName ?? activeName;
   const visibleRow = visibleName ? (rowsByName.get(visibleName) ?? null) : null;
-
-  const cancelHide = () => {
-    if (hideTimerRef.current !== null) {
-      window.clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = null;
-    }
-  };
-
-  const requestHide = () => {
-    if (pinnedName) {
-      return;
-    }
-    cancelHide();
-    hideTimerRef.current = window.setTimeout(() => {
-      setActiveName(null);
-    }, HIDE_DELAY_MS);
-  };
-
-  const pinVisible = () => {
-    if (!visibleName) {
-      return;
-    }
-    cancelHide();
-    setPinnedName(visibleName);
-    setActiveName(visibleName);
-  };
-
-  const closePanel = () => {
-    cancelHide();
-    setPinnedName(null);
-    setActiveName(null);
-  };
-
-  const showRow = (name: string) => {
-    if (pinnedName) {
-      return;
-    }
-    cancelHide();
-    setActiveName((current) => (current === name ? current : name));
-  };
-
-  useEffect(() => {
-    return () => cancelHide();
-  }, []);
-
-  useEffect(() => {
-    if (!pinnedName) {
-      return undefined;
-    }
-    const handlePointer = (event: MouseEvent) => {
-      if (rootRef.current?.contains(event.target as Node)) {
-        return;
-      }
-      setPinnedName(null);
-      setActiveName(null);
-    };
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setPinnedName(null);
-        setActiveName(null);
-      }
-    };
-    window.addEventListener('mousedown', handlePointer);
-    window.addEventListener('keydown', handleKey);
-    return () => {
-      window.removeEventListener('mousedown', handlePointer);
-      window.removeEventListener('keydown', handleKey);
-    };
-  }, [pinnedName]);
 
   return (
     <div ref={rootRef} className="relative flex h-full min-h-0 max-h-[18rem] flex-col lg:max-h-none">
@@ -228,11 +107,7 @@ export function DepartmentUnresolvedBarChart({
                 className="grid cursor-pointer items-stretch gap-x-4"
                 style={{ gridTemplateColumns: GRID_COLUMNS }}
                 onMouseEnter={() => showRow(row.name)}
-                onClick={() => {
-                  cancelHide();
-                  setActiveName(row.name);
-                  setPinnedName((current) => (current === row.name ? null : row.name));
-                }}
+                onClick={() => togglePinnedName(row.name)}
               >
                 <p
                   className="flex items-center justify-end py-1.5 text-right leading-snug text-slate-500"
@@ -245,7 +120,7 @@ export function DepartmentUnresolvedBarChart({
                     index === 0 ? 'border-t' : ''
                   } ${isActive ? 'bg-slate-100/90' : 'bg-slate-50/80'}`}
                 >
-                  <PlotGrid ticks={ticks} max={maxValue} />
+                  <CssBarPlotGrid ticks={ticks} max={maxValue} />
                   <div
                     className="relative z-[1] h-7 rounded-r-md"
                     style={{
@@ -295,7 +170,7 @@ export function DepartmentUnresolvedBarChart({
           onPin={pinVisible}
           onPinToggle={() => {
             if (pinnedName === visibleRow.name) {
-              setPinnedName(null);
+              unpin();
               return;
             }
             pinVisible();

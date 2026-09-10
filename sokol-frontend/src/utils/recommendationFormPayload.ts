@@ -32,7 +32,6 @@ export type RecommendationFormPayloadInput = {
   observationName: string;
   auditObject: string;
   deadline: Date | null;
-  executionDeadline?: Date | null;
   auditor: string;
   checkLeader: string;
   navigationAuditor?: string;
@@ -112,7 +111,6 @@ export function buildRecommendationPayload({
   observationName,
   auditObject,
   deadline,
-  executionDeadline,
   auditor,
   checkLeader,
   navigationAuditor,
@@ -143,7 +141,6 @@ export function buildRecommendationPayload({
     materiality_level: materialityLevel,
     audit_object: resolvedAuditObject,
     deadline: toIsoDate(deadline) ?? '',
-    execution_deadline: toIsoDate(executionDeadline ?? null) ?? '',
     auditor: resolvedAuditor,
     manager,
     status: status as Recommendation['status'],

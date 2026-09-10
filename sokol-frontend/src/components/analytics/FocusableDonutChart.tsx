@@ -74,6 +74,9 @@ function contrastLabelColor(fill?: string, fallback = '#111827') {
   return luminance > 0.62 ? '#111827' : '#ffffff';
 }
 
+/** Slices below this share get the number just outside the ring so it still reads. */
+const MIN_INSIDE_SLICE_PERCENT = 0.06;
+
 function PieValueLabel({
   cx = 0,
   cy = 0,
@@ -87,16 +90,19 @@ function PieValueLabel({
   payload: _payload,
   valueLabelColor = '#ffffff',
 }: LabelProps) {
-  if (percent < 0.06 || value <= 0) {
+  if (value <= 0) {
     return null;
   }
   const RADIAN = Math.PI / 180;
+  const placeOutside = percent < MIN_INSIDE_SLICE_PERCENT;
   const radiusRatio = innerRadius > 0 ? 0.5 : 0.62;
-  const radius = innerRadius + (outerRadius - innerRadius) * radiusRatio;
+  const radius = placeOutside
+    ? outerRadius + 14
+    : innerRadius + (outerRadius - innerRadius) * radiusRatio;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  const labelColor = valueLabelColor;
-  const percentLabel =`${Math.round(percent * 100)}%`;
+  const labelColor = placeOutside ? '#111827' : valueLabelColor;
+  const percentLabel = `${Math.round(percent * 100)}%`;
 
   if (labelMode === 'both') {
     return (
@@ -135,7 +141,7 @@ function PieValueLabel({
         fill={labelColor}
         textAnchor="middle"
         dominantBaseline="central"
-          fontSize={labelMode === 'percent' ? CHART_SLICE_PERCENT_FONT_SIZE : 16}
+        fontSize={labelMode === 'percent' ? CHART_SLICE_PERCENT_FONT_SIZE : 16}
         fontWeight={CHART_VALUE_LABEL_WEIGHT}
       >
         {labelMode === 'percent' ? percentLabel : value}
@@ -171,6 +177,12 @@ export function FocusableDonutChart({
   }));
   const pieData = chartData.filter((entry) => entry.value > 0);
   const total = chartData.reduce((sum, entry) => sum + entry.value, 0);
+  const hasOutsideSliceLabel = pieData.some(
+    (entry) => total > 0 && entry.value / total < MIN_INSIDE_SLICE_PERCENT,
+  );
+  const pieMargin = hasOutsideSliceLabel
+    ? { top: 20, right: 20, bottom: 20, left: 20 }
+    : { top: 8, right: 8, bottom: 8, left: 8 };
 
   const formatLegendText = (item: DonutDatum) => {
     const percent = total > 0 ? Math.round((item.value / total) * 100) : 0;
@@ -187,7 +199,7 @@ export function FocusableDonutChart({
     <div className={`flex min-h-0 flex-col ${containerClassName}`}>
       <div className="min-h-0 min-w-0 flex-1">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+          <PieChart margin={pieMargin}>
           <Pie
             data={pieData}
             dataKey="value"
