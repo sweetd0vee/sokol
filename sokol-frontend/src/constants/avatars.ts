@@ -11,6 +11,14 @@ const DEFAULT_AVATAR_ID = 'portrait';
 export const AVATAR_PRESETS: AvatarPreset[] = [
   { id: DEFAULT_AVATAR_ID, label: 'Портрет', src: '/sokol-avatar.png' },
   { id: 'flight', label: 'В полёте', src: '/sokol-avatar-flight.png' },
+  { id: 'crescent', label: 'Вираж', src: '/sokol-avatar-crescent.png' },
+  { id: 'rise', label: 'Взлёт', src: '/sokol-avatar-rise.png' },
+  { id: 'heraldic', label: 'Герб', src: '/sokol-avatar-heraldic.png' },
+  { id: 'glide', label: 'Планирование', src: '/sokol-avatar-glide.png' },
+  { id: 'mark', label: 'Эмблема', src: '/sokol-avatar-mark.png' },
+  { id: 'orbit', label: 'Виток', src: '/sokol-avatar-orbit.png' },
+  { id: 'plume', label: 'Шлейф', src: '/sokol-avatar-plume.png' },
+  { id: 'perch', label: 'Стойка', src: '/sokol-avatar-perch.png' },
 ];
 
 const AVATAR_BY_ID = Object.fromEntries(AVATAR_PRESETS.map((preset) => [preset.id, preset]));

@@ -47,6 +47,7 @@ import { completeNamedDistribution, distributionHasValues, topByValue } from '..
 import {
   completeSelectedPeriodPoints,
   emptyRecommendationPeriodPoint,
+  withPeriodChartLabels,
   withRecommendationRunningTotals,
 } from '../../utils/analyticsPeriodSeries';
 import { runAnalyticsExport } from '../../utils/runAnalyticsExport';
@@ -112,12 +113,13 @@ export function RecommendationsAnalyticsDashboard() {
   const summary = data?.summary ?? EMPTY_RECOMMENDATION_SUMMARY;
   const periodSeries = data?.periodSeries ?? EMPTY_PERIOD_SERIES;
   const completedPeriodSeries = useMemo(() => {
-    if (granularity !== 'quarter' || selectedQuarterKeys.length === 0) {
-      return periodSeries;
-    }
-    return withRecommendationRunningTotals(
-      completeSelectedPeriodPoints(periodSeries, selectedQuarterKeys, emptyRecommendationPeriodPoint),
-    );
+    const series =
+      granularity !== 'quarter' || selectedQuarterKeys.length === 0
+        ? periodSeries
+        : withRecommendationRunningTotals(
+            completeSelectedPeriodPoints(periodSeries, selectedQuarterKeys, emptyRecommendationPeriodPoint),
+          );
+    return withPeriodChartLabels(series, granularity);
   }, [granularity, periodSeries, selectedQuarterKeys]);
   const materialityDistribution = data?.materialityDistribution ?? EMPTY_MATERIALITY_DISTRIBUTION;
 

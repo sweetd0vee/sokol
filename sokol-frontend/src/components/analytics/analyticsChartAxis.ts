@@ -1,10 +1,16 @@
 import { CHART_AXIS_TICK } from './AnalyticsChartPrimitives';
 import { RECOMMENDATIONS_MATERIALITY_CHART_COLORS } from './analyticsPalette';
 import type { PeriodGranularity } from '../../utils/checkAnalytics';
+import { displayPeriodLabel } from '../../utils/analyticsPeriod';
 
 export const MATERIALITY_STACK_KEYS = ['low', 'medium', 'high'] as const;
 
 export function getPeriodXAxisProps(granularity?: PeriodGranularity) {
+  const yearTick =
+    granularity === 'year'
+      ? { tickFormatter: (value: string) => displayPeriodLabel(String(value), 'year') }
+      : {};
+
   if (granularity === 'quarter') {
     return {
       interval: 0 as const,
@@ -18,7 +24,7 @@ export function getPeriodXAxisProps(granularity?: PeriodGranularity) {
     };
   }
 
-  return {};
+  return yearTick;
 }
 
 export function getMaterialitySegmentColor(key: string) {

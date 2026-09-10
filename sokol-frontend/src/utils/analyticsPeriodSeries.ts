@@ -1,5 +1,15 @@
 import { labelFromPeriodKey, type PeriodGranularity } from './analyticsPeriod';
 
+export function withPeriodChartLabels<T extends { key: string; label: string }>(
+  series: T[],
+  granularity: PeriodGranularity,
+): T[] {
+  return series.map((item) => ({
+    ...item,
+    label: labelFromPeriodKey(item.key, granularity),
+  }));
+}
+
 export function sortKeyFromPeriodKey(key: string, granularity: PeriodGranularity) {
   if (granularity === 'year') {
     return Number(key);

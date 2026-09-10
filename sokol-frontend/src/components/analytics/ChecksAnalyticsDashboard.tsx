@@ -30,6 +30,7 @@ import { useExportSections } from '../../hooks/useExportSections';
 import {
   completeSelectedPeriodPoints,
   emptyChecksPeriodPoint,
+  withPeriodChartLabels,
   withRunningTotal,
 } from '../../utils/analyticsPeriodSeries';
 import { topByValue } from '../../utils/analyticsDistribution';
@@ -105,14 +106,15 @@ export function ChecksAnalyticsDashboard() {
   const rawFlowSeries = data?.periodSeries ?? EMPTY_FLOW_SERIES;
   const selectedPeriodKeys = granularity === 'quarter' ? selectedQuarterKeys : selectedYearKeys;
   const flowSeries = useMemo(() => {
-    if (selectedPeriodKeys.length === 0) {
-      return rawFlowSeries;
-    }
-    return withRunningTotal(
-      completeSelectedPeriodPoints(rawFlowSeries, selectedPeriodKeys, (key) =>
-        emptyChecksPeriodPoint(key, granularity),
-      ),
-    );
+    const series =
+      selectedPeriodKeys.length === 0
+        ? rawFlowSeries
+        : withRunningTotal(
+            completeSelectedPeriodPoints(rawFlowSeries, selectedPeriodKeys, (key) =>
+              emptyChecksPeriodPoint(key, granularity),
+            ),
+          );
+    return withPeriodChartLabels(series, granularity);
   }, [granularity, rawFlowSeries, selectedPeriodKeys]);
   const flowColors = useMemo(
     () => getValueBasedColors(flowSeries.map((item) => item.total)),

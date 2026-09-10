@@ -23,7 +23,7 @@ class ChecksAnalyticsPeriodTests(unittest.TestCase):
 
         year = get_period_bucket(value, "year")
         self.assertEqual(year.key, "2025")
-        self.assertEqual(year.label, "01.01.2025")
+        self.assertEqual(year.label, "2025")
 
     def test_is_date_in_any_selected_periods_or_logic(self):
         value = date(2025, 8, 1)

@@ -45,6 +45,17 @@ export function getPeriodBucket(dateMs: number, granularity: PeriodGranularity):
   };
 }
 
+const YEAR_FIRST_DAY_LABEL = /^01\.01\.(\d{4})$/;
+
+/** Year charts should show «2025», not the legacy first-day label «01.01.2025». */
+export function displayPeriodLabel(label: string, granularity?: PeriodGranularity) {
+  if (granularity !== 'year') {
+    return label;
+  }
+  const match = YEAR_FIRST_DAY_LABEL.exec(label);
+  return match ? match[1] : label;
+}
+
 export function labelFromPeriodKey(key: string, granularity: PeriodGranularity) {
   if (granularity === 'year') {
     const year = Number(key);

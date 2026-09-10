@@ -74,19 +74,11 @@ export function ProfilePage() {
       <div className={FORM_SECTION_CLASS}>
         <div className="space-y-3">
           <div className="flex flex-col items-start gap-4">
-            <div
-              className={
-                isAvatarPickerOpen
-                  ? 'grid w-fit grid-cols-[auto_auto] grid-rows-2 gap-3'
-                  : undefined
-              }
-            >
+            <div className={isAvatarPickerOpen ? 'flex w-fit items-start gap-3' : undefined}>
               <button
                 type="button"
                 onClick={() => setIsAvatarPickerOpen((prev) => !prev)}
-                className={`relative h-[12.75rem] w-[12.75rem] shrink-0 overflow-hidden rounded-full border border-gray-200 bg-gray-100 shadow-sm transition hover:border-sber-dark/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sber-dark/40 sm:h-[14.75rem] sm:w-[14.75rem] ${
-                  isAvatarPickerOpen ? 'row-span-2' : ''
-                }`}
+                className="relative h-[12.75rem] w-[12.75rem] shrink-0 overflow-hidden rounded-full border border-gray-200 bg-gray-100 shadow-sm transition hover:border-sber-dark/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sber-dark/40 sm:h-[14.75rem] sm:w-[14.75rem]"
                 aria-expanded={isAvatarPickerOpen}
                 aria-controls="profile-avatar-picker"
                 aria-label="Изменить аватар"
@@ -97,7 +89,7 @@ export function ProfilePage() {
               {isAvatarPickerOpen && (
                 <div
                   id="profile-avatar-picker"
-                  className="contents"
+                  className="grid grid-cols-3 gap-3 sm:grid-cols-4"
                   role="listbox"
                   aria-label="Предложенные аватары"
                 >

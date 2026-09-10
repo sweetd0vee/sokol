@@ -30,7 +30,7 @@ def get_period_bucket(value: date, granularity: PeriodGranularity) -> PeriodBuck
     if granularity == "year":
         return PeriodBucket(
             key=str(year),
-            label=format_period_first_day(year, 0),
+            label=str(year),
             sort_key=year,
         )
 

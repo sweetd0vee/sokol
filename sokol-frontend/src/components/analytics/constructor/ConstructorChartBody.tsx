@@ -53,9 +53,32 @@ import {
   StackedBarSegmentValueLabel,
 } from '../StackedBarSegmentValueLabel';
 import { distributionHasValues } from '../../../utils/analyticsDistribution';
+import { displayPeriodLabel } from '../../../utils/analyticsPeriod';
+import type { PeriodGranularity } from '../../../utils/checkAnalytics';
 import type { ConstructorPayload } from './constructorTypes';
 
 const QUARTER_AXIS_TICK = { fontSize: 12 } as const;
+
+function withYearChartLabels<T extends { label: string }>(data: T[], granularity?: PeriodGranularity): T[] {
+  if (granularity !== 'year') {
+    return data;
+  }
+  return data.map((item) => ({ ...item, label: displayPeriodLabel(item.label, 'year') }));
+}
+
+function withYearChartField(
+  data: Array<Record<string, string | number>>,
+  xKey: string,
+  granularity?: PeriodGranularity,
+): Array<Record<string, string | number>> {
+  if (granularity !== 'year') {
+    return data;
+  }
+  return data.map((row) => ({
+    ...row,
+    [xKey]: displayPeriodLabel(String(row[xKey] ?? ''), 'year'),
+  }));
+}
 
 export function ConstructorChartBody({ payload }: { payload: ConstructorPayload }) {
   if (payload.chart === 'kpi') {
@@ -89,11 +112,12 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
       return <EmptyChart message="Нет данных" />;
     }
     const isBars = payload.variant === 'bars';
+    const barData = withYearChartLabels(payload.data, payload.granularity);
     return (
       <div className="h-full min-h-[13rem]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={payload.data}
+            data={barData}
             layout={isBars ? 'vertical' : 'horizontal'}
             barCategoryGap={isBars ? '36%' : undefined}
             maxBarSize={isBars ? HORIZONTAL_STRIP_MAX_SIZE : undefined}
@@ -161,6 +185,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
     if (payload.data.length === 0) {
       return <EmptyChart message="Нет данных" />;
     }
+    const stackedData = withYearChartField(payload.data, payload.xKey, payload.granularity);
     const stackKeys = payload.series.map((item) => item.key);
     const colorByKey = Object.fromEntries(payload.series.map((item) => [item.key, item.color]));
     const isVertical = payload.layout === 'vertical';
@@ -170,7 +195,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
       <div className="h-full min-h-[10rem]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={payload.data}
+            data={stackedData}
             layout={isVertical ? 'vertical' : 'horizontal'}
             barCategoryGap={isVertical ? 4 : undefined}
             maxBarSize={isVertical ? 36 : undefined}
@@ -223,7 +248,7 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
                         stackKeys={stackKeys}
                         getColor={(key) => colorByKey[key] ?? series.color}
                         showStackTotal
-                        stackRow={payload.data[Number(props.index)]}
+                        stackRow={stackedData[Number(props.index)]}
                         layout={payload.layout ?? 'horizontal'}
                       />
                     )}
