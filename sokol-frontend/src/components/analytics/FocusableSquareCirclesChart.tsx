@@ -6,7 +6,7 @@ import {
   CHART_VALUE_LABEL_WEIGHT,
 } from './AnalyticsChartPrimitives';
 import { PALETTE } from './analyticsPalette';
-import { formatChartLegendText } from './chartLegend';
+import { formatChartLegendText } from './formatChartLegendText';
 
 export type SquareCirclesDatum = {
   name: string;

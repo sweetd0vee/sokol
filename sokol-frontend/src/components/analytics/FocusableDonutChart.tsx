@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { getValueBasedColors, PALETTE } from './analyticsPalette';
 import { ChartLegend, CHART_LEGEND_STYLE, CHART_SLICE_PERCENT_FONT_SIZE, CHART_TOOLTIP_STYLE, CHART_VALUE_LABEL_WEIGHT } from './AnalyticsChartPrimitives';
-import { formatChartLegendText } from './chartLegend';
+import { formatChartLegendText } from './formatChartLegendText';
 
 export type DonutDatum = {
   name: string;

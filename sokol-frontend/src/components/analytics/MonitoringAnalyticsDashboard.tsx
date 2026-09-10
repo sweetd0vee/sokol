@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -106,9 +106,11 @@ export function MonitoringAnalyticsDashboard() {
   const additionalStatusDistribution = data?.additionalStatusDistribution ?? EMPTY_ADDITIONAL_STATUS_DISTRIBUTION;
   const statusDistribution = data?.statusDistribution ?? EMPTY_STATUS_DISTRIBUTION;
   const statusMatrix = data?.statusMatrix ?? EMPTY_STATUS_MATRIX;
-  const statusMatrixSortRef = useRef<StatusMatrixCountSortConfig>(DEFAULT_STATUS_MATRIX_COUNT_SORT);
+  const [statusMatrixSort, setStatusMatrixSort] = useState<StatusMatrixCountSortConfig>(
+    DEFAULT_STATUS_MATRIX_COUNT_SORT,
+  );
   const handleStatusMatrixSortChange = useCallback((sortConfig: StatusMatrixCountSortConfig) => {
-    statusMatrixSortRef.current = sortConfig;
+    setStatusMatrixSort(sortConfig);
   }, []);
   const deadlineExtensionsByCheck = data?.deadlineExtensionsByCheck ?? EMPTY_DEADLINE_EXTENSIONS;
   const completedDuringAuditByCheck = data?.completedDuringAuditByCheck ?? EMPTY_COMPLETED_DURING_AUDIT;
@@ -175,7 +177,7 @@ export function MonitoringAnalyticsDashboard() {
             documentTitle: 'Мониторинг',
             filenamePrefix: 'analytics-monitoring',
             selectedSections: [...exportSections.allIds],
-            statusMatrixOverride: sortStatusMatrixRows(statusMatrix, statusMatrixSortRef.current),
+            statusMatrixOverride: sortStatusMatrixRows(statusMatrix, statusMatrixSort),
             meta: [
               ['Аудиторы', selectedAuditors.length ? selectedAuditors.join(', ') : 'Все'],
               ['Департаменты', selectedDepartments.length ? selectedDepartments.join(', ') : 'Все'],

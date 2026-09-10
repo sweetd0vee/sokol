@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -144,11 +144,11 @@ export function RecommendationsAnalyticsDashboard() {
   const universeTotal = data?.universeTotal ?? 0;
   const filteredTotal = data?.filteredTotal ?? 0;
   const materialityMatrix = data?.materialityMatrix ?? EMPTY_MATERIALITY_MATRIX;
-  const materialityMatrixSortRef = useRef<MaterialityMatrixCountSortConfig>(
+  const [materialityMatrixSort, setMaterialityMatrixSort] = useState<MaterialityMatrixCountSortConfig>(
     DEFAULT_MATERIALITY_MATRIX_COUNT_SORT,
   );
   const handleMaterialityMatrixSortChange = useCallback((sortConfig: MaterialityMatrixCountSortConfig) => {
-    materialityMatrixSortRef.current = sortConfig;
+    setMaterialityMatrixSort(sortConfig);
   }, []);
   const periodXAxisProps = useMemo(() => getPeriodXAxisProps(granularity), [granularity]);
 
@@ -170,7 +170,7 @@ export function RecommendationsAnalyticsDashboard() {
           selectedSections: [...exportSections.allIds],
           materialityMatrixOverride: sortMaterialityMatrixRows(
             materialityMatrix,
-            materialityMatrixSortRef.current,
+            materialityMatrixSort,
           ),
         },
         exportFormat,

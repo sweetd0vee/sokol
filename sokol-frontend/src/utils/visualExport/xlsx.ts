@@ -27,7 +27,7 @@ import {
 } from '../statusMatrix';
 import { getMaterialityChartColor } from '../../components/analytics/analyticsPalette';
 import type { DashboardChartCapture } from '../dashboardChartRegistry';
-import { dataUrlToUint8Array, fitImageSize, sheetNameForSection, stamp } from './shared';
+import { fitImageSize, sheetNameForSection, stamp } from './shared';
 import type { VisualAnalyticsKind, VisualExportMetaRow } from './types';
 
 function hexToArgb(hex: string): string {

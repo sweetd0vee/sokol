@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { displayPeriodLabel } from './analyticsPeriod';
 import {
   completeSelectedPeriodPoints,
   emptyChecksPeriodPoint,
   sortKeyFromPeriodKey,
-  withPeriodChartLabels,
   withRunningTotal,
 } from './analyticsPeriodSeries';
 

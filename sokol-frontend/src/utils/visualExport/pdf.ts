@@ -29,7 +29,7 @@ import {
 } from '../statusMatrix';
 import { getMaterialityChartColor } from '../../components/analytics/analyticsPalette';
 import type { DashboardChartCapture } from '../dashboardChartRegistry';
-import { dataUrlToBase64, fitImageSize, stamp } from './shared';
+import { fitImageSize, stamp } from './shared';
 import type { VisualExportMetaRow } from './types';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
