@@ -16,6 +16,7 @@ from app.models.recommendations import RecommendationAdditionalStatus, Recommend
 from app.services.recommendation_status import (
     MOSCOW_TZ,
     compute_auto_status_fields,
+    control_zone_execution_date,
     overlay_computed_status_fields,
     seconds_until_next_moscow_run,
     status_phase,
@@ -46,7 +47,7 @@ class RecommendationStatusCalcTests(unittest.TestCase):
         self.assertEqual(due["additional_status"], RecommendationAdditionalStatus.IN_PROGRESS)
         self.assertEqual(due["additional_indicator"], "в процессе")
 
-    def test_execution_deadline_drives_additional_status_independently(self) -> None:
+    def test_control_zone_date_drives_additional_status_independently(self) -> None:
         updates = compute_auto_status_fields(
             control_deadline=date(2026, 8, 1),
             execution_deadline=date(2026, 12, 1),
@@ -54,6 +55,45 @@ class RecommendationStatusCalcTests(unittest.TestCase):
         )
         self.assertEqual(updates["status"], RecommendationStatus.IN_PROGRESS)
         self.assertEqual(updates["additional_status"], RecommendationAdditionalStatus.ON_CONTROL)
+
+    def test_control_zone_prefers_actual_completion_over_postponement(self) -> None:
+        self.assertEqual(
+            control_zone_execution_date(
+                actual_completion_date=date(2026, 8, 10),
+                deadline_extensions=[{"date": date(2026, 12, 1)}],
+            ),
+            date(2026, 8, 10),
+        )
+
+    def test_control_zone_uses_latest_postponement_when_actual_is_empty(self) -> None:
+        self.assertEqual(
+            control_zone_execution_date(
+                deadline_extensions=[
+                    {"date": "2026-10-01"},
+                    {"date": "2026-12-15"},
+                ],
+                extension_1_date=date(2026, 9, 1),
+            ),
+            date(2026, 12, 15),
+        )
+
+    def test_overlay_uses_control_zone_dates_from_existing_row(self) -> None:
+        existing = SimpleNamespace(
+            deadline=date(2026, 8, 1),
+            actual_completion_date=None,
+            deadline_extensions=[{"date": "2026-12-01"}],
+            extension_1_date=None,
+            extension_2_reason=None,
+            status=RecommendationStatus.IN_PROGRESS,
+            additional_status=RecommendationAdditionalStatus.IN_PROGRESS,
+        )
+        payload = overlay_computed_status_fields(
+            {"name": "Рекомендация"},
+            existing=existing,
+            today=TODAY,
+        )
+        self.assertEqual(payload["status"], RecommendationStatus.IN_PROGRESS)
+        self.assertEqual(payload["additional_status"], RecommendationAdditionalStatus.ON_CONTROL)
 
     def test_terminal_and_manual_statuses_are_preserved(self) -> None:
         completed = compute_auto_status_fields(
@@ -77,7 +117,10 @@ class RecommendationStatusCalcTests(unittest.TestCase):
     def test_overlay_uses_existing_row_when_payload_omits_dates(self) -> None:
         existing = SimpleNamespace(
             deadline=date(2026, 12, 1),
-            execution_deadline=None,
+            actual_completion_date=None,
+            deadline_extensions=None,
+            extension_1_date=None,
+            extension_2_reason=None,
             status=RecommendationStatus.IN_PROGRESS,
             additional_status=RecommendationAdditionalStatus.IN_PROGRESS,
         )
