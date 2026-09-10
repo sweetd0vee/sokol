@@ -89,7 +89,7 @@ export function ProfilePage() {
               {isAvatarPickerOpen && (
                 <div
                   id="profile-avatar-picker"
-                  className="grid grid-cols-3 gap-3 sm:grid-cols-4"
+                  className="grid grid-cols-2 gap-3"
                   role="listbox"
                   aria-label="Предложенные аватары"
                 >
