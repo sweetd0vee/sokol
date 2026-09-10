@@ -133,7 +133,6 @@ log/
 
 docker-compose.override.yml
 
-docs/_build/
 site/
 
 .cache

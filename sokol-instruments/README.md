@@ -26,5 +26,5 @@
 
 ## Актуальная документация
 
-- [sokol-backend/docs/REPORTS.md](../sokol-backend/docs/REPORTS.md) — DOCX-пайплайны в API
+- [REPORTS.md](../docs/REPORTS.md) — DOCX-пайплайны в API
 - [корневой README](../README.md) — основной продукт

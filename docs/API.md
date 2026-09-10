@@ -108,7 +108,7 @@ Search: название, наблюдение, описание, объект �
 **Query:** `granularity` (`year` \| `quarter` \| `month`, default `year`); `years`, `quarters`, `months` — ключи (`2025`, `2025-Q1`, `2025-08`), OR между измерениями; `auditors`, `departments`.  
 Recommendations/monitoring: `statuses` / `additional_statuses` / `materiality_levels` (есть camelCase-алиасы `additionalStatuses`, `materialityLevels`).
 
-UI-контракт: [ANALYTICS.md](../../sokol-frontend/docs/ANALYTICS.md), [PLANNING.md](../../sokol-frontend/docs/PLANNING.md).
+UI-контракт: [ANALYTICS.md](ANALYTICS.md), [PLANNING.md](PLANNING.md).
 
 ---
 

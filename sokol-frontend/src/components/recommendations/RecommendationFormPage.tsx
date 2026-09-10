@@ -280,7 +280,7 @@ export function RecommendationFormPage() {
           <div className={FORM_SECTION_TITLE_CLASS}>Контрольная зона</div>
           <div className={FORM_SECTION_INNER_STACK_CLASS}>
             <CollapsibleFormBlock
-              title="Фактическое исполнение"
+              title="Срок исполнения"
               titleClassName={FORM_SECTION_TITLE_CLASS}
               open={form.isExecutionDeadlineOpen}
               onToggle={() => form.setIsExecutionDeadlineOpen((current) => !current)}

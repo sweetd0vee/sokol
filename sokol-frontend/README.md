@@ -33,8 +33,8 @@ http://localhost:5180 · dev-логин: `Админ А.А.` / `admin` (alias `a
 | `npm test` | Vitest |
 | `npm run test:watch` | Vitest watch |
 | `npm run test:e2e` | Playwright (не в CI) |
-| `npm run docs:analytics-screenshots` | скриншоты дашбордов |
-| `npm run docs:analytics-tz` | DOCX ТЗ аналитики |
+| `npm run docs:analytics-screenshots` | скриншоты дашбордов → `../docs/analytics-screenshots/` |
+| `npm run docs:analytics-tz` | DOCX ТЗ аналитики → `../docs/` |
 | `npm run docs:analytics-tz:full` | скриншоты + ТЗ |
 
 ## Env (`.env.development`)
@@ -67,7 +67,7 @@ VITE_DEV_API_PORT=8802
 
 `api/` · `components/` (в т.ч. `forms/`, `planning/`, `analytics/`) · `contexts/` · `constants/` · `hooks/` · `utils/` · `config/` · `assets/` · `types/`
 
-Документация: [docs/README.md](docs/README.md).
+Документация: [docs/README.md](../docs/README.md).
 
 ## Возможности
 

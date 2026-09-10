@@ -61,7 +61,7 @@
 
 | ID | Задача | DoD |
 |----|--------|-----|
-| P1-04 | Backup/restore drill PostgreSQL + MinIO | Restore PG на чистый том; MinIO volume/`mc mirror`; сверка `attachments`. Документы есть: [MINIO.md](MINIO.md), [ALEMBIC_AND_DATA.md](../sokol-backend/docs/ALEMBIC_AND_DATA.md) |
+| P1-04 | Backup/restore drill PostgreSQL + MinIO | Restore PG на чистый том; MinIO volume/`mc mirror`; сверка `attachments`. Документы есть: [MINIO.md](MINIO.md), [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md) |
 | P1-05 | UAT deploy checklist | `.env`, секреты, порты, DNS, TLS, CORS; `/api/v1/status` и UI открываются |
 | P1-06 | Пилот 10–20 проверок | 3 карточки сверены бизнесом |
 | P1-07 | Полная загрузка на UAT | Count API = freeze-файл |
@@ -128,7 +128,7 @@ OIDC/Keycloak — **не блокер 15.09**, если банк не выдал
 | BE-31 | Planning: аудиторы и месяц | API: `months` есть, `auditors` нет. UI месяца и аудиторов нет | Если модуль остаётся limited — задокументировать. Если «идеальный» — добавить `auditors` и считать месяц |
 | BE-32 | Analytics читает `audit_object[]` | Junction уже есть, аналитика его не использует | Перевести агрегаты на junction; массив оставить как кэш или убрать |
 | BE-33 | Drill-down | Клиент не может открыть список сущностей графика | `GET /analytics/.../items?` или reuse list API с теми же фильтрами |
-| BE-34 | Серверные сохранённые отчёты / конструктор | Конструктор только localStorage | `GET/POST/PATCH/DELETE /dashboards` — горизонт C, контракт набросан в [CONSTRUCTOR.md](../sokol-frontend/docs/CONSTRUCTOR.md) |
+| BE-34 | Серверные сохранённые отчёты / конструктор | Конструктор только localStorage | `GET/POST/PATCH/DELETE /dashboards` — горизонт C, контракт набросан в [CONSTRUCTOR.md](CONSTRUCTOR.md) |
 | BE-35 | Кэш аналитики | Каждый фильтр = SQL по всей БД | При росте: materialized view или Redis. На пилоте 60 с staleTime на FE достаточно |
 | BE-36 | Visual export на сервере | DOM capture на клиенте | Не делать до go-live. После: JSON виджетов + агрегаты → PDF/DOCX на backend |
 
@@ -207,7 +207,7 @@ OIDC/Keycloak — **не блокер 15.09**, если банк не выдал
 | FE-45 | Аватары | Только localStorage | Либо оставить и написать в профиле «только в этом браузере», либо BE storage |
 | FE-46 | Тосты / единый error | Часть форм — inline, часть — `getErrorMessage` | Один `ErrorState` паттерн на мутациях: 409/403/502 понятным русским |
 
-Стандарты вёрстки уже есть: [UI_STANDARDS.md](../sokol-frontend/docs/UI_STANDARDS.md). Новые экраны не изобретают отступы и цвета.
+Стандарты вёрстки уже есть: [UI_STANDARDS.md](UI_STANDARDS.md). Новые экраны не изобретают отступы и цвета.
 
 ### C6. Тесты frontend
 
@@ -326,5 +326,4 @@ Scope freeze до 15.09 это подтверждает: новые модули
 | [CODE_REVIEW.md](CODE_REVIEW.md) | Оценки блоков |
 | [APP_LIMITS_AND_GOTCHAS.md](APP_LIMITS_AND_GOTCHAS.md) | Что пользователи примут за баги |
 | [CI.md](CI.md) · [MINIO.md](MINIO.md) | Merge gate и файлы |
-| [sokol-backend/docs](../sokol-backend/docs/README.md) | API, БД, storage, reports |
-| [sokol-frontend/docs](../sokol-frontend/docs/README.md) | Архитектура, analytics, constructor, UI |
+| [README.md](README.md) | Индекс: backend, frontend, analytics, storage |

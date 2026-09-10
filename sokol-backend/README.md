@@ -56,7 +56,7 @@ Dev-пользователи (если таблица `users` пуста и ср
 | `SOKOL_LOAD_DEMO_DATA` / `SOKOL_SEED_REPLACE` | Docker bootstrap: demo Excel и TRUNCATE; в entrypoint demo default on; в prod запрещены |
 | `SOKOL_STATUS_SCHEDULER` | Ежедневный пересчёт статусов рекомендаций (default on; `0` выключает) |
 | `SOKOL_DESTRUCTIVE_DICTIONARY_SYNC` | в development удаляет лишние справочники/users при sync (default on); в prod всегда merge-only |
-| `SOKOL_MINIO_ENDPOINT` / `ACCESS_KEY` / `SECRET_KEY` / `SECURE` / `REGION` | MinIO — [docs/STORAGE.md](docs/STORAGE.md) |
+| `SOKOL_MINIO_ENDPOINT` / `ACCESS_KEY` / `SECRET_KEY` / `SECURE` / `REGION` | MinIO — [STORAGE.md](../docs/STORAGE.md) |
 
 ## Инициализация БД
 
@@ -70,7 +70,7 @@ python -m app.db.seed_effectiveness_ratings
 python -m app.db.seed_users
 ```
 
-Seed/import/бэкапы: [docs/ALEMBIC_AND_DATA.md](docs/ALEMBIC_AND_DATA.md). Excel seed лежит в корневом `data/`, не в `sokol-backend/data/`.
+Seed/import/бэкапы: [ALEMBIC_AND_DATA.md](../docs/ALEMBIC_AND_DATA.md). Excel seed лежит в корневом `data/`, не в `sokol-backend/data/`.
 
 ## Инструменты
 
@@ -83,11 +83,11 @@ Seed/import/бэкапы: [docs/ALEMBIC_AND_DATA.md](docs/ALEMBIC_AND_DATA.md). 
 | `POST /api/v1/tools/memorandum` | Докладная записка |
 | `POST /api/v1/tools/parse-recommendations` | Парсинг рекомендаций из АЗ |
 
-Подробно: [docs/REPORTS.md](docs/REPORTS.md).
+Подробно: [REPORTS.md](../docs/REPORTS.md).
 
 ## Документация
 
-Каталог [docs/README.md](docs/README.md): архитектура, API, БД, хранилище, reports. Исторический план — [PLAN.md](../PLAN.md).
+Каталог [docs/README.md](../docs/README.md): архитектура, API, БД, хранилище, reports. Исторический план — [PLAN.md](../PLAN.md).
 
 ## Тесты
 

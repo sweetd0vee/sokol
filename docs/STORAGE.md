@@ -2,7 +2,7 @@
 
 Метаданные — PostgreSQL (`attachments`), файлы — MinIO (S3). UI ходит **только через API**.
 
-Как поднимать MinIO, консоль, `mc`, бэкап: [docs/MINIO.md](../../docs/MINIO.md). Схема таблицы: [DATA_AND_DB.md](DATA_AND_DB.md).
+Как поднимать MinIO, консоль, `mc`, бэкап: [MINIO.md](MINIO.md). Схема таблицы: [DATA_AND_DB.md](DATA_AND_DB.md).
 
 ## Layout
 

@@ -1,11 +1,11 @@
 # Код-ревью frontend
 
-> **Исторический снимок (04.09.2026).** Актуальная архитектура: [sokol-frontend/docs/ARCHITECTURE.md](../sokol-frontend/docs/ARCHITECTURE.md).
+> **Исторический снимок (04.09.2026).** Актуальная архитектура: [ARCHITECTURE_FRONTEND.md](ARCHITECTURE_FRONTEND.md).
 
 **Дата:** 4 сентября 2026  
 **Оценка:** 8.6 / 10 · React 19, TypeScript, Vite, TanStack Query
 
-Сценарии аудитора закрыты: импорт из АЗ с undo, RBAC на delete/вложения, yearly №, конструктор дашбордов. Архитектура: [sokol-frontend/docs/ARCHITECTURE.md](../sokol-frontend/docs/ARCHITECTURE.md).
+Сценарии аудитора закрыты: импорт из АЗ с undo, RBAC на delete/вложения, yearly №, конструктор дашбордов. Архитектура: [ARCHITECTURE_FRONTEND.md](ARCHITECTURE_FRONTEND.md).
 
 ## Архитектура
 

@@ -1,6 +1,6 @@
 # Гайд по коду SOKOL
 
-Карта для нового разработчика. Подробности API и схемы — в `sokol-backend/docs` и `sokol-frontend/docs`.
+Карта для нового разработчика. Подробности API и схемы — в [docs/](README.md).
 
 ## Что это
 
@@ -9,7 +9,7 @@
 - `sokol-frontend` — React 19 + TypeScript + Vite
 - `sokol-backend` — FastAPI + async SQLAlchemy + PostgreSQL + MinIO
 - `sokol-instruments` — legacy Streamlit, для новой работы не нужен
-- `docs/` — лимиты, MinIO, CI, снимок код-ревью
+- `docs/` — продуктовая документация (архитектура, API, аналитика, лимиты, CI)
 
 ## Сценарий сверху вниз
 
@@ -56,7 +56,7 @@ sokol/
 
 **Роли:** `auditor` / `department_head` / `admin`. `require_admin` = admin **или** department_head. Auditor удаляет только свою рекомендацию (`person_match` по `auditor` ↔ username). Login матчит username и aliases.
 
-Подробно: [DATA_AND_DB.md](../sokol-backend/docs/DATA_AND_DB.md), [API.md](../sokol-backend/docs/API.md).
+Подробно: [DATA_AND_DB.md](DATA_AND_DB.md), [API.md](API.md).
 
 ## Frontend
 

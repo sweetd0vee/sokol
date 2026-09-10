@@ -76,7 +76,7 @@ pg_dump -h 127.0.0.1 -p 5433 -U postgres -d sokol_db -F c -f sokol_db.dump
 pg_restore -h 127.0.0.1 -p 5433 -U postgres -d sokol_db --clean --if-exists sokol_db.dump
 ```
 
-Dump **не** включает MinIO — бэкапьте volume или `mc mirror` ([docs/MINIO.md](../../docs/MINIO.md)). После restore: `sync_check_buckets`, сверка `attachments`.
+Dump **не** включает MinIO — бэкапьте volume или `mc mirror` ([MINIO.md](MINIO.md)). После restore: `sync_check_buckets`, сверка `attachments`.
 
 ```bash
 python scripts/check_db_tables.py

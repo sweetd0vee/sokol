@@ -101,4 +101,4 @@ Login (ФИО или alias `admin`) → `POST /auth/login` → token в localSto
 - HTML-экспорт дашбордов зависит от DOM-capture (хрупко при off-screen карточках); lifecycle в DOCX дополнительно отдаёт табличные строки.
 - Drill-down API и сохранённые серверные отчёты не реализованы.
 
-Backend-контракты: [API.md](../../sokol-backend/docs/API.md).
+Backend-контракты: [API.md](API.md).

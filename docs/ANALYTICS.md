@@ -16,7 +16,7 @@
 Клиент: `src/api/analytics.ts`. Query (повторяемые списки): `granularity`, `years`, `quarters`, `months`, `auditors`, `departments`.  
 Для рекомендаций/мониторинга API также принимает `statuses`, `additionalStatuses`, `materialityLevels` — в UI эти фильтры не выводятся.
 
-Ответ — KPI/серии + `filterOptions` (аудиторы, департаменты, `anchorDates`). Поля в camelCase. Требуется Bearer JWT. Полный контракт полей — [API.md](../../sokol-backend/docs/API.md) и `app/schemas/analytics.py`.
+Ответ — KPI/серии + `filterOptions` (аудиторы, департаменты, `anchorDates`). Поля в camelCase. Требуется Bearer JWT. Полный контракт полей — [API.md](API.md) и `app/schemas/analytics.py`.
 
 ## Общая логика UI
 

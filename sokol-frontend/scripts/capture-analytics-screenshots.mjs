@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const OUT_DIR = join(__dirname, '../docs/analytics-screenshots');
+const OUT_DIR = join(__dirname, '../../docs/analytics-screenshots');
 const BASE_URL = process.env.SOKOL_UI_URL ?? 'http://localhost:5180';
 
 const LOGIN_ATTEMPTS = [

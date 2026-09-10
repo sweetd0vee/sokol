@@ -4,7 +4,7 @@ MinIO — S3-совместимое хранилище файлов. В SOKOL в
 
 UI и бизнес-логика **не ходят в MinIO напрямую**: только backend API. Этот документ — как поднять MinIO, как правильно создавать бакеты, как смотреть файлы и как не сломать раскладку SOKOL.
 
-Краткий контракт приложения: [sokol-backend/docs/STORAGE.md](../sokol-backend/docs/STORAGE.md).
+Краткий контракт приложения: [STORAGE.md](STORAGE.md).
 
 ## Порты и доступ
 
@@ -250,5 +250,5 @@ docker compose start minio
 | `.env.example` | ключи MinIO |
 | `sokol-backend/app/services/storage/minio_storage.py` | бакеты, upload/download/copy/delete |
 | `sokol-backend/app/db/sync_check_buckets.py` | досоздать бакеты по проверкам |
-| `sokol-backend/docs/STORAGE.md` | API вложений и layout |
+| [STORAGE.md](STORAGE.md) | API вложений и layout |
 | `DOCKER.md` | порты и том на диске |

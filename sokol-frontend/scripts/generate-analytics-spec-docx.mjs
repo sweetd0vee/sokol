@@ -1,6 +1,6 @@
 /**
  * Generates the business guide for the Analytics tab:
- * sokol-frontend/docs/SOKOL_Аналитика.docx
+ * docs/SOKOL_Аналитика.docx
  */
 import {
   AlignmentType,
@@ -26,11 +26,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DOCS_DIR = join(__dirname, '../docs');
+const DOCS_DIR = join(__dirname, '../../docs');
 const SCREENSHOTS_DIR = join(DOCS_DIR, 'analytics-screenshots');
 const OUTPUT = join(DOCS_DIR, 'SOKOL_Аналитика.docx');
 const OUTPUT_TZ_ALIAS = join(DOCS_DIR, 'ANALYTICS_TZ.docx');
-const PRODUCT_DOCS_OUTPUT = join(__dirname, '../../docs/SOKOL_Аналитика.docx');
 
 const GENERATED_AT = new Date().toLocaleString('ru-RU', { dateStyle: 'long', timeStyle: 'short' });
 const NAVY = '003366';
@@ -1169,7 +1168,6 @@ const doc = new Document({
 
 mkdirSync(SCREENSHOTS_DIR, { recursive: true });
 mkdirSync(DOCS_DIR, { recursive: true });
-mkdirSync(dirname(PRODUCT_DOCS_OUTPUT), { recursive: true });
 
 const buffer = await Packer.toBuffer(doc);
 
@@ -1191,4 +1189,3 @@ function writeDocx(path) {
 
 writeDocx(OUTPUT);
 writeDocx(OUTPUT_TZ_ALIAS);
-writeDocx(PRODUCT_DOCS_OUTPUT);

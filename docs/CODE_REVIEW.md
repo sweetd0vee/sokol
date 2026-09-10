@@ -1,6 +1,6 @@
 # SOKOL — код-ревью
 
-> **Исторический снимок качества (04.09.2026),** не живая архитектура. Актуальные контракты: [sokol-backend/docs](../sokol-backend/docs/README.md), [sokol-frontend/docs](../sokol-frontend/docs/README.md).
+> **Исторический снимок качества (04.09.2026),** не живая архитектура. Актуальные контракты: [README.md](README.md).
 
 **Дата:** 4 сентября 2026  
 **Объект:** `sokol-backend`, `sokol-frontend`

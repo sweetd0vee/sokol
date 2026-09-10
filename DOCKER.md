@@ -43,7 +43,7 @@ docker compose up --build -d ui
 | Postgres | `~/docker-share/postgres-data-sokol` |
 | MinIO | `~/docker-share/minio-data-sokol` |
 
-Вложения: [sokol-backend/docs/STORAGE.md](sokol-backend/docs/STORAGE.md). Excel seed: корневой `data/` (в контейнере — `SOKOL_DATA_DIR`).
+Вложения: [docs/STORAGE.md](docs/STORAGE.md). Excel seed: корневой `data/` (в контейнере — `SOKOL_DATA_DIR`).
 
 ## Auth
 
