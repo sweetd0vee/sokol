@@ -82,7 +82,7 @@ OIDC нет. Смена пароля — `POST /auth/change-password`. Ават�
 
 Агрегаты с backend, `staleTime` ~60 с. Visual export (html/pdf/docx/xlsx) — DOM capture. **Планирование экспортируется.** Конструктор — `/constructor`, снимки в localStorage, без backend API.
 
-Виды проверок в Settings, форме проверки и фильтрах списка — из API (`/settings/check_kinds`).
+Виды проверок в Settings, формах и фильтрах списков — из API (`/settings/check_kinds`).
 
 ## Справочники и ключ проверки
 

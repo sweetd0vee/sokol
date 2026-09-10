@@ -70,7 +70,7 @@ python -m app.db.seed_effectiveness_ratings
 python -m app.db.seed_users
 ```
 
-Seed/import/бэкапы: [ALEMBIC_AND_DATA.md](../docs/ALEMBIC_AND_DATA.md). Excel seed лежит в корневом `data/`, не в `sokol-backend/data/`.
+Seed/import/бэкапы: [DATA_AND_DB.md](../docs/DATA_AND_DB.md). Excel seed лежит в корневом `data/`, не в `sokol-backend/data/`.
 
 ## Инструменты
 

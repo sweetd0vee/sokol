@@ -7,6 +7,8 @@ so existing imports keep working.
 from app.core.exceptions import (
     AccessDeniedError,
     AttachmentTooLargeError,
+    AuthenticationError,
+    ConflictError,
     CrudServiceError,
     EmptyAttachmentPayloadError,
     InvalidAttachmentSlotError,
@@ -20,6 +22,8 @@ from app.core.exceptions import (
 __all__ = [
     "AccessDeniedError",
     "AttachmentTooLargeError",
+    "AuthenticationError",
+    "ConflictError",
     "CrudServiceError",
     "EmptyAttachmentPayloadError",
     "InvalidAttachmentSlotError",

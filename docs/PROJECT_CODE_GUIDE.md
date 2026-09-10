@@ -1,6 +1,6 @@
 # Гайд по коду SOKOL
 
-Карта для нового разработчика. Подробности API и схемы — в [docs/](README.md).
+Карта для нового разработчика. Подробности — в [docs/](README.md).
 
 ## Что это
 
@@ -42,21 +42,22 @@ sokol/
 
 | Путь | Зачем |
 |------|--------|
-| `app/api/v1/endpoints/` | HTTP |
+| `app/api/v1/endpoints/` | HTTP домена (checks, rec, analytics, attachments, auth, users, tools) |
+| `app/api/v1/dictionary_registry.py` | factory `/settings/*` (нет отдельных endpoint-файлов справочников) |
 | `app/api/deps.py` | JWT / Basic, `require_admin` |
-| `app/core/` | config, роли, JWT |
-| `app/services/` | домен, analytics, reports, MinIO |
-| `app/crud/` | SQL |
+| `app/core/` | config, роли, JWT, `person_match`, prod guards |
+| `app/services/` | домен, `dictionary_*`, analytics, reports, MinIO, status scheduler |
+| `app/crud/` | SQL; словари — `DictionaryCrud` |
 | `app/models/` · `app/schemas/` | ORM и Pydantic |
-| `app/db/` | init, seed, migrate, import |
+| `app/db/` | init, seed (`label_rows`), migrate, import |
 
 Типовой запрос: `endpoints` → `services` → `crud` → модель.
 
-**Сущности:** `Check` (`serial_number` только backend), `Recommendation` (`check_id` + денормализованный serial), `Attachment` (MinIO + metadata), справочники (auditors с `code` из 3 букв, departments, check_kinds, ratings, audit_types), `User`.
+**Сущности:** `Check` (`serial_number` только backend), `Recommendation` (`check_id` + денормализованный serial), `Attachment` (MinIO + metadata), справочники (auditors с `code` из 3 букв, departments, check_kinds, ratings, audit_types), `User`. Открытые rec-статусы пересчитывает in-process scheduler (00:05 МСК).
 
 **Роли:** `auditor` / `department_head` / `admin`. `require_admin` = admin **или** department_head. Auditor удаляет только свою рекомендацию (`person_match` по `auditor` ↔ username). Login матчит username и aliases.
 
-Подробно: [DATA_AND_DB.md](DATA_AND_DB.md), [API.md](API.md).
+Подробно: [DATA_AND_DB.md](DATA_AND_DB.md), [API.md](API.md), [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Frontend
 
@@ -87,9 +88,9 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 | Планирование | `tabs/PlanningTab.tsx` | `GET /analytics/planning` |
 | Конструктор | `tabs/ConstructorTab.tsx`, `analytics/constructor/` | нет API |
 | Tools | `tabs/ToolsTab.tsx`, `api/tools.ts` | `instruments_reports.py`, `services/reports/` |
-| Справочники | `tabs/SettingsTab.tsx` | `/settings/*` |
+| Справочники | `tabs/SettingsTab.tsx`, `api/settings.ts` | `dictionary_registry.py` → `/settings/*` |
 
-`serial_number` frontend не считает. Виды проверок в Settings, форме проверки и фильтрах списка — из `/settings/check_kinds` (`useCheckKindOptions`).
+`serial_number` frontend не считает. Виды проверок в Settings, формах и фильтрах списков (проверки и рекомендации) — из `/settings/check_kinds` (`useCheckKindOptions`).
 
 ## Новая CRUD-фича
 
@@ -130,4 +131,4 @@ Playwright (не в CI): `cd sokol-frontend && npm run test:e2e`.
 4. `SokolDataContext.tsx`
 5. `app/main.py` → `app/api/v1/router.py` → `endpoints/checks.py` → service/crud/model
 
-Права: frontend `AuthContext` / `isAdmin`; backend `deps.py`. Файлы: [MINIO.md](MINIO.md). Аналитика: `src/api/analytics.ts` и `app/services/analytics/`.
+Права: frontend `AuthContext` / `isAdmin`; backend `deps.py`. Файлы: [STORAGE.md](STORAGE.md). Аналитика: [ANALYTICS.md](ANALYTICS.md). Архитектура: [ARCHITECTURE.md](ARCHITECTURE.md).

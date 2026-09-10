@@ -78,6 +78,8 @@ __all__ = [
     "dva_auditor_load_sql",
     "dva_auditor_matrix_sql",
     "dva_auditor_recommendation_profiles_sql",
+    "dva_check_lifecycle_from_rows",
+    "dva_check_lifecycle_sql",
     "dva_document_readiness_sql",
     "dva_portfolio_series_sql",
     "dva_recommendation_profiles_from_rows",

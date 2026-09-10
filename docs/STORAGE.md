@@ -1,12 +1,10 @@
 # MinIO и вложения
 
-Метаданные — PostgreSQL (`attachments`), файлы — MinIO (S3). UI ходит **только через API**.
-
-Как поднимать MinIO, консоль, `mc`, бэкап: [MINIO.md](MINIO.md). Схема таблицы: [DATA_AND_DB.md](DATA_AND_DB.md).
+Метаданные — PostgreSQL (`attachments`), байты — MinIO (S3). UI ходит **только через API**. Схема: [DATA_AND_DB.md](DATA_AND_DB.md).
 
 ## Layout
 
-Один bucket на проверку: `check-{serial_number}` (lowercase, 3–63 символа). При смене ключа проверки **или** `auditors.code` backend копирует объекты в новый bucket и удаляет старый (`check_serial_cascade`). При удалении проверки — объекты и bucket удаляются.
+Один bucket на проверку: `check-{serial_number}` (lowercase, 3–63 символа; недопустимые символы → `-`). Рекомендация своего бакета не имеет.
 
 ```
 check-{serial}/
@@ -14,44 +12,84 @@ check-{serial}/
   recommendations/{rec_id}/{slot}/{uuid}_{filename}
 ```
 
-Слоты рекомендаций: `recommendation_files`, `control_removal_files`.
+Слоты rec: `recommendation_files`, `control_removal_files`.
 
-Bucket создаётся при `create_check`, если MinIO включён (сбой ensure логируется, проверка всё равно коммитится). Пустые проверки также получают bucket через `sync_check_buckets` или при первом upload.
+Имя бакета — DNS S3: только `a-z0-9.-`, не `_`, не кириллица, не IP, не начинается/кончается `-`/`.`. Код: `check_bucket_name()`.
+
+| Событие | MinIO |
+|---------|-------|
+| create check | `make_bucket` если включён (сбой ensure логируется, проверка коммитится) |
+| upload | bucket создаётся перед `put_object` |
+| смена serial / `auditors.code` | copy в новый bucket, старый удаляется |
+| delete проверки | объекты и bucket удаляются |
+| Docker start / после import | `python -m app.db.sync_check_buckets` |
+| demo | `python -m app.db.seed_demo_attachments` |
+
+**Не создавайте `check-*` руками** и не заливайте файлы в консоли в обход API — не будет строки `attachments`.
 
 ## API
 
 | Метод | Путь |
 |-------|------|
 | GET | `/api/v1/attachments/storage/status` → `{ enabled, reachable, bucket_layout }` |
-| GET | `/api/v1/attachments?entity_type=&entity_id=` (`slot` опционален) |
-| POST | `/api/v1/attachments` multipart: `entity_type`, `entity_id`, `slot`, `file` |
-| GET | `/api/v1/attachments/{id}/download` |
-| DELETE | `/api/v1/attachments/{id}` |
+| GET | `/attachments?entity_type=&entity_id=` (`slot?`) |
+| POST | `/attachments` multipart: `entity_type`, `entity_id`, `slot`, `file` |
+| GET | `/attachments/{id}/download` |
+| DELETE | `/attachments/{id}` |
 
-Права: recommendation upload/delete — владелец или admin; check upload — любой authenticated; check delete — admin only. List/download — любой authenticated.
+Права: rec upload/delete — владелец или admin; check upload — любой authenticated; check delete — admin. List/download — любой authenticated.
 
-Frontend опрашивает `GET /storage/status` при открытии секции вложений (`useStorageStatus`). `enabled=false` или `reachable=false` → banner, upload disabled, retry. Tools (DOCX) от MinIO не зависят.
+Frontend: `useStorageStatus` (poll 15 с, refetch on focus). `enabled=false` / `reachable=false` → banner, upload disabled, retry. Tools (DOCX) от MinIO не зависят.
 
-Хранилище выключено (нет endpoint+keys) → **503**. Сбой MinIO → **502**. Слишком большой файл → **413**. Неподдерживаемый MIME → **415**. Пустое тело / слот → **400**. Нет прав → **403**.
+Ошибки: слот/пустое тело → **400**; слишком большой → **413**; MIME → **415**; не настроен → **503**; сбой → **502**; нет прав → **403**.
 
-Допустимые MIME: PDF, Office (doc/docx/xls/xlsx/ppt/pptx), jpeg/png/gif/webp, text/plain, `application/zip`, `application/x-zip-compressed`, `application/octet-stream`.
+MIME: PDF, Office (doc/docx/xls/xlsx/ppt/pptx), jpeg/png/gif/webp, text/plain, zip, `octet-stream`.
+
+Код: `minio_storage.py` · `attachments_service.py` · `check_serial_cascade.py` · `attachments_crud.py` · `endpoints/attachments.py`.
 
 ## Env
 
-| Переменная | Описание |
-|------------|----------|
-| `SOKOL_MINIO_ENDPOINT` | host:port |
-| `SOKOL_MINIO_ACCESS_KEY` / `SECRET_KEY` | credentials |
+Включено, только если заданы endpoint + access + secret. `SOKOL_DATA_DIR` к MinIO не относится.
+
+| Переменная | Назначение |
+|------------|------------|
+| `SOKOL_MINIO_ENDPOINT` | `host:port` без схемы. Docker: `minio:9000`, локальный uvicorn: `127.0.0.1:9000` |
+| `SOKOL_MINIO_ACCESS_KEY` / `SECRET_KEY` | credentials (обычно = MinIO root) |
 | `SOKOL_MINIO_SECURE` | `0` HTTP / `1` HTTPS |
 | `SOKOL_MINIO_REGION` | опционально |
 | `SOKOL_MAX_UPLOAD_MB` | лимит (default 100) |
 
-Включено, только если заданы endpoint + access key + secret key. `SOKOL_DATA_DIR` относится к Excel/templates, не к MinIO.
+Docker: порты 9000 / 9001, том `~/docker-share/minio-data-sokol` (Windows: `%USERPROFILE%\docker-share\minio-data-sokol`). Логин консоли: `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (default `sokol` / `change-me`, ≥8 символов).
 
-Docker: MinIO 9000/9001, том `~/docker-share/minio-data-sokol`.
+## Эксплуатация
 
-## Код
+```bash
+docker compose up -d minio
+curl http://localhost:9000/minio/health/live
+```
 
-`app/services/storage/minio_storage.py` · `app/services/attachments_service.py` · `app/services/check_serial_cascade.py` · `app/crud/attachments_crud.py` · `app/api/v1/endpoints/attachments.py`
+Консоль: http://localhost:9001 — диагностика. Бакеты приватные: не `mc anonymous set public`.
 
-`python -m app.db.sync_check_buckets` — для существующих проверок. Демо-файлы во все слоты: `python -m app.db.seed_demo_attachments`.
+```bash
+mc alias set sokol http://127.0.0.1:9000 sokol change-me
+mc ls sokol
+mc ls --recursive sokol/check-26ivp01p1
+mc mirror sokol ~/backup/sokol-minio
+```
+
+Не подменяйте объекты в `check-*` через `mc cp`, если `attachments.object_key` должен остаться валидным.
+
+Dump PostgreSQL **не содержит файлов**. Бэкап: `mc mirror` или копия тома при остановленном контейнере. После restore PG: поднять MinIO → `sync_check_buckets` → сверить `bucket` + `object_key` с `mc ls --recursive`.
+
+## Типичные ошибки
+
+| Симптом | Что делать |
+|---------|------------|
+| 503 upload | задать `SOKOL_MINIO_*` |
+| 502 upload | `docker compose ps minio`, health live |
+| `InvalidBucketName` | lowercase, 3–63, без `_` |
+| файл в консоли, нет в UI | залит в обход API |
+| download 502 | объект стёрт — restore или удалить строку `attachments` |
+| после смены serial файлы пропали | логи `Failed to migrate MinIO bucket` |
+| `sync_check_buckets` skip | MinIO disabled / unreachable |
+| локальный API не видит MinIO | endpoint `127.0.0.1:9000`, не hostname `minio` |

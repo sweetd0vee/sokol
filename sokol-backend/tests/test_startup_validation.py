@@ -7,6 +7,7 @@ import unittest
 from app.core.startup_validation import (
     DEFAULT_JWT_SECRET,
     MIN_PROD_JWT_SECRET_LEN,
+    assert_app_startup_safe,
     assert_demo_data_safe_for_env,
     assert_jwt_secret_safe_for_env,
     assert_seed_replace_safe_for_env,
@@ -91,6 +92,36 @@ class StartupValidationTests(unittest.TestCase):
         )
         self.assertFalse(
             destructive_dictionary_sync_enabled(env="development", flag="0")
+        )
+
+    def test_app_startup_requires_database_url(self) -> None:
+        with self.assertRaises(RuntimeError) as ctx:
+            assert_app_startup_safe(
+                database_url="",
+                jwt_secret="x" * MIN_PROD_JWT_SECRET_LEN,
+                env="development",
+                load_demo=False,
+                replace=False,
+            )
+        self.assertIn("DATABASE_URL", str(ctx.exception))
+
+    def test_app_startup_rejects_prod_demo(self) -> None:
+        with self.assertRaises(RuntimeError):
+            assert_app_startup_safe(
+                database_url="postgresql+asyncpg://postgres:postgres@localhost/sokol",
+                jwt_secret="x" * MIN_PROD_JWT_SECRET_LEN,
+                env="prod",
+                load_demo=True,
+                replace=False,
+            )
+
+    def test_app_startup_allows_dev(self) -> None:
+        assert_app_startup_safe(
+            database_url="postgresql+asyncpg://postgres:postgres@localhost/sokol",
+            jwt_secret=DEFAULT_JWT_SECRET,
+            env="development",
+            load_demo=True,
+            replace=True,
         )
 
 

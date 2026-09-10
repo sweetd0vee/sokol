@@ -82,7 +82,7 @@ class AuthRbacTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
-    @patch("app.api.v1.endpoints.auth.get_user_by_username", new_callable=AsyncMock)
+    @patch("app.services.auth_service.get_user_by_username", new_callable=AsyncMock)
     def test_login_and_me(
         self,
         mock_login_get_user: AsyncMock,
@@ -171,8 +171,8 @@ class AuthRbacTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 403)
 
-    @patch("app.api.v1.endpoints.auth.update_user_password", new_callable=AsyncMock)
-    @patch("app.api.v1.endpoints.auth.get_user_by_username", new_callable=AsyncMock)
+    @patch("app.services.auth_service.update_user_password", new_callable=AsyncMock)
+    @patch("app.services.auth_service.get_user_by_username", new_callable=AsyncMock)
     def test_change_password(self, mock_get_user: AsyncMock, mock_update: AsyncMock) -> None:
         user = _admin_user()
         mock_get_user.return_value = user
@@ -192,7 +192,7 @@ class AuthRbacTests(unittest.TestCase):
         self.assertEqual(response.status_code, 204, response.text)
         mock_update.assert_awaited_once()
 
-    @patch("app.api.v1.endpoints.auth.get_user_by_username", new_callable=AsyncMock)
+    @patch("app.services.auth_service.get_user_by_username", new_callable=AsyncMock)
     def test_change_password_rejects_wrong_current(self, mock_get_user: AsyncMock) -> None:
         mock_get_user.return_value = _admin_user()
 
@@ -211,7 +211,7 @@ class AuthRbacTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("текущий пароль", response.json()["detail"].lower())
 
-    @patch("app.api.v1.endpoints.auth.get_user_by_username", new_callable=AsyncMock)
+    @patch("app.services.auth_service.get_user_by_username", new_callable=AsyncMock)
     def test_login_accepts_admin_alias(self, mock_get_user: AsyncMock) -> None:
         mock_get_user.return_value = _admin_user()
         login = self.client.post(
@@ -223,7 +223,7 @@ class AuthRbacTests(unittest.TestCase):
         self.assertEqual(login.json()["username"], "Админ А.А.")
 
     @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
-    @patch("app.api.v1.endpoints.auth.get_user_by_username", new_callable=AsyncMock)
+    @patch("app.services.auth_service.get_user_by_username", new_callable=AsyncMock)
     def test_login_and_me_for_department_head(
         self,
         mock_login_get_user: AsyncMock,

@@ -1,8 +1,6 @@
 # Данные и БД
 
-PostgreSQL 16 · SQLAlchemy 2 async · `asyncpg` · порт хоста **5433**.
-
-Схема: `Base.metadata.create_all()` в `init_db.py` + идемпотентные `python -m app.db.migrate_*`. Alembic нет. Операции: [ALEMBIC_AND_DATA.md](ALEMBIC_AND_DATA.md). Файлы: [STORAGE.md](STORAGE.md).
+PostgreSQL 16 · SQLAlchemy 2 async · `asyncpg` · порт хоста **5433**. Схема: `create_all` + идемпотентные `python -m app.db.migrate_*`. Alembic **нет**. Файлы: [STORAGE.md](STORAGE.md).
 
 ## Сущности
 
@@ -10,16 +8,14 @@ PostgreSQL 16 · SQLAlchemy 2 async · `asyncpg` · порт хоста **5433**
 |---------|-----|-------|
 | `checks` | int | → recommendations (`ON DELETE CASCADE`) |
 | `recommendations` | int | FK `check_id` |
-| `recommendation_audit_objects` | `(recommendation_id, department_name)` | FK на recommendations и `departments.name` |
-| `attachments` | int | полиморфно: `entity_type` + `entity_id`; bucket `check-{serial}` |
+| `recommendation_audit_objects` | `(recommendation_id, department_name)` | FK на rec и `departments.name` |
+| `attachments` | int | полиморфно `entity_type` + `entity_id`; bucket `check-{serial}` |
 | `auditors` | UUID | unique `full_name`, unique `code` (3 латинские буквы) |
 | `departments`, `check_kinds`, `effectiveness_ratings` | UUID | unique labels |
 | `audit_types` | UUID | `code` + `name`, без unique и без FK в домен |
 | `users` | UUID | unique `username`; роли `admin` / `department_head` / `auditor` |
 
-Доменные ссылки на справочники — строки с физическим FK на unique label (`ON UPDATE CASCADE`; `ON DELETE RESTRICT`, для оценок эффективности `SET NULL`). Массив `recommendations.audit_object` дублируется для аналитики; целостность — в junction.
-
-## ER
+Доменные ссылки на справочники — строки с физическим FK (`ON UPDATE CASCADE`; delete `RESTRICT`, для оценок `SET NULL`). Массив `recommendations.audit_object` дублируется для аналитики; целостность — в junction.
 
 ```mermaid
 erDiagram
@@ -36,7 +32,7 @@ erDiagram
 
 ## Enum'ы
 
-В БД пишутся **values**, не имена членов.
+В БД пишутся **values**. API переходы не ограничивает.
 
 | Enum | Значения |
 |------|----------|
@@ -45,183 +41,140 @@ erDiagram
 | `recommendation_additional_status` | `on_time`, `deadline_violated`, `on_control`, `in_progress` |
 | `users.role` | `admin`, `department_head`, `auditor` |
 
-Переходы статусов API не ограничивает.
+Автостатус открытых rec: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Ключ проверки
 
-`serial_number` уникален, клиент его не задаёт. Формат: `{YY}{AUDITOR_CODE}{QUARTER}{P\|V\|K}{N}`.
+`serial_number` уникален, клиент не задаёт. Формат: `{YY}{AUDITOR_CODE}{QUARTER}{P\|V\|K}{N}`.
 
-Пример: `26KVS3P1` — год начала, `auditors.code`, квартал, тип (`planned`→P, `unscheduled`→V, `thematic`→K), порядковый номер среди проверок того же руководителя/типа/года (квартал в счётчик не входит).
+Пример: `26KVS3P1` — год `start_date`, `auditors.code`, квартал, тип (`planned`→P, `unscheduled`→V, `thematic`→K), порядковый среди того же руководителя/типа/года.
 
-При смене `start_date` / `check_quarter` / `check_leader` / `check_type` backend пересчитывает ключ, обновляет `recommendations.serial_number` и `attachments.check_serial_number`/`bucket`, копирует объекты MinIO в новый bucket и удаляет старый. Массово: `python -m app.db.recalculate_check_serial_numbers`.
+Смена `start_date` / `check_quarter` / `check_leader` / `check_type` или `auditors.code` → каскад rec/attachments + MinIO (`check_serial_cascade.py`). Массово: `python -m app.db.recalculate_check_serial_numbers`.
 
-Смена `auditors.code` запускает тот же каскад для всех проверок руководителя (`app/services/check_serial_cascade.py`).
-
-`check_type` — код ключа, не FK на `audit_types` (КП/ВП/ПП).
+`check_type` — код ключа, не FK на `audit_types`.
 
 ## Валидация справочников
 
-API (`dictionary_validation.py`) + FK:
-
 - `check_leader`, `auditor` ∈ `auditors.full_name`
 - `check_view` ∈ `check_kinds.label`
-- непустые `*_effectiveness` ∈ `effectiveness_ratings.label` (пустое → `NULL`)
-- `audit_object` канонизируется по `departments`; пишется массив и junction; пустое → `Не указан`
+- непустые `*_effectiveness` ∈ ratings (пустое → `NULL`)
+- `audit_object` канонизируется по `departments`; неизвестное в API → **400**; пустое → «Не указан»
 - `manager` — свободный текст
-- удаление in-use значения и системного «Не указан» → **409**
+- delete in-use и «Не указан» → **409**; дубликаты labels → **409** (кроме `audit_types`)
+- переименование каскадно обновляет FK; массив `audit_object` — отдельно (`replace_recommendation_audit_object_label`)
+- смена `auditors.code` переписывает ключи проверок этого руководителя
 
-Import/seed сначала `ensure_*` недостающие labels, затем вставляет строки. Excel-import **досоздаёт** неизвестные справочники, а не отклоняет их.
+Import/seed: `ensure_*` досоздаёт labels, затем вставляет строки. UI так не делает.
 
-## `checks`
+Общий seed label-таблиц: `app/db/seeds/label_rows.py` (`seed_exact_label_rows`).
 
-| Поле | Тип | Notes |
-|------|-----|-------|
-| `id` | int PK | |
-| `serial_number` | varchar(32) UK | генерируется backend |
-| `check_name` | varchar(255) | |
-| `short_name` | varchar(255)? | |
-| `check_type` | varchar(32) | `planned` / `unscheduled` / `thematic` |
-| `check_view` | varchar(255) | FK `check_kinds.label` |
-| `check_quarter` | int | CHECK 1–4 (на живой БД — migrate) |
-| `start_date` | date | год в ключе и аналитике |
-| `end_date` | date? | |
-| `check_leader` | varchar(255) | FK `auditors.full_name` |
-| `status` | `check_status` | |
-| `created_at` | date | default `today`, PATCH не меняет |
-| `description` | text? | |
-| `order_*` / `program_*` / `az_*` / `dz_*` | varchar(128)? / date? | номер и дата документов |
-| `process_effectiveness`, `svk_effectiveness`, `sur_effectiveness`, `svik_effectiveness` | varchar(255)? | FK ratings, `ON DELETE SET NULL` |
+## Поля
 
-List search: `check_name`, `check_leader`, `serial_number`.
+**checks:** `id`, `serial_number` UK, `check_name`, `short_name?`, `check_type` (≤32), `check_view` FK, `check_quarter` 1–4, `start_date`, `end_date?`, `check_leader` FK, `status`, `created_at` (PATCH не меняет), `description?`, `order_*` / `program_*` / `az_*` / `dz_*`, `process|svk|sur|svik_effectiveness` FK ratings.
 
-## `recommendations`
+List search: имя, руководитель, ключ.
 
-| Поле | Тип | Notes |
-|------|-----|-------|
-| `id` | int PK | |
-| `check_id` | int FK | `ON DELETE CASCADE` |
-| `serial_number` | varchar(32) | денормализация ключа проверки |
-| `sequence_number` | int | назначает backend, default 1 |
-| `name` | text | |
-| `observation_name` | text? | |
-| `description` | text | default `''` |
-| `indicator`, `additional_indicator` | varchar(32) | default `не указан` |
-| `materiality_level` | varchar(32) | default `средний` |
-| `audit_object` | `text[]` | GIN; FK-целостность в junction |
-| `deadline` | date? | срок контроля (из АЗ) |
-| `execution_deadline` | date? | срок исполнения (аудитор) |
-| `auditor` | varchar(255) | FK `auditors.full_name` |
-| `manager` | varchar(255) | свободный текст |
-| `status` / `additional_status` | enum | |
-| `created_at` | date | |
-| `actual_completion_date` | date? | |
-| `extension_1_*` | mixed | legacy первого переноса (`date` / `reason` / `comment`) |
-| `extension_2_reason`, `extension_2_comment` | mixed | legacy второго переноса (**без** `extension_2_date`) |
-| `remove_from_control_*` | mixed | legacy снятия с контроля |
-| `deadline_extensions`, `control_removals` | JSON | список `{date?, comment?}`; `create_all` → `JSON`, migrate на живой БД может дать `JSONB` |
-| `closure_verification_status` | varchar(64)? | |
-| `closure_information` | text? | |
+**recommendations:** `id`, `check_id` cascade, `serial_number` (денорм.), `sequence_number` (сервер), `name`, `observation_name?`, `description` default `''`, `indicator` / `additional_indicator` default `не указан`, `materiality_level` default `средний`, `audit_object` `text[]` + GIN, `deadline` (контроль), `execution_deadline` (исполнение, аудитор), `auditor` FK, `manager` текст, `status` / `additional_status`, `created_at`, `actual_completion_date?`, legacy `extension_1_*` / `extension_2_reason|comment` (без `extension_2_date`), `remove_from_control_*`, JSON `deadline_extensions` / `control_removals` (`{date?, comment?}`; `create_all` → JSON, migrate может дать JSONB), `closure_*`.
 
-Create/batch ищут проверку по `serial_number`. Вход `audit_object` — массив или строка с `,`/`;`.
+Create/batch ищут проверку по `serial_number`. Вход `audit_object` — массив или строка `,`/`;`.
 
-## `attachments`
+**attachments:** нет физического FK на домен. `entity_type` `check`\|`recommendation`, `entity_id`, `slot`, `check_serial_number`, `bucket` `check-{serial}` lowercase, `object_key`, имя/MIME/size, `created_at` timestamptz.
 
-Метаданные; байты в MinIO. Физического FK на checks/recommendations нет.
+Слоты check: `order`, `program`, `az`, `dz`, `dz_appendix`. Rec: `recommendation_files`, `control_removal_files`.
 
-| Поле | Тип | Notes |
-|------|-----|-------|
-| `id` | int PK | |
-| `entity_type` | varchar(32) | `check` \| `recommendation` |
-| `entity_id` | int | |
-| `slot` | varchar(64) | check: `order`, `program`, `az`, `dz`, `dz_appendix`; rec: `recommendation_files`, `control_removal_files` |
-| `check_serial_number` | varchar(32) | для bucket layout |
-| `bucket` | varchar(128) | `check-{serial}` lowercase |
-| `object_key` | varchar(512) | `{slot}/{uuid}_{filename}` или `recommendations/{id}/{slot}/{uuid}_{filename}` |
-| `original_name`, `content_type`, `size_bytes` | | |
-| `created_at` | timestamptz | `NOW()` |
-
-## `users`
-
-| Поле | Тип | Notes |
-|------|-----|-------|
-| `id` | UUID PK | |
-| `username` | varchar(255) UK | логин |
-| `password_hash` | varchar(255) | PBKDF2-SHA256; legacy plaintext verify на login |
-| `role` | varchar(32) | `admin` / `department_head` / `auditor`; `ADMIN_ROLES` = первые два |
-| `display_name` | varchar(255) | |
-| `aliases` | varchar(500)? | варианты имени через запятую; login/lookup матчит username и aliases |
-| `is_active` | bool | default true; неактивные не логинятся |
-
-Аватары в БД не хранятся. Сопоставление «своей» рекомендации: `recommendations.auditor` ↔ `username` (`person_match`).
-
-## Справочники
-
-| Таблица | Поля | Используется для |
-|---------|------|------------------|
-| `auditors` | `full_name` UK, `code` char(3) UK | `check_leader`, `auditor`, ключ проверки |
-| `departments` | `name` UK | `audit_object` / junction; «Не указан» защищён |
-| `check_kinds` | `label` UK | `check_view` |
-| `effectiveness_ratings` | `label` UK | оценки эффективности |
-| `audit_types` | `code`, `name` | без FK в домен; дубликаты API не отклоняет 409 |
-
-Переименование аудитора/вида/оценки/департамента каскадно обновляет FK; массив `audit_object` синхронизируется отдельно.
-
-## Связи
-
-| Связь | Тип | Поведение |
-|-------|-----|-----------|
-| `recommendations.check_id → checks.id` | FK | cascade delete |
-| `checks.check_leader` / `recommendations.auditor` → `auditors.full_name` | FK | update cascade, delete restrict |
-| `checks.check_view → check_kinds.label` | FK | update cascade, delete restrict |
-| `checks.*_effectiveness → effectiveness_ratings.label` | FK | update cascade, delete set null |
-| `recommendation_audit_objects` | FK | rec cascade; department update cascade, delete restrict |
-| `serial_number` на rec/attachments | денормализация | сервис при пересчёте ключа |
-| `attachments.entity_*` | логическая | сервис проверяет владельца |
+**users:** `username` UK, `password_hash`, `role`, `display_name`, `aliases?` (через запятую), `is_active` default true. Аватаров нет.
 
 Нет soft-delete и audit log. Прямой SQL по `serial_number` / labels / `attachments.bucket` ломает целостность.
 
 ## Индексы
 
-Из моделей: PK, unique `serial_number` / labels / username / auditor code, FK indexes (`check_id`, `check_leader`, `auditor`, entity lookup).
+Из моделей: PK, unique serial/labels/username/auditor code, FK indexes.
 
-Из `migrate_analytics_indexes` (bootstrap): `ix_checks_start_date`, `ix_checks_status`, `ix_checks_check_leader`, `ix_recommendations_deadline`, `ix_recommendations_auditor`, GIN `audit_object` (`ix_recommendations_audit_object_gin`), `ix_recommendations_status`, `ix_recommendations_materiality_level`, `ix_recommendations_deadline_status`. Плюс `ix_attachments_entity_lookup` из migrate attachments.
+Из `migrate_analytics_indexes`: `ix_checks_start_date`, `ix_checks_status`, `ix_checks_check_leader`, `ix_recommendations_deadline`, `ix_recommendations_auditor`, GIN `audit_object`, `ix_recommendations_status`, `ix_recommendations_materiality_level`, `ix_recommendations_deadline_status`. Плюс `ix_attachments_entity_lookup`.
 
-## Аналитика
+Аналитика — без data mart. Период проверок и planning — `checks.start_date`; рекомендаций/мониторинга — `deadline`. Контракт: [API.md](API.md), [ANALYTICS.md](ANALYTICS.md).
 
-Отдельного data mart нет. Период проверок — `checks.start_date`. Контракт ответов — [API.md](API.md) / `app/schemas/analytics.py`.
+## Пути к данным
 
-| Endpoint | Поля |
-|----------|------|
-| checks | status, type, view, leader, effectiveness, `completionShare`, объекты через rec |
-| recommendations | status, additional_status, deadline, materiality, indicator, audit_object, auditor + distribution/summary extras |
-| monitoring | то же + extensions / removals / completed-during-audit + summary/series |
-| dva | load/impact/execution/timeliness/documents, treemap, readiness, lifecycle |
-| planning | `coverage`, unresolved-by-department, high-materiality; **без** фильтра `auditors` |
+| Что | Где |
+|-----|-----|
+| Excel seed (`checks.xlsx`, `recommendations.xlsx`) | корневой `sokol/data/` или `SOKOL_DATA_DIR` |
+| Шаблон файла контроля, картинки существенности | `sokol-backend/data/` |
+| Резолв | `app/utils/paths.py` |
 
-## Пакет `app/db`
+## Init и seed
 
-| Модуль | Назначение |
-|--------|------------|
-| `session.py`, `init_db.py` | async engine, `create_all` |
-| `catalogs/` | канонические списки |
-| `seeds/` | идемпотентный insert |
-| `migrations/` | ad-hoc patches; `run_bootstrap_migrations()` — Docker |
-| `bootstrap.py` | Docker entrypoint и presentation demo |
-| корневые `seed_*` / `migrate_*` | CLI, реэкспорт |
+```bash
+python -c "import asyncio; from app.db.init_db import init_db; asyncio.run(init_db())"
+python -m app.db.seed_auditors
+python -m app.db.seed_departments
+python -m app.db.seed_audit_types
+python -m app.db.seed_check_kinds
+python -m app.db.seed_effectiveness_ratings
+python -m app.db.seed_users
+```
 
-Docker: `init_db` → `BOOTSTRAP_MIGRATIONS` → seed audit_types / check_kinds / ratings → `sync_dictionaries` (auditors/departments/users) → `sync_check_buckets` → опциональный Excel demo (`SOKOL_LOAD_DEMO_DATA`, в bootstrap default **on**).
+Либо `python -m app.db.sync_dictionaries`. Пароли: `SOKOL_ADMIN_PASSWORD` (default `admin`) для admin/department_head, `SOKOL_DEFAULT_USER_PASSWORD` (default `auditor`) для аудиторов.
 
-Bootstrap-миграции (порядок):
+Dev-логины (если `users` пуста): `Админ А.А.` / `admin` (alias `admin`), `Ковалев С.С.` / `admin` (`department_head`), аудиторы (ФИО) / `auditor`.
+
+## Import
+
+```bash
+python -m app.db.import_seed_data              # добавить новые serial
+python -m app.db.import_seed_data --replace    # TRUNCATE — только с бэкапом
+# SOKOL_ENV=prod|production ещё требует --confirm-prod-replace
+python -m app.db.import_seed_data --checks PATH --recommendations PATH
+```
+
+Неизвестные labels **досоздаются**. После импорта при MinIO: `python -m app.db.sync_check_buckets`.
+
+| Команда | Назначение |
+|---------|------------|
+| `python -m app.db.seed_demo_data` | синтетика без Excel |
+| `python -m app.db.bootstrap_presentation_demo` | Excel + import (`--replace` по умолчанию) |
+| `python -m app.db.seed_demo_attachments` | демо-файлы во все слоты (`--check-id`, `--replace`) |
+| `python -m app.db.recalculate_check_serial_numbers` | пересчёт ключей и buckets |
+
+Скрипты `sokol-backend/scripts/`: генераторы Excel/demo, `import_catalog_excel.py`, `check_db_tables.py`, `delete_check_by_name.py`.
+
+Docker: `SOKOL_LOAD_DEMO_DATA` в entrypoint default **on** (если checks уже есть и нет `SOKOL_SEED_REPLACE` — skip). Compose обычно `SOKOL_LOAD_DEMO_DATA:-1`. Prod запрещает demo; `--replace` без `--confirm-prod-replace` тоже.
+
+Перед `--replace` и ручными migrate на shared/prod — **бэкап**.
+
+## Bootstrap-миграции
+
+Порядок Docker (`app/db/migrations/__init__.py`):
 
 1. `migrate_auditor_codes`
 2. `migrate_check_quarter`
 3. `migrate_check_effectiveness`
 4. `migrate_attachments`
 5. `migrate_dictionary_uniqueness`
-6. `migrate_dictionary_foreign_keys`
-7. `migrate_recommendation_observation_name`
-8. `migrate_recommendation_indicator_on_control`
-9. `migrate_recommendation_additional_indicator`
-10. `migrate_analytics_indexes`
+6. `migrate_recommendation_execution_deadline` — колонка + enum value `in_progress`
+7. `migrate_dictionary_foreign_keys`
+8. `migrate_recommendation_observation_name`
+9. `migrate_recommendation_indicator_on_control`
+10. `migrate_recommendation_additional_indicator`
+11. `migrate_analytics_indexes`
 
-Остальные `migrate_*` (short_name, recommendation fields, closure lists, audit_object array/canonical, statuses, materiality) — только для стендов, поднятых до появления полей в `create_all`. `migrate_recommendation_indicators` — одноразовый remap индикаторов/статусов, **не** для живой БД. Import при необходимости досоздаёт labels через `ensure_dictionary_refs`.
+Остальные `migrate_*` (short_name, recommendation fields, closure lists, audit_object array/canonical, statuses, materiality) — для стендов старше `create_all`. `migrate_recommendation_indicators` — одноразовый remap, **не** для живой БД.
+
+## Новый стенд
+
+1. Postgres (+ MinIO)
+2. `init_db` + bootstrap-миграции
+3. seed справочников + users
+4. import / demo
+5. `sync_check_buckets`; опционально `seed_demo_attachments`
+6. smoke: `/api/v1/status`, `/checks`, `/analytics/checks`
+
+## Бэкапы
+
+```bash
+export PGPASSWORD=postgres
+pg_dump -h 127.0.0.1 -p 5433 -U postgres -d sokol_db -F c -f sokol_db.dump
+pg_restore -h 127.0.0.1 -p 5433 -U postgres -d sokol_db --clean --if-exists sokol_db.dump
+```
+
+Dump **не** включает MinIO. После restore: `sync_check_buckets`, сверка `attachments`. Проверка таблиц: `python scripts/check_db_tables.py`.

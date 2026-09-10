@@ -142,7 +142,7 @@
 - `KpiCard`: цветная заливка по `tone` / `accentColor`.
 - Матрицы: `MatrixChartShell`, сортируемые заголовки navy.
 
-Подробнее по вкладкам и API — [ANALYTICS.md](ANALYTICS.md), [PLANNING.md](PLANNING.md), [CONSTRUCTOR.md](CONSTRUCTOR.md).
+Подробнее по вкладкам и API — [ANALYTICS.md](ANALYTICS.md).
 
 ## Компоненты UI kit
 

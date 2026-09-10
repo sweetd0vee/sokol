@@ -59,10 +59,12 @@ sokol/
 |--------|------------|
 | [docs/README.md](docs/README.md) | Индекс: живые доки и исторические снимки |
 | [docs/PROJECT_CODE_GUIDE.md](docs/PROJECT_CODE_GUIDE.md) | Карта кода для нового разработчика |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Backend + frontend: слои, auth, инварианты |
+| [docs/API.md](docs/API.md) | HTTP `/api/v1` |
+| [docs/DATA_AND_DB.md](docs/DATA_AND_DB.md) | Модель, seed, import, миграции |
+| [docs/ANALYTICS.md](docs/ANALYTICS.md) | Дашборды, планирование, конструктор |
 | [docs/APP_LIMITS_AND_GOTCHAS.md](docs/APP_LIMITS_AND_GOTCHAS.md) | Лимиты, тонкости и типовые проблемы |
 | [docs/CI.md](docs/CI.md) | CI workflow и GitHub merge gate |
-| [docs/API.md](docs/API.md) · [docs/ARCHITECTURE_BACKEND.md](docs/ARCHITECTURE_BACKEND.md) | Backend: API и архитектура |
-| [docs/ANALYTICS.md](docs/ANALYTICS.md) · [docs/ARCHITECTURE_FRONTEND.md](docs/ARCHITECTURE_FRONTEND.md) | Frontend: аналитика и архитектура |
 | [sokol-backend/README.md](sokol-backend/README.md) | Запуск, env, тесты |
 | [sokol-frontend/README.md](sokol-frontend/README.md) | Скрипты, маршруты, env |
 | [PLAN.md](PLAN.md) | Исторический roadmap / go-live (не «текущий статус») |

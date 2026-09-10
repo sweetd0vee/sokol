@@ -85,7 +85,7 @@ Search: название, наблюдение, описание, объект �
 
 Ещё: `sequence_number` (сервер), `description`, `observation_name`, `indicator` / `additional_indicator` (default `не указан`), `materiality_level` (default `средний`), `audit_object: list[str]` (строка с `,`/`;` тоже принимается), `deadline` (срок контроля), `execution_deadline` (срок исполнения), продления и снятие с контроля, `deadline_extensions` / `control_removals` (`{date?, comment?}`), `closure_*`.
 
-Открытые рекомендации (`on_control` / `in_progress`) пересчитываются от этих дат при create/update и ежедневно в 00:05 Europe/Moscow. `completed` / `unresolved` и `on_time` / `deadline_violated` не трогаются.
+Открытые рекомендации пересчитываются при create/update и ежедневно в 00:05 Europe/Moscow (`SOKOL_STATUS_SCHEDULER=0` выключает). `status`/`indicator` — от `deadline`; `additional_status`/`additional_indicator` — от `actual_completion_date` или последней даты в `deadline_extensions`, иначе `deadline`. `completed` / `unresolved` и ручные `on_time` / `deadline_violated` не трогаются. Колонка `execution_deadline` хранится, автостатус её не читает.
 
 `auditor` ∈ auditors, иначе **400**. `manager` — свободный текст. `audit_object` канонизируется по `departments`; неизвестное → **400**. Нет проверки → **400**. Сбой MinIO при delete/replace → **502**.
 
@@ -105,10 +105,10 @@ Search: название, наблюдение, описание, объект �
 
 Все ответы: `universeTotal` / `filteredTotal` (у dva/planning — отдельно checks и recommendations), `granularity`, `filterOptions` (`auditors?`, `departments`, `anchorDates`).
 
-**Query:** `granularity` (`year` \| `quarter` \| `month`, default `year`); `years`, `quarters`, `months` — ключи (`2025`, `2025-Q1`, `2025-08`), OR между измерениями; `auditors`, `departments`.  
-Recommendations/monitoring: `statuses` / `additional_statuses` / `materiality_levels` (есть camelCase-алиасы `additionalStatuses`, `materialityLevels`).
+**Query:** `granularity` (`year` \| `quarter` \| `month`, default `year`); `years`, `quarters`, `months` — ключи (`2025`, `2025-Q1`, `2025-08`), OR между измерениями; `auditors`, `departments`. Shared deps: `app/api/v1/analytics_deps.py`.  
+Recommendations/monitoring: `statuses` / `additional_statuses` / `materiality_levels` (есть camelCase-алиасы `additionalStatuses`, `materialityLevels`). Фильтры уходят в SQL (`sql_filters.py`); департаменты — `audit_object.overlap`.
 
-UI-контракт: [ANALYTICS.md](ANALYTICS.md), [PLANNING.md](PLANNING.md).
+UI-контракт: [ANALYTICS.md](ANALYTICS.md).
 
 ---
 
@@ -133,9 +133,9 @@ UI-контракт: [ANALYTICS.md](ANALYTICS.md), [PLANNING.md](PLANNING.md).
 
 ## Settings
 
-Паттерн: `POST`, `GET` (list + total), `GET/{id}`, `PATCH/{id}`, `DELETE/{id}`.  
+Один factory (`dictionary_registry.py` + `make_dictionary_router`), пять prefix. Паттерн: `POST`, `GET` (list + total), `GET/{id}`, `PATCH/{id}`, `DELETE/{id}`.  
 List: `skip` (default 0), `limit` (1…200, default 50), `search?`.  
-Чтение — любой authenticated. Мутации — **admin**. Дубликаты labels → **409** (кроме `audit_types`). In-use delete и «Не указан» → **409**. Переименование каскадно обновляет FK; массив `audit_object` синхронизируется отдельно.
+Чтение — любой authenticated. Мутации — **admin**. Дубликаты labels → **409** (кроме `audit_types`). In-use delete и «Не указан» → **409**. Переименование каскадно обновляет FK; массив `audit_object` синхронизируется отдельно. Смена `auditors.code` каскадно переписывает ключи проверок и MinIO buckets.
 
 | Prefix | Тело |
 |--------|------|
