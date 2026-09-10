@@ -378,6 +378,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
           series: [
             { key: 'on_time', name: 'В срок', color: MONITORING_ADDITIONAL_STATUS_COLORS.on_time },
             { key: 'on_control', name: 'На контроле', color: MONITORING_ADDITIONAL_STATUS_COLORS.on_control },
+            { key: 'in_progress', name: 'В процессе', color: MONITORING_ADDITIONAL_STATUS_COLORS.in_progress },
             { key: 'deadline_violated', name: 'Срок нарушен', color: MONITORING_ADDITIONAL_STATUS_COLORS.deadline_violated },
           ],
           xKey: 'name',

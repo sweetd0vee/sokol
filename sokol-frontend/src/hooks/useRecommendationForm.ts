@@ -16,6 +16,7 @@ import { useCurrentUserName } from './useCurrentUserName';
 import { toNameOptions, useAuditorOptions } from './useReferenceOptions';
 import { useAuditObjectOptions } from './useAuditObjectOptions';
 import { computeRecommendationAutoStatus } from '../utils/recommendationAutoStatus';
+import { toIsoDate } from '../utils/dates';
 import { auditorMatchesCurrentUser } from '../utils/personMatch';
 import { resolveRecommendationYearlyDisplayNumber } from '../utils/recommendationYearlyNumber';
 import {

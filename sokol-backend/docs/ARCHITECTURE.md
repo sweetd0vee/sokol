@@ -19,6 +19,7 @@ app/
 ├── schemas/                # Pydantic v2
 ├── services/
 │   ├── checks_service.py / recommendations_service.py / attachments_service.py
+│   ├── recommendation_status.py / recommendation_status_refresh.py
 │   ├── users_service.py / check_serial_cascade.py
 │   ├── dictionary_*.py / settings_dictionaries_service.py / crud_errors.py
 │   ├── analytics/          # SQL-агрегаты дашбордов

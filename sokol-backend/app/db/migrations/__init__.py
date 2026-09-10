@@ -30,12 +30,12 @@ BOOTSTRAP_MIGRATIONS: tuple[MigrateFn, ...] = (
     CHECK_EFFECTIVENESS.migrate,
     ATTACHMENTS.migrate,
     migrate_dictionary_uniqueness,
+    migrate_recommendation_execution_deadline,
     migrate_dictionary_foreign_keys,
     RECOMMENDATION_OBSERVATION_NAME.migrate,
     RECOMMENDATION_INDICATOR_ON_CONTROL.migrate,
     RECOMMENDATION_ADDITIONAL_INDICATOR.migrate,
     ANALYTICS_INDEXES.migrate,
-    migrate_recommendation_execution_deadline,
 )
 
 

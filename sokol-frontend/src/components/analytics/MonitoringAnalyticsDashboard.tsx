@@ -137,6 +137,7 @@ export function MonitoringAnalyticsDashboard() {
         additionalStatusDistribution,
         [
           { value: 'on_control', label: 'На контроле' },
+          { value: 'in_progress', label: 'В процессе' },
           { value: 'deadline_violated', label: 'Срок нарушен' },
           { value: 'on_time', label: 'В срок' },
         ],
