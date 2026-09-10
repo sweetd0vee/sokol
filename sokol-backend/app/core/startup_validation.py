@@ -74,3 +74,20 @@ def assert_seed_replace_safe_for_env(
             "Destructive replace of checks/recommendations is forbidden when "
             "SOKOL_ENV=prod unless --confirm-prod-replace is passed."
         )
+
+
+def assert_app_startup_safe(
+    *,
+    database_url: str,
+    jwt_secret: str,
+    env: str,
+    load_demo: bool,
+    replace: bool,
+) -> None:
+    if not database_url:
+        raise RuntimeError(
+            "DATABASE_URL is required. Set it in '.env' before запуском."
+        )
+    assert_jwt_secret_safe_for_env(jwt_secret=jwt_secret, env=env)
+    assert_demo_data_safe_for_env(env=env, load_demo=load_demo)
+    assert_seed_replace_safe_for_env(env=env, replace=replace)

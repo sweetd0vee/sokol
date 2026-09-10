@@ -14,7 +14,7 @@ from app.schemas.recommendations import (
     RecommendationUpdate,
 )
 from app.services import attachments_service
-from app.services.crud_errors import AccessDeniedError, InvalidReferenceError, ResourceNotFoundError
+from app.core.exceptions import AccessDeniedError, InvalidReferenceError, ResourceNotFoundError
 from app.services.dictionary_validation import (
     canonicalize_audit_objects,
     validate_recommendation_dictionary_fields,

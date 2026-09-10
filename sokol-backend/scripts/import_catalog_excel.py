@@ -29,8 +29,8 @@ sys.path.insert(0, str(BACKEND_ROOT))
 
 from app.db.init_db import init_db
 from app.db.session import AsyncSessionLocal
-from app.db.auditor_names import AUDITOR_CODES, AUDITORS
-from app.db.department_names import DEPARTMENTS
+from app.db.catalogs.auditors import AUDITOR_CODES, AUDITORS
+from app.db.catalogs.departments import DEPARTMENTS
 from app.models.auditors import Auditor
 from app.models.audit_types import AuditType
 from app.models.check_kinds import CheckKind

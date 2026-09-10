@@ -29,9 +29,9 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1]
 ROOT = BACKEND_ROOT.parent
 sys.path.insert(0, str(BACKEND_ROOT))
 
-from app.db.auditor_names import AUDITORS as AUDITOR_NAMES  # noqa: E402
+from app.db.catalogs.auditors import AUDITORS as AUDITOR_NAMES  # noqa: E402
 from app.db.demo_data import apply_completed_during_audit_indicator, build_recommendation_closure_fields  # noqa: E402
-from app.db.department_names import DEPARTMENTS as DEPARTMENT_NAMES  # noqa: E402
+from app.db.catalogs.departments import DEPARTMENTS as DEPARTMENT_NAMES  # noqa: E402
 from app.utils.check_key import assign_serial_numbers  # noqa: E402
 
 DEFAULT_DATA_DIR = ROOT / "data"

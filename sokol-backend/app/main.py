@@ -8,35 +8,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.exception_handlers import register_exception_handlers
 from app.api.router import api_router
 from app.core.config import settings
-from app.core.startup_validation import (
-    assert_demo_data_safe_for_env,
-    assert_jwt_secret_safe_for_env,
-    assert_seed_replace_safe_for_env,
-    env_flag_enabled,
-)
+from app.core.startup_validation import assert_app_startup_safe, env_flag_enabled
 from app.services.recommendation_status_refresh import (
     run_recommendation_status_scheduler,
     status_scheduler_enabled,
 )
 
 
-if not settings.database_url:
-    raise RuntimeError(
-        "DATABASE_URL is required. Set it in '.env' before запуском."
-    )
-
-assert_jwt_secret_safe_for_env(
+assert_app_startup_safe(
+    database_url=settings.database_url,
     jwt_secret=settings.sokol_jwt_secret,
     env=settings.sokol_env,
-)
-assert_demo_data_safe_for_env(
-    env=settings.sokol_env,
     load_demo=env_flag_enabled(os.getenv("SOKOL_LOAD_DEMO_DATA"), default=False),
-)
-assert_seed_replace_safe_for_env(
-    env=settings.sokol_env,
     replace=env_flag_enabled(os.getenv("SOKOL_SEED_REPLACE"), default=False),
 )
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):

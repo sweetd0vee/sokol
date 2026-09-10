@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud import checks_crud
 from app.models.checks import Check, CheckStatus
 from app.schemas.checks import CheckCreate, CheckListResponse, CheckUpdate
-from app.services.crud_errors import ResourceNotFoundError
+from app.core.exceptions import ResourceNotFoundError
 
 
 async def create_check(session: AsyncSession, check_in: CheckCreate) -> Check:

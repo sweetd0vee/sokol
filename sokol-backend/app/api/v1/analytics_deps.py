@@ -52,20 +52,6 @@ def planning_filters(
     )
 
 
-def period_filters(
-    granularity: PeriodGranularity = Query("year"),
-    years: list[str] = Query(default=[]),
-    quarters: list[str] = Query(default=[]),
-    months: list[str] = Query(default=[]),
-) -> PeriodFilters:
-    return PeriodFilters(
-        granularity=granularity,
-        years=years,
-        quarters=quarters,
-        months=months,
-    )
-
-
 def audience_period_filters(
     granularity: PeriodGranularity = Query("year"),
     years: list[str] = Query(default=[]),

@@ -278,8 +278,8 @@ export function RecommendationsTab() {
             <col className="w-24" />
             <col />
             <col className="w-32" />
-            <col className="w-24" />
             <col className="w-28" />
+            <col className="w-32" />
             <col className="w-24" />
             <col className="w-32" />
             <col className="w-16" />

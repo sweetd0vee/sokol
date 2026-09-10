@@ -1,4 +1,6 @@
+from collections.abc import Awaitable, Callable
 from dataclasses import asdict
+from typing import Any
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,12 +32,20 @@ from app.services.analytics.recommendations_analytics import (
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 
+async def _build(
+    builder: Callable[..., Awaitable[Any]],
+    filters: object,
+    session: AsyncSession,
+) -> Any:
+    return await builder(session, **asdict(filters))
+
+
 @router.get("/checks", response_model=ChecksAnalyticsResponse)
 async def get_checks_analytics(
     filters: AudiencePeriodFilters = Depends(audience_period_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> ChecksAnalyticsResponse:
-    return await build_checks_analytics(session, **asdict(filters))
+    return await _build(build_checks_analytics, filters, session)
 
 
 @router.get("/recommendations", response_model=RecommendationsAnalyticsResponse)
@@ -43,7 +53,7 @@ async def get_recommendations_analytics(
     filters: RecommendationFilters = Depends(recommendation_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> RecommendationsAnalyticsResponse:
-    return await build_recommendations_analytics(session, **asdict(filters))
+    return await _build(build_recommendations_analytics, filters, session)
 
 
 @router.get("/monitoring", response_model=MonitoringAnalyticsResponse)
@@ -51,7 +61,7 @@ async def get_monitoring_analytics(
     filters: RecommendationFilters = Depends(recommendation_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> MonitoringAnalyticsResponse:
-    return await build_monitoring_analytics(session, **asdict(filters))
+    return await _build(build_monitoring_analytics, filters, session)
 
 
 @router.get("/dva", response_model=DvaAnalyticsResponse)
@@ -59,7 +69,7 @@ async def get_dva_analytics(
     filters: AudiencePeriodFilters = Depends(audience_period_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> DvaAnalyticsResponse:
-    return await build_dva_analytics(session, **asdict(filters))
+    return await _build(build_dva_analytics, filters, session)
 
 
 @router.get("/planning", response_model=PlanningAnalyticsResponse)
@@ -67,4 +77,4 @@ async def get_planning_analytics(
     filters: PlanningFilters = Depends(planning_filters),
     session: AsyncSession = Depends(get_db_session),
 ) -> PlanningAnalyticsResponse:
-    return await build_planning_analytics(session, **asdict(filters))
+    return await _build(build_planning_analytics, filters, session)

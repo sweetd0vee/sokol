@@ -17,7 +17,7 @@ from app.schemas.attachments import (
     AttachmentUploadResponse,
     StorageStatusResponse,
 )
-from app.services.crud_errors import (
+from app.core.exceptions import (
     AccessDeniedError,
     AttachmentTooLargeError,
     EmptyAttachmentPayloadError,

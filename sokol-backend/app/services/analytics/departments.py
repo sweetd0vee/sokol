@@ -192,6 +192,6 @@ async def load_department_names(session: AsyncSession) -> list[str]:
     names = list(result.scalars().all())
     if names:
         return names
-    from app.db.department_names import DEPARTMENTS
+    from app.db.catalogs.departments import DEPARTMENTS
 
     return sorted(DEPARTMENTS, key=lambda value: value.casefold())

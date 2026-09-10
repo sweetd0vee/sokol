@@ -5,9 +5,12 @@ from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ResourceNotFoundError
+from app.core.exceptions import (
+    DictionaryInUseError,
+    DictionaryProtectedError,
+    ResourceNotFoundError,
+)
 from app.crud.dictionary_crud import DictionaryCrud
-from app.crud.dictionary_errors import DictionaryInUseError, DictionaryProtectedError
 from app.services.dictionary_integrity import (
     dictionary_identity,
     dictionary_item_in_use,
