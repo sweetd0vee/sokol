@@ -4,7 +4,7 @@
 
 Контекст: внутренний инструмент аудита, доверенные пользователи одного департамента. Это смягчает часть рисков, но **не отменяет** дыры в авторизации, гонки и незакрытые миграции: они ломают продукт и у «своих».
 
-**Итоговая оценка: 5.7 / 10**
+**Итоговая оценка: 6.0 / 10**
 
 Для пилота на контролируемом объёме — терпимо. Для UAT/prod с реальными аудиторами — закрыть High до показа.
 
@@ -12,7 +12,7 @@
 |--|--|
 | Стек | FastAPI 0.115 · SQLAlchemy 2 async · PostgreSQL 16 · MinIO · python-docx · openpyxl |
 | Слои | endpoints → services → crud → models (commit/MinIO/валидация в service) |
-| Тесты | 35 unittest-файлов, в основном моки; integration — флаг `SOKOL_RUN_DB_INTEGRATION_TESTS` |
+| Тесты | 37 unittest-файлов, в основном моки; integration — флаг `SOKOL_RUN_DB_INTEGRATION_TESTS` |
 | Нет | Alembic · OIDC · rate-limit · Prometheus/Sentry · Celery |
 
 ---
@@ -30,18 +30,18 @@
 | 7 | Файлы / MinIO | **5.0** | Sanitization ок; upload в RAM; delete до commit; bucket-per-check |
 | 8 | Производительность | **5.0** | Full scan users на каждый JWT; scheduler грузит всю таблицу |
 | 9 | Тесты | **5.5** | Unit по статусам/ключам; граница слоёв CRUD; authz-дыр тесты не ловят |
-| 10 | Наблюдаемость | **3.0** | Почти нет логов/метрик; `except Exception` глотает тип |
+| 10 | Наблюдаемость | **7.5** | Request-id, access log, тип в `except`, счётчики на `/status`; нет Prometheus |
 | 11 | Конфиг / devops / секреты | **5.0** | Prod-гарды JWT/demo есть; Docker demo-on, CORS `*` |
 | 12 | Качество кода | **8.5** | Python 3.12; слои без инверсии; общие схемы без дублей UserRead/дат |
 
-Среднее по блокам ≈ 5.7. Итог **5.7**: слои и качество кода подтянуты, безопасность и схема — ниже.
+Среднее по блокам ≈ 6.0. Итог **6.0**: слои и качество кода подтянуты, безопасность и схема БД — ниже.
 
 ---
 
 ## Что сделано хорошо
 
 - JWT роль **не** берётся из токена: `get_current_user` перечитывает пользователя из БД (`app/api/deps.py`). Деактивация работает сразу.
-- Роутеры защищены `Depends(get_current_user)`, кроме `/`, `/status`, `/capabilities`, `POST /auth/login`.
+- Роутеры защищены `Depends(get_current_user)`, кроме `/`, `/status`, `/ready`, `/capabilities`, `POST /auth/login`.
 - `require_admin` на DELETE проверки, мутациях справочников, `GET/POST /users`.
 - `assert_app_startup_safe`: в prod слабый JWT и demo-load не стартуют.
 - Статусы рекомендаций — отдельный модуль с тестами (`recommendation_status.py`, `test_recommendation_status.py`), TZ Москва.
@@ -80,34 +80,21 @@
 
 ---
 
-## 1. Архитектура и слои — 6.0 / 10
+## 1. Архитектура и слои — 7.5 / 10
 
 Задумано: `endpoints → services → crud → models`. Роутеры тонкие, `DomainError` → JSON `{detail}`.
 
-### M1. CRUD знает про сервисы (инверсия)
+### M1. ~~CRUD знает про сервисы (инверсия)~~ — закрыто
 
-`app/crud/checks_crud.py` импортирует валидацию словарей, MinIO `get_storage`, поля эффективности.  
-`app/crud/recommendations_crud.py` вызывает `overlay_computed_status_fields` и канонизацию объектов аудита.
+CRUD больше не импортирует `app.services`. Overlay, канонизация, MinIO и каскад serial живут в service. `commit` для checks/recommendations/словарей — в service; `users_crud.create_user` коммитит сам (seed/sync).
 
-CRUD нельзя тестировать изолированно; риск циклов импорта. Commit иногда в CRUD (`create_check`, `create_recommendation`, `create_user`), иногда в service (`batch_recommendations`, `delete_recommendation`). `get_db_session` сам не коммитит:
+### M2. ~~Мёртвый путь удаления~~ — закрыто
 
-```15:17:sokol-backend/app/db/session.py
-async def get_db_session() -> AsyncSession:
-    async with AsyncSessionLocal() as session:
-        yield session
-```
+`recommendations_crud.delete_recommendation` убран. Удаление только через service (с вложениями).
 
-Забытый commit = тихая потеря данных. Единого unit-of-work нет.
+### L1. ~~Тонкий `checks_service`~~ — закрыто
 
-**Фикс:** commit только в service; CRUD = SQL; overlay/MinIO только в service.
-
-### M2. Мёртвый путь удаления
-
-`recommendations_crud.delete_recommendation` чистит строку и **не** трогает вложения. Живой путь — `recommendations_service.delete_recommendation`. Легко вызвать не тот.
-
-### L1. Тонкий `checks_service`
-
-Почти pass-through в CRUD. Смысл слоя размыт. `app/services/crud_errors.py` — реэкспорт `app/core/exceptions.py`.
+`checks_service` оркестрирует валидацию, serial rewrite и MinIO. `crud_errors.py` удалён: импорт из `app.core.exceptions`.
 
 ---
 
@@ -270,7 +257,7 @@ ARRAY `recommendations.audit_object` **и** junction `recommendation_audit_objec
 
 ---
 
-## 4. API-дизайн — 6.5 / 10
+## 4. API-дизайн — 7.0 / 10
 
 Плюсы: Pydantic v2, list `{items, total}`, словари единообразны, 401/403 на русском, `DomainError` → `{"detail": ...}`.
 
@@ -278,16 +265,13 @@ ARRAY `recommendations.audit_object` **и** junction `recommendation_audit_objec
 
 `/checks`, `/recommendations`: default 200, **le=10000**. `/users` le=200, но `list_users_page` грузит всех в память и слайсит.
 
-### M16. Невалидные даты → `None`
+### M16. ~~Невалидные даты → `None`~~ — закрыто
 
-```99:110:sokol-backend/app/schemas/recommendations.py
-            try:
-                Date.fromisoformat(cleaned[:10])
-            except ValueError:
-                return None
-```
+Пустая строка по-прежнему `None` (очистка поля). Мусор вроде `"32.13.2026"` даёт **422**.
 
-Клиент шлёт `"32.13.2026"` — поле **очищается**, не 422. Тихая потеря данных на PATCH.
+### L5. ~~Два `UserRead`~~ — закрыто
+
+Одна схема `schemas.users.UserRead`; `/auth/me` отдаёт её (id, aliases, is_active). Фронт роль по-прежнему берёт из login.
 
 ### M17. Analytics query params не валидируются
 
@@ -297,10 +281,6 @@ ARRAY `recommendations.audit_object` **и** junction `recommendation_audit_objec
 ### M18. IntegrityError не мапится
 
 Кроме dictionary_service и retry serial. Гонка unique serial / username → 500.
-
-### L5. Два `UserRead`
-
-`schemas/auth.py` (без id) vs `schemas/users.py` (id, aliases, is_active). `/auth/me` отдаёт урезанный — фронт роль из login/JWT storage, не из `/me`.
 
 ### L6. Search `ilike %user%`
 
@@ -486,13 +466,13 @@ Path traversal в object key: слот из whitelist, filename sanitised — **
 
 ---
 
-## 12. Качество кода — 6.5 / 10
+## 12. Качество кода — 8.5 / 10
 
 Читаемый Python 3.12, мало `Any` в домене. TODO/FIXME в app почти нет.
 
-Дубли: `empty_date_to_none` ×2; `_normalize_audit_object` vs `dictionary_validation`; `UserRead` ×2; serial rewrite в CRUD и `check_serial_cascade`; `app/db/migrate_*.py` + `app/db/migrations/` — две кучи.
+Слои выпрямлены: CRUD не импортирует services (есть `test_crud_layer_boundary`). Схемы: один `UserRead`, общий `ListResponse` / `parse_optional_date`, `normalize_audit_object_input` в `dictionary_text`. Serial rewrite checks идёт через `check_serial_cascade`. `get_db_session` типизирован как `AsyncGenerator`; dictionary router принимает Pydantic-схемы; `control_zone_execution_date` типизирован.
 
-Typing: `get_db_session` не `AsyncGenerator`; dictionary router `payload: dict[str, Any] = Body(...)` вместо generic schema; `control_zone_execution_date` параметры `object`.
+Осталось: две кучи `app/db/migrate_*.py` + `app/db/migrations/`; `users_crud` сам коммитит.
 
 Pydantic v1 артефактов в app нет.
 
@@ -511,8 +491,8 @@ Pydantic v1 артефактов в app нет.
 | B-H7 | High | `db/migrations/__init__.py` | Неполный bootstrap | Все патчи + таблица версий или Alembic |
 | B-H8 | High | `models/recommendations.py`, crud | Нет UNIQUE sequence, MAX+1 | Unique + `FOR UPDATE` |
 | B-H9 | High | `endpoints/attachments.py` | `file.read()` в RAM | Стрим как в tools |
-| B-M1 | Med | CRUD ↔ services | Инверсия слоёв, смешанный commit | UoW в service |
-| B-M2 | Med | `schemas/recommendations.py` | Битая дата → None | 422 |
+| B-M1 | Done | CRUD ↔ services | Инверсия слоёв | UoW в service; CRUD без импорта services |
+| B-M2 | Done | `schemas/recommendations.py` | Битая дата → 422 | `parse_optional_date` |
 | B-M3 | Med | `sql_filters.py` | Мусорный period → 500 | Валидация в deps |
 | B-M4 | Med | `recommendation_status.py` | `extension_2_reason` как дата | Не парсить reason |
 | B-M5 | Med | overlay PATCH | Сброс ручного статуса | Overlay только если даты изменились |
@@ -528,13 +508,13 @@ Pydantic v1 артефактов в app нет.
 | B-M15 | Med | IntegrityError | 500 | Map → 409 |
 | B-M16 | Med | `person_match` | Surname-only = match | Требовать инициалы |
 | B-M17 | Med | `date.today()` | Не Москва | `today_moscow()` |
-| B-L1 | Low | `UserRead` ×2 | Разный контракт `/me` | Одна схема |
-| B-L2 | Low | `/status` | Не проверяет DB | Readiness vs liveness |
+| B-L1 | Done | `UserRead` | Одна схема, `/me` полный | `schemas.users.UserRead` |
+| B-L2 | Low | `/ready` | Не пингует MinIO | Опционально; вложения: `/attachments/storage/status` |
 | B-L3 | Low | ilike | Wildcard injection | Escape `%` `_` |
 | B-L4 | Low | CheckStatus enum | Без `values_callable` | Как у rec |
 | B-L5 | Low | OpenAPI | Публичен в Docker | Выключить в prod |
 | B-L6 | Low | password min 4 | Слабая политика | 8+ |
-| B-L7 | Low | logging | Нет request-id | Middleware |
+| B-L7 | Done | logging | Request-id + тип в логе | Сделано 10.09.2026 |
 
 ---
 
@@ -570,7 +550,7 @@ Pydantic v1 артефактов в app нет.
 1. **P0.** Authz на create/update/batch/attachments list+download+check-upload. Тест 403.
 2. **P0.** Plaintext verify off в prod; unique aliases; CORS не `*` в prod; `python-multipart≥0.0.18`.
 3. **P0.** Alembic **или** полный упорядоченный bootstrap + таблица версий. UNIQUE sequence + lock.
-4. **P1.** Не глотать невалидные даты; валидировать analytics periods; IntegrityError → 409.
+4. **P1.** Валидировать analytics periods; IntegrityError → 409.
 5. **P1.** Стриминг upload; MinIO delete после commit; один bucket + prefix вместо bucket-per-check.
 6. **P1.** `get_user_by_username` по индексу, не full scan. Rate-limit login.
 7. **P2.** Prometheus/Sentry по желанию. Scheduler: только открытые + lock. Динамические anchor years.
