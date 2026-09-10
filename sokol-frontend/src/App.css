@@ -1,5 +1,12 @@
 /* Стили для react-datepicker в синих цветах */
-.react-datepicker-wrapper {
+.react-datepicker-wrapper,
+.react-datepicker__input-container {
+  width: 100%;
+  min-width: 0;
+}
+
+.react-datepicker__input-container input {
+  min-width: 0;
   width: 100%;
 }
 

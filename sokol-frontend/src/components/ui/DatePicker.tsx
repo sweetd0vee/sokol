@@ -48,9 +48,9 @@ export function DatePicker({
           placeholderText={placeholder}
           minDate={minDate ?? undefined}
           maxDate={maxDate ?? undefined}
-          wrapperClassName="w-full"
+          wrapperClassName="w-full min-w-0"
           className={[
-            'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 ',
+            'w-full min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 ',
             inputClassName,
           ]
             .filter(Boolean)

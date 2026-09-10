@@ -237,6 +237,7 @@ export function RecommendationsTab() {
 
       <ListTableShell
         className="overflow-hidden rounded-xl border border-gray-200 bg-white"
+        scrollClassName="min-w-0 overflow-x-hidden"
         empty={
           filteredRecommendations.length === 0 ? (
             <ListEmptyNotice>
@@ -271,20 +272,20 @@ export function RecommendationsTab() {
           </ListTableFooter>
         }
       >
-        <table className="w-full text-base table-fixed min-w-[1788px]">
+        <table className="w-full min-w-0 text-base table-fixed">
           <colgroup>
+            <col className="w-14" />
             <col className="w-24" />
-            <col className="w-40" />
             <col />
-            <col className="w-52" />
-            <col className="w-36" />
-            <col className="w-44" />
-            <col className="w-36" />
-            <col className="w-44" />
             <col className="w-28" />
-            <col className="w-36" />
-            <col className="w-[156px]" />
-            <col className="w-[190px]" />
+            <col className="w-20" />
+            <col className="w-24" />
+            <col className="w-20" />
+            <col className="w-28" />
+            <col className="w-14" />
+            <col className="w-24" />
+            <col className="w-28" />
+            <col className="w-[176px]" />
           </colgroup>
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
@@ -390,22 +391,47 @@ export function RecommendationsTab() {
               </ListFilterCell>
             </tr>
             <tr className={`bg-[#003366] text-white ${LIST_TABLE_COLUMN_HEADER_ROW_CLASS}`}>
-              {renderSortableHeader('id', 'ID', 'whitespace-nowrap')}
-              {renderSortableHeader('serial_number', 'Ключ')}
+              {renderSortableHeader('id', 'ID', 'whitespace-nowrap !px-2')}
+              {renderSortableHeader('serial_number', 'Ключ', '!px-2')}
               {renderSortableHeader('name', 'Название')}
-              {renderSortableHeader('audit_object', 'Объект аудита', 'whitespace-nowrap')}
-              {renderSortableHeader('indicator', 'Индикатор статуса')}
+              {renderSortableHeader(
+                'audit_object',
+                <>
+                  <span>Объект</span>
+                  <br />
+                  <span>аудита</span>
+                </>,
+                '!px-2',
+              )}
+              {renderSortableHeader(
+                'indicator',
+                <>
+                  <span>Индикатор</span>
+                  <br />
+                  <span>статуса</span>
+                </>,
+                '!px-2',
+              )}
               {renderSortableHeader(
                 'additional_indicator',
                 <>
-                  <span className="whitespace-nowrap">Индикатор</span>
+                  <span>Индикатор</span>
                   <br />
-                  <span>дополнительного статуса</span>
+                  <span>доп. статуса</span>
                 </>,
+                '!px-2',
               )}
-              {renderSortableHeader('check_view', 'Вид')}
-              {renderSortableHeader('deadline', 'Срок исполнения')}
-              {renderSortableHeader('materiality_level', 'Уровень')}
+              {renderSortableHeader('check_view', 'Вид', '!px-2')}
+              {renderSortableHeader(
+                'deadline',
+                <>
+                  <span>Срок</span>
+                  <br />
+                  <span>исполнения</span>
+                </>,
+                '!px-2',
+              )}
+              {renderSortableHeader('materiality_level', 'Уровень', '!px-2')}
               {renderSortableHeader('auditor', 'Аудитор')}
               {renderSortableHeader(
                 'manager',
@@ -457,7 +483,7 @@ export function RecommendationsTab() {
                   >
                     {checkView || '—'}
                   </td>
-                  <td className="px-4 py-3 pr-6">{formatRuDate(recommendation.deadline)}</td>
+                  <td className="px-2 py-3 whitespace-nowrap">{formatRuDate(recommendation.deadline)}</td>
                   <td className="px-2 py-3 text-center">
                     <span
                       className={`inline-block h-[18px] w-[18px] rounded-full ${getMaterialityDotClassName(recommendation.materiality_level)}`}

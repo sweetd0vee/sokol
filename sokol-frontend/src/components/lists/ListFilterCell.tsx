@@ -30,18 +30,18 @@ export function ListDateRangeFilter({
   onToChange: (value: Date | null) => void;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1.5">
       <DatePicker
         selected={from}
         onChange={onFromChange}
         placeholder="с"
-        inputClassName={listFilterClass(Boolean(from))}
+        inputClassName={`${listFilterClass(Boolean(from))} !px-2`}
       />
       <DatePicker
         selected={to}
         onChange={onToChange}
         placeholder="по"
-        inputClassName={listFilterClass(Boolean(to))}
+        inputClassName={`${listFilterClass(Boolean(to))} !px-2`}
       />
     </div>
   );
