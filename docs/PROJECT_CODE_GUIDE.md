@@ -96,6 +96,8 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 
 Модель → schema → CRUD → service → endpoint → router → TS types → `src/api` → UI → тесты. Если сущность уже есть — найти mapper, форму, список, экспорт, аналитику.
 
+Новый справочник: модель + schema + `DictionaryCrud` + строка в `DICTIONARY_ROUTER_CONFIGS` + `makeSettingsCrud` на фронте. Отдельный endpoint-файл не нужен.
+
 ## Запуск
 
 ```bash

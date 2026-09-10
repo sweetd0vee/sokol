@@ -90,6 +90,8 @@ API create/update валидирует labels; физические FK с `ON UP
 
 `serial_number` только backend. Смена даты / квартала / руководителя / типа пересчитывает ключ, rec serial, attachments и MinIO bucket. Смена `auditors.code` также каскадно переписывает ключи проверок этого руководителя и MinIO buckets. Квартал (`check_quarter` 1–4) участвует в ключе.
 
+Открытые статусы rec пересчитываются сами: `status` от `deadline`, доп. статус от даты исполнения в зоне контроля (`actual_completion_date` / переносы), не от колонки `execution_deadline`. Терминальные и ручные (`on_time` / `deadline_violated`) не трогаются. Цикл — 00:05 МСК.
+
 ## Импорт из АЗ
 
 `parse-recommendations` + `batch`. Если таблицы Раздела II нет, парсер берёт наблюдения раздела III. Нестандартный DOCX может разобраться неполно. Объекты аудита канонизируются по `departments`. Batch атомарный; результат всё равно смотреть глазами.

@@ -16,6 +16,8 @@
 | [UI_STANDARDS.md](UI_STANDARDS.md) | Каркас, формы, списки, цвета, UI kit |
 | [APP_LIMITS_AND_GOTCHAS.md](APP_LIMITS_AND_GOTCHAS.md) | Лимиты, тонкости, типовые ошибки |
 | [CI.md](CI.md) | GitHub Actions и merge gate |
+| [CODE_REVIEW_BACKEND.md](CODE_REVIEW_BACKEND.md) | Код-ревью API (оценки блоков, ошибки, камни) — 10.09.2026 |
+| [CODE_REVIEW_FRONTEND.md](CODE_REVIEW_FRONTEND.md) | Код-ревью UI (оценки блоков, ошибки, камни) — 10.09.2026 |
 | [../README.md](../README.md) · [../DOCKER.md](../DOCKER.md) | Быстрый старт |
 
 Скриншоты и DOCX аналитики: [SOKOL_Аналитика.docx](SOKOL_Аналитика.docx), [ANALYTICS_TZ.docx](ANALYTICS_TZ.docx), [analytics-screenshots/](analytics-screenshots/). Генерация: из `sokol-frontend` — `npm run docs:analytics-tz:full`.
@@ -78,6 +80,8 @@ SPA на React 19 + Vite 7:
 
 Алгоритм Раздела II — [REPORTS.md](REPORTS.md).
 
-## План и ревью (исторические снимки)
+## План и ревью
 
-Сводка снимка качества и открытого backlog на **04.09.2026**: [HISTORY.md](HISTORY.md). Календарь того спринта — [PLAN.md](../PLAN.md).
+Актуальное код-ревью (**10.09.2026**): backend **5.4 / 10** — [CODE_REVIEW_BACKEND.md](CODE_REVIEW_BACKEND.md); frontend **6.3 / 10** — [CODE_REVIEW_FRONTEND.md](CODE_REVIEW_FRONTEND.md).
+
+Исторический снимок качества и backlog на **04.09.2026**: [HISTORY.md](HISTORY.md). Календарь того спринта — [PLAN.md](../PLAN.md).
