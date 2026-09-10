@@ -2,7 +2,6 @@ import { getCheckViewLabel } from '../constants/checks';
 import { resolveRecommendationAdditionalIndicator } from '../constants/recommendations';
 import type { Check } from '../types/check';
 import type { Recommendation } from '../types/recommendation';
-import { getControlZoneExecutionDate } from '../constants/recommendationClosure';
 import { formatRecommendationAuditObjects, getRecommendationAuditObjects } from './auditObjects';
 import { parseDateValue } from './dates';
 import { matchesDateRange, matchesSelected } from './listTable';
@@ -18,7 +17,6 @@ export type RecommendationSortKey =
   | 'name'
   | 'audit_object'
   | 'deadline'
-  | 'execution_deadline'
   | 'check_view'
   | 'indicator'
   | 'additional_indicator'
@@ -99,8 +97,6 @@ export function getRecommendationSortValue(
       return getRecommendationCheckView(recommendation, checkViewBySerial);
     case 'deadline':
       return parseDateValue(recommendation.deadline);
-    case 'execution_deadline':
-      return parseDateValue(getControlZoneExecutionDate(recommendation));
     case 'indicator':
       return INDICATOR_ORDER[recommendation.indicator] ?? 999;
     case 'additional_indicator':

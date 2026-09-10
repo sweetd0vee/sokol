@@ -10,10 +10,7 @@ import {
   getRecommendationStatusLabel,
 } from '../../constants/recommendations';
 import { formatRecommendationAuditObjects } from '../auditObjects';
-import {
-  getControlZoneExecutionDate,
-  getRecommendationExecutionInfo,
-} from '../../constants/recommendationClosure';
+import { getRecommendationExecutionInfo } from '../../constants/recommendationClosure';
 import { buildCheckViewBySerial } from '../recommendationList';
 import type { ExportRow } from './types';
 
@@ -67,7 +64,7 @@ export const RECOMMENDATION_XLSX_COLUMN_WIDTHS: Record<string, number> = {
   'Объект аудита': 34,
   Индикатор: 12,
   Вид: 16,
-  'Срок исполнения': 15,
+  'Срок контроля': 15,
   'Уровень существенности': 24,
   Аудитор: 24,
   'Руководитель объекта аудита': 30,
@@ -97,7 +94,7 @@ export const RECOMMENDATION_TABLE_COLUMN_KEYS = [
   'Объект аудита',
   'Индикатор',
   'Вид',
-  'Срок исполнения',
+  'Срок контроля',
   'Уровень существенности',
   'Аудитор',
   'Руководитель объекта аудита',
@@ -193,7 +190,6 @@ export function toRecommendationTableRows(
     Индикатор: getIndicatorLabel(recommendation.indicator),
     Вид: checkViewByKey.get(recommendation.serial_number) ?? '',
     'Срок контроля': formatCheckDate(recommendation.deadline),
-    'Срок исполнения': formatCheckDate(getControlZoneExecutionDate(recommendation)),
     'Уровень существенности': getMaterialityLevelLabel(recommendation.materiality_level),
     Аудитор: recommendation.auditor,
     'Руководитель объекта аудита': recommendation.manager,
