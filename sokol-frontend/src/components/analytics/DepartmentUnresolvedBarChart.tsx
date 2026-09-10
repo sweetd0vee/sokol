@@ -218,14 +218,14 @@ export function DepartmentUnresolvedBarChart({
     <div ref={rootRef} className="relative flex h-full min-h-0 max-h-[18rem] flex-col lg:max-h-none">
       <div className="min-h-0 flex-1 overflow-y-auto px-4" onMouseLeave={requestHide}>
         <div className="flex flex-col">
-          {chartData.map((row) => {
+          {chartData.map((row, index) => {
             const isActive = visibleName === row.name;
             const muted = Boolean(visibleName) && !isActive;
             const barWidth = `${(row.value / maxValue) * 100}%`;
             return (
               <div
                 key={row.name}
-                className="grid cursor-pointer items-center gap-x-4 py-1.5"
+                className="grid cursor-pointer items-stretch gap-x-4"
                 style={{ gridTemplateColumns: GRID_COLUMNS }}
                 onMouseEnter={() => showRow(row.name)}
                 onClick={() => {
@@ -235,16 +235,17 @@ export function DepartmentUnresolvedBarChart({
                 }}
               >
                 <p
-                  className="text-right leading-snug text-slate-500"
+                  className="flex items-center justify-end py-1.5 text-right leading-snug text-slate-500"
                   style={{ fontSize: CHART_CATEGORY_AXIS_TICK.fontSize }}
                 >
                   {row.name}
                 </p>
                 <div
-                  className="relative flex min-h-[1.75rem] items-center border-l border-slate-200"
-                  style={{ backgroundColor: isActive ? 'rgba(15, 23, 42, 0.04)' : undefined }}
+                  className={`relative flex min-h-[2.25rem] items-center border-b border-l border-slate-200/80 ${
+                    index === 0 ? 'border-t' : ''
+                  } ${isActive ? 'bg-slate-100/90' : 'bg-slate-50/80'}`}
                 >
-                  <BarGridLines ticks={ticks} max={maxValue} />
+                  <PlotGrid ticks={ticks} max={maxValue} />
                   <div
                     className="relative z-[1] h-7 rounded-r-md"
                     style={{
@@ -275,7 +276,7 @@ export function DepartmentUnresolvedBarChart({
         style={{ gridTemplateColumns: GRID_COLUMNS }}
       >
         <div />
-        <div className="relative h-6 border-l border-slate-200">
+        <div className="relative h-6">
           {ticks.map((tick) => (
             <span
               key={tick}
