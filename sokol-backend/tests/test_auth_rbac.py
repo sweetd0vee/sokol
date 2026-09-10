@@ -106,6 +106,8 @@ class AuthRbacTests(unittest.TestCase):
         )
         self.assertEqual(me.status_code, 200)
         self.assertEqual(me.json()["role"], "admin")
+        self.assertTrue(me.json()["is_active"])
+        self.assertIn("id", me.json())
 
     @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
     def test_basic_auth_allows_active_user(self, mock_get_user: AsyncMock) -> None:
