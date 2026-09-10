@@ -24,6 +24,14 @@ class AccessDeniedError(DomainError):
     http_status = 403
 
 
+class AuthenticationError(DomainError):
+    http_status = 401
+
+
+class ConflictError(DomainError):
+    http_status = 409
+
+
 class StorageDisabledError(DomainError):
     http_status = 503
 

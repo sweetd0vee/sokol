@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud.dictionary_crud import bind_dictionary_crud
-from app.crud.dictionary_errors import DuplicateDictionaryError, DictionaryProtectedError
+from app.core.exceptions import DictionaryProtectedError, DuplicateDictionaryError
+from app.crud.dictionary_crud import DictionaryCrud, bind_dictionary_crud
 from app.models.departments import Department
 from app.schemas.departments import DepartmentUpdate
 from app.services.dictionary_integrity import replace_recommendation_audit_object_label
@@ -48,3 +48,13 @@ async def update_department(
     except DuplicateDictionaryError:
         await session.rollback()
         raise
+
+
+crud = DictionaryCrud(
+    create=create_department,
+    get=get_department,
+    list=list_departments,
+    count=count_departments,
+    update=update_department,
+    delete=delete_department,
+)

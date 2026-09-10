@@ -3,8 +3,8 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud.dictionary_crud import bind_dictionary_crud, find_dictionary_duplicate_by_label
-from app.crud.dictionary_errors import DuplicateDictionaryError
+from app.core.exceptions import DuplicateDictionaryError
+from app.crud.dictionary_crud import DictionaryCrud, bind_dictionary_crud, find_dictionary_duplicate_by_label
 from app.models.auditors import Auditor
 from app.schemas.auditors import AuditorCreate, AuditorUpdate
 from app.services.check_serial_cascade import (
@@ -102,3 +102,13 @@ async def update_auditor(
     if rewrites:
         await cleanup_old_serial_buckets(rewrites)
     return auditor
+
+
+crud = DictionaryCrud(
+    create=create_auditor,
+    get=get_auditor,
+    list=list_auditors,
+    count=count_auditors,
+    update=update_auditor,
+    delete=delete_auditor,
+)

@@ -10,7 +10,7 @@ from sqlalchemy import ColumnElement, Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
-from app.crud.dictionary_errors import DuplicateDictionaryError
+from app.core.exceptions import DuplicateDictionaryError
 from app.utils.dictionary_text import dictionary_match_key, normalize_dictionary_label
 
 ModelT = TypeVar("ModelT", bound=DeclarativeBase)

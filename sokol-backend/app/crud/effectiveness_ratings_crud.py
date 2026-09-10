@@ -2,7 +2,7 @@ from app.crud.dictionary_crud import bind_dictionary_crud
 from app.models.effectiveness_ratings import EffectivenessRating
 
 
-_ops = bind_dictionary_crud(
+crud = bind_dictionary_crud(
     model=EffectivenessRating,
     label_field="label",
     dictionary_name="effectiveness_ratings",
@@ -10,9 +10,9 @@ _ops = bind_dictionary_crud(
     search_columns=(EffectivenessRating.label,),
 )
 
-create_effectiveness_rating = _ops.create
-get_effectiveness_rating = _ops.get
-list_effectiveness_ratings = _ops.list
-count_effectiveness_ratings = _ops.count
-update_effectiveness_rating = _ops.update
-delete_effectiveness_rating = _ops.delete
+create_effectiveness_rating = crud.create
+get_effectiveness_rating = crud.get
+list_effectiveness_ratings = crud.list
+count_effectiveness_ratings = crud.count
+update_effectiveness_rating = crud.update
+delete_effectiveness_rating = crud.delete
