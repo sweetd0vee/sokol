@@ -228,6 +228,15 @@ describe('buildConstructorDrafts', () => {
       'highMateriality',
     ]);
     expect(drafts[0]?.kind).toBe('planning');
+    expect(drafts[0]?.payload).toMatchObject({
+      chart: 'kpi',
+      columns: 3,
+      items: [
+        { label: 'Охват департаментов' },
+        { label: 'Не охвачено' },
+        { label: 'Красные рекомендации' },
+      ],
+    });
     expect(drafts[1]?.payload.chart).toBe('list');
     expect(drafts[2]?.payload.chart).toBe('department-unresolved');
   });

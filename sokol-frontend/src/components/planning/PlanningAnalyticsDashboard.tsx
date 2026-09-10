@@ -167,9 +167,8 @@ export function PlanningAnalyticsDashboard() {
             exportSelected={exportSections.isSelected('summary')}
             onToggleExport={() => exportSections.toggleSection('summary')}
           >
-            <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-4">
+            <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3">
               <KpiCard label="Охват департаментов" value={coverage.coverageRate} suffix="%" tone="blue" />
-              <KpiCard label="С проверками" value={coverage.covered} hint={`из ${coverage.total}`} tone="green" />
               <KpiCard
                 label="Не охвачено"
                 value={coverage.uncovered}
@@ -183,7 +182,7 @@ export function PlanningAnalyticsDashboard() {
       },
       {
         id: 'coverage',
-        defaultLayout: { x: 0, y: 2, w: 5, h: 6, minW: 3, minH: 3 },
+        defaultLayout: { x: 0, y: 2, w: 5, h: 4, minW: 3, minH: 3 },
         render: () => {
           const uncoveredDepartments = coverage.uncoveredDepartments;
           return (
@@ -197,13 +196,13 @@ export function PlanningAnalyticsDashboard() {
               {coverage.total === 0 ? (
                 <EmptyChart message="Нет департаментов в данных" />
               ) : (
-                <div className="flex h-full min-h-[13rem] flex-col gap-2">
+                <div className="flex h-full min-h-0 max-h-[18rem] flex-col gap-2 lg:max-h-none">
                   {uncoveredDepartments.length === 0 ? (
                     <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 px-4 text-center text-sm font-semibold text-emerald-700">
                       Все департаменты охвачены проверками за выбранный период
                     </div>
                   ) : (
-                    <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-slate-200 bg-white">
+                    <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-slate-200 bg-white">
                       <ol className="divide-y divide-slate-100">
                         {uncoveredDepartments.map((department, index) => (
                           <li key={department} className="flex items-start gap-3 px-3 py-2 text-sm text-slate-700">
@@ -227,7 +226,7 @@ export function PlanningAnalyticsDashboard() {
       },
       {
         id: 'unresolved',
-        defaultLayout: { x: 5, y: 2, w: 7, h: 6, minW: 3, minH: 3 },
+        defaultLayout: { x: 5, y: 2, w: 7, h: 4, minW: 3, minH: 3 },
         render: () => (
           <ChartCard
             title="Рекомендации со статусом «Не решено»"
@@ -246,7 +245,8 @@ export function PlanningAnalyticsDashboard() {
       },
       {
         id: 'highMateriality',
-        defaultLayout: { x: 0, y: 8, w: 12, h: 4, minW: 6, minH: 3 },
+        defaultLayout: { x: 0, y: 6, w: 12, h: 4, minW: 6, minH: 3 },
+        expandToContent: true,
         render: () => (
           <ChartCard
             title="Рекомендации высокой существенности по департаментам"
@@ -254,11 +254,12 @@ export function PlanningAnalyticsDashboard() {
             exportSectionId="highMateriality"
             exportSelected={exportSections.isSelected('highMateriality')}
             onToggleExport={() => exportSections.toggleSection('highMateriality')}
+            fitContent
           >
             {highMaterialityRanking.length === 0 ? (
               <EmptyChart message="Нет красных рекомендаций за период" />
             ) : (
-              <div className="h-full min-h-[13rem]">
+              <div className="h-[16rem]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={highMaterialityRanking}
@@ -353,7 +354,7 @@ export function PlanningAnalyticsDashboard() {
         },
       )}
     >
-      <AnalyticsDashboardGrid cards={cards} />
+      <AnalyticsDashboardGrid cards={cards} maxChartArea={360} />
     </AnalyticsDashboardShell>
   );
 }

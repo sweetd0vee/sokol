@@ -108,16 +108,18 @@ function UnresolvedChecksPanel({
   );
 }
 
-function BarGridLines({ ticks, max }: { ticks: number[]; max: number }) {
+function PlotGrid({ ticks, max }: { ticks: number[]; max: number }) {
   return (
-    <div className="pointer-events-none absolute inset-0" aria-hidden>
-      {ticks.map((tick) => (
-        <div
-          key={tick}
-          className="absolute inset-y-0 border-l border-dashed border-slate-200"
-          style={{ left: `${(tick / max) * 100}%` }}
-        />
-      ))}
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      {ticks.map((tick) =>
+        tick === 0 ? null : (
+          <div
+            key={tick}
+            className="absolute inset-y-0 w-px bg-slate-200/70"
+            style={{ left: `${(tick / max) * 100}%` }}
+          />
+        ),
+      )}
     </div>
   );
 }
@@ -213,8 +215,8 @@ export function DepartmentUnresolvedBarChart({
   }, [pinnedName]);
 
   return (
-    <div ref={rootRef} className="relative flex h-full min-h-[13rem] flex-col">
-      <div className="min-h-0 flex-1 overflow-auto px-4" onMouseLeave={requestHide}>
+    <div ref={rootRef} className="relative flex h-full min-h-0 max-h-[18rem] flex-col lg:max-h-none">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4" onMouseLeave={requestHide}>
         <div className="flex flex-col">
           {chartData.map((row) => {
             const isActive = visibleName === row.name;

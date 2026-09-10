@@ -423,7 +423,7 @@ describe('сквозной сценарий как на дашборде (labels
     ];
     const yearOptions = collectCalendarPeriodOptions(anchors, 'year');
     const uiSelectedLabels = yearOptions
-      .filter((item) => item.label === '01.01.2025' || item.label === '01.01.2026')
+      .filter((item) => item.label === '2025' || item.label === '2026')
       .map((item) => item.label);
 
     expect(uiSelectedLabels).toHaveLength(2);
@@ -437,7 +437,7 @@ describe('сквозной сценарий как на дашборде (labels
 
     expect(selectedYearKeys).toEqual(['2025', '2026']);
     expect(filtered).toHaveLength(2);
-    expect(chartSeries.map((item) => item.label)).toEqual(['01.01.2025', '01.01.2026']);
+    expect(chartSeries.map((item) => item.label)).toEqual(['2025', '2026']);
     expect(chartSeries.at(-1)?.cumulative).toBe(2);
   });
 });

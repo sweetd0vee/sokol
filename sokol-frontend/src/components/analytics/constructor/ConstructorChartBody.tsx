@@ -63,7 +63,9 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
         ? 'lg:grid-cols-6'
         : payload.columns === 5
           ? 'lg:grid-cols-5'
-          : 'lg:grid-cols-4';
+          : payload.columns === 3
+            ? 'lg:grid-cols-3'
+            : 'lg:grid-cols-4';
     return (
       <div className={`grid w-full grid-cols-2 gap-1 sm:grid-cols-3 ${columnsClass}`}>
         {payload.items.map((item) => (
@@ -239,8 +241,8 @@ export function ConstructorChartBody({ payload }: { payload: ConstructorPayload 
       return <EmptyChart message={payload.emptyMessage ?? 'Нет данных'} />;
     }
     return (
-      <div className="flex h-full min-h-[13rem] flex-col gap-2">
-        <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-slate-200 bg-white">
+      <div className="flex h-full min-h-0 max-h-[18rem] flex-col gap-2 lg:max-h-none">
+        <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-slate-200 bg-white">
           <ol className="divide-y divide-slate-100">
             {payload.items.map((item, index) => (
               <li key={`${item}-${index}`} className="flex items-start gap-3 px-3 py-2 text-sm text-slate-700">

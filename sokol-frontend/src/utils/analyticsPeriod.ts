@@ -23,7 +23,7 @@ export function getPeriodBucket(dateMs: number, granularity: PeriodGranularity):
   if (granularity === 'year') {
     return {
       key: String(year),
-      label: formatPeriodFirstDay(year, 0),
+      label: String(year),
       sortKey: year,
     };
   }
@@ -48,7 +48,7 @@ export function getPeriodBucket(dateMs: number, granularity: PeriodGranularity):
 export function labelFromPeriodKey(key: string, granularity: PeriodGranularity) {
   if (granularity === 'year') {
     const year = Number(key);
-    return Number.isFinite(year) ? formatPeriodFirstDay(year, 0) : key;
+    return Number.isFinite(year) ? String(year) : key;
   }
 
   if (granularity === 'quarter') {
@@ -156,7 +156,7 @@ export function isDateInAnySelectedPeriods(
   return matches.some(Boolean);
 }
 
-/** Map UI labels (e.g. «01.01.2025») to period keys used by filters. */
+/** Map UI labels (e.g. «2025» or «01.01.2025 (Q1)») to period keys used by filters. */
 export function periodKeysFromLabels(
   dateMsList: Array<number | null>,
   granularity: PeriodGranularity,
