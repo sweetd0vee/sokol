@@ -404,7 +404,7 @@ export function RecommendationsTab() {
                 </>,
               )}
               {renderSortableHeader('check_view', 'Вид')}
-              {renderSortableHeader('deadline', 'Срок контроля')}
+              {renderSortableHeader('deadline', 'Срок исполнения')}
               {renderSortableHeader('materiality_level', 'Уровень')}
               {renderSortableHeader('auditor', 'Аудитор')}
               {renderSortableHeader(
