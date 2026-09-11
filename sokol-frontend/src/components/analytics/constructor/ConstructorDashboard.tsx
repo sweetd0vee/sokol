@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
-import { GripVertical, LayoutDashboard, Plus, Trash2 } from 'lucide-react';
+import { GripVertical, LayoutDashboard, Trash2 } from 'lucide-react';
 import { AnalyticsDashboardFrame } from '../AnalyticsDashboardFrame';
 import {
   FORM_OUTLINE_BUTTON_CLASS,
@@ -341,10 +341,6 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
             <LayoutDashboard className="h-7 w-7" />
           </div>
           <h3 className="text-lg font-semibold text-sber-dark">Пустой лист отчёта</h3>
-          <p className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-gray-400">
-            <Plus className="h-3.5 w-3.5" />
-            Затем переставьте, растяните или удалите блоки на этом листе
-          </p>
         </div>
       ) : (
         <div ref={containerRef} className="min-h-[32rem] w-full">

@@ -265,6 +265,7 @@ export function buildMonitoringConstructorDrafts(input: MonitoringConstructorInp
       drafts.push(
         draft(kind, sectionId, 'Дополнительные статусы за период', caption, SIZE.narrow, {
           chart: 'donut',
+          variant: 'ring',
           data: input.coloredAdditionalStatusDistribution,
           labelMode: 'both',
           legendPercentFirst: true,
