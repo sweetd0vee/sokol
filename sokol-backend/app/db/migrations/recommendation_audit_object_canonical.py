@@ -5,8 +5,7 @@ from sqlalchemy import select
 from app.db.session import AsyncSessionLocal
 from app.models.departments import Department
 from app.models.recommendations import Recommendation
-from app.services.analytics.common import parse_audit_object_parts
-from app.utils.dictionary_text import dictionary_match_key
+from app.utils.dictionary_text import dictionary_match_key, split_audit_object_values
 
 
 async def migrate() -> None:
@@ -29,7 +28,7 @@ async def migrate() -> None:
         for recommendation in recommendations:
             canonical: list[str] = []
             seen: set[str] = set()
-            for part in parse_audit_object_parts(recommendation.audit_object):
+            for part in split_audit_object_values(recommendation.audit_object):
                 matched = lookup.get(dictionary_match_key(part))
                 value = matched or part
                 if matched is None and part != "Не указан":

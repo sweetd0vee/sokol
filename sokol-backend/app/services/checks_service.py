@@ -4,8 +4,8 @@ from typing import Optional
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ResourceNotFoundError
-from app.crud import attachments_crud, checks_crud
+from app.core.exceptions import DictionaryRefError, ResourceNotFoundError
+from app.crud import attachments_crud, auditors_crud, checks_crud
 from app.crud.check_serial import (
     CHECK_SERIAL_SOURCE_FIELDS,
     generate_unique_check_serial_number,
@@ -25,6 +25,37 @@ logger = logging.getLogger(__name__)
 
 
 def _normalize_effectiveness_fields(data: dict) -> None:
+    for field in EFFECTIVENESS_FIELDS:
+        if field in data:
+            data[field] = normalize_optional_dictionary_label(data[field])
+
+
+async def _allocate_check_serial(
+    session: AsyncSession,
+    *,
+    start_date,
+    check_quarter: int,
+    check_leader: str,
+    check_type: str,
+    exclude_check_id: int | None = None,
+) -> str:
+    auditor = await auditors_crud.get_auditor_by_full_name(session, check_leader)
+    serial = await generate_unique_check_serial_number(
+        session,
+        start_date=start_date,
+        check_quarter=check_quarter,
+        check_leader=check_leader,
+        check_type=check_type,
+        exclude_check_id=exclude_check_id,
+        leader_code=auditor.code if auditor is not None else None,
+    )
+    if serial is None:
+        raise DictionaryRefError(
+            field="check_leader",
+            value=check_leader,
+            dictionary="auditors",
+        )
+    return serial
     for field in EFFECTIVENESS_FIELDS:
         if field in data:
             data[field] = normalize_optional_dictionary_label(data[field])
@@ -174,7 +205,7 @@ async def delete_check(session: AsyncSession, check_id: int) -> None:
                     await storage.delete_object(attachment.bucket, attachment.object_key)
                 except Exception:  # noqa: BLE001
                     logger.exception("Failed to delete attachment object %s", attachment.id)
-            await attachments_crud.delete_attachment(session, attachment, commit=False)
+            await attachments_crud.delete_attachment(session, attachment)
 
         await checks_crud.delete_check(session, check)
         await session.commit()

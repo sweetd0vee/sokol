@@ -274,7 +274,7 @@ export function RecommendationsTab() {
       >
         <table className="w-full min-w-0 text-base table-fixed">
           <colgroup>
-            <col className="w-16" />
+            <col className="w-24" />
             <col className="w-28" />
             <col />
             <col className="w-36" />
@@ -417,7 +417,9 @@ export function RecommendationsTab() {
                 <>
                   <span>Индикатор</span>
                   <br />
-                  <span>доп. статуса</span>
+                  <span>дополнительного</span>
+                  <br />
+                  <span>статуса</span>
                 </>,
                 '!px-2',
               )}

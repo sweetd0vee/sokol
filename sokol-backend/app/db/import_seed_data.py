@@ -25,12 +25,12 @@ from app.db.xlsx import (
 )
 from app.models.checks import Check, CheckStatus
 from app.models.recommendations import Recommendation, RecommendationAdditionalStatus, RecommendationStatus
-from app.services.analytics.common import parse_audit_object_parts
 from app.services.dictionary_integrity import (
     EFFECTIVENESS_FIELDS,
     sync_recommendation_audit_objects,
 )
 from app.services.dictionary_validation import canonicalize_audit_objects
+from app.utils.dictionary_text import split_audit_object_values
 from app.utils.paths import get_repo_data_dir
 
 # DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/sokol_db python -m app.db.import_seed_data --replace
@@ -97,7 +97,7 @@ async def import_seed_data(
             (
                 part
                 for row in recommendation_rows
-                for part in parse_audit_object_parts(row.get("audit_object"))
+                for part in split_audit_object_values(row.get("audit_object"))
             ),
         )
         await session.commit()

@@ -124,6 +124,9 @@ export function ToolsTab() {
   };
 
   const handleGenerateControlFile = async () => {
+    if (azControlJob.retryRemainingSeconds > 0) {
+      return;
+    }
     if (!azControlJob.file) {
       azControlJob.setError('Выберите файл .docx для обработки.');
       return;

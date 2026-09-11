@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from collections import defaultdict
 from collections.abc import Iterable
 
@@ -15,21 +14,20 @@ from app.models.recommendations import Recommendation
 from app.schemas.analytics import NamedCount
 from app.services.analytics.constants import WITHOUT_DEPARTMENT
 from app.services.analytics.values import named_counts
-from app.utils.dictionary_text import dictionary_match_key, find_dictionary_label_match
+from app.utils.dictionary_text import (
+    dictionary_match_key,
+    find_dictionary_label_match,
+    split_audit_object_values,
+)
 
 
 def parse_audit_object_parts(audit_object: str | list[str] | None) -> list[str]:
-    if isinstance(audit_object, list):
-        parts: list[str] = []
-        for item in audit_object:
-            parts.extend(parse_audit_object_parts(item))
+    parts = split_audit_object_values(audit_object)
+    if parts:
         return parts
-
-    raw = (audit_object or "").strip()
-    if not raw:
-        return []
-    parts = [part.strip() for part in re.split(r"[;,]", raw) if part.strip()]
-    return parts or [raw]
+    if isinstance(audit_object, str) and audit_object.strip():
+        return [audit_object.strip()]
+    return []
 
 
 def matches_any_audit_object_part(

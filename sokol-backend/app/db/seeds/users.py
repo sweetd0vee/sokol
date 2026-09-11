@@ -59,4 +59,6 @@ async def seed_users(*, only_if_empty: bool = False) -> int:
             ):
                 inserted += 1
 
+        await session.commit()
+
     return inserted

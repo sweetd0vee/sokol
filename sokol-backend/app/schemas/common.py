@@ -1,9 +1,9 @@
 """Shared Pydantic helpers used by domain schemas."""
 
 from datetime import date, datetime
-from typing import Generic, TypeVar
+from typing import Annotated, Generic, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, BeforeValidator
 
 T = TypeVar("T")
 
@@ -30,3 +30,6 @@ def parse_optional_date(value: object) -> date | None:
         except ValueError as exc:
             raise ValueError("Некорректная дата.") from exc
     return value  # type: ignore[return-value]
+
+
+OptionalDate = Annotated[date | None, BeforeValidator(parse_optional_date)]

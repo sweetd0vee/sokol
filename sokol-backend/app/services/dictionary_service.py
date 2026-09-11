@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -23,6 +23,7 @@ from app.services.dictionary_integrity import (
     dictionary_item_in_use,
     replace_recommendation_audit_object_label,
 )
+from app.services.dictionary_validation import assert_unique_dictionary_value
 from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT, normalize_dictionary_label
 
 __all__ = ["DictionaryCrud", "DictionaryService"]
@@ -34,7 +35,8 @@ class DictionaryService:
         self.not_found = not_found
 
     async def create(self, session: AsyncSession, payload: BaseModel) -> object:
-        item = await self.crud.create(session, payload)
+        data = await self._prepare_payload(session, payload.model_dump())
+        item = await self.crud.create(session, data)
         await session.commit()
         return item
 
@@ -62,11 +64,13 @@ class DictionaryService:
         payload: BaseModel,
     ) -> object:
         item = await self.get(session, item_id)
+        data = payload.model_dump(exclude_unset=True)
         if isinstance(item, Auditor):
-            return await self._update_auditor(session, item, payload)
+            return await self._update_auditor(session, item, data)
         if isinstance(item, Department):
-            return await self._update_department(session, item, payload)
-        updated = await self.crud.update(session, item, payload)
+            return await self._update_department(session, item, data)
+        prepared = await self._prepare_payload(session, data, existing=item)
+        updated = await self.crud.update(session, item, prepared)
         await session.commit()
         return updated
 
@@ -91,15 +95,55 @@ class DictionaryService:
             dictionary, label = identity or ("dictionary", str(item_id))
             raise DictionaryInUseError(dictionary=dictionary, label=label) from exc
 
+    async def _prepare_payload(
+        self,
+        session: AsyncSession,
+        data: dict[str, Any],
+        *,
+        existing: object | None = None,
+    ) -> dict[str, Any]:
+        prepared = dict(data)
+        exclude_id = getattr(existing, "id", None) if existing is not None else None
+        label_field = self.crud.label_field if isinstance(self.crud.label_field, str) else None
+        dictionary_name = (
+            self.crud.dictionary_name if isinstance(self.crud.dictionary_name, str) else None
+        )
+        model = self.crud.model if isinstance(self.crud.model, type) else None
+
+        if label_field and label_field in prepared and prepared[label_field] is not None:
+            prepared[label_field] = normalize_dictionary_label(str(prepared[label_field]))
+            if model is not None and dictionary_name:
+                await assert_unique_dictionary_value(
+                    session,
+                    model,
+                    getattr(model, label_field),
+                    prepared[label_field],
+                    dictionary_name=dictionary_name,
+                    exclude_id=exclude_id,
+                )
+
+        if model is Auditor and "code" in prepared and prepared["code"] is not None:
+            prepared["code"] = str(prepared["code"]).strip().upper()
+            await assert_unique_dictionary_value(
+                session,
+                Auditor,
+                Auditor.code,
+                prepared["code"],
+                dictionary_name="auditors",
+                exclude_id=exclude_id,
+            )
+        return prepared
+
     async def _update_auditor(
         self,
         session: AsyncSession,
         auditor: Auditor,
-        payload: BaseModel,
+        data: dict[str, Any],
     ) -> Auditor:
         old_code = auditor.code
         old_name = auditor.full_name
-        updated = await self.crud.update(session, auditor, payload)
+        prepared = await self._prepare_payload(session, data, existing=auditor)
+        updated = await self.crud.update(session, auditor, prepared)
         rewrites = []
         if updated.code != old_code:
             # Checks still reference the previous full_name until this transaction
@@ -119,27 +163,21 @@ class DictionaryService:
         self,
         session: AsyncSession,
         department: Department,
-        payload: BaseModel,
+        data: dict[str, Any],
     ) -> Department:
-        payload_data = payload.model_dump(exclude_unset=True)
         old_name = department.name
-        new_name = payload_data.get("name")
-        if new_name is not None:
-            normalized = normalize_dictionary_label(str(new_name))
+        if "name" in data and data["name"] is not None:
+            normalized = normalize_dictionary_label(str(data["name"]))
             if old_name == UNSPECIFIED_AUDIT_OBJECT and normalized != old_name:
                 raise DictionaryProtectedError(
                     dictionary="departments",
                     label=old_name,
                     action="переименовать",
                 )
-            if normalized != old_name:
-                await replace_recommendation_audit_object_label(
-                    session, old_name, normalized
-                )
-        try:
-            updated = await self.crud.update(session, department, payload)
-            await session.commit()
-            return updated
-        except DuplicateDictionaryError:
-            await session.rollback()
-            raise
+        prepared = await self._prepare_payload(session, data, existing=department)
+        new_name = prepared.get("name")
+        if new_name is not None and new_name != old_name:
+            await replace_recommendation_audit_object_label(session, old_name, new_name)
+        updated = await self.crud.update(session, department, prepared)
+        await session.commit()
+        return updated

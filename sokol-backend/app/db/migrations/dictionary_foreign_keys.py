@@ -13,9 +13,8 @@ from app.db.ensure_dictionary_refs import (
 from app.db.session import AsyncSessionLocal, engine
 from app.models.checks import Check
 from app.models.recommendations import Recommendation
-from app.services.analytics.common import parse_audit_object_parts
 from app.services.dictionary_integrity import ensure_unspecified_department
-from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT
+from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT, split_audit_object_values
 
 UNIQUE_INDEXES = [
     "CREATE UNIQUE INDEX IF NOT EXISTS uq_check_kinds_label ON check_kinds (label)",
@@ -162,7 +161,7 @@ async def _collect_domain_labels(session) -> tuple[set[str], set[str], set[str],
     for recommendation in recommendations:
         if recommendation.auditor:
             auditors.add(recommendation.auditor)
-        for part in parse_audit_object_parts(recommendation.audit_object):
+        for part in split_audit_object_values(recommendation.audit_object):
             departments.add(part)
     return auditors, views, ratings, departments
 

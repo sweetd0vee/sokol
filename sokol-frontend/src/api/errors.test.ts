@@ -89,9 +89,9 @@ describe('retry-after', () => {
   it('parses delay-seconds and HTTP-date', () => {
     expect(parseRetryAfterSeconds('15')).toBe(15);
     expect(parseRetryAfterSeconds(15)).toBe(15);
-    const future = new Date(Date.now() + 8_000).toUTCString();
-    expect(parseRetryAfterSeconds(future)).toBeGreaterThanOrEqual(7);
-    expect(parseRetryAfterSeconds(future)).toBeLessThanOrEqual(8);
+    const now = 1_700_000_000_000;
+    const future = new Date(now + 8_000).toUTCString();
+    expect(parseRetryAfterSeconds(future, now)).toBe(8);
     expect(parseRetryAfterSeconds('0')).toBeUndefined();
     expect(parseRetryAfterSeconds('bogus')).toBeUndefined();
   });

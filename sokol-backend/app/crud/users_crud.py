@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,7 +22,7 @@ async def list_users(session: AsyncSession) -> Sequence[User]:
     return result.scalars().all()
 
 
-async def get_user_by_username(session: AsyncSession, username: str) -> Optional[User]:
+async def get_user_by_username(session: AsyncSession, username: str) -> User | None:
     normalized = normalize_login(username)
     if not normalized:
         return None
@@ -56,7 +55,7 @@ async def create_user(
         is_active=is_active,
     )
     session.add(user)
-    await session.commit()
+    await session.flush()
     await session.refresh(user)
     return user
 
@@ -64,7 +63,7 @@ async def create_user(
 async def update_user_password(session: AsyncSession, user: User, new_password: str) -> User:
     user.password_hash = hash_password(new_password)
     session.add(user)
-    await session.commit()
+    await session.flush()
     await session.refresh(user)
     return user
 

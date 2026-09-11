@@ -7,10 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.current_user import CurrentUser
 from app.core.exceptions import AuthenticationError, InvalidReferenceError
 from app.core.roles import Role
-from app.core.security import create_access_token, verify_password
-from app.crud.users_crud import get_user_by_username, update_user_password
+from app.core.security import create_access_token, hash_password, verify_password
+from app.crud.users_crud import get_user_by_username, set_password_hash
 from app.models.users import User
 from app.schemas.auth import TokenResponse
+
+
+async def get_user_record(session: AsyncSession, username: str) -> User | None:
+    return await get_user_by_username(session, username)
 
 
 async def authenticate_credentials(session: AsyncSession, username: str, password: str) -> User:
@@ -48,4 +52,6 @@ async def change_password(
         raise InvalidReferenceError("Неверный текущий пароль.")
     if verify_password(new_password, user.password_hash):
         raise InvalidReferenceError("Новый пароль должен отличаться от текущего.")
-    await update_user_password(session, user, new_password)
+    await set_password_hash(session, user, hash_password(new_password))
+    await session.commit()
+    await session.commit()

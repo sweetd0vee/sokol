@@ -44,7 +44,7 @@ export function useDocxToolJob({
 
   const setError = (next: string | null) => {
     setErrorState(next);
-    if (next == null) {
+    if (next === null) {
       setRetryUntilMs(null);
     }
   };

@@ -1,11 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictError, DuplicateDictionaryError, InvalidReferenceError
+from app.core.exceptions import ConflictError, InvalidReferenceError
 from app.core.roles import Role
-from app.crud.auditors_crud import create_auditor
+from app.core.security import hash_password
+from app.crud.auditors_crud import create_auditor, get_auditor_by_full_name
+from app.crud.dictionary_crud import find_dictionary_duplicate_by_label
 from app.crud.users_crud import create_user, get_user_by_username, list_users
+from app.models.auditors import Auditor
 from app.models.users import User
-from app.schemas.auditors import AuditorCreate
 from app.schemas.users import UserCreate, UserListResponse, UserRead
 from app.utils.check_key import get_leader_initials_code
 
@@ -35,22 +37,23 @@ async def create_auditor_user(session: AsyncSession, payload: UserCreate) -> Use
     user = await create_user(
         session,
         username=username,
-        password=payload.password,
+        password_hash=hash_password(payload.password),
         role=payload.role,
         display_name=(payload.display_name or username).strip() or username,
         aliases=payload.aliases,
     )
 
-    try:
-        await create_auditor(
-            session,
-            AuditorCreate(
-                full_name=username,
-                code=get_leader_initials_code(username),
-            ),
+    if await get_auditor_by_full_name(session, username) is None:
+        code = get_leader_initials_code(username)
+        duplicate_code = await find_dictionary_duplicate_by_label(
+            session, Auditor, Auditor.code, code
         )
-        await session.commit()
-    except DuplicateDictionaryError:
-        pass
+        if duplicate_code is None:
+            await create_auditor(
+                session,
+                {"full_name": username, "code": code},
+            )
 
+    await session.commit()
+    await session.refresh(user)
     return user

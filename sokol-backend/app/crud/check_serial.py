@@ -4,7 +4,6 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import DictionaryRefError
 from app.crud import auditors_crud
 from app.models.checks import Check
 from app.utils.check_key import CheckKeySeed, generate_check_serial_number
@@ -47,14 +46,14 @@ async def generate_unique_check_serial_number(
     check_leader: str,
     check_type: str,
     exclude_check_id: int | None = None,
-) -> str:
-    auditor = await auditors_crud.get_auditor_by_full_name(session, check_leader)
-    if auditor is None or not auditor.code:
-        raise DictionaryRefError(
-            field="check_leader",
-            value=check_leader,
-            dictionary="auditors",
-        )
+    leader_code: Optional[str] = None,
+) -> str | None:
+    code = leader_code
+    if not code:
+        auditor = await auditors_crud.get_auditor_by_full_name(session, check_leader)
+        if auditor is None or not auditor.code:
+            return None
+        code = auditor.code
     seeds = await existing_key_seeds(session, exclude_check_id=exclude_check_id)
     existing_serials = await existing_serial_numbers(session, exclude_check_id=exclude_check_id)
     serial = generate_check_serial_number(
@@ -63,7 +62,7 @@ async def generate_unique_check_serial_number(
         check_leader,
         check_type,
         seeds,
-        leader_code=auditor.code,
+        leader_code=code,
     )
     while serial in existing_serials:
         seeds.append(CheckKeySeed(check_leader, start_date, check_type))
@@ -73,6 +72,6 @@ async def generate_unique_check_serial_number(
             check_leader,
             check_type,
             seeds,
-            leader_code=auditor.code,
+            leader_code=code,
         )
     return serial

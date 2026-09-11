@@ -1,32 +1,31 @@
-"""Shared helpers for settings dictionaries (label/code tables)."""
+"""Shared helpers for settings dictionaries (label/code tables). SQL only."""
 
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from typing import Any, Optional, TypeVar
 from uuid import UUID
 
-from pydantic import BaseModel
 from sqlalchemy import ColumnElement, Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
-from app.core.exceptions import DuplicateDictionaryError
-from app.utils.dictionary_text import dictionary_match_key, normalize_dictionary_label
+from app.utils.dictionary_text import dictionary_match_key
 
 ModelT = TypeVar("ModelT", bound=DeclarativeBase)
-CreateT = TypeVar("CreateT", bound=BaseModel)
-UpdateT = TypeVar("UpdateT", bound=BaseModel)
 EntityT = TypeVar("EntityT")
 
 
 @dataclass(frozen=True)
 class DictionaryCrud:
-    create: Callable[[AsyncSession, CreateT], Awaitable[EntityT]]
+    create: Callable[[AsyncSession, dict[str, Any]], Awaitable[EntityT]]
     get: Callable[[AsyncSession, UUID], Awaitable[EntityT | None]]
     list: Callable[[AsyncSession, int, int, Optional[str]], Awaitable[Sequence[EntityT]]]
     count: Callable[[AsyncSession, Optional[str]], Awaitable[int]]
-    update: Callable[[AsyncSession, EntityT, UpdateT], Awaitable[EntityT]]
+    update: Callable[[AsyncSession, EntityT, dict[str, Any]], Awaitable[EntityT]]
     delete: Callable[[AsyncSession, EntityT], Awaitable[None]]
+    model: type[Any]
+    label_field: Optional[str] = None
+    dictionary_name: Optional[str] = None
 
 
 def apply_ilike_search(
@@ -65,23 +64,7 @@ async def create_dictionary_item(
     session: AsyncSession,
     model: type[ModelT],
     payload: dict[str, Any],
-    *,
-    label_field: Optional[str] = None,
-    dictionary_name: Optional[str] = None,
 ) -> ModelT:
-    if label_field and label_field in payload:
-        payload = dict(payload)
-        payload[label_field] = normalize_dictionary_label(str(payload[label_field]))
-        if dictionary_name:
-            column = getattr(model, label_field)
-            duplicate = await find_dictionary_duplicate_by_label(
-                session, model, column, payload[label_field]
-            )
-            if duplicate is not None:
-                raise DuplicateDictionaryError(
-                    dictionary=dictionary_name,
-                    label=payload[label_field],
-                )
     item = model(**payload)
     session.add(item)
     await session.flush()
@@ -130,27 +113,7 @@ async def update_dictionary_item(
     session: AsyncSession,
     item: ModelT,
     payload: dict[str, Any],
-    *,
-    label_field: Optional[str] = None,
-    dictionary_name: Optional[str] = None,
 ) -> ModelT:
-    if label_field and label_field in payload and payload[label_field] is not None:
-        payload = dict(payload)
-        payload[label_field] = normalize_dictionary_label(str(payload[label_field]))
-        if dictionary_name:
-            column = getattr(item.__class__, label_field)
-            duplicate = await find_dictionary_duplicate_by_label(
-                session,
-                item.__class__,
-                column,
-                payload[label_field],
-                exclude_id=getattr(item, "id"),
-            )
-            if duplicate is not None:
-                raise DuplicateDictionaryError(
-                    dictionary=dictionary_name,
-                    label=payload[label_field],
-                )
     for field, value in payload.items():
         setattr(item, field, value)
     session.add(item)
@@ -172,14 +135,8 @@ def bind_dictionary_crud(
     label_field: Optional[str] = None,
     dictionary_name: Optional[str] = None,
 ) -> DictionaryCrud:
-    async def create(session: AsyncSession, payload: BaseModel) -> ModelT:
-        return await create_dictionary_item(
-            session,
-            model,
-            payload.model_dump(),
-            label_field=label_field,
-            dictionary_name=dictionary_name,
-        )
+    async def create(session: AsyncSession, payload: dict[str, Any]) -> ModelT:
+        return await create_dictionary_item(session, model, payload)
 
     async def get(session: AsyncSession, item_id: UUID) -> Optional[ModelT]:
         return await get_dictionary_item(session, model, item_id)
@@ -208,14 +165,8 @@ def bind_dictionary_crud(
             search_columns=search_columns,
         )
 
-    async def update(session: AsyncSession, item: ModelT, payload: BaseModel) -> ModelT:
-        return await update_dictionary_item(
-            session,
-            item,
-            payload.model_dump(exclude_unset=True),
-            label_field=label_field,
-            dictionary_name=dictionary_name,
-        )
+    async def update(session: AsyncSession, item: ModelT, payload: dict[str, Any]) -> ModelT:
+        return await update_dictionary_item(session, item, payload)
 
     async def delete(session: AsyncSession, item: ModelT) -> None:
         await delete_dictionary_item(session, item)
@@ -227,4 +178,7 @@ def bind_dictionary_crud(
         count=count,
         update=update,
         delete=delete,
+        model=model,
+        label_field=label_field,
+        dictionary_name=dictionary_name,
     )

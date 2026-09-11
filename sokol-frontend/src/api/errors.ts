@@ -19,23 +19,23 @@ function readHeader(headers: unknown, name: string): string | undefined {
   const record = headers as Record<string, unknown> & { get?: (key: string) => unknown };
   if (typeof record.get === 'function') {
     const value = record.get(name);
-    if (value != null && String(value).trim()) {
+    if (value !== null && value !== undefined && String(value).trim()) {
       return String(value).trim();
     }
   }
   const direct = record[name] ?? record[name.toLowerCase()];
   if (Array.isArray(direct)) {
     const first = direct[0];
-    return first != null ? String(first).trim() : undefined;
+    return first !== null && first !== undefined ? String(first).trim() : undefined;
   }
-  if (direct != null && String(direct).trim()) {
+  if (direct !== null && direct !== undefined && String(direct).trim()) {
     return String(direct).trim();
   }
   return undefined;
 }
 
 export function parseRetryAfterSeconds(raw: unknown, nowMs = Date.now()): number | undefined {
-  if (raw == null) {
+  if (raw === null || raw === undefined) {
     return undefined;
   }
   const value = Array.isArray(raw) ? raw[0] : raw;

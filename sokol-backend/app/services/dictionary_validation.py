@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Mapping, Optional
+from typing import Any, Mapping, Optional
+from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, select
 
-from app.core.exceptions import DictionaryRefError
+from app.core.exceptions import DictionaryRefError, DuplicateDictionaryError
 from app.crud.dictionary_crud import find_dictionary_duplicate_by_label
 from app.models.auditors import Auditor
 from app.models.check_kinds import CheckKind
@@ -22,6 +23,7 @@ from app.utils.dictionary_text import (
 
 __all__ = [
     "DictionaryRefError",
+    "assert_unique_dictionary_value",
     "canonicalize_audit_objects",
     "ensure_auditor_name",
     "ensure_check_kind_label",
@@ -29,6 +31,26 @@ __all__ = [
     "validate_check_dictionary_fields",
     "validate_recommendation_dictionary_fields",
 ]
+
+
+async def assert_unique_dictionary_value(
+    session: AsyncSession,
+    model: type,
+    column: ColumnElement[Any],
+    value: str,
+    *,
+    dictionary_name: str,
+    exclude_id: UUID | None = None,
+) -> None:
+    duplicate = await find_dictionary_duplicate_by_label(
+        session,
+        model,
+        column,
+        value,
+        exclude_id=exclude_id,
+    )
+    if duplicate is not None:
+        raise DuplicateDictionaryError(dictionary=dictionary_name, label=value)
 
 
 async def _label_exists(

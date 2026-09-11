@@ -61,7 +61,7 @@ export function RecommendationFormPage() {
     );
   }
 
-  if (form.isEditMode && !form.source && form.recommendationQuery.isError) {
+  if (form.isEditMode && !form.source && !form.isFetching) {
     return (
       <FormPageShell title={form.heading} backTo="/recommendations">
         <ErrorState

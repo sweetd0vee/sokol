@@ -179,6 +179,7 @@ async def upload_attachment(
     )
     try:
         saved = await attachments_crud.create_attachment(session, row)
+        await session.commit()
     except Exception:
         log_caught_exception(
             logger,
@@ -248,6 +249,7 @@ async def delete_attachment(
         raise StorageOperationError("Не удалось удалить файл из хранилища.") from exc
 
     await attachments_crud.delete_attachment(session, attachment)
+    await session.commit()
 
 
 async def delete_attachments_for_entity(
@@ -269,5 +271,5 @@ async def delete_attachments_for_entity(
             except Exception as exc:  # noqa: BLE001
                 log_caught_exception(logger, "MinIO delete failed for attachment %s", attachment.id)
                 raise StorageOperationError("Не удалось удалить файл из хранилища.") from exc
-        await attachments_crud.delete_attachment(session, attachment, commit=False)
+        await attachments_crud.delete_attachment(session, attachment)
 
