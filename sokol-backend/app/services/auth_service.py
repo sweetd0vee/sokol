@@ -54,4 +54,3 @@ async def change_password(
         raise InvalidReferenceError("Новый пароль должен отличаться от текущего.")
     await set_password_hash(session, user, hash_password(new_password))
     await session.commit()
-    await session.commit()

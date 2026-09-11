@@ -2,7 +2,7 @@
 
 React SPA + FastAPI + PostgreSQL 16 + MinIO. DOCX/XLSX и MinIO-I/O — в `asyncio.to_thread`. Тяжёлые DOCX-jobs — in-process очередь слотов (`services/reports/docx_queue.py`), не Celery.
 
-Цепочка: UI → `src/api` → endpoint → service → CRUD → Postgres/MinIO. Commit, MinIO и доменная валидация — в service; CRUD не импортирует `app.services`.
+Цепочка: UI → `src/api` → endpoint → service → CRUD → Postgres/MinIO. Commit, MinIO и доменная валидация — в service; CRUD — только SQL (`flush`), без `commit`, без импорта `app.services` / MinIO / Pydantic-схем.
 
 ## Backend
 
@@ -20,7 +20,7 @@ app/
 │   └── endpoints/          # checks, recommendations, analytics, attachments, auth, users, tools, health
 ├── core/                   # config, JWT, roles, logging, metrics, request_id, person_match, recommendation_access, startup_validation
 ├── crud/                   # SQL; словари — DictionaryCrud
-├── db/                     # session, init_db, catalogs, seeds, migrate_*, bootstrap
+├── db/                     # session, init_db, catalogs, seeds, migrations, bootstrap
 ├── models/ · schemas/
 ├── services/
 │   ├── checks / recommendations / attachments / users / auth

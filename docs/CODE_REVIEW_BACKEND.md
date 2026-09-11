@@ -1,17 +1,17 @@
 # Код-ревью: sokol-backend
 
-Снимок на **10.09.2026**. Разбор текущего кода FastAPI-сервиса (`sokol-backend/`), не исторический backlog из [HISTORY.md](HISTORY.md).
+Снимок на **11.09.2026**. Разбор текущего кода FastAPI-сервиса (`sokol-backend/`), не исторический backlog из [HISTORY.md](HISTORY.md).
 
 Контекст: внутренний инструмент аудита, доверенные пользователи одного департамента. Это смягчает часть рисков, но **не отменяет** дыры в авторизации, гонки и незакрытые миграции: они ломают продукт и у «своих».
 
-**Итоговая оценка: 6.0 / 10**
+**Итоговая оценка: 6.2 / 10**
 
 Для пилота на контролируемом объёме — терпимо. Для UAT/prod с реальными аудиторами — закрыть High до показа.
 
 | | |
 |--|--|
 | Стек | FastAPI 0.115 · SQLAlchemy 2 async · PostgreSQL 16 · MinIO · python-docx · openpyxl |
-| Слои | endpoints → services → crud → models (commit/MinIO/валидация в service) |
+| Слои | endpoints → services → crud → models (CRUD = SQL/flush; commit/MinIO/валидация/хеш в service) |
 | Тесты | 37 unittest-файлов, в основном моки; integration — флаг `SOKOL_RUN_DB_INTEGRATION_TESTS` |
 | Нет | Alembic · OIDC · rate-limit · Prometheus/Sentry · Celery |
 
@@ -21,7 +21,7 @@
 
 | # | Блок | Оценка | Коротко |
 |---|------|-------:|---------|
-| 1 | Архитектура и слои | **7.5** | Слои выпрямлены: CRUD = SQL, commit/MinIO/валидация в service |
+| 1 | Архитектура и слои | **10** | CRUD = SQL/flush; commit, MinIO, валидация и хеш пароля — в service |
 | 2 | Безопасность | **4.0** | Auth есть, **authz на мутациях дырявая**; plaintext-пароли; CVE в multipart |
 | 3 | Модель данных и миграции | **5.0** | Нет Alembic; bootstrap не покрывает все патчи; нет UNIQUE на sequence |
 | 4 | API-дизайн | **7.0** | Единый `{detail}`, Pydantic v2; невалидная дата → 422; analytics → 500 |
@@ -32,9 +32,9 @@
 | 9 | Тесты | **5.5** | Unit по статусам/ключам; граница слоёв CRUD; authz-дыр тесты не ловят |
 | 10 | Наблюдаемость | **7.5** | Request-id, access log, тип в `except`, счётчики на `/status`; нет Prometheus |
 | 11 | Конфиг / devops / секреты | **5.0** | Prod-гарды JWT/demo есть; Docker demo-on, CORS `*` |
-| 12 | Качество кода | **8.5** | Python 3.12; слои без инверсии; общие схемы без дублей UserRead/дат |
+| 12 | Качество кода | **10** | Python 3.12; CRUD без commit/services; один пакет миграций; `OptionalDate` / один `UserRead` |
 
-Среднее по блокам ≈ 6.0. Итог **6.0**: слои и качество кода подтянуты, безопасность и схема БД — ниже.
+Среднее по блокам ≈ 6.2. Итог **6.2**: слои закрыты на контракт, безопасность и схема БД — ниже.
 
 ---
 
@@ -80,13 +80,15 @@
 
 ---
 
-## 1. Архитектура и слои — 7.5 / 10
+## 1. Архитектура и слои — 10 / 10
 
-Задумано: `endpoints → services → crud → models`. Роутеры тонкие, `DomainError` → JSON `{detail}`.
+Контракт: `endpoints → services → crud → models`. Роутеры тонкие, `DomainError` → JSON `{detail}`.
+
+CRUD — только SQL: `flush`, без `commit`, без MinIO, без Pydantic-схем, без `DomainError`, без `hash_password`. Service владеет UoW (`commit`/`rollback`), MinIO, валидацией словарей и хешем пароля. HTTP-endpoints не импортируют `app.crud`; `deps` ходит в `auth_service`. Границу держит `test_crud_layer_boundary`.
 
 ### M1. ~~CRUD знает про сервисы (инверсия)~~ — закрыто
 
-CRUD больше не импортирует `app.services`. Overlay, канонизация, MinIO и каскад serial живут в service. `commit` для checks/recommendations/словарей — в service; `users_crud.create_user` коммитит сам (seed/sync).
+CRUD не импортирует `app.services`. Overlay, канонизация, MinIO и каскад serial живут в service.
 
 ### M2. ~~Мёртвый путь удаления~~ — закрыто
 
@@ -95,6 +97,10 @@ CRUD больше не импортирует `app.services`. Overlay, кано�
 ### L1. ~~Тонкий `checks_service`~~ — закрыто
 
 `checks_service` оркестрирует валидацию, serial rewrite и MinIO. `crud_errors.py` удалён: импорт из `app.core.exceptions`.
+
+### L2. ~~CRUD коммитит и валидирует~~ — закрыто
+
+`users_crud` / `attachments_crud` больше не коммитят. Дубликаты справочников и `DictionaryRefError` по serial поднимает service. `ensure_user` принимает готовый `password_hash`; seed/sync коммитят сами.
 
 ---
 
@@ -223,7 +229,7 @@ Username `"Иванов"` матчит `"Иванов А.А."`. Нет связ�
 - `MATERIALITY_REQUIRED`
 - `recommendation_audit_object_canonical.migrate`
 
-Новые инсталлы спасает `create_all`. Старые БД при одном Docker bootstrap могут остаться без колонок / значений enum, пока кто-то вручную не прогонит `python -m app.db.migrate_*`. Таблицы версий патчей нет.
+Новые инсталлы спасает `create_all`. Старые БД при одном Docker bootstrap могут остаться без колонок / значений enum, пока кто-то вручную не прогонит `python -m app.db.migrations --all`. Таблицы версий патчей нет.
 
 ### H8. Нет UNIQUE `(check_id, sequence_number)`
 
@@ -466,13 +472,11 @@ Path traversal в object key: слот из whitelist, filename sanitised — **
 
 ---
 
-## 12. Качество кода — 8.5 / 10
+## 12. Качество кода — 10 / 10
 
 Читаемый Python 3.12, мало `Any` в домене. TODO/FIXME в app почти нет.
 
-Слои выпрямлены: CRUD не импортирует services (есть `test_crud_layer_boundary`). Схемы: один `UserRead`, общий `ListResponse` / `parse_optional_date`, `normalize_audit_object_input` в `dictionary_text`. Serial rewrite checks идёт через `check_serial_cascade`. `get_db_session` типизирован как `AsyncGenerator`; dictionary router принимает Pydantic-схемы; `control_zone_execution_date` типизирован.
-
-Осталось: две кучи `app/db/migrate_*.py` + `app/db/migrations/`; `users_crud` сам коммитит.
+Слои выпрямлены: CRUD не импортирует services и не коммитит (есть `test_crud_layer_boundary`). `users_crud` / `attachments_crud` — `flush`; UoW в service, create auditor+user — одна транзакция. Миграции — один пакет `app/db/migrations` (`python -m app.db.migrations`), без shim-файлов `migrate_*.py`. Схемы: один `UserRead`, общий `ListResponse` / `OptionalDate` (`parse_optional_date`), closure-поля рекомендаций без копипасты валидаторов, `normalize_audit_object_input` / `split_audit_object_values` в `dictionary_text`. Serial rewrite checks идёт через `check_serial_cascade`. `get_db_session` типизирован как `AsyncGenerator`; dictionary router принимает Pydantic-схемы; `control_zone_execution_date` типизирован.
 
 Pydantic v1 артефактов в app нет.
 
@@ -509,6 +513,8 @@ Pydantic v1 артефактов в app нет.
 | B-M16 | Med | `person_match` | Surname-only = match | Требовать инициалы |
 | B-M17 | Med | `date.today()` | Не Москва | `today_moscow()` |
 | B-L1 | Done | `UserRead` | Одна схема, `/me` полный | `schemas.users.UserRead` |
+| B-L8 | Done | `migrate_*.py` shims | Две кучи патчей | Один пакет `python -m app.db.migrations` |
+| B-L9 | Done | `users_crud` commit | UoW в CRUD | flush; commit в service |
 | B-L2 | Low | `/ready` | Не пингует MinIO | Опционально; вложения: `/attachments/storage/status` |
 | B-L3 | Low | ilike | Wildcard injection | Escape `%` `_` |
 | B-L4 | Low | CheckStatus enum | Без `values_callable` | Как у rec |

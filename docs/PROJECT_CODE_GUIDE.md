@@ -49,9 +49,9 @@ sokol/
 | `app/services/` | домен, `dictionary_*`, analytics, reports, MinIO, status scheduler |
 | `app/crud/` | SQL; словари — `DictionaryCrud` |
 | `app/models/` · `app/schemas/` | ORM и Pydantic |
-| `app/db/` | init, seed (`label_rows`), migrate, import |
+| `app/db/` | init, seed (`label_rows`), `migrations` CLI, import |
 
-Типовой запрос: `endpoints` → `services` → `crud` → модель. CRUD — SQL (`flush`); валидация словарей, overlay статусов, MinIO и `commit` — в service.
+Типовой запрос: `endpoints` → `services` → `crud` → модель. CRUD — SQL (`flush`, без `commit`); валидация словарей, overlay статусов, хеш пароля, MinIO и `commit` — в service.
 
 **Сущности:** `Check` (`serial_number` только backend), `Recommendation` (`check_id` + денормализованный serial), `Attachment` (MinIO + metadata), справочники (auditors с `code` из 3 букв, departments, check_kinds, ratings, audit_types), `User`. Открытые rec-статусы пересчитывает in-process scheduler (00:05 МСК).
 

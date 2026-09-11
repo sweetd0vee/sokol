@@ -8,7 +8,8 @@ from datetime import date
 from pydantic import ValidationError
 
 from app.schemas.auth import UserRead as AuthUserRead
-from app.schemas.common import parse_optional_date
+from app.schemas.checks import CheckUpdate
+from app.schemas.common import OptionalDate, parse_optional_date
 from app.schemas.recommendations import RecommendationCreate, RecommendationUpdate
 from app.schemas.users import UserRead
 from app.utils.dictionary_text import normalize_audit_object_input
@@ -26,14 +27,25 @@ class ParseOptionalDateTests(unittest.TestCase):
             parse_optional_date("2026-13-32")
 
 
-class RecommendationDateSchemaTests(unittest.TestCase):
-    def test_invalid_deadline_is_422(self) -> None:
+class SharedDateSchemaTests(unittest.TestCase):
+    def test_optional_date_alias_is_annotated(self) -> None:
+        self.assertTrue(hasattr(OptionalDate, "__metadata__"))
+
+    def test_invalid_recommendation_deadline_is_422(self) -> None:
         with self.assertRaises(ValidationError):
             RecommendationUpdate(deadline="32.13.2026")
 
-    def test_empty_deadline_clears_field(self) -> None:
+    def test_empty_recommendation_deadline_clears_field(self) -> None:
         payload = RecommendationUpdate(deadline="")
         self.assertIsNone(payload.deadline)
+
+    def test_invalid_check_date_is_422(self) -> None:
+        with self.assertRaises(ValidationError):
+            CheckUpdate(end_date="32.13.2026")
+
+    def test_empty_check_date_clears_field(self) -> None:
+        payload = CheckUpdate(end_date="")
+        self.assertIsNone(payload.end_date)
 
     def test_audit_object_string_splits(self) -> None:
         payload = RecommendationCreate(

@@ -180,7 +180,9 @@ async def upload_attachment(
     try:
         saved = await attachments_crud.create_attachment(session, row)
         await session.commit()
+        await session.refresh(saved)
     except Exception:
+        await session.rollback()
         log_caught_exception(
             logger,
             "Failed to persist attachment metadata for %s/%s",

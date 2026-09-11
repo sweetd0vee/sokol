@@ -4,6 +4,7 @@ from sqlalchemy import select
 
 from app.core.config import settings
 from app.core.roles import Role
+from app.core.security import hash_password
 from app.crud.users_crud import ensure_user
 from app.db.catalogs.auditors import AUDITORS
 from app.db.catalogs.users import (
@@ -28,7 +29,7 @@ async def seed_users(*, only_if_empty: bool = False) -> int:
         if await ensure_user(
             session,
             username=ADMIN_USERNAME,
-            password=settings.sokol_admin_password,
+            password_hash=hash_password(settings.sokol_admin_password),
             role=Role.ADMIN,
             display_name=ADMIN_DISPLAY_NAME,
             aliases=ADMIN_ALIASES,
@@ -38,7 +39,7 @@ async def seed_users(*, only_if_empty: bool = False) -> int:
         if await ensure_user(
             session,
             username=DEPARTMENT_HEAD_USERNAME,
-            password=settings.sokol_admin_password,
+            password_hash=hash_password(settings.sokol_admin_password),
             role=Role.DEPARTMENT_HEAD,
             display_name=DEPARTMENT_HEAD_DISPLAY_NAME,
         ):
@@ -53,7 +54,7 @@ async def seed_users(*, only_if_empty: bool = False) -> int:
             if await ensure_user(
                 session,
                 username=full_name,
-                password=settings.sokol_default_user_password,
+                password_hash=hash_password(settings.sokol_default_user_password),
                 role=Role.AUDITOR,
                 display_name=full_name,
             ):

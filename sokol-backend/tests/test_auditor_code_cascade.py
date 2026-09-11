@@ -45,16 +45,7 @@ class UpdateAuditorCodeCascadeTests(unittest.TestCase):
         auditor.id = uuid4()
 
         async def run() -> None:
-            with patch(
-                "app.crud.auditors_crud.find_dictionary_duplicate_by_label",
-                new_callable=AsyncMock,
-                return_value=None,
-            ):
-                updated = await update_auditor(
-                    session,
-                    auditor,
-                    AuditorUpdate(code="ABC"),
-                )
+            updated = await update_auditor(session, auditor, {"code": "ABC"})
 
             self.assertEqual(updated.code, "ABC")
             session.flush.assert_awaited()

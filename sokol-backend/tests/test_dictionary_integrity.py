@@ -60,6 +60,9 @@ class DictionaryServiceDeleteTests(unittest.TestCase):
             count=AsyncMock(),
             update=AsyncMock(),
             delete=AsyncMock(),
+            model=Auditor,
+            dictionary_name="auditors",
+            label_field="full_name",
         )
         service = DictionaryService(crud=crud, not_found="not found")
 
@@ -84,6 +87,9 @@ class DictionaryServiceDeleteTests(unittest.TestCase):
             count=AsyncMock(),
             update=AsyncMock(),
             delete=AsyncMock(),
+            model=Department,
+            dictionary_name="departments",
+            label_field="name",
         )
         service = DictionaryService(crud=crud, not_found="not found")
 

@@ -112,7 +112,7 @@ async def sync_users() -> tuple[int, int]:
             await ensure_user(
                 session,
                 username=ADMIN_USERNAME,
-                password=settings.sokol_admin_password,
+                password_hash=hash_password(settings.sokol_admin_password),
                 role=Role.ADMIN,
                 display_name=ADMIN_DISPLAY_NAME,
                 aliases=ADMIN_ALIASES,
@@ -123,7 +123,7 @@ async def sync_users() -> tuple[int, int]:
             await ensure_user(
                 session,
                 username=DEPARTMENT_HEAD_USERNAME,
-                password=settings.sokol_admin_password,
+                password_hash=hash_password(settings.sokol_admin_password),
                 role=Role.DEPARTMENT_HEAD,
                 display_name=DEPARTMENT_HEAD_DISPLAY_NAME,
             )

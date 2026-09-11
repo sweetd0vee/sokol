@@ -6,7 +6,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.roles import Role
-from app.core.security import hash_password
 from app.core.users import normalize_login
 from app.models.users import User
 
@@ -40,7 +39,7 @@ async def create_user(
     session: AsyncSession,
     *,
     username: str,
-    password: str,
+    password_hash: str,
     role: Role,
     display_name: str | None = None,
     aliases: Sequence[str] = (),
@@ -48,7 +47,7 @@ async def create_user(
 ) -> User:
     user = User(
         username=username.strip(),
-        password_hash=hash_password(password),
+        password_hash=password_hash,
         role=role.value,
         display_name=(display_name or username).strip() or username.strip(),
         aliases=",".join(alias.strip() for alias in aliases if alias.strip()) or None,
@@ -60,8 +59,8 @@ async def create_user(
     return user
 
 
-async def update_user_password(session: AsyncSession, user: User, new_password: str) -> User:
-    user.password_hash = hash_password(new_password)
+async def set_password_hash(session: AsyncSession, user: User, password_hash: str) -> User:
+    user.password_hash = password_hash
     session.add(user)
     await session.flush()
     await session.refresh(user)
@@ -72,7 +71,7 @@ async def ensure_user(
     session: AsyncSession,
     *,
     username: str,
-    password: str,
+    password_hash: str,
     role: Role,
     display_name: str | None = None,
     aliases: Sequence[str] = (),
@@ -83,7 +82,7 @@ async def ensure_user(
     await create_user(
         session,
         username=username,
-        password=password,
+        password_hash=password_hash,
         role=role,
         display_name=display_name,
         aliases=aliases,

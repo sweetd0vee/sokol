@@ -81,7 +81,7 @@ class AuthRbacTests(unittest.TestCase):
         response = self.client.get("/api/v1/checks")
         self.assertEqual(response.status_code, 401)
 
-    @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
+    @patch("app.api.deps.get_user_record", new_callable=AsyncMock)
     @patch("app.services.auth_service.get_user_by_username", new_callable=AsyncMock)
     def test_login_and_me(
         self,
@@ -109,35 +109,35 @@ class AuthRbacTests(unittest.TestCase):
         self.assertTrue(me.json()["is_active"])
         self.assertIn("id", me.json())
 
-    @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
-    def test_basic_auth_allows_active_user(self, mock_get_user: AsyncMock) -> None:
-        mock_get_user.return_value = _admin_user()
+    @patch("app.api.deps.authenticate_credentials", new_callable=AsyncMock)
+    def test_basic_auth_allows_active_user(self, mock_authenticate: AsyncMock) -> None:
+        mock_authenticate.return_value = _admin_user()
         response = self.client.get("/api/v1/auth/me", auth=("admin", "admin"))
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()["role"], "admin")
 
-    @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
-    def test_basic_auth_rejects_deactivated_user(self, mock_get_user: AsyncMock) -> None:
+    @patch("app.api.deps.authenticate_credentials", new_callable=AsyncMock)
+    def test_basic_auth_rejects_deactivated_user(self, mock_authenticate: AsyncMock) -> None:
         user = _admin_user()
         user.is_active = False
-        mock_get_user.return_value = user
+        mock_authenticate.return_value = user
         response = self.client.get("/api/v1/auth/me", auth=("admin", "admin"))
         self.assertEqual(response.status_code, 401)
 
     @patch("app.api.deps.settings")
-    @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
+    @patch("app.api.deps.authenticate_credentials", new_callable=AsyncMock)
     def test_basic_auth_can_be_disabled(
         self,
-        mock_get_user: AsyncMock,
+        mock_authenticate: AsyncMock,
         mock_settings,
     ) -> None:
         mock_settings.basic_auth_enabled = False
-        mock_get_user.return_value = _admin_user()
+        mock_authenticate.return_value = _admin_user()
         response = self.client.get("/api/v1/auth/me", auth=("admin", "admin"))
         self.assertEqual(response.status_code, 401)
-        mock_get_user.assert_not_awaited()
+        mock_authenticate.assert_not_awaited()
 
-    @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
+    @patch("app.api.deps.get_user_record", new_callable=AsyncMock)
     def test_bearer_rejects_deactivated_user(self, mock_get_user: AsyncMock) -> None:
         user = _admin_user()
         user.is_active = False
@@ -155,7 +155,7 @@ class AuthRbacTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 401)
 
-    @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
+    @patch("app.api.deps.get_user_record", new_callable=AsyncMock)
     def test_bearer_uses_database_role_for_rbac(self, mock_get_user: AsyncMock) -> None:
         user = _auditor_user(username="Админ А.А.")
         mock_get_user.return_value = user
@@ -173,7 +173,7 @@ class AuthRbacTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 403)
 
-    @patch("app.services.auth_service.update_user_password", new_callable=AsyncMock)
+    @patch("app.services.auth_service.set_password_hash", new_callable=AsyncMock)
     @patch("app.services.auth_service.get_user_by_username", new_callable=AsyncMock)
     def test_change_password(self, mock_get_user: AsyncMock, mock_update: AsyncMock) -> None:
         user = _admin_user()
@@ -224,7 +224,7 @@ class AuthRbacTests(unittest.TestCase):
         self.assertEqual(login.json()["role"], "admin")
         self.assertEqual(login.json()["username"], "Админ А.А.")
 
-    @patch("app.api.deps.get_user_by_username", new_callable=AsyncMock)
+    @patch("app.api.deps.get_user_record", new_callable=AsyncMock)
     @patch("app.services.auth_service.get_user_by_username", new_callable=AsyncMock)
     def test_login_and_me_for_department_head(
         self,
@@ -362,6 +362,8 @@ class AuthRbacTests(unittest.TestCase):
         # Auth passed; missing entity → 404 from handler.
         self.assertEqual(response.status_code, 404)
 
+    @patch("app.services.users_service.find_dictionary_duplicate_by_label", new_callable=AsyncMock)
+    @patch("app.services.users_service.get_auditor_by_full_name", new_callable=AsyncMock)
     @patch("app.services.users_service.create_auditor", new_callable=AsyncMock)
     @patch("app.services.users_service.create_user", new_callable=AsyncMock)
     @patch("app.services.users_service.get_user_by_username", new_callable=AsyncMock)
@@ -370,8 +372,12 @@ class AuthRbacTests(unittest.TestCase):
         mock_get_user: AsyncMock,
         mock_create_user: AsyncMock,
         mock_create_auditor: AsyncMock,
+        mock_get_auditor: AsyncMock,
+        mock_duplicate_code: AsyncMock,
     ) -> None:
         mock_get_user.return_value = None
+        mock_get_auditor.return_value = None
+        mock_duplicate_code.return_value = None
         created = _auditor_user(username="Новиков Н.Н.")
         mock_create_user.return_value = created
 

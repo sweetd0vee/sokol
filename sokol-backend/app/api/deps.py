@@ -7,10 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.current_user import CurrentUser
+from app.core.exceptions import AuthenticationError
 from app.core.roles import ADMIN_ROLES, Role
-from app.core.security import decode_access_token, verify_password
-from app.crud.users_crud import get_user_by_username
+from app.core.security import decode_access_token
 from app.db.session import get_db_session
+from app.services.auth_service import authenticate_credentials, get_user_record
 
 _bearer = HTTPBearer(auto_error=False)
 _basic = HTTPBasic(auto_error=False)
@@ -60,7 +61,7 @@ async def get_current_user(
         if not username:
             raise _unauthorized("Недействительный токен.", scheme="Bearer")
 
-        user = await get_user_by_username(session, username)
+        user = await get_user_record(session, username)
         if user is None or not user.is_active:
             raise _unauthorized(
                 "Пользователь не найден или деактивирован.",
@@ -74,13 +75,16 @@ async def get_current_user(
         and basic_credentials is not None
         and basic_credentials.username
     ):
-        user = await get_user_by_username(session, basic_credentials.username)
-        if (
-            user is None
-            or not user.is_active
-            or not verify_password(basic_credentials.password, user.password_hash)
-        ):
-            raise _unauthorized("Неверный логин или пароль.", scheme="Basic")
+        try:
+            user = await authenticate_credentials(
+                session,
+                basic_credentials.username,
+                basic_credentials.password,
+            )
+        except AuthenticationError as exc:
+            raise _unauthorized("Неверный логин или пароль.", scheme="Basic") from exc
+        if not user.is_active:
+            raise _unauthorized("Пользователь не найден или деактивирован.", scheme="Basic")
         return _user_from_record(user)
 
     raise _unauthorized("Требуется авторизация.", scheme="Bearer")

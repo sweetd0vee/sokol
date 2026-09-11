@@ -99,6 +99,8 @@ BOOTSTRAP_MIGRATIONS: tuple[MigrateFn, ...] = tuple(
 )
 
 _BY_NAME = {item.name: item for item in ALL_MIGRATIONS}
+if len(_BY_NAME) != len(ALL_MIGRATIONS):
+    raise RuntimeError("Duplicate migration names in ALL_MIGRATIONS")
 
 
 def get_migration(name: str) -> SchemaMigration:

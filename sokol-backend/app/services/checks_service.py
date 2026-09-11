@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import DictionaryRefError, ResourceNotFoundError
-from app.crud import attachments_crud, auditors_crud, checks_crud
+from app.crud import attachments_crud, checks_crud
 from app.crud.check_serial import (
     CHECK_SERIAL_SOURCE_FIELDS,
     generate_unique_check_serial_number,
@@ -30,7 +30,7 @@ def _normalize_effectiveness_fields(data: dict) -> None:
             data[field] = normalize_optional_dictionary_label(data[field])
 
 
-async def _allocate_check_serial(
+async def _require_check_serial(
     session: AsyncSession,
     *,
     start_date,
@@ -39,7 +39,6 @@ async def _allocate_check_serial(
     check_type: str,
     exclude_check_id: int | None = None,
 ) -> str:
-    auditor = await auditors_crud.get_auditor_by_full_name(session, check_leader)
     serial = await generate_unique_check_serial_number(
         session,
         start_date=start_date,
@@ -47,7 +46,6 @@ async def _allocate_check_serial(
         check_leader=check_leader,
         check_type=check_type,
         exclude_check_id=exclude_check_id,
-        leader_code=auditor.code if auditor is not None else None,
     )
     if serial is None:
         raise DictionaryRefError(
@@ -56,9 +54,6 @@ async def _allocate_check_serial(
             dictionary="auditors",
         )
     return serial
-    for field in EFFECTIVENESS_FIELDS:
-        if field in data:
-            data[field] = normalize_optional_dictionary_label(data[field])
 
 
 async def create_check(session: AsyncSession, check_in: CheckCreate) -> Check:
@@ -73,7 +68,7 @@ async def create_check(session: AsyncSession, check_in: CheckCreate) -> Check:
     check: Check | None = None
     try:
         for _ in range(2):
-            data["serial_number"] = await generate_unique_check_serial_number(
+            data["serial_number"] = await _require_check_serial(
                 session,
                 start_date=data["start_date"],
                 check_quarter=data["check_quarter"],
@@ -163,7 +158,7 @@ async def update_check(
         await checks_crud.update_check(session, check, update_data)
         rewrites: list[SerialRewrite] = []
         if should_regenerate_serial:
-            new_serial = await generate_unique_check_serial_number(
+            new_serial = await _require_check_serial(
                 session,
                 start_date=check.start_date,
                 check_quarter=check.check_quarter,

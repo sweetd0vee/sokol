@@ -1,6 +1,6 @@
 # Данные и БД
 
-PostgreSQL 16 · SQLAlchemy 2 async · `asyncpg` · порт хоста **5433**. Схема: `create_all` + идемпотентные `python -m app.db.migrate_*`. Alembic **нет**. Файлы: [STORAGE.md](STORAGE.md).
+PostgreSQL 16 · SQLAlchemy 2 async · `asyncpg` · порт хоста **5433**. Схема: `create_all` + идемпотентные `python -m app.db.migrations NAME`. Alembic **нет**. Файлы: [STORAGE.md](STORAGE.md).
 
 ## Сущности
 
@@ -90,7 +90,7 @@ Create/batch ищут проверку по `serial_number`. Вход `audit_obj
 
 Из моделей: PK, unique serial/labels/username/auditor code, FK indexes.
 
-Из `migrate_analytics_indexes`: `ix_checks_start_date`, `ix_checks_status`, `ix_checks_check_leader`, `ix_recommendations_deadline`, `ix_recommendations_auditor`, GIN `audit_object`, `ix_recommendations_status`, `ix_recommendations_materiality_level`, `ix_recommendations_deadline_status`. Плюс `ix_attachments_entity_lookup`.
+Из `analytics_indexes`: `ix_checks_start_date`, `ix_checks_status`, `ix_checks_check_leader`, `ix_recommendations_deadline`, `ix_recommendations_auditor`, GIN `audit_object`, `ix_recommendations_status`, `ix_recommendations_materiality_level`, `ix_recommendations_deadline_status`. Плюс `ix_attachments_entity_lookup`.
 
 Аналитика — без data mart. Период проверок и planning — `checks.start_date`; рекомендаций/мониторинга — `deadline`. Контракт: [API.md](API.md), [ANALYTICS.md](ANALYTICS.md).
 
@@ -144,21 +144,23 @@ Docker: `SOKOL_LOAD_DEMO_DATA` в entrypoint default **on** (если checks у�
 
 ## Bootstrap-миграции
 
-Порядок Docker (`app/db/migrations/__init__.py`):
+Единый пакет: `python -m app.db.migrations --list|--bootstrap|--all|NAME`.
 
-1. `migrate_auditor_codes`
-2. `migrate_check_quarter`
-3. `migrate_check_effectiveness`
-4. `migrate_attachments`
-5. `migrate_dictionary_uniqueness`
-6. `migrate_recommendation_execution_deadline` — колонка + enum value `in_progress`
-7. `migrate_dictionary_foreign_keys`
-8. `migrate_recommendation_observation_name`
-9. `migrate_recommendation_indicator_on_control`
-10. `migrate_recommendation_additional_indicator`
-11. `migrate_analytics_indexes`
+Порядок Docker (`--bootstrap` / `BOOTSTRAP_MIGRATIONS`):
 
-Остальные `migrate_*` (short_name, recommendation fields, closure lists, audit_object array/canonical, statuses, materiality) — для стендов старше `create_all`. `migrate_recommendation_indicators` — одноразовый remap, **не** для живой БД.
+1. `auditor_codes`
+2. `check_quarter`
+3. `check_effectiveness`
+4. `attachments`
+5. `dictionary_uniqueness`
+6. `recommendation_execution_deadline` — колонка + enum value `in_progress`
+7. `dictionary_foreign_keys`
+8. `recommendation_observation_name`
+9. `recommendation_indicator_on_control`
+10. `recommendation_additional_indicator`
+11. `analytics_indexes`
+
+`--all` гоняет идемпотентные патчи для стендов старше `create_all` (short_name, recommendation fields, closure, audit_object array/canonical, statuses, materiality). `recommendation_indicators` — одноразовый remap, **не** для живой БД; только по имени.
 
 ## Новый стенд
 
