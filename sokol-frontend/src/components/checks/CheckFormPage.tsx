@@ -44,6 +44,7 @@ export function CheckFormPage() {
         <ErrorState
           title="Проверка не загружена"
           description={getErrorMessage(form.checkQuery.error, 'Не удалось загрузить проверку для редактирования.')}
+          action={{ label: 'Повторить', onClick: () => void form.checkQuery.refetch() }}
         />
       </FormPageShell>
     );

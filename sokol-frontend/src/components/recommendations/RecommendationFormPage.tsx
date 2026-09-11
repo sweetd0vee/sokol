@@ -3,7 +3,7 @@ import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
-import { LoadingState } from '../ui/StateMessage';
+import { ErrorState, LoadingState } from '../ui/StateMessage';
 import { ConfirmDialog } from '../ui/Modal';
 import type {
   MaterialityLevel,
@@ -27,6 +27,7 @@ import { FileAttachmentsPanel } from '../attachments/FileAttachmentsPanel';
 import { FormPageShell } from '../forms/FormPageShell';
 import { FormActionFooter } from '../forms/FormActionFooter';
 import { useRecommendationForm } from '../../hooks/useRecommendationForm';
+import { getErrorMessage } from '../../api/errors';
 import { RECOMMENDATION_ATTACHMENT_SLOTS } from '../../constants/recommendationClosure';
 import {
   FORM_EQUAL_CONTROL_CLASS,
@@ -54,9 +55,24 @@ export function RecommendationFormPage() {
 
   if (form.isEditMode && form.isFetching && !form.source) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <LoadingState />
-      </div>
+      <FormPageShell title={form.heading} backTo="/recommendations">
+        <LoadingState description="Загружаем рекомендацию для редактирования." />
+      </FormPageShell>
+    );
+  }
+
+  if (form.isEditMode && !form.source && form.recommendationQuery.isError) {
+    return (
+      <FormPageShell title={form.heading} backTo="/recommendations">
+        <ErrorState
+          title="Рекомендация не загружена"
+          description={getErrorMessage(
+            form.recommendationQuery.error,
+            'Не удалось загрузить рекомендацию для редактирования.',
+          )}
+          action={{ label: 'Повторить', onClick: () => void form.recommendationQuery.refetch() }}
+        />
+      </FormPageShell>
     );
   }
 

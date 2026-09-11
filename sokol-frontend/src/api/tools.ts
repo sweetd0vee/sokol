@@ -9,6 +9,18 @@ type DocxToolExtraFields = Record<string, string>;
 const DOCX_TIMEOUT_MESSAGE =
   'Обработка документа заняла слишком много времени. Попробуйте ещё раз; большие файлы могут обрабатываться несколько минут.';
 
+async function throwDocxToolError(error: unknown): Promise<never> {
+  const apiError = toApiError(error);
+  if (apiError.code === 'timeout') {
+    throw { ...apiError, message: DOCX_TIMEOUT_MESSAGE };
+  }
+  const message = await getBlobErrorMessage(error);
+  throw {
+    ...apiError,
+    message: message || apiError.message,
+  };
+}
+
 async function postDocxTool(file: File, endpoint: string, extraFields?: DocxToolExtraFields): Promise<Blob> {
   const formData = new FormData();
   formData.append('file', file);
@@ -23,14 +35,7 @@ async function postDocxTool(file: File, endpoint: string, extraFields?: DocxTool
     });
     return response.data;
   } catch (error) {
-    if (toApiError(error).code === 'timeout') {
-      throw new Error(DOCX_TIMEOUT_MESSAGE);
-    }
-    const message = await getBlobErrorMessage(error);
-    if (message) {
-      throw new Error(message);
-    }
-    throw error;
+    return throwDocxToolError(error);
   }
 }
 
@@ -64,13 +69,6 @@ export async function downloadControlFileTemplate(): Promise<Blob> {
     });
     return response.data;
   } catch (error) {
-    if (toApiError(error).code === 'timeout') {
-      throw new Error(DOCX_TIMEOUT_MESSAGE);
-    }
-    const message = await getBlobErrorMessage(error);
-    if (message) {
-      throw new Error(message);
-    }
-    throw error;
+    return throwDocxToolError(error);
   }
 }

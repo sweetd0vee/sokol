@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { AxiosError } from 'axios';
-import { getBlobErrorMessage, getErrorMessage, toApiError } from './errors';
+import {
+  getBlobErrorMessage,
+  getErrorMessage,
+  getRetryAfterSeconds,
+  parseRetryAfterSeconds,
+  shouldRetryRequest,
+  toApiError,
+} from './errors';
 
 describe('toApiError', () => {
   it('maps axios validation detail array to readable message', () => {
@@ -47,21 +54,67 @@ describe('toApiError', () => {
 });
 
 describe('getErrorMessage', () => {
-  it('returns empty string for 404', () => {
+  it('keeps API detail for 404', () => {
     const error = new AxiosError('Not Found');
     error.response = {
       status: 404,
-      data: { detail: 'missing' },
+      data: { detail: 'Рекомендация не найдена' },
       statusText: 'Not Found',
       headers: {},
       config: {} as never,
     };
-    expect(getErrorMessage(error)).toBe('');
+    expect(getErrorMessage(error)).toBe('Рекомендация не найдена');
+  });
+
+  it('returns Russian not-found when 404 has no payload', () => {
+    const error = new AxiosError('Not Found');
+    error.response = {
+      status: 404,
+      data: {},
+      statusText: 'Not Found',
+      headers: {},
+      config: {} as never,
+    };
+    expect(getErrorMessage(error)).toBe('Запись не найдена.');
+    expect(getErrorMessage(error, 'fallback')).toBe('Запись не найдена.');
   });
 
   it('uses fallback when api error message is empty', () => {
     const error = { code: 'custom', message: '' };
     expect(getErrorMessage(error, 'fallback')).toBe('fallback');
+  });
+});
+
+describe('retry-after', () => {
+  it('parses delay-seconds and HTTP-date', () => {
+    expect(parseRetryAfterSeconds('15')).toBe(15);
+    expect(parseRetryAfterSeconds(15)).toBe(15);
+    const future = new Date(Date.now() + 8_000).toUTCString();
+    expect(parseRetryAfterSeconds(future)).toBeGreaterThanOrEqual(7);
+    expect(parseRetryAfterSeconds(future)).toBeLessThanOrEqual(8);
+    expect(parseRetryAfterSeconds('0')).toBeUndefined();
+    expect(parseRetryAfterSeconds('bogus')).toBeUndefined();
+  });
+
+  it('caps long delays and reads axios headers', () => {
+    expect(parseRetryAfterSeconds('9999')).toBe(300);
+    const error = new AxiosError('Service Unavailable');
+    error.response = {
+      status: 503,
+      data: { detail: 'очередь' },
+      statusText: 'Service Unavailable',
+      headers: { 'retry-after': '15' },
+      config: {} as never,
+    };
+    expect(toApiError(error).retryAfterSeconds).toBe(15);
+    expect(getRetryAfterSeconds(error)).toBe(15);
+  });
+
+  it('does not retry 401/403/404', () => {
+    expect(shouldRetryRequest(0, { code: 'http_401', message: 'no', status: 401 })).toBe(false);
+    expect(shouldRetryRequest(0, { code: 'http_404', message: 'no', status: 404 })).toBe(false);
+    expect(shouldRetryRequest(0, { code: 'http_500', message: 'no', status: 500 })).toBe(true);
+    expect(shouldRetryRequest(1, { code: 'http_500', message: 'no', status: 500 })).toBe(false);
   });
 });
 

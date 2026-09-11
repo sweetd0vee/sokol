@@ -6,7 +6,71 @@ export type ApiError = {
   message: string;
   status?: number;
   details?: unknown;
+  retryAfterSeconds?: number;
 };
+
+const NOT_FOUND_MESSAGE = 'Запись не найдена.';
+const MAX_RETRY_AFTER_SECONDS = 5 * 60;
+
+function readHeader(headers: unknown, name: string): string | undefined {
+  if (!headers || typeof headers !== 'object') {
+    return undefined;
+  }
+  const record = headers as Record<string, unknown> & { get?: (key: string) => unknown };
+  if (typeof record.get === 'function') {
+    const value = record.get(name);
+    if (value != null && String(value).trim()) {
+      return String(value).trim();
+    }
+  }
+  const direct = record[name] ?? record[name.toLowerCase()];
+  if (Array.isArray(direct)) {
+    const first = direct[0];
+    return first != null ? String(first).trim() : undefined;
+  }
+  if (direct != null && String(direct).trim()) {
+    return String(direct).trim();
+  }
+  return undefined;
+}
+
+export function parseRetryAfterSeconds(raw: unknown, nowMs = Date.now()): number | undefined {
+  if (raw == null) {
+    return undefined;
+  }
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    return undefined;
+  }
+  const text = String(value).trim();
+  if (!text) {
+    return undefined;
+  }
+  let seconds: number;
+  if (/^\d+$/.test(text)) {
+    seconds = Number(text);
+  } else {
+    const dateMs = Date.parse(text);
+    if (Number.isNaN(dateMs)) {
+      return undefined;
+    }
+    seconds = Math.ceil((dateMs - nowMs) / 1000);
+  }
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return undefined;
+  }
+  return Math.min(Math.floor(seconds), MAX_RETRY_AFTER_SECONDS);
+}
+
+function defaultStatusMessage(status?: number): string {
+  if (status === 404) {
+    return NOT_FOUND_MESSAGE;
+  }
+  if (status) {
+    return `HTTP ${status}`;
+  }
+  return 'Ошибка сети. Проверьте подключение.';
+}
 
 type ErrorPayload = {
   code?: string;
@@ -83,14 +147,16 @@ export function toApiError(error: unknown): ApiError {
         message: API_UNAVAILABLE_HINT,
       };
     }
-    const message =
-      payloadMessage ??
-      (status ? `HTTP ${status}` : 'Ошибка сети. Проверьте подключение.');
+    const message = payloadMessage ?? defaultStatusMessage(status);
+    const retryAfterSeconds = parseRetryAfterSeconds(
+      readHeader(error.response?.headers, 'retry-after'),
+    );
     return {
       code,
       message,
       status,
       details: data.details ?? error.response?.data,
+      ...(retryAfterSeconds ? { retryAfterSeconds } : {}),
     };
   }
 
@@ -103,10 +169,19 @@ export function toApiError(error: unknown): ApiError {
 
 export function getErrorMessage(error: unknown, fallback?: string) {
   const apiError = toApiError(error);
-  if (apiError.status === 404 || apiError.code === 'http_404') {
-    return '';
-  }
   return apiError.message || fallback || 'Произошла ошибка';
+}
+
+export function getRetryAfterSeconds(error: unknown): number | undefined {
+  return toApiError(error).retryAfterSeconds;
+}
+
+export function shouldRetryRequest(failureCount: number, error: unknown, maxRetries = 1): boolean {
+  const status = toApiError(error).status;
+  if (status === 401 || status === 403 || status === 404) {
+    return false;
+  }
+  return failureCount < maxRetries;
 }
 
 const API_UNAVAILABLE_HINT =

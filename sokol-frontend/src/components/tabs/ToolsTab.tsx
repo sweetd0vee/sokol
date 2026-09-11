@@ -15,7 +15,6 @@ import {
 } from '../../api/tools';
 import { fetchCapabilities } from '../../api/capabilities';
 import { queryKeys } from '../../api/queryKeys';
-import { getErrorMessage } from '../../api/errors';
 import { downloadBlob } from '../../utils/download';
 import { isDocxFile } from '../../utils/docx';
 import {
@@ -115,8 +114,9 @@ export function ToolsTab() {
       const blob = await downloadControlFileTemplate();
       downloadBlob(blob, CONTROL_FILE_TEMPLATE_NAME);
     } catch (err) {
-      azControlJob.setError(
-        getErrorMessage(err, 'Не удалось скачать шаблон файла контроля. Проверьте подключение к API.'),
+      azControlJob.captureError(
+        err,
+        'Не удалось скачать шаблон файла контроля. Проверьте подключение к API.',
       );
     } finally {
       setIsControlTemplateDownloading(false);
@@ -157,6 +157,7 @@ export function ToolsTab() {
                 onFileChange={azJob.onFileChange}
                 onProcess={() => void azJob.run()}
                 isProcessing={azJob.isProcessing}
+                retryRemainingSeconds={azJob.retryRemainingSeconds}
                 error={azJob.error}
               />
               <DocxToolPanel
@@ -166,6 +167,7 @@ export function ToolsTab() {
                 onFileChange={azLinksJob.onFileChange}
                 onProcess={() => void azLinksJob.run()}
                 isProcessing={azLinksJob.isProcessing}
+                retryRemainingSeconds={azLinksJob.retryRemainingSeconds}
                 error={azLinksJob.error}
               />
               <DocxToolPanel
@@ -180,6 +182,7 @@ export function ToolsTab() {
                 isProcessDisabled={!azControlLeader || !azControlDate}
                 extraFieldsClassName="w-full"
                 hideTemplateButton
+                retryRemainingSeconds={azControlJob.retryRemainingSeconds}
                 error={azControlJob.error}
               >
                 <div className="flex items-end gap-4">
@@ -226,6 +229,7 @@ export function ToolsTab() {
               onFileChange={dzJob.onFileChange}
               onProcess={() => void dzJob.run()}
               isProcessing={dzJob.isProcessing}
+              retryRemainingSeconds={dzJob.retryRemainingSeconds}
               error={dzJob.error}
             />
           </div>

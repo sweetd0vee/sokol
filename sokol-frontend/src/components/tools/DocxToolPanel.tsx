@@ -18,6 +18,7 @@ type DocxToolPanelProps = {
   templateButtonLabel?: string;
   children?: ReactNode;
   isProcessDisabled?: boolean;
+  retryRemainingSeconds?: number;
   hideTemplateButton?: boolean;
   extraFieldsClassName?: string;
 };
@@ -37,6 +38,7 @@ export function DocxToolPanel({
   templateButtonLabel = 'Скачать шаблон',
   children,
   isProcessDisabled = false,
+  retryRemainingSeconds = 0,
   hideTemplateButton = false,
   extraFieldsClassName = 'space-y-4',
 }: DocxToolPanelProps) {
@@ -79,15 +81,28 @@ export function DocxToolPanel({
         <button
           type="button"
           onClick={onProcess}
-          disabled={!file || isProcessing || isProcessDisabled}
+          disabled={!file || isProcessing || isProcessDisabled || retryRemainingSeconds > 0}
           className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-sber-dark px-5 py-2.5 text-sm font-medium text-white transition hover:bg-sber-muted disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Download size={18} />
-          {isProcessing ? processingLabel : buttonLabel}
+          {isProcessing
+            ? processingLabel
+            : retryRemainingSeconds > 0
+              ? `Повторить через ${retryRemainingSeconds} с`
+              : buttonLabel}
         </button>
       </div>
 
-      {error && <ErrorState title="Ошибка обработки" description={error} />}
+      {error && (
+        <ErrorState
+          title="Ошибка обработки"
+          description={
+            retryRemainingSeconds > 0
+              ? `${error} Повторите через ${retryRemainingSeconds} с.`
+              : error
+          }
+        />
+      )}
       {isProcessing && (
         <LoadingState
           title="Файл обрабатывается"

@@ -4,10 +4,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { SokolDataProvider } from './contexts/SokolDataContext';
 import { AnalyticsConstructorProvider } from './components/analytics/constructor/AnalyticsConstructorContext';
+import { shouldRetryRequest } from './api/errors';
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, refetchOnWindowFocus: false },
+    queries: {
+      retry: (failureCount, error) => shouldRetryRequest(failureCount, error),
+      refetchOnWindowFocus: false,
+    },
   },
 });
 

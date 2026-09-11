@@ -62,3 +62,28 @@ describe('generateControlFile', () => {
     );
   });
 });
+
+describe('docx tool errors', () => {
+  beforeEach(() => {
+    vi.mocked(api.post).mockReset();
+  });
+
+  it('preserves Retry-After from a 503 queue response', async () => {
+    vi.mocked(api.post).mockRejectedValue({
+      code: 'http_503',
+      message: 'HTTP 503',
+      status: 503,
+      retryAfterSeconds: 15,
+      details: new Blob(
+        [JSON.stringify({ detail: 'Сейчас обрабатывается слишком много документов. Повторите через несколько секунд — запрос встанет в очередь.' })],
+        { type: 'application/json' },
+      ),
+    });
+
+    await expect(generateSectionIITemplate(docxFile())).rejects.toMatchObject({
+      status: 503,
+      retryAfterSeconds: 15,
+      message: expect.stringMatching(/очеред/i),
+    });
+  });
+});

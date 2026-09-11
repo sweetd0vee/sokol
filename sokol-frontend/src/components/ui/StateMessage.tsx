@@ -24,6 +24,7 @@ export function LoadingState({ title = 'Загрузка...', description, class
 export function ErrorState({ title = 'Ошибка', description, className = '', action }: StateMessageProps) {
   return (
     <div
+      role="alert"
       className={cn('rounded-xl border border-red-200 bg-red-50 p-4 text-red-700', className)}
     >
       <div className="font-medium">{title}</div>

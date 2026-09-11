@@ -4,6 +4,7 @@ import { Check, Clipboard, Expand, Minimize2, X } from 'lucide-react';
 import { registerDashboardChart } from '../../utils/dashboardChartRegistry';
 import { useAnalyticsFilterCaption } from './analyticsFilterCaptionContext';
 import { captureChartPngWithFilters, captureNodePng } from './chartPngCapture';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 function ChartToolbar({
   exportSelected,
@@ -255,7 +256,9 @@ export function ChartCard({
             : 'min-h-[13rem] rounded-lg bg-white lg:min-h-0 lg:flex-1 lg:[&>*]:!h-full lg:[&_.recharts-responsive-container]:!h-full'
       }
     >
-      {children}
+      <ErrorBoundary title="Не удалось показать график">
+        {children}
+      </ErrorBoundary>
     </div>
   );
 
@@ -271,7 +274,9 @@ export function ChartCard({
             {toolbar}
           </div>
           <div ref={captureRef} {...exportCaptureAttributes} className="min-w-0">
-            {children}
+            <ErrorBoundary title="Не удалось показать график">
+              {children}
+            </ErrorBoundary>
           </div>
         </section>
       );

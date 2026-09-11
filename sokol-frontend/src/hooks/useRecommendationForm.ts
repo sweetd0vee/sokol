@@ -59,11 +59,14 @@ export function useRecommendationForm() {
     [id, recommendations],
   );
 
-  const { data: fetchedRecommendation, isLoading: isFetching } = useQuery({
+  const recommendationQuery = useQuery({
     queryKey: queryKeys.recommendation(id),
     queryFn: () => fetchRecommendation(id!),
     enabled: isEditMode && Boolean(id) && !navigationState.recommendation && !recommendationFromContext,
+    retry: false,
   });
+  const fetchedRecommendation = recommendationQuery.data;
+  const isFetching = recommendationQuery.isLoading;
 
   const source = isEditMode
     ? (navigationState.recommendation ?? recommendationFromContext ?? fetchedRecommendation)
@@ -423,6 +426,7 @@ export function useRecommendationForm() {
     isEditMode,
     isFetching,
     source,
+    recommendationQuery,
     fromCheckForm,
     heading,
     backToCheckPath,

@@ -98,7 +98,7 @@ export function ConfirmDialog({
   };
 
   return (
-    <Modal title={title}>
+    <Modal title={title} onClose={onCancel}>
       <form onSubmit={handleSubmit} className="mt-2 space-y-6">
         <div className="text-sm text-gray-600">{message}</div>
         <div className="flex items-center justify-center gap-3">

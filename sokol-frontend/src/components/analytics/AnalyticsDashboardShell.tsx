@@ -12,6 +12,7 @@ import {
 import { AnalyticsFilterCaptionProvider } from './analyticsFilterCaptionContext';
 import { filterSelectionItem } from './filterSelectionItem';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
+import { getErrorMessage } from '../../api/errors';
 
 /** Shared main column class for checks / recommendations / monitoring. */
 export const ANALYTICS_DASHBOARD_MAIN_CLASS =
@@ -73,7 +74,14 @@ export function AnalyticsDashboardShell({
     return (
       <ErrorState
         title={errorTitle}
-        description={error instanceof Error ? error.message : 'неизвестная ошибка'}
+        description={getErrorMessage(error, 'Проверьте подключение к API и повторите попытку.')}
+        action={{
+          label: 'Повторить',
+          onClick: () => {
+            void bootstrapQuery.refetch();
+            void analyticsQuery.refetch();
+          },
+        }}
       />
     );
   }

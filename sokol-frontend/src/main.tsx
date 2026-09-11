@@ -2,9 +2,16 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { ErrorBoundary } from './components/ui/ErrorBoundary'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary
+      title="Приложение остановилось"
+      description="Непредвиденная ошибка остановила интерфейс. Обновите страницу, чтобы продолжить."
+      reloadOnError
+    >
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 )

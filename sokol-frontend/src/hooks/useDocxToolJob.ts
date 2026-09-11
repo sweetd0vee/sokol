@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { getErrorMessage } from '../api/errors';
+import { useEffect, useState } from 'react';
+import { getErrorMessage, getRetryAfterSeconds } from '../api/errors';
 import { downloadBlob } from '../utils/download';
 
 const DEFAULT_MISSING_FILE_MESSAGE = 'Выберите файл .docx для обработки.';
@@ -20,21 +20,56 @@ export function useDocxToolJob({
   validate,
 }: UseDocxToolJobOptions) {
   const [file, setFile] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setErrorState] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [retryUntilMs, setRetryUntilMs] = useState<number | null>(null);
+  const [retryRemainingSeconds, setRetryRemainingSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!retryUntilMs) {
+      setRetryRemainingSeconds(0);
+      return undefined;
+    }
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((retryUntilMs - Date.now()) / 1000));
+      setRetryRemainingSeconds(remaining);
+      if (remaining === 0) {
+        setRetryUntilMs(null);
+      }
+    };
+    tick();
+    const id = window.setInterval(tick, 250);
+    return () => window.clearInterval(id);
+  }, [retryUntilMs]);
+
+  const setError = (next: string | null) => {
+    setErrorState(next);
+    if (next == null) {
+      setRetryUntilMs(null);
+    }
+  };
+
+  const captureError = (err: unknown, fallback = fallbackError) => {
+    setErrorState(getErrorMessage(err, fallback));
+    const retryAfter = getRetryAfterSeconds(err);
+    setRetryUntilMs(retryAfter ? Date.now() + retryAfter * 1000 : null);
+  };
 
   const onFileChange = (next: File | null) => {
     setError(null);
     const validationError = validate?.(next) ?? null;
     if (validationError) {
       setFile(null);
-      setError(validationError);
+      setErrorState(validationError);
       return;
     }
     setFile(next);
   };
 
   const run = async () => {
+    if (retryRemainingSeconds > 0) {
+      return;
+    }
     if (!file) {
       setError(missingFileMessage);
       return;
@@ -45,7 +80,7 @@ export function useDocxToolJob({
       const blob = await process(file);
       downloadBlob(blob, outputName(file.name));
     } catch (err) {
-      setError(getErrorMessage(err, fallbackError));
+      captureError(err);
     } finally {
       setIsProcessing(false);
     }
@@ -55,9 +90,11 @@ export function useDocxToolJob({
     file,
     error,
     isProcessing,
+    retryRemainingSeconds,
     onFileChange,
     run,
     setError,
+    captureError,
     setIsProcessing,
   };
 }
