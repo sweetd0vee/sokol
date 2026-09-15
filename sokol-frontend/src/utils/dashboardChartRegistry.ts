@@ -1,4 +1,5 @@
 import { toPng } from 'html-to-image';
+import { expandOverflowForTableCapture, exportCapturePixelSize } from './exportCaptureBox';
 
 const EXPORT_PNG_PIXEL_RATIO = 4;
 
@@ -25,7 +26,12 @@ type ChartRegistration = {
 const EXPORT_CAPTURE_ATTRIBUTE = 'data-analytics-export-capture-id';
 const EXPORT_TITLE_ATTRIBUTE = 'data-analytics-export-title';
 const EXPORT_DESCRIPTION_ATTRIBUTE = 'data-analytics-export-description';
-const TABLE_EXPORT_CHART_IDS = new Set(['effectivenessMatrix', 'materialityMatrix', 'statusMatrix']);
+const TABLE_EXPORT_CHART_IDS = new Set([
+  'effectivenessMatrix',
+  'materialityMatrix',
+  'statusMatrix',
+  'checkLifecycle',
+]);
 
 const chartRegistry = new Map<string, Set<ChartRegistration>>();
 
@@ -626,12 +632,20 @@ async function captureNodeAsPng(
         backgroundColor: '#ffffff',
         width,
         height,
-        style: { transform: 'none' },
+        style: {
+          transform: 'none',
+          width: `${width}px`,
+          height: `${height}px`,
+          overflow: 'visible',
+        },
         filter: (domNode) => {
           if (!(domNode instanceof HTMLElement)) {
             return true;
           }
           return !domNode.closest('[data-chart-toolbar]');
+        },
+        onClone: (_document, clonedNode) => {
+          expandOverflowForTableCapture(clonedNode);
         },
       });
     });
@@ -645,13 +659,15 @@ async function captureNodeAsPng(
       width: `${width}px`,
       height: `${height}px`,
       background: '#ffffff',
-      overflow: 'hidden',
+      overflow: 'visible',
       pointerEvents: 'none',
     });
     const clone = node.cloneNode(true) as HTMLElement;
     clone.style.width = `${width}px`;
     clone.style.height = `${height}px`;
     clone.style.transform = 'none';
+    clone.style.overflow = 'visible';
+    expandOverflowForTableCapture(clone);
     host.appendChild(clone);
     document.body.appendChild(host);
     try {
@@ -681,8 +697,17 @@ async function captureNode(
 }> {
   await waitForChartPaint(node);
   const rect = node.getBoundingClientRect();
-  const width = Math.max(Math.round(rect.width), node.offsetWidth || 0, 1);
-  const height = Math.max(Math.round(rect.height), node.offsetHeight || 0, 1);
+  const table = node.querySelector('table');
+  const { width, height } = exportCapturePixelSize({
+    rectWidth: rect.width,
+    rectHeight: rect.height,
+    offsetWidth: node.offsetWidth || 0,
+    offsetHeight: node.offsetHeight || 0,
+    scrollWidth: node.scrollWidth || 0,
+    scrollHeight: node.scrollHeight || 0,
+    contentWidth: table?.scrollWidth,
+    contentHeight: table?.scrollHeight,
+  });
   const exportHtmlMarkup = buildExportHtmlMarkup(node);
   const svgMarkup = exportHtmlMarkup ? undefined : extractSvgMarkup(node);
   const htmlMarkup = exportHtmlMarkup ?? (isUsefulSvgMarkup(svgMarkup) ? undefined : extractHtmlMarkup(node));

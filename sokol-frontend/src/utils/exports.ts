@@ -20,7 +20,7 @@ export async function exportChecks(
   const filename = `${filenameBase}.${format}`;
   switch (format) {
     case 'xlsx':
-      exportChecksXlsx(checks, filename, yearlyNumbers);
+      await exportChecksXlsx(checks, filename, yearlyNumbers);
       break;
     case 'docx':
       await exportChecksDocx(checks, filename, yearlyNumbers);

@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx-js-style';
 import ExcelJS from 'exceljs';
 import type { Check } from '../../types/check';
 import type { Recommendation } from '../../types/recommendation';
@@ -22,21 +21,24 @@ import {
   RECOMMENDATION_XLSX_MAX_ROW_HEIGHT,
   RECOMMENDATION_XLSX_MIN_ROW_HEIGHT,
   RECOMMENDATION_XLSX_COLUMN_WIDTHS,
-  TIMES_NEW_ROMAN_12,
   toCellText,
   toCheckRows,
   toRecommendationTableRows,
   WHITE,
 } from './shared';
 
-export function getCellBorderStyle() {
-  return {
-    top: { style: 'thin' as const, color: { rgb: BORDER_GRAY } },
-    bottom: { style: 'thin' as const, color: { rgb: BORDER_GRAY } },
-    left: { style: 'thin' as const, color: { rgb: BORDER_GRAY } },
-    right: { style: 'thin' as const, color: { rgb: BORDER_GRAY } },
-  };
-}
+const CHECK_XLSX_COLUMN_WIDTHS: Record<string, number> = {
+  ID: 10,
+  Ключ: 14,
+  'Название проверки': 48,
+  'Тип проверки': 16,
+  Вид: 22,
+  'Квартал проверки': 16,
+  'Дата начала': 14,
+  'Руководитель проверки': 26,
+  Статус: 16,
+};
+const CHECK_XLSX_WRAP_HEADERS = new Set(['Название проверки']);
 
 export function getRecommendationXlsxColumnWidth(header: string) {
   return RECOMMENDATION_XLSX_COLUMN_WIDTHS[header] ?? RECOMMENDATION_XLSX_DEFAULT_COLUMN_WIDTH;
@@ -68,90 +70,6 @@ export function getRecommendationXlsxRowHeight(row: ExportRow, headers: string[]
     Math.max(RECOMMENDATION_XLSX_MIN_ROW_HEIGHT, maxLineCount * RECOMMENDATION_XLSX_LINE_HEIGHT + 8),
     RECOMMENDATION_XLSX_MAX_ROW_HEIGHT,
   );
-}
-
-export function applySheetTableStyle(ws: XLSX.WorkSheet, headers: string[], rows: ExportRow[]) {
-  const ref = ws['!ref'];
-  if (!ref) {
-    return;
-  }
-  const range = XLSX.utils.decode_range(ref);
-  for (let row = range.s.r; row <= range.e.r; row += 1) {
-    for (let col = range.s.c; col <= range.e.c; col += 1) {
-      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-      const cell = ws[cellAddress];
-      if (!cell) {
-        continue;
-      }
-      const isHeader = row === range.s.r;
-      const header = headers[col - range.s.c];
-      const materialityColor =
-        !isHeader && isMaterialityHeader(header) ? getMaterialityDotColor(cell.v) : undefined;
-
-      if (materialityColor) {
-        cell.v = MATERIALITY_DOT_CHAR;
-        cell.t = 's';
-        cell.w = MATERIALITY_DOT_CHAR;
-        cell.s = {
-          ...(cell.s ?? {}),
-          font: {
-            name: 'Segoe UI Symbol',
-            sz: 16,
-            color: { rgb: materialityColor },
-          },
-          alignment: {
-            horizontal: 'center',
-            vertical: 'center',
-          },
-          border: getCellBorderStyle(),
-        };
-        continue;
-      }
-
-      if (!isHeader && isIndicatorHeader(header)) {
-        // Recommendation XLSX uses ExcelJS with embedded icon images instead.
-        cell.v = '';
-        cell.t = 's';
-        cell.s = {
-          ...(cell.s ?? {}),
-          alignment: { horizontal: 'center', vertical: 'center' },
-          border: getCellBorderStyle(),
-        };
-        continue;
-      }
-
-      const valueFill = !isHeader ? getHighlightFill(header, cell.v) : undefined;
-      cell.s = {
-        ...(cell.s ?? {}),
-        font: {
-          ...TIMES_NEW_ROMAN_12,
-          bold: isHeader,
-          color: isHeader ? { rgb: WHITE } : { rgb: '111827' },
-        },
-        fill: isHeader
-          ? { fgColor: { rgb: HEADER_BLUE } }
-          : valueFill
-            ? { fgColor: { rgb: valueFill } }
-            : undefined,
-        alignment: {
-          horizontal: isHeader || valueFill ? 'center' : 'left',
-          vertical: 'center',
-          wrapText: true,
-        },
-        border: getCellBorderStyle(),
-      };
-    }
-  }
-  ws['!cols'] = headers.map((header) => {
-    if (isMaterialityHeader(header) || isIndicatorHeader(header)) {
-      return { wch: 14 };
-    }
-    const maxLength = Math.max(
-      header.length,
-      ...rows.map((row) => toCellText(row[header]).length)
-    );
-    return { wch: Math.min(Math.max(maxLength + 2, 12), 42) };
-  });
 }
 
 export function excelBorder() {
@@ -276,11 +194,77 @@ export async function exportRecommendationsTableXlsx(
   );
 }
 
-export function exportChecksXlsx(checks: Check[], filename: string, yearlyNumbers: Map<string, number>) {
+export async function buildChecksXlsxBuffer(checks: Check[], yearlyNumbers: Map<string, number>) {
   const rows = toCheckRows(checks, yearlyNumbers);
-  const ws = XLSX.utils.json_to_sheet(rows);
-  applySheetTableStyle(ws, getHeaders(rows, CHECK_COLUMN_KEYS), rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Проверки');
-  XLSX.writeFile(wb, filename);
+  const headers = getHeaders(rows, CHECK_COLUMN_KEYS);
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Проверки', {
+    views: [{ state: 'frozen', ySplit: 1, showGridLines: true }],
+    pageSetup: {
+      orientation: 'landscape',
+      paperSize: 9,
+      fitToPage: false,
+      scale: 100,
+    },
+  });
+
+  headers.forEach((header, index) => {
+    sheet.getColumn(index + 1).width = CHECK_XLSX_COLUMN_WIDTHS[header] ?? 16;
+  });
+
+  const headerRow = sheet.addRow(headers);
+  headerRow.height = 22;
+  headerRow.eachCell((cell) => {
+    cell.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: `FF${WHITE}` } };
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: `FF${HEADER_BLUE}` },
+    };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    cell.border = excelBorder();
+  });
+
+  const nameWidth = CHECK_XLSX_COLUMN_WIDTHS['Название проверки'] ?? 48;
+  rows.forEach((row) => {
+    const excelRow = sheet.addRow(headers.map((header) => toCellText(row[header])));
+    excelRow.height = Math.min(
+      72,
+      Math.max(18, estimateWrappedLineCount(row['Название проверки'], nameWidth) * 15),
+    );
+    excelRow.eachCell((cell, colNumber) => {
+      const header = headers[colNumber - 1];
+      const fill = getHighlightFill(header, row[header ?? '']);
+      cell.border = excelBorder();
+      cell.alignment = {
+        horizontal: fill || header === 'ID' || header === 'Статус' ? 'center' : 'left',
+        vertical: 'middle',
+        wrapText: header !== undefined && CHECK_XLSX_WRAP_HEADERS.has(header),
+      };
+      cell.font = { name: 'Times New Roman', size: 12, color: { argb: 'FF111827' } };
+      if (fill) {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: `FF${fill}` },
+        };
+      }
+    });
+  });
+
+  return workbook.xlsx.writeBuffer();
+}
+
+export async function exportChecksXlsx(
+  checks: Check[],
+  filename: string,
+  yearlyNumbers: Map<string, number>,
+) {
+  const buffer = await buildChecksXlsxBuffer(checks, yearlyNumbers);
+  downloadBlob(
+    new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    }),
+    filename,
+  );
 }
