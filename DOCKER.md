@@ -9,6 +9,8 @@
 | Postgres | localhost:5433 |
 | MinIO API / Console | http://localhost:9000 / http://localhost:9001 |
 
+Образ MinIO — `quay.io/minio/minio` (Docker Hub `minio/minio` больше не отдаёт pull).
+
 ## Первый запуск
 
 ```bash
