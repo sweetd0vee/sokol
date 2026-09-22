@@ -54,8 +54,7 @@ def get_run_text(r: ET.Element) -> str:
             if child.text is not None:
                 parts.append(child.text)
         elif tag == f"{{{W_NS}}}instrText":
-            if child.text is not None:
-                parts.append(child.text)
+            continue
         elif tag in (f"{{{W_NS}}}tab", f"{{{W_NS}}}ptab"):
             parts.append("\t")
         elif tag in (f"{{{W_NS}}}br", f"{{{W_NS}}}cr"):
@@ -85,10 +84,26 @@ def run_has_payload(r: ET.Element) -> bool:
     return False
 
 
+def _fld_char_type(r: ET.Element) -> Optional[str]:
+    for child in r.iter(f"{{{W_NS}}}fldChar"):
+        return child.get(f"{{{W_NS}}}fldCharType") or child.get("fldCharType")
+    return None
+
+
 def get_paragraph_runs(p: ET.Element) -> Tuple[str, List[RunFragment]]:
     runs: List[RunFragment] = []
     p_text_parts: List[str] = []
+    skipping_field_instr = False
     for r in p.iter(f"{{{W_NS}}}r"):
+        fld_type = _fld_char_type(r)
+        if fld_type == "begin":
+            skipping_field_instr = True
+            continue
+        if fld_type in ("separate", "end"):
+            skipping_field_instr = False
+            continue
+        if skipping_field_instr:
+            continue
         rPr = r.find(f"./{{{W_NS}}}rPr")
         rPr_copy = copy.deepcopy(rPr) if rPr is not None else None
         run_text = get_run_text(r)

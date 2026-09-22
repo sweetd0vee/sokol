@@ -2,7 +2,7 @@ import re
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
-from app.services.reports.section_ii.field_parser import normalize_heading_num
+from app.services.reports.section_ii.field_parser import normalize_heading_num, parse_heading_line
 from app.services.reports.section_ii.models import RunFragment
 from app.services.reports.section_ii.patterns import (
     OBS_BLOCK_START_RE,
@@ -13,7 +13,10 @@ from app.services.reports.section_ii.patterns import (
 
 SECTION_TITLE_REF_RE = re.compile(r"Аудиторское\s*мнение", re.IGNORECASE)
 ROMAN_ONLY_RE = re.compile(r"^\s*([IVXLCDM]+)\s*[.)–—\-:]?\s*$", re.IGNORECASE)
-ROMAN_WITH_TITLE_RE = re.compile(r"^\s*([IVXLCDM]+)\s*[.)–—\-:]?\s+(.+)$", re.IGNORECASE)
+ROMAN_WITH_TITLE_RE = re.compile(
+    r"^\s*([IVXLCDM]+)(?:\s*[.)–—\-:]+\s*|\s+)(.+)$",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -121,13 +124,9 @@ def parse_section_heading_text(text: str) -> Tuple[Optional[str], str, str]:
     normalized = " ".join((text or "").split())
     if not normalized or OBS_START_RE.search(normalized):
         return (None, "", "")
-    roman_match = ROMAN_WITH_TITLE_RE.match(normalized)
-    if roman_match:
-        return (
-            "roman",
-            normalize_heading_num(roman_match.group(1)),
-            roman_match.group(2).strip(),
-        )
+    heading_type, heading_num, heading_title = parse_heading_line(normalized)
+    if heading_type in ("chapter", "roman") and heading_num:
+        return (heading_type, heading_num, heading_title)
     roman_only = ROMAN_ONLY_RE.match(normalized)
     if roman_only:
         return ("roman", normalize_heading_num(roman_only.group(1)), "")
@@ -188,16 +187,15 @@ def build_block_heading_state(
 
         is_fmt_heading = is_section_heading_paragraph(block.text, block.runs, signature)
         heading_type, heading_num, parsed_title = parse_section_heading_text(block.text)
-        # После входа в тело принимаем и «неидеальные» римские заголовки (III без bold),
+        # После входа в тело принимаем и «неидеальные» римские/главные заголовки (III без bold),
         # иначе наблюдения 3.x остаются привязаны к предыдущему разделу I/II.
-        is_loose_roman = (
-            seen_body_heading
-            and heading_type == "roman"
+        is_loose_section = (
+            heading_type in ("roman", "chapter")
             and bool(heading_num)
             and not OBS_START_RE.search(text)
         )
-        if is_fmt_heading or is_loose_roman:
-            if heading_type == "roman":
+        if is_fmt_heading or is_loose_section:
+            if heading_type in ("roman", "chapter"):
                 seen_body_heading = True
                 if parsed_title:
                     heading_chapter = heading_num
