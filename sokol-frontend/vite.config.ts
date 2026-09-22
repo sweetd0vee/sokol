@@ -35,6 +35,9 @@ export default defineConfig(({ mode }) => {
       include: ['src/**/*.test.ts'],
     },
     server: {
+      // Bind IPv4 only: on Windows+WSL, `localhost` often resolves to ::1 and
+      // hangs (ERR_CONNECTION_TIMED_OUT) while 127.0.0.1 works.
+      host: env.VITE_DEV_SERVER_HOST || '127.0.0.1',
       port: devPort,
       proxy: {
         '/api': {

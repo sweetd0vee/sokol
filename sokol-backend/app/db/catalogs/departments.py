@@ -1,4 +1,4 @@
-"""Canonical department list for seed and demo data (~30 current units)."""
+"""Canonical department list for seed and demo data (~35 current units)."""
 
 DEPARTMENTS = [
     "Не указан",
@@ -32,4 +32,10 @@ DEPARTMENTS = [
     "Департамент закупок и АХД",
     "Архивный отдел",
     "Центр обработки данных",
+    # Subsidiary companies
+    'ЗАО "Водород"',
+    'ЗАО "СБЛ-Лизинг"',
+    'ООО "СБ-Глобал"',
+    'СООО "Сбер Страхование"',
+    'ЗАСО "ТАСК"',
 ]

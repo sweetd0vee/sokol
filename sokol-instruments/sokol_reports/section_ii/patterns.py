@@ -49,7 +49,10 @@ CHAPTER_RE = re.compile(
     r"^\s*(Глава|Раздел)\s+([IVXLCDM]+|\d+)\s*[.\-:]?\s*(.*)$",
     re.IGNORECASE,
 )
-ROMAN_HEADING_RE = re.compile(r"^\s*([IVXLCDM]+)\s*[.)–—\-:]?\s+(.+)$", re.IGNORECASE)
+ROMAN_HEADING_RE = re.compile(
+    r"^\s*([IVXLCDM]+)(?:\s*[.)–—\-:]+\s*|\s+)(.+)$",
+    re.IGNORECASE,
+)
 SUBCHAPTER_RE = re.compile(r"^\s*(\d+(?:\.\d+)+)\.\s+(.+)$", re.IGNORECASE)
 
 SECTION2_ROMAN_ONLY_RE = re.compile(

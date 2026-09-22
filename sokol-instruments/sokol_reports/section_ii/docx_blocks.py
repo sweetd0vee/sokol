@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 
 from sokol_reports.section_ii.models import RunFragment
 from sokol_reports.section_ii.patterns import OBS_BLOCK_START_RE, W_NS
+from sokol_reports.section_ii.xml_utils import iter_unwrapped
 
 
 @dataclass(frozen=True)
@@ -53,8 +54,7 @@ def get_run_text(r: ET.Element) -> str:
             if child.text is not None:
                 parts.append(child.text)
         elif tag == f"{{{W_NS}}}instrText":
-            if child.text is not None:
-                parts.append(child.text)
+            continue
         elif tag in (f"{{{W_NS}}}tab", f"{{{W_NS}}}ptab"):
             parts.append("\t")
         elif tag in (f"{{{W_NS}}}br", f"{{{W_NS}}}cr"):
@@ -84,10 +84,26 @@ def run_has_payload(r: ET.Element) -> bool:
     return False
 
 
+def _fld_char_type(r: ET.Element) -> Optional[str]:
+    for child in r.iter(f"{{{W_NS}}}fldChar"):
+        return child.get(f"{{{W_NS}}}fldCharType") or child.get("fldCharType")
+    return None
+
+
 def get_paragraph_runs(p: ET.Element) -> Tuple[str, List[RunFragment]]:
     runs: List[RunFragment] = []
     p_text_parts: List[str] = []
+    skipping_field_instr = False
     for r in p.iter(f"{{{W_NS}}}r"):
+        fld_type = _fld_char_type(r)
+        if fld_type == "begin":
+            skipping_field_instr = True
+            continue
+        if fld_type in ("separate", "end"):
+            skipping_field_instr = False
+            continue
+        if skipping_field_instr:
+            continue
         rPr = r.find(f"./{{{W_NS}}}rPr")
         rPr_copy = copy.deepcopy(rPr) if rPr is not None else None
         run_text = get_run_text(r)
@@ -219,10 +235,7 @@ def extract_name_runs_from_tables(root: ET.Element, min_block_idx: int = 0) -> T
     if body is None:
         return name_runs_map, order
     block_idx = 0
-    for child in list(body):
-        tag = local_name(child.tag)
-        if tag not in {"p", "tbl"}:
-            continue
+    for tag, child in iter_unwrapped(body, "p", "tbl"):
         if tag != "tbl":
             block_idx += 1
             continue
@@ -230,8 +243,8 @@ def extract_name_runs_from_tables(root: ET.Element, min_block_idx: int = 0) -> T
             block_idx += 1
             continue
         tbl = child
-        for tr in tbl.findall(f"./{{{W_NS}}}tr"):
-            tcs = tr.findall(f"./{{{W_NS}}}tc")
+        for _row_tag, tr in iter_unwrapped(tbl, "tr"):
+            tcs = [tc for _tc_tag, tc in iter_unwrapped(tr, "tc")]
             if len(tcs) < 2:
                 continue
             first_text = get_cell_text(tcs[0])
@@ -258,8 +271,7 @@ def extract_document_blocks(root: ET.Element) -> Tuple[List[DocumentBlock], List
         return ([], [])
     blocks: List[DocumentBlock] = []
     textboxes: List[TextboxBlock] = []
-    for child in list(body):
-        tag = local_name(child.tag)
+    for tag, child in iter_unwrapped(body, "p", "tbl"):
         if tag == "p":
             p_text, runs = get_paragraph_runs(child)
             has_txbx = has_txbx_contents(child)
@@ -280,13 +292,11 @@ def extract_document_blocks(root: ET.Element) -> Tuple[List[DocumentBlock], List
                 if has_txbx:
                     collect_textboxes_from_element(child, anchor_idx, textboxes)
             continue
-        if tag != "tbl":
-            continue
         table_index = max((block.table_index or 0 for block in blocks if block.table_index is not None), default=-1) + 1
-        for row_idx, tr in enumerate(child.findall(f"./{{{W_NS}}}tr")):
-            tcs = tr.findall(f"./{{{W_NS}}}tc")
+        for row_idx, (_row_tag, tr) in enumerate(iter_unwrapped(child, "tr")):
+            tcs = [tc for _tc_tag, tc in iter_unwrapped(tr, "tc")]
             for tc_idx, tc in enumerate(tcs):
-                for p in tc.findall(f"./{{{W_NS}}}p"):
+                for _p_tag, p in iter_unwrapped(tc, "p"):
                     p_text, runs = get_paragraph_runs(p)
                     has_txbx = has_txbx_contents(p)
                     if p_text != "" or runs or has_txbx:

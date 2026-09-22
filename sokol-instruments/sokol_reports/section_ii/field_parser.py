@@ -185,8 +185,11 @@ def parse_text_observations(text: str) -> List[Observation]:
         chapter_title = ""
 
         previous_headings = [heading for heading in headings if heading[0] < match.start()]
-        if previous_headings:
-            _heading_pos, heading_num, heading_title = previous_headings[-1]
+        matching_headings = [
+            heading for heading in previous_headings if heading[1] == chapter
+        ] if chapter else previous_headings
+        if matching_headings:
+            _heading_pos, heading_num, heading_title = matching_headings[-1]
             chapter = heading_num
             chapter_title = heading_title.strip()[:120]
 
@@ -199,6 +202,8 @@ def parse_text_observations(text: str) -> List[Observation]:
                     re.IGNORECASE | re.DOTALL,
                 )
             )
+            if chapter and chapter_matches:
+                chapter_matches = [item for item in chapter_matches if item.group(1) == chapter]
             if chapter_matches:
                 last = chapter_matches[-1]
                 chapter = last.group(1)
@@ -211,6 +216,8 @@ def parse_text_observations(text: str) -> List[Observation]:
                         re.IGNORECASE | re.DOTALL,
                     )
                 )
+                if chapter and div_matches:
+                    div_matches = [item for item in div_matches if item.group(1) == chapter]
                 if div_matches:
                     last = div_matches[-1]
                     chapter = last.group(1)

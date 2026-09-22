@@ -1,5 +1,6 @@
 import unittest
 
+from sokol_reports.dictionaries.department_names import DEPARTMENTS
 from sokol_reports.dictionaries.dictionary_text import find_dictionary_label_match
 from sokol_reports.dictionaries.validation import DictionaryRefError, canonicalize_audit_objects
 from sokol_reports.memorandum.canonicalize import canonicalize_memorandum_source
@@ -41,6 +42,16 @@ class DepartmentCanonicalizationTests(unittest.TestCase):
         result = canonicalize_memorandum_source(source)
         self.assertEqual(len(result.groups), 1)
         self.assertEqual(len(result.groups[0].recommendations), 2)
+
+    def test_catalog_includes_subsidiary_companies(self) -> None:
+        for name in (
+            'ЗАО "Водород"',
+            'ЗАО "СБЛ-Лизинг"',
+            'ООО "СБ-Глобал"',
+            'СООО "Сбер Страхование"',
+            'ЗАСО "ТАСК"',
+        ):
+            self.assertIn(name, DEPARTMENTS)
 
     def test_find_match_allows_small_typo(self) -> None:
         self.assertEqual(

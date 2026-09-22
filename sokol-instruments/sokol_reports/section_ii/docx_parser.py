@@ -688,17 +688,27 @@ def parse_observations_from_file_with_runs(file_path: str) -> List[Observation]:
         if start_idx is None:
             continue
         state_chapter, state_title = block_heading_state.get(start_idx, ("", ""))
-        if state_chapter:
-            obs.chapter = state_chapter
-        if state_title:
-            obs.chapter_title = state_title
-        elif obs.chapter:
-            if obs.chapter in heading_map:
-                obs.chapter_title = heading_map[obs.chapter]
-            else:
-                base = obs.chapter.split(".")[0]
-                if base in heading_map:
-                    obs.chapter_title = heading_map[base]
+        obs_major = obs.number.split(".")[0] if obs.number else ""
+        # Номер наблюдения — источник главы. Иначе пропущенный заголовок
+        # оставляет наблюдения 4.x/5.x под названием предыдущей главы.
+        if obs_major:
+            obs.chapter = obs_major
+            if obs_major in heading_map:
+                obs.chapter_title = heading_map[obs_major]
+            elif state_chapter == obs_major and state_title:
+                obs.chapter_title = state_title
+        else:
+            if state_chapter:
+                obs.chapter = state_chapter
+            if state_title:
+                obs.chapter_title = state_title
+            elif obs.chapter:
+                if obs.chapter in heading_map:
+                    obs.chapter_title = heading_map[obs.chapter]
+                else:
+                    base = obs.chapter.split(".")[0]
+                    if base in heading_map:
+                        obs.chapter_title = heading_map[base]
 
         end_idx = len(blocks)
         for next_idx in range(obs_idx + 1, len(observations)):

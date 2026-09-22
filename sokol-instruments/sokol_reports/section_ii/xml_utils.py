@@ -32,6 +32,31 @@ _MAJOR_SECTION_HEADING_LOOSE_RE = re.compile(
 )
 
 
+XML_WRAPPER_TAGS = frozenset({"sdt", "sdtContent", "customXml", "smartTag", "ins", "del"})
+
+
+def local_tag(el) -> str:
+    tag = getattr(el, "tag", "") or ""
+    return tag.split("}")[-1] if "}" in tag else tag
+
+
+def iter_unwrapped(parent, *target_tags: str):
+    """Direct block children, descending into Word content-control wrappers."""
+    targets = frozenset(target_tags)
+    found: List[Tuple[str, object]] = []
+
+    def walk(node) -> None:
+        for child in node:
+            tag = local_tag(child)
+            if tag in targets:
+                found.append((tag, child))
+            elif tag in XML_WRAPPER_TAGS:
+                walk(child)
+
+    walk(parent)
+    return found
+
+
 def get_text_from_element(el) -> str:
     """Извлекает текст из XML-элемента."""
     return "".join(n.text or "" for n in el.iter() if hasattr(n, "text") and n.text)
@@ -39,14 +64,7 @@ def get_text_from_element(el) -> str:
 
 def get_blocks_from_xml(body) -> List[Tuple[str, object]]:
     """Возвращает список (тип, элемент) для параграфов и таблиц в body."""
-    blocks = []
-    for child in body:
-        tag = child.tag.split("}")[-1] if "}" in child.tag else child.tag
-        if tag == "p":
-            blocks.append(("p", child))
-        elif tag == "tbl":
-            blocks.append(("tbl", child))
-    return blocks
+    return iter_unwrapped(body, "p", "tbl")
 
 
 def _paragraph_text(btype: str, el) -> str:

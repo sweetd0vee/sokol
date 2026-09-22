@@ -116,7 +116,7 @@ def _guess_sheets(wb) -> dict[str, SheetGuess]:
             break
 
     # One-col sheets:
-    # - departments: big list (~48)
+    # - departments: big list (~53)
     # - check_kinds: medium (~16)
     # - effectiveness_ratings: small (~6)
     for sh in one_col_sheets:
