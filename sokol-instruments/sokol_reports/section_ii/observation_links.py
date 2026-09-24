@@ -89,36 +89,32 @@ def _starts_with_name(text: str, name: str) -> bool:
     return after.startswith(probe)
 
 
-def _contains_name(text: str, name: str) -> bool:
-    key = _name_key(name)
-    if not key:
-        return False
-    haystack = _normalize_match_text(text)
-    probe = key[:48]
-    if len(probe) < 4:
-        return key in haystack
-    return probe in haystack
-
-
 def _rest_is_short(rest: str) -> bool:
     return len(_normalize_match_text(rest).strip(" .:-")) <= 2
 
 
 def _is_title_frame(frame_text: str, number: str, name: str) -> bool:
     """Рамка заголовка — почти только «Наблюдение X.Y» и его название, без текста нарушения."""
-    if not name or not (_contains_name(frame_text, name) or _starts_with_name(frame_text, name)):
+    key = _name_key(name)
+    if len(key) < 4:
         return False
     text = _normalize_match_text(frame_text)
+    probe = key[:48]
+    if probe not in text:
+        return False
     text = re.sub(
         rf"наблюдени[ея]\s*(?:№|n|no\.?)?\s*{re.escape(_normalize_match_text(number))}(?!\.\d)",
         " ",
         text,
         count=1,
     )
-    probe = _name_key(name)[:80]
-    idx = text.find(probe) if probe else -1
+    idx = text.find(key)
+    consume = len(key) if idx >= 0 else 0
+    if idx < 0:
+        idx = text.find(probe)
+        consume = len(probe) if idx >= 0 else 0
     if idx >= 0:
-        text = f"{text[:idx]} {text[idx + len(probe):]}"
+        text = f"{text[:idx]} {text[idx + consume:]}"
     letters = re.sub(r"[^0-9a-zа-я]+", "", text)
     return len(letters) <= 40
 

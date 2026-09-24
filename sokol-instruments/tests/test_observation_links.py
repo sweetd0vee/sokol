@@ -123,6 +123,35 @@ class ObservationLinkTargetTests(unittest.TestCase):
         self.assertNotIn("SokolObs3_1", plain)
         self.assertIn("SokolObs3_1", heading)
 
+    def test_long_title_in_table_beats_earlier_copy(self) -> None:
+        name = (
+            "Вопросы необходимости уточнения показателей нагрузки менеджеров "
+            "клиентского сервиса сегмента Крупный и закрепления методики расчета"
+        )
+        document_xml = _document(
+            f"""
+            <w:p><w:r><w:t>Наблюдение 3.1.1. {name} — это не заголовок, а отсылка в тексте.</w:t></w:r></w:p>
+            <w:tbl>
+              <w:tr>
+                <w:tc><w:p><w:r><w:t>Наблюдение 3.1.1.</w:t></w:r></w:p></w:tc>
+                <w:tc><w:p><w:r><w:t>{name}</w:t></w:r></w:p></w:tc>
+              </w:tr>
+            </w:tbl>
+            """
+        )
+        updated, anchors, _next_id = ensure_observation_bookmarks(
+            document_xml,
+            ["3.1.1"],
+            bookmark_start_id=50,
+            observation_names={"3.1.1": name},
+        )
+
+        self.assertEqual(anchors["3.1.1"], "SokolObs3_1_1")
+        plain = _paragraph_containing(updated, "это не заголовок")
+        heading = _paragraph_containing(updated, ">Наблюдение 3.1.1.</w:t>")
+        self.assertNotIn("SokolObs3_1_1", plain)
+        self.assertIn("SokolObs3_1_1", heading)
+
 
 if __name__ == "__main__":
     unittest.main()
