@@ -7,18 +7,23 @@ import re
 from typing import Dict, Iterable, List, Optional, Tuple
 
 from sokol_reports.section_ii.bookmark_utils import extract_bookmark_names, next_bookmark_id
-from sokol_reports.section_ii.patterns import OBS_START_RE, SECTION3_TOC_TEXT_RE
+from sokol_reports.section_ii.patterns import OBS_BLOCK_START_RE, OBS_START_RE, SECTION3_TOC_TEXT_RE
+from sokol_reports.section_ii.xml_utils import is_sokol_summary_table_text
 
 _SOKOL_OBS_BOOKMARK_PREFIX = "SokolObs"
-_P_BLOCK_RE = re.compile(
-    r"<(?P<qname>[\w:]+p)\b(?P<attrs>[^>]*)>(?P<body>.*?)</(?P=qname)>",
-    re.IGNORECASE | re.DOTALL,
-)
 _PPR_CLOSE_RE = re.compile(r"</(?P<qname>[\w:]+pPr)>", re.IGNORECASE)
 _TEXT_NODE_RE = re.compile(
     r"<(?P<tag>[\w:]+t)\b[^>]*>(?P<text>[^<]*)</(?P=tag)>",
     re.IGNORECASE,
 )
+_TEXT_TOKEN_RE = re.compile(
+    r"<(?P<tag>(?:[\w-]+:)?t)\b[^>]*>(?P<text>[^<]*)</(?P=tag)>"
+    r"|<(?:[\w-]+:)?(?:tab|br|cr)\b[^>]*/?>",
+    re.IGNORECASE,
+)
+_LOCAL_TAG_RE_CACHE: Dict[str, re.Pattern[str]] = {}
+_PBDR_RE = re.compile(r"<(?:[\w-]+:)?pBdr\b", re.IGNORECASE)
+_GAP_BLOCK_RE = re.compile(r"<(?:[\w-]+:)?(?:p|tbl)\b", re.IGNORECASE)
 _BOOKMARK_START_RE = re.compile(
     r"<(?P<tag>[\w:]+bookmarkStart)\b[^>]*\bw:name=\"(?P<name>[^\"]+)\"",
     re.IGNORECASE,
@@ -39,8 +44,177 @@ def bookmark_name_for_observation(number: str) -> str:
     return f"{_SOKOL_OBS_BOOKMARK_PREFIX}{safe}"
 
 
+def _unescape_xml_text(value: str) -> str:
+    return (
+        value.replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", '"')
+        .replace("&apos;", "'")
+    )
+
+
 def _collect_text(xml_fragment: str) -> str:
-    return "".join(match.group("text") for match in _TEXT_NODE_RE.finditer(xml_fragment))
+    parts: List[str] = []
+    for match in _TEXT_TOKEN_RE.finditer(xml_fragment):
+        if match.group("text") is None:
+            parts.append(" ")
+            continue
+        parts.append(_unescape_xml_text(match.group("text")))
+    return "".join(parts)
+
+
+def _normalize_match_text(value: str) -> str:
+    text = (value or "").replace("\xa0", " ").replace("\u202f", " ")
+    text = text.replace("ё", "е").replace("Ё", "е")
+    text = text.replace("—", "-").replace("–", "-")
+    text = re.sub(r"\s+", " ", text)
+    return text.strip().casefold()
+
+
+def _name_key(name: str) -> str:
+    key = _normalize_match_text(name)
+    key = re.sub(r"(?:\.{3}|…)+$", "", key)
+    return key.strip(" .:-«»\"'")
+
+
+def _starts_with_name(text: str, name: str) -> bool:
+    key = _name_key(name)
+    if not key:
+        return False
+    after = _normalize_match_text(text).lstrip(" .:-«»\"'")
+    probe = key[:48]
+    if len(probe) < 4:
+        return after.startswith(key)
+    return after.startswith(probe)
+
+
+def _contains_name(text: str, name: str) -> bool:
+    key = _name_key(name)
+    if not key:
+        return False
+    haystack = _normalize_match_text(text)
+    probe = key[:48]
+    if len(probe) < 4:
+        return key in haystack
+    return probe in haystack
+
+
+def _rest_is_short(rest: str) -> bool:
+    return len(_normalize_match_text(rest).strip(" .:-")) <= 2
+
+
+def _is_title_frame(frame_text: str, number: str, name: str) -> bool:
+    """Рамка заголовка — почти только «Наблюдение X.Y» и его название, без текста нарушения."""
+    if not name or not (_contains_name(frame_text, name) or _starts_with_name(frame_text, name)):
+        return False
+    text = _normalize_match_text(frame_text)
+    text = re.sub(
+        rf"наблюдени[ея]\s*(?:№|n|no\.?)?\s*{re.escape(_normalize_match_text(number))}(?!\.\d)",
+        " ",
+        text,
+        count=1,
+    )
+    probe = _name_key(name)[:80]
+    idx = text.find(probe) if probe else -1
+    if idx >= 0:
+        text = f"{text[:idx]} {text[idx + len(probe):]}"
+    letters = re.sub(r"[^0-9a-zа-я]+", "", text)
+    return len(letters) <= 40
+
+
+def _local_tag_re(local: str) -> re.Pattern[str]:
+    cached = _LOCAL_TAG_RE_CACHE.get(local)
+    if cached is None:
+        cached = re.compile(
+            rf"<(?P<slash>/)?(?P<qname>(?:[\w-]+:)?{re.escape(local)})(?=[\s>/])[^>]*>",
+            re.IGNORECASE,
+        )
+        _LOCAL_TAG_RE_CACHE[local] = cached
+    return cached
+
+
+def _iter_local_spans(xml: str, local: str) -> List[Tuple[int, int]]:
+    spans: List[Tuple[int, int]] = []
+    stack: List[int] = []
+    for match in _local_tag_re(local).finditer(xml):
+        token = match.group(0)
+        if match.group("slash"):
+            if stack:
+                spans.append((stack.pop(), match.end()))
+            continue
+        if token.rstrip().endswith("/>"):
+            spans.append((match.start(), match.end()))
+            continue
+        stack.append(match.start())
+    spans.sort()
+    return spans
+
+
+def _enclosing_span(spans: List[Tuple[int, int]], start: int, end: int) -> Optional[Tuple[int, int]]:
+    found: Optional[Tuple[int, int]] = None
+    for span_start, span_end in spans:
+        if span_start <= start and end <= span_end:
+            found = (span_start, span_end)
+    return found
+
+
+def _gap_has_block(xml: str, left_end: int, right_start: int) -> bool:
+    return _GAP_BLOCK_RE.search(xml[left_end:right_start]) is not None
+
+
+def _bordered_group_text(xml: str, records: List[dict], index: int) -> str:
+    lo = index
+    while lo > 0 and records[lo - 1]["border"] and not _gap_has_block(xml, records[lo - 1]["end"], records[lo]["start"]):
+        lo -= 1
+    hi = index
+    limit = len(records) - 1
+    while hi < limit and records[hi + 1]["border"] and not _gap_has_block(xml, records[hi]["end"], records[hi + 1]["start"]):
+        hi += 1
+    return " ".join(records[pos]["text"] for pos in range(lo, hi + 1))
+
+
+def _next_paragraph_text(xml: str, records: List[dict], index: int) -> str:
+    if index + 1 >= len(records):
+        return ""
+    if _gap_has_block(xml, records[index]["end"], records[index + 1]["start"]):
+        return ""
+    return records[index + 1]["text"]
+
+
+def _candidate_priority(
+    *,
+    frame_kind: str,
+    at_start: bool,
+    rest: str,
+    frame_text: str,
+    next_text: str,
+    number: str,
+    name: str,
+) -> Optional[int]:
+    """
+    0 — рамка (таблица или абзацы с границей), где вместе номер и название.
+    1 — абзац, который начинается с номера, и следом идёт название.
+    2 — то же название сразу после номера, но не с начала абзаца.
+    3 — запасной вариант: абзац начинается с номера.
+    """
+    title_here = bool(name) and _starts_with_name(rest, name)
+    title_next = bool(name) and at_start and _rest_is_short(rest) and _starts_with_name(next_text, name)
+    title_frame = (
+        frame_kind in {"table", "border"}
+        and at_start
+        and _is_title_frame(frame_text, number, name)
+        and (title_here or title_next or _rest_is_short(rest))
+    )
+    if title_frame:
+        return 0
+    if at_start and (title_here or title_next):
+        return 1
+    if title_here:
+        return 2
+    if at_start:
+        return 3
+    return None
 
 
 def _element_text(el) -> str:
@@ -125,12 +299,15 @@ def ensure_observation_bookmarks(
     bookmark_start_id: Optional[int] = None,
     block_spans=None,
     blocks=None,
+    observation_names: Optional[Dict[str, str]] = None,
 ) -> Tuple[str, Dict[str, str], int]:
     """
-    Добавляет закладки на абзацы «Наблюдение X.Y» в разделе III
-    и возвращает карту только для реально существующих закладок.
+    Ставит закладку на рамку заголовка наблюдения: «Наблюдение X.Y» вместе с названием.
+
+    Упоминание «Наблюдение X.Y» в тексте нарушения не подходит, даже если номер совпал.
     """
     needed = {number for number in observation_numbers if number}
+    names = observation_names or {}
     next_id = bookmark_start_id if bookmark_start_id is not None else next_bookmark_id(document_xml)
     if not needed:
         return document_xml, {}, next_id
@@ -138,31 +315,92 @@ def ensure_observation_bookmarks(
     search_from = _find_search_start_from_blocks(needed, block_spans, blocks)
     if search_from is None:
         search_from = _find_section3_search_start(document_xml)
-    search_region = document_xml[search_from:]
 
-    targets: List[Tuple[int, int, List[Tuple[str, str]]]] = []
-    seen = set()
-    for match in _P_BLOCK_RE.finditer(search_region):
-        paragraph_xml = match.group(0)
-        text = _collect_text(paragraph_xml)
-        if not text:
+    paragraph_spans = [
+        span for span in _iter_local_spans(document_xml, "p") if span[0] >= search_from
+    ]
+    row_spans = _iter_local_spans(document_xml, "tr")
+    records: List[dict] = []
+    for start, end in paragraph_spans:
+        paragraph_xml = document_xml[start:end]
+        text = _collect_text(paragraph_xml).strip()
+        border = _PBDR_RE.search(paragraph_xml) is not None
+        if not text and not border:
             continue
-        # Не ставим закладку на ячейки сводной таблицы раздела II.
+        records.append(
+            {
+                "start": start,
+                "end": end,
+                "text": text,
+                "border": border,
+            }
+        )
+
+    chosen: Dict[str, Tuple[int, int, int]] = {}
+
+    def consider(number: str, priority: int, start: int, end: int) -> None:
+        if number not in needed:
+            return
+        current = chosen.get(number)
+        if current is None or (priority, start) < (current[0], current[1]):
+            chosen[number] = (priority, start, end)
+
+    for index, record in enumerate(records):
+        text = record["text"]
+        row = _enclosing_span(row_spans, record["start"], record["end"])
+        if row is not None:
+            frame_kind = "table"
+            frame_text = _collect_text(document_xml[row[0]:row[1]])
+        elif record["border"]:
+            frame_kind = "border"
+            frame_text = _bordered_group_text(document_xml, records, index)
+        else:
+            frame_kind = "plain"
+            frame_text = text
+        if is_sokol_summary_table_text(frame_text):
+            continue
         if "Основные нарушения" in text or "Существенность" in text:
             continue
-        paragraph_bookmarks: List[Tuple[str, str]] = []
-        for obs_match in OBS_START_RE.finditer(text):
-            number = obs_match.group(1)
-            if number not in needed or number in seen:
+
+        next_text = _next_paragraph_text(document_xml, records, index)
+        start_match = OBS_BLOCK_START_RE.match(text)
+        matches = []
+        if start_match:
+            matches.append(start_match)
+        for mid_match in OBS_START_RE.finditer(text):
+            if start_match and mid_match.start() <= start_match.start():
                 continue
-            seen.add(number)
-            existing = _existing_sokol_obs_bookmark(paragraph_xml, number)
-            bookmark_name = existing or bookmark_name_for_observation(number)
-            paragraph_bookmarks.append((number, bookmark_name))
-        if paragraph_bookmarks:
-            absolute_start = search_from + match.start()
-            absolute_end = search_from + match.end()
-            targets.append((absolute_start, absolute_end, paragraph_bookmarks))
+            matches.append(mid_match)
+
+        for obs_match in matches:
+            number = obs_match.group(1)
+            if number not in needed:
+                continue
+            at_start = start_match is not None and obs_match.start() == start_match.start()
+            priority = _candidate_priority(
+                frame_kind=frame_kind,
+                at_start=at_start,
+                rest=text[obs_match.end():],
+                frame_text=frame_text,
+                next_text=next_text,
+                number=number,
+                name=(names.get(number) or "").strip(),
+            )
+            if priority is None:
+                continue
+            consider(number, priority, record["start"], record["end"])
+
+    grouped: Dict[Tuple[int, int], List[Tuple[str, str]]] = {}
+    for number, (_priority, start, end) in chosen.items():
+        paragraph_xml = document_xml[start:end]
+        existing = _existing_sokol_obs_bookmark(paragraph_xml, number)
+        bookmark_name = existing or bookmark_name_for_observation(number)
+        grouped.setdefault((start, end), []).append((number, bookmark_name))
+
+    targets = [
+        (start, end, bookmarks)
+        for (start, end), bookmarks in grouped.items()
+    ]
 
     updated = document_xml
     anchor_map: Dict[str, str] = {}
