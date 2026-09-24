@@ -94,29 +94,48 @@ def get_paragraph_runs(p: ET.Element) -> Tuple[str, List[RunFragment]]:
     runs: List[RunFragment] = []
     p_text_parts: List[str] = []
     skipping_field_instr = False
-    for r in p.iter(f"{{{W_NS}}}r"):
+
+    def handle_run(r: ET.Element) -> None:
+        nonlocal skipping_field_instr
         fld_type = _fld_char_type(r)
         if fld_type == "begin":
             skipping_field_instr = True
-            continue
+            return
         if fld_type in ("separate", "end"):
             skipping_field_instr = False
-            continue
+            return
         if skipping_field_instr:
-            continue
+            return
         rPr = r.find(f"./{{{W_NS}}}rPr")
         rPr_copy = copy.deepcopy(rPr) if rPr is not None else None
         run_text = get_run_text(r)
         if run_text == "" and not run_has_payload(r):
-            continue
+            return
+        tab_only = bool(run_text) and not run_text.replace("\t", "").strip()
         runs.append(
             RunFragment(
                 text=run_text,
                 rPr=copy.deepcopy(rPr_copy),
+                is_tab=tab_only,
                 raw_r=copy.deepcopy(r),
             )
         )
         p_text_parts.append(run_text)
+
+    def walk(node: ET.Element) -> None:
+        for child in list(node):
+            tag = child.tag
+            if tag == f"{{{W_NS}}}r":
+                handle_run(child)
+                continue
+            # Таб между номером и названием иногда лежит рядом с w:r, а не внутри него.
+            if tag in (f"{{{W_NS}}}tab", f"{{{W_NS}}}ptab"):
+                if not skipping_field_instr:
+                    p_text_parts.append("\t")
+                continue
+            walk(child)
+
+    walk(p)
     return ("".join(p_text_parts), runs)
 
 

@@ -15,6 +15,27 @@ from sokol_reports.section_ii.patterns import W_NS
 from sokol_reports.section_ii.table_builder import create_table_xml
 
 
+def _add_tab_heading(doc: Document, number: str, title: str, *, tab_outside_run: bool = False):
+    """«VII. Раздел 7» и «VII.<tab>Раздел 7»: таб может быть и внутри прогона, и рядом с ним."""
+    paragraph = doc.add_paragraph()
+
+    def _style(run, bold: bool = True):
+        run.bold = bold
+        run.font.size = Pt(14)
+        run.font.name = "Times New Roman"
+        return run
+
+    _style(paragraph.add_run(number))
+    if tab_outside_run:
+        paragraph._element.append(OxmlElement("w:tab"))
+    else:
+        tab_run = paragraph.add_run()
+        _style(tab_run, bold=False)
+        tab_run._r.append(OxmlElement("w:tab"))
+    _style(paragraph.add_run(title))
+    return paragraph
+
+
 def _add_bold_heading(doc: Document, text: str):
     paragraph = doc.add_paragraph()
     run = paragraph.add_run(text)
@@ -148,6 +169,30 @@ class SectionIIChapterHeadingsTest(unittest.TestCase):
         self.assertIn("V. Управление рисками", table_xml)
         text_nodes = [node.text or "" for node in ET.fromstring(table_xml).iter(f"{{{W_NS}}}t")]
         self.assertTrue(any("Раздел 4" in text or "IV." in text for text in text_nodes))
+
+    def test_chapter_title_with_tab_after_section_number(self):
+        """Таб после номера главы — тот же разделитель, что и пробел: «VII. Раздел 7»."""
+        doc = Document()
+        _add_bold_heading(doc, "I. Аудиторское мнение")
+        _add_tab_heading(doc, "VII.", "Раздел 7")
+        _add_observation(doc, "7.1", "Контроль сроков")
+        _add_tab_heading(doc, "VIII", "Раздел 8", tab_outside_run=True)
+        _add_observation(doc, "8.1", "Контроль отчётности")
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            docx_path = Path(tmp_dir) / "input.docx"
+            doc.save(docx_path)
+            observations = parse_observations_from_file_with_runs(str(docx_path))
+
+        self.assertEqual([obs.number for obs in observations], ["7.1", "8.1"])
+        self.assertEqual(observations[0].chapter, "7")
+        self.assertEqual(observations[0].chapter_title, "Раздел 7")
+        self.assertEqual(observations[1].chapter, "8")
+        self.assertEqual(observations[1].chapter_title, "Раздел 8")
+
+        table_xml = ET.tostring(create_table_xml(observations), encoding="unicode")
+        self.assertIn("VII. Раздел 7", table_xml)
+        self.assertIn("VIII. Раздел 8", table_xml)
 
 
 if __name__ == "__main__":

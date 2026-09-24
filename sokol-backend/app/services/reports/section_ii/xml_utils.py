@@ -58,8 +58,15 @@ def iter_unwrapped(parent, *target_tags: str):
 
 
 def get_text_from_element(el) -> str:
-    """Извлекает текст из XML-элемента."""
-    return "".join(n.text or "" for n in el.iter() if hasattr(n, "text") and n.text)
+    """Извлекает текст из XML-элемента. Таб после номера раздела — такой же разделитель, как пробел."""
+    parts: List[str] = []
+    for node in el.iter():
+        tag = local_tag(node)
+        if tag in ("tab", "ptab"):
+            parts.append(" ")
+        elif node.text:
+            parts.append(node.text)
+    return "".join(parts)
 
 
 def get_blocks_from_xml(body) -> List[Tuple[str, object]]:

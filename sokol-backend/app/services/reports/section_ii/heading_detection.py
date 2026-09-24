@@ -52,14 +52,19 @@ def _run_font_name(rPr) -> Optional[str]:
     return r_fonts.get(f"{{{W_NS}}}ascii") or r_fonts.get(f"{{{W_NS}}}hAnsi")
 
 
+def _fragment_visible_text(frag: RunFragment) -> str:
+    """Текст прогона без табов. Прогон из одного w:tab не должен ломать формат заголовка."""
+    return (frag.text or "").replace("\t", "").strip()
+
+
 def extract_dominant_run_format(runs: List[RunFragment]) -> HeadingFormatSignature:
     bold_votes = 0
     regular_votes = 0
     sizes: dict[str, int] = {}
     fonts: dict[str, int] = {}
     for frag in runs:
-        text = (frag.text or "").strip()
-        if not text and not frag.is_tab:
+        text = _fragment_visible_text(frag)
+        if not text:
             continue
         if _run_is_bold(frag.rPr):
             bold_votes += len(text) or 1
@@ -86,7 +91,7 @@ def paragraph_matches_heading_format(
 ) -> bool:
     if not runs:
         return False
-    substantive = [frag for frag in runs if (frag.text or "").strip() or frag.is_tab]
+    substantive = [frag for frag in runs if _fragment_visible_text(frag)]
     if not substantive:
         return False
     if signature.bold:
@@ -214,7 +219,7 @@ def build_block_heading_state(
             )
         ):
             heading_chapter = pending_roman
-            heading_title = text.split("\n")[0].strip()
+            heading_title = " ".join(text.split("\n")[0].split())
             heading_map[pending_roman] = heading_title
             pending_roman = ""
             seen_body_heading = True

@@ -78,6 +78,8 @@ def normalize_heading_num(raw_num: str) -> str:
 
 
 def parse_heading_line(p_text: str) -> Tuple[Optional[str], str, str]:
+    # Таб, NBSP и обычный пробел после «VII.» — один и тот же разделитель.
+    p_text = " ".join((p_text or "").split())
     ch_match = CHAPTER_RE.search(p_text)
     if ch_match:
         raw_num = ch_match.group(2)
