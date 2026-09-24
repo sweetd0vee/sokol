@@ -16,6 +16,8 @@ from sokol_reports.section_ii.docx_blocks import (
     extract_document_blocks,
     extract_name_runs_from_tables,
     load_document_xml,
+    local_name,
+    run_has_payload,
     runs_to_text,
 )
 from sokol_reports.section_ii.field_parser import (
@@ -69,17 +71,6 @@ def parse_observations(text: str) -> List[Observation]:
     return parse_text_observations(text)
 
 
-def _find_section3_flat_block_idx(blocks, min_block_idx: int = 0) -> int:
-    return find_section3_flat_block_idx(blocks, min_block_idx=min_block_idx)
-
-
-def _run_has_payload(r: ET.Element) -> bool:
-    for child in list(r):
-        if child.tag != f"{{{W_NS}}}rPr":
-            return True
-    return False
-
-
 def _raw_run_is_break_only(r: ET.Element) -> bool:
     has_break = False
     for child in list(r):
@@ -121,30 +112,11 @@ def _truncate_runs_to_offset(runs: List[RunFragment], offset: int) -> List[RunFr
     return _slice_runs_by_offsets(runs, 0, offset)
 
 
-def _runs_to_text(runs: List[RunFragment]) -> str:
-    parts: List[str] = []
-    for frag in runs:
-        if frag.br_before:
-            parts.append("\n")
-        parts.append(frag.text or "")
-    return "".join(parts)
-
-
 def _runs_to_text_no_breaks(runs: List[RunFragment]) -> str:
     parts: List[str] = []
     for frag in runs:
         parts.append(frag.text or "")
     return "".join(parts)
-
-
-def _clone_fragment_with_text(frag: RunFragment, text: str, br_before: bool) -> RunFragment:
-    return RunFragment(
-        text=text,
-        rPr=copy.deepcopy(frag.rPr) if frag.rPr is not None else None,
-        br_before=br_before,
-        is_tab=frag.is_tab,
-        raw_r=None,
-    )
 
 
 def _text_nodes(raw_r: ET.Element) -> List[ET.Element]:
@@ -235,7 +207,7 @@ def _slice_runs_by_offsets(
     start_offset: int,
     end_offset: Optional[int] = None,
 ) -> List[RunFragment]:
-    text_len = len(_runs_to_text(runs))
+    text_len = len(runs_to_text(runs))
     start_offset = max(0, start_offset)
     end_offset = text_len if end_offset is None else min(text_len, max(start_offset, end_offset))
     remove_spans = [(0, start_offset), (end_offset, text_len)]
@@ -302,13 +274,6 @@ def _remove_text_spans_from_runs(
         pos = text_end
 
     return _strip_leading_breaks(result)
-
-
-def _service_line_spans(text: str) -> List[Tuple[int, int]]:
-    spans: List[Tuple[int, int]] = []
-    for match in re.finditer(r"[^\n]*(?:Уровень\s+существенности|Аудитор\s*:)[^\n]*(?:\n|$)", text, re.IGNORECASE):
-        spans.append(match.span())
-    return spans
 
 
 def _is_service_line(text: str) -> bool:
@@ -448,17 +413,13 @@ def _has_structured_recommendation_fields(text: str) -> bool:
     )
 
 
-def _local_name(tag: str) -> str:
-    return tag.split("}")[-1] if "}" in tag else tag
-
-
 def _strip_drawings_from_raw_run(raw_r: ET.Element) -> Optional[ET.Element]:
     cleaned = copy.deepcopy(raw_r)
     for parent in cleaned.iter():
         for child in list(parent):
-            if _local_name(child.tag) in ("drawing", "pict", "object"):
+            if local_name(child.tag) in ("drawing", "pict", "object"):
                 parent.remove(child)
-    if not _run_has_payload(cleaned):
+    if not run_has_payload(cleaned):
         return None
     return cleaned
 
@@ -548,10 +509,10 @@ def _extract_rec_runs_from_block(block: List[Tuple[str, List[RunFragment]]]) -> 
 def _extract_rec_entries_from_runs(runs: List[RunFragment]) -> List[RecommendationEntry]:
     if not runs:
         return []
-    text = _runs_to_text(runs)
+    text = runs_to_text(runs)
     if not _has_structured_recommendation_fields(text):
         return []
-    lines = _clean_structured_recommendation_lines(_runs_to_text(_strip_images_from_runs(runs)))
+    lines = _clean_structured_recommendation_lines(runs_to_text(_strip_images_from_runs(runs)))
     rec_runs = _structured_recommendation_runs_from_source(runs)
     rec_text = "\n".join(lines).strip()
     if not rec_text:
@@ -642,9 +603,9 @@ def parse_observations_from_file_with_runs(file_path: str) -> List[Observation]:
     section3_top_level_idx = xml_utils.find_insert_before_section3(body, min_idx=0)
     table_min_idx = section3_top_level_idx if section3_top_level_idx is not None else 0
 
-    table_name_runs, _table_order = extract_name_runs_from_tables(root, min_block_idx=table_min_idx)
+    table_name_runs = extract_name_runs_from_tables(root, min_block_idx=table_min_idx)
     blocks, textboxes = extract_document_blocks(root)
-    section3_start = _find_section3_flat_block_idx(blocks)
+    section3_start = find_section3_flat_block_idx(blocks)
 
     # Порядок = только порядок появления в документе. Никакой дописки «в конец».
     ordered_starts = _iter_observation_starts(blocks, section3_start)

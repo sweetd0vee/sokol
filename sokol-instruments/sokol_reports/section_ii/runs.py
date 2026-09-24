@@ -1,5 +1,4 @@
 import copy
-from typing import List
 
 import xml.etree.ElementTree as ET
 

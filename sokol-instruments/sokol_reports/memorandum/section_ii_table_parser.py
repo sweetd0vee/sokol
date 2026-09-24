@@ -33,6 +33,16 @@ DEADLINE_VALUE_RE = re.compile(
 SROK_INLINE_RE = re.compile(r"Срок\s*[–\-—]\s*", re.IGNORECASE)
 
 
+def _is_recommendation_row(first_cell: str) -> bool:
+    if SECTION2_TABLE_HEADER.lower() in first_cell.lower():
+        return False
+    if CHAPTER_ROW_RE.match(first_cell) or OBS_ROW_LABEL_RE.match(first_cell):
+        return False
+    if OBS_START_RE.search(first_cell) and not REC_ROW_LABEL_RE.match(first_cell):
+        return False
+    return REC_ROW_LABEL_RE.match(first_cell) is not None
+
+
 def _cell_texts(tr) -> List[str]:
     texts: List[str] = []
     for tc in tr.findall(f"./{{{W_NS}}}tc"):
@@ -204,13 +214,7 @@ def parse_section_ii_for_memorandum(file_path: str) -> Tuple[Optional[Memorandum
             continue
 
         first_cell = cells[0].strip()
-        if SECTION2_TABLE_HEADER.lower() in first_cell.lower():
-            continue
-        if CHAPTER_ROW_RE.match(first_cell) or OBS_ROW_LABEL_RE.match(first_cell):
-            continue
-        if OBS_START_RE.search(first_cell) and not REC_ROW_LABEL_RE.match(first_cell):
-            continue
-        if not REC_ROW_LABEL_RE.match(first_cell):
+        if not _is_recommendation_row(first_cell):
             continue
 
         raw_recommendation = cells[1] if len(cells) > 1 else ""

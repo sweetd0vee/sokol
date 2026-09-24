@@ -20,7 +20,6 @@ __all__ = [
     "MemorandumSource",
     "document_has_section_ii",
     "parse_az_for_memorandum",
-    "parse_recommendations_from_az",
 ]
 
 
@@ -67,8 +66,3 @@ def parse_az_for_memorandum(
         return canonicalize_memorandum_source(source, department_names=department_names), None
     except DictionaryRefError as exc:
         return None, str(exc)
-
-
-def parse_recommendations_from_az(file_path: str) -> Tuple[Optional[MemorandumSource], Optional[str]]:
-    """Извлечь рекомендации из таблицы Раздела II аудиторского заключения (АЗ)."""
-    return parse_az_for_memorandum(file_path)

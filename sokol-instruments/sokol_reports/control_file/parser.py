@@ -5,20 +5,16 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 from sokol_reports.memorandum.section_ii_table_parser import (
-    CHAPTER_ROW_RE,
-    OBS_ROW_LABEL_RE,
-    REC_ROW_LABEL_RE,
-    SECTION2_TABLE_HEADER,
     _cell_texts,
     _find_section_ii_table,
+    _is_recommendation_row,
     _parse_all_audit_object_pairs,
-    _split_body_into_recommendations,
     _parse_audit_object_header,
+    _split_body_into_recommendations,
 )
 from sokol_reports.section_ii.docx_blocks import load_document_xml
-from sokol_reports.section_ii.field_parser import SROK_TAIL_RE
 from sokol_reports.memorandum.models import MemorandumRecommendation
-from sokol_reports.section_ii.patterns import OBS_START_RE, W_NS
+from sokol_reports.section_ii.patterns import SROK_TAIL_RE, W_NS
 
 
 @dataclass
@@ -55,13 +51,7 @@ def parse_section_ii_for_control_file(
             continue
 
         first_cell = cells[0].strip()
-        if SECTION2_TABLE_HEADER.lower() in first_cell.lower():
-            continue
-        if CHAPTER_ROW_RE.match(first_cell) or OBS_ROW_LABEL_RE.match(first_cell):
-            continue
-        if OBS_START_RE.search(first_cell) and not REC_ROW_LABEL_RE.match(first_cell):
-            continue
-        if not REC_ROW_LABEL_RE.match(first_cell):
+        if not _is_recommendation_row(first_cell):
             continue
 
         raw_recommendation = cells[1] if len(cells) > 1 else ""

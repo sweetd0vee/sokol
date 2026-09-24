@@ -195,30 +195,27 @@ def build_block_heading_state(
             and not OBS_START_RE.search(text)
         )
         if is_fmt_heading or is_loose_section:
-            if heading_type in ("roman", "chapter"):
-                seen_body_heading = True
-                if parsed_title:
-                    heading_chapter = heading_num
-                    heading_title = parsed_title
-                    heading_map[heading_num] = parsed_title
-                    pending_roman = ""
-                else:
-                    pending_roman = heading_num
+            seen_body_heading = True
+            if parsed_title:
+                heading_chapter = heading_num
+                heading_title = parsed_title
+                heading_map[heading_num] = parsed_title
+                pending_roman = ""
+            else:
+                pending_roman = heading_num
         elif (
             pending_roman
             and text
             and not OBS_START_RE.search(text)
             and (
                 paragraph_matches_heading_format(block.runs, signature)
-                or (seen_body_heading and block.cell_index is None)
+                or seen_body_heading
             )
         ):
             heading_chapter = pending_roman
             heading_title = text.split("\n")[0].strip()
             heading_map[pending_roman] = heading_title
             pending_roman = ""
-            seen_body_heading = True
-        elif is_fmt_heading:
             seen_body_heading = True
 
         block_heading_state[idx] = (heading_chapter, heading_title)

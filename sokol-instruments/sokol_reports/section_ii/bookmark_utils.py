@@ -337,37 +337,6 @@ def get_section_heading_template_paragraph(
     return source_paragraph
 
 
-def copy_paragraph_properties(source: ET.Element, target: ET.Element) -> None:
-    source_p_pr = source.find(f"./{{{W_NS}}}pPr")
-    if source_p_pr is None:
-        return
-    target_p_pr = target.find(f"./{{{W_NS}}}pPr")
-    if target_p_pr is None:
-        target.insert(0, ET.fromstring(ET.tostring(source_p_pr, encoding="unicode")))
-        return
-    for child in list(target_p_pr):
-        target_p_pr.remove(child)
-    for child in source_p_pr:
-        target_p_pr.append(ET.fromstring(ET.tostring(child, encoding="unicode")))
-
-
-def copy_first_run_properties(source: ET.Element, target_run: ET.Element) -> None:
-    source_run = source.find(f"./{{{W_NS}}}r")
-    if source_run is None:
-        return
-    source_r_pr = source_run.find(f"./{{{W_NS}}}rPr")
-    if source_r_pr is None:
-        return
-    target_r_pr = target_run.find(f"./{{{W_NS}}}rPr")
-    if target_r_pr is None:
-        target_run.insert(0, ET.fromstring(ET.tostring(source_r_pr, encoding="unicode")))
-        return
-    for child in list(target_r_pr):
-        target_r_pr.remove(child)
-    for child in source_r_pr:
-        target_r_pr.append(ET.fromstring(ET.tostring(child, encoding="unicode")))
-
-
 def parse_paragraph_xml(paragraph_xml: str) -> Optional[ET.Element]:
     wrapped = f'<root xmlns:w="{W_NS}">{paragraph_xml}</root>'
     try:

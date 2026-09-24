@@ -110,8 +110,7 @@ def _paragraph_outline_level(el) -> Optional[int]:
 
 def _paragraph_has_page_break(el) -> bool:
     for br in el.iter():
-        tag = br.tag.split("}")[-1] if "}" in br.tag else br.tag
-        if tag != "br":
+        if local_tag(br) != "br":
             continue
         br_type = br.get(f"{{{W_NS}}}type") or br.get("type")
         if br_type == "page":
@@ -170,11 +169,6 @@ def _find_insert_index_from_toc(body, section1_start: int, toc_max_idx: int) -> 
         if not text or "HYPERLINK" in text:
             continue
         section_num = parse_major_section_heading_number(text)
-        if section_num is None:
-            loose = _MAJOR_SECTION_HEADING_LOOSE_RE.match(text)
-            if loose:
-                token = loose.group(1)
-                section_num = int(token) if token.isdigit() else roman_to_int(token)
         if section_num is not None and section_num > 2:
             toc_titles.append((section_num, text))
 
@@ -389,10 +383,9 @@ def find_first_block_after_page2(body) -> int:
     """
     blocks = get_blocks_from_xml(body)
     page_break_count = 0
-    for i, (btype, el) in enumerate(blocks):
+    for i, (_btype, el) in enumerate(blocks):
         for br in el.iter():
-            tag = br.tag.split("}")[-1] if "}" in br.tag else br.tag
-            if tag != "br":
+            if local_tag(br) != "br":
                 continue
             br_type = br.get(f"{{{W_NS}}}type") or br.get("type")
             if br_type == "page":

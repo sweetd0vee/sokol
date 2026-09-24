@@ -34,16 +34,6 @@ def load_document_xml(file_path: str) -> ET.Element:
             return ET.parse(f).getroot()
 
 
-def get_text_from_xml(root: ET.Element) -> str:
-    """Извлекает весь текст из document.xml с сохранением структуры параграфов."""
-    parts = []
-    for p in root.iter(f"{{{W_NS}}}p"):
-        p_text = "".join(t.text or "" for t in p.iter(f"{{{W_NS}}}t") if t.text)
-        if p_text.strip():
-            parts.append(p_text)
-    return "\n".join(parts)
-
-
 def get_run_text(r: ET.Element) -> str:
     parts: List[str] = []
     for child in r.iter():
@@ -70,10 +60,6 @@ def get_run_text(r: ET.Element) -> str:
                     parts.append(chr(int(char_hex, 16)))
                 except ValueError:
                     pass
-        elif tag == f"{{{W_NS}}}fldChar":
-            fld_type = child.get(f"{{{W_NS}}}fldCharType") or child.get("fldCharType")
-            if fld_type:
-                parts.append("")
     return "".join(parts)
 
 
@@ -105,14 +91,13 @@ def get_paragraph_runs(p: ET.Element) -> Tuple[str, List[RunFragment]]:
         if skipping_field_instr:
             continue
         rPr = r.find(f"./{{{W_NS}}}rPr")
-        rPr_copy = copy.deepcopy(rPr) if rPr is not None else None
         run_text = get_run_text(r)
         if run_text == "" and not run_has_payload(r):
             continue
         runs.append(
             RunFragment(
                 text=run_text,
-                rPr=copy.deepcopy(rPr_copy),
+                rPr=copy.deepcopy(rPr) if rPr is not None else None,
                 raw_r=copy.deepcopy(r),
             )
         )
@@ -191,16 +176,7 @@ def collect_textboxes_from_element(
 
 
 def collect_runs_from_cell(tc: ET.Element) -> List[RunFragment]:
-    combined: List[RunFragment] = []
-    for p in tc.findall(f".//{{{W_NS}}}p"):
-        _p_text, runs = get_paragraph_runs(p)
-        if not runs:
-            continue
-        cloned = clone_runs(runs)
-        if combined and cloned:
-            cloned[0].br_before = True
-        combined.extend(cloned)
-    return combined
+    return collect_runs_from_paragraphs(list(tc.findall(f".//{{{W_NS}}}p")))
 
 
 def get_cell_text(tc: ET.Element) -> str:
@@ -228,12 +204,11 @@ def get_cell_text(tc: ET.Element) -> str:
     return "".join(parts)
 
 
-def extract_name_runs_from_tables(root: ET.Element, min_block_idx: int = 0) -> Tuple[dict, List[str]]:
+def extract_name_runs_from_tables(root: ET.Element, min_block_idx: int = 0) -> dict:
     name_runs_map: dict = {}
-    order: List[str] = []
     body = root.find(f".//{{{W_NS}}}body")
     if body is None:
-        return name_runs_map, order
+        return name_runs_map
     block_idx = 0
     for tag, child in iter_unwrapped(body, "p", "tbl"):
         if tag != "tbl":
@@ -260,9 +235,8 @@ def extract_name_runs_from_tables(root: ET.Element, min_block_idx: int = 0) -> T
             if not runs:
                 continue
             name_runs_map[obs_num] = runs
-            order.append(obs_num)
         block_idx += 1
-    return name_runs_map, order
+    return name_runs_map
 
 
 def extract_document_blocks(root: ET.Element) -> Tuple[List[DocumentBlock], List[TextboxBlock]]:

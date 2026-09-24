@@ -5,10 +5,6 @@ from tempfile import TemporaryDirectory
 from typing import Optional
 
 import streamlit as st
-
-APP_DIR = Path(__file__).resolve().parent
-FAVICON_PATH = APP_DIR / "images" / "sberbank.png"
-CONTROL_FILE_HEADER_TEMPLATE = APP_DIR / "data" / "файл контроля шаблон (шапка).xlsx"
 import streamlit.components.v1 as components
 
 from sokol_reports.control_file.generator import generate_control_file_template
@@ -18,6 +14,9 @@ from sokol_reports.section_ii.docx_generator import process_document
 from ui.dictionary_tab import ensure_departments_loaded, get_active_departments, render_dictionary_tab
 from ui.theme import inject_theme
 
+APP_DIR = Path(__file__).resolve().parent
+FAVICON_PATH = APP_DIR / "images" / "sberbank.png"
+CONTROL_FILE_HEADER_TEMPLATE = APP_DIR / "data" / "файл контроля шаблон (шапка).xlsx"
 
 OUTPUT_MIME = {
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -136,16 +135,6 @@ def render_tool(
         key=f"{key_prefix}_upload",
         label_visibility="collapsed",
     )
-
-    upload_signature_key = f"{key_prefix}_upload_signature"
-
-    if uploaded_file is None:
-        st.session_state.pop(upload_signature_key, None)
-
-    if uploaded_file is not None:
-        upload_signature = (uploaded_file.name, uploaded_file.size)
-        if st.session_state.get(upload_signature_key) != upload_signature:
-            st.session_state[upload_signature_key] = upload_signature
 
     if st.button(
         "Сгенерировать и скачать",

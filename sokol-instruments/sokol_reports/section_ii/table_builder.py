@@ -312,7 +312,6 @@ def _cell_with_run_fragments(
 
 def _cell_recommendation_with_runs(
     run_frags: List[RunFragment],
-    deadline: str,
     width: int,
     grid_span: int,
     font: Optional[dict] = None,
@@ -433,7 +432,7 @@ def create_table_xml(
             tr_rec.append(_cell(obs.rec_label, RECOMMENDATION_LABEL_WIDTH, 2, font=main_font))
             if obs.rec_runs:
                 tr_rec.append(_cell_recommendation_with_runs(
-                    obs.rec_runs, obs.deadline or "", RECOMMENDATION_TEXT_WIDTH, 3, font=main_font
+                    obs.rec_runs, RECOMMENDATION_TEXT_WIDTH, 3, font=main_font
                 ))
             else:
                 tr_rec.append(_cell_recommendation_with_deadline(
@@ -455,8 +454,6 @@ def create_heading_paragraph_xml(
     from sokol_reports.section_ii.bookmark_utils import (
         add_bookmarks_to_paragraph,
         build_section_heading_paragraph,
-        copy_first_run_properties,
-        copy_paragraph_properties,
     )
 
     template = style_reference or source_paragraph
@@ -471,25 +468,16 @@ def create_heading_paragraph_xml(
 
     f = font or fonts.FONT_BODY
     p = ET.Element(f"{{{W_NS}}}p")
-    if source_paragraph is not None:
-        copy_paragraph_properties(source_paragraph, p)
-    else:
-        pPr = ET.SubElement(p, f"{{{W_NS}}}pPr")
-        ET.SubElement(pPr, f"{{{W_NS}}}pageBreakBefore")
-        ET.SubElement(pPr, f"{{{W_NS}}}spacing", attrib={f"{{{W_NS}}}before": "240", f"{{{W_NS}}}after": "120"})
+    pPr = ET.SubElement(p, f"{{{W_NS}}}pPr")
+    ET.SubElement(pPr, f"{{{W_NS}}}pageBreakBefore")
+    ET.SubElement(pPr, f"{{{W_NS}}}spacing", attrib={f"{{{W_NS}}}before": "240", f"{{{W_NS}}}after": "120"})
 
     if bookmark_names:
         add_bookmarks_to_paragraph(p, bookmark_names, bookmark_start_id or 0)
 
     r = ET.SubElement(p, f"{{{W_NS}}}r")
-    if source_paragraph is not None:
-        copy_first_run_properties(source_paragraph, r)
-    rPr = r.find(f"./{{{W_NS}}}rPr")
-    if rPr is None:
-        rPr = ET.SubElement(r, f"{{{W_NS}}}rPr")
-        fonts.add_rpr(rPr, f, bold=True)
-    elif source_paragraph is None:
-        fonts.add_rpr(rPr, f, bold=True)
+    rPr = ET.SubElement(r, f"{{{W_NS}}}rPr")
+    fonts.add_rpr(rPr, f, bold=True)
     t = ET.SubElement(r, f"{{{W_NS}}}t", attrib={f"{{{XML_NS}}}space": "preserve"})
     t.text = text
     return p
