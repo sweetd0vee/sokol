@@ -234,6 +234,8 @@ SOKOL_CSS = """
     }
 
     .stButton > button {
+        width: 288px;
+        max-width: 100%;
         min-height: 2.75rem;
         margin-top: 1rem;
         padding: 0.625rem 1.25rem;

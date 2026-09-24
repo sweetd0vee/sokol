@@ -23,9 +23,6 @@ OUTPUT_MIME = {
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 }
 
-TOOL_BUTTON_WIDTH = 288
-
-
 def save_uploaded_file(uploaded_file, folder: Path) -> Path:
     input_path = folder / uploaded_file.name
     input_path.write_bytes(uploaded_file.getbuffer())
@@ -121,7 +118,6 @@ def render_tool(
                 "Скачать шаблон",
                 key=f"{key_prefix}_template_download",
                 type="secondary",
-                width=TOOL_BUTTON_WIDTH,
             ):
                 start_download(
                     template_file.name,
@@ -140,7 +136,6 @@ def render_tool(
         "Сгенерировать и скачать",
         key=f"{key_prefix}_button",
         type="primary",
-        width=TOOL_BUTTON_WIDTH,
         disabled=uploaded_file is None,
     ):
         with st.spinner("Файл обрабатывается..."):
