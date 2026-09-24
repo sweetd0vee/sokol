@@ -33,6 +33,13 @@ SOKOL_CSS = """
         visibility: hidden;
     }
 
+    html,
+    body,
+    .stApp,
+    [data-testid="stAppViewContainer"] {
+        color-scheme: light;
+    }
+
     .stApp {
         background: #ffffff;
         color: var(--text);
@@ -115,10 +122,10 @@ SOKOL_CSS = """
 
     div[data-testid="stRadio"] label span,
     div[data-testid="stRadio"] label p,
-    div[data-testid="stRadio"] label div[data-testid="stMarkdownContainer"] {
+    div[data-testid="stRadio"] label div {
         font-size: 0.875rem;
         font-weight: 500;
-        color: inherit !important;
+        color: var(--gray-700) !important;
     }
 
     div[data-testid="stRadio"] label[data-checked="true"],
@@ -217,15 +224,35 @@ SOKOL_CSS = """
         text-align: center;
     }
 
+    div[data-testid="stFileUploaderDropzone"],
+    div[data-testid="stFileUploaderDropzoneInstructions"],
+    div[data-testid="stFileUploaderDropzoneInstructions"] span,
+    div[data-testid="stFileUploaderDropzoneInstructions"] div {
+        color: var(--gray-700) !important;
+    }
+
+    div[data-testid="stFileUploader"] svg {
+        color: var(--gray-500) !important;
+        fill: currentColor;
+    }
+
     div[data-testid="stFileUploader"] button {
-        color: var(--sber-dark);
-        border-color: var(--gray-300);
-        border-radius: 0.5rem;
+        background: #ffffff !important;
+        color: var(--sber-dark) !important;
+        border: 1px solid var(--gray-300) !important;
+        border-radius: 0.5rem !important;
         font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    div[data-testid="stFileUploader"] button:hover {
+        background: var(--gray-50) !important;
+        border-color: var(--sber-dark) !important;
+        color: var(--sber-dark) !important;
     }
 
     div[data-testid="stFileUploader"] small {
-        color: var(--gray-500);
+        color: var(--gray-500) !important;
     }
 
     .stButton {
