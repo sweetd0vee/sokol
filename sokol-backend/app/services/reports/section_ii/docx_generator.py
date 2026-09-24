@@ -452,11 +452,17 @@ def process_document(
         observation_anchors = {}
         if with_hyperlinks:
             # Закладки ставим до вставки раздела II, чтобы не забукмаркить ячейки новой таблицы.
+            observation_names = {
+                obs.number: (obs.name or "").strip()
+                for obs in observations
+                if obs.number
+            }
             original_document_xml, observation_anchors, _ = ensure_observation_bookmarks(
                 original_document_xml,
-                [obs.number for obs in observations if obs.number],
+                list(observation_names),
                 block_spans=block_spans,
                 blocks=blocks,
+                observation_names=observation_names,
             )
             tree = ET.ElementTree(ET.fromstring(original_document_xml.encode("utf-8")))
             root = tree.getroot()

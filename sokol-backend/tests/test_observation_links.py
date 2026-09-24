@@ -122,6 +122,11 @@ class ObservationLinksTests(unittest.TestCase):
             document_xml,
             ["2.1", "2.2", "2.3"],
             bookmark_start_id=20,
+            observation_names={
+                "2.1": "Первое",
+                "2.2": "Второе",
+                "2.3": "Третье",
+            },
         )
 
         self.assertEqual(anchors["2.1"], "SokolObs2_1")
@@ -161,6 +166,71 @@ class ObservationLinksTests(unittest.TestCase):
         section3_idx = updated.find("III. Детальные результаты")
         first_bookmark_idx = updated.find('w:name="SokolObs1_1"')
         self.assertGreater(first_bookmark_idx, section3_idx)
+
+    def test_bordered_frame_wins_over_mention_in_text(self):
+        document_xml = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="{W_NS}">
+  <w:body>
+    <w:p><w:r><w:t>Проверкой установлено, см. Наблюдение 3.1 в описании процесса.</w:t></w:r></w:p>
+    <w:p>
+      <w:pPr><w:pBdr><w:top w:val="single"/></w:pBdr></w:pPr>
+      <w:r><w:t>Наблюдение 3.1.</w:t></w:r>
+    </w:p>
+    <w:p>
+      <w:pPr><w:pBdr><w:bottom w:val="single"/></w:pBdr></w:pPr>
+      <w:r><w:t>Несвоевременное обновление лимитов</w:t></w:r>
+    </w:p>
+  </w:body>
+</w:document>
+"""
+        updated, anchors, _next_id = ensure_observation_bookmarks(
+            document_xml,
+            ["3.1"],
+            bookmark_start_id=10,
+            observation_names={"3.1": "Несвоевременное обновление лимитов"},
+        )
+
+        self.assertEqual(anchors["3.1"], "SokolObs3_1")
+        mention = _paragraph_containing(updated, "в описании процесса")
+        heading = _paragraph_containing(updated, "Наблюдение 3.1.")
+        self.assertNotIn("SokolObs3_1", mention)
+        self.assertIn("SokolObs3_1", heading)
+        self.assertIn("pBdr", heading)
+
+    def test_table_frame_wins_over_mention_in_text(self):
+        document_xml = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="{W_NS}">
+  <w:body>
+    <w:p><w:r><w:t>В ходе проверки указано Наблюдение 3.1 как пример.</w:t></w:r></w:p>
+    <w:tbl>
+      <w:tr>
+        <w:tc><w:p><w:r><w:t>Наблюдение 3.1.</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>Несвоевременное обновление лимитов</w:t></w:r></w:p></w:tc>
+      </w:tr>
+    </w:tbl>
+  </w:body>
+</w:document>
+"""
+        updated, anchors, _next_id = ensure_observation_bookmarks(
+            document_xml,
+            ["3.1"],
+            bookmark_start_id=20,
+            observation_names={"3.1": "Несвоевременное обновление лимитов"},
+        )
+
+        self.assertEqual(anchors["3.1"], "SokolObs3_1")
+        mention = _paragraph_containing(updated, "как пример")
+        heading = _paragraph_containing(updated, "Наблюдение 3.1.")
+        self.assertNotIn("SokolObs3_1", mention)
+        self.assertIn("SokolObs3_1", heading)
+        self.assertLess(updated.find("как пример"), updated.find('w:name="SokolObs3_1"'))
+
+
+def _paragraph_containing(document_xml: str, snippet: str) -> str:
+    for match in re.finditer(r"<w:p\b.*?</w:p>", document_xml, re.DOTALL):
+        if snippet in match.group(0):
+            return match.group(0)
+    raise AssertionError(f"Абзац с текстом {snippet!r} не найден")
 
 
 if __name__ == "__main__":
