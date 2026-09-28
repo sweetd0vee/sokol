@@ -15,11 +15,28 @@ export type RecommendationAutoStatusFields = {
   additionalIndicator: RecommendationAdditionalIndicator;
 };
 
-const TERMINAL_STATUSES = new Set<RecommendationStatus>(['completed', 'unresolved']);
-const MANUAL_ADDITIONAL_STATUSES = new Set<RecommendationAdditionalStatus>([
-  'on_time',
-  'deadline_violated',
-]);
+const TERMINAL_STATUSES = new Set<RecommendationStatus>(['completed']);
+const MANUAL_ADDITIONAL_STATUSES = new Set<RecommendationAdditionalStatus>(['on_time']);
+
+const PHASE_STATUS = {
+  on_control: 'on_control',
+  overdue: 'unresolved',
+} as const satisfies Record<'on_control' | 'overdue', RecommendationStatus>;
+
+const PHASE_ADDITIONAL_STATUS = {
+  on_control: 'on_control',
+  overdue: 'deadline_violated',
+} as const satisfies Record<'on_control' | 'overdue', RecommendationAdditionalStatus>;
+
+const PHASE_STATUS_INDICATOR = {
+  on_control: 'на контроле',
+  overdue: 'не решено',
+} as const satisfies Record<'on_control' | 'overdue', RecommendationIndicator>;
+
+const PHASE_ADDITIONAL_INDICATOR = {
+  on_control: 'на контроле',
+  overdue: 'срок нарушен',
+} as const satisfies Record<'on_control' | 'overdue', RecommendationAdditionalIndicator>;
 
 function moscowTodayIso(now = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -41,11 +58,11 @@ function toDateIso(value: Date | string | null | undefined): string | null {
   return trimmed || null;
 }
 
-function phase(anchor: string | null, today: string): 'on_control' | 'in_progress' | null {
+function phase(anchor: string | null, today: string): 'on_control' | 'overdue' | null {
   if (!anchor) {
     return null;
   }
-  return today < anchor ? 'on_control' : 'in_progress';
+  return today < anchor ? 'on_control' : 'overdue';
 }
 
 export function computeRecommendationAutoStatus({
@@ -63,15 +80,15 @@ export function computeRecommendationAutoStatus({
   const controlIso = toDateIso(controlDeadline);
   const statusPhase = phase(controlIso, today);
   if (statusPhase && !TERMINAL_STATUSES.has(currentStatus as RecommendationStatus)) {
-    updates.status = statusPhase;
-    updates.indicator = statusPhase === 'on_control' ? 'на контроле' : 'в процессе';
+    updates.status = PHASE_STATUS[statusPhase];
+    updates.indicator = PHASE_STATUS_INDICATOR[statusPhase];
   }
   if (
     statusPhase
     && !MANUAL_ADDITIONAL_STATUSES.has(currentAdditionalStatus as RecommendationAdditionalStatus)
   ) {
-    updates.additionalStatus = statusPhase;
-    updates.additionalIndicator = statusPhase === 'on_control' ? 'на контроле' : 'в процессе';
+    updates.additionalStatus = PHASE_ADDITIONAL_STATUS[statusPhase];
+    updates.additionalIndicator = PHASE_ADDITIONAL_INDICATOR[statusPhase];
   }
   return updates;
 }

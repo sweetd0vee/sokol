@@ -317,7 +317,7 @@ for raw in (extension_1_date, extension_2_reason):
 
 ### M21. Overlay на каждом PATCH
 
-Любой PATCH (хоть `name`) пересчитывает status/indicator, если не terminal. Ручной `on_control` после дедлайна сбросится в `in_progress`.
+Любой PATCH (хоть `name`) пересчитывает status/indicator, если не `completed`. Ручной `on_control` после дедлайна сбросится в `unresolved` + `deadline_violated`.
 
 ### M22. Scheduler грузит всю таблицу
 

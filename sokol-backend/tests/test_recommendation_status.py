@@ -28,10 +28,10 @@ TODAY = date(2026, 9, 10)
 
 
 class RecommendationStatusCalcTests(unittest.TestCase):
-    def test_phase_is_on_control_before_anchor_and_in_progress_on_or_after(self) -> None:
+    def test_phase_is_on_control_before_anchor_and_overdue_on_or_after(self) -> None:
         self.assertEqual(status_phase(date(2026, 9, 11), TODAY), "on_control")
-        self.assertEqual(status_phase(date(2026, 9, 10), TODAY), "in_progress")
-        self.assertEqual(status_phase(date(2026, 9, 9), TODAY), "in_progress")
+        self.assertEqual(status_phase(date(2026, 9, 10), TODAY), "overdue")
+        self.assertEqual(status_phase(date(2026, 9, 9), TODAY), "overdue")
         self.assertIsNone(status_phase(None, TODAY))
 
     def test_control_deadline_drives_status_and_indicator(self) -> None:
@@ -42,10 +42,10 @@ class RecommendationStatusCalcTests(unittest.TestCase):
         self.assertEqual(future["additional_indicator"], "на контроле")
 
         due = compute_auto_status_fields(control_deadline=date(2026, 9, 1), today=TODAY)
-        self.assertEqual(due["status"], RecommendationStatus.IN_PROGRESS)
-        self.assertEqual(due["indicator"], "в процессе")
-        self.assertEqual(due["additional_status"], RecommendationAdditionalStatus.IN_PROGRESS)
-        self.assertEqual(due["additional_indicator"], "в процессе")
+        self.assertEqual(due["status"], RecommendationStatus.UNRESOLVED)
+        self.assertEqual(due["indicator"], "не решено")
+        self.assertEqual(due["additional_status"], RecommendationAdditionalStatus.DEADLINE_VIOLATED)
+        self.assertEqual(due["additional_indicator"], "срок нарушен")
 
     def test_completed_during_audit_indicator_is_preserved(self) -> None:
         updates = compute_auto_status_fields(
@@ -62,9 +62,9 @@ class RecommendationStatusCalcTests(unittest.TestCase):
             control_deadline=date(2026, 8, 1),
             today=TODAY,
         )
-        self.assertEqual(updates["status"], RecommendationStatus.IN_PROGRESS)
-        self.assertEqual(updates["additional_status"], RecommendationAdditionalStatus.IN_PROGRESS)
-        self.assertEqual(updates["additional_indicator"], "в процессе")
+        self.assertEqual(updates["status"], RecommendationStatus.UNRESOLVED)
+        self.assertEqual(updates["additional_status"], RecommendationAdditionalStatus.DEADLINE_VIOLATED)
+        self.assertEqual(updates["additional_indicator"], "срок нарушен")
 
     def test_control_zone_prefers_actual_completion_over_postponement(self) -> None:
         self.assertEqual(
@@ -102,9 +102,9 @@ class RecommendationStatusCalcTests(unittest.TestCase):
             existing=existing,
             today=TODAY,
         )
-        self.assertEqual(payload["status"], RecommendationStatus.IN_PROGRESS)
-        self.assertEqual(payload["additional_status"], RecommendationAdditionalStatus.IN_PROGRESS)
-        self.assertEqual(payload["additional_indicator"], "в процессе")
+        self.assertEqual(payload["status"], RecommendationStatus.UNRESOLVED)
+        self.assertEqual(payload["additional_status"], RecommendationAdditionalStatus.DEADLINE_VIOLATED)
+        self.assertEqual(payload["additional_indicator"], "срок нарушен")
 
     def test_terminal_and_manual_statuses_are_preserved(self) -> None:
         completed = compute_auto_status_fields(
@@ -116,14 +116,15 @@ class RecommendationStatusCalcTests(unittest.TestCase):
         self.assertNotIn("status", completed)
         self.assertNotIn("additional_status", completed)
 
-        unresolved = compute_auto_status_fields(
-            control_deadline=date(2026, 8, 1),
+    def test_overdue_pair_is_recomputed_when_deadline_moves(self) -> None:
+        restored = compute_auto_status_fields(
+            control_deadline=date(2026, 12, 1),
             current_status=RecommendationStatus.UNRESOLVED,
             current_additional_status=RecommendationAdditionalStatus.DEADLINE_VIOLATED,
             today=TODAY,
         )
-        self.assertNotIn("status", unresolved)
-        self.assertNotIn("additional_status", unresolved)
+        self.assertEqual(restored["status"], RecommendationStatus.ON_CONTROL)
+        self.assertEqual(restored["additional_status"], RecommendationAdditionalStatus.ON_CONTROL)
 
     def test_overlay_uses_existing_row_when_payload_omits_dates(self) -> None:
         existing = SimpleNamespace(

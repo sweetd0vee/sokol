@@ -3,9 +3,9 @@
 Status / indicator and additional status / indicator both follow ``deadline``
 (срок контроля from AZ) against the current Moscow date.
 
-Open items switch ``on_control`` ↔ ``in_progress`` as the Moscow calendar day
-moves across the control date. Terminal statuses (completed / unresolved) and
-manual additional statuses (on_time / deadline_violated) are left untouched.
+Open items switch ``on_control`` ↔ overdue (``unresolved`` + ``deadline_violated``)
+as the Moscow calendar day moves across the control date. Completed status and
+manual additional status ``on_time`` are left untouched.
 """
 
 from __future__ import annotations
@@ -19,33 +19,28 @@ from app.models.recommendations import RecommendationAdditionalStatus, Recommend
 MOSCOW_TZ = timezone(timedelta(hours=3))
 
 ON_CONTROL_INDICATOR = "на контроле"
-IN_PROGRESS_INDICATOR = "в процессе"
+UNRESOLVED_INDICATOR = "не решено"
+DEADLINE_VIOLATED_INDICATOR = "срок нарушен"
 COMPLETED_DURING_AUDIT_INDICATOR = "исполнено в ходе аудита"
 
-TERMINAL_STATUSES = frozenset(
-    {
-        RecommendationStatus.COMPLETED,
-        RecommendationStatus.UNRESOLVED,
-    }
-)
-MANUAL_ADDITIONAL_STATUSES = frozenset(
-    {
-        RecommendationAdditionalStatus.ON_TIME,
-        RecommendationAdditionalStatus.DEADLINE_VIOLATED,
-    }
-)
+TERMINAL_STATUSES = frozenset({RecommendationStatus.COMPLETED})
+MANUAL_ADDITIONAL_STATUSES = frozenset({RecommendationAdditionalStatus.ON_TIME})
 
 PHASE_STATUS = {
     "on_control": RecommendationStatus.ON_CONTROL,
-    "in_progress": RecommendationStatus.IN_PROGRESS,
+    "overdue": RecommendationStatus.UNRESOLVED,
 }
 PHASE_ADDITIONAL_STATUS = {
     "on_control": RecommendationAdditionalStatus.ON_CONTROL,
-    "in_progress": RecommendationAdditionalStatus.IN_PROGRESS,
+    "overdue": RecommendationAdditionalStatus.DEADLINE_VIOLATED,
 }
-PHASE_INDICATOR = {
+PHASE_STATUS_INDICATOR = {
     "on_control": ON_CONTROL_INDICATOR,
-    "in_progress": IN_PROGRESS_INDICATOR,
+    "overdue": UNRESOLVED_INDICATOR,
+}
+PHASE_ADDITIONAL_INDICATOR = {
+    "on_control": ON_CONTROL_INDICATOR,
+    "overdue": DEADLINE_VIOLATED_INDICATOR,
 }
 
 
@@ -66,12 +61,12 @@ def seconds_until_next_moscow_run(now: datetime | None = None) -> float:
 
 
 def status_phase(anchor: date | None, today: date) -> str | None:
-    """``on_control`` before the anchor date, ``in_progress`` on/after it."""
+    """``on_control`` before the anchor date, ``overdue`` on/after it."""
     if anchor is None:
         return None
     if today < anchor:
         return "on_control"
-    return "in_progress"
+    return "overdue"
 
 
 def compute_auto_status_fields(
@@ -98,11 +93,11 @@ def compute_auto_status_fields(
         and not completed_during_audit
     ):
         updates["status"] = PHASE_STATUS[phase]
-        updates["indicator"] = PHASE_INDICATOR[phase]
+        updates["indicator"] = PHASE_STATUS_INDICATOR[phase]
 
     if phase is not None and additional not in MANUAL_ADDITIONAL_STATUSES:
         updates["additional_status"] = PHASE_ADDITIONAL_STATUS[phase]
-        updates["additional_indicator"] = PHASE_INDICATOR[phase]
+        updates["additional_indicator"] = PHASE_ADDITIONAL_INDICATOR[phase]
 
     return updates
 

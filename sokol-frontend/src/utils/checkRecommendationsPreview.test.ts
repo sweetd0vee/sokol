@@ -49,13 +49,13 @@ describe('buildParsedPreviewItem', () => {
     });
   });
 
-  it('ставит жёлтые часы и жёлтый колокольчик, если срок контроля уже прошёл', () => {
+  it('ставит красный треугольник и красный колокольчик, если срок контроля уже прошёл', () => {
     const item = buildParsedPreviewItem({ ...draft, deadline: '2000-01-01' }, 0, 'П-1', 0);
     expect(item).toMatchObject({
-      status: 'in_progress',
-      indicator: 'в процессе',
-      additional_status: 'in_progress',
-      additional_indicator: 'в процессе',
+      status: 'unresolved',
+      indicator: 'не решено',
+      additional_status: 'deadline_violated',
+      additional_indicator: 'срок нарушен',
     });
   });
 });
@@ -78,10 +78,10 @@ describe('patchPreviewItem', () => {
     const overdue = patchPreviewItem(item, 'deadline', '2000-01-01', (value) => value);
     expect(overdue).toMatchObject({
       deadline: '2000-01-01',
-      status: 'in_progress',
-      indicator: 'в процессе',
-      additional_status: 'in_progress',
-      additional_indicator: 'в процессе',
+      status: 'unresolved',
+      indicator: 'не решено',
+      additional_status: 'deadline_violated',
+      additional_indicator: 'срок нарушен',
     });
 
     const upcoming = patchPreviewItem(overdue, 'deadline', '2099-01-01', (value) => value);
