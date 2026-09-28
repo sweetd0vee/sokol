@@ -90,7 +90,7 @@ API create/update валидирует labels; физические FK с `ON UP
 
 `serial_number` только backend. Смена даты / квартала / руководителя / типа пересчитывает ключ, rec serial, attachments и MinIO bucket. Смена `auditors.code` также каскадно переписывает ключи проверок этого руководителя и MinIO buckets. Квартал (`check_quarter` 1–4) участвует в ключе.
 
-Автостатус rec: [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md). Цикл — 00:05 МСК (`SOKOL_STATUS_SCHEDULER=0` выключает).
+Автостатус rec: [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md). Автостатус проверки: дата ДЗ → завершено, начало позже сегодня → запланировано, иначе в процессе. Цикл — 00:05 МСК (`SOKOL_STATUS_SCHEDULER=0` выключает).
 
 ## Импорт из АЗ
 

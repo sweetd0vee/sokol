@@ -104,7 +104,7 @@ CHECK_COLUMN_META: list[tuple[str, bool, str]] = [
     ("start_date", True, "Дата начала YYYY-MM-DD"),
     ("end_date", False, "Дата окончания YYYY-MM-DD"),
     ("check_leader", True, "ФИО руководителя проверки"),
-    ("status", True, "not_started | in_progress | completed"),
+    ("status", True, "Пересчитывается при импорте: дата ДЗ → completed; начало позже сегодня → not_started; иначе in_progress"),
     ("created_at", False, "Дата создания записи YYYY-MM-DD (по умолчанию — сегодня при импорте)"),
     ("description", False, "Описание / цель проверки"),
     ("order_document_number", False, "Номер приказа"),
@@ -206,7 +206,7 @@ def _write_guides_sheet(workbook: Workbook, years: list[int]) -> None:
         ),
         ("", ""),
         ("check_type", "planned=Плановая, unscheduled=Внеплановая, thematic=Контрольная"),
-        ("status (проверка)", "not_started=Запланировано, in_progress=В процессе, completed=Завершено"),
+        ("status (проверка)", "пересчитывается: дата ДЗ → Завершено; начало позже сегодня → Запланировано; иначе В процессе"),
         ("status (рекомендация)", "completed | unresolved | on_control | in_progress"),
         ("additional_status", "on_time | deadline_violated | on_control | in_progress"),
     ]

@@ -11,7 +11,11 @@ import {
   type CheckFormDraft,
   type CheckFormLocationState,
 } from '../utils/checkFormNavigation';
-import { buildCheckPayload, getCheckRequiredFieldErrors } from '../utils/checkFormPayload';
+import {
+  buildCheckPayload,
+  EMPTY_CHECK_REQUIRED_FIELD_ERRORS,
+  getCheckRequiredFieldErrors,
+} from '../utils/checkFormPayload';
 import {
   applyStartDateChange,
   checkFormFieldsFromCheck,
@@ -78,7 +82,7 @@ export function useCheckForm() {
   }, []);
 
   const heading = isEditMode ? 'Редактирование проверки' : 'Создание проверки';
-  const status = deriveCheckStatus(fields.startDate, fields.endDate, existing?.status);
+  const status = deriveCheckStatus(fields.startDate, fields.dzDocumentDate, existing?.status);
 
   const handleStartDateChange = (value: Date | null) => {
     setFields((prev) => applyStartDateChange(prev, value));
@@ -86,15 +90,25 @@ export function useCheckForm() {
 
   const requiredFieldErrors = useMemo(
     () =>
-      getCheckRequiredFieldErrors({
-        checkName: fields.checkName,
-        checkType: fields.checkType,
-        checkView: fields.checkView,
-        checkLeader: fields.checkLeader,
-        checkQuarter: fields.checkQuarter,
-        startDate: fields.startDate,
-      }),
-    [fields.checkName, fields.checkType, fields.checkView, fields.checkLeader, fields.checkQuarter, fields.startDate],
+      isEditMode
+        ? EMPTY_CHECK_REQUIRED_FIELD_ERRORS
+        : getCheckRequiredFieldErrors({
+            checkName: fields.checkName,
+            checkType: fields.checkType,
+            checkView: fields.checkView,
+            checkLeader: fields.checkLeader,
+            checkQuarter: fields.checkQuarter,
+            startDate: fields.startDate,
+          }),
+    [
+      fields.checkLeader,
+      fields.checkName,
+      fields.checkQuarter,
+      fields.checkType,
+      fields.checkView,
+      fields.startDate,
+      isEditMode,
+    ],
   );
 
   const missingKeyFields = getMissingCheckKeyFieldLabels(
@@ -131,9 +145,9 @@ export function useCheckForm() {
     if (isSaving) {
       return;
     }
-    setShowValidationErrors(true);
+    setShowValidationErrors(!isEditMode);
     setSaveError(null);
-    if (requiredFieldErrors.hasErrors) {
+    if (!isEditMode && requiredFieldErrors.hasErrors) {
       return;
     }
     if (isEditMode && !existing?.id) {

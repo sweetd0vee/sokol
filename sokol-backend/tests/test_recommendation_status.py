@@ -126,6 +126,22 @@ class RecommendationStatusCalcTests(unittest.TestCase):
         self.assertEqual(updates["additional_status"], RecommendationAdditionalStatus.DEADLINE_VIOLATED)
         self.assertEqual(updates["additional_indicator"], "срок нарушен")
 
+    def test_overlay_uses_latest_of_several_extensions_regardless_of_order(self) -> None:
+        payload = overlay_computed_status_fields(
+            {
+                "deadline": date(2026, 8, 1),
+                "deadline_extensions": [
+                    {"date": "2026-12-01", "comment": "Первый"},
+                    {"date": "2027-03-15", "comment": "Самый поздний"},
+                    {"date": "2026-10-01", "comment": "Добавлен последним"},
+                ],
+            },
+            today=TODAY,
+        )
+        self.assertEqual(payload["deadline"], date(2027, 3, 15))
+        self.assertEqual(payload["status"], RecommendationStatus.ON_CONTROL)
+        self.assertEqual(payload["additional_status"], RecommendationAdditionalStatus.ON_CONTROL)
+
     def test_overlay_moves_control_deadline_to_latest_extension(self) -> None:
         existing = SimpleNamespace(
             deadline=date(2026, 8, 1),

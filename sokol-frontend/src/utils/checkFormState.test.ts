@@ -8,7 +8,7 @@ import {
   resolveInitialCheckFormFields,
 } from './checkFormState';
 
-const now = new Date(2026, 8, 4);
+const now = new Date('2026-09-04T12:00:00+03:00');
 
 function check(overrides: Partial<Check> = {}): Check {
   return {
@@ -32,21 +32,19 @@ describe('deriveCheckStatus', () => {
     expect(deriveCheckStatus(null, null, undefined, now)).toBe('');
   });
 
-  it('marks completed when end date is before today', () => {
-    expect(deriveCheckStatus(new Date(2026, 7, 1), new Date(2026, 8, 1), 'in_progress', now)).toBe(
+  it('marks completed when the DZ date is set, even if the start is still ahead', () => {
+    expect(deriveCheckStatus(new Date(2026, 8, 10), new Date(2026, 8, 1), 'in_progress', now)).toBe(
       'completed',
     );
   });
 
-  it('marks not_started when start is after today', () => {
+  it('marks not_started when start is after today and there is no DZ date', () => {
     expect(deriveCheckStatus(new Date(2026, 8, 10), null, '', now)).toBe('not_started');
   });
 
-  it('marks in_progress when start is today or earlier and not completed', () => {
+  it('marks in_progress when start is today or earlier and there is no DZ date', () => {
     expect(deriveCheckStatus(new Date(2026, 8, 4), null, '', now)).toBe('in_progress');
-    expect(deriveCheckStatus(new Date(2026, 8, 1), new Date(2026, 8, 10), '', now)).toBe(
-      'in_progress',
-    );
+    expect(deriveCheckStatus(new Date(2026, 8, 1), null, '', now)).toBe('in_progress');
   });
 });
 

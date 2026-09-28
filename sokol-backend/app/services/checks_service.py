@@ -13,6 +13,7 @@ from app.crud.check_serial import (
 from app.models.checks import Check, CheckStatus
 from app.schemas.checks import CheckCreate, CheckListResponse, CheckUpdate
 from app.services.check_serial_cascade import SerialRewrite, apply_serial_rewrites, cleanup_old_serial_buckets
+from app.services.check_status import overlay_check_status
 from app.services.dictionary_integrity import (
     EFFECTIVENESS_FIELDS,
     normalize_optional_dictionary_label,
@@ -63,6 +64,7 @@ async def create_check(session: AsyncSession, check_in: CheckCreate) -> Check:
     await validate_check_dictionary_fields(session, data)
     if not data.get("created_at"):
         data["created_at"] = today_moscow()
+    overlay_check_status(data)
 
     last_integrity_error: IntegrityError | None = None
     check: Check | None = None
@@ -145,6 +147,7 @@ async def update_check(
     check = await get_check(session, check_id)
     update_data = check_in.model_dump(exclude_unset=True)
     update_data.pop("serial_number", None)
+    overlay_check_status(update_data, existing=check)
     _normalize_effectiveness_fields(update_data)
     await validate_check_dictionary_fields(session, update_data)
 

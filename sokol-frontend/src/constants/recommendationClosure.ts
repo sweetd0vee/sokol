@@ -121,7 +121,7 @@ function isoDateOrNull(value?: string | null): string | undefined {
 
 /**
  * Срок исполнения из контрольной зоны: дата фактического исполнения,
- * иначе последний перенос срока. Не отдельное поле карточки.
+ * иначе самый поздний перенос срока. Не отдельное поле карточки.
  */
 export function getControlZoneExecutionDate(
   source?: ControlZoneDateSource | null,
@@ -152,11 +152,16 @@ export function getControlZoneExecutionDate(
   if (!dates.length) {
     return undefined;
   }
-  return dates.sort()[dates.length - 1];
+  return latestIsoDate(dates);
+}
+
+function latestIsoDate(dates: string[]): string {
+  return dates.reduce((latest, date) => (date > latest ? date : latest));
 }
 
 /**
- * Latest «перенос срока» date. Does not use actual completion.
+ * Самая поздняя дата «перенос срока» среди всех строк, не последняя в списке.
+ * Дату фактического исполнения не использует.
  */
 export function getLatestDeadlineExtensionDate(
   source?: ControlZoneDateSource | null,

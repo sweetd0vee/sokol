@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createClosureDateCommentRow } from '../constants/recommendationClosure';
+import { toIsoDate } from './dates';
 import { applyRecommendationFormAutoStatus } from './recommendationFormAutoStatus';
 import { emptyRecommendationFormFields } from './recommendationFormState';
 
@@ -11,6 +12,25 @@ describe('applyRecommendationFormAutoStatus', () => {
 
     const next = applyRecommendationFormAutoStatus(fields);
     expect(next.deadline && next.deadline.getFullYear()).toBe(2099);
+    expect(next).toMatchObject({
+      status: 'on_control',
+      indicator: 'на контроле',
+      additionalStatus: 'on_control',
+      additionalIndicator: 'на контроле',
+    });
+  });
+
+  it('при нескольких переносах ставит в срок контроля самую позднюю дату', () => {
+    const fields = emptyRecommendationFormFields();
+    fields.deadline = new Date(2026, 7, 1);
+    fields.closure.extensions = [
+      createClosureDateCommentRow({ date: '2026-12-01', comment: 'Первый' }),
+      createClosureDateCommentRow({ date: '2099-03-15', comment: 'Самый поздний' }),
+      createClosureDateCommentRow({ date: '2026-10-01', comment: 'Добавлен последним' }),
+    ];
+
+    const next = applyRecommendationFormAutoStatus(fields);
+    expect(next.deadline && toIsoDate(next.deadline)).toBe('2099-03-15');
     expect(next).toMatchObject({
       status: 'on_control',
       indicator: 'на контроле',

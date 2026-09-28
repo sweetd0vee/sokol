@@ -127,4 +127,55 @@ describe('check form payload', () => {
     expect(payload.created_at).toBe('2026-01-02');
     expect(payload.description).toBe('server description');
   });
+
+  it('при редактировании не затирает обязательные поля пустыми значениями', () => {
+    const existing: Check = {
+      id: '42',
+      serial_number: '26-7/ИТ',
+      check_name: 'Проверка ИТ',
+      check_type: 'planned',
+      check_view: 'ИТ',
+      check_quarter: 1,
+      start_date: '2026-01-01',
+      check_leader: 'Иванов И.И.',
+      status: 'in_progress',
+      created_at: '2026-01-02',
+    };
+
+    const payload = buildCheckPayload({
+      existing,
+      checkName: '  ',
+      shortName: '',
+      checkType: '',
+      checkView: '',
+      checkLeader: '',
+      checkQuarter: '',
+      startDate: null,
+      endDate: null,
+      status: '',
+      orderDocumentNumber: 'ПР-1',
+      orderDocumentDate: null,
+      programDocumentNumber: '',
+      programDocumentDate: null,
+      azDocumentNumber: '',
+      azDocumentDate: null,
+      dzDocumentNumber: '',
+      dzDocumentDate: null,
+      processEffectiveness: '',
+      svkEffectiveness: '',
+      surEffectiveness: '',
+      svikEffectiveness: '',
+    });
+
+    expect(payload).toMatchObject({
+      check_name: 'Проверка ИТ',
+      check_type: 'planned',
+      check_view: 'ИТ',
+      check_quarter: 1,
+      start_date: '2026-01-01',
+      check_leader: 'Иванов И.И.',
+      status: 'in_progress',
+      order_document_number: 'ПР-1',
+    });
+  });
 });

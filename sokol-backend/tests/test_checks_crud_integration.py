@@ -130,7 +130,8 @@ class ChecksCrudIntegrationTests(unittest.TestCase):
             f"/api/v1/checks/{check_id}",
             json={
                 "check_name": "Интеграционная проверка обновлена",
-                "status": "completed",
+                "status": "not_started",
+                "dz_document_date": "2026-02-20",
                 "check_leader": "Петров П.П.",
             },
         )

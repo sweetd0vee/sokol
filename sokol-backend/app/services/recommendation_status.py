@@ -202,7 +202,7 @@ def latest_deadline_extension_date(
     extension_1_date: DateLike = None,
     extension_2_reason: DateLike = None,
 ) -> date | None:
-    """Последняя дата «перенос срока»."""
+    """Самая поздняя дата среди всех переносов, не последняя строка в списке."""
     dates = _extension_dates(
         deadline_extensions,
         extension_1_date,

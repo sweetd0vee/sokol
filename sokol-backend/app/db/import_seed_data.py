@@ -23,7 +23,8 @@ from app.db.xlsx import (
     parse_date,
     read_sheet_rows,
 )
-from app.models.checks import Check, CheckStatus
+from app.models.checks import Check
+from app.services.check_status import choose_check_status
 from app.models.recommendations import Recommendation, RecommendationAdditionalStatus, RecommendationStatus
 from app.services.dictionary_integrity import (
     EFFECTIVENESS_FIELDS,
@@ -118,6 +119,7 @@ async def import_seed_data(
             start_date = parse_date(row["start_date"])
             if start_date is None:
                 raise ValueError("start_date обязателен для каждой проверки.")
+            dz_document_date = parse_date(row.get("dz_document_date"))
             check_quarter = int(
                 row.get("check_quarter") or ((start_date.month - 1) // 3 + 1)
             )
@@ -133,7 +135,10 @@ async def import_seed_data(
                 "start_date": start_date,
                 "end_date": parse_date(row.get("end_date")),
                 "check_leader": str(row["check_leader"]).strip(),
-                "status": CheckStatus(str(row["status"]).strip()),
+                "status": choose_check_status(
+                    start_date=start_date,
+                    dz_document_date=dz_document_date,
+                ),
                 "created_at": parse_date(row.get("created_at")) or date.today(),
                 "description": optional_str(row.get("description")),
             }
@@ -146,7 +151,7 @@ async def import_seed_data(
                 "az_document_number": optional_str(row.get("az_document_number")),
                 "az_document_date": parse_date(row.get("az_document_date")),
                 "dz_document_number": optional_str(row.get("dz_document_number")),
-                "dz_document_date": parse_date(row.get("dz_document_date")),
+                "dz_document_date": dz_document_date,
                 "process_effectiveness": optional_str(row.get("process_effectiveness")),
                 "svk_effectiveness": optional_str(row.get("svk_effectiveness")),
                 "sur_effectiveness": optional_str(row.get("sur_effectiveness")),

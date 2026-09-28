@@ -12,7 +12,7 @@ from app.core.config import settings
 from app.core.logging import configure_logging
 from app.core.startup_validation import assert_app_startup_safe, env_flag_enabled
 from app.services.recommendation_status_refresh import (
-    run_recommendation_status_scheduler,
+    run_status_scheduler,
     status_scheduler_enabled,
 )
 
@@ -32,8 +32,8 @@ async def lifespan(_app: FastAPI):
     task: asyncio.Task[None] | None = None
     if status_scheduler_enabled():
         task = asyncio.create_task(
-            run_recommendation_status_scheduler(),
-            name="recommendation-status-scheduler",
+            run_status_scheduler(),
+            name="status-scheduler",
         )
     try:
         yield

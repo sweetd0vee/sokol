@@ -60,6 +60,8 @@ HTTP Basic: в non-prod включён по умолчанию; при `SOKOL_EN
 
 **Create:** `check_name`, `short_name?`, `check_type` (строка ≤32; в ключе: `planned`→P, `unscheduled`→V, `thematic`→K, иначе пустой type-code), `check_view`, **`check_quarter`** (1–4), `start_date`, `end_date?`, `check_leader`, `status`, `created_at?` (default сегодня), `description?`, `*_effectiveness?`, документы приказа/программы/АЗ/ДЗ. `serial_number` клиент не шлёт: backend генерирует и пересчитывает при смене `start_date` / `check_quarter` / `check_leader` / `check_type` (синхронизация rec serial + MinIO bucket).
 
+Автостатус проверки при create/update и ежедневно в 00:05 Europe/Moscow (тот же `SOKOL_STATUS_SCHEDULER`): проставлена `dz_document_date` → `completed`; `start_date` позже сегодняшнего дня Москвы → `not_started` (Запланировано); иначе `in_progress`. Присланный `status` перезаписывается. `end_date` на статус не влияет.
+
 **Read:** те же поля + `id`, `serial_number`, `created_at`.
 
 Неизвестный `check_leader` / `check_view` / непустая оценка ∉ ratings → **400**.

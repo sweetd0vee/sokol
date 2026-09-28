@@ -37,6 +37,16 @@ export type CheckFormPayloadInput = {
   now?: Date;
 };
 
+export const EMPTY_CHECK_REQUIRED_FIELD_ERRORS: CheckRequiredFieldErrors = {
+  checkName: false,
+  checkType: false,
+  checkView: false,
+  checkLeader: false,
+  checkQuarter: false,
+  startDate: false,
+  hasErrors: false,
+};
+
 export function getCheckRequiredFieldErrors({
   checkName,
   checkType,
@@ -57,6 +67,13 @@ export function getCheckRequiredFieldErrors({
     ...errors,
     hasErrors: Object.values(errors).some(Boolean),
   };
+}
+
+function resolveCheckQuarter(checkQuarter: string, existing?: Check): CheckQuarter {
+  if (['1', '2', '3', '4'].includes(checkQuarter)) {
+    return Number(checkQuarter) as CheckQuarter;
+  }
+  return existing?.check_quarter ?? (Number(checkQuarter) as CheckQuarter);
 }
 
 export function buildCheckPayload({
@@ -87,14 +104,14 @@ export function buildCheckPayload({
   return {
     id: existing?.id ?? '0',
     serial_number: existing?.serial_number ?? '',
-    check_name: checkName.trim(),
+    check_name: checkName.trim() || existing?.check_name || '',
     short_name: shortName.trim() || undefined,
-    check_type: checkType as CheckType,
-    check_view: checkView as Check['check_view'],
-    check_quarter: Number(checkQuarter) as CheckQuarter,
-    start_date: toIsoDate(startDate) ?? '',
+    check_type: (checkType || existing?.check_type || '') as CheckType,
+    check_view: (checkView || existing?.check_view || '') as Check['check_view'],
+    check_quarter: resolveCheckQuarter(checkQuarter, existing),
+    start_date: toIsoDate(startDate) ?? existing?.start_date ?? '',
     end_date: toIsoDate(endDate),
-    check_leader: checkLeader,
+    check_leader: checkLeader || existing?.check_leader || '',
     status: (status || existing?.status || 'not_started') as CheckStatus,
     created_at: existing?.created_at ?? now.toISOString().slice(0, 10),
     description: existing?.description,

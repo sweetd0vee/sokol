@@ -102,7 +102,8 @@ Login матчит `username` и `aliases`. Неактивные не прохо
 - Смена `start_date` / `check_quarter` / `check_leader` / `check_type` или `auditors.code` → `check_serial_cascade`: rec serial, attachment serial/bucket, copy+delete MinIO.
 - Справочники: физический FK на unique label (`ON UPDATE CASCADE`). API create/update валидирует labels (**400**); import Excel **досоздаёт** (`ensure_*`).
 - `audit_object` — массив + junction `recommendation_audit_objects`. Пустое → «Не указан». Аналитика фильтрует по массиву (`overlap`), не по junction.
-- Статусы и индикаторы рекомендаций — отдельный контур, см. [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md). Кратко: приоритет «снять с контроля» → «исполнено в ходе аудита» → срок исполнения vs срок контроля → открытая пара от срока контроля vs сегодня (Москва). Перенос срока переписывает `deadline`. Пересчёт на create/update, в карточке, в превью АЗ и ежедневно в 00:05 Europe/Moscow (`SOKOL_STATUS_SCHEDULER=0` выключает). Колонка `execution_deadline` автостатус не читает.
+- Статусы и индикаторы рекомендаций — отдельный контур, см. [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md). Кратко: приоритет «снять с контроля» → «исполнено в ходе аудита» → срок исполнения vs срок контроля → открытая пара от срока контроля vs сегодня (Москва). Перенос срока переписывает `deadline` самой поздней датой среди всех переносов. Пересчёт на create/update, в карточке, в превью АЗ и ежедневно в 00:05 Europe/Moscow (`SOKOL_STATUS_SCHEDULER=0` выключает). Колонка `execution_deadline` автостатус не читает.
+- Статус проверки считается так же по календарю Москвы: дата ДЗ проставлена → `completed`; дата начала позже сегодня → `not_started`; иначе `in_progress`. Тот же ночной цикл и create/update. `end_date` статус не двигает.
 - `Attachment` — metadata в PG, байты в MinIO, bucket `check-{serial}`.
 
 ## Bootstrap

@@ -2,6 +2,17 @@ import type { Check } from '../types/check';
 import type { CheckFormDraft } from './checkFormNavigation';
 import { toInputDate, toIsoDate, toStartOfDayMs } from './dates';
 
+const MOSCOW_TZ = 'Europe/Moscow';
+
+function moscowTodayIso(now = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: MOSCOW_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+}
+
 export type CheckFormFields = {
   checkName: string;
   shortName: string;
@@ -114,19 +125,21 @@ export function resolveInitialCheckFormFields(
 
 export function deriveCheckStatus(
   startDate: Date | null,
-  endDate: Date | null,
+  dzDocumentDate: Date | null,
   existingStatus: string | undefined,
   now = new Date(),
 ): string {
+  if (dzDocumentDate) {
+    return 'completed';
+  }
   if (!startDate) {
     return existingStatus ?? '';
   }
-  const selected = toStartOfDayMs(startDate);
-  const today = toStartOfDayMs(now);
-  if (endDate && toStartOfDayMs(endDate) < today) {
-    return 'completed';
+  const start = toIsoDate(startDate);
+  if (!start) {
+    return existingStatus ?? '';
   }
-  return selected > today ? 'not_started' : 'in_progress';
+  return start > moscowTodayIso(now) ? 'not_started' : 'in_progress';
 }
 
 export function getMissingCheckKeyFieldLabels(

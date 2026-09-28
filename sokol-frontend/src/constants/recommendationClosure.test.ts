@@ -43,6 +43,18 @@ describe('getLatestDeadlineExtensionDate', () => {
       }),
     ).toBe('2026-12-15');
   });
+
+  it('берёт самую позднюю дату, даже если она не последняя в списке', () => {
+    expect(
+      getLatestDeadlineExtensionDate({
+        deadline_extensions: [
+          { date: '2026-12-01' },
+          { date: '2027-03-15' },
+          { date: '2026-10-01' },
+        ],
+      }),
+    ).toBe('2027-03-15');
+  });
 });
 
 describe('hasControlRemoval', () => {
