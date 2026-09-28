@@ -5,12 +5,12 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 from sokol_reports.memorandum.section_ii_table_parser import (
-    _cell_texts,
-    _find_section_ii_table,
-    _is_recommendation_row,
-    _parse_all_audit_object_pairs,
-    _parse_audit_object_header,
-    _split_body_into_recommendations,
+    cell_texts,
+    find_section_ii_table,
+    is_recommendation_row,
+    parse_all_audit_object_pairs,
+    parse_audit_object_header,
+    split_body_into_recommendations,
 )
 from sokol_reports.section_ii.docx_blocks import load_document_xml
 from sokol_reports.memorandum.models import MemorandumRecommendation
@@ -39,34 +39,34 @@ def parse_section_ii_for_control_file(
     if body is None:
         return None, "Не удалось прочитать документ."
 
-    table = _find_section_ii_table(body)
+    table = find_section_ii_table(body)
     if table is None:
         return None, "Таблица Раздела II не найдена."
 
     rows: List[ControlFileRow] = []
 
     for tr in table.findall(f"./{{{W_NS}}}tr"):
-        cells = _cell_texts(tr)
+        cells = cell_texts(tr)
         if not cells:
             continue
 
         first_cell = cells[0].strip()
-        if not _is_recommendation_row(first_cell):
+        if not is_recommendation_row(first_cell):
             continue
 
         raw_recommendation = cells[1] if len(cells) > 1 else ""
         if not raw_recommendation.strip():
             continue
 
-        pairs = _parse_all_audit_object_pairs(raw_recommendation)
+        pairs = parse_all_audit_object_pairs(raw_recommendation)
         if pairs:
             responsible = format_responsible_from_pairs(pairs)
         else:
-            audit_object, manager, _ = _parse_audit_object_header(raw_recommendation)
+            audit_object, manager, _ = parse_audit_object_header(raw_recommendation)
             responsible = format_responsible_from_pairs([(audit_object, manager)])
 
-        _, _, body_text = _parse_audit_object_header(raw_recommendation)
-        recommendations = _split_body_into_recommendations(body_text)
+        _, _, body_text = parse_audit_object_header(raw_recommendation)
+        recommendations = split_body_into_recommendations(body_text)
         if not recommendations and body_text:
             clean_body = SROK_TAIL_RE.sub("", body_text).strip()
             deadline_match = SROK_TAIL_RE.search(body_text)

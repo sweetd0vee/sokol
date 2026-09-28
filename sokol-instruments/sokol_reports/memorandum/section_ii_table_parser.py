@@ -14,6 +14,17 @@ from sokol_reports.section_ii.docx_blocks import load_document_xml
 from sokol_reports.section_ii.field_parser import int_to_roman
 from sokol_reports.section_ii.patterns import OBS_START_RE, SROK_TAIL_RE, W_NS
 
+__all__ = [
+    "cell_texts",
+    "find_section_ii_table",
+    "format_group_heading",
+    "is_recommendation_row",
+    "parse_all_audit_object_pairs",
+    "parse_audit_object_header",
+    "parse_section_ii_for_memorandum",
+    "split_body_into_recommendations",
+]
+
 SECTION2_TABLE_HEADER = "Основные нарушения и недостатки"
 REC_ROW_LABEL_RE = re.compile(r"^(?:Рекомендация|Аудиторск\w*\s+рекомендац\w*)", re.IGNORECASE)
 OBS_ROW_LABEL_RE = re.compile(r"^Наблюдени", re.IGNORECASE)
@@ -33,7 +44,7 @@ DEADLINE_VALUE_RE = re.compile(
 SROK_INLINE_RE = re.compile(r"Срок\s*[–\-—]\s*", re.IGNORECASE)
 
 
-def _is_recommendation_row(first_cell: str) -> bool:
+def is_recommendation_row(first_cell: str) -> bool:
     if SECTION2_TABLE_HEADER.lower() in first_cell.lower():
         return False
     if CHAPTER_ROW_RE.match(first_cell) or OBS_ROW_LABEL_RE.match(first_cell):
@@ -43,7 +54,7 @@ def _is_recommendation_row(first_cell: str) -> bool:
     return REC_ROW_LABEL_RE.match(first_cell) is not None
 
 
-def _cell_texts(tr) -> List[str]:
+def cell_texts(tr) -> List[str]:
     texts: List[str] = []
     for tc in tr.findall(f"./{{{W_NS}}}tc"):
         parts: List[str] = []
@@ -54,7 +65,7 @@ def _cell_texts(tr) -> List[str]:
     return texts
 
 
-def _parse_all_audit_object_pairs(raw_text: str) -> List[Tuple[str, str]]:
+def parse_all_audit_object_pairs(raw_text: str) -> List[Tuple[str, str]]:
     text = re.sub(r"\s+", " ", (raw_text or "").strip())
     pairs: List[Tuple[str, str]] = []
     pattern = re.compile(
@@ -70,7 +81,7 @@ def _parse_all_audit_object_pairs(raw_text: str) -> List[Tuple[str, str]]:
     return pairs
 
 
-def _find_section_ii_table(body) -> Optional[object]:
+def find_section_ii_table(body) -> Optional[object]:
     for btype, el in xml_utils.get_blocks_from_xml(body):
         if btype != "tbl":
             continue
@@ -80,7 +91,7 @@ def _find_section_ii_table(body) -> Optional[object]:
     return None
 
 
-def _parse_audit_object_header(raw_text: str) -> Tuple[str, str, str]:
+def parse_audit_object_header(raw_text: str) -> Tuple[str, str, str]:
     text = re.sub(r"\s+", " ", (raw_text or "").strip())
     match = AUDIT_OBJECT_RE.search(text)
     if not match:
@@ -120,7 +131,7 @@ def _extract_deadline_and_rest(chunk: str) -> Tuple[str, str]:
     return _normalize_deadline(chunk), ""
 
 
-def _split_body_into_recommendations(body: str) -> List[MemorandumRecommendation]:
+def split_body_into_recommendations(body: str) -> List[MemorandumRecommendation]:
     body = (body or "").strip()
     if not body:
         return []
@@ -201,7 +212,7 @@ def parse_section_ii_for_memorandum(file_path: str) -> Tuple[Optional[Memorandum
     if body is None:
         return None, "Не удалось прочитать документ."
 
-    table = _find_section_ii_table(body)
+    table = find_section_ii_table(body)
     if table is None:
         return None, "Таблица Раздела II не найдена."
 
@@ -209,20 +220,20 @@ def parse_section_ii_for_memorandum(file_path: str) -> Tuple[Optional[Memorandum
     group_index: dict = {}
 
     for tr in table.findall(f"./{{{W_NS}}}tr"):
-        cells = _cell_texts(tr)
+        cells = cell_texts(tr)
         if not cells:
             continue
 
         first_cell = cells[0].strip()
-        if not _is_recommendation_row(first_cell):
+        if not is_recommendation_row(first_cell):
             continue
 
         raw_recommendation = cells[1] if len(cells) > 1 else ""
         if not raw_recommendation.strip():
             continue
 
-        audit_object, manager, body_text = _parse_audit_object_header(raw_recommendation)
-        recommendations = _split_body_into_recommendations(body_text)
+        audit_object, manager, body_text = parse_audit_object_header(raw_recommendation)
+        recommendations = split_body_into_recommendations(body_text)
         if not recommendations and body_text:
             clean_body = SROK_TAIL_RE.sub("", body_text).strip()
             deadline_match = SROK_TAIL_RE.search(body_text)
@@ -244,3 +255,12 @@ def format_group_heading(index: int, group: MemorandumAuditObject) -> str:
         manager = f"{manager}."
     manager_suffix = f" ({manager})" if manager else ""
     return f"{roman}. {group.name}{manager_suffix}:"
+
+
+# Backward-compatible aliases for integrations that imported the old private names.
+_cell_texts = cell_texts
+_find_section_ii_table = find_section_ii_table
+_is_recommendation_row = is_recommendation_row
+_parse_all_audit_object_pairs = parse_all_audit_object_pairs
+_parse_audit_object_header = parse_audit_object_header
+_split_body_into_recommendations = split_body_into_recommendations

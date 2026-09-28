@@ -7,18 +7,30 @@ ZIP-подход: копируем документ побайтово, заме
 """
 
 import os
-import re
 import shutil
-import struct
 import tempfile
 import zipfile
-from pathlib import Path
 from typing import List, Optional
 
 import xml.etree.ElementTree as ET
 
+from sokol_reports.ooxml import W_NS, register_word_namespaces
+from sokol_reports.section_ii.document_xml import (
+    create_page_break_paragraph as _create_page_break_paragraph,
+    find_body_block_spans as _find_body_block_spans,
+    replace_document_blocks_xml as _replace_document_blocks_xml,
+    serialize_fragment as _serialize_fragment,
+    strip_generated_section2_blocks as _strip_generated_section2_blocks,
+    validate_replacement_boundary as _validate_replacement_boundary,
+    validate_unchanged_prefix as _validate_unchanged_prefix,
+)
 from sokol_reports.section_ii.docx_parser import (
     parse_observations_from_file_with_runs,
+)
+from sokol_reports.section_ii.materiality_images import (
+    CONTENT_TYPES_PATH as _CONTENT_TYPES_PATH,
+    DOCUMENT_RELS_PATH as _DOCUMENT_RELS_PATH,
+    build_materiality_image_package_parts as _build_materiality_image_package_parts,
 )
 from sokol_reports.section_ii.models import Observation
 from sokol_reports.section_ii import fonts, table_builder, xml_utils
@@ -33,236 +45,7 @@ from sokol_reports.section_ii.observation_links import ensure_observation_bookma
 from sokol_reports.section_ii.patterns import DEFAULT_SECTION2_HEADING
 
 
-W_NS = xml_utils.W_NS
-R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
-WP_NS = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
-A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
-PIC_NS = "http://schemas.openxmlformats.org/drawingml/2006/picture"
-REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
-CT_NS = "http://schemas.openxmlformats.org/package/2006/content-types"
-EMU_PER_CM = 360000
-EMU_PER_METER = EMU_PER_CM * 100
-DEFAULT_PNG_PIXELS_PER_METER = 3780
-# Размер круга существенности в таблице Раздела II (~0.75 см).
-MATERIALITY_DISPLAY_SIZE_EMU = int(0.75 * EMU_PER_CM)
-
-# Регистрируем префиксы для корректной сериализации новых XML-фрагментов.
-for prefix, uri in [("w", W_NS), ("r", R_NS), ("wp", WP_NS), ("a", A_NS), ("pic", PIC_NS)]:
-    try:
-        ET.register_namespace(prefix, uri)
-    except (ValueError, KeyError):
-        pass
-
-IMAGES_DIR = Path(__file__).resolve().parents[2] / "images"
-_MATERIALITY_IMAGE = {
-    "низкий": str(IMAGES_DIR / "green.png"),
-    "средний": str(IMAGES_DIR / "yellow.png"),
-    "высокий": str(IMAGES_DIR / "red.png"),
-}
-_MATERIALITY_MEDIA_NAME = {
-    "низкий": "low",
-    "средний": "medium",
-    "высокий": "high",
-}
-_IMAGE_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
-_CONTENT_TYPES_PATH = "[Content_Types].xml"
-_DOCUMENT_RELS_PATH = "word/_rels/document.xml.rels"
-
-
-def _create_page_break_paragraph() -> ET.Element:
-    p = ET.Element(f"{{{W_NS}}}p")
-    r = ET.SubElement(p, f"{{{W_NS}}}r")
-    br = ET.SubElement(r, f"{{{W_NS}}}br")
-    br.set(f"{{{W_NS}}}type", "page")
-    return p
-
-
-def _tag_local_name(qname: str) -> str:
-    return qname.split(":", 1)[-1]
-
-
-def _find_matching_element_end(xml: str, start: int, qname: str) -> int:
-    tag_re = re.compile(rf"<(?P<closing>/)?{re.escape(qname)}(?=[\s>/])[^>]*>")
-    depth = 0
-    for match in tag_re.finditer(xml, start):
-        is_closing = bool(match.group("closing"))
-        is_self_closing = match.group(0).rstrip().endswith("/>")
-        if is_closing:
-            depth -= 1
-            if depth == 0:
-                return match.end()
-            continue
-        if not is_self_closing:
-            depth += 1
-        if match.start() == start and is_self_closing:
-            return match.end()
-    raise ValueError(f"Не найден конец XML-элемента {qname}")
-
-
-def _find_body_block_spans(document_xml: str) -> list[tuple[int, int]]:
-    body_match = re.search(r"<(?P<qname>[\w:]+:)?body(?=[\s>/])[^>]*>", document_xml)
-    if not body_match:
-        raise ValueError("Не найден w:body в document.xml")
-    body_qname = (body_match.group("qname") or "") + "body"
-    body_close = document_xml.find(f"</{body_qname}>", body_match.end())
-    if body_close == -1:
-        raise ValueError("Не найден закрывающий тег w:body в document.xml")
-
-    spans: list[tuple[int, int]] = []
-    tag_re = re.compile(r"<(?P<qname>[\w:]+)(?=[\s>/])[^>]*>")
-    pos = body_match.end()
-    while pos < body_close:
-        match = tag_re.search(document_xml, pos, body_close)
-        if not match:
-            break
-        qname = match.group("qname")
-        end = _find_matching_element_end(document_xml, match.start(), qname)
-        if _tag_local_name(qname) in {"p", "tbl"}:
-            spans.append((match.start(), end))
-        pos = end
-    return spans
-
-
-def _serialize_fragment(el: ET.Element) -> str:
-    return ET.tostring(el, encoding="unicode", method="xml")
-
-
-def _default_rels_xml() -> bytes:
-    return (
-        f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-        f'<Relationships xmlns="{REL_NS}"/>'
-    ).encode("utf-8")
-
-
-def _next_relationship_id(rels_root: ET.Element) -> int:
-    max_id = 0
-    for rel in rels_root.findall(f"./{{{REL_NS}}}Relationship"):
-        rel_id = rel.get("Id") or ""
-        if not rel_id.startswith("rId"):
-            continue
-        try:
-            max_id = max(max_id, int(rel_id[3:]))
-        except ValueError:
-            continue
-    return max_id + 1
-
-
-def _ensure_png_content_type(content_types_xml: bytes) -> bytes:
-    root = ET.fromstring(content_types_xml)
-    for default in root.findall(f"./{{{CT_NS}}}Default"):
-        if (default.get("Extension") or "").lower() == "png":
-            return content_types_xml
-    ET.SubElement(
-        root,
-        f"{{{CT_NS}}}Default",
-        attrib={"Extension": "png", "ContentType": "image/png"},
-    )
-    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
-
-
-def _png_natural_extent_emu(payload: bytes) -> tuple[int, int]:
-    if payload[:8] != b"\x89PNG\r\n\x1a\n":
-        raise ValueError("Файл уровня существенности должен быть PNG.")
-    width_px, height_px = struct.unpack(">II", payload[16:24])
-    x_ppm = y_ppm = DEFAULT_PNG_PIXELS_PER_METER
-    offset = 8
-    while offset + 8 <= len(payload):
-        length = struct.unpack(">I", payload[offset:offset + 4])[0]
-        kind = payload[offset + 4:offset + 8]
-        data_start = offset + 8
-        data_end = data_start + length
-        if kind == b"pHYs" and length >= 9:
-            x_ppm, y_ppm, unit = struct.unpack(">IIB", payload[data_start:data_start + 9])
-            if unit != 1:
-                x_ppm = y_ppm = DEFAULT_PNG_PIXELS_PER_METER
-            break
-        offset = data_end + 4
-    cx = max(1, int(round(width_px * EMU_PER_METER / x_ppm)))
-    cy = max(1, int(round(height_px * EMU_PER_METER / y_ppm)))
-    return cx, cy
-
-
-def _materiality_display_extent_emu(payload: bytes) -> tuple[int, int]:
-    """Масштабирует PNG до целевого размера в таблице (сохраняя пропорции)."""
-    cx, cy = _png_natural_extent_emu(payload)
-    max_side = max(cx, cy)
-    if max_side <= MATERIALITY_DISPLAY_SIZE_EMU:
-        return cx, cy
-    scale = MATERIALITY_DISPLAY_SIZE_EMU / max_side
-    return max(1, int(round(cx * scale))), max(1, int(round(cy * scale)))
-
-
-def _build_materiality_image_package_parts(
-    zf: zipfile.ZipFile,
-    observations,
-) -> tuple[dict, bytes, bytes, dict, Optional[str]]:
-    used_levels = []
-    for obs in observations:
-        level = (obs.materiality_level or "").strip().lower()
-        if level in _MATERIALITY_IMAGE and level not in used_levels:
-            used_levels.append(level)
-
-    rels_xml = zf.read(_DOCUMENT_RELS_PATH) if _DOCUMENT_RELS_PATH in zf.namelist() else _default_rels_xml()
-    content_types_xml = zf.read(_CONTENT_TYPES_PATH)
-    if not used_levels:
-        return {}, rels_xml, content_types_xml, {}, None
-
-    missing_images = [
-        image_path
-        for level in used_levels
-        for image_path in [_MATERIALITY_IMAGE[level]]
-        if not os.path.isfile(image_path)
-    ]
-    if missing_images:
-        return (
-            {},
-            b"",
-            b"",
-            {},
-            "Не найдены картинки уровня существенности: " + ", ".join(sorted(set(missing_images))),
-        )
-
-    rels_root = ET.fromstring(rels_xml)
-    existing_names = set(zf.namelist())
-    next_rel_num = _next_relationship_id(rels_root)
-    image_info = {}
-    media_payloads = {}
-    content_types_xml = _ensure_png_content_type(content_types_xml)
-
-    for level in used_levels:
-        image_path = _MATERIALITY_IMAGE[level]
-        media_name = f"sokol_materiality_{_MATERIALITY_MEDIA_NAME[level]}.png"
-        media_path = f"word/media/{media_name}"
-        suffix = 1
-        while media_path in existing_names or media_path in media_payloads:
-            media_name = f"sokol_materiality_{_MATERIALITY_MEDIA_NAME[level]}_{suffix}.png"
-            media_path = f"word/media/{media_name}"
-            suffix += 1
-
-        rel_id = f"rId{next_rel_num}"
-        next_rel_num += 1
-        ET.SubElement(
-            rels_root,
-            f"{{{REL_NS}}}Relationship",
-            attrib={
-                "Id": rel_id,
-                "Type": _IMAGE_REL_TYPE,
-                "Target": f"media/{media_name}",
-            },
-        )
-        with open(image_path, "rb") as image_file:
-            payload = image_file.read()
-        cx, cy = _materiality_display_extent_emu(payload)
-        media_payloads[media_path] = payload
-        image_info[level] = {"rel_id": rel_id, "cx": cx, "cy": cy}
-
-    return (
-        image_info,
-        ET.tostring(rels_root, encoding="utf-8", xml_declaration=True),
-        content_types_xml,
-        media_payloads,
-        None,
-    )
+register_word_namespaces()
 
 
 def _parse_observations_from_stripped_docx(
@@ -286,79 +69,6 @@ def _parse_observations_from_stripped_docx(
             os.unlink(tmp_path)
         except OSError:
             pass
-
-
-def _strip_generated_section2_blocks(document_xml: str, min_idx: int) -> str:
-    """Удаляет ранее вставленный SOKOL-раздел II перед повторной генерацией."""
-    updated = document_xml
-    for _ in range(32):
-        root = ET.fromstring(updated.encode("utf-8"))
-        body = root.find(f".//{{{W_NS}}}body")
-        if body is None:
-            return updated
-        blocks = xml_utils.get_blocks_from_xml(body)
-        block_spans = _find_body_block_spans(updated)
-        if len(block_spans) != len(blocks):
-            return updated
-        ranges = xml_utils.find_generated_section2_block_ranges(body, min_idx=min_idx)
-        if not ranges:
-            return updated
-        start_idx, end_idx = max(ranges, key=lambda item: item[0])
-        updated = _replace_document_blocks_xml(updated, block_spans, start_idx, end_idx, "")
-    return updated
-
-
-def _replace_document_blocks_xml(
-    original_xml: str,
-    block_spans: list[tuple[int, int]],
-    start_idx: int,
-    end_idx: int,
-    replacement_xml: str,
-) -> str:
-    if start_idx < 0 or start_idx > len(block_spans):
-        raise ValueError("Некорректная точка вставки Раздела II")
-    if end_idx < start_idx or end_idx > len(block_spans):
-        raise ValueError("Некорректные границы Раздела II")
-
-    if start_idx == len(block_spans):
-        insert_at = block_spans[-1][1] if block_spans else original_xml.rfind("</w:body>")
-        return original_xml[:insert_at] + replacement_xml + original_xml[insert_at:]
-
-    replace_start = block_spans[start_idx][0]
-    replace_end = block_spans[end_idx - 1][1] if end_idx > start_idx else replace_start
-    return original_xml[:replace_start] + replacement_xml + original_xml[replace_end:]
-
-
-def _validate_replacement_boundary(
-    block_spans: list[tuple[int, int]],
-    insert_idx: int,
-    first_allowed_idx: int,
-) -> Optional[str]:
-    if insert_idx < first_allowed_idx:
-        return (
-            "Небезопасная точка вставки Раздела II: она находится в титульной "
-            "странице/содержании. Документ не изменен."
-        )
-    if insert_idx <= 0:
-        return "Небезопасная точка вставки Раздела II: начало документа. Документ не изменен."
-    if insert_idx >= len(block_spans):
-        return "Небезопасная точка вставки Раздела II: конец документа. Документ не изменен."
-    return None
-
-
-def _validate_unchanged_prefix(
-    original_xml: str,
-    new_xml: str,
-    block_spans: list[tuple[int, int]],
-    insert_idx: int,
-) -> Optional[str]:
-    prefix_end = block_spans[insert_idx][0]
-    if original_xml[:prefix_end] != new_xml[:prefix_end]:
-        return (
-            "Проверка защиты титульной страницы не пройдена: XML до Раздела II "
-            "изменился. Документ не изменен."
-        )
-    return None
 
 
 def _validate_observation_hyperlinks(

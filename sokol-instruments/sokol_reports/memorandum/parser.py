@@ -9,7 +9,7 @@ from sokol_reports.dictionaries.validation import DictionaryRefError
 from sokol_reports.memorandum.canonicalize import canonicalize_memorandum_source
 from sokol_reports.memorandum.models import MemorandumSource
 from sokol_reports.memorandum.section_ii_table_parser import (
-    SECTION2_TABLE_HEADER,
+    find_section_ii_table,
     parse_section_ii_for_memorandum,
 )
 from sokol_reports.section_ii import xml_utils
@@ -29,14 +29,10 @@ def document_has_section_ii(file_path: str) -> bool:
     if body is None:
         return False
 
-    blocks = xml_utils.get_blocks_from_xml(body)
-    for btype, el in blocks:
-        if btype != "tbl":
-            continue
-        text = xml_utils.get_text_from_element(el)
-        if SECTION2_TABLE_HEADER.lower() in text.lower():
-            return True
+    if find_section_ii_table(body) is not None:
+        return True
 
+    blocks = xml_utils.get_blocks_from_xml(body)
     first_after_page2 = xml_utils.find_first_block_after_page2(body)
     section2 = xml_utils.find_section2_in_xml(body, min_idx=first_after_page2)
     if section2 is None:
