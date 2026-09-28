@@ -8,6 +8,7 @@
 |----------|------------|
 | [PROJECT_CODE_GUIDE.md](PROJECT_CODE_GUIDE.md) | Карта кода для нового разработчика |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Слои backend/frontend, auth, инварианты, bootstrap |
+| [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md) | Автостатус и индикаторы рекомендаций: правила, приоритет, код |
 | [API.md](API.md) | HTTP `/api/v1` |
 | [DATA_AND_DB.md](DATA_AND_DB.md) | Модель, enum'ы, FK, seed, import, миграции, бэкапы |
 | [STORAGE.md](STORAGE.md) | MinIO: layout, API, консоль, `mc`, бэкап |
@@ -34,7 +35,7 @@ FastAPI + PostgreSQL (async SQLAlchemy) + MinIO:
 - **Analytics** — `GET /analytics/{checks|recommendations|monitoring|dva|planning}`, SQL-агрегаты. Конструктор дашбордов — только frontend.
 - **Attachments** — Postgres metadata + MinIO.
 - **Tools** — Раздел II, ДЗ, parse-recommendations, файл контроля (XLSX); in-process очередь DOCX (`docx_queue`), не Celery.
-- **Статусы rec** — `status` и доп. статус от `deadline` vs текущая дата; ежедневно 00:05 МСК (`SOKOL_STATUS_SCHEDULER`).
+- **Статусы rec** — индикаторы по правилам ([RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md)); ежедневно 00:05 МСК (`SOKOL_STATUS_SCHEDULER`).
 
 **Нет:** Alembic, OIDC, CRUD наблюдений, users PATCH/DELETE, хранение аватаров, серверные сохранённые отчёты, distributed job queue.
 

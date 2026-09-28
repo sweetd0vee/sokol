@@ -1,24 +1,28 @@
-"""Date-driven recommendation status and indicator calculation.
+"""Автостатус рекомендаций: одна таблица правил, два входа (payload и ORM-строка).
 
-Open items follow ``deadline`` (срок контроля) against the current Moscow date:
-before the date both indicators are ``on_control``; on/after it both are
-``in_progress``. Filling «снять с контроля» locks ``unresolved`` +
-``deadline_violated``. A postponement («перенос срока») rewrites ``deadline``
-to the latest extension date, then the same rules apply. When the auditor
-fills ``actual_completion_date`` (срок исполнения), status becomes completed
-and additional status is ``on_time`` or ``deadline_violated`` vs control
-deadline. «Исполнено в ходе аудита» stays locked to the star + ``on_time``.
+Приоритет (первый совпавший выигрывает):
+
+1. «Снять с контроля» → не решено + срок нарушен.
+2. «Исполнено в ходе аудита» → звезда + в срок.
+3. Есть срок исполнения и срок контроля → исполнено + в срок / срок нарушен.
+4. Иначе открытая пара от срока контроля vs сегодня (Москва): на контроле / в процессе.
+
+Перенос срока сначала подменяет ``deadline``, затем считается шаг 3 или 4.
+Подробно: ``docs/RECOMMENDATION_INDICATORS.md``.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from app.models.recommendations import RecommendationAdditionalStatus, RecommendationStatus
 
 MOSCOW_TZ = timezone(timedelta(hours=3))
+DateLike = date | datetime | str | None
+ClosureRows = Sequence[Mapping[str, Any]] | Sequence[Any] | None
 
 ON_CONTROL_INDICATOR = "на контроле"
 IN_PROGRESS_INDICATOR = "в процессе"
@@ -28,22 +32,81 @@ DEADLINE_VIOLATED_INDICATOR = "срок нарушен"
 ON_TIME_INDICATOR = "в срок"
 COMPLETED_DURING_AUDIT_INDICATOR = "исполнено в ходе аудита"
 
-PHASE_STATUS = {
-    "on_control": RecommendationStatus.ON_CONTROL,
-    "in_progress": RecommendationStatus.IN_PROGRESS,
+
+@dataclass(frozen=True)
+class StatusPair:
+    """Одна пара статус + доп. статус и их индикаторы."""
+
+    status: RecommendationStatus
+    indicator: str
+    additional_status: RecommendationAdditionalStatus
+    additional_indicator: str
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "status": self.status,
+            "indicator": self.indicator,
+            "additional_status": self.additional_status,
+            "additional_indicator": self.additional_indicator,
+        }
+
+
+REMOVED_FROM_CONTROL = StatusPair(
+    RecommendationStatus.UNRESOLVED,
+    UNRESOLVED_INDICATOR,
+    RecommendationAdditionalStatus.DEADLINE_VIOLATED,
+    DEADLINE_VIOLATED_INDICATOR,
+)
+COMPLETED_DURING_AUDIT = StatusPair(
+    RecommendationStatus.COMPLETED,
+    COMPLETED_DURING_AUDIT_INDICATOR,
+    RecommendationAdditionalStatus.ON_TIME,
+    ON_TIME_INDICATOR,
+)
+EXECUTED_ON_TIME = StatusPair(
+    RecommendationStatus.COMPLETED,
+    COMPLETED_INDICATOR,
+    RecommendationAdditionalStatus.ON_TIME,
+    ON_TIME_INDICATOR,
+)
+EXECUTED_LATE = StatusPair(
+    RecommendationStatus.COMPLETED,
+    COMPLETED_INDICATOR,
+    RecommendationAdditionalStatus.DEADLINE_VIOLATED,
+    DEADLINE_VIOLATED_INDICATOR,
+)
+OPEN_ON_CONTROL = StatusPair(
+    RecommendationStatus.ON_CONTROL,
+    ON_CONTROL_INDICATOR,
+    RecommendationAdditionalStatus.ON_CONTROL,
+    ON_CONTROL_INDICATOR,
+)
+OPEN_IN_PROGRESS = StatusPair(
+    RecommendationStatus.IN_PROGRESS,
+    IN_PROGRESS_INDICATOR,
+    RecommendationAdditionalStatus.IN_PROGRESS,
+    IN_PROGRESS_INDICATOR,
+)
+
+OPEN_PHASE_PAIR = {
+    "on_control": OPEN_ON_CONTROL,
+    "in_progress": OPEN_IN_PROGRESS,
 }
-PHASE_ADDITIONAL_STATUS = {
-    "on_control": RecommendationAdditionalStatus.ON_CONTROL,
-    "in_progress": RecommendationAdditionalStatus.IN_PROGRESS,
-}
-PHASE_STATUS_INDICATOR = {
-    "on_control": ON_CONTROL_INDICATOR,
-    "in_progress": IN_PROGRESS_INDICATOR,
-}
-PHASE_ADDITIONAL_INDICATOR = {
-    "on_control": ON_CONTROL_INDICATOR,
-    "in_progress": IN_PROGRESS_INDICATOR,
-}
+
+
+@dataclass(frozen=True)
+class AutoStatusFacts:
+    """Входные факты для правил. ``effective_deadline`` уже с учётом переноса."""
+
+    control_deadline: date | None
+    execution_date: date | None
+    latest_extension: date | None
+    removed_from_control: bool
+    current_indicator: str | None
+
+    @property
+    def effective_deadline(self) -> date | None:
+        return self.latest_extension or self.control_deadline
 
 
 def today_moscow(now: datetime | None = None) -> date:
@@ -71,6 +134,28 @@ def status_phase(anchor: date | None, today: date) -> str | None:
     return "in_progress"
 
 
+def choose_status_pair(
+    *,
+    control_deadline: date | None,
+    execution_date: date | None = None,
+    removed_from_control: bool = False,
+    current_indicator: str | None = None,
+    today: date | None = None,
+) -> StatusPair | None:
+    """Первое совпавшее правило. ``None`` — нет срока контроля и нечем заполнить."""
+    today = today or today_moscow()
+    if removed_from_control:
+        return REMOVED_FROM_CONTROL
+    if str(current_indicator or "").strip().casefold() == COMPLETED_DURING_AUDIT_INDICATOR:
+        return COMPLETED_DURING_AUDIT
+    if execution_date is not None and control_deadline is not None:
+        return EXECUTED_LATE if execution_date > control_deadline else EXECUTED_ON_TIME
+    phase = status_phase(control_deadline, today)
+    if phase is None:
+        return None
+    return OPEN_PHASE_PAIR[phase]
+
+
 def compute_auto_status_fields(
     *,
     control_deadline: date | None,
@@ -81,65 +166,151 @@ def compute_auto_status_fields(
     current_indicator: str | None = None,
     today: date | None = None,
 ) -> dict[str, Any]:
-    """Return only the fields that automation is allowed to overwrite."""
-    today = today or today_moscow()
-    updates: dict[str, Any] = {}
-    completed_during_audit = (
-        str(current_indicator or "").strip().casefold() == COMPLETED_DURING_AUDIT_INDICATOR
+    """Поля, которые автоматика имеет право перезаписать. Текущий статус не защищает."""
+    del current_status, current_additional_status
+    pair = choose_status_pair(
+        control_deadline=control_deadline,
+        execution_date=execution_date,
+        removed_from_control=removed_from_control,
+        current_indicator=current_indicator,
+        today=today,
     )
-
-    if removed_from_control:
-        updates["status"] = RecommendationStatus.UNRESOLVED
-        updates["indicator"] = UNRESOLVED_INDICATOR
-        updates["additional_status"] = RecommendationAdditionalStatus.DEADLINE_VIOLATED
-        updates["additional_indicator"] = DEADLINE_VIOLATED_INDICATOR
-        return updates
-
-    if completed_during_audit:
-        updates["status"] = RecommendationStatus.COMPLETED
-        updates["indicator"] = COMPLETED_DURING_AUDIT_INDICATOR
-        updates["additional_status"] = RecommendationAdditionalStatus.ON_TIME
-        updates["additional_indicator"] = ON_TIME_INDICATOR
-        return updates
-
-    if execution_date is not None and control_deadline is not None:
-        late = execution_date > control_deadline
-        updates["status"] = RecommendationStatus.COMPLETED
-        updates["indicator"] = COMPLETED_INDICATOR
-        updates["additional_status"] = (
-            RecommendationAdditionalStatus.DEADLINE_VIOLATED
-            if late
-            else RecommendationAdditionalStatus.ON_TIME
-        )
-        updates["additional_indicator"] = (
-            DEADLINE_VIOLATED_INDICATOR if late else ON_TIME_INDICATOR
-        )
-        return updates
-
-    phase = status_phase(control_deadline, today)
-    if phase is not None:
-        updates["status"] = PHASE_STATUS[phase]
-        updates["indicator"] = PHASE_STATUS_INDICATOR[phase]
-        updates["additional_status"] = PHASE_ADDITIONAL_STATUS[phase]
-        updates["additional_indicator"] = PHASE_ADDITIONAL_INDICATOR[phase]
-
-    return updates
-
-
-DateLike = date | datetime | str | None
+    return {} if pair is None else pair.as_dict()
 
 
 def control_zone_execution_date(
     *,
     actual_completion_date: DateLike = None,
-    deadline_extensions: Sequence[Mapping[str, Any]] | Sequence[Any] | None = None,
+    deadline_extensions: ClosureRows = None,
     extension_1_date: DateLike = None,
     extension_2_reason: DateLike = None,
 ) -> date | None:
-    """Срок исполнения from control zone: actual completion, else latest postponement."""
+    """Срок исполнения из контрольной зоны: факт, иначе последний перенос."""
     actual = _as_date(actual_completion_date)
     if actual:
         return actual
+    return latest_deadline_extension_date(
+        deadline_extensions=deadline_extensions,
+        extension_1_date=extension_1_date,
+        extension_2_reason=extension_2_reason,
+    )
+
+
+def latest_deadline_extension_date(
+    *,
+    deadline_extensions: ClosureRows = None,
+    extension_1_date: DateLike = None,
+    extension_2_reason: DateLike = None,
+) -> date | None:
+    """Последняя дата «перенос срока»."""
+    dates = _extension_dates(
+        deadline_extensions,
+        extension_1_date,
+        extension_2_reason,
+    )
+    return max(dates) if dates else None
+
+
+def has_control_removal(
+    *,
+    control_removals: ClosureRows = None,
+    remove_from_control_date: DateLike = None,
+    remove_from_control_comment: str | None = None,
+) -> bool:
+    """True, если «снять с контроля» заполнено датой или комментарием."""
+    if control_removals:
+        for item in control_removals:
+            if _closure_row_filled(item):
+                return True
+    if _as_date(remove_from_control_date):
+        return True
+    return bool(str(remove_from_control_comment or "").strip())
+
+
+def collect_auto_status_facts(
+    source: Any,
+    *,
+    existing: Any | None = None,
+) -> AutoStatusFacts:
+    """Собрать факты из payload-dict (с fallback на existing) или с ORM-строки."""
+
+    def field(key: str) -> Any:
+        if isinstance(source, dict):
+            return _payload_value(source, key, existing)
+        return getattr(source, key, None)
+
+    return AutoStatusFacts(
+        control_deadline=_as_date(field("deadline")),
+        execution_date=_as_date(field("actual_completion_date")),
+        latest_extension=latest_deadline_extension_date(
+            deadline_extensions=field("deadline_extensions"),
+            extension_1_date=field("extension_1_date"),
+            extension_2_reason=field("extension_2_reason"),
+        ),
+        removed_from_control=has_control_removal(
+            control_removals=field("control_removals"),
+            remove_from_control_date=field("remove_from_control_date"),
+            remove_from_control_comment=field("remove_from_control_comment"),
+        ),
+        current_indicator=field("indicator"),
+    )
+
+
+def overlay_computed_status_fields(
+    data: dict[str, Any],
+    *,
+    existing: Any | None = None,
+    today: date | None = None,
+) -> dict[str, Any]:
+    """Подставить автополя в create/update payload. Перенос пишет ``deadline``."""
+    facts = collect_auto_status_facts(data, existing=existing)
+    if facts.latest_extension is not None:
+        data["deadline"] = facts.latest_extension
+    data.update(
+        compute_auto_status_fields(
+            control_deadline=facts.effective_deadline,
+            execution_date=facts.execution_date,
+            removed_from_control=facts.removed_from_control,
+            current_indicator=facts.current_indicator,
+            today=today,
+        )
+    )
+    return data
+
+
+def apply_computed_status_to_recommendation(
+    recommendation: Any,
+    *,
+    today: date | None = None,
+) -> bool:
+    """Записать автополя на ORM-строку. True, если что-то изменилось."""
+    facts = collect_auto_status_facts(recommendation)
+    changed = False
+    if (
+        facts.latest_extension is not None
+        and getattr(recommendation, "deadline", None) != facts.latest_extension
+    ):
+        recommendation.deadline = facts.latest_extension
+        changed = True
+    updates = compute_auto_status_fields(
+        control_deadline=facts.effective_deadline,
+        execution_date=facts.execution_date,
+        removed_from_control=facts.removed_from_control,
+        current_indicator=facts.current_indicator,
+        today=today,
+    )
+    for key, value in updates.items():
+        if getattr(recommendation, key) != value:
+            setattr(recommendation, key, value)
+            changed = True
+    return changed
+
+
+def _extension_dates(
+    deadline_extensions: ClosureRows,
+    extension_1_date: DateLike,
+    extension_2_reason: DateLike,
+) -> list[date]:
     dates: list[date] = []
     if deadline_extensions is not None:
         for item in deadline_extensions:
@@ -151,37 +322,7 @@ def control_zone_execution_date(
         parsed = _as_date(raw)
         if parsed:
             dates.append(parsed)
-    return max(dates) if dates else None
-
-
-def latest_deadline_extension_date(
-    *,
-    deadline_extensions: Sequence[Mapping[str, Any]] | Sequence[Any] | None = None,
-    extension_1_date: DateLike = None,
-    extension_2_reason: DateLike = None,
-) -> date | None:
-    """Latest «перенос срока» date from the control zone."""
-    return control_zone_execution_date(
-        deadline_extensions=deadline_extensions,
-        extension_1_date=extension_1_date,
-        extension_2_reason=extension_2_reason,
-    )
-
-
-def has_control_removal(
-    *,
-    control_removals: Sequence[Mapping[str, Any]] | Sequence[Any] | None = None,
-    remove_from_control_date: DateLike = None,
-    remove_from_control_comment: str | None = None,
-) -> bool:
-    """True when «снять с контроля» has a date or comment."""
-    if control_removals:
-        for item in control_removals:
-            if _closure_row_filled(item):
-                return True
-    if _as_date(remove_from_control_date):
-        return True
-    return bool(str(remove_from_control_comment or "").strip())
+    return dates
 
 
 def _closure_row_filled(item: object) -> bool:
@@ -196,91 +337,10 @@ def _closure_row_filled(item: object) -> bool:
     return bool(str(raw_comment or "").strip())
 
 
-def overlay_computed_status_fields(
-    data: dict[str, Any],
-    *,
-    existing: Any | None = None,
-    today: date | None = None,
-) -> dict[str, Any]:
-    """Merge auto-calculated fields into a create/update payload dict."""
-    latest_extension = latest_deadline_extension_date(
-        deadline_extensions=_payload_value(data, "deadline_extensions", existing),
-        extension_1_date=_payload_value(data, "extension_1_date", existing),
-        extension_2_reason=_payload_value(data, "extension_2_reason", existing),
-    )
-    if latest_extension is not None:
-        data["deadline"] = latest_extension
-    control = _payload_date(data, "deadline", existing)
-    execution = _payload_date(data, "actual_completion_date", existing)
-    removed = has_control_removal(
-        control_removals=_payload_value(data, "control_removals", existing),
-        remove_from_control_date=_payload_value(data, "remove_from_control_date", existing),
-        remove_from_control_comment=_payload_value(data, "remove_from_control_comment", existing),
-    )
-    current_status = data["status"] if "status" in data else getattr(existing, "status", None)
-    current_additional = (
-        data["additional_status"]
-        if "additional_status" in data
-        else getattr(existing, "additional_status", None)
-    )
-    current_indicator = data["indicator"] if "indicator" in data else getattr(existing, "indicator", None)
-    data.update(
-        compute_auto_status_fields(
-            control_deadline=control,
-            execution_date=execution,
-            removed_from_control=removed,
-            current_status=current_status,
-            current_additional_status=current_additional,
-            current_indicator=current_indicator,
-            today=today,
-        )
-    )
-    return data
-
-
-def apply_computed_status_to_recommendation(
-    recommendation: Any,
-    *,
-    today: date | None = None,
-) -> bool:
-    """Write computed fields onto an ORM row. Returns True when anything changed."""
-    latest_extension = latest_deadline_extension_date(
-        deadline_extensions=getattr(recommendation, "deadline_extensions", None),
-        extension_1_date=getattr(recommendation, "extension_1_date", None),
-        extension_2_reason=getattr(recommendation, "extension_2_reason", None),
-    )
-    changed = False
-    if latest_extension is not None and getattr(recommendation, "deadline", None) != latest_extension:
-        recommendation.deadline = latest_extension
-        changed = True
-    updates = compute_auto_status_fields(
-        control_deadline=latest_extension or getattr(recommendation, "deadline", None),
-        execution_date=getattr(recommendation, "actual_completion_date", None),
-        removed_from_control=has_control_removal(
-            control_removals=getattr(recommendation, "control_removals", None),
-            remove_from_control_date=getattr(recommendation, "remove_from_control_date", None),
-            remove_from_control_comment=getattr(recommendation, "remove_from_control_comment", None),
-        ),
-        current_status=getattr(recommendation, "status", None),
-        current_additional_status=getattr(recommendation, "additional_status", None),
-        current_indicator=getattr(recommendation, "indicator", None),
-        today=today,
-    )
-    for key, value in updates.items():
-        if getattr(recommendation, key) != value:
-            setattr(recommendation, key, value)
-            changed = True
-    return changed
-
-
 def _payload_value(data: dict[str, Any], key: str, existing: Any | None) -> Any:
     if key in data:
         return data.get(key)
     return getattr(existing, key, None)
-
-
-def _payload_date(data: dict[str, Any], key: str, existing: Any | None) -> date | None:
-    return _as_date(_payload_value(data, key, existing))
 
 
 def _as_date(value: object) -> date | None:

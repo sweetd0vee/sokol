@@ -15,6 +15,7 @@ os.environ.setdefault(
 from app.models.recommendations import RecommendationAdditionalStatus, RecommendationStatus
 from app.services.recommendation_status import (
     MOSCOW_TZ,
+    collect_auto_status_facts,
     compute_auto_status_fields,
     control_zone_execution_date,
     overlay_computed_status_fields,
@@ -248,6 +249,17 @@ class RecommendationStatusCalcTests(unittest.TestCase):
         )
         self.assertEqual(payload["status"], RecommendationStatus.ON_CONTROL)
         self.assertEqual(payload["additional_status"], RecommendationAdditionalStatus.ON_CONTROL)
+
+    def test_facts_prefer_latest_extension_as_effective_deadline(self) -> None:
+        facts = collect_auto_status_facts(
+            {
+                "deadline": date(2026, 8, 1),
+                "deadline_extensions": [{"date": "2026-12-01"}],
+            }
+        )
+        self.assertEqual(facts.control_deadline, date(2026, 8, 1))
+        self.assertEqual(facts.latest_extension, date(2026, 12, 1))
+        self.assertEqual(facts.effective_deadline, date(2026, 12, 1))
 
     def test_today_moscow_uses_utc_plus_three(self) -> None:
         just_after_midnight = datetime(2026, 9, 11, 0, 10, tzinfo=MOSCOW_TZ)

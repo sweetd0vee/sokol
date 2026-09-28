@@ -15,8 +15,8 @@ import { useAuth } from './useAuth';
 import { useCurrentUserName } from './useCurrentUserName';
 import { toNameOptions, useAuditorOptions } from './useReferenceOptions';
 import { useAuditObjectOptions } from './useAuditObjectOptions';
-import { computeRecommendationAutoStatus } from '../utils/recommendationAutoStatus';
-import { toInputDate, toIsoDate } from '../utils/dates';
+import { applyRecommendationFormAutoStatus } from '../utils/recommendationFormAutoStatus';
+import { toIsoDate } from '../utils/dates';
 import { auditorMatchesCurrentUser } from '../utils/personMatch';
 import { resolveRecommendationYearlyDisplayNumber } from '../utils/recommendationYearlyNumber';
 import {
@@ -24,8 +24,6 @@ import {
   type RecommendationFormLocationState,
 } from '../utils/checkFormNavigation';
 import {
-  getLatestDeadlineExtensionDate,
-  hasControlRemoval,
   hasIncompleteClosureRows,
   type RecommendationClosureForm,
 } from '../constants/recommendationClosure';
@@ -141,24 +139,10 @@ export function useRecommendationForm() {
     navigationState.checkFormDraft?.checkLeader,
   ]);
 
-  const applyAutoStatus = useCallback((next: RecommendationFormFields): RecommendationFormFields => {
-    const extensionIso = getLatestDeadlineExtensionDate({ extensions: next.closure.extensions });
-    const deadline = extensionIso ? toInputDate(extensionIso) : next.deadline;
-    const auto = computeRecommendationAutoStatus({
-      controlDeadline: deadline,
-      executionDate: next.closure.actualCompletionDate,
-      removedFromControl: hasControlRemoval({ removals: next.closure.removals }),
-      currentIndicator: next.indicator,
-    });
-    return {
-      ...next,
-      deadline,
-      status: auto.status ?? next.status,
-      indicator: auto.indicator ?? next.indicator,
-      additionalStatus: auto.additionalStatus ?? next.additionalStatus,
-      additionalIndicator: auto.additionalIndicator ?? next.additionalIndicator,
-    };
-  }, []);
+  const applyAutoStatus = useCallback(
+    (next: RecommendationFormFields): RecommendationFormFields => applyRecommendationFormAutoStatus(next),
+    [],
+  );
 
   const setField = useCallback(<K extends keyof RecommendationFormFields>(
     key: K,

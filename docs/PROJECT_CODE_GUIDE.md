@@ -82,7 +82,8 @@ QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvi
 | Тема | Frontend | Backend |
 |------|----------|---------|
 | Проверки | `components/tabs/ChecksTab.tsx`, `checks/CheckFormPage.tsx` | `endpoints/checks.py`, `checks_service`, `checks_crud` |
-| Рекомендации | `RecommendationsTab`, `RecommendationFormPage`, `CheckRecommendationsBlock` | `endpoints/recommendations.py`, `recommendations_service` |
+| Рекомендации | `RecommendationsTab`, `RecommendationFormPage`, `CheckRecommendationsBlock` | `endpoints/recommendations.py`, `recommendations_service`, **автостатус** `recommendation_status.py` |
+| Индикаторы rec | `recommendationAutoStatus.ts`, `recommendationFormAutoStatus.ts` | `recommendation_status.py`, `recommendation_status_refresh.py` — [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md) |
 | Вложения | `api/attachments.ts`, `attachments/*` | `attachments_service`, `minio_storage` |
 | Аналитика | `tabs/AnalyticsTab.tsx`, `components/analytics/` | `endpoints/analytics.py`, `services/analytics/` |
 | Планирование | `tabs/PlanningTab.tsx` | `GET /analytics/planning` |

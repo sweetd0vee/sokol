@@ -88,7 +88,7 @@ Search: название, наблюдение, описание, объект �
 
 Ещё: `sequence_number` (сервер), `description`, `observation_name`, `indicator` / `additional_indicator` (default `не указан`), `materiality_level` (default `средний`), `audit_object: list[str]` (строка с `,`/`;` тоже принимается), `deadline` (срок контроля), `execution_deadline` (срок исполнения), продления и снятие с контроля, `deadline_extensions` / `control_removals` (`{date?, comment?}`), `closure_*`.
 
-Открытые рекомендации пересчитываются при create/update и ежедневно в 00:05 Europe/Moscow (`SOKOL_STATUS_SCHEDULER=0` выключает). Без срока исполнения: до `deadline` оба `on_control`, в дату и после оба `in_progress`. Если заполнен `actual_completion_date` (срок исполнения в контрольной зоне): `completed` / «исполнено»; доп. статус `on_time`, если дата исполнения ≤ срока контроля, иначе `deadline_violated`. «Снять с контроля» → `unresolved` + `deadline_violated`. «Перенос срока» переписывает `deadline` на дату переноса. «Исполнено в ходе аудита» → звезда + `on_time`. Колонка `execution_deadline` автостатус не читает.
+Автостатус рекомендаций при create/update и ежедневно в 00:05 Europe/Moscow (`SOKOL_STATUS_SCHEDULER=0` выключает). Правила и приоритет — [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md). Колонка `execution_deadline` автостатус не читает.
 
 `auditor` ∈ auditors, иначе **400**. `manager` — свободный текст. `audit_object` канонизируется по `departments`; неизвестное → **400**. Нет проверки → **400**. Сбой MinIO при delete/replace → **502**.
 

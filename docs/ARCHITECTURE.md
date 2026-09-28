@@ -102,16 +102,7 @@ Login матчит `username` и `aliases`. Неактивные не прохо
 - Смена `start_date` / `check_quarter` / `check_leader` / `check_type` или `auditors.code` → `check_serial_cascade`: rec serial, attachment serial/bucket, copy+delete MinIO.
 - Справочники: физический FK на unique label (`ON UPDATE CASCADE`). API create/update валидирует labels (**400**); import Excel **досоздаёт** (`ensure_*`).
 - `audit_object` — массив + junction `recommendation_audit_objects`. Пустое → «Не указан». Аналитика фильтрует по массиву (`overlap`), не по junction.
-- Статусы открытых рекомендаций:
-  - `status` / `indicator` и `additional_status` / `additional_indicator` считаются так:
-    - нет срока исполнения: от `deadline` (срок контроля) и текущей даты — до даты оба `on_control` (серые песочные часы + серый колокольчик), в дату и после оба `in_progress` (жёлтые часы + жёлтый колокольчик);
-    - заполнен `actual_completion_date` (срок исполнения в контрольной зоне): статус `completed` / «исполнено» (зелёная галочка); доп. статус `on_time` / «в срок» (зелёный колокольчик), если дата исполнения ≤ срока контроля, иначе `deadline_violated` / «срок нарушен» (красный колокольчик);
-    - заполнен «снять с контроля» — `unresolved` / красный треугольник и `deadline_violated` / красный колокольчик;
-    - «перенос срока» переписывает `deadline` на дату переноса, после чего индикаторы считаются по тем же правилам;
-    - вместо срока в АЗ «исполнено в ходе аудита» — синяя звезда и зелёный колокольчик `on_time`.
-  - Обычный `completed` без даты исполнения снова считается от срока контроля.
-  - Колонка `execution_deadline` хранится, автостатус её не читает; читается `actual_completion_date`.
-  - Пересчёт при create/update и ежедневно в 00:05 Europe/Moscow (`SOKOL_STATUS_SCHEDULER=0` выключает; в pytest выключен).
+- Статусы и индикаторы рекомендаций — отдельный контур, см. [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md). Кратко: приоритет «снять с контроля» → «исполнено в ходе аудита» → срок исполнения vs срок контроля → открытая пара от срока контроля vs сегодня (Москва). Перенос срока переписывает `deadline`. Пересчёт на create/update, в карточке, в превью АЗ и ежедневно в 00:05 Europe/Moscow (`SOKOL_STATUS_SCHEDULER=0` выключает). Колонка `execution_deadline` автостатус не читает.
 - `Attachment` — metadata в PG, байты в MinIO, bucket `check-{serial}`.
 
 ## Bootstrap
