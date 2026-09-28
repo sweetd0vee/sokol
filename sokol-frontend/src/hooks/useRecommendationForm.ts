@@ -83,10 +83,17 @@ export function useRecommendationForm() {
   const [isExecutionDeadlineOpen, setIsExecutionDeadlineOpen] = useState(true);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [hydratedRecommendationId, setHydratedRecommendationId] = useState<string | null>(() =>
+    isEditMode && source ? String(source.id) : null,
+  );
 
   useEffect(() => {
     if (isEditMode && source) {
+      if (hydratedRecommendationId === String(source.id)) {
+        return;
+      }
       setFields((prev) => recommendationFormFieldsFromSource(source, prev.checkLeader));
+      setHydratedRecommendationId(String(source.id));
       setShowValidationErrors(false);
       return;
     }
@@ -94,10 +101,12 @@ export function useRecommendationForm() {
       setFields(emptyRecommendationFormFields(recommendationFormPrefillFromNavigation(navigationState)));
       setShowValidationErrors(false);
       setIsExecutionDeadlineOpen(true);
+      setHydratedRecommendationId(null);
     }
   }, [
     source,
     isEditMode,
+    hydratedRecommendationId,
     navigationState.serialNumber,
     navigationState.auditor,
     navigationState.checkLeader,
@@ -338,6 +347,10 @@ export function useRecommendationForm() {
         !fields.additionalStatus ||
         requiredFieldErrors.hasErrors)
     ) {
+      return;
+    }
+    if (isEditMode && (!source?.id || hydratedRecommendationId !== String(source.id))) {
+      setSaveError('Рекомендация не загружена. Обновите страницу или вернитесь к списку рекомендаций.');
       return;
     }
 
