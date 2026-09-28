@@ -25,7 +25,7 @@ describe('buildParsedPreviewItem', () => {
     expect(item.materiality_level).toBe('средний');
   });
 
-  it('ставит серый колокольчик, если срок контроля ещё не наступил', () => {
+  it('ставит серые песочные часы и серый колокольчик, если срок контроля ещё не наступил', () => {
     const item = buildParsedPreviewItem({ ...draft, deadline: '2099-01-01' }, 0, 'П-1', 0);
     expect(item).toMatchObject({
       status: 'on_control',
