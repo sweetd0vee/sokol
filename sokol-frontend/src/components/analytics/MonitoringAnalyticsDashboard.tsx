@@ -1,15 +1,4 @@
 import { useCallback, useMemo, useState } from 'react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  LabelList,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import { fetchMonitoringAnalytics } from '../../api/analytics';
 import { queryKeys } from '../../api/queryKeys';
 import { AnalyticsDashboardGrid, type AnalyticsGridCard } from './AnalyticsDashboardGrid';
@@ -17,18 +6,9 @@ import {
   ANALYTICS_DASHBOARD_MAIN_CLASS,
   AnalyticsDashboardShell,
 } from './AnalyticsDashboardShell';
-import {
-  ChartCard,
-  CHART_AXIS_TICK,
-  CHART_TOOLTIP_STYLE,
-  CHART_VALUE_LABEL_SIZE,
-  CHART_VALUE_LABEL_WEIGHT,
-  EmptyChart,
-  KpiCard,
-} from './AnalyticsChartPrimitives';
+import { ChartCard, EmptyChart, KpiCard } from './AnalyticsChartPrimitives';
 import {
   applyValueBasedColors,
-  lastScaleColor,
   MONITORING_ADDITIONAL_STATUS_COLORS,
   MONITORING_BAR_BLUE_SCALE,
   MONITORING_STATUS_COLORS,
@@ -37,9 +17,8 @@ import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
 import { StatusMatrixChart } from './StatusMatrixChart';
-import { CheckKeyAxisTick } from './CheckKeyAxisTick';
+import { MonitoringCheckKeyBarChart } from './MonitoringCheckKeyBarChart';
 import { toAnalyticsFilterSidebarProps } from './analyticsFilterSidebarProps';
-import { checkBarTooltipLabel } from './checkBarTooltip';
 import { useAnalyticsDashboardController } from './useAnalyticsDashboardController';
 import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
 import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
@@ -224,7 +203,7 @@ export function MonitoringAnalyticsDashboard() {
         id: 'summary',
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
         render: () => (
-          <ChartCard title="Итого по мониторингу" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')}>
+          <ChartCard title="Итого по мониторингу" description="" dense {...exportSections.sectionProps('summary')}>
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
               <KpiCard
                 label="Исполнено"
@@ -263,9 +242,7 @@ export function MonitoringAnalyticsDashboard() {
           <ChartCard
             title="Статусы рекомендаций за период"
             description=""
-            exportSectionId="statuses"
-            exportSelected={exportSections.isSelected('statuses')}
-            onToggleExport={() => exportSections.toggleSection('statuses')}
+            {...exportSections.sectionProps('statuses')}
           >
             {distributionHasValues(coloredStatusDistribution) ? (
               <FocusableSquareCirclesChart
@@ -286,9 +263,7 @@ export function MonitoringAnalyticsDashboard() {
           <ChartCard
             title="Дополнительные статусы за период"
             description=""
-            exportSectionId="additionalStatuses"
-            exportSelected={exportSections.isSelected('additionalStatuses')}
-            onToggleExport={() => exportSections.toggleSection('additionalStatuses')}
+            {...exportSections.sectionProps('additionalStatuses')}
           >
             {distributionHasValues(coloredAdditionalStatusDistribution) ? (
               <FocusableDonutChart
@@ -310,50 +285,23 @@ export function MonitoringAnalyticsDashboard() {
           <ChartCard
             title="Переносы срока по проверкам"
             description=""
-            exportSectionId="deadlineExtensions"
-            exportSelected={exportSections.isSelected('deadlineExtensions')}
-            onToggleExport={() => exportSections.toggleSection('deadlineExtensions')}
+            {...exportSections.sectionProps('deadlineExtensions')}
           >
             {deadlineExtensionsByCheck.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <div className="h-full min-h-[14rem]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={deadlineExtensionsByCheck}
-                    margin={{ top: 22, right: 16, left: -10, bottom: 28 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis
-                      dataKey="key"
-                      interval={0}
-                      height={36}
-                      tick={(props) => (
-                        <CheckKeyAxisTick {...props} shortNameByKey={deadlineExtensionShortNames} />
-                      )}
-                    />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                    <Tooltip
-                      contentStyle={CHART_TOOLTIP_STYLE}
-                      formatter={(value) => [value, 'Переносов']}
-                      labelFormatter={(label) => checkBarTooltipLabel(label, deadlineExtensionShortNames)}
-                    />
-                    <Bar dataKey="value" name="Переносов" fill={lastScaleColor(MONITORING_BAR_BLUE_SCALE)} radius={[4, 4, 0, 0]}>
-                      {deadlineExtensionsByCheck.map((item, index) => (
-                        <Cell key={item.id} fill={deadlineExtensionColors[index]} />
-                      ))}
-                      <LabelList
-                        dataKey="value"
-                        position="top"
-                        fontSize={CHART_VALUE_LABEL_SIZE}
-                        fontWeight={CHART_VALUE_LABEL_WEIGHT}
-                        fill="#000000"
-                        offset={8}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <MonitoringCheckKeyBarChart
+                items={deadlineExtensionsByCheck}
+                layout="horizontal"
+                shortNameByKey={deadlineExtensionShortNames}
+                colors={deadlineExtensionColors}
+                seriesName="Переносов"
+                minHeightClass="min-h-[14rem]"
+                margin={{ top: 22, right: 16, left: -10, bottom: 28 }}
+                barRadius={[4, 4, 0, 0]}
+                labelPosition="top"
+                labelOffset={8}
+              />
             )}
           </ChartCard>
         ),
@@ -365,51 +313,22 @@ export function MonitoringAnalyticsDashboard() {
           <ChartCard
             title="Исполнено в ходе аудита по проверкам"
             description=""
-            exportSectionId="completedDuringAudit"
-            exportSelected={exportSections.isSelected('completedDuringAudit')}
-            onToggleExport={() => exportSections.toggleSection('completedDuringAudit')}
+            {...exportSections.sectionProps('completedDuringAudit')}
           >
             {completedDuringAuditByCheck.length === 0 ? (
               <EmptyChart message="Нет данных" />
             ) : (
-              <div className="h-full min-h-[13rem]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={completedDuringAuditByCheck}
-                    layout="vertical"
-                    margin={{ top: 8, right: 40, left: 8, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis type="number" allowDecimals={false} tick={CHART_AXIS_TICK} />
-                    <YAxis
-                      dataKey="key"
-                      type="category"
-                      width={88}
-                      interval={0}
-                      tick={(props) => (
-                        <CheckKeyAxisTick {...props} orientation="left" shortNameByKey={completedDuringAuditShortNames} />
-                      )}
-                    />
-                    <Tooltip
-                      contentStyle={CHART_TOOLTIP_STYLE}
-                      formatter={(value) => [value, 'Рекомендаций']}
-                      labelFormatter={(label) => checkBarTooltipLabel(label, completedDuringAuditShortNames)}
-                    />
-                    <Bar dataKey="value" name="Рекомендаций" fill={lastScaleColor(MONITORING_BAR_BLUE_SCALE)} radius={[0, 6, 6, 0]}>
-                      {completedDuringAuditByCheck.map((item, index) => (
-                        <Cell key={item.id} fill={completedDuringAuditColors[index]} />
-                      ))}
-                      <LabelList
-                        dataKey="value"
-                        position="right"
-                        fontSize={CHART_VALUE_LABEL_SIZE}
-                        fontWeight={CHART_VALUE_LABEL_WEIGHT}
-                        fill="#000000"
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <MonitoringCheckKeyBarChart
+                items={completedDuringAuditByCheck}
+                layout="vertical"
+                shortNameByKey={completedDuringAuditShortNames}
+                colors={completedDuringAuditColors}
+                seriesName="Рекомендаций"
+                minHeightClass="min-h-[13rem]"
+                margin={{ top: 8, right: 40, left: 8, bottom: 0 }}
+                barRadius={[0, 6, 6, 0]}
+                labelPosition="right"
+              />
             )}
           </ChartCard>
         ),
@@ -422,9 +341,7 @@ export function MonitoringAnalyticsDashboard() {
           <ChartCard
             title="Матрица статусов по проверкам"
             description=""
-            exportSectionId="statusMatrix"
-            exportSelected={exportSections.isSelected('statusMatrix')}
-            onToggleExport={() => exportSections.toggleSection('statusMatrix')}
+            {...exportSections.sectionProps('statusMatrix')}
             fitContent
           >
             {statusMatrix.length === 0 ? (

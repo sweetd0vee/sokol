@@ -97,7 +97,9 @@ API: `coverage` (rates, donut, covered/uncovered, `checksByDepartment`), `unreso
 
 Сценарий: создать лист → он становится *текущим* → на аналитике/планировании отметить карточки → «Добавить в конструктор». Первое добавление без листа создаёт черновик. Холст: drag/resize 12 колонок, удаление, переименование. Запись в localStorage сразу; кнопки «Сохранить» нет. «Копировать» — новое имя. Экспорт — html/pdf/docx/xlsx с **смонтированного** холста; из истории без открытия листа снимок пустой.
 
-Файлы: `ConstructorTab.tsx`, `constructor/ConstructorEditorPage.tsx`, `ConstructorDashboard.tsx`, `ConstructorChartBody.tsx`, `constructorLibrary.ts`, `AnalyticsConstructorContext.tsx`, `buildConstructorWidgets.ts`, `useAddToConstructor.ts`, `utils/constructor*Export*`.
+Файлы: `ConstructorTab.tsx`, `constructor/ConstructorEditorPage.tsx`, `ConstructorDashboard.tsx`, `ConstructorChartBody.tsx`, `constructorLibrary.ts`, `AnalyticsConstructorContext.tsx`, `useAddToConstructor.ts`, `utils/constructor*Export*`.
+
+Черновики виджетов собираются по разделам: `buildChecksConstructorDrafts.ts`, `buildRecommendationsConstructorDrafts.ts`, `buildMonitoringConstructorDrafts.ts`, `buildDvaConstructorDrafts.ts`, `buildPlanningConstructorDrafts.ts`. Общие размер и `draft()` — `constructorDraft.ts`. `buildConstructorWidgets.ts` только реэкспортирует эти сборщики.
 
 Дальше до продукта (не сделано): `POST/GET/PATCH /dashboards`, хранить `kind+filters+layout` и перезапрашивать агрегаты, debounce layout, ETag/конфликты, серверный PDF.
 

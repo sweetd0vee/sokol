@@ -18,6 +18,16 @@ async def get_attachment(session: AsyncSession, attachment_id: int) -> Optional[
     return result.scalar_one_or_none()
 
 
+def _entity_filters(entity_type: str, entity_id: int, slot: Optional[str]):
+    filters = [
+        Attachment.entity_type == entity_type,
+        Attachment.entity_id == entity_id,
+    ]
+    if slot:
+        filters.append(Attachment.slot == slot)
+    return filters
+
+
 async def list_attachments(
     session: AsyncSession,
     *,
@@ -27,11 +37,9 @@ async def list_attachments(
 ) -> Sequence[Attachment]:
     query = (
         select(Attachment)
-        .where(Attachment.entity_type == entity_type, Attachment.entity_id == entity_id)
+        .where(*_entity_filters(entity_type, entity_id, slot))
         .order_by(Attachment.created_at.desc(), Attachment.id.desc())
     )
-    if slot:
-        query = query.where(Attachment.slot == slot)
     result = await session.execute(query)
     return result.scalars().all()
 
@@ -44,11 +52,8 @@ async def count_attachments(
     slot: Optional[str] = None,
 ) -> int:
     query = select(func.count()).select_from(Attachment).where(
-        Attachment.entity_type == entity_type,
-        Attachment.entity_id == entity_id,
+        *_entity_filters(entity_type, entity_id, slot),
     )
-    if slot:
-        query = query.where(Attachment.slot == slot)
     result = await session.execute(query)
     return int(result.scalar_one())
 

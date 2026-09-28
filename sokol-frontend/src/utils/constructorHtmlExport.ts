@@ -15,15 +15,7 @@ import {
   type DashboardChartCapture,
 } from './dashboardChartRegistry';
 import { RECOMMENDATIONS_MATERIALITY_CHART_COLORS } from '../components/analytics/analyticsPalette';
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
+import { escapeHtml } from './escapeHtml';
 
 export function resolveConstructorHtmlChartBody(chart: DashboardChartCapture, index: number): string {
   const prefersHtml =

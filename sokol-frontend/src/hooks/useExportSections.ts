@@ -22,6 +22,15 @@ export function useExportSections<T extends string>(allIds: readonly T[]) {
     setSelectedSections([]);
   }, []);
 
+  const sectionProps = useCallback(
+    (id: T) => ({
+      exportSectionId: id,
+      exportSelected: selectedSections.includes(id),
+      onToggleExport: () => toggleSection(id),
+    }),
+    [selectedSections, toggleSection],
+  );
+
   return {
     selectedSections,
     allIds,
@@ -29,6 +38,7 @@ export function useExportSections<T extends string>(allIds: readonly T[]) {
     toggleSection,
     selectAll,
     clearAll,
+    sectionProps,
     selectedCount: selectedSections.length,
     totalCount: allIds.length,
   };

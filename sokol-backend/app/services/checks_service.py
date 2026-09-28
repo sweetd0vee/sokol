@@ -19,6 +19,7 @@ from app.services.dictionary_integrity import (
     normalize_optional_dictionary_label,
 )
 from app.services.dictionary_validation import validate_check_dictionary_fields
+from app.services.db_transaction import rollback_on_error
 from app.services.recommendation_status import today_moscow
 from app.services.storage.minio_storage import get_storage
 
@@ -68,7 +69,7 @@ async def create_check(session: AsyncSession, check_in: CheckCreate) -> Check:
 
     last_integrity_error: IntegrityError | None = None
     check: Check | None = None
-    try:
+    async with rollback_on_error(session):
         for _ in range(2):
             data["serial_number"] = await _require_check_serial(
                 session,
@@ -92,9 +93,6 @@ async def create_check(session: AsyncSession, check_in: CheckCreate) -> Check:
             raise RuntimeError("Failed to create check.")
         await session.commit()
         await session.refresh(check)
-    except Exception:
-        await session.rollback()
-        raise
 
     storage = get_storage()
     if storage is not None:
@@ -157,9 +155,9 @@ async def update_check(
         for field in CHECK_SERIAL_SOURCE_FIELDS
     )
 
-    try:
+    rewrites: list[SerialRewrite] = []
+    async with rollback_on_error(session):
         await checks_crud.update_check(session, check, update_data)
-        rewrites: list[SerialRewrite] = []
         if should_regenerate_serial:
             new_serial = await _require_check_serial(
                 session,
@@ -181,9 +179,6 @@ async def update_check(
 
         await session.commit()
         await session.refresh(check)
-    except Exception:
-        await session.rollback()
-        raise
 
     if rewrites:
         await cleanup_old_serial_buckets(rewrites)
@@ -196,7 +191,7 @@ async def delete_check(session: AsyncSession, check_id: int) -> None:
     attachment_rows = await attachments_crud.list_attachments_by_serial(session, serial_number)
     storage = get_storage()
 
-    try:
+    async with rollback_on_error(session):
         for attachment in attachment_rows:
             if storage is not None:
                 try:
@@ -207,9 +202,6 @@ async def delete_check(session: AsyncSession, check_id: int) -> None:
 
         await checks_crud.delete_check(session, check)
         await session.commit()
-    except Exception:
-        await session.rollback()
-        raise
 
     if storage is not None:
         try:

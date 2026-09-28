@@ -1,4 +1,5 @@
 import { toPng } from 'html-to-image';
+import { escapeAttr, escapeText } from './escapeHtml';
 import { expandOverflowForTableCapture, exportCapturePixelSize } from './exportCaptureBox';
 
 const EXPORT_PNG_PIXEL_RATIO = 4;
@@ -298,21 +299,6 @@ export function namespaceSvgMarkupForEmbed(markup: string, namespace: string): s
 
 export function chartHasPngPayload(dataUrl: string) {
   return dataUrl.startsWith('data:image/png;base64,') && Boolean(dataUrl.split(',')[1]);
-}
-
-function escapeAttr(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-function escapeText(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
 }
 
 function resolveLegendSwatchColor(item: Element): string {

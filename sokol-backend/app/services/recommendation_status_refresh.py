@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+from collections.abc import Callable
 
 from sqlalchemy import select
 
@@ -29,42 +30,47 @@ def status_scheduler_enabled() -> bool:
     return env_flag_enabled(os.getenv("SOKOL_STATUS_SCHEDULER"), default=True)
 
 
-async def refresh_recommendation_statuses() -> int:
+async def _refresh_statuses(
+    model: type,
+    apply_status: Callable[..., bool],
+    *,
+    updated_log: str,
+    unchanged_log: str,
+) -> int:
     today = today_moscow()
     updated = 0
     async with AsyncSessionLocal() as session:
-        result = await session.execute(select(Recommendation))
-        for recommendation in result.scalars():
-            if apply_computed_status_to_recommendation(recommendation, today=today):
+        result = await session.execute(select(model))
+        for entity in result.scalars():
+            if apply_status(entity, today=today):
                 updated += 1
         if updated:
             await session.commit()
         else:
             await session.rollback()
     if updated:
-        logger.info("Updated date-driven status on %s recommendation(s)", updated)
+        logger.info(updated_log, updated)
     else:
-        logger.info("Recommendation statuses already match %s", today.isoformat())
+        logger.info(unchanged_log, today.isoformat())
     return updated
+
+
+async def refresh_recommendation_statuses() -> int:
+    return await _refresh_statuses(
+        Recommendation,
+        apply_computed_status_to_recommendation,
+        updated_log="Updated date-driven status on %s recommendation(s)",
+        unchanged_log="Recommendation statuses already match %s",
+    )
 
 
 async def refresh_check_statuses() -> int:
-    today = today_moscow()
-    updated = 0
-    async with AsyncSessionLocal() as session:
-        result = await session.execute(select(Check))
-        for check in result.scalars():
-            if apply_computed_status_to_check(check, today=today):
-                updated += 1
-        if updated:
-            await session.commit()
-        else:
-            await session.rollback()
-    if updated:
-        logger.info("Updated date-driven status on %s check(s)", updated)
-    else:
-        logger.info("Check statuses already match %s", today.isoformat())
-    return updated
+    return await _refresh_statuses(
+        Check,
+        apply_computed_status_to_check,
+        updated_log="Updated date-driven status on %s check(s)",
+        unchanged_log="Check statuses already match %s",
+    )
 
 
 async def run_status_scheduler() -> None:

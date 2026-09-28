@@ -5,9 +5,9 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.current_user import CurrentUser
-from app.core.exceptions import AccessDeniedError, DomainError, InvalidReferenceError, ResourceNotFoundError
-from app.core.logging import log_caught_exception
-from app.core.recommendation_access import user_can_manage_recommendation
+from app.core.exceptions import InvalidReferenceError, ResourceNotFoundError
+from app.core.recommendation_access import ensure_user_can_manage_recommendation
+from app.services.db_transaction import rollback_on_error
 from app.crud import checks_crud, recommendations_crud
 from app.models.checks import Check
 from app.models.recommendations import Recommendation
@@ -36,12 +36,12 @@ async def _check_by_serial(session: AsyncSession, serial_number: str) -> Check:
 
 
 def _assert_can_manage(user: CurrentUser, recommendation: Recommendation, *, message: str) -> None:
-    if not user_can_manage_recommendation(
+    ensure_user_can_manage_recommendation(
         role=user.role,
         username=user.username,
         auditor=recommendation.auditor,
-    ):
-        raise AccessDeniedError(message)
+        message=message,
+    )
 
 
 async def _prepare_create_payload(session: AsyncSession, data: dict) -> dict:
@@ -95,7 +95,12 @@ async def create_recommendation(
 ) -> Recommendation:
     check = await _check_by_serial(session, recommendation_in.serial_number)
     data = await _prepare_create_payload(session, recommendation_in.model_dump())
-    try:
+    async with rollback_on_error(
+        session,
+        logger=logger,
+        message="Failed to create recommendation for check %s",
+        message_args=(check.serial_number,),
+    ):
         recommendation = await _insert_recommendation(
             session,
             data,
@@ -105,13 +110,6 @@ async def create_recommendation(
         await session.commit()
         await session.refresh(recommendation)
         return recommendation
-    except DomainError:
-        await session.rollback()
-        raise
-    except Exception:
-        log_caught_exception(logger, "Failed to create recommendation for check %s", check.serial_number)
-        await session.rollback()
-        raise
 
 
 async def batch_recommendations(
@@ -126,7 +124,12 @@ async def batch_recommendations(
         data["serial_number"] = check.serial_number
         normalized_items.append(data)
 
-    try:
+    async with rollback_on_error(
+        session,
+        logger=logger,
+        message="Failed to batch recommendations for check %s",
+        message_args=(check.serial_number,),
+    ):
         if payload.mode == "replace":
             existing = await recommendations_crud.list_recommendations_for_check(session, check.id)
             for recommendation in existing:
@@ -150,13 +153,6 @@ async def batch_recommendations(
         for recommendation in created:
             await session.refresh(recommendation)
         return RecommendationListResponse(items=list(created), total=len(created))
-    except DomainError:
-        await session.rollback()
-        raise
-    except Exception:
-        log_caught_exception(logger, "Failed to batch recommendations for check %s", check.serial_number)
-        await session.rollback()
-        raise
 
 
 async def list_recommendations(
@@ -219,7 +215,12 @@ async def update_recommendation(
     )
     previous_check_id = recommendation.check_id
 
-    try:
+    async with rollback_on_error(
+        session,
+        logger=logger,
+        message="Failed to update recommendation %s",
+        message_args=(recommendation_id,),
+    ):
         if check_id is not None:
             update_data["check_id"] = check_id
         await recommendations_crud.update_recommendation_fields(
@@ -245,13 +246,6 @@ async def update_recommendation(
         await session.commit()
         await session.refresh(recommendation)
         return recommendation
-    except DomainError:
-        await session.rollback()
-        raise
-    except Exception:
-        log_caught_exception(logger, "Failed to update recommendation %s", recommendation_id)
-        await session.rollback()
-        raise
 
 
 async def delete_recommendation(
@@ -265,17 +259,15 @@ async def delete_recommendation(
         recommendation,
         message="Недостаточно прав для удаления этой рекомендации.",
     )
-    try:
+    async with rollback_on_error(
+        session,
+        logger=logger,
+        message="Failed to delete recommendation %s",
+        message_args=(recommendation_id,),
+    ):
         await _delete_recommendation_and_files(session, recommendation)
         await recommendations_crud.renumber_recommendations_for_check(session, recommendation.check_id)
         await session.commit()
-    except DomainError:
-        await session.rollback()
-        raise
-    except Exception:
-        log_caught_exception(logger, "Failed to delete recommendation %s", recommendation_id)
-        await session.rollback()
-        raise
 
 
 async def delete_recommendations_batch(
@@ -295,7 +287,12 @@ async def delete_recommendations_batch(
         recommendations.append(recommendation)
 
     check_ids: set[int] = set()
-    try:
+    async with rollback_on_error(
+        session,
+        logger=logger,
+        message="Failed to batch-delete %s recommendations",
+        message_args=(len(unique_ids),),
+    ):
         for recommendation in recommendations:
             await _delete_recommendation_and_files(session, recommendation)
             check_ids.add(recommendation.check_id)
@@ -303,10 +300,3 @@ async def delete_recommendations_batch(
         for check_id in check_ids:
             await recommendations_crud.renumber_recommendations_for_check(session, check_id)
         await session.commit()
-    except DomainError:
-        await session.rollback()
-        raise
-    except Exception:
-        log_caught_exception(logger, "Failed to batch-delete %s recommendations", len(unique_ids))
-        await session.rollback()
-        raise

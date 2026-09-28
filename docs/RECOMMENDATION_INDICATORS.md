@@ -28,6 +28,8 @@
 
 Колонка `execution_deadline` в БД **не участвует**. Срок исполнения для правил — только `actual_completion_date`.
 
+`control_zone_execution_date` в том же Python-модуле умеет подставить дату переноса, если факта исполнения нет. Живой путь — overlay, карточка и ночной прогон — берёт срок исполнения только из `actual_completion_date`. Перенос пишет `deadline`.
+
 Календарный день — **Europe/Moscow** (UTC+3). Сравнение дат без времени: `YYYY-MM-DD`.
 
 ## Пары значков
@@ -119,7 +121,8 @@
 
 `collect_auto_status_facts` собирает из payload+existing или из ORM:
 
-- исходный `deadline`, `actual_completion_date`;
+- исходный `deadline`;
+- `actual_completion_date` как срок исполнения (не `execution_deadline` и не `control_zone_execution_date`);
 - `latest_extension`;
 - `removed_from_control`;
 - текущий `indicator` (для звезды).

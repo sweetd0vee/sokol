@@ -2,7 +2,7 @@
 
 React SPA + FastAPI + PostgreSQL 16 + MinIO. DOCX/XLSX и MinIO-I/O — в `asyncio.to_thread`. Тяжёлые DOCX-jobs — in-process очередь слотов (`services/reports/docx_queue.py`), не Celery.
 
-Цепочка: UI → `src/api` → endpoint → service → CRUD → Postgres/MinIO. Commit, MinIO и доменная валидация — в service; CRUD — только SQL (`flush`), без `commit`, без импорта `app.services` / MinIO / Pydantic-схем.
+Цепочка: UI → `src/api` → endpoint → service → CRUD → Postgres/MinIO. Commit, MinIO и доменная валидация — в service; CRUD — только SQL (`flush`), без `commit`, без импорта `app.services` / MinIO / Pydantic-схем. Откат незакоммиченной записи проверки и рекомендации — `rollback_on_error` в `services/db_transaction.py`.
 
 ## Backend
 
@@ -24,6 +24,7 @@ app/
 ├── models/ · schemas/
 ├── services/
 │   ├── checks / recommendations / attachments / users / auth
+│   ├── db_transaction.py   # rollback_on_error; commit остаётся в service
 │   ├── dictionary_service.py + dictionary_validation.py + dictionary_integrity.py
 │   ├── check_serial_cascade.py
 │   ├── recommendation_status.py + recommendation_status_refresh.py

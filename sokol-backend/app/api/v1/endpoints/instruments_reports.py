@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import re
+from collections.abc import Awaitable, Callable
 from datetime import date
 from pathlib import Path
 
@@ -76,6 +77,37 @@ def _download_name(original_name: str, suffix: str, ext: str) -> str:
     return f"{stem}{suffix}{ext}" if stem else f"{suffix.lstrip('_')}{ext}"
 
 
+def _require_tool_output(
+    result_path: str | None,
+    output_path: Path,
+    error: str | None,
+    *,
+    missing_detail: str,
+) -> None:
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    if not result_path or not output_path.is_file():
+        raise HTTPException(status_code=500, detail=missing_detail)
+
+
+async def _run_uploaded_tool(
+    *,
+    input_path: Path,
+    output_path: Path,
+    failure_message: str,
+    work: Callable[[], Awaitable[FileResponse]],
+) -> FileResponse:
+    try:
+        return await work()
+    except HTTPException:
+        cleanup_files(str(input_path), str(output_path))
+        raise
+    except Exception:
+        log_caught_exception(logger, failure_message)
+        cleanup_files(str(input_path), str(output_path))
+        raise
+
+
 async def _generate_section_ii_response(
     background_tasks: BackgroundTasks,
     file: UploadFile,
@@ -87,7 +119,8 @@ async def _generate_section_ii_response(
     download_name = _download_name(file.filename or "", suffix, DOCX_EXT)
     input_path = await save_upload_to_temp(file)
     output_path = result_path_with_suffix(input_path, "_section_ii", DOCX_EXT)
-    try:
+
+    async def produce() -> FileResponse:
         async with docx_job_slot():
             result_path, _observations, error = await asyncio.to_thread(
                 docx_generator.process_document,
@@ -95,10 +128,12 @@ async def _generate_section_ii_response(
                 str(output_path),
                 with_hyperlinks,
             )
-        if error:
-            raise HTTPException(status_code=400, detail=error)
-        if not result_path or not output_path.is_file():
-            raise HTTPException(status_code=500, detail="Файл результата не создан.")
+        _require_tool_output(
+            result_path,
+            output_path,
+            error,
+            missing_detail="Файл результата не создан.",
+        )
         return stream_result_file(
             background_tasks,
             input_path,
@@ -106,13 +141,13 @@ async def _generate_section_ii_response(
             media_type=DOCX_MIME,
             download_name=download_name,
         )
-    except HTTPException:
-        cleanup_files(str(input_path), str(output_path))
-        raise
-    except Exception:
-        log_caught_exception(logger, "Section II tool failed")
-        cleanup_files(str(input_path), str(output_path))
-        raise
+
+    return await _run_uploaded_tool(
+        input_path=input_path,
+        output_path=output_path,
+        failure_message="Section II tool failed",
+        work=produce,
+    )
 
 
 @router.post("/section-ii")
@@ -164,7 +199,8 @@ async def generate_control_file(
     download_name = _download_name(file.filename or "", "_control", XLSX_EXT)
     input_path = await save_upload_to_temp(file)
     output_path = result_path_with_suffix(input_path, "_control", XLSX_EXT)
-    try:
+
+    async def produce() -> FileResponse:
         async with docx_job_slot():
             result_path, error = await asyncio.to_thread(
                 generate_control_file_template,
@@ -173,10 +209,12 @@ async def generate_control_file(
                 check_leader=normalized_check_leader,
                 check_date=normalized_check_date,
             )
-        if error:
-            raise HTTPException(status_code=400, detail=error)
-        if not result_path or not output_path.is_file():
-            raise HTTPException(status_code=500, detail="Файл контроля не создан.")
+        _require_tool_output(
+            result_path,
+            output_path,
+            error,
+            missing_detail="Файл контроля не создан.",
+        )
         return stream_result_file(
             background_tasks,
             input_path,
@@ -184,13 +222,13 @@ async def generate_control_file(
             media_type=XLSX_MIME,
             download_name=download_name,
         )
-    except HTTPException:
-        cleanup_files(str(input_path), str(output_path))
-        raise
-    except Exception:
-        log_caught_exception(logger, "Control-file tool failed")
-        cleanup_files(str(input_path), str(output_path))
-        raise
+
+    return await _run_uploaded_tool(
+        input_path=input_path,
+        output_path=output_path,
+        failure_message="Control-file tool failed",
+        work=produce,
+    )
 
 
 @router.post("/memorandum")
@@ -203,7 +241,8 @@ async def generate_memorandum(
     download_name = _download_name(file.filename or "", "_dz", DOCX_EXT)
     input_path = await save_upload_to_temp(file)
     output_path = result_path_with_suffix(input_path, "_dz", DOCX_EXT)
-    try:
+
+    async def produce() -> FileResponse:
         async with docx_job_slot():
             source, error = await asyncio.to_thread(parse_az_for_memorandum, str(input_path))
             if error:
@@ -220,10 +259,12 @@ async def generate_memorandum(
                 source,
                 str(output_path),
             )
-        if error:
-            raise HTTPException(status_code=400, detail=error)
-        if not result_path or not output_path.is_file():
-            raise HTTPException(status_code=500, detail="Файл докладной записки не создан.")
+        _require_tool_output(
+            result_path,
+            output_path,
+            error,
+            missing_detail="Файл докладной записки не создан.",
+        )
         return stream_result_file(
             background_tasks,
             input_path,
@@ -231,13 +272,13 @@ async def generate_memorandum(
             media_type=DOCX_MIME,
             download_name=download_name,
         )
-    except HTTPException:
-        cleanup_files(str(input_path), str(output_path))
-        raise
-    except Exception:
-        log_caught_exception(logger, "Memorandum tool failed")
-        cleanup_files(str(input_path), str(output_path))
-        raise
+
+    return await _run_uploaded_tool(
+        input_path=input_path,
+        output_path=output_path,
+        failure_message="Memorandum tool failed",
+        work=produce,
+    )
 
 
 @router.post("/parse-recommendations", response_model=list[ParsedRecommendationItem])

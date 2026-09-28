@@ -181,7 +181,7 @@ export function DvaAnalyticsDashboard() {
         id: 'summary',
         defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 8, minH: 2 },
         render: () => (
-          <ChartCard title="Итого по ДВА" description="" dense exportSectionId="summary" exportSelected={exportSections.isSelected('summary')} onToggleExport={() => exportSections.toggleSection('summary')}>
+          <ChartCard title="Итого по ДВА" description="" dense {...exportSections.sectionProps('summary')}>
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
               <KpiCard label="Проверки" value={checkSummary.total} tone="blue" />
               <KpiCard label="Рекомендации" value={recSummary.total} tone="slate" />
@@ -218,9 +218,7 @@ export function DvaAnalyticsDashboard() {
           <ChartCard
             title="Количество рекомендаций по сотрудникам (существенность)"
             description=""
-            exportSectionId="auditorImpact"
-            exportSelected={exportSections.isSelected('auditorImpact')}
-            onToggleExport={() => exportSections.toggleSection('auditorImpact')}
+            {...exportSections.sectionProps('auditorImpact')}
           >
             {auditorImpact.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -237,9 +235,7 @@ export function DvaAnalyticsDashboard() {
           <ChartCard
             title="Количество рекомендаций по сотрудникам (дополнительный статус)"
             description=""
-            exportSectionId="auditorTimeliness"
-            exportSelected={exportSections.isSelected('auditorTimeliness')}
-            onToggleExport={() => exportSections.toggleSection('auditorTimeliness')}
+            {...exportSections.sectionProps('auditorTimeliness')}
           >
             {auditorTimeliness.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -256,9 +252,7 @@ export function DvaAnalyticsDashboard() {
           <ChartCard
             title='Количество и доля рекомендаций со статусом "Не решено"'
             description=""
-            exportSectionId="auditorExecution"
-            exportSelected={exportSections.isSelected('auditorExecution')}
-            onToggleExport={() => exportSections.toggleSection('auditorExecution')}
+            {...exportSections.sectionProps('auditorExecution')}
           >
             {auditorExecution.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -275,9 +269,7 @@ export function DvaAnalyticsDashboard() {
           <ChartCard
             title="Карта сотрудников по проверкам"
             description=""
-            exportSectionId="auditorChecksMap"
-            exportSelected={exportSections.isSelected('auditorChecksMap')}
-            onToggleExport={() => exportSections.toggleSection('auditorChecksMap')}
+            {...exportSections.sectionProps('auditorChecksMap')}
           >
             {auditorChecksMap.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -299,9 +291,7 @@ export function DvaAnalyticsDashboard() {
           <ChartCard
             title="Жизненный цикл проверки: от приказа до ДЗ"
             description=""
-            exportSectionId="checkLifecycle"
-            exportSelected={exportSections.isSelected('checkLifecycle')}
-            onToggleExport={() => exportSections.toggleSection('checkLifecycle')}
+            {...exportSections.sectionProps('checkLifecycle')}
             fitContent
           >
             {checkLifecycle.length === 0 ? (

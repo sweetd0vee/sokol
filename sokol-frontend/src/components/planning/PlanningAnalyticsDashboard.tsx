@@ -148,9 +148,7 @@ export function PlanningAnalyticsDashboard() {
             title="Итого планирования"
             description=""
             dense
-            exportSectionId="summary"
-            exportSelected={exportSections.isSelected('summary')}
-            onToggleExport={() => exportSections.toggleSection('summary')}
+            {...exportSections.sectionProps('summary')}
           >
             <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3">
               <KpiCard label="Охват департаментов" value={coverage.coverageRate} suffix="%" tone="blue" />
@@ -174,9 +172,7 @@ export function PlanningAnalyticsDashboard() {
             <ChartCard
               title="Неохваченные департаменты"
               description=""
-              exportSectionId="coverage"
-              exportSelected={exportSections.isSelected('coverage')}
-              onToggleExport={() => exportSections.toggleSection('coverage')}
+              {...exportSections.sectionProps('coverage')}
             >
               {coverage.total === 0 ? (
                 <EmptyChart message="Нет департаментов в данных" />
@@ -216,9 +212,7 @@ export function PlanningAnalyticsDashboard() {
           <ChartCard
             title="Рекомендации со статусом «Не решено»"
             description=""
-            exportSectionId="unresolved"
-            exportSelected={exportSections.isSelected('unresolved')}
-            onToggleExport={() => exportSections.toggleSection('unresolved')}
+            {...exportSections.sectionProps('unresolved')}
           >
             {unresolvedByDepartment.length === 0 ? (
               <EmptyChart message="Нет нерешённых рекомендаций за период" />
@@ -235,9 +229,7 @@ export function PlanningAnalyticsDashboard() {
           <ChartCard
             title="Количество и доля красных рекомендаций по департаментам"
             description=""
-            exportSectionId="highMateriality"
-            exportSelected={exportSections.isSelected('highMateriality')}
-            onToggleExport={() => exportSections.toggleSection('highMateriality')}
+            {...exportSections.sectionProps('highMateriality')}
           >
             {highMaterialityRanking.length === 0 ? (
               <EmptyChart message="Нет красных рекомендаций за период" />

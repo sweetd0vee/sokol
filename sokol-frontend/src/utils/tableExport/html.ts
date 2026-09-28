@@ -19,15 +19,7 @@ import {
   toRecommendationTableRows,
 } from './shared';
 import type { ExportRow } from './types';
-
-export function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { escapeHtml } from '../escapeHtml';
 
 export function buildHtmlCellContent(
   header: string,

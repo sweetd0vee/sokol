@@ -193,9 +193,7 @@ export function ChecksAnalyticsDashboard() {
             title="Итого по проверкам"
             description=""
             dense
-            exportSectionId="summary"
-            exportSelected={exportSections.isSelected('summary')}
-            onToggleExport={() => exportSections.toggleSection('summary')}
+            {...exportSections.sectionProps('summary')}
           >
             <div className="grid w-full grid-cols-2 gap-1 lg:grid-cols-5">
               <KpiCard label="Всего" value={summary.total} hint={`из ${universeTotal}`} tone="blue" />
@@ -227,9 +225,7 @@ export function ChecksAnalyticsDashboard() {
           <ChartCard
             title="Динамика количества проверок по периодам"
             description=""
-            exportSectionId="dynamics"
-            exportSelected={exportSections.isSelected('dynamics')}
-            onToggleExport={() => exportSections.toggleSection('dynamics')}
+            {...exportSections.sectionProps('dynamics')}
           >
             {flowSeries.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -283,9 +279,7 @@ export function ChecksAnalyticsDashboard() {
           <ChartCard
             title="Виды проверок за период"
             description=""
-            exportSectionId="views"
-            exportSelected={exportSections.isSelected('views')}
-            onToggleExport={() => exportSections.toggleSection('views')}
+            {...exportSections.sectionProps('views')}
           >
             {viewDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -323,9 +317,7 @@ export function ChecksAnalyticsDashboard() {
           <ChartCard
             title="Типы проверок за период"
             description=""
-            exportSectionId="types"
-            exportSelected={exportSections.isSelected('types')}
-            onToggleExport={() => exportSections.toggleSection('types')}
+            {...exportSections.sectionProps('types')}
           >
             {typeDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -348,9 +340,7 @@ export function ChecksAnalyticsDashboard() {
           <ChartCard
             title="Карта департаментов по количеству проверок (ТОП-10)"
             description=""
-            exportSectionId="departmentMap"
-            exportSelected={exportSections.isSelected('departmentMap')}
-            onToggleExport={() => exportSections.toggleSection('departmentMap')}
+            {...exportSections.sectionProps('departmentMap')}
           >
             {departmentMapTop.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -372,9 +362,7 @@ export function ChecksAnalyticsDashboard() {
           <ChartCard
             title="Матрица оценок эффективности"
             description=""
-            exportSectionId="effectivenessMatrix"
-            exportSelected={exportSections.isSelected('effectivenessMatrix')}
-            onToggleExport={() => exportSections.toggleSection('effectivenessMatrix')}
+            {...exportSections.sectionProps('effectivenessMatrix')}
             fitContent
           >
             {effectivenessMatrix.length === 0 ? (

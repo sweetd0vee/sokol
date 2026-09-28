@@ -84,13 +84,52 @@ def _build_coverage(
     )
 
 
+def _selected_department_names(selected_departments: list[str] | None) -> set[str]:
+    return {name.strip() for name in (selected_departments or []) if name.strip()}
+
+
+def _planning_departments(
+    audit_object: str | list[str],
+    department_lookup: dict[str, str],
+    selected: set[str],
+):
+    for name in matched_departments_or_fallback(audit_object, department_lookup):
+        if name in _COVERAGE_SKIP:
+            continue
+        if selected and name not in selected:
+            continue
+        yield name
+
+
+def _bump_check_ref(
+    bucket: dict[str, DvaCheckCountRef],
+    serial_key: str,
+    display_short: str,
+) -> None:
+    if not serial_key:
+        return
+    existing = bucket.get(serial_key)
+    if existing is None:
+        bucket[serial_key] = DvaCheckCountRef(
+            key=serial_key,
+            short_name=display_short,
+            count=1,
+        )
+        return
+    bucket[serial_key] = DvaCheckCountRef(
+        key=existing.key,
+        short_name=existing.short_name or display_short,
+        count=existing.count + 1,
+    )
+
+
 def _unresolved_by_department(
     rows: list[tuple[str, str | list[str], str, str]],
     department_lookup: dict[str, str],
     *,
     selected_departments: list[str] | None = None,
 ) -> list[PlanningUnresolvedDepartmentRow]:
-    selected = {name.strip() for name in (selected_departments or []) if name.strip()}
+    selected = _selected_department_names(selected_departments)
     counts: dict[str, int] = defaultdict(int)
     checks: dict[str, dict[str, DvaCheckCountRef]] = defaultdict(dict)
     for serial, audit_object, status, short_name in rows:
@@ -98,27 +137,9 @@ def _unresolved_by_department(
             continue
         serial_key = (serial or "").strip()
         display_short = (short_name or "").strip()
-        for name in matched_departments_or_fallback(audit_object, department_lookup):
-            if name in _COVERAGE_SKIP:
-                continue
-            if selected and name not in selected:
-                continue
+        for name in _planning_departments(audit_object, department_lookup, selected):
             counts[name] += 1
-            if not serial_key:
-                continue
-            existing = checks[name].get(serial_key)
-            if existing is None:
-                checks[name][serial_key] = DvaCheckCountRef(
-                    key=serial_key,
-                    short_name=display_short,
-                    count=1,
-                )
-                continue
-            checks[name][serial_key] = DvaCheckCountRef(
-                key=existing.key,
-                short_name=existing.short_name or display_short,
-                count=existing.count + 1,
-            )
+            _bump_check_ref(checks[name], serial_key, display_short)
     ranking = [
         PlanningUnresolvedDepartmentRow(
             name=name,
@@ -137,7 +158,7 @@ def _high_materiality_by_department(
     *,
     selected_departments: list[str] | None = None,
 ) -> tuple[list[PlanningHighMaterialityDepartmentRow], int]:
-    selected = {name.strip() for name in (selected_departments or []) if name.strip()}
+    selected = _selected_department_names(selected_departments)
     totals: dict[str, int] = defaultdict(int)
     highs: dict[str, int] = defaultdict(int)
     checks: dict[str, dict[str, DvaCheckCountRef]] = defaultdict(dict)
@@ -145,30 +166,12 @@ def _high_materiality_by_department(
         serial_key = (serial or "").strip()
         display_short = (short_name or "").strip()
         is_high = materiality_level == "высокий"
-        for name in matched_departments_or_fallback(audit_object, department_lookup):
-            if name in _COVERAGE_SKIP:
-                continue
-            if selected and name not in selected:
-                continue
+        for name in _planning_departments(audit_object, department_lookup, selected):
             totals[name] += 1
             if not is_high:
                 continue
             highs[name] += 1
-            if not serial_key:
-                continue
-            existing = checks[name].get(serial_key)
-            if existing is None:
-                checks[name][serial_key] = DvaCheckCountRef(
-                    key=serial_key,
-                    short_name=display_short,
-                    count=1,
-                )
-                continue
-            checks[name][serial_key] = DvaCheckCountRef(
-                key=existing.key,
-                short_name=existing.short_name or display_short,
-                count=existing.count + 1,
-            )
+            _bump_check_ref(checks[name], serial_key, display_short)
     ranking = [
         PlanningHighMaterialityDepartmentRow(
             name=name,

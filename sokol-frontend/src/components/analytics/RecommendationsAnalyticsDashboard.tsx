@@ -214,9 +214,7 @@ export function RecommendationsAnalyticsDashboard() {
             title="Итого по рекомендациям"
             description=""
             dense
-            exportSectionId="summary"
-            exportSelected={exportSections.isSelected('summary')}
-            onToggleExport={() => exportSections.toggleSection('summary')}
+            {...exportSections.sectionProps('summary')}
           >
             <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5">
               <KpiCard
@@ -257,9 +255,7 @@ export function RecommendationsAnalyticsDashboard() {
           <ChartCard
             title="Динамика количества рекомендаций по периодам (существенность)"
             description=""
-            exportSectionId="materialityByPeriod"
-            exportSelected={exportSections.isSelected('materialityByPeriod')}
-            onToggleExport={() => exportSections.toggleSection('materialityByPeriod')}
+            {...exportSections.sectionProps('materialityByPeriod')}
           >
             {completedPeriodSeries.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -366,9 +362,7 @@ export function RecommendationsAnalyticsDashboard() {
           <ChartCard
             title="Существенность рекомендаций за период"
             description=""
-            exportSectionId="materiality"
-            exportSelected={exportSections.isSelected('materiality')}
-            onToggleExport={() => exportSections.toggleSection('materiality')}
+            {...exportSections.sectionProps('materiality')}
           >
             {distributionHasValues(coloredMaterialityDistribution) ? (
               <FocusableDonutChart
@@ -391,9 +385,7 @@ export function RecommendationsAnalyticsDashboard() {
           <ChartCard
             title="Матрица существенности рекомендаций"
             description=""
-            exportSectionId="materialityMatrix"
-            exportSelected={exportSections.isSelected('materialityMatrix')}
-            onToggleExport={() => exportSections.toggleSection('materialityMatrix')}
+            {...exportSections.sectionProps('materialityMatrix')}
             fitContent
           >
             {materialityMatrix.length === 0 ? (
@@ -415,9 +407,7 @@ export function RecommendationsAnalyticsDashboard() {
           <ChartCard
             title="Количество рекомендаций по видам проверок"
             description=""
-            exportSectionId="views"
-            exportSelected={exportSections.isSelected('views')}
-            onToggleExport={() => exportSections.toggleSection('views')}
+            {...exportSections.sectionProps('views')}
           >
             {viewDistribution.length === 0 ? (
               <EmptyChart message="Нет данных" />
@@ -455,9 +445,7 @@ export function RecommendationsAnalyticsDashboard() {
           <ChartCard
             title="Карта департаментов по количеству рекомендаций (ТОП-10)"
             description=""
-            exportSectionId="objects"
-            exportSelected={exportSections.isSelected('objects')}
-            onToggleExport={() => exportSections.toggleSection('objects')}
+            {...exportSections.sectionProps('objects')}
           >
             {objectDistributionTop.length === 0 ? (
               <EmptyChart message="Нет данных" />

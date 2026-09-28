@@ -1,4 +1,5 @@
 import { getMaterialityChartColor } from '../components/analytics/analyticsPalette';
+import { escapeHtmlQuoted as escapeHtml } from './escapeHtml';
 import type { SortDirection } from './listTable';
 
 export type MaterialityMatrixCounts = {
@@ -114,14 +115,6 @@ export function buildMaterialityMatrixColumnTotals(rows: MaterialityMatrixRow[])
 export function materialityMatrixGrandTotal(rows: MaterialityMatrixRow[]) {
   const totals = buildMaterialityMatrixColumnTotals(rows);
   return totals.high + totals.medium + totals.low;
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 /** Self-contained HTML for materiality matrix export (no Tailwind / Recharts required). */

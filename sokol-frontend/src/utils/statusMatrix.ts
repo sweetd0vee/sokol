@@ -1,3 +1,4 @@
+import { escapeHtmlQuoted as escapeHtml } from './escapeHtml';
 import type { SortDirection } from './listTable';
 import { getRecommendationStatusColor, STATUS_COLORS } from './recommendationAnalytics';
 import type { RecommendationStatus } from '../types/recommendation';
@@ -122,14 +123,6 @@ export function buildStatusMatrixColumnShares(rows: StatusMatrixRow[]) {
       percent,
     };
   });
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 /** Self-contained HTML for status matrix export (no Tailwind / Recharts required). */

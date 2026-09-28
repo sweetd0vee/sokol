@@ -14,7 +14,6 @@ import {
   CHART_VALUE_LABEL_WEIGHT,
 } from './chartTokens';
 import { ChartLegend } from './ChartLegend';
-import { CssBarPlotGrid } from './CssBarPlotGrid';
 import { axisTicks, niceMax } from './cssBarChartScale';
 import { PinnedChartAside } from './PinnedChartAside';
 import { usePinnedChartPanel } from './usePinnedChartPanel';
@@ -202,7 +201,7 @@ export function DepartmentHighMaterialityBarChart({
           />
         </div>
         <div className="flex flex-col">
-          {chartData.map((row, index) => {
+          {chartData.map((row) => {
             const isActive = visibleName === row.name;
             const muted = Boolean(visibleName) && !isActive;
             const rankWidth = `${(highMaterialityMetric(row, sort.key) / maxMetric) * 100}%`;
@@ -230,11 +229,10 @@ export function DepartmentHighMaterialityBarChart({
                   </p>
                 </div>
                 <div
-                  className={`relative flex min-h-[2.75rem] flex-col justify-center gap-1 border-b border-l border-slate-200/80 ${
-                    index === 0 ? 'border-t' : ''
-                  } ${isActive ? 'bg-slate-100/90' : 'bg-slate-50/80'}`}
+                  className={`relative flex min-h-[2.75rem] flex-col justify-center gap-1 ${
+                    isActive ? 'bg-slate-100' : 'bg-white'
+                  }`}
                 >
-                  <CssBarPlotGrid ticks={ticks} max={maxMetric} />
                   <div
                     className="relative z-[1] h-6 rounded-r-md"
                     style={{
@@ -254,11 +252,9 @@ export function DepartmentHighMaterialityBarChart({
                   </div>
                 </div>
                 <p
-                  className={`flex items-center justify-end border-b border-slate-200/80 tabular-nums ${
-                    index === 0 ? 'border-t' : ''
-                  } ${isActive ? 'bg-slate-100/90' : ''} ${
-                    sort.key === 'value' ? 'text-sber-dark' : 'text-slate-600'
-                  }`}
+                  className={`flex items-center justify-end tabular-nums ${
+                    isActive ? 'bg-slate-100' : 'bg-white'
+                  } ${sort.key === 'value' ? 'text-sber-dark' : 'text-slate-600'}`}
                   style={{
                     fontSize: CHART_VALUE_LABEL_SIZE,
                     fontWeight: sort.key === 'value' ? 600 : CHART_VALUE_LABEL_WEIGHT,
@@ -268,11 +264,9 @@ export function DepartmentHighMaterialityBarChart({
                   {row.value}
                 </p>
                 <p
-                  className={`flex items-center justify-end border-b border-slate-200/80 tabular-nums ${
-                    index === 0 ? 'border-t' : ''
-                  } ${isActive ? 'bg-slate-100/90' : ''} ${
-                    sort.key === 'share' ? 'text-sber-dark' : 'text-slate-500'
-                  }`}
+                  className={`flex items-center justify-end tabular-nums ${
+                    isActive ? 'bg-slate-100' : 'bg-white'
+                  } ${sort.key === 'share' ? 'text-sber-dark' : 'text-slate-500'}`}
                   style={{
                     fontSize: CHART_VALUE_LABEL_SIZE,
                     fontWeight: sort.key === 'share' ? 600 : CHART_VALUE_LABEL_WEIGHT,

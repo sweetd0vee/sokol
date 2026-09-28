@@ -51,7 +51,7 @@ sokol/
 | `app/models/` · `app/schemas/` | ORM и Pydantic |
 | `app/db/` | init, seed (`label_rows`), `migrations` CLI, import |
 
-Типовой запрос: `endpoints` → `services` → `crud` → модель. CRUD — SQL (`flush`, без `commit`); валидация словарей, overlay статусов, хеш пароля, MinIO и `commit` — в service.
+Типовой запрос: `endpoints` → `services` → `crud` → модель. CRUD — SQL (`flush`, без `commit`); валидация словарей, overlay статусов, хеш пароля, MinIO и `commit` — в service. Откат проверки и рекомендации при ошибке записи — `rollback_on_error` (`db_transaction.py`).
 
 **Сущности:** `Check` (`serial_number` только backend), `Recommendation` (`check_id` + денормализованный serial), `Attachment` (MinIO + metadata), справочники (auditors с `code` из 3 букв, departments, check_kinds, ratings, audit_types), `User`. Открытые rec-статусы пересчитывает in-process scheduler (00:05 МСК).
 

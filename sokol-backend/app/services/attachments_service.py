@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.current_user import CurrentUser
 from app.core.config import settings
-from app.core.recommendation_access import user_can_manage_recommendation
+from app.core.recommendation_access import ensure_user_can_manage_recommendation
 from app.crud import attachments_crud, checks_crud, recommendations_crud
 from app.models.recommendations import Recommendation
 from app.models.attachments import Attachment
@@ -88,12 +88,12 @@ async def get_storage_status() -> StorageStatusResponse:
 
 
 def _ensure_user_can_manage_recommendation(user: CurrentUser, recommendation: Recommendation) -> None:
-    if not user_can_manage_recommendation(
+    ensure_user_can_manage_recommendation(
         role=user.role,
         username=user.username,
         auditor=recommendation.auditor,
-    ):
-        raise AccessDeniedError("Недостаточно прав для операции с вложениями этой рекомендации.")
+        message="Недостаточно прав для операции с вложениями этой рекомендации.",
+    )
 
 
 async def list_attachments(

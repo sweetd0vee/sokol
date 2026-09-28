@@ -8,7 +8,6 @@ import {
   CHART_VALUE_LABEL_WEIGHT,
 } from './chartTokens';
 import { MONITORING_STATUS_COLORS } from './analyticsPalette';
-import { CssBarPlotGrid } from './CssBarPlotGrid';
 import { axisTicks, niceMax } from './cssBarChartScale';
 import { PinnedChartAside } from './PinnedChartAside';
 import { usePinnedChartPanel } from './usePinnedChartPanel';
@@ -97,7 +96,7 @@ export function DepartmentUnresolvedBarChart({
     <div ref={rootRef} className="relative flex h-full min-h-0 max-h-[18rem] flex-col lg:max-h-none">
       <div className="min-h-0 flex-1 overflow-y-auto px-4" onMouseLeave={requestHide}>
         <div className="flex flex-col">
-          {chartData.map((row, index) => {
+          {chartData.map((row) => {
             const isActive = visibleName === row.name;
             const muted = Boolean(visibleName) && !isActive;
             const barWidth = `${(row.value / maxValue) * 100}%`;
@@ -116,11 +115,10 @@ export function DepartmentUnresolvedBarChart({
                   {row.name}
                 </p>
                 <div
-                  className={`relative flex min-h-[2.25rem] items-center border-b border-l border-slate-200/80 ${
-                    index === 0 ? 'border-t' : ''
-                  } ${isActive ? 'bg-slate-100/90' : 'bg-slate-50/80'}`}
+                  className={`relative flex min-h-[2.25rem] items-center ${
+                    isActive ? 'bg-slate-100' : 'bg-white'
+                  }`}
                 >
-                  <CssBarPlotGrid ticks={ticks} max={maxValue} />
                   <div
                     className="relative z-[1] h-7 rounded-r-md"
                     style={{

@@ -203,19 +203,26 @@ async def recommendation_object_distribution_sql(
     ]
 
 
+async def _matrix_rows_by_check(session: AsyncSession, count_columns, **filters: Any):
+    statement = apply_recommendation_filters(
+        recommendation_grouped_by_check(*count_columns, func.count().label("total")),
+        **filters,
+    )
+    grouped = []
+    for row in await fetch_all(session, statement):
+        grouped.append((check_group_identity(row), row))
+    return grouped
+
+
 async def recommendation_materiality_matrix_sql(
     session: AsyncSession, **filters: Any
 ) -> list[MaterialityMatrixRow]:
-    statement = apply_recommendation_filters(
-        recommendation_grouped_by_check(
-            *recommendation_materiality_count_columns(),
-            func.count().label("total"),
-        ),
-        **filters,
-    )
     result: list[MaterialityMatrixRow] = []
-    for row in await fetch_all(session, statement):
-        identity = check_group_identity(row)
+    for identity, row in await _matrix_rows_by_check(
+        session,
+        recommendation_materiality_count_columns(),
+        **filters,
+    ):
         result.append(
             MaterialityMatrixRow(
                 id=identity.id,
@@ -236,16 +243,12 @@ async def recommendation_materiality_matrix_sql(
 async def recommendation_status_matrix_sql(
     session: AsyncSession, **filters: Any
 ) -> list[StatusMatrixRow]:
-    statement = apply_recommendation_filters(
-        recommendation_grouped_by_check(
-            *recommendation_status_count_columns(),
-            func.count().label("total"),
-        ),
-        **filters,
-    )
     result: list[StatusMatrixRow] = []
-    for row in await fetch_all(session, statement):
-        identity = check_group_identity(row)
+    for identity, row in await _matrix_rows_by_check(
+        session,
+        recommendation_status_count_columns(),
+        **filters,
+    ):
         result.append(
             StatusMatrixRow(
                 id=identity.id,
