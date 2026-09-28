@@ -5,8 +5,11 @@ from __future__ import annotations
 
 import random
 from datetime import date, timedelta
+from enum import Enum
 
 from app.db.catalogs import AUDITORS, CHECK_KINDS, DEPARTMENTS, EFFECTIVENESS_RATINGS
+from app.services.check_status import choose_check_status
+from app.services.recommendation_status import overlay_computed_status_fields, today_moscow
 from app.utils.check_key import assign_serial_numbers
 
 CHECK_TYPES = ("planned", "unscheduled", "thematic")
@@ -257,26 +260,22 @@ def build_recommendation_closure_fields(
     index: int,
     rng: random.Random | None = None,
     extension_count: int | None = None,
+    today: date | None = None,
+    additional_status: str | None = None,
 ) -> dict:
-    """Даты и комментарии для «Срок исполнения», «Перенос срока» и «Снять с контроля»."""
+    """Факты контрольной зоны, из которых автостатус получает запрошенную пару.
+
+    Снятие с контроля — только у ``unresolved``. Срок исполнения — только у ``completed``.
+    Открытые рекомендации не получают ни того, ни другого: ``on_control`` держит срок
+    контроля в будущем, ``in_progress`` — сегодня или раньше.
+    """
+    today = today or today_moscow()
     rng = rng or random.Random(10_000 + index)
 
-    if status == "completed":
-        fill_completion = True
-        fill_removal = True
-        closure_pool = CLOSURE_INFORMATION_COMMENTS
-    elif status == "on_control":
-        fill_completion = rng.random() < 0.55
-        fill_removal = rng.random() < 0.45
-        closure_pool = CLOSURE_INFORMATION_COMMENTS if fill_completion else IN_PROGRESS_CLOSURE_COMMENTS
-    elif status == "unresolved":
-        fill_completion = False
-        fill_removal = rng.random() < 0.12
-        closure_pool = UNRESOLVED_CLOSURE_COMMENTS
-    else:
-        fill_completion = rng.random() < 0.35
-        fill_removal = rng.random() < 0.12
-        closure_pool = IN_PROGRESS_CLOSURE_COMMENTS if not fill_completion else CLOSURE_INFORMATION_COMMENTS
+    if status == "on_control" and deadline <= today:
+        deadline = _add_days(today, rng.randint(21, 75))
+    elif status == "in_progress" and deadline > today:
+        deadline = _add_days(today, -rng.randint(1, 40))
 
     if extension_count is None:
         extension_count = _roll_deadline_extension_count(status, rng)
@@ -284,27 +283,55 @@ def build_recommendation_closure_fields(
         extension_count = max(0, min(2, int(extension_count)))
 
     extension_1_date = _add_days(deadline, rng.randint(14, 40)) if extension_count >= 1 else None
+    if extension_1_date and status == "in_progress" and extension_1_date > today:
+        extension_1_date = today if deadline < today else None
+    if extension_1_date and status == "on_control" and extension_1_date <= today:
+        extension_1_date = _add_days(today, rng.randint(14, 45))
     extension_2_date = (
         _add_days(extension_1_date, rng.randint(14, 35)) if extension_count >= 2 and extension_1_date else None
     )
+    if extension_2_date and status == "in_progress" and extension_2_date > today:
+        extension_2_date = today if extension_1_date and extension_1_date < today else None
+    if extension_2_date and status == "on_control" and extension_2_date <= today:
+        extension_2_date = _add_days(today, rng.randint(30, 70))
+
+    effective_deadline = extension_2_date or extension_1_date or deadline
+    if status == "on_control" and effective_deadline <= today:
+        deadline = _add_days(today, rng.randint(21, 60))
+        extension_1_date = None
+        extension_2_date = None
+        effective_deadline = deadline
+    if status == "in_progress" and effective_deadline > today:
+        deadline = today
+        extension_1_date = None
+        extension_2_date = None
+        effective_deadline = deadline
+
     extension_1_comment = _pick(DEADLINE_EXTENSION_COMMENTS, rng) if extension_1_date else None
     extension_2_comment = _pick(DEADLINE_EXTENSION_COMMENTS, rng) if extension_2_date else None
 
-    effective_deadline = extension_2_date or extension_1_date or deadline
-    if fill_completion:
-        actual_completion_date = _add_days(effective_deadline, rng.randint(-12, 18))
-        if actual_completion_date < created:
-            actual_completion_date = _add_days(created, rng.randint(10, 25))
+    if status == "completed":
+        closure_pool = CLOSURE_INFORMATION_COMMENTS
+        late = additional_status == "deadline_violated" or (
+            additional_status not in {"on_time", "deadline_violated"} and rng.random() < 0.22
+        )
+        if late:
+            actual_completion_date = _add_days(effective_deadline, rng.randint(1, 18))
+        else:
+            actual_completion_date = _add_days(effective_deadline, -rng.randint(0, 12))
+            if actual_completion_date < created and created <= effective_deadline:
+                actual_completion_date = created
         closure_information = _pick(closure_pool, rng)
-    else:
+        remove_from_control_date = None
+        remove_from_control_comment = None
+    elif status == "unresolved":
         actual_completion_date = None
-        closure_information = _pick(closure_pool, rng) if rng.random() < 0.82 else None
-
-    if fill_removal:
-        base_removal = actual_completion_date or effective_deadline
-        remove_from_control_date = _add_days(base_removal, rng.randint(3, 21))
+        closure_information = _pick(UNRESOLVED_CLOSURE_COMMENTS, rng)
+        remove_from_control_date = _add_days(effective_deadline, rng.randint(3, 21))
         remove_from_control_comment = _pick(CONTROL_REMOVAL_COMMENTS, rng)
     else:
+        actual_completion_date = None
+        closure_information = _pick(IN_PROGRESS_CLOSURE_COMMENTS, rng) if rng.random() < 0.82 else None
         remove_from_control_date = None
         remove_from_control_comment = None
 
@@ -327,6 +354,7 @@ def build_recommendation_closure_fields(
     )
 
     return {
+        "deadline": deadline,
         "actual_completion_date": actual_completion_date,
         "closure_information": closure_information,
         "extension_1_reason": None,
@@ -342,7 +370,58 @@ def build_recommendation_closure_fields(
     }
 
 
-def build_check_rows(count: int = 100) -> list[dict]:
+def align_check_demo_row(row: dict, *, today: date | None = None, index: int = 0) -> dict:
+    """Подогнать даты проверки под автостатус и записать сам статус."""
+    current = today or today_moscow()
+    status = str(row.get("status") or "in_progress")
+    start = row["start_date"]
+    if status == "completed":
+        if start > current:
+            start = _add_days(current, -(21 + (index % 8) * 7))
+            row["start_date"] = start
+        end = row.get("end_date") or _add_days(start, 30)
+        if end < start:
+            end = _add_days(start, 30)
+        row["end_date"] = end
+        if not row.get("dz_document_date"):
+            row["dz_document_date"] = _add_days(end, 5)
+        if not row.get("dz_document_number"):
+            row["dz_document_number"] = f"ДЗ-{index:04d}"
+    else:
+        row["dz_document_date"] = None
+        row["dz_document_number"] = None
+        if status == "not_started" and start <= current:
+            start = _add_days(current, 14 + (index % 10) * 7)
+            row["start_date"] = start
+            row["end_date"] = None
+        elif status != "not_started" and start > current:
+            start = current
+            row["start_date"] = start
+    created = row.get("created_at")
+    if isinstance(created, date) and created > row["start_date"]:
+        row["created_at"] = _add_days(row["start_date"], -14)
+    row["check_quarter"] = (row["start_date"].month - 1) // 3 + 1
+    row["status"] = choose_check_status(
+        start_date=row["start_date"],
+        dz_document_date=row.get("dz_document_date"),
+        today=current,
+    ).value
+    return row
+
+
+def stamp_recommendation_demo_rows(rows: list[dict], *, today: date | None = None) -> list[dict]:
+    """Записать в строки ту же пару статуса, которую посчитает ночной пересчёт."""
+    current = today or today_moscow()
+    for row in rows:
+        overlay_computed_status_fields(row, today=current)
+        for key in ("status", "additional_status"):
+            value = row.get(key)
+            if isinstance(value, Enum):
+                row[key] = value.value
+    return rows
+
+
+def build_check_rows(count: int = 100, *, today: date | None = None) -> list[dict]:
     if count < 1:
         raise ValueError("count must be >= 1")
 
@@ -392,6 +471,7 @@ def build_check_rows(count: int = 100) -> list[dict]:
                 "svik_effectiveness": svik or None,
             }
         )
+        align_check_demo_row(rows[-1], today=today, index=n)
 
     # Якоря жизненного цикла до декабря 2026 — для прокрутки оси «Сроки» в аналитике ДВА.
     lifecycle_anchors = [
@@ -431,10 +511,16 @@ def build_check_rows(count: int = 100) -> list[dict]:
                 "svik_effectiveness": "достаточно эффективно",
             }
         )
+        align_check_demo_row(rows[-1], today=today, index=n)
     return assign_serial_numbers(rows)
 
 
-def build_recommendation_rows(checks: list[dict], count: int = 100) -> list[dict]:
+def build_recommendation_rows(
+    checks: list[dict],
+    count: int = 100,
+    *,
+    today: date | None = None,
+) -> list[dict]:
     if not checks:
         raise ValueError("checks must not be empty")
     if count < 1:
@@ -478,10 +564,13 @@ def build_recommendation_rows(checks: list[dict], count: int = 100) -> list[dict
                     created=created,
                     deadline=deadline,
                     index=n,
+                    today=today,
+                    additional_status=additional if status == "completed" else None,
                 ),
             }
         )
-    return apply_completed_during_audit_indicator(rows)
+    apply_completed_during_audit_indicator(rows)
+    return stamp_recommendation_demo_rows(rows, today=today)
 
 
 def apply_completed_during_audit_indicator(

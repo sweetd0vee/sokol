@@ -30,7 +30,13 @@ ROOT = BACKEND_ROOT.parent
 sys.path.insert(0, str(BACKEND_ROOT))
 
 from app.db.catalogs.auditors import AUDITORS as AUDITOR_NAMES  # noqa: E402
-from app.db.demo_data import apply_completed_during_audit_indicator, build_recommendation_closure_fields  # noqa: E402
+from app.db.demo_data import (  # noqa: E402
+    align_check_demo_row,
+    apply_completed_during_audit_indicator,
+    build_recommendation_closure_fields,
+    stamp_recommendation_demo_rows,
+)
+from app.services.recommendation_status import today_moscow  # noqa: E402
 from app.db.catalogs.departments import DEPARTMENTS as DEPARTMENT_NAMES  # noqa: E402
 from app.utils.check_key import assign_serial_numbers  # noqa: E402
 
@@ -220,7 +226,7 @@ def _document_fields(index: int, status: str, created: date, start: date, end: d
     order_ready = random.random() < 0.86
     program_ready = random.random() < 0.72
     az_ready = status == "completed" and random.random() < 0.88
-    dz_ready = az_ready and random.random() < 0.64
+    dz_ready = status == "completed"
     return {
         "order_document_number": f"ПР-{index:04d}" if order_ready else None,
         "order_document_date": created + timedelta(days=random.randint(0, 5)) if order_ready else None,
@@ -269,7 +275,7 @@ def build_checks(count: int) -> list[dict]:
             "svik_effectiveness": _weighted_choice(rating_pool) or None,
         }
         row.update(_document_fields(index, status, created, start, end))
-        rows.append(row)
+        rows.append(align_check_demo_row(row, today=today_moscow(), index=index))
     return assign_serial_numbers(rows)
 
 
@@ -319,6 +325,8 @@ def build_recommendations(checks: list[dict], target_count: int) -> list[dict]:
                 created=created,
                 deadline=deadline,
                 index=number,
+                today=today_moscow(),
+                additional_status=additional_status if status == "completed" else None,
             )
             if status == "completed" and closure["actual_completion_date"] and closure["actual_completion_date"] > deadline:
                 additional_status = "deadline_violated"
@@ -349,7 +357,8 @@ def build_recommendations(checks: list[dict], target_count: int) -> list[dict]:
     while len(rows) < target_count:
         check = random.choice(checks)
         rows.extend(build_recommendations([check], target_count - len(rows)))
-    return apply_completed_during_audit_indicator(rows[:target_count])
+    stamped = apply_completed_during_audit_indicator(rows[:target_count])
+    return stamp_recommendation_demo_rows(stamped, today=today_moscow())
 
 
 def _write_sheet(workbook: Workbook, title: str, headers: list[str], rows: list[dict]) -> Worksheet:

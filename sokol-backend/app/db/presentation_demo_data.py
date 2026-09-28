@@ -15,8 +15,10 @@ from openpyxl.worksheet.worksheet import Worksheet
 from app.db.catalogs import AUDITORS, CHECK_KINDS, DEPARTMENTS
 from app.db.demo_data import (
     DEMO_UNCOVERED_DEPARTMENTS,
+    align_check_demo_row,
     apply_completed_during_audit_indicator,
     build_recommendation_closure_fields,
+    stamp_recommendation_demo_rows,
 )
 from app.utils.check_key import assign_serial_numbers
 from app.utils.paths import get_repo_data_dir
@@ -163,7 +165,7 @@ def _document_fields(index: int, status: str, created: date, start: date, end: d
     order_ready = status != "not_started" and rng.random() < 0.92
     program_ready = status != "not_started" and rng.random() < 0.85
     az_ready = status == "completed" and rng.random() < 0.9
-    dz_ready = az_ready and rng.random() < 0.7
+    dz_ready = status == "completed"
     return {
         "order_document_number": f"ПР-{index:04d}" if order_ready else None,
         "order_document_date": created + timedelta(days=rng.randint(0, 5)) if order_ready else None,
@@ -177,28 +179,21 @@ def _document_fields(index: int, status: str, created: date, start: date, end: d
 
 
 def _schedule_check_dates(year: int, rng: random.Random, today: date) -> tuple[date, date | None]:
-    if year == 2025:
-        start = date(year, rng.randint(1, 12), rng.randint(1, 28))
-    else:
-        # Cover the full calendar year so lifecycle axis reaches December 2026.
-        month = rng.randint(1, 12)
-        day = rng.randint(1, 28)
-        start = date(year, month, day)
-        if start > today + timedelta(days=30):
-            start = today - timedelta(days=rng.randint(5, 60))
+    """Дата начала по году. Дата окончания есть только у проверки с датой ДЗ.
+
+    Начало в будущем — запланирована. Начало уже наступило, ДЗ нет — в процессе.
+    """
+    start = date(year, rng.randint(1, 12), rng.randint(1, 28))
+    if start > today:
+        return start, None
 
     duration = rng.choice([45, 60, 75, 90, 105, 120])
     if rng.random() < 0.2:
         duration = rng.randint(21, 44)
     end = start + timedelta(days=duration)
-    status = _resolve_check_status(start, end, today)
-    if status == "in_progress":
-        end = None
-    elif status == "not_started":
-        end = None
-        if start <= today:
-            start = today + timedelta(days=rng.randint(7, 45))
-    return start, end
+    if end <= today and rng.random() < 0.72:
+        return start, end
+    return start, None
 
 
 def _year_end_lifecycle_checks(rng: random.Random, start_index: int) -> list[dict]:
@@ -265,6 +260,7 @@ def _year_end_lifecycle_checks(rng: random.Random, start_index: int) -> list[dic
                 "svik_effectiveness": svik,
             }
         )
+        align_check_demo_row(rows[-1], today=PRESENTATION_TODAY, index=index)
     return rows
 
 
@@ -312,7 +308,7 @@ def build_checks(
                 "svik_effectiveness": svik,
             }
             row.update(_document_fields(index, status, created, start, end, rng))
-            rows.append(row)
+            rows.append(align_check_demo_row(row, today=today, index=index))
 
     rows.extend(_year_end_lifecycle_checks(rng, start_index=index + 1))
     rows.sort(key=lambda item: item["start_date"])
@@ -439,6 +435,8 @@ def build_recommendations(checks: list[dict], rng: random.Random, today: date) -
                 index=len(rows) + 1,
                 rng=rng,
                 extension_count=extension_by_sequence.get(sequence, 0),
+                today=today,
+                additional_status=additional_status if status == "completed" else None,
             )
             if status == "completed" and closure["actual_completion_date"] and closure["actual_completion_date"] > deadline:
                 additional_status = "deadline_violated"
@@ -464,7 +462,8 @@ def build_recommendations(checks: list[dict], rng: random.Random, today: date) -
                 "created_at": created,
                 **closure,
             })
-    return apply_completed_during_audit_indicator(rows)
+    apply_completed_during_audit_indicator(rows)
+    return stamp_recommendation_demo_rows(rows, today=today)
 
 
 def _write_sheet(workbook: Workbook, title: str, headers: list[str], rows: list[dict]) -> Worksheet:
