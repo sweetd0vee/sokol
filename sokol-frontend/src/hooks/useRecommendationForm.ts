@@ -29,6 +29,7 @@ import {
 } from '../constants/recommendationClosure';
 import {
   buildRecommendationPayload,
+  EMPTY_RECOMMENDATION_REQUIRED_FIELD_ERRORS,
   getRecommendationRequiredFieldErrors,
 } from '../utils/recommendationFormPayload';
 import {
@@ -72,7 +73,9 @@ export function useRecommendationForm() {
     : navigationState.recommendation;
 
   const [fields, setFields] = useState<RecommendationFormFields>(() =>
-    emptyRecommendationFormFields(recommendationFormPrefillFromNavigation(navigationState)),
+    isEditMode && source
+      ? recommendationFormFieldsFromSource(source)
+      : emptyRecommendationFormFields(recommendationFormPrefillFromNavigation(navigationState)),
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -84,6 +87,7 @@ export function useRecommendationForm() {
   useEffect(() => {
     if (isEditMode && source) {
       setFields((prev) => recommendationFormFieldsFromSource(source, prev.checkLeader));
+      setShowValidationErrors(false);
       return;
     }
     if (!isEditMode) {
@@ -214,19 +218,21 @@ export function useRecommendationForm() {
 
   const requiredFieldErrors = useMemo(
     () =>
-      getRecommendationRequiredFieldErrors({
-        description: fields.description,
-        auditObject: fields.auditObject,
-        deadline: fields.deadline,
-        auditor: fields.auditor,
-        checkLeader: fields.checkLeader,
-        manager: fields.manager,
-        indicator: fields.indicator,
-        additionalIndicator: fields.additionalIndicator,
-        closure: fields.closure,
-        hasIncompleteClosureRows,
-      }),
-    [fields],
+      isEditMode
+        ? EMPTY_RECOMMENDATION_REQUIRED_FIELD_ERRORS
+        : getRecommendationRequiredFieldErrors({
+            description: fields.description,
+            auditObject: fields.auditObject,
+            deadline: fields.deadline,
+            auditor: fields.auditor,
+            checkLeader: fields.checkLeader,
+            manager: fields.manager,
+            indicator: fields.indicator,
+            additionalIndicator: fields.additionalIndicator,
+            closure: fields.closure,
+            hasIncompleteClosureRows,
+          }),
+    [fields, isEditMode],
   );
 
   useEffect(() => {
@@ -322,9 +328,16 @@ export function useRecommendationForm() {
     if (isSaving) {
       return;
     }
-    setShowValidationErrors(true);
+    setShowValidationErrors(!isEditMode);
     setSaveError(null);
-    if (!fields.serialNumber || !trimmedDescription || !fields.status || !fields.additionalStatus || requiredFieldErrors.hasErrors) {
+    if (
+      !isEditMode &&
+      (!fields.serialNumber ||
+        !trimmedDescription ||
+        !fields.status ||
+        !fields.additionalStatus ||
+        requiredFieldErrors.hasErrors)
+    ) {
       return;
     }
 

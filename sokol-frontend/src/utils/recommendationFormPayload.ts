@@ -71,6 +71,21 @@ export function buildRecommendationName(description: string, sequenceNumber: num
   return `Рекомендация ${sequenceNumber}`;
 }
 
+export const EMPTY_RECOMMENDATION_REQUIRED_FIELD_ERRORS: RecommendationRequiredFieldErrors = {
+  description: false,
+  auditObject: false,
+  deadline: false,
+  auditor: false,
+  manager: false,
+  indicator: false,
+  additionalIndicator: false,
+  closureInformation: false,
+  actualCompletionDate: false,
+  extensions: false,
+  removals: false,
+  hasErrors: false,
+};
+
 export function getRecommendationRequiredFieldErrors({
   description,
   auditObject,
