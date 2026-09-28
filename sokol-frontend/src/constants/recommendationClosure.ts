@@ -155,6 +155,43 @@ export function getControlZoneExecutionDate(
   return dates.sort()[dates.length - 1];
 }
 
+/**
+ * Latest «перенос срока» date. Does not use actual completion.
+ */
+export function getLatestDeadlineExtensionDate(
+  source?: ControlZoneDateSource | null,
+): string | undefined {
+  if (!source) {
+    return undefined;
+  }
+  return getControlZoneExecutionDate({
+    ...source,
+    actual_completion_date: null,
+    actualCompletionDate: '',
+  });
+}
+
+export function hasControlRemoval(
+  source?: {
+    removals?: Pick<ClosureDateCommentRow, 'date' | 'comment'>[] | null;
+    control_removals?: ClosureListItem[] | null;
+    remove_from_control_date?: string | null;
+    remove_from_control_comment?: string | null;
+  } | null,
+): boolean {
+  if (!source) {
+    return false;
+  }
+  const rows = source.removals ?? source.control_removals ?? [];
+  if (rows.some((row) => Boolean(row.date?.trim() || row.comment?.trim()))) {
+    return true;
+  }
+  return Boolean(
+    isoDateOrNull(source.remove_from_control_date)
+    || source.remove_from_control_comment?.trim(),
+  );
+}
+
 /** Comments from «Срок исполнения» and «Снять с контроля» — информация о выполнении. */
 export function getRecommendationExecutionInfo(
   source?: Parameters<typeof closureFromRecommendation>[0],

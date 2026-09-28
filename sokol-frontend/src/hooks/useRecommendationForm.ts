@@ -16,7 +16,7 @@ import { useCurrentUserName } from './useCurrentUserName';
 import { toNameOptions, useAuditorOptions } from './useReferenceOptions';
 import { useAuditObjectOptions } from './useAuditObjectOptions';
 import { computeRecommendationAutoStatus } from '../utils/recommendationAutoStatus';
-import { toIsoDate } from '../utils/dates';
+import { toInputDate, toIsoDate } from '../utils/dates';
 import { auditorMatchesCurrentUser } from '../utils/personMatch';
 import { resolveRecommendationYearlyDisplayNumber } from '../utils/recommendationYearlyNumber';
 import {
@@ -24,6 +24,8 @@ import {
   type RecommendationFormLocationState,
 } from '../utils/checkFormNavigation';
 import {
+  getLatestDeadlineExtensionDate,
+  hasControlRemoval,
   hasIncompleteClosureRows,
   type RecommendationClosureForm,
 } from '../constants/recommendationClosure';
@@ -140,14 +142,17 @@ export function useRecommendationForm() {
   ]);
 
   const applyAutoStatus = useCallback((next: RecommendationFormFields): RecommendationFormFields => {
+    const extensionIso = getLatestDeadlineExtensionDate({ extensions: next.closure.extensions });
+    const deadline = extensionIso ? toInputDate(extensionIso) : next.deadline;
     const auto = computeRecommendationAutoStatus({
-      controlDeadline: next.deadline,
-      currentStatus: next.status,
-      currentAdditionalStatus: next.additionalStatus,
+      controlDeadline: deadline,
+      executionDate: next.closure.actualCompletionDate,
+      removedFromControl: hasControlRemoval({ removals: next.closure.removals }),
       currentIndicator: next.indicator,
     });
     return {
       ...next,
+      deadline,
       status: auto.status ?? next.status,
       indicator: auto.indicator ?? next.indicator,
       additionalStatus: auto.additionalStatus ?? next.additionalStatus,
@@ -169,11 +174,14 @@ export function useRecommendationForm() {
   }, [applyAutoStatus]);
 
   const setClosure = useCallback((value: SetStateAction<RecommendationClosureForm>) => {
-    setFields((prev) => ({
-      ...prev,
-      closure: typeof value === 'function' ? value(prev.closure) : value,
-    }));
-  }, []);
+    setFields((prev) => {
+      const next = {
+        ...prev,
+        closure: typeof value === 'function' ? value(prev.closure) : value,
+      };
+      return applyAutoStatus(next);
+    });
+  }, [applyAutoStatus]);
 
   const checkDisplayName = useMemo(() => {
     if (fromCheckForm && navigationState.checkFormDraft?.checkName.trim()) {

@@ -4,7 +4,7 @@ import { computeRecommendationAutoStatus } from './recommendationAutoStatus';
 const TODAY = '2026-09-10';
 
 describe('computeRecommendationAutoStatus', () => {
-  it('ставит «на контроле» до срока контроля и просрочку начиная с этой даты', () => {
+  it('ставит «на контроле» до срока контроля и «в процессе» начиная с этой даты', () => {
     expect(
       computeRecommendationAutoStatus({
         controlDeadline: '2026-09-11',
@@ -23,17 +23,19 @@ describe('computeRecommendationAutoStatus', () => {
         today: TODAY,
       }),
     ).toMatchObject({
-      status: 'unresolved',
-      indicator: 'не решено',
-      additionalStatus: 'deadline_violated',
-      additionalIndicator: 'срок нарушен',
+      status: 'in_progress',
+      indicator: 'в процессе',
+      additionalStatus: 'in_progress',
+      additionalIndicator: 'в процессе',
     });
   });
 
-  it('считает оба индикатора только от срока контроля', () => {
+  it('для снятия с контроля ставит красный треугольник и красный колокольчик', () => {
     expect(
       computeRecommendationAutoStatus({
-        controlDeadline: '2026-08-01',
+        controlDeadline: '2026-12-01',
+        executionDate: '2026-09-09',
+        removedFromControl: true,
         today: TODAY,
       }),
     ).toMatchObject({
@@ -44,10 +46,53 @@ describe('computeRecommendationAutoStatus', () => {
     });
   });
 
+  it('для срока исполнения не позже срока контроля ставит исполнено и «в срок»', () => {
+    expect(
+      computeRecommendationAutoStatus({
+        controlDeadline: '2026-09-10',
+        executionDate: '2026-09-09',
+        today: TODAY,
+      }),
+    ).toMatchObject({
+      status: 'completed',
+      indicator: 'исполнено',
+      additionalStatus: 'on_time',
+      additionalIndicator: 'в срок',
+    });
+
+    expect(
+      computeRecommendationAutoStatus({
+        controlDeadline: '2026-09-10',
+        executionDate: '2026-09-10',
+        today: TODAY,
+      }),
+    ).toMatchObject({
+      additionalStatus: 'on_time',
+      additionalIndicator: 'в срок',
+    });
+  });
+
+  it('для срока исполнения позже срока контроля ставит исполнено и «срок нарушен»', () => {
+    expect(
+      computeRecommendationAutoStatus({
+        controlDeadline: '2026-09-01',
+        executionDate: '2026-09-15',
+        currentStatus: 'on_control',
+        today: TODAY,
+      }),
+    ).toMatchObject({
+      status: 'completed',
+      indicator: 'исполнено',
+      additionalStatus: 'deadline_violated',
+      additionalIndicator: 'срок нарушен',
+    });
+  });
+
   it('для «исполнено в ходе аудита» ставит синюю звезду и зелёный «в срок»', () => {
     expect(
       computeRecommendationAutoStatus({
         controlDeadline: '2026-08-01',
+        executionDate: '2026-09-15',
         currentStatus: 'on_control',
         currentAdditionalStatus: 'on_control',
         completedDuringAudit: true,
@@ -61,7 +106,7 @@ describe('computeRecommendationAutoStatus', () => {
     });
   });
 
-  it('не перезаписывает исполнено и в срок', () => {
+  it('пересчитывает открытую пару, даже если статус был «исполнено»', () => {
     expect(
       computeRecommendationAutoStatus({
         controlDeadline: '2026-08-01',
@@ -69,15 +114,20 @@ describe('computeRecommendationAutoStatus', () => {
         currentAdditionalStatus: 'on_time',
         today: TODAY,
       }),
-    ).toEqual({});
+    ).toMatchObject({
+      status: 'in_progress',
+      indicator: 'в процессе',
+      additionalStatus: 'in_progress',
+      additionalIndicator: 'в процессе',
+    });
   });
 
-  it('пересчитывает просроченную пару, если срок контроля снова в будущем', () => {
+  it('возвращает открытую пару «на контроле», если срок контроля снова в будущем', () => {
     expect(
       computeRecommendationAutoStatus({
         controlDeadline: '2026-12-01',
-        currentStatus: 'unresolved',
-        currentAdditionalStatus: 'deadline_violated',
+        currentStatus: 'in_progress',
+        currentAdditionalStatus: 'in_progress',
         today: TODAY,
       }),
     ).toMatchObject({

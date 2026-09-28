@@ -15,31 +15,31 @@ export type RecommendationAutoStatusFields = {
   additionalIndicator: RecommendationAdditionalIndicator;
 };
 
-const TERMINAL_STATUSES = new Set<RecommendationStatus>(['completed']);
-const MANUAL_ADDITIONAL_STATUSES = new Set<RecommendationAdditionalStatus>(['on_time']);
-
 const PHASE_STATUS = {
   on_control: 'on_control',
-  overdue: 'unresolved',
-} as const satisfies Record<'on_control' | 'overdue', RecommendationStatus>;
+  in_progress: 'in_progress',
+} as const satisfies Record<'on_control' | 'in_progress', RecommendationStatus>;
 
 const PHASE_ADDITIONAL_STATUS = {
   on_control: 'on_control',
-  overdue: 'deadline_violated',
-} as const satisfies Record<'on_control' | 'overdue', RecommendationAdditionalStatus>;
+  in_progress: 'in_progress',
+} as const satisfies Record<'on_control' | 'in_progress', RecommendationAdditionalStatus>;
 
 const PHASE_STATUS_INDICATOR = {
   on_control: 'на контроле',
-  overdue: 'не решено',
-} as const satisfies Record<'on_control' | 'overdue', RecommendationIndicator>;
+  in_progress: 'в процессе',
+} as const satisfies Record<'on_control' | 'in_progress', RecommendationIndicator>;
 
 const PHASE_ADDITIONAL_INDICATOR = {
   on_control: 'на контроле',
-  overdue: 'срок нарушен',
-} as const satisfies Record<'on_control' | 'overdue', RecommendationAdditionalIndicator>;
+  in_progress: 'в процессе',
+} as const satisfies Record<'on_control' | 'in_progress', RecommendationAdditionalIndicator>;
 
 const COMPLETED_DURING_AUDIT_INDICATOR = 'исполнено в ходе аудита';
+const COMPLETED_INDICATOR = 'исполнено';
+const UNRESOLVED_INDICATOR = 'не решено';
 const ON_TIME_INDICATOR = 'в срок';
+const DEADLINE_VIOLATED_INDICATOR = 'срок нарушен';
 
 function moscowTodayIso(now = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -61,11 +61,11 @@ function toDateIso(value: Date | string | null | undefined): string | null {
   return trimmed || null;
 }
 
-function phase(anchor: string | null, today: string): 'on_control' | 'overdue' | null {
+function phase(anchor: string | null, today: string): 'on_control' | 'in_progress' | null {
   if (!anchor) {
     return null;
   }
-  return today < anchor ? 'on_control' : 'overdue';
+  return today < anchor ? 'on_control' : 'in_progress';
 }
 
 function isCompletedDuringAudit(
@@ -80,19 +80,29 @@ function isCompletedDuringAudit(
 
 export function computeRecommendationAutoStatus({
   controlDeadline,
-  currentStatus,
-  currentAdditionalStatus,
+  executionDate,
+  removedFromControl,
   currentIndicator,
   completedDuringAudit,
   today = moscowTodayIso(),
 }: {
   controlDeadline?: Date | string | null;
+  executionDate?: Date | string | null;
+  removedFromControl?: boolean;
   currentStatus?: RecommendationStatus | '' | null;
   currentAdditionalStatus?: RecommendationAdditionalStatus | '' | null;
   currentIndicator?: string | null;
   completedDuringAudit?: boolean;
   today?: string;
 }): Partial<RecommendationAutoStatusFields> {
+  if (removedFromControl) {
+    return {
+      status: 'unresolved',
+      indicator: UNRESOLVED_INDICATOR,
+      additionalStatus: 'deadline_violated',
+      additionalIndicator: DEADLINE_VIOLATED_INDICATOR,
+    };
+  }
   if (isCompletedDuringAudit(completedDuringAudit, currentIndicator)) {
     return {
       status: 'completed',
@@ -101,17 +111,24 @@ export function computeRecommendationAutoStatus({
       additionalIndicator: ON_TIME_INDICATOR,
     };
   }
-  const updates: Partial<RecommendationAutoStatusFields> = {};
+
   const controlIso = toDateIso(controlDeadline);
+  const executionIso = toDateIso(executionDate);
+  if (executionIso && controlIso) {
+    const late = executionIso > controlIso;
+    return {
+      status: 'completed',
+      indicator: COMPLETED_INDICATOR,
+      additionalStatus: late ? 'deadline_violated' : 'on_time',
+      additionalIndicator: late ? DEADLINE_VIOLATED_INDICATOR : ON_TIME_INDICATOR,
+    };
+  }
+
+  const updates: Partial<RecommendationAutoStatusFields> = {};
   const statusPhase = phase(controlIso, today);
-  if (statusPhase && !TERMINAL_STATUSES.has(currentStatus as RecommendationStatus)) {
+  if (statusPhase) {
     updates.status = PHASE_STATUS[statusPhase];
     updates.indicator = PHASE_STATUS_INDICATOR[statusPhase];
-  }
-  if (
-    statusPhase
-    && !MANUAL_ADDITIONAL_STATUSES.has(currentAdditionalStatus as RecommendationAdditionalStatus)
-  ) {
     updates.additionalStatus = PHASE_ADDITIONAL_STATUS[statusPhase];
     updates.additionalIndicator = PHASE_ADDITIONAL_INDICATOR[statusPhase];
   }

@@ -28,13 +28,13 @@ TODAY = date(2026, 9, 10)
 
 
 class RecommendationStatusCalcTests(unittest.TestCase):
-    def test_phase_is_on_control_before_anchor_and_overdue_on_or_after(self) -> None:
+    def test_phase_is_on_control_before_anchor_and_in_progress_on_or_after(self) -> None:
         self.assertEqual(status_phase(date(2026, 9, 11), TODAY), "on_control")
-        self.assertEqual(status_phase(date(2026, 9, 10), TODAY), "overdue")
-        self.assertEqual(status_phase(date(2026, 9, 9), TODAY), "overdue")
+        self.assertEqual(status_phase(date(2026, 9, 10), TODAY), "in_progress")
+        self.assertEqual(status_phase(date(2026, 9, 9), TODAY), "in_progress")
         self.assertIsNone(status_phase(None, TODAY))
 
-    def test_control_deadline_drives_status_and_indicator(self) -> None:
+    def test_control_deadline_drives_open_item_indicators(self) -> None:
         future = compute_auto_status_fields(control_deadline=date(2026, 10, 1), today=TODAY)
         self.assertEqual(future["status"], RecommendationStatus.ON_CONTROL)
         self.assertEqual(future["indicator"], "на контроле")
@@ -42,14 +42,46 @@ class RecommendationStatusCalcTests(unittest.TestCase):
         self.assertEqual(future["additional_indicator"], "на контроле")
 
         due = compute_auto_status_fields(control_deadline=date(2026, 9, 1), today=TODAY)
-        self.assertEqual(due["status"], RecommendationStatus.UNRESOLVED)
-        self.assertEqual(due["indicator"], "не решено")
-        self.assertEqual(due["additional_status"], RecommendationAdditionalStatus.DEADLINE_VIOLATED)
-        self.assertEqual(due["additional_indicator"], "срок нарушен")
+        self.assertEqual(due["status"], RecommendationStatus.IN_PROGRESS)
+        self.assertEqual(due["indicator"], "в процессе")
+        self.assertEqual(due["additional_status"], RecommendationAdditionalStatus.IN_PROGRESS)
+        self.assertEqual(due["additional_indicator"], "в процессе")
+
+    def test_execution_before_or_on_control_deadline_is_on_time(self) -> None:
+        early = compute_auto_status_fields(
+            control_deadline=date(2026, 9, 10),
+            execution_date=date(2026, 9, 9),
+            today=TODAY,
+        )
+        self.assertEqual(early["status"], RecommendationStatus.COMPLETED)
+        self.assertEqual(early["indicator"], "исполнено")
+        self.assertEqual(early["additional_status"], RecommendationAdditionalStatus.ON_TIME)
+        self.assertEqual(early["additional_indicator"], "в срок")
+
+        on_day = compute_auto_status_fields(
+            control_deadline=date(2026, 9, 10),
+            execution_date=date(2026, 9, 10),
+            today=TODAY,
+        )
+        self.assertEqual(on_day["additional_status"], RecommendationAdditionalStatus.ON_TIME)
+        self.assertEqual(on_day["additional_indicator"], "в срок")
+
+    def test_execution_after_control_deadline_is_deadline_violated(self) -> None:
+        late = compute_auto_status_fields(
+            control_deadline=date(2026, 9, 1),
+            execution_date=date(2026, 9, 15),
+            current_status=RecommendationStatus.ON_CONTROL,
+            today=TODAY,
+        )
+        self.assertEqual(late["status"], RecommendationStatus.COMPLETED)
+        self.assertEqual(late["indicator"], "исполнено")
+        self.assertEqual(late["additional_status"], RecommendationAdditionalStatus.DEADLINE_VIOLATED)
+        self.assertEqual(late["additional_indicator"], "срок нарушен")
 
     def test_completed_during_audit_sets_star_and_on_time(self) -> None:
         updates = compute_auto_status_fields(
             control_deadline=date(2026, 8, 1),
+            execution_date=date(2026, 9, 15),
             current_status=RecommendationStatus.ON_CONTROL,
             current_additional_status=RecommendationAdditionalStatus.ON_CONTROL,
             current_indicator="исполнено в ходе аудита",
@@ -59,15 +91,6 @@ class RecommendationStatusCalcTests(unittest.TestCase):
         self.assertEqual(updates["indicator"], "исполнено в ходе аудита")
         self.assertEqual(updates["additional_status"], RecommendationAdditionalStatus.ON_TIME)
         self.assertEqual(updates["additional_indicator"], "в срок")
-
-    def test_additional_status_follows_control_deadline_not_execution_date(self) -> None:
-        updates = compute_auto_status_fields(
-            control_deadline=date(2026, 8, 1),
-            today=TODAY,
-        )
-        self.assertEqual(updates["status"], RecommendationStatus.UNRESOLVED)
-        self.assertEqual(updates["additional_status"], RecommendationAdditionalStatus.DEADLINE_VIOLATED)
-        self.assertEqual(updates["additional_indicator"], "срок нарушен")
 
     def test_control_zone_prefers_actual_completion_over_postponement(self) -> None:
         self.assertEqual(
@@ -90,14 +113,92 @@ class RecommendationStatusCalcTests(unittest.TestCase):
             date(2026, 12, 15),
         )
 
-    def test_overlay_uses_control_deadline_even_when_control_zone_has_another_date(self) -> None:
+    def test_control_removal_sets_unresolved_and_deadline_violated(self) -> None:
+        updates = compute_auto_status_fields(
+            control_deadline=date(2026, 12, 1),
+            execution_date=date(2026, 9, 9),
+            removed_from_control=True,
+            today=TODAY,
+        )
+        self.assertEqual(updates["status"], RecommendationStatus.UNRESOLVED)
+        self.assertEqual(updates["indicator"], "не решено")
+        self.assertEqual(updates["additional_status"], RecommendationAdditionalStatus.DEADLINE_VIOLATED)
+        self.assertEqual(updates["additional_indicator"], "срок нарушен")
+
+    def test_overlay_moves_control_deadline_to_latest_extension(self) -> None:
         existing = SimpleNamespace(
             deadline=date(2026, 8, 1),
             actual_completion_date=None,
-            deadline_extensions=[{"date": "2026-12-01"}],
+            deadline_extensions=None,
             extension_1_date=None,
             extension_2_reason=None,
+            control_removals=None,
             status=RecommendationStatus.IN_PROGRESS,
+            additional_status=RecommendationAdditionalStatus.IN_PROGRESS,
+        )
+        payload = overlay_computed_status_fields(
+            {
+                "name": "Рекомендация",
+                "deadline_extensions": [{"date": "2026-12-01", "comment": "Перенос"}],
+            },
+            existing=existing,
+            today=TODAY,
+        )
+        self.assertEqual(payload["deadline"], date(2026, 12, 1))
+        self.assertEqual(payload["status"], RecommendationStatus.ON_CONTROL)
+        self.assertEqual(payload["additional_status"], RecommendationAdditionalStatus.ON_CONTROL)
+
+    def test_overlay_control_removal_overrides_execution_date(self) -> None:
+        existing = SimpleNamespace(
+            deadline=date(2026, 9, 1),
+            actual_completion_date=date(2026, 8, 20),
+            deadline_extensions=None,
+            extension_1_date=None,
+            extension_2_reason=None,
+            control_removals=None,
+            status=RecommendationStatus.COMPLETED,
+            additional_status=RecommendationAdditionalStatus.ON_TIME,
+        )
+        payload = overlay_computed_status_fields(
+            {"control_removals": [{"date": "2026-09-15", "comment": "Снято"}]},
+            existing=existing,
+            today=TODAY,
+        )
+        self.assertEqual(payload["status"], RecommendationStatus.UNRESOLVED)
+        self.assertEqual(payload["indicator"], "не решено")
+        self.assertEqual(payload["additional_status"], RecommendationAdditionalStatus.DEADLINE_VIOLATED)
+        self.assertEqual(payload["additional_indicator"], "срок нарушен")
+
+    def test_overlay_uses_execution_date_from_payload(self) -> None:
+        existing = SimpleNamespace(
+            deadline=date(2026, 8, 1),
+            actual_completion_date=None,
+            deadline_extensions=None,
+            extension_1_date=None,
+            extension_2_reason=None,
+            control_removals=None,
+            status=RecommendationStatus.IN_PROGRESS,
+            additional_status=RecommendationAdditionalStatus.IN_PROGRESS,
+        )
+        payload = overlay_computed_status_fields(
+            {"name": "Рекомендация", "actual_completion_date": date(2026, 8, 20)},
+            existing=existing,
+            today=TODAY,
+        )
+        self.assertEqual(payload["status"], RecommendationStatus.COMPLETED)
+        self.assertEqual(payload["indicator"], "исполнено")
+        self.assertEqual(payload["additional_status"], RecommendationAdditionalStatus.DEADLINE_VIOLATED)
+        self.assertEqual(payload["additional_indicator"], "срок нарушен")
+
+    def test_overlay_open_item_follows_control_deadline(self) -> None:
+        existing = SimpleNamespace(
+            deadline=date(2026, 8, 1),
+            actual_completion_date=None,
+            deadline_extensions=None,
+            extension_1_date=None,
+            extension_2_reason=None,
+            control_removals=None,
+            status=RecommendationStatus.ON_CONTROL,
             additional_status=RecommendationAdditionalStatus.ON_CONTROL,
         )
         payload = overlay_computed_status_fields(
@@ -105,25 +206,25 @@ class RecommendationStatusCalcTests(unittest.TestCase):
             existing=existing,
             today=TODAY,
         )
-        self.assertEqual(payload["status"], RecommendationStatus.UNRESOLVED)
-        self.assertEqual(payload["additional_status"], RecommendationAdditionalStatus.DEADLINE_VIOLATED)
-        self.assertEqual(payload["additional_indicator"], "срок нарушен")
+        self.assertEqual(payload["status"], RecommendationStatus.IN_PROGRESS)
+        self.assertEqual(payload["additional_status"], RecommendationAdditionalStatus.IN_PROGRESS)
+        self.assertEqual(payload["additional_indicator"], "в процессе")
 
-    def test_terminal_and_manual_statuses_are_preserved(self) -> None:
-        completed = compute_auto_status_fields(
+    def test_open_item_is_recomputed_even_if_status_was_completed(self) -> None:
+        due = compute_auto_status_fields(
             control_deadline=date(2026, 8, 1),
             current_status=RecommendationStatus.COMPLETED,
             current_additional_status=RecommendationAdditionalStatus.ON_TIME,
             today=TODAY,
         )
-        self.assertNotIn("status", completed)
-        self.assertNotIn("additional_status", completed)
+        self.assertEqual(due["status"], RecommendationStatus.IN_PROGRESS)
+        self.assertEqual(due["additional_status"], RecommendationAdditionalStatus.IN_PROGRESS)
 
-    def test_overdue_pair_is_recomputed_when_deadline_moves(self) -> None:
+    def test_open_item_is_restored_when_deadline_moves_to_future(self) -> None:
         restored = compute_auto_status_fields(
             control_deadline=date(2026, 12, 1),
-            current_status=RecommendationStatus.UNRESOLVED,
-            current_additional_status=RecommendationAdditionalStatus.DEADLINE_VIOLATED,
+            current_status=RecommendationStatus.IN_PROGRESS,
+            current_additional_status=RecommendationAdditionalStatus.IN_PROGRESS,
             today=TODAY,
         )
         self.assertEqual(restored["status"], RecommendationStatus.ON_CONTROL)
@@ -136,6 +237,7 @@ class RecommendationStatusCalcTests(unittest.TestCase):
             deadline_extensions=None,
             extension_1_date=None,
             extension_2_reason=None,
+            control_removals=None,
             status=RecommendationStatus.IN_PROGRESS,
             additional_status=RecommendationAdditionalStatus.IN_PROGRESS,
         )

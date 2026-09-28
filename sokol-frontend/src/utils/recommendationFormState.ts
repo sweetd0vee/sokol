@@ -13,6 +13,7 @@ import {
 import {
   closureFromRecommendation,
   createEmptyRecommendationClosure,
+  getLatestDeadlineExtensionDate,
   type RecommendationClosureForm,
 } from '../constants/recommendationClosure';
 import { formatRecommendationAuditObjects } from './auditObjects';
@@ -71,7 +72,7 @@ export function recommendationFormFieldsFromSource(
     observationName: source.observation_name ?? '',
     description: source.description || source.name,
     auditObject: formatRecommendationAuditObjects(source.audit_object),
-    deadline: toInputDate(source.deadline),
+    deadline: toInputDate(getLatestDeadlineExtensionDate(source) ?? source.deadline),
     auditor: source.auditor,
     checkLeader,
     manager: source.manager,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getControlZoneExecutionDate, getRecommendationExecutionInfo } from './recommendationClosure';
+import { getControlZoneExecutionDate, getLatestDeadlineExtensionDate, getRecommendationExecutionInfo, hasControlRemoval } from './recommendationClosure';
 
 describe('getControlZoneExecutionDate', () => {
   it('takes actual completion date from the control zone first', () => {
@@ -31,6 +31,25 @@ describe('getControlZoneExecutionDate', () => {
 
   it('returns undefined when the control zone has no execution date', () => {
     expect(getControlZoneExecutionDate({})).toBeUndefined();
+  });
+});
+
+describe('getLatestDeadlineExtensionDate', () => {
+  it('ignores actual completion and takes the latest postponement', () => {
+    expect(
+      getLatestDeadlineExtensionDate({
+        actual_completion_date: '2026-08-10',
+        deadline_extensions: [{ date: '2026-10-01' }, { date: '2026-12-15' }],
+      }),
+    ).toBe('2026-12-15');
+  });
+});
+
+describe('hasControlRemoval', () => {
+  it('is true when a removal row has a date or comment', () => {
+    expect(hasControlRemoval({ removals: [{ date: '2026-09-01', comment: '' }] })).toBe(true);
+    expect(hasControlRemoval({ removals: [{ date: '', comment: 'Снято' }] })).toBe(true);
+    expect(hasControlRemoval({ removals: [{ date: '', comment: '' }] })).toBe(false);
   });
 });
 
