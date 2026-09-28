@@ -47,14 +47,14 @@ class RecommendationStatusCalcTests(unittest.TestCase):
         self.assertEqual(due["additional_status"], RecommendationAdditionalStatus.IN_PROGRESS)
         self.assertEqual(due["additional_indicator"], "в процессе")
 
-    def test_control_zone_date_drives_additional_status_independently(self) -> None:
+    def test_additional_status_follows_control_deadline_not_execution_date(self) -> None:
         updates = compute_auto_status_fields(
             control_deadline=date(2026, 8, 1),
-            execution_deadline=date(2026, 12, 1),
             today=TODAY,
         )
         self.assertEqual(updates["status"], RecommendationStatus.IN_PROGRESS)
-        self.assertEqual(updates["additional_status"], RecommendationAdditionalStatus.ON_CONTROL)
+        self.assertEqual(updates["additional_status"], RecommendationAdditionalStatus.IN_PROGRESS)
+        self.assertEqual(updates["additional_indicator"], "в процессе")
 
     def test_control_zone_prefers_actual_completion_over_postponement(self) -> None:
         self.assertEqual(
@@ -77,7 +77,7 @@ class RecommendationStatusCalcTests(unittest.TestCase):
             date(2026, 12, 15),
         )
 
-    def test_overlay_uses_control_zone_dates_from_existing_row(self) -> None:
+    def test_overlay_uses_control_deadline_even_when_control_zone_has_another_date(self) -> None:
         existing = SimpleNamespace(
             deadline=date(2026, 8, 1),
             actual_completion_date=None,
@@ -85,7 +85,7 @@ class RecommendationStatusCalcTests(unittest.TestCase):
             extension_1_date=None,
             extension_2_reason=None,
             status=RecommendationStatus.IN_PROGRESS,
-            additional_status=RecommendationAdditionalStatus.IN_PROGRESS,
+            additional_status=RecommendationAdditionalStatus.ON_CONTROL,
         )
         payload = overlay_computed_status_fields(
             {"name": "Рекомендация"},
@@ -93,7 +93,8 @@ class RecommendationStatusCalcTests(unittest.TestCase):
             today=TODAY,
         )
         self.assertEqual(payload["status"], RecommendationStatus.IN_PROGRESS)
-        self.assertEqual(payload["additional_status"], RecommendationAdditionalStatus.ON_CONTROL)
+        self.assertEqual(payload["additional_status"], RecommendationAdditionalStatus.IN_PROGRESS)
+        self.assertEqual(payload["additional_indicator"], "в процессе")
 
     def test_terminal_and_manual_statuses_are_preserved(self) -> None:
         completed = compute_auto_status_fields(

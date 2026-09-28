@@ -30,16 +30,17 @@ describe('computeRecommendationAutoStatus', () => {
     });
   });
 
-  it('считает дополнительный статус от даты из контрольной зоны, если она задана', () => {
+  it('считает оба индикатора только от срока контроля', () => {
     expect(
       computeRecommendationAutoStatus({
         controlDeadline: '2026-08-01',
-        executionDeadline: '2026-12-01',
         today: TODAY,
       }),
     ).toMatchObject({
       status: 'in_progress',
-      additionalStatus: 'on_control',
+      indicator: 'в процессе',
+      additionalStatus: 'in_progress',
+      additionalIndicator: 'в процессе',
     });
   });
 

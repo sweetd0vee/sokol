@@ -90,7 +90,7 @@ API create/update валидирует labels; физические FK с `ON UP
 
 `serial_number` только backend. Смена даты / квартала / руководителя / типа пересчитывает ключ, rec serial, attachments и MinIO bucket. Смена `auditors.code` также каскадно переписывает ключи проверок этого руководителя и MinIO buckets. Квартал (`check_quarter` 1–4) участвует в ключе.
 
-Открытые статусы rec пересчитываются сами: `status` от `deadline`, доп. статус от даты исполнения в зоне контроля (`actual_completion_date` / переносы), не от колонки `execution_deadline`. Терминальные и ручные (`on_time` / `deadline_violated`) не трогаются. Цикл — 00:05 МСК.
+Открытые статусы rec пересчитываются сами: `status` и доп. статус от `deadline` (срок контроля) против текущей даты, не от колонки `execution_deadline`. Терминальные и ручные (`on_time` / `deadline_violated`) не трогаются. Цикл — 00:05 МСК.
 
 ## Импорт из АЗ
 

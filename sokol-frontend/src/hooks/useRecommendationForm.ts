@@ -24,7 +24,6 @@ import {
   type RecommendationFormLocationState,
 } from '../utils/checkFormNavigation';
 import {
-  getControlZoneExecutionDate,
   hasIncompleteClosureRows,
   type RecommendationClosureForm,
 } from '../constants/recommendationClosure';
@@ -143,7 +142,6 @@ export function useRecommendationForm() {
   const applyAutoStatus = useCallback((next: RecommendationFormFields): RecommendationFormFields => {
     const auto = computeRecommendationAutoStatus({
       controlDeadline: next.deadline,
-      executionDeadline: getControlZoneExecutionDate(next.closure),
       currentStatus: next.status,
       currentAdditionalStatus: next.additionalStatus,
     });
@@ -170,13 +168,11 @@ export function useRecommendationForm() {
   }, [applyAutoStatus]);
 
   const setClosure = useCallback((value: SetStateAction<RecommendationClosureForm>) => {
-    setFields((prev) =>
-      applyAutoStatus({
-        ...prev,
-        closure: typeof value === 'function' ? value(prev.closure) : value,
-      }),
-    );
-  }, [applyAutoStatus]);
+    setFields((prev) => ({
+      ...prev,
+      closure: typeof value === 'function' ? value(prev.closure) : value,
+    }));
+  }, []);
 
   const checkDisplayName = useMemo(() => {
     if (fromCheckForm && navigationState.checkFormDraft?.checkName.trim()) {

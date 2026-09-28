@@ -34,7 +34,7 @@ FastAPI + PostgreSQL (async SQLAlchemy) + MinIO:
 - **Analytics** — `GET /analytics/{checks|recommendations|monitoring|dva|planning}`, SQL-агрегаты. Конструктор дашбордов — только frontend.
 - **Attachments** — Postgres metadata + MinIO.
 - **Tools** — Раздел II, ДЗ, parse-recommendations, файл контроля (XLSX); in-process очередь DOCX (`docx_queue`), не Celery.
-- **Статусы rec** — от `deadline` / зоны контроля; ежедневно 00:05 МСК (`SOKOL_STATUS_SCHEDULER`).
+- **Статусы rec** — `status` и доп. статус от `deadline` vs текущая дата; ежедневно 00:05 МСК (`SOKOL_STATUS_SCHEDULER`).
 
 **Нет:** Alembic, OIDC, CRUD наблюдений, users PATCH/DELETE, хранение аватаров, серверные сохранённые отчёты, distributed job queue.
 

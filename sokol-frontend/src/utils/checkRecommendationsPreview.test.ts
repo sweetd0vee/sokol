@@ -24,6 +24,26 @@ describe('buildParsedPreviewItem', () => {
     expect(item.manager).toBe('Петров');
     expect(item.materiality_level).toBe('средний');
   });
+
+  it('ставит серый колокольчик, если срок контроля ещё не наступил', () => {
+    const item = buildParsedPreviewItem({ ...draft, deadline: '2099-01-01' }, 0, 'П-1', 0);
+    expect(item).toMatchObject({
+      status: 'on_control',
+      indicator: 'на контроле',
+      additional_status: 'on_control',
+      additional_indicator: 'на контроле',
+    });
+  });
+
+  it('ставит жёлтые часы и жёлтый колокольчик, если срок контроля уже прошёл', () => {
+    const item = buildParsedPreviewItem({ ...draft, deadline: '2000-01-01' }, 0, 'П-1', 0);
+    expect(item).toMatchObject({
+      status: 'in_progress',
+      indicator: 'в процессе',
+      additional_status: 'in_progress',
+      additional_indicator: 'в процессе',
+    });
+  });
 });
 
 describe('patchPreviewItem', () => {
@@ -38,6 +58,26 @@ describe('patchPreviewItem', () => {
   it('falls back to the raw deadline when normalizer returns empty', () => {
     const next = patchPreviewItem(item, 'deadline', 'raw', () => '');
     expect(next.deadline).toBe('raw');
+  });
+
+  it('пересчитывает оба индикатора при смене срока контроля', () => {
+    const overdue = patchPreviewItem(item, 'deadline', '2000-01-01', (value) => value);
+    expect(overdue).toMatchObject({
+      deadline: '2000-01-01',
+      status: 'in_progress',
+      indicator: 'в процессе',
+      additional_status: 'in_progress',
+      additional_indicator: 'в процессе',
+    });
+
+    const upcoming = patchPreviewItem(overdue, 'deadline', '2099-01-01', (value) => value);
+    expect(upcoming).toMatchObject({
+      deadline: '2099-01-01',
+      status: 'on_control',
+      indicator: 'на контроле',
+      additional_status: 'on_control',
+      additional_indicator: 'на контроле',
+    });
   });
 
   it('clips audit object and manager to 255 chars', () => {

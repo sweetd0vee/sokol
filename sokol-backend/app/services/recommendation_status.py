@@ -1,13 +1,10 @@
 """Date-driven recommendation status and indicator calculation.
 
-Status / indicator follow ``deadline`` (срок контроля from AZ).
-Additional status / indicator follow the control-zone execution date:
-``actual_completion_date`` (фактическое исполнение) or the latest
-``deadline_extensions`` date (перенос срока), falling back to the control
-date when that is empty.
+Status / indicator and additional status / indicator both follow ``deadline``
+(срок контроля from AZ) against the current Moscow date.
 
 Open items switch ``on_control`` ↔ ``in_progress`` as the Moscow calendar day
-moves across the anchor date. Terminal statuses (completed / unresolved) and
+moves across the control date. Terminal statuses (completed / unresolved) and
 manual additional statuses (on_time / deadline_violated) are left untouched.
 """
 
@@ -79,7 +76,6 @@ def status_phase(anchor: date | None, today: date) -> str | None:
 def compute_auto_status_fields(
     *,
     control_deadline: date | None,
-    execution_deadline: date | None = None,
     current_status: RecommendationStatus | str | None = None,
     current_additional_status: RecommendationAdditionalStatus | str | None = None,
     today: date | None = None,
@@ -95,10 +91,9 @@ def compute_auto_status_fields(
         updates["status"] = PHASE_STATUS[phase]
         updates["indicator"] = PHASE_INDICATOR[phase]
 
-    additional_phase = status_phase(execution_deadline or control_deadline, today)
-    if additional_phase is not None and additional not in MANUAL_ADDITIONAL_STATUSES:
-        updates["additional_status"] = PHASE_ADDITIONAL_STATUS[additional_phase]
-        updates["additional_indicator"] = PHASE_INDICATOR[additional_phase]
+    if phase is not None and additional not in MANUAL_ADDITIONAL_STATUSES:
+        updates["additional_status"] = PHASE_ADDITIONAL_STATUS[phase]
+        updates["additional_indicator"] = PHASE_INDICATOR[phase]
 
     return updates
 
@@ -131,15 +126,6 @@ def control_zone_execution_date(
     return max(dates) if dates else None
 
 
-def _payload_control_zone_execution(data: dict[str, Any], existing: Any | None) -> date | None:
-    return control_zone_execution_date(
-        actual_completion_date=_payload_value(data, "actual_completion_date", existing),
-        deadline_extensions=_payload_value(data, "deadline_extensions", existing),
-        extension_1_date=_payload_value(data, "extension_1_date", existing),
-        extension_2_reason=_payload_value(data, "extension_2_reason", existing),
-    )
-
-
 def overlay_computed_status_fields(
     data: dict[str, Any],
     *,
@@ -148,7 +134,6 @@ def overlay_computed_status_fields(
 ) -> dict[str, Any]:
     """Merge auto-calculated fields into a create/update payload dict."""
     control = _payload_date(data, "deadline", existing)
-    execution = _payload_control_zone_execution(data, existing)
     current_status = data["status"] if "status" in data else getattr(existing, "status", None)
     current_additional = (
         data["additional_status"]
@@ -158,7 +143,6 @@ def overlay_computed_status_fields(
     data.update(
         compute_auto_status_fields(
             control_deadline=control,
-            execution_deadline=execution,
             current_status=current_status,
             current_additional_status=current_additional,
             today=today,
@@ -175,12 +159,6 @@ def apply_computed_status_to_recommendation(
     """Write computed fields onto an ORM row. Returns True when anything changed."""
     updates = compute_auto_status_fields(
         control_deadline=getattr(recommendation, "deadline", None),
-        execution_deadline=control_zone_execution_date(
-            actual_completion_date=getattr(recommendation, "actual_completion_date", None),
-            deadline_extensions=getattr(recommendation, "deadline_extensions", None),
-            extension_1_date=getattr(recommendation, "extension_1_date", None),
-            extension_2_reason=getattr(recommendation, "extension_2_reason", None),
-        ),
         current_status=getattr(recommendation, "status", None),
         current_additional_status=getattr(recommendation, "additional_status", None),
         today=today,
