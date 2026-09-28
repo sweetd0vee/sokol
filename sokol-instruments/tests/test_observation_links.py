@@ -78,7 +78,7 @@ class ObservationLinkTargetTests(unittest.TestCase):
         self.assertIn("SokolObs3_1", heading)
         self.assertLess(updated.find("как пример"), updated.find('w:name="SokolObs3_1"'))
 
-    def test_plain_heading_with_name_ignores_later_mention(self) -> None:
+    def test_plain_heading_with_name_is_not_a_link_target(self) -> None:
         document_xml = _document(
             """
             <w:p><w:r><w:t>Наблюдение 4.1. Контроль сроков исполнения заявок</w:t></w:r></w:p>
@@ -92,11 +92,30 @@ class ObservationLinkTargetTests(unittest.TestCase):
             observation_names={"4.1": "Контроль сроков исполнения заявок"},
         )
 
-        self.assertEqual(anchors["4.1"], "SokolObs4_1")
+        self.assertNotIn("4.1", anchors)
         heading = _paragraph_containing(updated, "Контроль сроков исполнения заявок")
         mention = _paragraph_containing(updated, "при следующей проверке")
-        self.assertIn("SokolObs4_1", heading)
+        self.assertNotIn("SokolObs4_1", heading)
         self.assertNotIn("SokolObs4_1", mention)
+
+    def test_bordered_text_reference_is_not_a_title_frame(self) -> None:
+        document_xml = _document(
+            """
+            <w:p>
+              <w:pPr><w:pBdr><w:top w:val="single"/></w:pBdr></w:pPr>
+              <w:r><w:t>Наблюдение 5.2. Ошибки обработки заявок упоминаются далее в тексте.</w:t></w:r>
+            </w:p>
+            """
+        )
+        updated, anchors, _next_id = ensure_observation_bookmarks(
+            document_xml,
+            ["5.2"],
+            bookmark_start_id=35,
+            observation_names={"5.2": "Ошибки обработки заявок"},
+        )
+
+        self.assertNotIn("5.2", anchors)
+        self.assertNotIn("SokolObs5_2", updated)
 
     def test_title_frame_wins_over_earlier_plain_heading(self) -> None:
         document_xml = _document(
