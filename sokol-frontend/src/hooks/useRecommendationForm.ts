@@ -144,6 +144,7 @@ export function useRecommendationForm() {
       controlDeadline: next.deadline,
       currentStatus: next.status,
       currentAdditionalStatus: next.additionalStatus,
+      currentIndicator: next.indicator,
     });
     return {
       ...next,

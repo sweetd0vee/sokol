@@ -59,10 +59,11 @@ export function buildParsedPreviewItem(
     || isCompletedDuringAudit(draft.deadline);
   const auto = computeRecommendationAutoStatus({
     controlDeadline: completedDuringAudit ? null : draft.deadline,
-    currentStatus: completedDuringAudit ? 'completed' : draft.status,
+    currentStatus: draft.status,
     currentAdditionalStatus: draft.additional_status,
+    completedDuringAudit,
   });
-  const status = completedDuringAudit ? 'completed' : (auto.status ?? draft.status);
+  const status = auto.status ?? draft.status;
   const additionalStatus = auto.additionalStatus ?? draft.additional_status;
   return {
     previewKey: `preview-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
@@ -72,9 +73,7 @@ export function buildParsedPreviewItem(
     name: draft.name.trim(),
     observation_name: draft.observation_name?.trim() || undefined,
     description: draft.name.trim(),
-    indicator: completedDuringAudit
-      ? 'исполнено в ходе аудита'
-      : (auto.indicator ?? indicatorFromRecommendationStatus(status)),
+    indicator: auto.indicator ?? indicatorFromRecommendationStatus(status),
     materiality_level: 'средний',
     audit_object: (draft.audit_object.trim() || 'Не указан').slice(0, 255),
     deadline: completedDuringAudit ? '' : draft.deadline,
@@ -100,17 +99,20 @@ export function patchPreviewItem(
   if (field === 'deadline') {
     const deadline = normalizeDeadline(value) || value;
     if (isCompletedDuringAudit(value) || isCompletedDuringAudit(deadline)) {
+      const auto = computeRecommendationAutoStatus({ completedDuringAudit: true });
       return {
         ...item,
         deadline: '',
-        status: 'completed',
-        indicator: 'исполнено в ходе аудита',
+        status: auto.status ?? 'completed',
+        indicator: auto.indicator ?? 'исполнено в ходе аудита',
+        additional_status: auto.additionalStatus ?? 'on_time',
+        additional_indicator: auto.additionalIndicator ?? 'в срок',
       };
     }
     const auto = computeRecommendationAutoStatus({
       controlDeadline: deadline,
       currentStatus: item.status === 'completed' ? '' : item.status,
-      currentAdditionalStatus: item.additional_status,
+      currentAdditionalStatus: item.indicator === 'исполнено в ходе аудита' ? '' : item.additional_status,
     });
     return {
       ...item,

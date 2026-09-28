@@ -44,6 +44,23 @@ describe('computeRecommendationAutoStatus', () => {
     });
   });
 
+  it('для «исполнено в ходе аудита» ставит синюю звезду и зелёный «в срок»', () => {
+    expect(
+      computeRecommendationAutoStatus({
+        controlDeadline: '2026-08-01',
+        currentStatus: 'on_control',
+        currentAdditionalStatus: 'on_control',
+        completedDuringAudit: true,
+        today: TODAY,
+      }),
+    ).toMatchObject({
+      status: 'completed',
+      indicator: 'исполнено в ходе аудита',
+      additionalStatus: 'on_time',
+      additionalIndicator: 'в срок',
+    });
+  });
+
   it('не перезаписывает исполнено и в срок', () => {
     expect(
       computeRecommendationAutoStatus({

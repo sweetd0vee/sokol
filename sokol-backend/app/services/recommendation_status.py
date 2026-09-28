@@ -4,8 +4,9 @@ Status / indicator and additional status / indicator both follow ``deadline``
 (срок контроля from AZ) against the current Moscow date.
 
 Open items switch ``on_control`` ↔ overdue (``unresolved`` + ``deadline_violated``)
-as the Moscow calendar day moves across the control date. Completed status and
-manual additional status ``on_time`` are left untouched.
+as the Moscow calendar day moves across the control date. «Исполнено в ходе аудита»
+locks completed + the star indicator and additional ``on_time``. Other completed
+rows and a manual additional ``on_time`` are left untouched.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ MOSCOW_TZ = timezone(timedelta(hours=3))
 ON_CONTROL_INDICATOR = "на контроле"
 UNRESOLVED_INDICATOR = "не решено"
 DEADLINE_VIOLATED_INDICATOR = "срок нарушен"
+ON_TIME_INDICATOR = "в срок"
 COMPLETED_DURING_AUDIT_INDICATOR = "исполнено в ходе аудита"
 
 TERMINAL_STATUSES = frozenset({RecommendationStatus.COMPLETED})
@@ -86,12 +88,15 @@ def compute_auto_status_fields(
         str(current_indicator or "").strip().casefold() == COMPLETED_DURING_AUDIT_INDICATOR
     )
 
+    if completed_during_audit:
+        updates["status"] = RecommendationStatus.COMPLETED
+        updates["indicator"] = COMPLETED_DURING_AUDIT_INDICATOR
+        updates["additional_status"] = RecommendationAdditionalStatus.ON_TIME
+        updates["additional_indicator"] = ON_TIME_INDICATOR
+        return updates
+
     phase = status_phase(control_deadline, today)
-    if (
-        phase is not None
-        and status not in TERMINAL_STATUSES
-        and not completed_during_audit
-    ):
+    if phase is not None and status not in TERMINAL_STATUSES:
         updates["status"] = PHASE_STATUS[phase]
         updates["indicator"] = PHASE_STATUS_INDICATOR[phase]
 

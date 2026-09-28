@@ -38,6 +38,9 @@ const PHASE_ADDITIONAL_INDICATOR = {
   overdue: 'срок нарушен',
 } as const satisfies Record<'on_control' | 'overdue', RecommendationAdditionalIndicator>;
 
+const COMPLETED_DURING_AUDIT_INDICATOR = 'исполнено в ходе аудита';
+const ON_TIME_INDICATOR = 'в срок';
+
 function moscowTodayIso(now = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: MOSCOW_TZ,
@@ -65,17 +68,39 @@ function phase(anchor: string | null, today: string): 'on_control' | 'overdue' |
   return today < anchor ? 'on_control' : 'overdue';
 }
 
+function isCompletedDuringAudit(
+  completedDuringAudit?: boolean,
+  currentIndicator?: string | null,
+): boolean {
+  if (completedDuringAudit) {
+    return true;
+  }
+  return (currentIndicator ?? '').trim().toLowerCase() === COMPLETED_DURING_AUDIT_INDICATOR;
+}
+
 export function computeRecommendationAutoStatus({
   controlDeadline,
   currentStatus,
   currentAdditionalStatus,
+  currentIndicator,
+  completedDuringAudit,
   today = moscowTodayIso(),
 }: {
   controlDeadline?: Date | string | null;
   currentStatus?: RecommendationStatus | '' | null;
   currentAdditionalStatus?: RecommendationAdditionalStatus | '' | null;
+  currentIndicator?: string | null;
+  completedDuringAudit?: boolean;
   today?: string;
 }): Partial<RecommendationAutoStatusFields> {
+  if (isCompletedDuringAudit(completedDuringAudit, currentIndicator)) {
+    return {
+      status: 'completed',
+      indicator: COMPLETED_DURING_AUDIT_INDICATOR,
+      additionalStatus: 'on_time',
+      additionalIndicator: ON_TIME_INDICATOR,
+    };
+  }
   const updates: Partial<RecommendationAutoStatusFields> = {};
   const controlIso = toDateIso(controlDeadline);
   const statusPhase = phase(controlIso, today);

@@ -35,7 +35,7 @@ describe('buildParsedPreviewItem', () => {
     });
   });
 
-  it('ставит синюю звезду, если вместо срока написано «исполнено в ходе аудита»', () => {
+  it('ставит синюю звезду и зелёный «в срок», если вместо срока написано «исполнено в ходе аудита»', () => {
     const item = buildParsedPreviewItem(
       { ...draft, deadline: '', completed_during_audit: true },
       0,
@@ -46,6 +46,8 @@ describe('buildParsedPreviewItem', () => {
       deadline: '',
       status: 'completed',
       indicator: 'исполнено в ходе аудита',
+      additional_status: 'on_time',
+      additional_indicator: 'в срок',
     });
   });
 
@@ -91,6 +93,17 @@ describe('patchPreviewItem', () => {
       indicator: 'на контроле',
       additional_status: 'on_control',
       additional_indicator: 'на контроле',
+    });
+  });
+
+  it('ставит синюю звезду и зелёный «в срок» при фразе «исполнено в ходе аудита»', () => {
+    const next = patchPreviewItem(item, 'deadline', 'исполнено в ходе аудита', (value) => value);
+    expect(next).toMatchObject({
+      deadline: '',
+      status: 'completed',
+      indicator: 'исполнено в ходе аудита',
+      additional_status: 'on_time',
+      additional_indicator: 'в срок',
     });
   });
 

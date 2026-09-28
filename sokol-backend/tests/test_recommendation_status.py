@@ -47,15 +47,18 @@ class RecommendationStatusCalcTests(unittest.TestCase):
         self.assertEqual(due["additional_status"], RecommendationAdditionalStatus.DEADLINE_VIOLATED)
         self.assertEqual(due["additional_indicator"], "срок нарушен")
 
-    def test_completed_during_audit_indicator_is_preserved(self) -> None:
+    def test_completed_during_audit_sets_star_and_on_time(self) -> None:
         updates = compute_auto_status_fields(
             control_deadline=date(2026, 8, 1),
             current_status=RecommendationStatus.ON_CONTROL,
+            current_additional_status=RecommendationAdditionalStatus.ON_CONTROL,
             current_indicator="исполнено в ходе аудита",
             today=TODAY,
         )
-        self.assertNotIn("status", updates)
-        self.assertNotIn("indicator", updates)
+        self.assertEqual(updates["status"], RecommendationStatus.COMPLETED)
+        self.assertEqual(updates["indicator"], "исполнено в ходе аудита")
+        self.assertEqual(updates["additional_status"], RecommendationAdditionalStatus.ON_TIME)
+        self.assertEqual(updates["additional_indicator"], "в срок")
 
     def test_additional_status_follows_control_deadline_not_execution_date(self) -> None:
         updates = compute_auto_status_fields(
