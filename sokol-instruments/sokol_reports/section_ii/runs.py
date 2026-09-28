@@ -2,12 +2,9 @@ import copy
 
 import xml.etree.ElementTree as ET
 
-from sokol_reports.section_ii import fonts, xml_utils
+from sokol_reports.ooxml import W_NS, XML_NS
+from sokol_reports.section_ii import fonts
 from sokol_reports.section_ii.models import RunFragment
-
-
-W_NS = xml_utils.W_NS
-XML_NS = "http://www.w3.org/XML/1998/namespace"
 
 
 def _preserve_edge_spaces(raw_r: ET.Element) -> None:

@@ -1,9 +1,11 @@
-# -*- coding: utf-8 -*-
 """Плоский парсинг строк Раздела II для файла контроля."""
 
-from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from __future__ import annotations
 
+from dataclasses import dataclass
+
+from sokol_reports.control_file.responsible import format_responsible_from_pairs
+from sokol_reports.memorandum.models import MemorandumRecommendation
 from sokol_reports.memorandum.section_ii_table_parser import (
     cell_texts,
     find_section_ii_table,
@@ -13,7 +15,6 @@ from sokol_reports.memorandum.section_ii_table_parser import (
     split_body_into_recommendations,
 )
 from sokol_reports.section_ii.docx_blocks import load_document_xml
-from sokol_reports.memorandum.models import MemorandumRecommendation
 from sokol_reports.section_ii.patterns import SROK_TAIL_RE, W_NS
 
 
@@ -31,9 +32,7 @@ def _recommendation_to_text(recommendation: MemorandumRecommendation) -> str:
 
 def parse_section_ii_for_control_file(
     file_path: str,
-    *,
-    format_responsible_from_pairs,
-) -> Tuple[Optional[List[ControlFileRow]], Optional[str]]:
+) -> tuple[list[ControlFileRow] | None, str | None]:
     root = load_document_xml(file_path)
     body = root.find(f".//{{{W_NS}}}body")
     if body is None:
@@ -43,7 +42,7 @@ def parse_section_ii_for_control_file(
     if table is None:
         return None, "Таблица Раздела II не найдена."
 
-    rows: List[ControlFileRow] = []
+    rows: list[ControlFileRow] = []
 
     for tr in table.findall(f"./{{{W_NS}}}tr"):
         cells = cell_texts(tr)

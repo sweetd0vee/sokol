@@ -1,5 +1,7 @@
 """SOKOL design tokens and Streamlit theme overrides."""
 
+import streamlit as st
+
 SOKOL_CSS = """
 <style>
     :root {
@@ -350,6 +352,4 @@ SOKOL_CSS = """
 
 
 def inject_theme() -> None:
-    import streamlit as st
-
     st.markdown(SOKOL_CSS, unsafe_allow_html=True)

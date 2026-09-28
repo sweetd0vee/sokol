@@ -1,8 +1,11 @@
-import re
-from typing import List, Optional, Tuple
+from __future__ import annotations
 
+import re
+from typing import Optional
+
+from sokol_reports.ooxml import W_NS
 from sokol_reports.section_ii.field_parser import roman_to_int
-from sokol_reports.section_ii.patterns import OBS_BLOCK_START_RE, SECTION2_START_RE, W_NS
+from sokol_reports.section_ii.patterns import OBS_BLOCK_START_RE, SECTION2_START_RE
 
 # Заголовок раздела III: только римское III или «Раздел 3», без голой арабской «3.» в тексте.
 _SECTION3_HEADING = re.compile(
@@ -43,7 +46,7 @@ def local_tag(el) -> str:
 def iter_unwrapped(parent, *target_tags: str):
     """Direct block children, descending into Word content-control wrappers."""
     targets = frozenset(target_tags)
-    found: List[Tuple[str, object]] = []
+    found: list[tuple[str, object]] = []
 
     def walk(node) -> None:
         for child in node:
@@ -59,7 +62,7 @@ def iter_unwrapped(parent, *target_tags: str):
 
 def get_text_from_element(el) -> str:
     """Извлекает текст из XML-элемента. Таб после номера раздела — такой же разделитель, как пробел."""
-    parts: List[str] = []
+    parts: list[str] = []
     for node in el.iter():
         tag = local_tag(node)
         if tag in ("tab", "ptab"):
@@ -69,7 +72,7 @@ def get_text_from_element(el) -> str:
     return "".join(parts)
 
 
-def get_blocks_from_xml(body) -> List[Tuple[str, object]]:
+def get_blocks_from_xml(body) -> list[tuple[str, object]]:
     """Возвращает список (тип, элемент) для параграфов и таблиц в body."""
     return iter_unwrapped(body, "p", "tbl")
 
@@ -115,7 +118,7 @@ def _paragraph_outline_level(el) -> Optional[int]:
         return None
 
 
-def _paragraph_has_page_break(el) -> bool:
+def paragraph_has_page_break(el) -> bool:
     for br in el.iter():
         if local_tag(br) != "br":
             continue
@@ -167,7 +170,7 @@ def _find_insert_index_from_toc(body, section1_start: int, toc_max_idx: int) -> 
     """
     blocks = get_blocks_from_xml(body)
     min_idx = max(section1_start + 1, toc_max_idx)
-    toc_titles: List[Tuple[int, str]] = []
+    toc_titles: list[tuple[int, str]] = []
     for i in range(min(toc_max_idx, len(blocks))):
         btype, el = blocks[i]
         if btype != "p":
@@ -209,7 +212,7 @@ def _find_first_top_level_boundary_after(
         btype, el = blocks[i]
         text = _paragraph_text(btype, el)
         if not text:
-            if btype == "p" and _paragraph_has_page_break(el):
+            if btype == "p" and paragraph_has_page_break(el):
                 for j in range(i + 1, min(i + 4, len(blocks))):
                     next_type, next_el = blocks[j]
                     next_text = _paragraph_text(next_type, next_el)
@@ -266,13 +269,13 @@ def is_sokol_summary_table_text(text: str) -> bool:
     return False
 
 
-def find_generated_section2_block_ranges(body, min_idx: int = 0) -> List[Tuple[int, int]]:
+def find_generated_section2_block_ranges(body, min_idx: int = 0) -> list[tuple[int, int]]:
     """
     Диапазоны блоков ранее сгенерированного раздела II для удаления перед повторной обработкой.
     Возвращает список (start_idx, end_idx) — end не включается.
     """
     blocks = get_blocks_from_xml(body)
-    ranges: List[Tuple[int, int]] = []
+    ranges: list[tuple[int, int]] = []
     i = min_idx
     while i < len(blocks):
         btype, el = blocks[i]
@@ -286,7 +289,7 @@ def find_generated_section2_block_ranges(body, min_idx: int = 0) -> List[Tuple[i
                 break
             if end < len(blocks) and blocks[end][0] == "tbl":
                 end += 1
-                if end < len(blocks) and blocks[end][0] == "p" and _paragraph_has_page_break(blocks[end][1]):
+                if end < len(blocks) and blocks[end][0] == "p" and paragraph_has_page_break(blocks[end][1]):
                     end += 1
                 ranges.append((i, end))
                 i = end
@@ -297,7 +300,7 @@ def find_generated_section2_block_ranges(body, min_idx: int = 0) -> List[Tuple[i
     return ranges
 
 
-def find_section2_in_xml(body, min_idx: int = 0) -> Optional[Tuple[int, int]]:
+def find_section2_in_xml(body, min_idx: int = 0) -> Optional[tuple[int, int]]:
     """
     Находит границы раздела II в XML body (именно в тексте, НЕ в содержании).
     Возвращает (start_idx, end_idx) или None.
@@ -347,8 +350,8 @@ def find_section1_start(body, min_idx: int = 0) -> Optional[int]:
     первым разделом II на/после min_idx.
     """
     blocks = get_blocks_from_xml(body)
-    section1_indices: List[int] = []
-    section2_indices: List[int] = []
+    section1_indices: list[int] = []
+    section2_indices: list[int] = []
 
     for i, (btype, el) in enumerate(blocks):
         text = get_text_from_element(el).strip() if btype == "p" else get_text_from_element(el)

@@ -2,18 +2,17 @@ from typing import Iterable, List, Optional
 
 import xml.etree.ElementTree as ET
 
-from sokol_reports.section_ii import fonts, runs, xml_utils
+from sokol_reports.ooxml import A_NS, PIC_NS, R_NS, W_NS, WP_NS, XML_NS
+from sokol_reports.section_ii import fonts, runs
+from sokol_reports.section_ii.bookmark_utils import (
+    add_bookmarks_to_paragraph,
+    build_section_heading_paragraph,
+)
+from sokol_reports.section_ii.docx_blocks import runs_to_text
 from sokol_reports.section_ii.field_parser import format_chapter_heading
 from sokol_reports.section_ii.models import Observation, RunFragment
 from sokol_reports.section_ii.patterns import SROK_TAIL_RE
 
-
-W_NS = xml_utils.W_NS
-WP_NS = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
-A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
-PIC_NS = "http://schemas.openxmlformats.org/drawingml/2006/picture"
-R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
-XML_NS = "http://www.w3.org/XML/1998/namespace"
 TABLE_WIDTH = 10037
 OBS_NUMBER_WIDTH = 2500
 SPACER_WIDTH = 21
@@ -378,8 +377,6 @@ def create_table_xml(
         )
         name_text = (obs.name or "").strip()
         if not name_text and obs.name_runs:
-            from sokol_reports.section_ii.docx_blocks import runs_to_text
-
             name_text = runs_to_text(obs.name_runs).strip()
         if obs_anchor and name_text:
             tr_obs.append(
@@ -451,12 +448,7 @@ def create_heading_paragraph_xml(
     source_paragraph: Optional[ET.Element] = None,
     style_reference: Optional[ET.Element] = None,
 ):
-    from sokol_reports.section_ii.bookmark_utils import (
-        add_bookmarks_to_paragraph,
-        build_section_heading_paragraph,
-    )
-
-    template = style_reference or source_paragraph
+    template = style_reference if style_reference is not None else source_paragraph
     if template is not None:
         return build_section_heading_paragraph(
             template,

@@ -146,7 +146,7 @@ def _collect_title_page_lines(blocks: Iterable[tuple[str, object]]) -> List[str]
     for btype, el in blocks:
         if btype == "p":
             _extend_unique_lines(lines, _lines_from_paragraph_block(el))
-            if xml_utils._paragraph_has_page_break(el):
+            if xml_utils.paragraph_has_page_break(el):
                 break
         elif btype == "tbl":
             _extend_unique_lines(lines, _lines_from_table(el))

@@ -5,12 +5,12 @@ from __future__ import annotations
 import os
 import struct
 import zipfile
-from pathlib import Path
 from typing import Optional
 
 import xml.etree.ElementTree as ET
 
 from sokol_reports.ooxml import CT_NS, REL_NS
+from sokol_reports.paths import IMAGES_DIR
 
 EMU_PER_CM = 360000
 EMU_PER_METER = EMU_PER_CM * 100
@@ -18,7 +18,6 @@ DEFAULT_PNG_PIXELS_PER_METER = 3780
 # Размер круга существенности в таблице Раздела II (~0.75 см).
 MATERIALITY_DISPLAY_SIZE_EMU = int(0.75 * EMU_PER_CM)
 
-IMAGES_DIR = Path(__file__).resolve().parents[2] / "images"
 _MATERIALITY_IMAGE = {
     "низкий": str(IMAGES_DIR / "green.png"),
     "средний": str(IMAGES_DIR / "yellow.png"),

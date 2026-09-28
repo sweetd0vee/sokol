@@ -1,20 +1,19 @@
-# -*- coding: utf-8 -*-
 """Парсинг АЗ под шаблон файла контроля (.xlsx)."""
 
+from __future__ import annotations
+
 import re
-from pathlib import Path
 import shutil
-from typing import List, Optional, Tuple
 
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 
 from sokol_reports.control_file.parser import parse_section_ii_for_control_file
+from sokol_reports.control_file.responsible import format_responsible_from_pairs
 from sokol_reports.control_file.title_parser import parse_az_title_from_docx
 from sokol_reports.memorandum.parser import document_has_section_ii
-
-TEMPLATE_PATH = Path(__file__).resolve().parents[2] / "data" / "файл контроля шаблон (шапка).xlsx"
+from sokol_reports.paths import CONTROL_FILE_TEMPLATE
 
 COL_CHECK_NAME = 4
 COL_CHECK_LEADER = 5
@@ -22,9 +21,6 @@ COL_RECOMMENDATION = 6
 COL_DEADLINE = 9
 COL_RESPONSIBLE = 10
 DATA_START_ROW = 2
-_MANAGER_INITIALS_RE = re.compile(
-    r"^[А-ЯЁA-Z][а-яёa-z]+\s+[А-ЯЁA-Z]\.\s*[А-ЯЁA-Z]\.?$"
-)
 _WRAPPED_TEXT_ALIGNMENT = Alignment(wrap_text=True, vertical="top")
 _COLUMN_WIDTHS = {
     COL_CHECK_NAME: 45,
@@ -36,68 +32,15 @@ _COLUMN_WIDTHS = {
 _MIN_DATA_ROW_HEIGHT = 31.5
 _LINE_HEIGHT = 15
 
-
-def _normalize_manager(manager: str) -> str:
-    mgr = (manager or "").strip().rstrip(".")
-    if mgr and _MANAGER_INITIALS_RE.match(mgr) and not mgr.endswith("."):
-        mgr = f"{mgr}."
-    return mgr
-
-
-def _split_audit_objects(value: str) -> List[str]:
-    parts = [
-        re.sub(r"\s+", " ", part).strip().rstrip(".")
-        for part in re.split(r",\s*", value or "")
-    ]
-    return [part for part in parts if part]
-
-
-def _split_managers(value: str) -> List[str]:
-    managers: List[str] = []
-    for part in re.split(r",\s*", value or ""):
-        manager = _normalize_manager(part)
-        if manager:
-            managers.append(manager)
-    return managers
-
-
-def _format_single_responsible(audit_object: str, manager: str) -> str:
-    name = re.sub(r"\s+", " ", (audit_object or "").strip()).rstrip(".")
-    mgr = _normalize_manager(manager)
-    if name and mgr:
-        return f"{name} ({mgr})"
-    return name or mgr
-
-
-def format_responsible_from_pairs(pairs: List[Tuple[str, str]]) -> str:
-    """Сформировать «Ответственные»: департамент (руководитель) для каждого объекта аудита."""
-    if not pairs:
-        return ""
-
-    if len(pairs) > 1:
-        formatted = [_format_single_responsible(obj, mgr) for obj, mgr in pairs if obj or mgr]
-        return ", ".join(formatted)
-
-    audit_object, manager = pairs[0]
-    objects = _split_audit_objects(audit_object)
-    managers = _split_managers(manager)
-
-    if len(objects) > 1 and len(managers) > 1:
-        limit = min(len(objects), len(managers))
-        formatted = [
-            _format_single_responsible(objects[index], managers[index])
-            for index in range(limit)
-        ]
-        for extra_object in objects[limit:]:
-            formatted.append(_format_single_responsible(extra_object, ""))
-        for extra_manager in managers[limit:]:
-            formatted.append(_format_single_responsible("", extra_manager))
-        return ", ".join(part for part in formatted if part)
-
-    return _format_single_responsible(
-        objects[0] if objects else audit_object,
-        managers[0] if managers else manager,
-    )
+__all__ = [
+    "COL_CHECK_LEADER",
+    "COL_CHECK_NAME",
+    "COL_DEADLINE",
+    "COL_RECOMMENDATION",
+    "COL_RESPONSIBLE",
+    "format_responsible_from_pairs",
+    "generate_control_file_template",
+]
 
 
 def _estimate_wrapped_lines(text: str, column_width: float) -> int:
@@ -114,7 +57,7 @@ def _estimate_wrapped_lines(text: str, column_width: float) -> int:
     return max(1, lines)
 
 
-def _row_height_for_texts(texts_with_widths: List[Tuple[str, float]]) -> float:
+def _row_height_for_texts(texts_with_widths: list[tuple[str, float]]) -> float:
     line_count = max(_estimate_wrapped_lines(text, width) for text, width in texts_with_widths)
     return min(409, max(_MIN_DATA_ROW_HEIGHT, line_count * _LINE_HEIGHT))
 
@@ -140,7 +83,7 @@ def _apply_worksheet_formatting(worksheet, *, last_row: int) -> None:
                 cell.alignment = _WRAPPED_TEXT_ALIGNMENT
 
 
-def generate_control_file_template(input_path: str, output_path: str) -> Tuple[Optional[str], Optional[str]]:
+def generate_control_file_template(input_path: str, output_path: str) -> tuple[str | None, str | None]:
     """Сформировать xlsx-шаблон файла контроля из Аудиторского Заключения с Разделом II.
 
     Args:
@@ -156,10 +99,7 @@ def generate_control_file_template(input_path: str, output_path: str) -> Tuple[O
             "В документе не найден Раздел II. Загрузите АЗ с заполненным Разделом II.",
         )
 
-    rows, parse_error = parse_section_ii_for_control_file(
-        input_path,
-        format_responsible_from_pairs=format_responsible_from_pairs,
-    )
+    rows, parse_error = parse_section_ii_for_control_file(input_path)
     if parse_error or rows is None:
         return None, parse_error or "Не удалось разобрать таблицу Раздела II."
 
@@ -167,10 +107,10 @@ def generate_control_file_template(input_path: str, output_path: str) -> Tuple[O
     if title_error:
         return None, title_error
 
-    if not TEMPLATE_PATH.is_file():
-        return None, f"Шаблон не найден: {TEMPLATE_PATH.name}"
+    if not CONTROL_FILE_TEMPLATE.is_file():
+        return None, f"Шаблон не найден: {CONTROL_FILE_TEMPLATE.name}"
 
-    shutil.copy2(TEMPLATE_PATH, output_path)
+    shutil.copy2(CONTROL_FILE_TEMPLATE, output_path)
     workbook = load_workbook(output_path)
     worksheet = workbook.active
 

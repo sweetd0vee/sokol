@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from sokol_reports.dictionaries.department_names import DEPARTMENTS
-
-_STORE_DIR = Path(__file__).resolve().parents[2] / "data"
-_STORE_PATH = _STORE_DIR / "departments.json"
+from sokol_reports.paths import DATA_DIR, DEPARTMENTS_STORE_PATH
 
 
 def default_departments() -> list[str]:
@@ -16,10 +13,10 @@ def default_departments() -> list[str]:
 
 
 def load_departments() -> list[str]:
-    if not _STORE_PATH.is_file():
+    if not DEPARTMENTS_STORE_PATH.is_file():
         return default_departments()
     try:
-        data = json.loads(_STORE_PATH.read_text(encoding="utf-8"))
+        data = json.loads(DEPARTMENTS_STORE_PATH.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return default_departments()
     if not isinstance(data, list):
@@ -30,16 +27,16 @@ def load_departments() -> list[str]:
 
 def save_departments(names: list[str]) -> None:
     cleaned = normalize_departments(names)
-    _STORE_DIR.mkdir(parents=True, exist_ok=True)
-    _STORE_PATH.write_text(
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DEPARTMENTS_STORE_PATH.write_text(
         json.dumps(cleaned, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
 
 
 def reset_departments() -> list[str]:
-    if _STORE_PATH.is_file():
-        _STORE_PATH.unlink(missing_ok=True)
+    if DEPARTMENTS_STORE_PATH.is_file():
+        DEPARTMENTS_STORE_PATH.unlink(missing_ok=True)
     return default_departments()
 
 

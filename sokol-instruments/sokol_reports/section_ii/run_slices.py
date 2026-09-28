@@ -9,7 +9,13 @@ from typing import List, Optional, Tuple
 import xml.etree.ElementTree as ET
 
 from sokol_reports.ooxml import XML_NS, W_NS
-from sokol_reports.section_ii.docx_blocks import DocumentBlock, clone_runs, run_has_payload, runs_to_text
+from sokol_reports.section_ii.docx_blocks import (
+    DocumentBlock,
+    clone_runs,
+    local_name,
+    run_has_payload,
+    runs_to_text,
+)
 from sokol_reports.section_ii.models import RecommendationEntry, RunFragment
 from sokol_reports.section_ii.patterns import AUDIT_REC_LABEL_RE, REC_LABEL_RE, SROK_MARK_RE
 
@@ -62,16 +68,6 @@ def runs_to_text_no_breaks(runs: List[RunFragment]) -> str:
     for frag in runs:
         parts.append(frag.text or "")
     return "".join(parts)
-
-
-def _clone_fragment_with_text(frag: RunFragment, text: str, br_before: bool) -> RunFragment:
-    return RunFragment(
-        text=text,
-        rPr=copy.deepcopy(frag.rPr) if frag.rPr is not None else None,
-        br_before=br_before,
-        is_tab=frag.is_tab,
-        raw_r=None,
-    )
 
 
 def _text_nodes(raw_r: ET.Element) -> List[ET.Element]:
@@ -334,15 +330,11 @@ def remove_audit_recommendation_label_from_line(line_runs: List[RunFragment]) ->
     return before + [blank_separator] + after
 
 
-def _local_name(tag: str) -> str:
-    return tag.split("}")[-1] if "}" in tag else tag
-
-
 def _strip_drawings_from_raw_run(raw_r: ET.Element) -> Optional[ET.Element]:
     cleaned = copy.deepcopy(raw_r)
     for parent in cleaned.iter():
         for child in list(parent):
-            if _local_name(child.tag) in ("drawing", "pict", "object"):
+            if local_name(child.tag) in ("drawing", "pict", "object"):
                 parent.remove(child)
     if not run_has_payload(cleaned):
         return None
