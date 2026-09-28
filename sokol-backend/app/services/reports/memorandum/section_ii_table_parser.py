@@ -14,6 +14,17 @@ from app.services.reports.section_ii.docx_blocks import get_cell_text, load_docu
 from app.services.reports.section_ii.field_parser import int_to_roman
 from app.services.reports.section_ii.patterns import OBS_START_RE, SROK_TAIL_RE, W_NS
 
+__all__ = [
+    "cell_texts",
+    "find_section_ii_table",
+    "format_group_heading",
+    "is_recommendation_row",
+    "parse_all_audit_object_pairs",
+    "parse_audit_object_header",
+    "parse_section_ii_for_memorandum",
+    "split_body_into_recommendations",
+]
+
 SECTION2_TABLE_HEADER = "Основные нарушения и недостатки"
 REC_ROW_LABEL_RE = re.compile(r"^(?:Рекомендация|Аудиторск\w*\s+рекомендац\w*)", re.IGNORECASE)
 OBS_ROW_LABEL_RE = re.compile(r"^Наблюдени", re.IGNORECASE)
@@ -282,3 +293,38 @@ def format_group_heading(index: int, group: MemorandumAuditObject) -> str:
         manager = f"{manager}."
     manager_suffix = f" ({manager})" if manager else ""
     return f"{roman}. {group.name}{manager_suffix}:"
+
+
+def parse_all_audit_object_pairs(raw_text: str) -> List[Tuple[str, str]]:
+    text = re.sub(r"\s+", " ", (raw_text or "").strip())
+    pairs: List[Tuple[str, str]] = []
+    pattern = re.compile(
+        rf"Объект\s+аудита:\s*(.+?)\s*Руководитель\s+объекта\s+аудита:\s*"
+        rf"({PERSON_INITIALS_RE}(?:\s*,\s*{PERSON_INITIALS_RE})*)",
+        re.IGNORECASE | re.DOTALL,
+    )
+    for match in pattern.finditer(text):
+        audit_object = re.sub(r"\s+", " ", match.group(1).strip())
+        manager = re.sub(r"\s+", " ", match.group(2).strip().rstrip("."))
+        if audit_object or manager:
+            pairs.append((audit_object, manager))
+    return pairs
+
+
+def is_recommendation_row(first_cell: str) -> bool:
+    if SECTION2_TABLE_HEADER.lower() in first_cell.lower():
+        return False
+    if CHAPTER_ROW_RE.match(first_cell) or OBS_ROW_LABEL_RE.match(first_cell):
+        return False
+    if OBS_START_RE.search(first_cell) and not REC_ROW_LABEL_RE.match(first_cell):
+        return False
+    return REC_ROW_LABEL_RE.match(first_cell) is not None
+
+
+# Public names match sokol-instruments; private aliases stay for existing imports.
+cell_texts = _cell_texts
+find_section_ii_table = _find_section_ii_table
+parse_audit_object_header = _parse_audit_object_header
+split_body_into_recommendations = _split_body_into_recommendations
+_parse_all_audit_object_pairs = parse_all_audit_object_pairs
+_is_recommendation_row = is_recommendation_row

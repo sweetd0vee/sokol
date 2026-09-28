@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import re
 
-
-W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+from app.services.reports.ooxml import W_NS
 
 DATE_RE = r"\d{1,2}[./]\d{1,2}[./](?:\d{4}|\d{2})"
 # Любое вхождение в тексте (в т.ч. перекрёстные ссылки).

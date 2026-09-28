@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import re
 from typing import List, Optional, Tuple
 
+from app.services.reports.ooxml import W_NS
 from app.services.reports.section_ii.field_parser import roman_to_int
-from app.services.reports.section_ii.patterns import OBS_BLOCK_START_RE, SECTION2_START_RE, W_NS
+from app.services.reports.section_ii.patterns import OBS_BLOCK_START_RE, SECTION2_START_RE
 
 # Заголовок раздела III: только римское III или «Раздел 3», без голой арабской «3.» в тексте.
 _SECTION3_HEADING = re.compile(
@@ -115,7 +118,7 @@ def _paragraph_outline_level(el) -> Optional[int]:
         return None
 
 
-def _paragraph_has_page_break(el) -> bool:
+def paragraph_has_page_break(el) -> bool:
     for br in el.iter():
         tag = br.tag.split("}")[-1] if "}" in br.tag else br.tag
         if tag != "br":
@@ -215,7 +218,7 @@ def _find_first_top_level_boundary_after(
         btype, el = blocks[i]
         text = _paragraph_text(btype, el)
         if not text:
-            if btype == "p" and _paragraph_has_page_break(el):
+            if btype == "p" and paragraph_has_page_break(el):
                 for j in range(i + 1, min(i + 4, len(blocks))):
                     next_type, next_el = blocks[j]
                     next_text = _paragraph_text(next_type, next_el)
@@ -292,7 +295,7 @@ def find_generated_section2_block_ranges(body, min_idx: int = 0) -> List[Tuple[i
                 break
             if end < len(blocks) and blocks[end][0] == "tbl":
                 end += 1
-                if end < len(blocks) and blocks[end][0] == "p" and _paragraph_has_page_break(blocks[end][1]):
+                if end < len(blocks) and blocks[end][0] == "p" and paragraph_has_page_break(blocks[end][1]):
                     end += 1
                 ranges.append((i, end))
                 i = end

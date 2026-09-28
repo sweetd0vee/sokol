@@ -10,6 +10,7 @@ from app.services.reports.section_ii.patterns import (
     SECTION2_START_RE,
     W_NS,
 )
+from app.services.reports.section_ii.xml_utils import is_sokol_summary_table_text
 
 SECTION_TITLE_REF_RE = re.compile(r"Аудиторское\s*мнение", re.IGNORECASE)
 ROMAN_ONLY_RE = re.compile(r"^\s*([IVXLCDM]+)\s*[.)–—\-:]?\s*$", re.IGNORECASE)
@@ -301,8 +302,6 @@ def find_sokol_summary_block_indices(blocks) -> set[int]:
         table_groups.setdefault(block.table_index, []).append(idx)
     for indices in table_groups.values():
         table_text = "\n".join((blocks[i].text or "") for i in indices)
-        from app.services.reports.section_ii.xml_utils import is_sokol_summary_table_text
-
         if is_sokol_summary_table_text(table_text):
             summary_indices.update(indices)
     return summary_indices

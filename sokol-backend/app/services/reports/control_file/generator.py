@@ -10,6 +10,7 @@ from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 
 from app.services.reports.control_file.parser import ControlFileRow, parse_section_ii_for_control_file
+from app.services.reports.control_file.responsible import format_responsible_from_pairs
 from app.services.reports.control_file.title_parser import parse_az_title_from_docx
 from app.services.reports.memorandum.parser import parse_az_for_memorandum
 from app.utils.paths import get_control_file_template_path
@@ -23,9 +24,6 @@ COL_RECOMMENDATION = 6
 COL_DEADLINE = 9
 COL_RESPONSIBLE = 10
 DATA_START_ROW = 2
-_MANAGER_INITIALS_RE = re.compile(
-    r"^[А-ЯЁA-Z][а-яёa-z]+\s+[А-ЯЁA-Z]\.\s*[А-ЯЁA-Z]\.?$"
-)
 _WRAPPED_TEXT_ALIGNMENT = Alignment(wrap_text=True, vertical="top")
 _COLUMN_WIDTHS = {
     COL_CHECK_NAME: 45,
@@ -37,68 +35,16 @@ _COLUMN_WIDTHS = {
 _MIN_DATA_ROW_HEIGHT = 31.5
 _LINE_HEIGHT = 15
 
-
-def _normalize_manager(manager: str) -> str:
-    mgr = (manager or "").strip().rstrip(".")
-    if mgr and _MANAGER_INITIALS_RE.match(mgr) and not mgr.endswith("."):
-        mgr = f"{mgr}."
-    return mgr
-
-
-def _split_audit_objects(value: str) -> List[str]:
-    parts = [
-        re.sub(r"\s+", " ", part).strip().rstrip(".")
-        for part in re.split(r",\s*", value or "")
-    ]
-    return [part for part in parts if part]
-
-
-def _split_managers(value: str) -> List[str]:
-    managers: List[str] = []
-    for part in re.split(r",\s*", value or ""):
-        manager = _normalize_manager(part)
-        if manager:
-            managers.append(manager)
-    return managers
-
-
-def _format_single_responsible(audit_object: str, manager: str) -> str:
-    name = re.sub(r"\s+", " ", (audit_object or "").strip()).rstrip(".")
-    mgr = _normalize_manager(manager)
-    if name and mgr:
-        return f"{name} ({mgr})"
-    return name or mgr
-
-
-def format_responsible_from_pairs(pairs: List[Tuple[str, str]]) -> str:
-    """Сформировать ответственных по каждому объекту аудита."""
-    if not pairs:
-        return ""
-
-    if len(pairs) > 1:
-        formatted = [_format_single_responsible(obj, mgr) for obj, mgr in pairs if obj or mgr]
-        return ", ".join(formatted)
-
-    audit_object, manager = pairs[0]
-    objects = _split_audit_objects(audit_object)
-    managers = _split_managers(manager)
-
-    if len(objects) > 1 and len(managers) > 1:
-        limit = min(len(objects), len(managers))
-        formatted = [
-            _format_single_responsible(objects[index], managers[index])
-            for index in range(limit)
-        ]
-        for extra_object in objects[limit:]:
-            formatted.append(_format_single_responsible(extra_object, ""))
-        for extra_manager in managers[limit:]:
-            formatted.append(_format_single_responsible("", extra_manager))
-        return ", ".join(part for part in formatted if part)
-
-    return _format_single_responsible(
-        objects[0] if objects else audit_object,
-        managers[0] if managers else manager,
-    )
+__all__ = [
+    "COL_CHECK_DATE",
+    "COL_CHECK_LEADER",
+    "COL_CHECK_NAME",
+    "COL_DEADLINE",
+    "COL_RECOMMENDATION",
+    "COL_RESPONSIBLE",
+    "format_responsible_from_pairs",
+    "generate_control_file_template",
+]
 
 
 def _estimate_wrapped_lines(text: str, column_width: float) -> int:
@@ -155,10 +101,7 @@ def generate_control_file_template(
     check_date: str,
 ) -> Tuple[Optional[str], Optional[str]]:
     """Сформировать xlsx-шаблон файла контроля из АЗ с Разделом II или из наблюдений."""
-    rows, parse_error = parse_section_ii_for_control_file(
-        input_path,
-        format_responsible_from_pairs=format_responsible_from_pairs,
-    )
+    rows, parse_error = parse_section_ii_for_control_file(input_path)
     if rows is None:
         source, fallback_error = parse_az_for_memorandum(input_path)
         if source is not None:

@@ -10,7 +10,7 @@ from app.services.reports.memorandum.models import (
 )
 from app.services.reports.memorandum.section_ii_table_parser import (
     _append_to_groups,
-    _find_section_ii_table,
+    find_section_ii_table,
     parse_section_ii_for_memorandum,
 )
 from app.services.reports.section_ii import xml_utils
@@ -40,7 +40,7 @@ def document_has_section_ii(file_path: str) -> bool:
     if body is None:
         return False
 
-    if _find_section_ii_table(body) is not None:
+    if find_section_ii_table(body) is not None:
         return True
 
     blocks = xml_utils.get_blocks_from_xml(body)

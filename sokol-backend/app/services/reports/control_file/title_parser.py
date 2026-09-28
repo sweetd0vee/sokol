@@ -178,7 +178,7 @@ def _collect_title_page_lines(blocks: Iterable[tuple[str, object]]) -> List[str]
             _extend_unique_lines(page, [line])
         if stopped:
             break
-        if btype == "p" and xml_utils._paragraph_has_page_break(el):
+        if btype == "p" and xml_utils.paragraph_has_page_break(el):
             if _build_check_name_from_lines(page):
                 break
             pages.append([])

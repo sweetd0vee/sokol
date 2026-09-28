@@ -254,19 +254,15 @@ def extract_name_runs_from_tables(root: ET.Element, min_block_idx: int = 0) -> T
     if body is None:
         return name_runs_map, order
     block_idx = 0
-    for child in list(body):
-        tag = local_name(child.tag)
-        if tag not in {"p", "tbl"}:
-            continue
+    for tag, child in iter_unwrapped(body, "p", "tbl"):
         if tag != "tbl":
             block_idx += 1
             continue
         if block_idx < min_block_idx:
             block_idx += 1
             continue
-        tbl = child
-        for tr in tbl.findall(f"./{{{W_NS}}}tr"):
-            tcs = tr.findall(f"./{{{W_NS}}}tc")
+        for _row_tag, tr in iter_unwrapped(child, "tr"):
+            tcs = [tc for _tc_tag, tc in iter_unwrapped(tr, "tc")]
             if len(tcs) < 2:
                 continue
             first_text = get_cell_text(tcs[0])

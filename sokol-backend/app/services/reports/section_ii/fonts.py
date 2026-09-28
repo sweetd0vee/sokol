@@ -3,10 +3,7 @@ from typing import Optional
 
 import xml.etree.ElementTree as ET
 
-from app.services.reports.section_ii import xml_utils
-
-
-W_NS = xml_utils.W_NS
+from app.services.reports.ooxml import W_NS
 
 # Шрифты по умолчанию — Calibri (если документ не содержит явных rFonts)
 FONT_CALIBRI = {"ascii": "Calibri", "eastAsia": "Calibri", "hAnsi": "Calibri", "cs": "Calibri"}

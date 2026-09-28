@@ -3,12 +3,9 @@ from typing import List
 
 import xml.etree.ElementTree as ET
 
-from app.services.reports.section_ii import fonts, xml_utils
+from app.services.reports.ooxml import W_NS, XML_NS
+from app.services.reports.section_ii import fonts
 from app.services.reports.section_ii.models import RunFragment
-
-
-W_NS = xml_utils.W_NS
-XML_NS = "http://www.w3.org/XML/1998/namespace"
 
 
 def _preserve_edge_spaces(raw_r: ET.Element) -> None:
