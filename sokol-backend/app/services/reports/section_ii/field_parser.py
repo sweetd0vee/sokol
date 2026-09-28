@@ -4,6 +4,8 @@ from typing import List, Optional, Tuple
 from app.services.reports.section_ii.models import Observation
 from app.services.reports.section_ii.patterns import (
     CHAPTER_RE,
+    COMPLETED_DURING_AUDIT_PHRASE,
+    COMPLETED_DURING_AUDIT_RE,
     NAME_CUTOFF_PATTERNS,
     OBS_LINE_START_RE,
     REC_LABEL_RE,
@@ -110,16 +112,20 @@ def extract_materiality_from_text(text: str) -> str:
 
 def extract_deadline_from_text(text: str) -> str:
     deadline_match = SROK_TAIL_RE.search(text)
-    if not deadline_match:
-        return ""
-    matched = re.sub(r"\s+", " ", deadline_match.group(0)).strip(" .")
-    matched = re.sub(
-        r"^Срок(?:\s+(?:исполнения|реализации|выполнения))?\s*(?:[—–\-:]?\s*)?(?:до\s*)?",
-        "",
-        matched,
-        flags=re.IGNORECASE,
-    ).strip()
-    return matched
+    if deadline_match:
+        matched = re.sub(r"\s+", " ", deadline_match.group(0)).strip(" .")
+        matched = re.sub(
+            r"^Срок(?:\s+(?:исполнения|реализации|выполнения))?\s*(?:[—–\-:]?\s*)?(?:до\s*)?",
+            "",
+            matched,
+            flags=re.IGNORECASE,
+        ).strip()
+        if COMPLETED_DURING_AUDIT_RE.fullmatch(matched.rstrip(".")):
+            return COMPLETED_DURING_AUDIT_PHRASE
+        return matched
+    if COMPLETED_DURING_AUDIT_RE.search(text or ""):
+        return COMPLETED_DURING_AUDIT_PHRASE
+    return ""
 
 
 _PERSON_INITIALS_RE = r"[А-ЯЁA-Z][а-яёa-z]+\s+[А-ЯЁA-Z]\.\s*[А-ЯЁA-Z]\.?"

@@ -18,7 +18,9 @@ export type ParsedPreviewDraft = Pick<
   | 'manager'
   | 'status'
   | 'additional_status'
->;
+> & {
+  completed_during_audit?: boolean;
+};
 
 export type RecentUploadSession = {
   ids: string[];
@@ -27,6 +29,18 @@ export type RecentUploadSession = {
 };
 
 export type EditablePreviewField = 'name' | 'observation_name' | 'audit_object' | 'manager' | 'deadline';
+
+const COMPLETED_DURING_AUDIT_RE = /исполнено\s+в\s+ходе\s+аудита/i;
+
+export function isCompletedDuringAudit(value?: string | boolean | null): boolean {
+  if (value === true) {
+    return true;
+  }
+  if (typeof value !== 'string') {
+    return false;
+  }
+  return COMPLETED_DURING_AUDIT_RE.test(value);
+}
 
 export function toRecommendationPayload({ previewKey: _previewKey, audit_object, ...payload }: ParsedPreviewItem): Recommendation {
   return {
@@ -41,12 +55,14 @@ export function buildParsedPreviewItem(
   checkKey: string,
   storedCount: number,
 ): ParsedPreviewItem {
+  const completedDuringAudit = isCompletedDuringAudit(draft.completed_during_audit)
+    || isCompletedDuringAudit(draft.deadline);
   const auto = computeRecommendationAutoStatus({
-    controlDeadline: draft.deadline,
-    currentStatus: draft.status,
+    controlDeadline: completedDuringAudit ? null : draft.deadline,
+    currentStatus: completedDuringAudit ? 'completed' : draft.status,
     currentAdditionalStatus: draft.additional_status,
   });
-  const status = auto.status ?? draft.status;
+  const status = completedDuringAudit ? 'completed' : (auto.status ?? draft.status);
   const additionalStatus = auto.additionalStatus ?? draft.additional_status;
   return {
     previewKey: `preview-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
@@ -56,10 +72,12 @@ export function buildParsedPreviewItem(
     name: draft.name.trim(),
     observation_name: draft.observation_name?.trim() || undefined,
     description: draft.name.trim(),
-    indicator: auto.indicator ?? indicatorFromRecommendationStatus(status),
+    indicator: completedDuringAudit
+      ? 'исполнено в ходе аудита'
+      : (auto.indicator ?? indicatorFromRecommendationStatus(status)),
     materiality_level: 'средний',
     audit_object: (draft.audit_object.trim() || 'Не указан').slice(0, 255),
-    deadline: draft.deadline,
+    deadline: completedDuringAudit ? '' : draft.deadline,
     auditor: (draft.auditor.trim() || 'Не указан').slice(0, 255),
     manager: (draft.manager.trim() || 'Не указан').slice(0, 255),
     status,
@@ -81,9 +99,17 @@ export function patchPreviewItem(
   }
   if (field === 'deadline') {
     const deadline = normalizeDeadline(value) || value;
+    if (isCompletedDuringAudit(value) || isCompletedDuringAudit(deadline)) {
+      return {
+        ...item,
+        deadline: '',
+        status: 'completed',
+        indicator: 'исполнено в ходе аудита',
+      };
+    }
     const auto = computeRecommendationAutoStatus({
       controlDeadline: deadline,
-      currentStatus: item.status,
+      currentStatus: item.status === 'completed' ? '' : item.status,
       currentAdditionalStatus: item.additional_status,
     });
     return {

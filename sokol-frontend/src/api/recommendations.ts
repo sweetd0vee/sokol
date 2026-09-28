@@ -15,6 +15,7 @@ export type ParsedRecommendation = {
   audit_object: string[] | string;
   manager: string;
   deadline: string;
+  completed_during_audit?: boolean;
 };
 
 type RecommendationListResponse = {

@@ -5,6 +5,8 @@ import re
 from app.services.reports.ooxml import W_NS
 
 DATE_RE = r"\d{1,2}[./]\d{1,2}[./](?:\d{4}|\d{2})"
+COMPLETED_DURING_AUDIT_PHRASE = "исполнено в ходе аудита"
+COMPLETED_DURING_AUDIT_RE = re.compile(r"исполнено\s+в\s+ходе\s+аудита", re.IGNORECASE)
 # Любое вхождение в тексте (в т.ч. перекрёстные ссылки).
 OBS_START_RE = re.compile(
     r"\bНаблюдени[ея]\s*(?:№|N|No\.?)?\s*(\d+(?:\.\d+)*)(?:[.)\s:;—–\-]*)",
@@ -30,7 +32,7 @@ AUDIT_REC_LABEL_RE = re.compile(
 )
 SROK_TAIL_RE = re.compile(
     rf"\bСрок(?:\s+(?:исполнения|реализации|выполнения))?\s*(?:[—–\-:]?\s*)?"
-    rf"(?:до\s*)?(?:{DATE_RE}|с\s*{DATE_RE}\s*по\s*{DATE_RE})"
+    rf"(?:до\s*)?(?:{DATE_RE}|с\s*{DATE_RE}\s*по\s*{DATE_RE}|исполнено\s+в\s+ходе\s+аудита)"
     r"\s*(?:г\.?)?\.?",
     re.IGNORECASE,
 )

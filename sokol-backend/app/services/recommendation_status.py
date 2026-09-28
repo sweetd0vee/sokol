@@ -20,6 +20,7 @@ MOSCOW_TZ = timezone(timedelta(hours=3))
 
 ON_CONTROL_INDICATOR = "на контроле"
 IN_PROGRESS_INDICATOR = "в процессе"
+COMPLETED_DURING_AUDIT_INDICATOR = "исполнено в ходе аудита"
 
 TERMINAL_STATUSES = frozenset(
     {
@@ -78,6 +79,7 @@ def compute_auto_status_fields(
     control_deadline: date | None,
     current_status: RecommendationStatus | str | None = None,
     current_additional_status: RecommendationAdditionalStatus | str | None = None,
+    current_indicator: str | None = None,
     today: date | None = None,
 ) -> dict[str, Any]:
     """Return only the fields that automation is allowed to overwrite."""
@@ -85,9 +87,16 @@ def compute_auto_status_fields(
     status = _coerce_status(current_status)
     additional = _coerce_additional(current_additional_status)
     updates: dict[str, Any] = {}
+    completed_during_audit = (
+        str(current_indicator or "").strip().casefold() == COMPLETED_DURING_AUDIT_INDICATOR
+    )
 
     phase = status_phase(control_deadline, today)
-    if phase is not None and status not in TERMINAL_STATUSES:
+    if (
+        phase is not None
+        and status not in TERMINAL_STATUSES
+        and not completed_during_audit
+    ):
         updates["status"] = PHASE_STATUS[phase]
         updates["indicator"] = PHASE_INDICATOR[phase]
 
@@ -140,11 +149,13 @@ def overlay_computed_status_fields(
         if "additional_status" in data
         else getattr(existing, "additional_status", None)
     )
+    current_indicator = data["indicator"] if "indicator" in data else getattr(existing, "indicator", None)
     data.update(
         compute_auto_status_fields(
             control_deadline=control,
             current_status=current_status,
             current_additional_status=current_additional,
+            current_indicator=current_indicator,
             today=today,
         )
     )
@@ -161,6 +172,7 @@ def apply_computed_status_to_recommendation(
         control_deadline=getattr(recommendation, "deadline", None),
         current_status=getattr(recommendation, "status", None),
         current_additional_status=getattr(recommendation, "additional_status", None),
+        current_indicator=getattr(recommendation, "indicator", None),
         today=today,
     )
     changed = False

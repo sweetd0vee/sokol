@@ -38,7 +38,7 @@ MANAGER_RE = re.compile(
     rf"^((?:{PERSON_INITIALS_RE})(?:\s*,\s*{PERSON_INITIALS_RE})*)\.?",
 )
 DEADLINE_VALUE_RE = re.compile(
-    r"(\d{1,2}\.\d{2}\.\d{4}|на\s+постоянной\s+основе\.?|постоянно\.?)",
+    r"(\d{1,2}\.\d{2}\.\d{4}|на\s+постоянной\s+основе\.?|постоянно\.?|исполнено\s+в\s+ходе\s+аудита)",
     re.IGNORECASE,
 )
 SROK_INLINE_RE = re.compile(r"Срок\s*[–\-—]\s*", re.IGNORECASE)

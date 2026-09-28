@@ -7,6 +7,7 @@ import { isDocxFile } from '../utils/docx';
 import { useSokolData } from '../contexts/sokolData';
 import {
   buildParsedPreviewItem,
+  isCompletedDuringAudit,
   patchPreviewItem,
   toRecommendationPayload,
   type EditablePreviewField,
@@ -101,6 +102,8 @@ export function useCheckRecommendationsImport({
               manager: item.manager,
               status: 'on_control',
               additional_status: 'on_control',
+              completed_during_audit:
+                Boolean(item.completed_during_audit) || isCompletedDuringAudit(item.deadline),
             },
             index,
             checkKey,

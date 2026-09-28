@@ -35,6 +35,20 @@ describe('buildParsedPreviewItem', () => {
     });
   });
 
+  it('ставит синюю звезду, если вместо срока написано «исполнено в ходе аудита»', () => {
+    const item = buildParsedPreviewItem(
+      { ...draft, deadline: '', completed_during_audit: true },
+      0,
+      'П-1',
+      0,
+    );
+    expect(item).toMatchObject({
+      deadline: '',
+      status: 'completed',
+      indicator: 'исполнено в ходе аудита',
+    });
+  });
+
   it('ставит жёлтые часы и жёлтый колокольчик, если срок контроля уже прошёл', () => {
     const item = buildParsedPreviewItem({ ...draft, deadline: '2000-01-01' }, 0, 'П-1', 0);
     expect(item).toMatchObject({

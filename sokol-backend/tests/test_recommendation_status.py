@@ -47,6 +47,16 @@ class RecommendationStatusCalcTests(unittest.TestCase):
         self.assertEqual(due["additional_status"], RecommendationAdditionalStatus.IN_PROGRESS)
         self.assertEqual(due["additional_indicator"], "в процессе")
 
+    def test_completed_during_audit_indicator_is_preserved(self) -> None:
+        updates = compute_auto_status_fields(
+            control_deadline=date(2026, 8, 1),
+            current_status=RecommendationStatus.ON_CONTROL,
+            current_indicator="исполнено в ходе аудита",
+            today=TODAY,
+        )
+        self.assertNotIn("status", updates)
+        self.assertNotIn("indicator", updates)
+
     def test_additional_status_follows_control_deadline_not_execution_date(self) -> None:
         updates = compute_auto_status_fields(
             control_deadline=date(2026, 8, 1),

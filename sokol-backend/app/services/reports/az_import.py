@@ -11,6 +11,7 @@ from app.schemas.tools import ParsedRecommendationItem
 from app.services.dictionary_validation import canonicalize_audit_objects
 from app.services.reports.memorandum.models import MemorandumAuditObject, MemorandumSource
 from app.services.reports.memorandum.parser import parse_az_for_memorandum
+from app.services.reports.section_ii.patterns import COMPLETED_DURING_AUDIT_RE
 
 
 def deadline_to_iso(value: str) -> str:
@@ -24,6 +25,10 @@ def deadline_to_iso(value: str) -> str:
     except ValueError:
         return ""
     return f"{year}-{month}-{day.zfill(2)}"
+
+
+def is_completed_during_audit(*parts: str) -> bool:
+    return any(COMPLETED_DURING_AUDIT_RE.search(part or "") for part in parts)
 
 
 async def canonicalize_memorandum_source(
@@ -67,13 +72,19 @@ def parse_recommendations_from_docx(input_path: str) -> tuple[list[ParsedRecomme
                 name = "Рекомендация"
             if not name:
                 continue
+            raw_deadline = (recommendation.deadline or "").strip()
+            completed_during_audit = is_completed_during_audit(
+                raw_deadline,
+                *recommendation.paragraphs,
+            )
             items.append(
                 ParsedRecommendationItem(
                     name=name,
                     observation_name=(recommendation.observation_name or "").strip(),
                     audit_object=[((group.name or "").strip() or "Не указан")[:255]],
                     manager=((group.manager or "").strip() or "Не указан")[:255],
-                    deadline=deadline_to_iso(recommendation.deadline),
+                    deadline="" if completed_during_audit else deadline_to_iso(raw_deadline),
+                    completed_during_audit=completed_during_audit,
                 )
             )
 

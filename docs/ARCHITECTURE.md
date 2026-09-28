@@ -103,7 +103,7 @@ Login матчит `username` и `aliases`. Неактивные не прохо
 - Справочники: физический FK на unique label (`ON UPDATE CASCADE`). API create/update валидирует labels (**400**); import Excel **досоздаёт** (`ensure_*`).
 - `audit_object` — массив + junction `recommendation_audit_objects`. Пустое → «Не указан». Аналитика фильтрует по массиву (`overlap`), не по junction.
 - Статусы открытых рекомендаций:
-  - `status` / `indicator` и `additional_status` / `additional_indicator` — от `deadline` (срок контроля из АЗ) и текущей даты: до даты оба `on_control` (серый колокольчик), в дату и после `in_progress` (жёлтые часы + жёлтый колокольчик).
+  - `status` / `indicator` и `additional_status` / `additional_indicator` — от `deadline` (срок контроля из АЗ) и текущей даты: до даты оба `on_control` (серый колокольчик), в дату и после `in_progress` (жёлтые часы + жёлтый колокольчик). Если вместо срока в АЗ написано «исполнено в ходе аудита», индикатор статуса — синяя звезда, статус `completed`.
   - `completed` / `unresolved` и ручные `on_time` / `deadline_violated` не трогаются.
   - Колонка `execution_deadline` — срок исполнения, который ставит аудитор; автостатус её не читает.
   - Пересчёт при create/update и ежедневно в 00:05 Europe/Moscow (`SOKOL_STATUS_SCHEDULER=0` выключает; в pytest выключен).

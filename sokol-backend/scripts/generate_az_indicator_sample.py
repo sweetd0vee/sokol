@@ -27,7 +27,7 @@ from app.db.catalogs.users import DEPARTMENT_HEAD_USERNAME  # noqa: E402
 OUTPUT_DIR = PROJECT_ROOT / "data" / "az"
 OUTPUT_DOCX = OUTPUT_DIR / "аз_тест_индикаторов.docx"
 
-DEPARTMENT_SAMPLE = [name for name in DEPARTMENTS if name != "Не указан"][:6]
+DEPARTMENT_SAMPLE = [name for name in DEPARTMENTS if name != "Не указан"][:7]
 AUDITOR_SAMPLE = list(AUDITORS)
 MANAGERS = [DEPARTMENT_HEAD_USERNAME, *AUDITOR_SAMPLE]
 
@@ -92,6 +92,17 @@ RECOMMENDATIONS = [
         "text": "Обновить шаблоны договоров и разместить их в корпоративной библиотеке.",
         "deadline": "31.12.2027",
         "expected": "срок ещё не наступил → серый колокольчик + серый колокольчик",
+    },
+    {
+        "number": "4.4",
+        "observation": "Неполная сверка остатков на счетах",
+        "auditor": AUDITOR_SAMPLE[6],
+        "audit_object": DEPARTMENT_SAMPLE[6] if len(DEPARTMENT_SAMPLE) > 6 else DEPARTMENT_SAMPLE[0],
+        "manager": MANAGERS[6],
+        "text": "Сверить остатки на транзитных счетах и устранить расхождения.",
+        "deadline": None,
+        "deadline_text": "Срок исполнения — исполнено в ходе аудита",
+        "expected": "вместо срока → синяя звезда",
     },
 ]
 
@@ -159,7 +170,10 @@ def _observation_block(doc: Document, item: dict) -> None:
     _bordered(doc, f"Руководитель объекта аудита: {item['manager']}")
     _bordered(doc, "Аудиторская рекомендация:", bold=True)
     _bordered(doc, item["text"])
-    _bordered(doc, f"Срок исполнения — до {item['deadline']}", bold=True)
+    deadline_line = item.get("deadline_text")
+    if not deadline_line:
+        deadline_line = f"Срок исполнения — до {item['deadline']}"
+    _bordered(doc, deadline_line, bold=True)
 
 
 def build_document() -> Document:
@@ -203,6 +217,11 @@ def main() -> None:
     doc = build_document()
     doc.save(OUTPUT_DOCX)
     print(f"Wrote {OUTPUT_DOCX}")
+    for item in RECOMMENDATIONS:
+        print(
+            f"{item['number']}: {item['audit_object']} / {item['auditor']} / "
+            f"{item['manager']} / {item.get('deadline_text') or item.get('deadline')}"
+        )
 
 
 if __name__ == "__main__":
