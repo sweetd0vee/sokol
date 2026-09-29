@@ -78,29 +78,13 @@ def _name_key(name: str) -> str:
     return key.strip(" .:-«»\"'")
 
 
-def _starts_with_name(text: str, name: str) -> bool:
-    key = _name_key(name)
-    if not key:
-        return False
-    after = _normalize_match_text(text).lstrip(" .:-«»\"'")
-    probe = key[:48]
-    if len(probe) < 4:
-        return after.startswith(key)
-    return after.startswith(probe)
-
-
-def _rest_is_short(rest: str) -> bool:
-    return len(_normalize_match_text(rest).strip(" .:-")) <= 2
-
-
 def _is_title_frame(frame_text: str, number: str, name: str) -> bool:
-    """Рамка заголовка — почти только «Наблюдение X.Y» и его название, без текста нарушения."""
+    """Рамка заголовка содержит только номер и полное название наблюдения."""
     key = _name_key(name)
     if len(key) < 4:
         return False
     text = _normalize_match_text(frame_text)
-    probe = key[:48]
-    if probe not in text:
+    if key not in text:
         return False
     text = re.sub(
         rf"наблюдени[ея]\s*(?:№|n|no\.?)?\s*{re.escape(_normalize_match_text(number))}(?!\.\d)",
@@ -109,14 +93,10 @@ def _is_title_frame(frame_text: str, number: str, name: str) -> bool:
         count=1,
     )
     idx = text.find(key)
-    consume = len(key) if idx >= 0 else 0
     if idx < 0:
-        idx = text.find(probe)
-        consume = len(probe) if idx >= 0 else 0
-    if idx >= 0:
-        text = f"{text[:idx]} {text[idx + consume:]}"
-    letters = re.sub(r"[^0-9a-zа-я]+", "", text)
-    return len(letters) <= 40
+        return False
+    remainder = f"{text[:idx]} {text[idx + len(key):]}"
+    return re.sub(r"[^0-9a-zа-я]+", "", remainder) == ""
 
 
 def _local_tag_re(local: str) -> re.Pattern[str]:
@@ -188,28 +168,13 @@ def _candidate_priority(
     number: str,
     name: str,
 ) -> Optional[int]:
-    """
-    0 — рамка (таблица или абзацы с границей), где вместе номер и название.
-    1 — абзац, который начинается с номера, и следом идёт название.
-    2 — то же название сразу после номера, но не с начала абзаца.
-    3 — запасной вариант: абзац начинается с номера.
-    """
-    title_here = bool(name) and _starts_with_name(rest, name)
-    title_next = bool(name) and at_start and _rest_is_short(rest) and _starts_with_name(next_text, name)
-    title_frame = (
+    """Возвращает цель только для рамки, содержащей номер и название."""
+    if (
         frame_kind in {"table", "border"}
         and at_start
         and _is_title_frame(frame_text, number, name)
-        and (title_here or title_next or _rest_is_short(rest))
-    )
-    if title_frame:
+    ):
         return 0
-    if at_start and (title_here or title_next):
-        return 1
-    if title_here:
-        return 2
-    if at_start:
-        return 3
     return None
 
 

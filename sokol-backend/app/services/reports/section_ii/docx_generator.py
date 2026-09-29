@@ -127,8 +127,9 @@ def _apply_observation_bookmarks(
         return (
             document_xml,
             {},
-            "Не найдены абзацы наблюдений для гиперссылок. "
-            "В разделе III должны быть абзацы вида «Наблюдение X.Y».",
+            "Не найдены рамки заголовков наблюдений для гиперссылок. "
+            "В разделе III заголовок «Наблюдение X.Y» вместе с названием "
+            "должен быть в таблице или в абзаце с границей.",
         )
     expected_numbers = [obs.number for obs in observations if obs.number]
     missing_anchor_numbers = [

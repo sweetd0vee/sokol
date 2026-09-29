@@ -109,18 +109,18 @@ export function DepartmentUnresolvedBarChart({
                 onClick={() => togglePinnedName(row.name)}
               >
                 <p
-                  className="flex items-center justify-end py-1.5 text-right leading-snug text-slate-500"
+                  className="flex items-center justify-end py-0 text-right leading-tight text-slate-500"
                   style={{ fontSize: CHART_CATEGORY_AXIS_TICK.fontSize }}
                 >
                   {row.name}
                 </p>
                 <div
-                  className={`relative flex min-h-[2.25rem] items-center ${
+                  className={`relative flex min-h-0 items-center py-[3px] ${
                     isActive ? 'bg-slate-100' : 'bg-white'
                   }`}
                 >
                   <div
-                    className="relative z-[1] h-7 rounded-r-md"
+                    className="relative z-[1] h-[21px] rounded-r-md"
                     style={{
                       width: barWidth,
                       backgroundColor: BAR_COLOR,

@@ -41,7 +41,19 @@ def _wrap_in_sdt(paragraph) -> None:
     parent.insert(index, sdt)
 
 
-def _build_canonical_az(path: Path, *, wrap_headings: bool = False, extra_blanks: bool = False) -> None:
+def _add_observation_title_frame(doc: Document, number: str, name: str) -> None:
+    table = doc.add_table(rows=1, cols=2)
+    table.cell(0, 0).text = f"Наблюдение {number}."
+    table.cell(0, 1).text = name
+
+
+def _build_canonical_az(
+    path: Path,
+    *,
+    wrap_headings: bool = False,
+    extra_blanks: bool = False,
+    framed_observation: bool = False,
+) -> None:
     doc = Document()
     title = doc.add_paragraph("АУДИТОРСКОЕ ЗАКЛЮЧЕНИЕ")
     check_title = doc.add_paragraph("Комплексный аудит процессов кредитования")
@@ -59,7 +71,10 @@ def _build_canonical_az(path: Path, *, wrap_headings: bool = False, extra_blanks
         doc.add_paragraph("")
         doc.add_paragraph("")
     heading_iii = _add_bold_heading(doc, "III. Контроль клиентских данных")
-    doc.add_paragraph("Наблюдение 3.1. Несвоевременное обновление лимитов")
+    if framed_observation:
+        _add_observation_title_frame(doc, "3.1", "Несвоевременное обновление лимитов")
+    else:
+        doc.add_paragraph("Наблюдение 3.1. Несвоевременное обновление лимитов")
     doc.add_paragraph("Уровень существенности: средний")
     doc.add_paragraph(
         "Объект аудита: Департамент розничных продуктов "
@@ -85,9 +100,11 @@ class DocxToolsGoldenTest(unittest.TestCase):
             self.assertEqual(result_path, str(section_path))
             self.assertEqual([obs.number for obs in observations], ["3.1"])
 
+            framed_path = Path(tmp) / "az_framed.docx"
+            _build_canonical_az(framed_path, framed_observation=True)
             links_path = Path(tmp) / "az_section_ii_links.docx"
             links_result, linked_obs, links_error = process_document(
-                str(az_path),
+                str(framed_path),
                 str(links_path),
                 with_hyperlinks=True,
             )
