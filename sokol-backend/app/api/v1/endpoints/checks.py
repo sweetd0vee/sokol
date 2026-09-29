@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import require_admin
+from app.api.deps import CurrentUser, get_current_user
 from app.db.session import get_db_session
 from app.models.checks import CheckStatus
 from app.schemas.checks import CheckCreate, CheckListResponse, CheckRead, CheckUpdate
@@ -17,8 +17,9 @@ router = APIRouter(prefix="/checks", tags=["checks"])
 async def create_check_endpoint(
     check_in: CheckCreate,
     session: AsyncSession = Depends(get_db_session),
+    user: CurrentUser = Depends(get_current_user),
 ) -> CheckRead:
-    return await checks_service.create_check(session, check_in)
+    return await checks_service.create_check(session, check_in, user)
 
 
 @router.get("", response_model=CheckListResponse)

@@ -65,6 +65,7 @@ class CheckRead(CheckBase):
     id: int
     serial_number: str
     created_at: date
+    created_by: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

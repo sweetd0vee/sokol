@@ -60,6 +60,7 @@ class Recommendation(Base):
         "recommendation_additional_status",
     )
     created_at: Mapped[date] = required_date()
+    created_by: Mapped[str | None] = optional_string(255)
     actual_completion_date: Mapped[date | None] = optional_date()
     extension_1_reason: Mapped[str | None] = optional_string(64)
     extension_1_date: Mapped[date | None] = optional_date()

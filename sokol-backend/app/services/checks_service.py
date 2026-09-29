@@ -4,7 +4,9 @@ from typing import Optional
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.current_user import CurrentUser
 from app.core.exceptions import DictionaryRefError, ResourceNotFoundError
+from app.core.recommendation_access import ensure_user_can_manage_check
 from app.crud import attachments_crud, checks_crud
 from app.crud.check_serial import (
     CHECK_SERIAL_SOURCE_FIELDS,
@@ -58,9 +60,14 @@ async def _require_check_serial(
     return serial
 
 
-async def create_check(session: AsyncSession, check_in: CheckCreate) -> Check:
+async def create_check(
+    session: AsyncSession,
+    check_in: CheckCreate,
+    user: CurrentUser,
+) -> Check:
     data = check_in.model_dump()
     data.pop("serial_number", None)
+    data["created_by"] = user.username
     _normalize_effectiveness_fields(data)
     await validate_check_dictionary_fields(session, data)
     if not data.get("created_at"):
@@ -141,10 +148,19 @@ async def update_check(
     session: AsyncSession,
     check_id: int,
     check_in: CheckUpdate,
+    user: CurrentUser,
 ) -> Check:
     check = await get_check(session, check_id)
+    ensure_user_can_manage_check(
+        role=user.role,
+        username=user.username,
+        check_leader=check.check_leader,
+        created_by=check.created_by,
+        message="Недостаточно прав для изменения этой проверки.",
+    )
     update_data = check_in.model_dump(exclude_unset=True)
     update_data.pop("serial_number", None)
+    update_data.pop("created_by", None)
     overlay_check_status(update_data, existing=check)
     _normalize_effectiveness_fields(update_data)
     await validate_check_dictionary_fields(session, update_data)
@@ -185,8 +201,15 @@ async def update_check(
     return check
 
 
-async def delete_check(session: AsyncSession, check_id: int) -> None:
+async def delete_check(session: AsyncSession, check_id: int, user: CurrentUser) -> None:
     check = await get_check(session, check_id)
+    ensure_user_can_manage_check(
+        role=user.role,
+        username=user.username,
+        check_leader=check.check_leader,
+        created_by=check.created_by,
+        message="Недостаточно прав для удаления этой проверки.",
+    )
     serial_number = check.serial_number
     attachment_rows = await attachments_crud.list_attachments_by_serial(session, serial_number)
     storage = get_storage()

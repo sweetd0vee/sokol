@@ -4,26 +4,37 @@
  * are separate floating images, not one screenshot of the screen.
  */
 import ExcelJS from 'exceljs';
+import JSZip from 'jszip';
 import { CONSTRUCTOR_GRID_COLS } from '../components/analytics/constructor/constructorLayout';
 import type { ConstructorWidget } from '../components/analytics/constructor/constructorTypes';
 import type { DashboardChartCapture } from './dashboardChartRegistry';
 import { chartHasPngPayload } from './dashboardChartRegistry';
 
-/** ~103px per column → full board ~1240px, close to the on-screen constructor. */
-export const CONSTRUCTOR_XLSX_COL_WIDTH = 14;
-export const CONSTRUCTOR_XLSX_ROWS_PER_UNIT = 4;
-/** 18pt × 4 rows ≈ 96px per grid unit; a h=4 widget is ~360px tall plus gap. */
-export const CONSTRUCTOR_XLSX_ROW_HEIGHT = 18;
-export const CONSTRUCTOR_XLSX_IMAGE_PAD = 0.3;
-export const CONSTRUCTOR_XLSX_IMAGE_PAD_ROW = 0.7;
-/** Title + subtitle + gap before the board grid (0-based image origin). */
+/** ~84px per column → the 12-col board fits a landscape sheet without a horizontal scrollbar. */
+export const CONSTRUCTOR_XLSX_COL_WIDTH = 12;
+export const CONSTRUCTOR_XLSX_ROWS_PER_UNIT = 3;
+/** 15pt × 3 rows ≈ 60px per grid unit; a h=4 card stays wide, close to the on-screen 2:1. */
+export const CONSTRUCTOR_XLSX_ROW_HEIGHT = 15;
+export const CONSTRUCTOR_XLSX_IMAGE_PAD = 0.18;
+export const CONSTRUCTOR_XLSX_IMAGE_PAD_ROW = 0.28;
+/**
+ * Default 0-based image origin used by the anchor helpers.
+ * The workbook itself starts the grid after the title, meta rows, and a spacer.
+ */
 export const CONSTRUCTOR_XLSX_GRID_ORIGIN_ROW = 3;
 
+/** 0-based row index of the first board row: title + meta lines + spacer. */
+export function constructorXlsxOriginRow(metaCount: number): number {
+  return Math.max(metaCount, 0) + 2;
+}
+
 const BRAND = 'FF003366';
-const MUTED = 'FF64748B';
-const CARD_FILL = 'FFF8FAFC';
-const CARD_BORDER = 'FFD7DEE7';
-const TITLE_FILL = 'FFEEF4FA';
+const INK = 'FF334155';
+const CARD_FILL = 'FFFFFFFF';
+const CARD_BORDER = 'FF9AADC0';
+const HAIRLINE = 'FFE6EDF4';
+const LABEL_FILL = 'FFF4F7FB';
+const FONT = 'Calibri';
 
 export type ConstructorGridRect = {
   x: number;
@@ -178,11 +189,44 @@ function outlineRange(
   }
 }
 
-function formatMetaLine(meta: Array<[string, string]>): string {
-  return meta
-    .map(([label, value]) => `${label}: ${value}`)
-    .filter((part) => part.length > 0)
-    .join('   ·   ');
+function paintRowBottom(sheet: ExcelJS.Worksheet, row: number, color: string, style: 'thin' | 'medium') {
+  for (let col = 1; col <= CONSTRUCTOR_GRID_COLS; col += 1) {
+    const cell = sheet.getCell(row, col);
+    cell.border = { bottom: { style, color: { argb: color } } };
+  }
+}
+
+function writeHeader(sheet: ExcelJS.Worksheet, title: string, meta: Array<[string, string]>) {
+  sheet.mergeCells(1, 1, 1, CONSTRUCTOR_GRID_COLS);
+  const titleCell = sheet.getCell(1, 1);
+  titleCell.value = title;
+  titleCell.font = { name: FONT, size: 18, bold: true, color: { argb: BRAND } };
+  titleCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+  sheet.getRow(1).height = 28;
+  paintRowBottom(sheet, 1, BRAND, 'medium');
+
+  meta.forEach(([label, value], index) => {
+    const row = 2 + index;
+    sheet.mergeCells(row, 1, row, 3);
+    sheet.mergeCells(row, 4, row, CONSTRUCTOR_GRID_COLS);
+    const labelCell = sheet.getCell(row, 1);
+    labelCell.value = label;
+    labelCell.font = { name: FONT, size: 10, bold: true, color: { argb: BRAND } };
+    labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: LABEL_FILL } };
+    labelCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    const valueCell = sheet.getCell(row, 4);
+    valueCell.value = value;
+    valueCell.font = { name: FONT, size: 10, color: { argb: INK } };
+    valueCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    sheet.getRow(row).height = 20;
+    for (let col = 1; col <= 3; col += 1) {
+      sheet.getCell(row, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: LABEL_FILL } };
+    }
+    paintRowBottom(sheet, row, HAIRLINE, 'thin');
+  });
+
+  const spacer = constructorXlsxOriginRow(meta.length);
+  sheet.getRow(spacer).height = 12;
 }
 
 export function buildConstructorDashboardWorkbook(options: {
@@ -202,7 +246,7 @@ export function buildConstructorDashboardWorkbook(options: {
         || left.widget.instanceId.localeCompare(right.widget.instanceId),
     );
   const rowSpan = constructorGridRowSpan(placed.map((item) => item.layout));
-  const originRow = CONSTRUCTOR_XLSX_GRID_ORIGIN_ROW;
+  const originRow = constructorXlsxOriginRow(meta.length);
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'SOKOL';
@@ -210,35 +254,40 @@ export function buildConstructorDashboardWorkbook(options: {
 
   const sheet = workbook.addWorksheet(excelSheetName(title), {
     properties: { tabColor: { argb: BRAND } },
-    views: [{ showGridLines: false, zoomScale: 100, zoomScaleNormal: 100, state: 'frozen', ySplit: 2 }],
+    views: [
+      {
+        showGridLines: false,
+        zoomScale: 100,
+        zoomScaleNormal: 100,
+        state: 'frozen',
+        ySplit: originRow,
+      },
+    ],
     pageSetup: {
       orientation: 'landscape',
       paperSize: 9,
-      fitToPage: false,
-      scale: 100,
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
       horizontalCentered: true,
+      horizontalDpi: 600,
+      verticalDpi: 600,
+      printTitlesRow: `1:${Math.max(originRow, 1)}`,
+      margins: {
+        left: 0.4,
+        right: 0.4,
+        top: 0.45,
+        bottom: 0.4,
+        header: 0.2,
+        footer: 0.2,
+      },
     },
   });
 
   sheet.columns = Array.from({ length: CONSTRUCTOR_GRID_COLS }, () => ({
     width: CONSTRUCTOR_XLSX_COL_WIDTH,
   }));
-
-  sheet.mergeCells(1, 1, 1, CONSTRUCTOR_GRID_COLS);
-  const titleCell = sheet.getCell(1, 1);
-  titleCell.value = title;
-  titleCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: BRAND } };
-  titleCell.alignment = { vertical: 'middle', horizontal: 'left' };
-  titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TITLE_FILL } };
-  sheet.getRow(1).height = 24;
-
-  sheet.mergeCells(2, 1, 2, CONSTRUCTOR_GRID_COLS);
-  const subtitleCell = sheet.getCell(2, 1);
-  subtitleCell.value = formatMetaLine(meta);
-  subtitleCell.font = { name: 'Calibri', size: 10, color: { argb: MUTED } };
-  subtitleCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
-  sheet.getRow(2).height = 18;
-  sheet.getRow(3).height = 8;
+  writeHeader(sheet, title, meta);
 
   const gridEndRow = originRow + rowSpan * CONSTRUCTOR_XLSX_ROWS_PER_UNIT;
   for (let row = originRow + 1; row <= gridEndRow; row += 1) {
@@ -247,18 +296,20 @@ export function buildConstructorDashboardWorkbook(options: {
 
   placed.forEach(({ widget, layout }) => {
     const range = constructorXlsxCellRange(layout, originRow);
-    sheet.mergeCells(range.startRow, range.startCol, range.endRow, range.endCol);
-
-    const labelCell = sheet.getCell(range.startRow, range.startCol);
-    labelCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-    labelCell.font = { name: 'Calibri', size: 11, color: { argb: MUTED } };
-
     const capture = byId.get(widget.instanceId);
     if (!capture) {
+      sheet.mergeCells(range.startRow, range.startCol, range.endRow, range.endCol);
       outlineRange(sheet, range.startRow, range.startCol, range.endRow, range.endCol);
+      const labelCell = sheet.getCell(range.startRow, range.startCol);
       labelCell.value = widget.title;
+      labelCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      labelCell.font = { name: FONT, size: 11, color: { argb: INK } };
       return;
     }
+
+    // Keep the card cells unmerged. Excel drops the right and bottom edges of a
+    // merged range, so the frame is drawn on the perimeter cells themselves.
+    outlineRange(sheet, range.startRow, range.startCol, range.endRow, range.endCol);
 
     const imageId = workbook.addImage({
       base64: capture.dataUrl.startsWith('data:')
@@ -266,7 +317,7 @@ export function buildConstructorDashboardWorkbook(options: {
         : `data:image/png;base64,${capture.dataUrl}`,
       extension: 'png',
     });
-    const fitted = constructorXlsxFittedImage(layout, capture);
+    const fitted = constructorXlsxFittedImage(layout, capture, originRow);
     sheet.addImage(imageId, {
       tl: { col: fitted.tl.col, row: fitted.tl.row },
       ext: fitted.ext,
@@ -274,11 +325,54 @@ export function buildConstructorDashboardWorkbook(options: {
     } as unknown as ExcelJS.ImagePosition);
   });
 
-  const headerTitle = title.replaceAll('&', '&&');
   sheet.pageSetup.printArea = `A1:${sheet.getColumn(CONSTRUCTOR_GRID_COLS).letter}${gridEndRow}`;
-  sheet.headerFooter.oddHeader = `&LSOKOL&C&B${headerTitle}`;
+  sheet.headerFooter.oddFooter = '&LSOKOL&RСтр. &P';
 
   return workbook;
+}
+
+const LOCAL_DPI_EXT =
+  '<a:extLst><a:ext uri="{28A0092B-C50C-407E-A947-70E740481C1C}">' +
+  '<a14:useLocalDpi xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" val="0"/>' +
+  '</a:ext></a:extLst>';
+
+/**
+ * ExcelJS writes each picture with a 0×0 transform and marks it compressed for
+ * print, so Excel resamples the PNG and the chart looks soft. Restore the real
+ * size and tell Excel to draw the embedded pixels at 96 DPI.
+ */
+export function sharpenConstructorDrawingXml(xml: string): string {
+  return xml.replace(/<xdr:(?:one|two)CellAnchor[\s\S]*?<\/xdr:(?:one|two)CellAnchor>/g, (anchor) => {
+    const extent = anchor.match(/<xdr:ext\b[^>]*\bcx="(\d+)"[^>]*\bcy="(\d+)"/);
+    let next = anchor.replace(/cstate="print"/g, 'cstate="none"');
+    if (extent) {
+      next = next.replace(/<a:ext cx="0" cy="0"\/>/, `<a:ext cx="${extent[1]}" cy="${extent[2]}"/>`);
+    }
+    if (!next.includes('useLocalDpi')) {
+      next = next.replace(/<a:blip\b([^>]*)\/>/g, `<a:blip$1>${LOCAL_DPI_EXT}</a:blip>`);
+    }
+    return next;
+  });
+}
+
+export async function sharpenConstructorXlsxBuffer(
+  data: ArrayBuffer | Uint8Array,
+): Promise<Uint8Array> {
+  const zip = await JSZip.loadAsync(data);
+  const drawings = Object.keys(zip.files).filter((name) => /^xl\/drawings\/drawing\d+\.xml$/.test(name));
+  if (drawings.length === 0) {
+    return data instanceof Uint8Array ? data : new Uint8Array(data);
+  }
+  await Promise.all(
+    drawings.map(async (name) => {
+      const xml = await zip.file(name)?.async('string');
+      if (!xml) {
+        return;
+      }
+      zip.file(name, sharpenConstructorDrawingXml(xml));
+    }),
+  );
+  return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
 }
 
 export function constructorXlsxHasChartImages(workbook: ExcelJS.Workbook): boolean {

@@ -42,6 +42,7 @@ class Check(Base):
         nullable=False,
     )
     created_at: Mapped[date] = required_date()
+    created_by: Mapped[str | None] = optional_string(255)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     order_document_number: Mapped[str | None] = optional_string(128)
     order_document_date: Mapped[date | None] = optional_date()

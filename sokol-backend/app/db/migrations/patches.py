@@ -42,6 +42,15 @@ CHECK_EFFECTIVENESS = SqlPatch(
     ),
 )
 
+RECORD_CREATED_BY = SqlPatch(
+    name="record_created_by",
+    message="created_by columns migration completed.",
+    statements=(
+        "ALTER TABLE checks ADD COLUMN IF NOT EXISTS created_by VARCHAR(255)",
+        "ALTER TABLE recommendations ADD COLUMN IF NOT EXISTS created_by VARCHAR(255)",
+    ),
+)
+
 CHECK_SHORT_NAME = SqlPatch(
     name="check_short_name",
     message="Check short_name migration completed.",

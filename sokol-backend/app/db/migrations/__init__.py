@@ -34,6 +34,7 @@ from app.db.migrations.patches import (
     RECOMMENDATION_INDICATOR_ON_CONTROL,
     RECOMMENDATION_INDICATORS,
     RECOMMENDATION_OBSERVATION_NAME,
+    RECORD_CREATED_BY,
     RECOMMENDATION_STATUSES,
 )
 
@@ -76,6 +77,7 @@ ALL_MIGRATIONS: tuple[SchemaMigration, ...] = (
         in_bootstrap=True,
     ),
     SchemaMigration("analytics_indexes", ANALYTICS_INDEXES.migrate, in_bootstrap=True),
+    SchemaMigration("record_created_by", RECORD_CREATED_BY.migrate, in_bootstrap=True),
     SchemaMigration("check_short_name", CHECK_SHORT_NAME.migrate),
     SchemaMigration("recommendation_fields", RECOMMENDATION_FIELDS.migrate),
     SchemaMigration("recommendation_closure", RECOMMENDATION_CLOSURE.migrate),

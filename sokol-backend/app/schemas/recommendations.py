@@ -106,6 +106,7 @@ class RecommendationRead(RecommendationBase):
     id: int
     sequence_number: int
     created_at: date
+    created_by: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

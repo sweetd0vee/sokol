@@ -12,7 +12,7 @@ import type { ConstructorWidget } from '../components/analytics/constructor/cons
 import { CONSTRUCTOR_GRID_COLS } from '../components/analytics/constructor/constructorLayout';
 import { buildConstructorDashboardHtml } from './constructorHtmlExport';
 import { buildConstructorDashboardDocument } from './constructorDocxExport';
-import { buildConstructorDashboardWorkbook } from './constructorXlsxLayout';
+import { buildConstructorDashboardWorkbook, sharpenConstructorXlsxBuffer } from './constructorXlsxLayout';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
@@ -175,7 +175,7 @@ export async function exportConstructorDashboard(options: {
   if (format === 'xlsx') {
     const captures = await captureConstructorWidgetCharts(widgets);
     const workbook = buildConstructorDashboardWorkbook({ title, meta, widgets, captures });
-    const buffer = await workbook.xlsx.writeBuffer();
+    const buffer = await sharpenConstructorXlsxBuffer(await workbook.xlsx.writeBuffer());
     triggerDownload(
       new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
       `${filenamePrefix}-${stamp()}.xlsx`,

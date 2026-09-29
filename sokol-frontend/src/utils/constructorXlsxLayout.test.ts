@@ -1,4 +1,6 @@
+import { readFileSync, writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import JSZip from 'jszip';
 import type { ConstructorWidget } from '../components/analytics/constructor/constructorTypes';
 import type { DashboardChartCapture } from './dashboardChartRegistry';
 import {
@@ -15,8 +17,10 @@ import {
   constructorXlsxFittedImage,
   constructorXlsxImageAnchor,
   constructorXlsxImageExtent,
+  constructorXlsxOriginRow,
   excelColumnWidthToPixels,
   excelSheetName,
+  sharpenConstructorXlsxBuffer,
 } from './constructorXlsxLayout';
 
 const PIXEL_PNG =
@@ -80,16 +84,18 @@ describe('constructor xlsx grid mapping', () => {
     expect(left.editAs).toBe('twoCell');
   });
 
-  it('draws a half-width chart at dashboard scale without stretching the whole sheet', () => {
+  it('draws a half-width chart as a wide card that fits a landscape sheet', () => {
     const half = constructorXlsxImageExtent({ x: 0, y: 0, w: 6, h: 4 });
     const full = constructorXlsxImageExtent({ x: 0, y: 4, w: 12, h: 3 });
     const boardWidth = excelColumnWidthToPixels(CONSTRUCTOR_XLSX_COL_WIDTH) * 12;
-    expect(half.width).toBeGreaterThanOrEqual(500);
-    expect(half.width).toBeLessThan(800);
-    expect(half.height).toBeGreaterThanOrEqual(280);
+    expect(half.width).toBeGreaterThan(420);
+    expect(half.width).toBeLessThan(650);
+    expect(half.height).toBeGreaterThan(180);
+    expect(half.height).toBeLessThan(280);
+    expect(half.width / half.height).toBeGreaterThan(1.7);
     expect(full.width).toBeGreaterThan(half.width);
     expect(full.width / half.width).toBeCloseTo(2, 0);
-    expect(boardWidth).toBeLessThan(1400);
+    expect(boardWidth).toBeLessThan(1200);
   });
 
   it('keeps the captured chart aspect instead of stretching it to the cell', () => {
@@ -154,7 +160,11 @@ describe('buildConstructorDashboardWorkbook', () => {
     expect(sheet?.columnCount).toBeGreaterThanOrEqual(12);
     expect(sheet?.getColumn(1).width).toBe(CONSTRUCTOR_XLSX_COL_WIDTH);
     expect(sheet?.getCell('A1').value).toBe('Мой дашборд');
-    expect(String(sheet?.getCell('A2').value)).toContain('Графиков на листе: 3');
+    expect(sheet?.getCell('A2').value).toBe('Графиков на листе');
+    expect(sheet?.getCell('D2').value).toBe('3');
+    expect(sheet?.getCell('A3').value).toBe('Источники');
+    expect(sheet?.pageSetup.orientation).toBe('landscape');
+    expect(sheet?.pageSetup.fitToWidth).toBe(1);
 
     const images = sheet?.getImages() ?? [];
     expect(images).toHaveLength(3);
@@ -178,8 +188,15 @@ describe('buildConstructorDashboardWorkbook', () => {
     expect(cols[0]?.width).toBe(cols[1]?.width);
     expect((cols[0]?.width ?? 0) / (cols[0]?.height ?? 1)).toBeCloseTo(640 / 360, 2);
 
-    const buffer = await workbook.xlsx.writeBuffer();
+    const raw = await workbook.xlsx.writeBuffer();
+    const buffer = await sharpenConstructorXlsxBuffer(raw);
     expect(buffer.byteLength).toBeGreaterThan(1000);
+    const drawing = await JSZip.loadAsync(buffer).then((zip) => zip.file('xl/drawings/drawing1.xml')?.async('string'));
+    expect(drawing).toBeTruthy();
+    expect(drawing).not.toContain('cx="0" cy="0"');
+    expect(drawing).toContain('cstate="none"');
+    expect(drawing).toContain('useLocalDpi');
+    expect(drawing).not.toContain('cstate="print"');
   });
 
   it('keeps the board slot and title when a chart snapshot is missing', () => {
@@ -191,8 +208,39 @@ describe('buildConstructorDashboardWorkbook', () => {
       captures: [],
     });
     const sheet = workbook.worksheets[0];
-    const range = constructorXlsxCellRange(widgets[0]!.layout);
+    const range = constructorXlsxCellRange(widgets[0]!.layout, constructorXlsxOriginRow(0));
     expect(sheet?.getCell(range.startRow, range.startCol).value).toBe('Пустой график');
     expect(sheet?.getImages() ?? []).toHaveLength(0);
+  });
+});
+
+describe.skipIf(!process.env.PREVIEW_XLSX)('xlsx preview', () => {
+  it('writes a sample sheet', async () => {
+    const dir = `${process.env.TEMP}\\sokol-docx-preview`;
+    const png = (name: string) => `data:image/png;base64,${readFileSync(`${dir}\\${name}`).toString('base64')}`;
+    const widgets = [
+      widget('a', { x: 0, y: 0, w: 6, h: 4 }, 'Динамика'),
+      widget('b', { x: 6, y: 0, w: 6, h: 4 }, 'Типы'),
+      widget('c', { x: 0, y: 4, w: 6, h: 4 }, 'Сотрудники'),
+      widget('d', { x: 6, y: 4, w: 6, h: 4 }, 'Существенность'),
+    ];
+    const files = ['bars.png', 'pie.png', 'hbar.png', 'pie2.png'];
+    const workbook = buildConstructorDashboardWorkbook({
+      title: 'ОТЧЕТ',
+      meta: [
+        ['Графиков на листе', '4'],
+        ['Источники', 'Проверки, Рекомендации, ДВА'],
+        ['Сформировано', '29.09.2026, 09:04:02'],
+      ],
+      widgets,
+      captures: widgets.map((item, index) => ({
+        ...capture(item.instanceId),
+        dataUrl: png(files[index] ?? 'bars.png'),
+        width: 1000,
+        height: 500,
+      })),
+    });
+    const buffer = await sharpenConstructorXlsxBuffer(await workbook.xlsx.writeBuffer());
+    writeFileSync(`${dir}\\preview.xlsx`, buffer);
   });
 });
