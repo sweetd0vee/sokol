@@ -241,7 +241,6 @@ export type PlanningConstructorInput = {
     uncoveredDepartments: string[];
   };
   unresolvedByDepartment: PlanningUnresolvedDepartmentRow[];
-  highMaterialityRanking: PlanningHighMaterialityDepartmentRow[];
   highMaterialityTotal: number;
   filteredChecksTotal: number;
   filteredRecommendationsTotal: number;

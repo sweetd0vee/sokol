@@ -13,14 +13,14 @@ export function buildPlanningConstructorDrafts(input: PlanningConstructorInput):
           chart: 'kpi',
           columns: 3,
           items: [
-            { label: 'Охват департаментов', value: input.coverage.coverageRate, suffix: '%', tone: 'blue' },
+            { label: 'Охват департаментов', value: input.coverage.coverageRate, suffix: '%', tone: 'green' },
             {
               label: 'Не охвачено',
               value: input.coverage.uncovered,
               hint: `из ${input.coverage.total}`,
               tone: 'slate',
             },
-            { label: 'Красные рекомендации', value: input.highMaterialityTotal, tone: 'red' },
+            { label: 'Красные рекомендации', value: input.highMaterialityTotal, tone: 'blue' },
           ],
         }),
       );
@@ -38,13 +38,6 @@ export function buildPlanningConstructorDrafts(input: PlanningConstructorInput):
         draft(kind, sectionId, 'Рекомендации со статусом «Не решено»', caption, { w: 7, h: 4, minW: 3, minH: 3 }, {
           chart: 'department-unresolved',
           data: input.unresolvedByDepartment,
-        }),
-      );
-    } else if (sectionId === 'highMateriality') {
-      drafts.push(
-        draft(kind, sectionId, 'Количество и доля красных рекомендаций по департаментам', caption, { w: 12, h: 5, minW: 6, minH: 4 }, {
-          chart: 'department-high-materiality',
-          data: input.highMaterialityRanking,
         }),
       );
     }

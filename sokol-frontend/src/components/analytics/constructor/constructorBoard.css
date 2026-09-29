@@ -22,11 +22,19 @@ body.constructor-export-mode .react-resizable-handle,
 body.analytics-export-mode .constructor-widget-actions,
 body.analytics-export-mode .constructor-drag-handle,
 body.analytics-export-mode .react-resizable-handle {
-  visibility: hidden !important;
+  display: none !important;
 }
 
 body.constructor-export-mode [data-analytics-export-capture-id],
 body.analytics-export-mode [data-analytics-export-capture-id] {
   border-radius: 0 !important;
   box-shadow: none !important;
+}
+
+body.constructor-export-mode [data-analytics-export-capture-id] {
+  border: none !important;
+}
+
+body.constructor-export-mode [data-analytics-export-capture-id] p {
+  margin-left: 0 !important;
 }

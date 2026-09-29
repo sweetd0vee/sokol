@@ -9,7 +9,6 @@ import {
   KpiCard,
 } from '../analytics/AnalyticsChartPrimitives';
 import { DepartmentUnresolvedBarChart } from '../analytics/DepartmentUnresolvedBarChart';
-import { DepartmentHighMaterialityBarChart } from '../analytics/DepartmentHighMaterialityBarChart';
 import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
 import { useExportSections } from '../../hooks/useExportSections';
 import { PLANNING_EXPORT_SECTIONS, type PlanningExportSectionId } from '../../constants/analyticsExportSections';
@@ -32,7 +31,6 @@ const EMPTY_COVERAGE = {
   checksByDepartment: [],
 };
 const EMPTY_UNRESOLVED: never[] = [];
-const EMPTY_HIGH_MATERIALITY_RANKING: never[] = [];
 const PLANNING_EXPORT_SECTION_IDS = PLANNING_EXPORT_SECTIONS.map(
   (section) => section.id,
 ) as PlanningExportSectionId[];
@@ -78,7 +76,6 @@ export function PlanningAnalyticsDashboard() {
 
   const coverage = data?.coverage ?? EMPTY_COVERAGE;
   const unresolvedByDepartment = data?.unresolvedByDepartment ?? EMPTY_UNRESOLVED;
-  const highMaterialityRanking = data?.highMaterialityByDepartment ?? EMPTY_HIGH_MATERIALITY_RANKING;
   const highMaterialityTotal = data?.highMaterialityTotal ?? 0;
   const filteredChecksTotal = data?.filteredChecksTotal ?? 0;
   const filteredRecommendationsTotal = data?.filteredRecommendationsTotal ?? 0;
@@ -125,7 +122,6 @@ export function PlanningAnalyticsDashboard() {
         }),
         coverage,
         unresolvedByDepartment,
-        highMaterialityRanking,
         highMaterialityTotal,
         filteredChecksTotal,
         filteredRecommendationsTotal,
@@ -151,14 +147,14 @@ export function PlanningAnalyticsDashboard() {
             {...exportSections.sectionProps('summary')}
           >
             <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3">
-              <KpiCard label="Охват департаментов" value={coverage.coverageRate} suffix="%" tone="blue" />
+              <KpiCard label="Охват департаментов" value={coverage.coverageRate} suffix="%" tone="green" />
               <KpiCard
                 label="Не охвачено"
                 value={coverage.uncovered}
                 hint={`из ${coverage.total}`}
                 tone="slate"
               />
-              <KpiCard label="Красные рекомендации" value={highMaterialityTotal} tone="red" />
+              <KpiCard label="Красные рекомендации" value={highMaterialityTotal} tone="blue" />
             </div>
           </ChartCard>
         ),
@@ -222,25 +218,8 @@ export function PlanningAnalyticsDashboard() {
           </ChartCard>
         ),
       },
-      {
-        id: 'highMateriality',
-        defaultLayout: { x: 0, y: 6, w: 12, h: 5, minW: 6, minH: 4 },
-        render: () => (
-          <ChartCard
-            title="Количество и доля красных рекомендаций по департаментам"
-            description=""
-            {...exportSections.sectionProps('highMateriality')}
-          >
-            {highMaterialityRanking.length === 0 ? (
-              <EmptyChart message="Нет красных рекомендаций за период" />
-            ) : (
-              <DepartmentHighMaterialityBarChart data={highMaterialityRanking} />
-            )}
-          </ChartCard>
-        ),
-      },
     ],
-    [coverage, exportSections, highMaterialityRanking, highMaterialityTotal, unresolvedByDepartment],
+    [coverage, exportSections, highMaterialityTotal, unresolvedByDepartment],
   );
 
   return (

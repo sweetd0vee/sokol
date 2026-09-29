@@ -103,22 +103,20 @@ export function DepartmentUnresolvedBarChart({
             return (
               <div
                 key={row.name}
-                className="grid cursor-pointer items-stretch gap-x-4"
+                className={`grid cursor-pointer items-stretch gap-x-4 ${
+                  isActive ? 'bg-slate-100' : 'bg-white'
+                }`}
                 style={{ gridTemplateColumns: GRID_COLUMNS }}
                 onMouseEnter={() => showRow(row.name)}
                 onClick={() => togglePinnedName(row.name)}
               >
                 <p
-                  className="flex items-center justify-end py-0 text-right leading-tight text-slate-500"
+                  className="flex items-center justify-end self-center py-0 text-right leading-tight text-slate-500"
                   style={{ fontSize: CHART_CATEGORY_AXIS_TICK.fontSize }}
                 >
                   {row.name}
                 </p>
-                <div
-                  className={`relative flex min-h-0 items-center py-[3px] ${
-                    isActive ? 'bg-slate-100' : 'bg-white'
-                  }`}
-                >
+                <div className="relative flex h-[21px] items-center self-center">
                   <div
                     className="relative z-[1] h-[21px] rounded-r-md"
                     style={{
@@ -145,15 +143,15 @@ export function DepartmentUnresolvedBarChart({
         </div>
       </div>
       <div
-        className="grid shrink-0 gap-x-4 px-4 pb-1 pt-0.5"
+        className="grid shrink-0 gap-x-4 px-4 pb-0 pt-0.5"
         style={{ gridTemplateColumns: GRID_COLUMNS }}
       >
         <div />
-        <div className="relative h-6">
+        <div className="relative h-5">
           {ticks.map((tick) => (
             <span
               key={tick}
-              className="absolute top-0 -translate-x-1/2 text-slate-500 first:translate-x-0 last:translate-x-[-100%]"
+              className="absolute top-0 -translate-x-1/2 leading-none text-slate-500 first:translate-x-0 last:translate-x-[-100%]"
               style={{ left: `${(tick / maxValue) * 100}%`, fontSize: CHART_AXIS_TICK.fontSize }}
             >
               {tick}
