@@ -22,16 +22,18 @@ router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 async def create_recommendation_endpoint(
     recommendation_in: RecommendationCreate,
     session: AsyncSession = Depends(get_db_session),
+    user: CurrentUser = Depends(get_current_user),
 ) -> RecommendationRead:
-    return await recommendations_service.create_recommendation(session, recommendation_in)
+    return await recommendations_service.create_recommendation(session, recommendation_in, user)
 
 
 @router.post("/batch", response_model=RecommendationListResponse, status_code=status.HTTP_201_CREATED)
 async def batch_recommendations_endpoint(
     payload: RecommendationBatchRequest,
     session: AsyncSession = Depends(get_db_session),
+    user: CurrentUser = Depends(get_current_user),
 ) -> RecommendationListResponse:
-    return await recommendations_service.batch_recommendations(session, payload)
+    return await recommendations_service.batch_recommendations(session, payload, user)
 
 
 @router.post("/batch-delete", status_code=status.HTTP_204_NO_CONTENT)
@@ -73,11 +75,13 @@ async def update_recommendation_endpoint(
     recommendation_id: int,
     recommendation_in: RecommendationUpdate,
     session: AsyncSession = Depends(get_db_session),
+    user: CurrentUser = Depends(get_current_user),
 ) -> RecommendationRead:
     return await recommendations_service.update_recommendation(
         session,
         recommendation_id,
         recommendation_in,
+        user,
     )
 
 

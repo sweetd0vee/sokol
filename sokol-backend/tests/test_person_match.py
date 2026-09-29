@@ -11,7 +11,11 @@ os.environ.setdefault(
 )
 
 from app.core.person_match import person_field_matches_user
-from app.core.recommendation_access import user_can_manage_recommendation
+from app.core.recommendation_access import (
+    user_can_create_recommendation,
+    user_can_manage_check,
+    user_can_manage_recommendation,
+)
 from app.core.roles import Role
 
 
@@ -61,6 +65,102 @@ class PersonMatchTests(unittest.TestCase):
                 role=Role.AUDITOR,
                 username="Важник Д.С.",
                 auditor="Иванов И.И.",
+            )
+        )
+
+    def test_auditor_can_manage_check_as_leader_or_creator(self) -> None:
+        self.assertTrue(
+            user_can_manage_check(
+                role=Role.AUDITOR,
+                username="Важник Д.С.",
+                check_leader="Важник Дмитрий Сергеевич",
+            )
+        )
+        self.assertTrue(
+            user_can_manage_check(
+                role=Role.AUDITOR,
+                username="Важник Д.С.",
+                check_leader="Иванов И.И.",
+                created_by="Важник Д.С.",
+            )
+        )
+        self.assertFalse(
+            user_can_manage_check(
+                role=Role.AUDITOR,
+                username="Важник Д.С.",
+                check_leader="Иванов И.И.",
+                created_by="Петров П.П.",
+            )
+        )
+
+    def test_admin_can_manage_any_check(self) -> None:
+        self.assertTrue(
+            user_can_manage_check(
+                role=Role.ADMIN,
+                username="Админ А.А.",
+                check_leader="Иванов И.И.",
+            )
+        )
+
+    def test_auditor_can_manage_recommendation_as_leader_or_creator(self) -> None:
+        self.assertTrue(
+            user_can_manage_recommendation(
+                role=Role.AUDITOR,
+                username="Важник Д.С.",
+                auditor="Иванов И.И.",
+                check_leader="Важник Д.С.",
+            )
+        )
+        self.assertTrue(
+            user_can_manage_recommendation(
+                role=Role.AUDITOR,
+                username="Важник Д.С.",
+                auditor="Иванов И.И.",
+                created_by="Важник Д.С.",
+            )
+        )
+        self.assertTrue(
+            user_can_manage_recommendation(
+                role=Role.AUDITOR,
+                username="Важник Д.С.",
+                auditor="Иванов И.И.",
+                check_created_by="Важник Д.С.",
+            )
+        )
+        self.assertFalse(
+            user_can_manage_recommendation(
+                role=Role.AUDITOR,
+                username="Важник Д.С.",
+                auditor="Иванов И.И.",
+                check_leader="Петров П.П.",
+                created_by="Петров П.П.",
+                check_created_by="Петров П.П.",
+            )
+        )
+
+    def test_auditor_can_create_recommendation_on_own_check_or_as_auditor(self) -> None:
+        self.assertTrue(
+            user_can_create_recommendation(
+                role=Role.AUDITOR,
+                username="Важник Д.С.",
+                auditor="Иванов И.И.",
+                check_leader="Важник Д.С.",
+            )
+        )
+        self.assertTrue(
+            user_can_create_recommendation(
+                role=Role.AUDITOR,
+                username="Важник Д.С.",
+                auditor="Важник Д.С.",
+                check_leader="Иванов И.И.",
+            )
+        )
+        self.assertFalse(
+            user_can_create_recommendation(
+                role=Role.AUDITOR,
+                username="Важник Д.С.",
+                auditor="Иванов И.И.",
+                check_leader="Петров П.П.",
             )
         )
 

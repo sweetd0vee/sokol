@@ -54,14 +54,15 @@ async def update_check_endpoint(
     check_id: int,
     check_in: CheckUpdate,
     session: AsyncSession = Depends(get_db_session),
+    user: CurrentUser = Depends(get_current_user),
 ) -> CheckRead:
-    return await checks_service.update_check(session, check_id, check_in)
+    return await checks_service.update_check(session, check_id, check_in, user)
 
 
 @router.delete("/{check_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_check_endpoint(
     check_id: int,
     session: AsyncSession = Depends(get_db_session),
-    _: object = Depends(require_admin),
+    user: CurrentUser = Depends(get_current_user),
 ) -> None:
-    await checks_service.delete_check(session, check_id)
+    await checks_service.delete_check(session, check_id, user)

@@ -1,4 +1,3 @@
-import { readFileSync, writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
 import type { ConstructorWidget } from '../components/analytics/constructor/constructorTypes';
@@ -211,36 +210,5 @@ describe('buildConstructorDashboardWorkbook', () => {
     const range = constructorXlsxCellRange(widgets[0]!.layout, constructorXlsxOriginRow(0));
     expect(sheet?.getCell(range.startRow, range.startCol).value).toBe('Пустой график');
     expect(sheet?.getImages() ?? []).toHaveLength(0);
-  });
-});
-
-describe.skipIf(!process.env.PREVIEW_XLSX)('xlsx preview', () => {
-  it('writes a sample sheet', async () => {
-    const dir = `${process.env.TEMP}\\sokol-docx-preview`;
-    const png = (name: string) => `data:image/png;base64,${readFileSync(`${dir}\\${name}`).toString('base64')}`;
-    const widgets = [
-      widget('a', { x: 0, y: 0, w: 6, h: 4 }, 'Динамика'),
-      widget('b', { x: 6, y: 0, w: 6, h: 4 }, 'Типы'),
-      widget('c', { x: 0, y: 4, w: 6, h: 4 }, 'Сотрудники'),
-      widget('d', { x: 6, y: 4, w: 6, h: 4 }, 'Существенность'),
-    ];
-    const files = ['bars.png', 'pie.png', 'hbar.png', 'pie2.png'];
-    const workbook = buildConstructorDashboardWorkbook({
-      title: 'ОТЧЕТ',
-      meta: [
-        ['Графиков на листе', '4'],
-        ['Источники', 'Проверки, Рекомендации, ДВА'],
-        ['Сформировано', '29.09.2026, 09:04:02'],
-      ],
-      widgets,
-      captures: widgets.map((item, index) => ({
-        ...capture(item.instanceId),
-        dataUrl: png(files[index] ?? 'bars.png'),
-        width: 1000,
-        height: 500,
-      })),
-    });
-    const buffer = await sharpenConstructorXlsxBuffer(await workbook.xlsx.writeBuffer());
-    writeFileSync(`${dir}\\preview.xlsx`, buffer);
   });
 });

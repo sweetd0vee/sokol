@@ -1,7 +1,8 @@
 /**
- * Map constructor board layout (12-col grid) onto a single Excel sheet.
- * Each widget occupies the same x/y/w/h cells as on the dashboard; charts
- * are separate floating images, not one screenshot of the screen.
+ * Map constructor board layout (12-col grid) onto one landscape Excel sheet.
+ * Each widget is its own card and image. Pictures are written at full PNG
+ * resolution; ExcelJS otherwise stores a 0×0 transform and marks them
+ * compressed for print, which makes the charts look soft.
  */
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
@@ -15,8 +16,8 @@ export const CONSTRUCTOR_XLSX_COL_WIDTH = 12;
 export const CONSTRUCTOR_XLSX_ROWS_PER_UNIT = 3;
 /** 15pt × 3 rows ≈ 60px per grid unit; a h=4 card stays wide, close to the on-screen 2:1. */
 export const CONSTRUCTOR_XLSX_ROW_HEIGHT = 15;
-export const CONSTRUCTOR_XLSX_IMAGE_PAD = 0.18;
-export const CONSTRUCTOR_XLSX_IMAGE_PAD_ROW = 0.28;
+export const CONSTRUCTOR_XLSX_IMAGE_PAD = 0.28;
+export const CONSTRUCTOR_XLSX_IMAGE_PAD_ROW = 0.6;
 /**
  * Default 0-based image origin used by the anchor helpers.
  * The workbook itself starts the grid after the title, meta rows, and a spacer.

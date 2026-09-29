@@ -14,6 +14,8 @@ os.environ.setdefault(
 )
 os.environ.setdefault("SOKOL_JWT_SECRET", "test-jwt-secret")
 
+from app.core.current_user import CurrentUser
+from app.core.roles import Role
 from app.models.checks import Check, CheckStatus
 from app.schemas.checks import CheckUpdate
 from app.services import checks_service
@@ -75,6 +77,11 @@ class ChecksSerialLifecycleTests(unittest.TestCase):
                     session,
                     1,
                     CheckUpdate(check_leader="Петров П.П."),
+                    CurrentUser(
+                        username="Админ А.А.",
+                        display_name="Администратор",
+                        role=Role.ADMIN,
+                    ),
                 )
 
             self.assertEqual(updated.serial_number, "26PPP1P1")

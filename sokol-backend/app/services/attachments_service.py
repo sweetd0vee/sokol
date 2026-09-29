@@ -6,7 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.current_user import CurrentUser
 from app.core.config import settings
-from app.core.recommendation_access import ensure_user_can_manage_recommendation
+from app.core.recommendation_access import (
+    ensure_user_can_manage_check,
+    ensure_user_can_manage_recommendation,
+    user_can_manage_recommendation,
+)
 from app.crud import attachments_crud, checks_crud, recommendations_crud
 from app.models.recommendations import Recommendation
 from app.models.attachments import Attachment
@@ -18,7 +22,6 @@ from app.schemas.attachments import (
     StorageStatusResponse,
 )
 from app.core.exceptions import (
-    AccessDeniedError,
     AttachmentTooLargeError,
     EmptyAttachmentPayloadError,
     InvalidAttachmentSlotError,
@@ -87,12 +90,41 @@ async def get_storage_status() -> StorageStatusResponse:
     return StorageStatusResponse(enabled=True, reachable=reachable)
 
 
-def _ensure_user_can_manage_recommendation(user: CurrentUser, recommendation: Recommendation) -> None:
+async def _ensure_user_can_manage_check(session: AsyncSession, user: CurrentUser, check_id: int) -> None:
+    check = await checks_crud.get_check(session, check_id)
+    if check is None:
+        raise ResourceNotFoundError("Проверка не найдена.")
+    ensure_user_can_manage_check(
+        role=user.role,
+        username=user.username,
+        check_leader=check.check_leader,
+        created_by=check.created_by,
+        message="Недостаточно прав для операции с вложениями этой проверки.",
+    )
+
+
+async def _ensure_user_can_manage_recommendation(
+    session: AsyncSession,
+    user: CurrentUser,
+    recommendation: Recommendation,
+) -> None:
+    message = "Недостаточно прав для операции с вложениями этой рекомендации."
+    if user_can_manage_recommendation(
+        role=user.role,
+        username=user.username,
+        auditor=recommendation.auditor,
+        created_by=recommendation.created_by,
+    ):
+        return
+    check = await checks_crud.get_check(session, recommendation.check_id)
     ensure_user_can_manage_recommendation(
         role=user.role,
         username=user.username,
         auditor=recommendation.auditor,
-        message="Недостаточно прав для операции с вложениями этой рекомендации.",
+        created_by=recommendation.created_by,
+        check_leader=None if check is None else check.check_leader,
+        check_created_by=None if check is None else check.created_by,
+        message=message,
     )
 
 
@@ -141,8 +173,10 @@ async def upload_attachment(
         entity_type,
         entity_id,
     )
-    if entity_type == "recommendation" and recommendation is not None:
-        _ensure_user_can_manage_recommendation(user, recommendation)
+    if entity_type == "check":
+        await _ensure_user_can_manage_check(session, user, entity_id)
+    elif recommendation is not None:
+        await _ensure_user_can_manage_recommendation(session, user, recommendation)
 
     if content_type not in ALLOWED_CONTENT_TYPES:
         raise UnsupportedAttachmentContentTypeError(f"Тип файла не поддерживается: {content_type}.")
@@ -239,9 +273,9 @@ async def delete_attachment(
         recommendation = await recommendations_crud.get_recommendation(session, attachment.entity_id)
         if recommendation is None:
             raise ResourceNotFoundError("Рекомендация не найдена.")
-        _ensure_user_can_manage_recommendation(user, recommendation)
-    elif not user.is_admin:
-        raise AccessDeniedError("Недостаточно прав для удаления вложения проверки.")
+        await _ensure_user_can_manage_recommendation(session, user, recommendation)
+    elif attachment.entity_type == "check":
+        await _ensure_user_can_manage_check(session, user, attachment.entity_id)
 
     storage = require_storage()
     try:

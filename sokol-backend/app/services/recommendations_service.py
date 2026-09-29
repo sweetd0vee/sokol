@@ -6,7 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.current_user import CurrentUser
 from app.core.exceptions import InvalidReferenceError, ResourceNotFoundError
-from app.core.recommendation_access import ensure_user_can_manage_recommendation
+from app.core.recommendation_access import (
+    ensure_user_can_create_recommendation,
+    ensure_user_can_manage_check,
+    ensure_user_can_manage_recommendation,
+    user_can_manage_recommendation,
+)
 from app.services.db_transaction import rollback_on_error
 from app.crud import checks_crud, recommendations_crud
 from app.models.checks import Check
@@ -35,11 +40,30 @@ async def _check_by_serial(session: AsyncSession, serial_number: str) -> Check:
     return check
 
 
-def _assert_can_manage(user: CurrentUser, recommendation: Recommendation, *, message: str) -> None:
+async def _assert_can_manage(
+    session: AsyncSession,
+    user: CurrentUser,
+    recommendation: Recommendation,
+    *,
+    message: str,
+) -> None:
+    created_by = getattr(recommendation, "created_by", None)
+    if user_can_manage_recommendation(
+        role=user.role,
+        username=user.username,
+        auditor=recommendation.auditor,
+        created_by=created_by,
+    ):
+        return
+
+    check = await checks_crud.get_check(session, recommendation.check_id)
     ensure_user_can_manage_recommendation(
         role=user.role,
         username=user.username,
         auditor=recommendation.auditor,
+        created_by=created_by,
+        check_leader=None if check is None else check.check_leader,
+        check_created_by=None if check is None else check.created_by,
         message=message,
     )
 
@@ -92,9 +116,19 @@ async def _delete_recommendation_and_files(
 async def create_recommendation(
     session: AsyncSession,
     recommendation_in: RecommendationCreate,
+    user: CurrentUser,
 ) -> Recommendation:
     check = await _check_by_serial(session, recommendation_in.serial_number)
+    ensure_user_can_create_recommendation(
+        role=user.role,
+        username=user.username,
+        auditor=recommendation_in.auditor,
+        check_leader=check.check_leader,
+        check_created_by=check.created_by,
+        message="Недостаточно прав для создания рекомендации в этой проверке.",
+    )
     data = await _prepare_create_payload(session, recommendation_in.model_dump())
+    data["created_by"] = user.username
     async with rollback_on_error(
         session,
         logger=logger,
@@ -115,13 +149,33 @@ async def create_recommendation(
 async def batch_recommendations(
     session: AsyncSession,
     payload: RecommendationBatchRequest,
+    user: CurrentUser,
 ) -> RecommendationListResponse:
     check = await _check_by_serial(session, payload.serial_number)
+    if payload.mode == "replace":
+        ensure_user_can_manage_check(
+            role=user.role,
+            username=user.username,
+            check_leader=check.check_leader,
+            created_by=check.created_by,
+            message="Недостаточно прав для замены рекомендаций этой проверки.",
+        )
+    else:
+        for item in payload.items:
+            ensure_user_can_create_recommendation(
+                role=user.role,
+                username=user.username,
+                auditor=item.auditor,
+                check_leader=check.check_leader,
+                check_created_by=check.created_by,
+                message="Недостаточно прав для добавления рекомендации в эту проверку.",
+            )
 
     normalized_items = []
     for item in payload.items:
         data = await _prepare_create_payload(session, item.model_dump())
         data["serial_number"] = check.serial_number
+        data["created_by"] = user.username
         normalized_items.append(data)
 
     async with rollback_on_error(
@@ -192,8 +246,15 @@ async def update_recommendation(
     session: AsyncSession,
     recommendation_id: int,
     recommendation_in: RecommendationUpdate,
+    user: CurrentUser,
 ) -> Recommendation:
     recommendation = await get_recommendation(session, recommendation_id)
+    await _assert_can_manage(
+        session,
+        user,
+        recommendation,
+        message="Недостаточно прав для изменения этой рекомендации.",
+    )
 
     check_id: Optional[int] = None
     if recommendation_in.serial_number:
@@ -204,6 +265,7 @@ async def update_recommendation(
         recommendation_in.model_dump(exclude_unset=True),
         existing=recommendation,
     )
+    update_data.pop("created_by", None)
     if "audit_object" in update_data:
         update_data["audit_object"] = await canonicalize_audit_objects(
             session,
@@ -254,7 +316,8 @@ async def delete_recommendation(
     user: CurrentUser,
 ) -> None:
     recommendation = await get_recommendation(session, recommendation_id)
-    _assert_can_manage(
+    await _assert_can_manage(
+        session,
         user,
         recommendation,
         message="Недостаточно прав для удаления этой рекомендации.",
@@ -279,7 +342,8 @@ async def delete_recommendations_batch(
     recommendations = []
     for recommendation_id in unique_ids:
         recommendation = await get_recommendation(session, recommendation_id)
-        _assert_can_manage(
+        await _assert_can_manage(
+            session,
             user,
             recommendation,
             message="Недостаточно прав для удаления одной из рекомендаций.",

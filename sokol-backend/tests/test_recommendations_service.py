@@ -15,7 +15,7 @@ os.environ.setdefault(
 )
 os.environ.setdefault("SOKOL_JWT_SECRET", "test-jwt-secret")
 
-from app.api.deps import CurrentUser
+from app.core.current_user import CurrentUser
 from app.core.roles import Role
 from app.models.recommendations import (
     Recommendation,
@@ -149,6 +149,11 @@ class RecommendationsServiceTests(unittest.TestCase):
                         serial_number="26IVP1P1",
                         mode="replace",
                         items=[_recommendation_create("Новая рекомендация")],
+                    ),
+                    CurrentUser(
+                        username="Админ А.А.",
+                        display_name="Администратор",
+                        role=Role.ADMIN,
                     ),
                 )
 
