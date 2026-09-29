@@ -35,6 +35,7 @@ export interface Check {
   check_leader: string;
   status: CheckStatus;
   created_at: string;
+  created_by?: string | null;
   description?: string | null;
   order_document_number?: string;
   order_document_date?: string;

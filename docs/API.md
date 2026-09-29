@@ -12,18 +12,19 @@ HTTP Basic: в non-prod включён по умолчанию; при `SOKOL_EN
 
 | Действие | `auditor` | `admin` / `department_head` |
 |----------|-----------|-----------------------------|
-| CRUD checks/recommendations (create/read/update) | ✅ | ✅ |
-| `DELETE /checks/{id}` | ❌ | ✅ |
-| `DELETE /recommendations/{id}` и `POST .../batch-delete` | только свои (`auditor` ↔ username) | ✅ |
-| Upload/delete attachment (recommendation) | только своя | ✅ |
-| Upload attachment (check) | ✅ | ✅ |
-| `DELETE /attachments/{id}` (check) | ❌ | ✅ |
+| Read checks/recommendations | ✅ | ✅ |
+| Create check | ✅, автор записывается в `created_by` | ✅ |
+| Update/delete check | свои: руководитель проверки или `created_by` | ✅ |
+| Create recommendation | своя проверка или себя в `auditor` | ✅ |
+| Update/delete recommendation и batch-delete | свои: аудитор, руководитель проверки, `created_by` рекомендации или проверки | ✅ |
+| `POST /recommendations/batch` `replace` | только своя проверка | ✅ |
+| Upload/delete attachment | той же проверке или рекомендации, что update | ✅ |
 | Settings mutate | ❌ | ✅ |
 | Settings GET | ✅ | ✅ |
 | `GET/POST /users` | ❌ | ✅ |
 | Analytics / tools | ✅ | ✅ |
 
-«Своя» рекомендация: `recommendations.auditor` сравнивается с `username` через `person_match`.
+«Своя» запись: `person_match` сравнивает `username` с руководителем проверки, аудитором рекомендации или `created_by`. У старых строк `created_by` пустой — остаётся совпадение по ФИО.
 
 Логин: `POST /auth/login` → `{ access_token, token_type: "bearer", role, username, display_name }`. TTL: `SOKOL_JWT_EXPIRE_MINUTES` (default 480).  
 `GET /auth/me` → `{ username, display_name, role }` (без id и аватара).  
@@ -54,7 +55,7 @@ HTTP Basic: в non-prod включён по умолчанию; при `SOKOL_EN
 | `GET` | `/checks` | список |
 | `GET` | `/checks/{id}` | одна |
 | `PATCH` | `/checks/{id}` | частичное; `created_at` не меняется |
-| `DELETE` | `/checks/{id}` | 204; cascade rec + вложения MinIO; **admin** |
+| `DELETE` | `/checks/{id}` | 204; cascade rec + вложения MinIO; admin или своя проверка |
 
 **Query list:** `skip` (≥0, default 0), `limit` (1…10000, default 200), `search?` (min 1; имя / руководитель / ключ), `status?` (`not_started` \| `in_progress` \| `completed`), `check_type?` (`planned` \| `unscheduled` \| `thematic`).
 
@@ -73,11 +74,11 @@ HTTP Basic: в non-prod включён по умолчанию; при `SOKOL_EN
 | Method | Path | Описание |
 |--------|------|----------|
 | `POST` | `/recommendations` | 201; проверка ищется по `serial_number` |
-| `POST` | `/recommendations/batch` | atomic append/replace для проверки; body `{ serial_number, mode: append\|replace, items: [...] }`, 1…200 items; `serial_number` item'ов перезаписывается с проверки; 201 `{ items, total }`. **Ownership не проверяется** (в отличие от DELETE / batch-delete). `mode=replace` удаляет существующие рекомендации **и их MinIO-вложения** |
+| `POST` | `/recommendations/batch` | atomic append/replace для проверки; body `{ serial_number, mode: append\|replace, items: [...] }`, 1…200 items; `serial_number` item'ов перезаписывается с проверки; 201 `{ items, total }`. `append` — если можно создать каждую рекомендацию; `replace` — только если можно менять проверку. `mode=replace` удаляет существующие рекомендации **и их MinIO-вложения** |
 | `POST` | `/recommendations/batch-delete` | 204, 1…200 ids; та же модель владения, что `DELETE` |
 | `GET` | `/recommendations` | список |
 | `GET` | `/recommendations/{id}` | одна |
-| `PATCH` | `/recommendations/{id}` | смена `serial_number` переносит рекомендацию на другую проверку |
+| `PATCH` | `/recommendations/{id}` | своя рекомендация; смена `serial_number` переносит её на другую проверку |
 | `DELETE` | `/recommendations/{id}` | 204; auditor — только своя |
 
 **Query list:** `skip`, `limit` (как checks), `search?`, `serial_number?`.  

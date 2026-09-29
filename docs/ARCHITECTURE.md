@@ -93,7 +93,7 @@ State: Context + React Query, без Redux. Списки — bulk-fetch 10000, �
 
 Роли: `auditor` / `department_head` / `admin`. `ADMIN_ROLES` = admin + department_head. `require_admin` и UI `isAdmin` — оба.
 
-Login матчит `username` и `aliases`. Неактивные не проходят. «Своя» рекомендация: `recommendations.auditor` ↔ `username` через `person_match` (фамилия + инициалы, «Иванов А.А.» ≡ «Иванов Александр Александрович»). То же на фронте (`personMatch.ts`). Фильтр «Мои» сравнивает с `shortName` из JWT, не с server identity.
+Login матчит `username` и `aliases`. Неактивные не проходят. Изменение и удаление проверки: admin/department_head — любые; аудитор — если он `check_leader` или `created_by`. Рекомендация — если он её аудитор, руководитель проверки, `created_by` рекомендации или проверки. Сравнение через `person_match` (фамилия + инициалы, «Иванов А.А.» ≡ «Иванов Александр Александрович»). То же на фронте (`personMatch.ts`). Фильтр «Мои» сравнивает с `shortName` из JWT, не с server identity.
 
 Пароли: PBKDF2-SHA256, на login ещё legacy plaintext verify. Аватары только в localStorage. OIDC нет.
 

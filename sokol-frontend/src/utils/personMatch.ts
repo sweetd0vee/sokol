@@ -79,6 +79,40 @@ export function auditorMatchesCurrentUser(auditor: string, userFullName: string)
   return personFieldMatchesUser(auditor, userFullName);
 }
 
+export function userCanManageCheck(input: {
+  isAdmin: boolean;
+  userName: string;
+  checkLeader: string;
+  createdBy?: string | null;
+}) {
+  if (input.isAdmin) {
+    return true;
+  }
+  return (
+    personFieldMatchesUser(input.checkLeader, input.userName)
+    || personFieldMatchesUser(input.createdBy ?? '', input.userName)
+  );
+}
+
+export function userCanManageRecommendation(input: {
+  isAdmin: boolean;
+  userName: string;
+  auditor: string;
+  createdBy?: string | null;
+  checkLeader?: string | null;
+  checkCreatedBy?: string | null;
+}) {
+  if (input.isAdmin) {
+    return true;
+  }
+  return (
+    personFieldMatchesUser(input.auditor, input.userName)
+    || personFieldMatchesUser(input.createdBy ?? '', input.userName)
+    || personFieldMatchesUser(input.checkLeader ?? '', input.userName)
+    || personFieldMatchesUser(input.checkCreatedBy ?? '', input.userName)
+  );
+}
+
 export function recommendationMatchesCurrentUser(
   recommendation: { auditor: string; manager: string },
   userFullName: string,

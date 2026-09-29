@@ -6,6 +6,8 @@ import { getErrorMessage } from '../api/errors';
 import { queryKeys } from '../api/queryKeys';
 import { useSokolData } from '../contexts/sokolData';
 import { useAuth } from './useAuth';
+import { useCurrentUserName } from './useCurrentUserName';
+import { userCanManageCheck } from '../utils/personMatch';
 import { useAuditorOptions, useCheckKindOptions, useEffectivenessRatingOptions } from './useReferenceOptions';
 import {
   type CheckFormDraft,
@@ -33,6 +35,7 @@ export function useCheckForm() {
   const location = useLocation();
   const { checks, addCheck, updateCheck, deleteCheck } = useSokolData();
   const { isAdmin } = useAuth();
+  const myName = useCurrentUserName();
 
   const existingFromList = checks.find((item) => item.id === id);
   const locationState = location.state as CheckFormLocationState | null;
@@ -68,6 +71,14 @@ export function useCheckForm() {
   );
 
   const checkSaved = Boolean(isEditMode && existing?.id);
+  const canManageCheck =
+    !isEditMode
+    || userCanManageCheck({
+      isAdmin,
+      userName: myName,
+      checkLeader: existing?.check_leader ?? '',
+      createdBy: existing?.created_by,
+    });
 
   useEffect(() => {
     if (restoredDraft || !existing?.id || hydratedCheckId === existing.id) {
@@ -78,13 +89,19 @@ export function useCheckForm() {
   }, [existing, hydratedCheckId, restoredDraft]);
 
   const setField = useCallback(<K extends keyof CheckFormFields>(key: K, value: CheckFormFields[K]) => {
+    if (isEditMode && !canManageCheck) {
+      return;
+    }
     setFields((prev) => ({ ...prev, [key]: value }));
-  }, []);
+  }, [canManageCheck, isEditMode]);
 
   const heading = isEditMode ? 'Редактирование проверки' : 'Создание проверки';
   const status = deriveCheckStatus(fields.startDate, fields.dzDocumentDate, existing?.status);
 
   const handleStartDateChange = (value: Date | null) => {
+    if (isEditMode && !canManageCheck) {
+      return;
+    }
     setFields((prev) => applyStartDateChange(prev, value));
   };
 
@@ -142,7 +159,7 @@ export function useCheckForm() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (isSaving) {
+    if (isSaving || (isEditMode && !canManageCheck)) {
       return;
     }
     setShowValidationErrors(!isEditMode);
@@ -234,6 +251,7 @@ export function useCheckForm() {
     deleteConfirmOpen,
     setDeleteConfirmOpen,
     isAdmin,
+    canManageCheck,
     leaderOptions,
     checkViewOptions,
     effectivenessOptions,

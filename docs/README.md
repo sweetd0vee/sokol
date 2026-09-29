@@ -48,7 +48,7 @@ Python 3.12 · FastAPI · SQLAlchemy 2 + asyncpg · PostgreSQL 16 · MinIO · py
 
 SPA на React 19 + Vite 7:
 
-- **Auth** — JWT, роли `admin` / `department_head` / `auditor`. В UI `isAdmin` = admin или руководитель департамента (settings mutate, DELETE проверок, пользователи).
+- **Auth** — JWT, роли `admin` / `department_head` / `auditor`. В UI `isAdmin` = admin или руководитель департамента (любые проверки и рекомендации, settings, пользователи). Аудитор меняет только свои.
 - **Данные** — TanStack Query + `SokolDataProvider` (checks/recommendations, до 10000 строк).
 - **Analytics / planning** — `GET /api/v1/analytics/*`; visual export (html/pdf/docx/xlsx) на вкладках аналитики и на `/planning`.
 - **Constructor** — снимки карточек в `localStorage`, без backend API.
@@ -67,9 +67,9 @@ SPA на React 19 + Vite 7:
 
 | Роль | Возможности в UI |
 |------|------------------|
-| `auditor` | CRUD домена, analytics, tools, вложения; DELETE рекомендации — только своей (`auditor` ↔ ФИО) |
+| `auditor` | чтение, analytics, tools; изменять и удалять только свои проверки и рекомендации (руководитель, аудитор или автор) |
 | `department_head` | как admin в UI (`isAdmin`) |
-| `admin` | + справочники, DELETE проверок, удаление вложений проверки, `GET/POST /users` |
+| `admin` | любые проверки и рекомендации, справочники, `GET/POST /users` |
 
 Фильтр «Мои» сравнивает руководителя / аудитора / менеджера с ФИО из JWT (`shortName`) через `personMatch` (фамилия + инициалы), не с server identity.
 

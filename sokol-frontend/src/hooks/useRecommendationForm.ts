@@ -17,7 +17,7 @@ import { toNameOptions, useAuditorOptions } from './useReferenceOptions';
 import { useAuditObjectOptions } from './useAuditObjectOptions';
 import { applyRecommendationFormAutoStatus } from '../utils/recommendationFormAutoStatus';
 import { toIsoDate } from '../utils/dates';
-import { auditorMatchesCurrentUser } from '../utils/personMatch';
+import { auditorMatchesCurrentUser, userCanManageCheck, userCanManageRecommendation } from '../utils/personMatch';
 import { resolveRecommendationYearlyDisplayNumber } from '../utils/recommendationYearlyNumber';
 import {
   type CheckFormLocationState,
@@ -157,10 +157,44 @@ export function useRecommendationForm() {
     [],
   );
 
+  const canManageLinkedCheck = Boolean(
+    linkedCheck
+    && userCanManageCheck({
+      isAdmin,
+      userName: myName,
+      checkLeader: linkedCheck.check_leader,
+      createdBy: linkedCheck.created_by,
+    }),
+  );
+  const canEditCheckLeader = isAdmin || canManageLinkedCheck || (!isEditMode && !linkedCheck);
+  const recommendationAccessKnown =
+    !isEditMode
+    || isAdmin
+    || auditorMatchesCurrentUser(source?.auditor ?? '', myName)
+    || auditorMatchesCurrentUser(source?.created_by ?? '', myName)
+    || Boolean(linkedCheck)
+    || !resolvedSerialNumber;
+  const canManageRecommendation =
+    !isEditMode
+    || userCanManageRecommendation({
+      isAdmin,
+      userName: myName,
+      auditor: source?.auditor ?? '',
+      createdBy: source?.created_by,
+      checkLeader: linkedCheck?.check_leader,
+      checkCreatedBy: linkedCheck?.created_by,
+    });
+
   const setField = useCallback(<K extends keyof RecommendationFormFields>(
     key: K,
     value: RecommendationFormFields[K],
   ) => {
+    if (isEditMode && !canManageRecommendation) {
+      return;
+    }
+    if (key === 'checkLeader' && !canEditCheckLeader) {
+      return;
+    }
     setFields((prev) => {
       const next = { ...prev, [key]: value };
       if (key !== 'deadline') {
@@ -168,9 +202,12 @@ export function useRecommendationForm() {
       }
       return applyAutoStatus(next);
     });
-  }, [applyAutoStatus]);
+  }, [applyAutoStatus, canEditCheckLeader, canManageRecommendation, isEditMode]);
 
   const setClosure = useCallback((value: SetStateAction<RecommendationClosureForm>) => {
+    if (isEditMode && !canManageRecommendation) {
+      return;
+    }
     setFields((prev) => {
       const next = {
         ...prev,
@@ -178,7 +215,7 @@ export function useRecommendationForm() {
       };
       return applyAutoStatus(next);
     });
-  }, [applyAutoStatus]);
+  }, [applyAutoStatus, canManageRecommendation, isEditMode]);
 
   const checkDisplayName = useMemo(() => {
     if (fromCheckForm && navigationState.checkFormDraft?.checkName.trim()) {
@@ -221,9 +258,6 @@ export function useRecommendationForm() {
   const { options: managerOptions } = useAuditorOptions(fields.manager);
   const { options: auditObjectOptions } = useAuditObjectOptions(fields.auditObject);
   const recommendationId = isEditMode ? (source?.id ?? id ?? null) : null;
-  const recommendationAuditor = source?.auditor ?? fields.auditor;
-  const canManageRecommendation =
-    isAdmin || auditorMatchesCurrentUser(recommendationAuditor, myName);
 
   const requiredFieldErrors = useMemo(
     () =>
@@ -312,7 +346,12 @@ export function useRecommendationForm() {
     });
 
   const persistCheckLeaderIfNeeded = async () => {
-    if (!linkedCheck || !fields.checkLeader.trim() || fields.checkLeader === linkedCheck.check_leader) {
+    if (
+      !canEditCheckLeader
+      || !linkedCheck
+      || !fields.checkLeader.trim()
+      || fields.checkLeader === linkedCheck.check_leader
+    ) {
       return fields.serialNumber;
     }
     const updatedCheck = await updateCheck({ ...linkedCheck, check_leader: fields.checkLeader });
@@ -334,7 +373,7 @@ export function useRecommendationForm() {
 
   const saveRecommendation = async (mode: 'save' | 'createAnotherCheckOnly') => {
     const trimmedDescription = fields.description.trim();
-    if (isSaving) {
+    if (isSaving || (isEditMode && !canManageRecommendation)) {
       return;
     }
     setShowValidationErrors(!isEditMode);
@@ -420,6 +459,9 @@ export function useRecommendationForm() {
   };
 
   const handleStatusChange = (value: string) => {
+    if (isEditMode && !canManageRecommendation) {
+      return;
+    }
     const nextStatus = value as Recommendation['status'] | '';
     setFields((prev) => ({
       ...prev,
@@ -429,6 +471,9 @@ export function useRecommendationForm() {
   };
 
   const handleAdditionalStatusChange = (value: string) => {
+    if (isEditMode && !canManageRecommendation) {
+      return;
+    }
     const nextAdditionalStatus = value as Recommendation['additional_status'] | '';
     setFields((prev) => ({
       ...prev,
@@ -463,6 +508,8 @@ export function useRecommendationForm() {
     setIsExecutionDeadlineOpen,
     recommendationId,
     canManageRecommendation,
+    recommendationAccessKnown,
+    canEditCheckLeader,
     requiredFieldErrors,
     showValidationErrors,
     saveError,

@@ -52,7 +52,20 @@ export function CheckFormPage() {
 
   return (
     <FormPageShell title={form.heading} backTo="/checks">
-      <form onSubmit={form.handleSubmit} className={FORM_STACK_CLASS}>
+      <form
+        onSubmit={form.handleSubmit}
+        className={`${FORM_STACK_CLASS}${
+          form.isEditMode && !form.canManageCheck
+            ? ' [&_input]:pointer-events-none [&_select]:pointer-events-none [&_textarea]:pointer-events-none'
+            : ''
+        }`}
+      >
+        {form.isEditMode && !form.canManageCheck && (
+          <p className="text-sm text-gray-600">
+            Эту проверку можно только просматривать. Изменять и удалять её могут администратор,
+            руководитель проверки и тот, кто её создал.
+          </p>
+        )}
         <div className={FORM_SECTION_CLASS}>
           <div className={FORM_SECTION_TITLE_CLASS}>Проверка</div>
           <Textarea
@@ -168,6 +181,7 @@ export function CheckFormPage() {
 
         <CheckAttachmentsSection
           checkId={form.existing?.id ?? null}
+          canModify={form.canManageCheck}
           order={{
             documentNumber: fields.orderDocumentNumber,
             onDocumentNumberChange: (value) => setField('orderDocumentNumber', value),
@@ -240,19 +254,22 @@ export function CheckFormPage() {
           </div>
         </div>
 
-        <CheckRecommendationsBlock
-          checkKey={form.checkKey}
-          checkLeader={fields.checkLeader}
-          checkSaved={form.checkSaved}
-          onAddManually={form.handleNavigateToNewRecommendation}
-        />
+        {form.canManageCheck && (
+          <CheckRecommendationsBlock
+            checkKey={form.checkKey}
+            checkLeader={fields.checkLeader}
+            checkSaved={form.checkSaved}
+            onAddManually={form.handleNavigateToNewRecommendation}
+          />
+        )}
 
         <FormActionFooter
           showValidation={showValidationErrors && requiredFieldErrors.hasErrors}
           saveError={form.saveError}
           isSaving={form.isSaving}
           isDeleting={form.isDeleting}
-          deleteVisible={Boolean(form.isEditMode && form.existing?.id && form.isAdmin)}
+          saveVisible={form.canManageCheck}
+          deleteVisible={Boolean(form.isEditMode && form.existing?.id && form.canManageCheck)}
           onDelete={() => form.setDeleteConfirmOpen(true)}
         />
       </form>

@@ -22,6 +22,7 @@ export type ApiCheck = {
   check_leader: string;
   status: CheckStatus;
   created_at: string;
+  created_by?: string | null;
   description?: string | null;
   order_document_number?: string | null;
   order_document_date?: string | null;
@@ -57,6 +58,7 @@ export type ApiRecommendation = {
   status: RecommendationStatus;
   additional_status: RecommendationAdditionalStatus;
   created_at: string;
+  created_by?: string | null;
   actual_completion_date?: string | null;
   extension_1_reason?: string | null;
   extension_1_date?: string | null;
@@ -90,6 +92,7 @@ export function mapCheckFromApi(api: ApiCheck): Check {
     check_leader: api.check_leader,
     status: api.status,
     created_at: api.created_at,
+    created_by: api.created_by ?? undefined,
     description: api.description ?? undefined,
     order_document_number: optionalDate(api.order_document_number),
     order_document_date: optionalDate(api.order_document_date),
@@ -160,6 +163,7 @@ export function mapRecommendationFromApi(api: ApiRecommendation): Recommendation
     status: normalizeRecommendationStatus(api.status),
     additional_status: normalizeRecommendationAdditionalStatus(api.additional_status),
     created_at: api.created_at,
+    created_by: api.created_by ?? undefined,
     actual_completion_date: api.actual_completion_date ?? undefined,
     extension_1_reason: api.extension_1_reason ?? undefined,
     extension_1_date: api.extension_1_date ?? undefined,

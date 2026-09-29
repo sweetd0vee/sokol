@@ -55,7 +55,7 @@ sokol/
 
 **Сущности:** `Check` (`serial_number` только backend), `Recommendation` (`check_id` + денормализованный serial), `Attachment` (MinIO + metadata), справочники (auditors с `code` из 3 букв, departments, check_kinds, ratings, audit_types), `User`. Открытые rec-статусы пересчитывает in-process scheduler (00:05 МСК).
 
-**Роли:** `auditor` / `department_head` / `admin`. `require_admin` = admin **или** department_head. Auditor удаляет только свою рекомендацию (`person_match` по `auditor` ↔ username). Login матчит username и aliases.
+**Роли:** `auditor` / `department_head` / `admin`. `require_admin` = admin **или** department_head. Эти роли меняют любые проверки и рекомендации. Аудитор — только свои: руководитель проверки, аудитор рекомендации или `created_by` (`person_match` с username). Login матчит username и aliases.
 
 Подробно: [DATA_AND_DB.md](DATA_AND_DB.md), [API.md](API.md), [ARCHITECTURE.md](ARCHITECTURE.md).
 

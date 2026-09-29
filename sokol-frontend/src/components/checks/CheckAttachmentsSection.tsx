@@ -7,7 +7,6 @@ import {
   type AttachmentSlot,
 } from '../../utils/checkAttachments';
 import { useEntityAttachments } from '../../hooks/useEntityAttachments';
-import { useAuth } from '../../hooks/useAuth';
 import { useStorageStatus } from '../../hooks/useStorageStatus';
 import { fetchCapabilities } from '../../api/capabilities';
 import { queryKeys } from '../../api/queryKeys';
@@ -34,6 +33,7 @@ type DocumentFields = {
 };
 
 type CheckAttachmentsSectionProps = {
+  canModify?: boolean;
   checkId?: string | null;
   order: DocumentFields;
   program: DocumentFields;
@@ -73,12 +73,12 @@ function DocumentMetaFields({
 
 export function CheckAttachmentsSection({
   checkId = null,
+  canModify = true,
   order,
   program,
   az,
   dz,
 }: CheckAttachmentsSectionProps) {
-  const { isAdmin } = useAuth();
   const { filesBySlot, addFiles, removeFile, countForSlot, canPersist } = useEntityAttachments({
     entityType: 'check',
     entityId: checkId,
@@ -177,7 +177,8 @@ export function CheckAttachmentsSection({
             void removeFile(group, clientId);
           }}
           onClose={() => setOpenSlot(null)}
-          canRemoveSaved={isAdmin}
+          canModify={canModify}
+          canRemoveSaved={canModify}
         />
       )}
     </div>

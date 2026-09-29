@@ -29,6 +29,7 @@ type AttachmentFilesModalProps = {
   onRemoveFile: (group: AttachmentFileGroup, clientId: string) => void;
   onClose: () => void;
   canRemoveSaved: boolean;
+  canModify?: boolean;
   unavailableMessage?: string;
 };
 
@@ -45,11 +46,12 @@ export function AttachmentFilesModal({
   onRemoveFile,
   onClose,
   canRemoveSaved,
+  canModify = true,
   unavailableMessage = 'Сохраните проверку, чтобы прикрепить файлы.',
 }: AttachmentFilesModalProps) {
   const inputRefs = useRef<Partial<Record<AttachmentFileGroup, HTMLInputElement | null>>>({});
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const canAddFiles = canPersist && canUploadToStorage;
+  const canAddFiles = canPersist && canUploadToStorage && canModify;
 
   const handlePickFiles = (group: AttachmentFileGroup) => {
     const input = inputRefs.current[group];

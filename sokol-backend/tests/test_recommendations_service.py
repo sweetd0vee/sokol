@@ -85,7 +85,12 @@ class RecommendationsServiceTests(unittest.TestCase):
 
     def test_batch_replace_deletes_old_rows_and_creates_new_rows_once(self) -> None:
         session = AsyncMock()
-        check = SimpleNamespace(id=20, serial_number="26IVP1P1")
+        check = SimpleNamespace(
+            id=20,
+            serial_number="26IVP1P1",
+            check_leader="Иванов И.И.",
+            created_by=None,
+        )
         existing = [Recommendation(id=10, check_id=20, serial_number="26IVP1P1")]
         created = Recommendation(
             id=11,

@@ -11,6 +11,7 @@ type FormActionFooterProps = {
   isDeleting: boolean;
   extraLeft?: ReactNode;
   deleteVisible?: boolean;
+  saveVisible?: boolean;
   onDelete?: () => void;
 };
 
@@ -21,6 +22,7 @@ export function FormActionFooter({
   isDeleting,
   extraLeft,
   deleteVisible = false,
+  saveVisible = true,
   onDelete,
 }: FormActionFooterProps) {
   return (
@@ -29,13 +31,15 @@ export function FormActionFooter({
       {saveError && <ErrorState description={saveError} />}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap justify-start gap-3">
-          <button
-            type="submit"
-            disabled={isSaving || isDeleting}
-            className={`${FORM_SAVE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
-          >
-            {isSaving ? 'Сохранение...' : 'Сохранить'}
-          </button>
+          {saveVisible ? (
+            <button
+              type="submit"
+              disabled={isSaving || isDeleting}
+              className={`${FORM_SAVE_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-50`}
+            >
+              {isSaving ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          ) : null}
           {extraLeft}
         </div>
         {deleteVisible && onDelete ? (

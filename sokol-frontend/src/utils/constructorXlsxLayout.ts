@@ -11,13 +11,17 @@ import type { ConstructorWidget } from '../components/analytics/constructor/cons
 import type { DashboardChartCapture } from './dashboardChartRegistry';
 import { chartHasPngPayload } from './dashboardChartRegistry';
 
-/** ~84px per column → the 12-col board fits a landscape sheet without a horizontal scrollbar. */
-export const CONSTRUCTOR_XLSX_COL_WIDTH = 12;
+/** Two Excel columns per board column; the last column of a widget is left empty as a gutter. */
+export const CONSTRUCTOR_XLSX_COLS_PER_BOARD = 2;
+export const CONSTRUCTOR_XLSX_SHEET_COLS = CONSTRUCTOR_GRID_COLS * CONSTRUCTOR_XLSX_COLS_PER_BOARD;
+/** ~52px × 24 cols ≈ 1250px — large enough that charts stay sharp at 100% zoom. */
+export const CONSTRUCTOR_XLSX_COL_WIDTH = 7.5;
 export const CONSTRUCTOR_XLSX_ROWS_PER_UNIT = 3;
-/** 15pt × 3 rows ≈ 60px per grid unit; a h=4 card stays wide, close to the on-screen 2:1. */
-export const CONSTRUCTOR_XLSX_ROW_HEIGHT = 15;
-export const CONSTRUCTOR_XLSX_IMAGE_PAD = 0.28;
-export const CONSTRUCTOR_XLSX_IMAGE_PAD_ROW = 0.6;
+/** 18pt × 3 rows ≈ 72px per grid unit; a h=4 card stays close to the on-screen 2:1. */
+export const CONSTRUCTOR_XLSX_ROW_HEIGHT = 18;
+export const CONSTRUCTOR_XLSX_BAND_GAP_ROWS = 1;
+export const CONSTRUCTOR_XLSX_IMAGE_PAD = 0.4;
+export const CONSTRUCTOR_XLSX_IMAGE_PAD_ROW = 0.45;
 /**
  * Default 0-based image origin used by the anchor helpers.
  * The workbook itself starts the grid after the title, meta rows, and a spacer.
@@ -65,28 +69,54 @@ export function constructorGridRowSpan(layouts: ConstructorGridRect[]): number {
   );
 }
 
+export type ConstructorXlsxSheetRect = {
+  startCol: number;
+  endCol: number;
+  startRow: number;
+  endRow: number;
+};
+
+/** 1-based inclusive Excel range for a board widget, with a 1-col gutter on the right. */
+export function constructorXlsxSheetRect(
+  layout: ConstructorGridRect,
+  originRow = CONSTRUCTOR_XLSX_GRID_ORIGIN_ROW,
+  bandGapBefore = 0,
+): ConstructorXlsxSheetRect {
+  const { x, y, w, h } = clampConstructorGridRect(layout);
+  const startCol = x * CONSTRUCTOR_XLSX_COLS_PER_BOARD + 1;
+  const endCol = (x + w) * CONSTRUCTOR_XLSX_COLS_PER_BOARD - (x + w < CONSTRUCTOR_GRID_COLS ? 1 : 0);
+  const startRow = originRow + y * CONSTRUCTOR_XLSX_ROWS_PER_UNIT + bandGapBefore + 1;
+  const endRow = startRow + h * CONSTRUCTOR_XLSX_ROWS_PER_UNIT - 1;
+  return { startCol, endCol, startRow, endRow };
+}
+
+export function constructorXlsxBandGapBefore(ys: number[], y: number): number {
+  return ys.filter((value) => value < y).length * CONSTRUCTOR_XLSX_BAND_GAP_ROWS;
+}
+
 export type ConstructorXlsxImageAnchor = {
   tl: { col: number; row: number };
   br: { col: number; row: number };
   editAs: 'twoCell';
 };
 
-/** ExcelJS image anchors are 0-based; widget cells use the dashboard 12-col grid. */
+/** ExcelJS image anchors are 0-based; widget cells use the 24-col sheet (2 per board col). */
 export function constructorXlsxImageAnchor(
   layout: ConstructorGridRect,
   originRow = CONSTRUCTOR_XLSX_GRID_ORIGIN_ROW,
   padCol = CONSTRUCTOR_XLSX_IMAGE_PAD,
   padRow = CONSTRUCTOR_XLSX_IMAGE_PAD_ROW,
+  bandGapBefore = 0,
 ): ConstructorXlsxImageAnchor {
-  const { x, y, w, h } = clampConstructorGridRect(layout);
+  const range = constructorXlsxSheetRect(layout, originRow, bandGapBefore);
   return {
     tl: {
-      col: x + padCol,
-      row: originRow + y * CONSTRUCTOR_XLSX_ROWS_PER_UNIT + padRow,
+      col: range.startCol - 1 + padCol,
+      row: range.startRow - 1 + padRow,
     },
     br: {
-      col: x + w - padCol,
-      row: originRow + (y + h) * CONSTRUCTOR_XLSX_ROWS_PER_UNIT - padRow,
+      col: range.endCol - padCol,
+      row: range.endRow - padRow,
     },
     editAs: 'twoCell',
   };
@@ -102,18 +132,20 @@ export function excelRowHeightToPixels(heightPt: number): number {
   return Math.round((heightPt * 96) / 72);
 }
 
-/** On-sheet drawing size of a widget, matching the enlarged 12-col grid. */
+/** On-sheet drawing size of a widget, after gutters and padding. */
 export function constructorXlsxImageExtent(
   layout: ConstructorGridRect,
   padCol = CONSTRUCTOR_XLSX_IMAGE_PAD,
   padRow = CONSTRUCTOR_XLSX_IMAGE_PAD_ROW,
 ): { width: number; height: number } {
-  const { w, h } = clampConstructorGridRect(layout);
+  const range = constructorXlsxSheetRect(layout);
   const colPx = excelColumnWidthToPixels(CONSTRUCTOR_XLSX_COL_WIDTH);
   const rowPx = excelRowHeightToPixels(CONSTRUCTOR_XLSX_ROW_HEIGHT);
+  const cols = range.endCol - range.startCol + 1;
+  const rows = range.endRow - range.startRow + 1;
   return {
-    width: Math.max(Math.round(w * colPx - 2 * padCol * colPx), 1),
-    height: Math.max(Math.round(h * CONSTRUCTOR_XLSX_ROWS_PER_UNIT * rowPx - 2 * padRow * rowPx), 1),
+    width: Math.max(Math.round(cols * colPx - 2 * padCol * colPx), 1),
+    height: Math.max(Math.round(rows * rowPx - 2 * padRow * rowPx), 1),
   };
 }
 
@@ -122,8 +154,9 @@ export function constructorXlsxFittedImage(
   layout: ConstructorGridRect,
   captureSize: { width: number; height: number },
   originRow = CONSTRUCTOR_XLSX_GRID_ORIGIN_ROW,
+  bandGapBefore = 0,
 ): { tl: { col: number; row: number }; ext: { width: number; height: number }; editAs: 'oneCell' } {
-  const box = constructorXlsxImageAnchor(layout, originRow);
+  const box = constructorXlsxImageAnchor(layout, originRow, CONSTRUCTOR_XLSX_IMAGE_PAD, CONSTRUCTOR_XLSX_IMAGE_PAD_ROW, bandGapBefore);
   const cell = constructorXlsxImageExtent(layout);
   const srcW = Math.max(captureSize.width, 1);
   const srcH = Math.max(captureSize.height, 1);
@@ -142,18 +175,13 @@ export function constructorXlsxFittedImage(
   };
 }
 
-/** 1-based inclusive cell range behind a widget (for merge, fill, border). */
+/** 1-based inclusive cell range behind a widget (for fill and border). */
 export function constructorXlsxCellRange(
   layout: ConstructorGridRect,
   originRow = CONSTRUCTOR_XLSX_GRID_ORIGIN_ROW,
-): { startRow: number; startCol: number; endRow: number; endCol: number } {
-  const { x, y, w, h } = clampConstructorGridRect(layout);
-  return {
-    startCol: x + 1,
-    endCol: x + w,
-    startRow: originRow + y * CONSTRUCTOR_XLSX_ROWS_PER_UNIT + 1,
-    endRow: originRow + (y + h) * CONSTRUCTOR_XLSX_ROWS_PER_UNIT,
-  };
+  bandGapBefore = 0,
+): ConstructorXlsxSheetRect {
+  return constructorXlsxSheetRect(layout, originRow, bandGapBefore);
 }
 
 export function excelSheetName(name: string): string {
@@ -191,43 +219,44 @@ function outlineRange(
 }
 
 function paintRowBottom(sheet: ExcelJS.Worksheet, row: number, color: string, style: 'thin' | 'medium') {
-  for (let col = 1; col <= CONSTRUCTOR_GRID_COLS; col += 1) {
+  for (let col = 1; col <= CONSTRUCTOR_XLSX_SHEET_COLS; col += 1) {
     const cell = sheet.getCell(row, col);
     cell.border = { bottom: { style, color: { argb: color } } };
   }
 }
 
 function writeHeader(sheet: ExcelJS.Worksheet, title: string, meta: Array<[string, string]>) {
-  sheet.mergeCells(1, 1, 1, CONSTRUCTOR_GRID_COLS);
+  sheet.mergeCells(1, 1, 1, CONSTRUCTOR_XLSX_SHEET_COLS);
   const titleCell = sheet.getCell(1, 1);
   titleCell.value = title;
-  titleCell.font = { name: FONT, size: 18, bold: true, color: { argb: BRAND } };
+  titleCell.font = { name: FONT, size: 20, bold: true, color: { argb: BRAND } };
   titleCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-  sheet.getRow(1).height = 28;
+  sheet.getRow(1).height = 32;
   paintRowBottom(sheet, 1, BRAND, 'medium');
 
+  const labelCols = 6;
   meta.forEach(([label, value], index) => {
     const row = 2 + index;
-    sheet.mergeCells(row, 1, row, 3);
-    sheet.mergeCells(row, 4, row, CONSTRUCTOR_GRID_COLS);
+    sheet.mergeCells(row, 1, row, labelCols);
+    sheet.mergeCells(row, labelCols + 1, row, CONSTRUCTOR_XLSX_SHEET_COLS);
     const labelCell = sheet.getCell(row, 1);
     labelCell.value = label;
     labelCell.font = { name: FONT, size: 10, bold: true, color: { argb: BRAND } };
     labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: LABEL_FILL } };
     labelCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-    const valueCell = sheet.getCell(row, 4);
+    const valueCell = sheet.getCell(row, labelCols + 1);
     valueCell.value = value;
-    valueCell.font = { name: FONT, size: 10, color: { argb: INK } };
+    valueCell.font = { name: FONT, size: 11, color: { argb: INK } };
     valueCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-    sheet.getRow(row).height = 20;
-    for (let col = 1; col <= 3; col += 1) {
+    sheet.getRow(row).height = 22;
+    for (let col = 1; col <= labelCols; col += 1) {
       sheet.getCell(row, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: LABEL_FILL } };
     }
     paintRowBottom(sheet, row, HAIRLINE, 'thin');
   });
 
   const spacer = constructorXlsxOriginRow(meta.length);
-  sheet.getRow(spacer).height = 12;
+  sheet.getRow(spacer).height = 14;
 }
 
 export function buildConstructorDashboardWorkbook(options: {
@@ -246,8 +275,8 @@ export function buildConstructorDashboardWorkbook(options: {
         || left.layout.x - right.layout.x
         || left.widget.instanceId.localeCompare(right.widget.instanceId),
     );
-  const rowSpan = constructorGridRowSpan(placed.map((item) => item.layout));
   const originRow = constructorXlsxOriginRow(meta.length);
+  const bandYs = [...new Set(placed.map((item) => item.layout.y))].sort((left, right) => left - right);
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'SOKOL';
@@ -269,7 +298,7 @@ export function buildConstructorDashboardWorkbook(options: {
       paperSize: 9,
       fitToPage: true,
       fitToWidth: 1,
-      fitToHeight: 0,
+      fitToHeight: 1,
       horizontalCentered: true,
       horizontalDpi: 600,
       verticalDpi: 600,
@@ -285,18 +314,26 @@ export function buildConstructorDashboardWorkbook(options: {
     },
   });
 
-  sheet.columns = Array.from({ length: CONSTRUCTOR_GRID_COLS }, () => ({
+  sheet.columns = Array.from({ length: CONSTRUCTOR_XLSX_SHEET_COLS }, () => ({
     width: CONSTRUCTOR_XLSX_COL_WIDTH,
   }));
   writeHeader(sheet, title, meta);
 
-  const gridEndRow = originRow + rowSpan * CONSTRUCTOR_XLSX_ROWS_PER_UNIT;
+  const gridEndRow = placed.reduce((max, item) => {
+    const range = constructorXlsxCellRange(
+      item.layout,
+      originRow,
+      constructorXlsxBandGapBefore(bandYs, item.layout.y),
+    );
+    return Math.max(max, range.endRow);
+  }, originRow);
   for (let row = originRow + 1; row <= gridEndRow; row += 1) {
     sheet.getRow(row).height = CONSTRUCTOR_XLSX_ROW_HEIGHT;
   }
 
   placed.forEach(({ widget, layout }) => {
-    const range = constructorXlsxCellRange(layout, originRow);
+    const bandGap = constructorXlsxBandGapBefore(bandYs, layout.y);
+    const range = constructorXlsxCellRange(layout, originRow, bandGap);
     const capture = byId.get(widget.instanceId);
     if (!capture) {
       sheet.mergeCells(range.startRow, range.startCol, range.endRow, range.endCol);
@@ -318,7 +355,7 @@ export function buildConstructorDashboardWorkbook(options: {
         : `data:image/png;base64,${capture.dataUrl}`,
       extension: 'png',
     });
-    const fitted = constructorXlsxFittedImage(layout, capture, originRow);
+    const fitted = constructorXlsxFittedImage(layout, capture, originRow, bandGap);
     sheet.addImage(imageId, {
       tl: { col: fitted.tl.col, row: fitted.tl.row },
       ext: fitted.ext,
@@ -326,7 +363,7 @@ export function buildConstructorDashboardWorkbook(options: {
     } as unknown as ExcelJS.ImagePosition);
   });
 
-  sheet.pageSetup.printArea = `A1:${sheet.getColumn(CONSTRUCTOR_GRID_COLS).letter}${gridEndRow}`;
+  sheet.pageSetup.printArea = `A1:${sheet.getColumn(CONSTRUCTOR_XLSX_SHEET_COLS).letter}${gridEndRow}`;
   sheet.headerFooter.oddFooter = '&LSOKOL&RСтр. &P';
 
   return workbook;

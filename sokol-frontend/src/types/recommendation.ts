@@ -37,6 +37,7 @@ export interface Recommendation {
   status: RecommendationStatus;
   additional_status: RecommendationAdditionalStatus;
   created_at?: string;
+  created_by?: string | null;
   actual_completion_date?: string;
   extension_1_reason?: string;
   extension_1_date?: string;

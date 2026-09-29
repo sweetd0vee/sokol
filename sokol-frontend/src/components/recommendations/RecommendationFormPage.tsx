@@ -108,7 +108,20 @@ export function RecommendationFormPage() {
         </div>
       )}
     >
-      <form onSubmit={form.handleSubmit} className={FORM_STACK_CLASS}>
+      <form
+        onSubmit={form.handleSubmit}
+        className={`${FORM_STACK_CLASS}${
+          form.isEditMode && !form.canManageRecommendation
+            ? ' [&_input]:pointer-events-none [&_select]:pointer-events-none [&_textarea]:pointer-events-none'
+            : ''
+        }`}
+      >
+        {form.isEditMode && form.recommendationAccessKnown && !form.canManageRecommendation && (
+          <p className="text-sm text-gray-600">
+            Эту рекомендацию можно только просматривать. Изменять и удалять её могут администратор,
+            руководитель проверки, аудитор рекомендации и тот, кто её создал.
+          </p>
+        )}
         <div className={FORM_SECTION_CLASS}>
           <div className={FORM_SECTION_TITLE_CLASS}>Проверка</div>
           <div className={FORM_ROW_4}>
@@ -261,16 +274,28 @@ export function RecommendationFormPage() {
           </div>
 
           <div className={FORM_ROW_3}>
-            <Select
-              label="Руководитель проверки"
-              value={fields.checkLeader}
-              onChange={(value) => setField('checkLeader', value)}
-              options={form.leaderOptions}
-              placeholder="Выберите руководителя"
-              className={FORM_FIELD_CLASS}
-              labelClassName={FORM_LABEL_CLASS}
-              inputClassName={FORM_INPUT_CLASS}
-            />
+            {form.canEditCheckLeader ? (
+              <Select
+                label="Руководитель проверки"
+                value={fields.checkLeader}
+                onChange={(value) => setField('checkLeader', value)}
+                options={form.leaderOptions}
+                placeholder="Выберите руководителя"
+                className={FORM_FIELD_CLASS}
+                labelClassName={FORM_LABEL_CLASS}
+                inputClassName={FORM_INPUT_CLASS}
+              />
+            ) : (
+              <Input
+                label="Руководитель проверки"
+                value={fields.checkLeader}
+                onChange={() => undefined}
+                readOnly
+                className={FORM_FIELD_CLASS}
+                labelClassName={FORM_LABEL_CLASS}
+                inputClassName={FORM_INPUT_CLASS}
+              />
+            )}
             <Select
               label="Руководитель объекта аудита"
               value={fields.manager}
@@ -369,9 +394,10 @@ export function RecommendationFormPage() {
           saveError={form.saveError}
           isSaving={form.isSaving}
           isDeleting={form.isDeleting}
+          saveVisible={!form.isEditMode || form.canManageRecommendation}
           deleteVisible={Boolean(form.isEditMode && form.recommendationId && form.canManageRecommendation)}
           onDelete={() => form.setDeleteConfirmOpen(true)}
-          extraLeft={(
+          extraLeft={form.canManageRecommendation || !form.isEditMode ? (
             <button
               type="button"
               onClick={() => void form.handleCreateAnotherCheckOnly()}
@@ -380,7 +406,7 @@ export function RecommendationFormPage() {
             >
               Создать еще
             </button>
-          )}
+          ) : null}
         />
       </form>
       {form.deleteConfirmOpen && form.source && (

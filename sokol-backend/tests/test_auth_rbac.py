@@ -249,7 +249,7 @@ class AuthRbacTests(unittest.TestCase):
         self.assertEqual(me.status_code, 200)
         self.assertEqual(me.json()["role"], "department_head")
 
-    def test_auditor_cannot_delete_check(self) -> None:
+    def test_auditor_cannot_delete_foreign_check(self) -> None:
         async def _auditor() -> CurrentUser:
             return CurrentUser(
                 username="Важник Д.С.",
@@ -258,8 +258,54 @@ class AuthRbacTests(unittest.TestCase):
             )
 
         app.dependency_overrides[get_current_user] = _auditor
-        response = self.client.delete("/api/v1/checks/1")
+        foreign_check = SimpleNamespace(
+            id=1,
+            serial_number="26IVP1P1",
+            check_leader="Иванов И.И.",
+            created_by="Иванов И.И.",
+        )
+        with patch(
+            "app.services.checks_service.get_check",
+            new_callable=AsyncMock,
+            return_value=foreign_check,
+        ):
+            response = self.client.delete("/api/v1/checks/1")
         self.assertEqual(response.status_code, 403)
+
+    def test_auditor_can_delete_own_check(self) -> None:
+        async def _auditor() -> CurrentUser:
+            return CurrentUser(
+                username="Важник Д.С.",
+                display_name="Важник Д.С.",
+                role=Role.AUDITOR,
+            )
+
+        app.dependency_overrides[get_current_user] = _auditor
+        own_check = SimpleNamespace(
+            id=1,
+            serial_number="26VAZ1P1",
+            check_leader="Важник Д.С.",
+            created_by=None,
+        )
+        with (
+            patch(
+                "app.services.checks_service.get_check",
+                new_callable=AsyncMock,
+                return_value=own_check,
+            ),
+            patch(
+                "app.services.checks_service.attachments_crud.list_attachments_by_serial",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
+            patch("app.services.checks_service.get_storage", return_value=None),
+            patch(
+                "app.services.checks_service.checks_crud.delete_check",
+                new_callable=AsyncMock,
+            ),
+        ):
+            response = self.client.delete("/api/v1/checks/1")
+        self.assertEqual(response.status_code, 204, response.text)
 
     def test_auditor_can_delete_own_recommendation(self) -> None:
         async def _auditor() -> CurrentUser:
@@ -293,6 +339,49 @@ class AuthRbacTests(unittest.TestCase):
             response = self.client.delete("/api/v1/recommendations/1")
         self.assertEqual(response.status_code, 204, response.text)
 
+    def test_check_leader_can_delete_recommendation_they_do_not_audit(self) -> None:
+        async def _auditor() -> CurrentUser:
+            return CurrentUser(
+                username="Важник Д.С.",
+                display_name="Важник Д.С.",
+                role=Role.AUDITOR,
+            )
+
+        app.dependency_overrides[get_current_user] = _auditor
+        recommendation = SimpleNamespace(
+            id=1,
+            check_id=2,
+            auditor="Иванов И.И.",
+            created_by="Иванов И.И.",
+        )
+        led_check = SimpleNamespace(check_leader="Важник Д.С.", created_by="Иванов И.И.")
+        with (
+            patch(
+                "app.services.recommendations_service.get_recommendation",
+                new_callable=AsyncMock,
+                return_value=recommendation,
+            ),
+            patch(
+                "app.services.recommendations_service.checks_crud.get_check",
+                new_callable=AsyncMock,
+                return_value=led_check,
+            ),
+            patch(
+                "app.services.recommendations_service.attachments_service.delete_attachments_for_entity",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.services.recommendations_service.recommendations_crud.delete_recommendation_row",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.services.recommendations_service.recommendations_crud.renumber_recommendations_for_check",
+                new_callable=AsyncMock,
+            ),
+        ):
+            response = self.client.delete("/api/v1/recommendations/1")
+        self.assertEqual(response.status_code, 204, response.text)
+
     def test_auditor_cannot_delete_foreign_recommendation(self) -> None:
         async def _auditor() -> CurrentUser:
             return CurrentUser(
@@ -302,11 +391,24 @@ class AuthRbacTests(unittest.TestCase):
             )
 
         app.dependency_overrides[get_current_user] = _auditor
-        recommendation = SimpleNamespace(id=1, check_id=2, auditor="Иванов И.И.")
-        with patch(
-            "app.services.recommendations_service.get_recommendation",
-            new_callable=AsyncMock,
-            return_value=recommendation,
+        recommendation = SimpleNamespace(
+            id=1,
+            check_id=2,
+            auditor="Иванов И.И.",
+            created_by="Иванов И.И.",
+        )
+        foreign_check = SimpleNamespace(check_leader="Петров П.П.", created_by="Петров П.П.")
+        with (
+            patch(
+                "app.services.recommendations_service.get_recommendation",
+                new_callable=AsyncMock,
+                return_value=recommendation,
+            ),
+            patch(
+                "app.services.recommendations_service.checks_crud.get_check",
+                new_callable=AsyncMock,
+                return_value=foreign_check,
+            ),
         ):
             response = self.client.delete("/api/v1/recommendations/1")
         self.assertEqual(response.status_code, 403)
