@@ -7,13 +7,18 @@ import {
   CHART_VALUE_LABEL_SIZE,
   CHART_VALUE_LABEL_WEIGHT,
 } from './chartTokens';
-import { MONITORING_STATUS_COLORS } from './analyticsPalette';
 import { axisTicks, niceMax } from './cssBarChartScale';
 import { PinnedChartAside } from './PinnedChartAside';
 import { usePinnedChartPanel } from './usePinnedChartPanel';
 
-const BAR_COLOR = MONITORING_STATUS_COLORS.unresolved;
+/** Sidebar navy, same swatch as `bg-[#003366]` / `sber-dark`. */
+const BAR_COLOR = '#003366';
 const GRID_COLUMNS = 'minmax(0,1fr) minmax(0,1fr)';
+/**
+ * Same category split as the checks bar chart (Recharts `barCategoryGap` 10%):
+ * 10% gap, 80% bar, 10% gap — so thickness and the space between bars match.
+ */
+const CATEGORY_ROW_TRACK = '1fr 8fr 1fr';
 
 function UnresolvedChecksPanel({
   row,
@@ -95,7 +100,7 @@ export function DepartmentUnresolvedBarChart({
   return (
     <div ref={rootRef} className="relative flex h-full min-h-0 max-h-[18rem] flex-col lg:max-h-none">
       <div className="min-h-0 flex-1 overflow-y-auto px-4" onMouseLeave={requestHide}>
-        <div className="flex flex-col">
+        <div className="flex h-full min-h-0 flex-col">
           {chartData.map((row) => {
             const isActive = visibleName === row.name;
             const muted = Boolean(visibleName) && !isActive;
@@ -103,7 +108,7 @@ export function DepartmentUnresolvedBarChart({
             return (
               <div
                 key={row.name}
-                className={`grid cursor-pointer items-stretch gap-x-4 ${
+                className={`grid min-h-[1.375rem] flex-1 cursor-pointer items-stretch gap-x-4 ${
                   isActive ? 'bg-slate-100' : 'bg-white'
                 }`}
                 style={{ gridTemplateColumns: GRID_COLUMNS }}
@@ -116,26 +121,30 @@ export function DepartmentUnresolvedBarChart({
                 >
                   {row.name}
                 </p>
-                <div className="relative flex h-[21px] items-center self-center">
-                  <div
-                    className="relative z-[1] h-[21px] rounded-r-md"
-                    style={{
-                      width: barWidth,
-                      backgroundColor: BAR_COLOR,
-                      opacity: muted ? 0.35 : 1,
-                    }}
-                  />
-                  <span
-                    className="absolute z-[1] -translate-y-1/2 text-slate-600"
-                    style={{
-                      top: '50%',
-                      left: `calc(${barWidth} + 6px)`,
-                      fontSize: CHART_VALUE_LABEL_SIZE,
-                      fontWeight: CHART_VALUE_LABEL_WEIGHT,
-                    }}
-                  >
-                    {row.value}
-                  </span>
+                <div className="grid h-full min-h-0" style={{ gridTemplateRows: CATEGORY_ROW_TRACK }}>
+                  <div />
+                  <div className="relative min-h-0">
+                    <div
+                      className="h-full rounded-r-md"
+                      style={{
+                        width: barWidth,
+                        backgroundColor: BAR_COLOR,
+                        opacity: muted ? 0.35 : 1,
+                      }}
+                    />
+                    <span
+                      className="absolute z-[1] -translate-y-1/2 text-slate-600"
+                      style={{
+                        top: '50%',
+                        left: `calc(${barWidth} + 6px)`,
+                        fontSize: CHART_VALUE_LABEL_SIZE,
+                        fontWeight: CHART_VALUE_LABEL_WEIGHT,
+                      }}
+                    >
+                      {row.value}
+                    </span>
+                  </div>
+                  <div />
                 </div>
               </div>
             );

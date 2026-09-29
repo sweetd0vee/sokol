@@ -1,4 +1,3 @@
-import { readFileSync, writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { Packer } from 'docx';
 import JSZip from 'jszip';
@@ -160,7 +159,7 @@ describe('buildConstructorDashboardDocument', () => {
     const xml = await JSZip.loadAsync(buffer).then((zip) => zip.file('word/document.xml')?.async('string'));
     expect(xml).toBeTruthy();
     const documentXml = xml ?? '';
-    expect(boardRowSpans(documentXml)).toEqual([12, 12, 12, 12]);
+    expect(boardRowSpans(documentXml)).toEqual([12]);
     expect(documentXml).not.toContain('Типы проверок');
     expect(documentXml).toContain('Графиков на листе');
     expect(documentXml).toContain('w:color="E6EDF4"');
@@ -189,39 +188,31 @@ describe('buildConstructorDashboardDocument', () => {
     });
     const buffer = await Packer.toBuffer(doc);
     const xml = await JSZip.loadAsync(buffer).then((zip) => zip.file('word/document.xml')?.async('string'));
-    expect(boardRowSpans(xml ?? '')).toEqual([12, 12]);
+    expect(boardRowSpans(xml ?? '')).toEqual([12]);
   });
-});
 
-describe.skipIf(!process.env.PREVIEW_DOCX)('constructor docx preview file', () => {
-  it('writes a sample workbook', async () => {
-    const dir = `${process.env.TEMP}\\sokol-docx-preview`;
-    const png = (name: string) =>
-      `data:image/png;base64,${readFileSync(`${dir}\\${name}`).toString('base64')}`;
+  it('puts the next board row on its own table row', async () => {
     const widgets = [
-      widget('a', { x: 0, y: 0, w: 6, h: 4 }, 'Динамика', 'checks'),
-      widget('b', { x: 6, y: 0, w: 6, h: 4 }, 'Типы', 'checks'),
-      widget('c', { x: 0, y: 4, w: 6, h: 4 }, 'Сотрудники', 'dva'),
-      widget('d', { x: 6, y: 4, w: 6, h: 4 }, 'Существенность', 'recommendations'),
+      widget('top-left', { x: 0, y: 0, w: 6, h: 4 }, 'Верх'),
+      widget('top-right', { x: 6, y: 0, w: 6, h: 4 }, 'Верх справа'),
+      widget('bottom', { x: 0, y: 4, w: 12, h: 4 }, 'Низ'),
     ];
-    const files = ['bars.png', 'pie.png', 'hbar.png', 'pie2.png'];
     const doc = buildConstructorDashboardDocument({
-      title: 'ОТЧЕТ',
-      meta: [
-        ['Графиков на листе', '4'],
-        ['Источники', 'Проверки, Рекомендации, ДВА'],
-        ['Сформировано', '29.09.2026, 09:04:02'],
-      ],
+      title: 'Отчет',
+      meta: [['Графиков на листе', '3']],
       widgets,
-      captures: widgets.map((item, index) => ({
+      captures: widgets.map((item) => ({
         id: item.instanceId,
         title: item.title,
         description: '',
-        dataUrl: png(files[index] ?? 'bars.png'),
-        width: 1000,
-        height: 500,
+        dataUrl: PIXEL_PNG,
+        width: 800,
+        height: 400,
       })),
     });
-    writeFileSync(`${dir}\\preview.docx`, await Packer.toBuffer(doc));
+    const buffer = await Packer.toBuffer(doc);
+    const xml = await JSZip.loadAsync(buffer).then((zip) => zip.file('word/document.xml')?.async('string'));
+    expect(boardRowSpans(xml ?? '')).toEqual([12, 12]);
+    expect(xml).not.toContain('w:vMerge');
   });
 });

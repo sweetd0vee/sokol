@@ -387,7 +387,7 @@ export function buildConstructorDashboardDocument(options: {
             children: [new TextRun({ text: title, bold: true, color: BRAND, size: 40, font: FONT })],
           }),
           metaTable(meta),
-          new Paragraph({ spacing: { before: 200, after: 80 } }),
+          new Paragraph({ spacing: { before: 160, after: 40 } }),
           board,
         ],
       },
