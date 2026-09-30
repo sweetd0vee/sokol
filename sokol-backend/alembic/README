@@ -1,0 +1,13 @@
+# Alembic
+
+Схема PostgreSQL для SOKOL. Конфиг: `../alembic.ini`, runner: `app.db.alembic_runner`.
+
+```bash
+cd sokol-backend
+alembic current
+alembic upgrade head
+alembic revision --autogenerate -m "describe_change"
+```
+
+Baseline: `versions/20260930_0001_baseline_schema.py` — `Base.metadata.create_all`.
+Подробности: [docs/DATA.md](../docs/DATA.md).

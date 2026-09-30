@@ -10,6 +10,8 @@ COPY sokol-backend/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY sokol-backend/app /app/app
+COPY sokol-backend/alembic.ini /app/alembic.ini
+COPY sokol-backend/alembic /app/alembic
 COPY sokol-backend/data/images /app/data/images
 COPY sokol-backend/data/*.xlsx /app/data/
 COPY data/checks.xlsx data/recommendations.xlsx /app/data/

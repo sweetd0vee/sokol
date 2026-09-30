@@ -1,6 +1,6 @@
 # Данные
 
-PostgreSQL 16 и MinIO. В Docker compose порты БД/MinIO на хост **не** публикуются (API → `db:5432`, `minio:9000`). Локальный loopback — [DOCKER.md](../DOCKER.md) (`docker-compose.dev-ports.yml` → `127.0.0.1:5433` / `9000`). Схема — `create_all` плюс идемпотентные патчи `python -m app.db.migrations`. Alembic нет. Прямой SQL по `serial_number`, labels и `attachments.bucket` ломает связи: ключи и бакеты двигает только каскад в сервисе.
+PostgreSQL 16 и MinIO. В Docker compose порты БД/MinIO на хост **не** публикуются (API → `db:5432`, `minio:9000`). Локальный loopback — [DOCKER.md](../DOCKER.md) (`docker-compose.dev-ports.yml` → `127.0.0.1:5433` / `9000`). **Схема — Alembic** (`alembic upgrade head`, ревизия `20260930_0001` = текущие модели). `init_db` / Docker bootstrap вызывают `ensure_schema`: пустая БД → upgrade; старый стенд без `alembic_version` → legacy-патчи + `stamp head` (**строки данных не трогает**). Прямой SQL по `serial_number`, labels и `attachments.bucket` ломает связи: ключи и бакеты двигает только каскад в сервисе.
 
 ## Таблицы
 
@@ -24,7 +24,7 @@ Enum-значения пишутся как values, API переходы не о
 `serial_number` уникален, формат `{YY}{AUDITOR_CODE}{QUARTER}{P|V|K}{N}` (`planned`→P, `unscheduled`→V, `thematic`→K). Пример: `26KVS3P1`. `check_type` — код ключа, не FK на `audit_types`. Массовый пересчёт: `python -m app.db.recalculate_check_serial_numbers`.
 
 - `deadline` — срок контроля. Перенос записывает в него самую позднюю дату. `execution_deadline` автостатус не читает: срок исполнения — `actual_completion_date`.
-- `deadline_extensions` / `control_removals` — JSON `{date?, comment?}`. `create_all` даёт JSON, старый патч мог оставить JSONB.
+- `deadline_extensions` / `control_removals` — JSON `{date?, comment?}`.
 - Вложения: `slot`, `check_serial_number`, `bucket` = `check-{serial}` в нижнем регистре, `object_key`. Слоты check: `order`, `program`, `az`, `dz`, `dz_appendix`. Слоты рекомендации: `recommendation_files`, `control_removal_files`.
 - `users.aliases` — строка через запятую. Аватаров в БД нет. Soft-delete и audit log нет.
 
@@ -33,6 +33,23 @@ API create/update проверяет labels. Неизвестный объект
 Индексы аналитики: `checks.start_date` / `status` / `check_leader`, `recommendations.deadline` / `auditor` / `status` / `materiality_level`, GIN `audit_object`, плюс `ix_attachments_entity_lookup`. Период проверок и планирования — `start_date`; рекомендаций и мониторинга — `deadline`.
 
 ## Seed, import, миграции
+
+### Alembic (основной путь)
+
+Из `sokol-backend/` при заданном `DATABASE_URL`:
+
+```bash
+alembic current
+alembic upgrade head
+alembic revision --autogenerate -m "add_column_foo"
+alembic upgrade head
+```
+
+Новое изменение схемы: правка моделей → `alembic revision --autogenerate` → ревью SQL → commit → на стендах `upgrade head`. Baseline `20260930_0001` строит таблицы из `Base.metadata` (включая аналитические индексы в `__table_args__`). **Demo/боевые строки Alembic не удаляет**, пока revision явно не делает `DROP`/`TRUNCATE`.
+
+Существующий стенд без `alembic_version`: при старте API/`init_db` один раз прогонит idempotent legacy-патчи и сделает `stamp head`. Данные checks/recommendations остаются.
+
+### Excel seed / справочники
 
 Excel seed (`checks.xlsx`, `recommendations.xlsx`) — корневой `data/` или `SOKOL_DATA_DIR`. Шаблон файла контроля и картинки существенности — `sokol-backend/data/`. Резолв: `app/utils/paths.py`.
 
@@ -51,9 +68,9 @@ python -m app.db.sync_check_buckets
 
 Пароли seed: `SOKOL_ADMIN_PASSWORD` (default `admin`) для admin и department_head, `SOKOL_DEFAULT_USER_PASSWORD` (default `auditor`) для аудиторов. Если `users` пуста: `Админ А.А.` / `admin`, `Ковалев С.С.` / `admin` (`department_head`), аудиторы (ФИО) / `auditor`.
 
-Демо Excel / синтетика / presentation / вложения — команды в [DEMO.md](DEMO.md). Прочее: `sync_dictionaries`.
+Демо Excel / синтетика / presentation / вложения — команды в [DEMO.md](DEMO.md). Прочее: `sync_dictionaries`. Legacy-патчи (только ремонт старых стендов): `python -m app.db.migrations --list|--all|NAME`.
 
-`python -m app.db.migrations --list|--bootstrap|--all|NAME`. Docker гоняет `--bootstrap`: патчи с `in_bootstrap=True`, включая `record_created_by`. `--all` догоняет стенды старше `create_all` и пропускает `recommendation_indicators` (одноразовый remap, только по имени). Перед `--replace` и ручным migrate на общем стенде — бэкап.
+Legacy CLI: `python -m app.db.migrations --list|--bootstrap|--all|NAME` — для ручного ремонта стендов до Alembic. Docker больше не вызывает `--bootstrap` отдельно: это внутри `ensure_schema` при stamp. `--all` без destructive пропускает `recommendation_indicators`. Перед `--replace` и ручным migrate на общем стенде — бэкап.
 
 Новый стенд: Postgres и MinIO → `init_db` и bootstrap → seed → import или demo → `sync_check_buckets` → smoke `/status`, `/checks`, `/analytics/checks`.
 

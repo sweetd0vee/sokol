@@ -1,8 +1,10 @@
-"""Ad-hoc schema/data patches run until Alembic is adopted.
+"""Ad-hoc schema/data patches kept for repairing pre-Alembic stands.
 
-SQL-only patches live in ``patches``; data backfills stay in dedicated modules.
+New schema changes go through Alembic (`alembic revision` / `upgrade head`).
+Docker bootstrap uses ``app.db.alembic_runner.ensure_schema``; on a legacy DB
+(with tables but no ``alembic_version``) it runs ``run_all_migrations`` then stamps.
+
 CLI: ``python -m app.db.migrations --list|--bootstrap|--all|NAME``.
-``run_bootstrap_migrations`` is the ordered subset used by Docker entrypoint.
 """
 
 from __future__ import annotations

@@ -63,7 +63,9 @@ Dev-пользователи (если таблица `users` пуста и ср
 ## Инициализация БД
 
 ```bash
+# схема через Alembic (пусто → upgrade; legacy → stamp)
 python -c "import asyncio; from app.db.init_db import init_db; asyncio.run(init_db())"
+# или: alembic upgrade head
 python -m app.db.seed_auditors
 python -m app.db.seed_departments
 python -m app.db.seed_audit_types

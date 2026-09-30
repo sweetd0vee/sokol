@@ -1,7 +1,7 @@
 from datetime import date
 from enum import Enum
 
-from sqlalchemy import Enum as SAEnum, Integer, Text
+from sqlalchemy import Enum as SAEnum, Index, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -26,6 +26,10 @@ class CheckStatus(str, Enum):
 
 class Check(Base):
     __tablename__ = "checks"
+    __table_args__ = (
+        Index("ix_checks_start_date", "start_date"),
+        Index("ix_checks_status", "status"),
+    )
 
     id: Mapped[int] = int_pk()
     serial_number: Mapped[str] = unique_string(32, index=True)
@@ -38,7 +42,11 @@ class Check(Base):
     end_date: Mapped[date | None] = optional_date()
     check_leader: Mapped[str] = auditor_fk("fk_checks_check_leader", index=True)
     status: Mapped[CheckStatus] = mapped_column(
-        SAEnum(CheckStatus, name="check_status"),
+        SAEnum(
+            CheckStatus,
+            name="check_status",
+            values_callable=lambda cls: [item.value for item in cls],
+        ),
         nullable=False,
     )
     created_at: Mapped[date] = required_date()

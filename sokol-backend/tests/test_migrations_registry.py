@@ -28,6 +28,7 @@ BOOTSTRAP_NAMES = (
     "recommendation_indicator_on_control",
     "recommendation_additional_indicator",
     "analytics_indexes",
+    "record_created_by",
 )
 
 

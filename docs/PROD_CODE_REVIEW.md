@@ -59,7 +59,7 @@
 | **SEC-07** | BE | Мин. длина пароля = 4 | Слабые пароли через UI/API | should-fix | нет | Поднять минимум (например 8) | S |
 | **FE-SEC-01** | FE | JWT в `localStorage` (`authSession.ts`) | XSS = полный захват сессии | accepted risk за VPN; **blocker** open contour | принято | HttpOnly cookie / OIDC позже; до этого — жёсткий CSP | L |
 | **FE-SEC-02** | FE | Роль в UI из login+storage, без `/me` | Подмена storage открывает admin UI (API всё равно откажет запись) | should-fix | нет | При старте сверка роли с API | M |
-| **DATA-01** | BE | Нет Alembic; Docker гоняет только bootstrap-патчи | Два стенда могут разъехаться по схеме | should-fix для одного нового стенда; **blocker** при долгих апгрейдах | риск | Alembic **или** полный ordered migrate на деплое + учёт применённых патчей | L |
+| **DATA-01** | BE | ~~Нет Alembic~~ → **закрыто 30.09.2026** (`alembic/`, baseline `20260930_0001`, `ensure_schema`) | Версионирование схемы | ~~should-fix~~ **done** | — | Новые изменения только через `alembic revision` | — |
 | **DATA-02** | BE | Import Excel `ensure_*` досоздаёт справочники | Плохой Excel тихо портит словари (в отличие от UI CRUD) | should-fix | нет | `--strict` / dry-run reject report | M |
 | **DATA-04** | BE | MinIO delete до `commit` (check/attachments) | Rollback БД после удаления объектов → потеря файлов | should-fix | нет | Удалять объекты после успешного commit | M |
 | **DATA-03** | BE | Нет UNIQUE(`check_id`,`sequence_number`) | Гонка двух create → дубликаты sequence | should-fix | нет при низкой нагрузке | Unique + lock | M |
@@ -131,7 +131,6 @@
 | SEC-03 | Rate limit login |
 | SEC-06 / SEC-07 | Короткий JWT TTL, пароль ≥8 |
 | FE-SEC-02 | `/me` или сверка роли при boot |
-| DATA-01 | Alembic или полный migration gate |
 | DATA-02 | Strict import / dry-run |
 | DATA-04 | MinIO delete after commit |
 | FE-UX-01…03, FE-OPS-01…02 | Truncation warn, keep-alive, requestId в UI, timeout, error beacon |
@@ -163,8 +162,10 @@ OPS-A (env) ──► всё остальное имеет смысл
 выкат пилота за VPN
      │
      ▼
-DATA-01, SEC-02/03, FE supportability (requestId, timeout, beacon)
+SEC-02/03, FE supportability (requestId, timeout, beacon)
 ```
+
+DATA-01 (Alembic) закрыт baseline `20260930_0001`.
 
 ---
 

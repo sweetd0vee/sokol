@@ -15,7 +15,6 @@ from app.core.startup_validation import (
 from app.db.catalogs import AUDIT_TYPES, CHECK_KINDS, EFFECTIVENESS_RATINGS
 from app.db.import_seed_data import import_seed_data
 from app.db.init_db import init_db
-from app.db.migrations import run_bootstrap_migrations
 from app.db.presentation_demo_data import generate_presentation_dataset
 from app.db.seeds.audit_types import seed_audit_types
 from app.db.seeds.check_kinds import seed_check_kinds
@@ -41,8 +40,8 @@ async def sync_canonical_dictionaries() -> tuple[tuple[int, int], tuple[int, int
 
 
 async def run_docker_bootstrap() -> None:
+    # Alembic: empty DB → upgrade; legacy DB → patches + stamp. Does not wipe rows.
     await init_db()
-    await run_bootstrap_migrations()
     await seed_reference_dictionaries()
 
     auditors, departments, users = await sync_canonical_dictionaries()

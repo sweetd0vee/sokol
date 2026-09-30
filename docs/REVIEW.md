@@ -29,7 +29,7 @@
 2. **Legacy plaintext verify** + строки users не только PBKDF2; **python-multipart 0.0.9**.
 3. **Ops:** `SOKOL_ENV=prod`, JWT/CORS/пароли, restore drill, off-host бэкап, required CI.
 4. **Сессия в `localStorage`** — accepted risk за VPN; для open contour нужен cookie/OIDC.
-5. **Нагрузка / схема** (should-fix): Alembic/migrate gate, списки 10k, analytics keep-alive, ночной refresh в память.
+5. **Нагрузка / схема** (should-fix): списки 10k, analytics keep-alive, ночной refresh в память. Alembic baseline внедрён — [DATA.md](DATA.md).
 
 ## Чеклист
 

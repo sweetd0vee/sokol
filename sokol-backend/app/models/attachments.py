@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import BigInteger, DateTime, Integer, String, func
+from sqlalchemy import BigInteger, DateTime, Index, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -15,6 +15,9 @@ class AttachmentEntityType(str, Enum):
 
 class Attachment(Base):
     __tablename__ = "attachments"
+    __table_args__ = (
+        Index("ix_attachments_entity_lookup", "entity_type", "entity_id"),
+    )
 
     id: Mapped[int] = int_pk()
     entity_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
