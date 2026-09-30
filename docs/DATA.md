@@ -78,7 +78,7 @@ Create проверки делает `make_bucket`, если MinIO включё�
 | `SOKOL_MINIO_SECURE` | `0` HTTP / `1` HTTPS |
 | `SOKOL_MAX_UPLOAD_MB` | default 100 |
 
-Порты 9000 / 9001, том `~/docker-share/minio-data-sokol`. Консоль: `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (default `sokol` / `change-me`). Не делать `mc anonymous set public` и не подменять объекты через `mc cp`, если `object_key` должен остаться верным.
+Порты 9000 / 9001, том `~/docker-share/minio-data-sokol`. Консоль: `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (default `sokol` / `change-me`). Не делать `mc anonymous set public` и не подменять объекты через `mc cp`, если `object_key` должен остаться верным. Боевые снимки пишет сервис `backup`, не ручной `mc mirror`.
 
 ```bash
 mc alias set sokol http://127.0.0.1:9000 sokol change-me
@@ -98,9 +98,27 @@ MIME: PDF, Office, jpeg/png/gif/webp, text/plain, zip, `octet-stream`. Код: `
 
 ## Бэкап
 
+Сервис `backup` в Compose (образ `docker/backup/Dockerfile`) сам снимает Postgres и MinIO в **00:05 Europe/Moscow (UTC+3)**. Снимки: `~/docker-share/sokol-backups/<UTC-штамп>/` — `postgres.dump`, каталог `minio/`, `MANIFEST.txt`. Хранит 14 дней и не меньше трёх снимков. Успех пишет `LAST_OK`; healthcheck красный, если снимка нет 48 часов.
+
+```bash
+docker compose exec backup /opt/sokol-backup/backup.sh
+```
+
+Restore **затирает** живую БД и бакеты. Сначала остановить API:
+
+```bash
+docker compose stop api ui
+docker compose run --rm -e SOKOL_RESTORE_CONFIRM=I_UNDERSTAND backup /opt/sokol-backup/restore.sh 2026-09-30T021500Z
+docker compose start api ui
+```
+
+После restore из контейнера API: `python -m app.db.sync_check_buckets`. Dump без файлов не бывает: MinIO входит в тот же снимок. Том `sokol-backups` лежит рядом с данными — скопируйте его ещё на другую машину или диск.
+
+Без Docker, вручную:
+
 ```bash
 pg_dump -h 127.0.0.1 -p 5433 -U postgres -d sokol_db -F c -f sokol_db.dump
 pg_restore -h 127.0.0.1 -p 5433 -U postgres -d sokol_db --clean --if-exists sokol_db.dump
+mc alias set sokol http://127.0.0.1:9000 sokol change-me
+mc mirror sokol ~/backup/sokol-minio
 ```
-
-Dump не содержит файлов. После restore: поднять MinIO, `sync_check_buckets`, сверить `bucket` и `object_key` с `mc ls --recursive`. Таблицы: `python scripts/check_db_tables.py`.

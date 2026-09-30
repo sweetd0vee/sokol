@@ -19,7 +19,7 @@
 
 Слои держатся: endpoint → service → CRUD, CRUD не коммитит (`tests/test_crud_layer_boundary.py`). UI режется по ролям: `AuthGuard`, `/settings` за `AdminGuard`. Роль читается из БД. Запись проходит `ensure_user_can_manage_*`. В prod старт падает на слабом JWT, demo-load и seed replace.
 
-Ошибки домена — `{detail}` без traceback. Логи с request-id, в prod JSON. `/metrics` — Prometheus. Healthcheck у compose, UI шлёт `X-Request-ID`. Автостатус, KPI переносов, парсер Раздела II, фильтры аналитики и черновики конструктора закрыты тестами. Золотой набор — [fixtures/auto_status_golden.json](fixtures/auto_status_golden.json).
+Ошибки домена — `{detail}` без traceback. Логи с request-id, в prod JSON. `/metrics` — Prometheus. Healthcheck у compose, UI шлёт `X-Request-ID`. Сервис `backup` в 00:05 Europe/Moscow пишет Postgres dump и зеркало MinIO в `~/docker-share/sokol-backups` (14 дней). Автостатус, KPI переносов, парсер Раздела II, фильтры аналитики и черновики конструктора закрыты тестами. Золотой набор — [fixtures/auto_status_golden.json](fixtures/auto_status_golden.json).
 
 ## Что блокирует прод
 
@@ -35,7 +35,7 @@
 - [ ] `SOKOL_LOAD_DEMO_DATA=0`, `SOKOL_SEED_REPLACE` выключен, свои пароли seed.
 - [ ] В БД только PBKDF2-хеши.
 - [ ] Postgres и MinIO не торчат в интернет; `/docs` закрыт сетью, если Swagger снаружи не нужен.
-- [ ] Бэкап Postgres и бакетов MinIO проверен восстановлением. Команды — [DATA.md](DATA.md).
+- [x] Снимки Postgres и MinIO в 00:05 Europe/Moscow, хранение 14 дней (`~/docker-share/sokol-backups`). Один раз прогнать restore на копии стенда — [DATA.md](DATA.md).
 - [ ] Решение по чтению зафиксировано: «все свои» или отдельный ACL.
 - [ ] В GitHub для default branch включены required checks (см. ниже). Сам workflow их не включает.
 
@@ -56,6 +56,6 @@ Workflow: `.github/workflows/ci.yml`.
 
 ## Ещё открыто
 
-Import без `--dry-run`: неизвестные labels досоздаются, а не отклоняются. На `/planning` нет метки limited. Операционный restore drill не зафиксирован. Дальше, не блокер пилота: server pagination, OIDC, audit log, users PATCH/DELETE, серверные дашборды.
+Import без `--dry-run`: неизвестные labels досоздаются, а не отклоняются. На `/planning` нет метки limited. Дальше, не блокер пилота: server pagination, OIDC, audit log, users PATCH/DELETE, серверные дашборды.
 
 Календарь спринта 04.09.2026 — [PLAN.md](../PLAN.md). Это исторический снимок, не текущий статус.

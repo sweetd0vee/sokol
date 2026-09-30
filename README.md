@@ -43,6 +43,7 @@ Dev-логины (после seed, если `users` пуста): `Админ А.
 ```
 sokol/
 ├── docker-compose.yml
+├── docker/backup/          # ночные снимки Postgres + MinIO
 ├── DOCKER.md
 ├── PLAN.md                 # исторический go-live план (04.09.2026)
 ├── docs/                   # продуктовая документация
@@ -60,7 +61,7 @@ sokol/
 | [docs/README.md](docs/README.md) | Индекс |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Слои, auth, инварианты, карта кода |
 | [docs/API.md](docs/API.md) | HTTP `/api/v1`, лимиты |
-| [docs/DATA.md](docs/DATA.md) | Postgres, MinIO, seed, миграции |
+| [docs/DATA.md](docs/DATA.md) | Postgres, MinIO, seed, миграции, бэкап |
 | [docs/ANALYTICS.md](docs/ANALYTICS.md) | Дашборды, планирование, конструктор |
 | [docs/REVIEW.md](docs/REVIEW.md) | Готовность к продакшену и CI |
 | [sokol-backend/README.md](sokol-backend/README.md) | Запуск, env, тесты |

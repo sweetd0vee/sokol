@@ -9,7 +9,7 @@
 | Postgres | localhost:5433 |
 | MinIO API / Console | http://localhost:9000 / http://localhost:9001 |
 
-Образ MinIO — `quay.io/minio/minio` (Docker Hub `minio/minio` больше не отдаёт pull).
+Образ MinIO — `quay.io/minio/minio` (Docker Hub `minio/minio` больше не отдаёт pull). Образ бэкапа ставит Python-клиент `minio` из PyPI и не качает `mc` с dl.min.io.
 
 ## Первый запуск
 
@@ -44,8 +44,11 @@ docker compose up --build -d ui
 |-----|------|
 | Postgres | `~/docker-share/postgres-data-sokol` |
 | MinIO | `~/docker-share/minio-data-sokol` |
+| Бэкапы | `~/docker-share/sokol-backups` |
 
-Вложения и бэкап: [docs/DATA.md](docs/DATA.md). Excel seed: корневой `data/` (в контейнере — `SOKOL_DATA_DIR`).
+Сервис `backup` раз в сутки в **00:05 Europe/Moscow (UTC+3)** пишет снимок Postgres (`pg_dump -Fc`) и зеркало MinIO. Держит 14 дней и минимум 3 снимка. Ручной прогон: `docker compose exec backup /opt/sokol-backup/backup.sh`. Restore — [DATA.md](docs/DATA.md). Том бэкапов лучше копировать ещё и вне этой машины.
+
+Вложения: [docs/DATA.md](docs/DATA.md). Excel seed: корневой `data/` (в контейнере — `SOKOL_DATA_DIR`).
 
 ## Auth
 

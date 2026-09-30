@@ -91,6 +91,49 @@ services:
     networks:
       - sokol
 
+  backup:
+    build:
+      context: .
+      dockerfile: docker/backup/Dockerfile
+    image: sber/sokol-backup:master
+    container_name: sokol-backup
+    hostname: backup
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sokol_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PGHOST: db
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-sokol}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me}
+      SOKOL_MINIO_ENDPOINT: ${SOKOL_MINIO_ENDPOINT:-minio:9000}
+      SOKOL_MINIO_SECURE: ${SOKOL_MINIO_SECURE:-0}
+      SOKOL_BACKUP_KEEP_DAYS: ${SOKOL_BACKUP_KEEP_DAYS:-14}
+      SOKOL_BACKUP_KEEP_MIN: ${SOKOL_BACKUP_KEEP_MIN:-3}
+      SOKOL_BACKUP_AT: ${SOKOL_BACKUP_AT:-00:05}
+      SOKOL_BACKUP_TZ: ${SOKOL_BACKUP_TZ:-Europe/Moscow}
+    volumes:
+      - ~/docker-share/sokol-backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "from pathlib import Path; from datetime import datetime, timezone, timedelta; p=Path('/backups/LAST_OK'); raise SystemExit(0 if p.is_file() and datetime.now(timezone.utc)-datetime.fromtimestamp(p.stat().st_mtime, timezone.utc)<timedelta(hours=48) else 1)",
+        ]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 26h
+    networks:
+      - sokol
+
   ui:
     build:
       context: ./sokol-frontend

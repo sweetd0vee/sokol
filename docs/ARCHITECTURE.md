@@ -110,4 +110,4 @@ Login матчит `username` и `aliases`. Неактивные не прохо
 
 ## Чего нет
 
-OIDC, Alembic, отдельная очередь задач, CRUD наблюдений, users PATCH/DELETE, аватары на сервере, drill-down и серверные дашборды.
+OIDC, Alembic, отдельная очередь задач, CRUD наблюдений, users PATCH/DELETE, аватары на сервере, drill-down и серверные дашборды. Ночные снимки БД и MinIO — сервис `backup` в Compose.
