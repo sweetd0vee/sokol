@@ -1,0 +1,47 @@
+# Postgres + MinIO + сеть sokol.
+# Подключается из корневого docker-compose.yml и backend-only compose.
+# Пути build/volume относительно этого файла (каталог docker/).
+
+networks:
+  sokol:
+    name: sokol
+
+services:
+  db:
+    image: postgres:16-bookworm
+    container_name: postgres
+    restart: unless-stopped
+    # Порты на хост не публикуем. Локальный loopback: docker-compose.dev-ports.yml
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sokol_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - ~/docker-share/postgres-data-sokol:/var/lib/postgresql/data
+    networks:
+      - sokol
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-sokol_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: minio
+    hostname: minio
+    restart: unless-stopped
+    command: server --console-address ":9001" /data
+    # Порты на хост не публикуем. Локальный loopback: docker-compose.dev-ports.yml
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-sokol}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me}
+    volumes:
+      - ~/docker-share/minio-data-sokol:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sokol

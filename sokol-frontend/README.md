@@ -6,7 +6,7 @@ React 19 + TypeScript + Vite 7. Внутренний UI аудита.
 
 | Сервис | URL |
 |--------|-----|
-| UI | http://localhost:5180 |
+| UI | http://localhost:5180 | nginx static (`docker compose`) или Vite (`npm run dev`) |
 | API (dev) | http://localhost:8802 |
 
 Прокси Vite: `/api` → `127.0.0.1:8802` (`VITE_DEV_API_HOST` / `VITE_DEV_API_PORT`). В Docker API на **8800** — [DOCKER.md](../DOCKER.md).

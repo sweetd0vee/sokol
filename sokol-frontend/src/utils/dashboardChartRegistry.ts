@@ -630,9 +630,6 @@ async function captureNodeAsPng(
           }
           return !domNode.closest('[data-chart-toolbar]');
         },
-        onClone: (_document, clonedNode) => {
-          expandOverflowForTableCapture(clonedNode);
-        },
       });
     });
   } catch (liveError) {

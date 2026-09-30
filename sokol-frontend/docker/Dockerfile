@@ -1,11 +1,34 @@
-FROM node:20-alpine
+# Production UI: multi-stage Vite build → nginx static.
+# VITE_API_URL is baked at build time (browser calls the published API URL).
+#
+# Build (from sokol-frontend/):
+#   docker build -f docker/Dockerfile --build-arg VITE_API_URL=http://localhost:8800 -t sber/sokol-fe:master .
+
+FROM node:22-alpine AS build
 
 WORKDIR /app
-COPY package*.json ./
+
+COPY package.json package-lock.json ./
 RUN npm ci
+
 COPY . .
 
-EXPOSE 5180
-HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
-  CMD node -e "fetch('http://127.0.0.1:5180/').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5180"]
+ARG VITE_API_URL=http://localhost:8800
+ENV VITE_API_URL=$VITE_API_URL
+
+RUN npm run build
+
+FROM nginx:1.27-alpine
+
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+
+RUN chown -R nginx:nginx /usr/share/nginx/html \
+  && sed -i 's/\r$//' /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=5 \
+  CMD wget -qO- http://127.0.0.1/ >/dev/null || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

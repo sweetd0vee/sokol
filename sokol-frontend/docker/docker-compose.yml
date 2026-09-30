@@ -1,32 +1,27 @@
 name: sokol
 
+# UI against an existing sokol network (root or backend-only compose already up).
+# Full stack: from repo root → docker compose up --build -d
+
 services:
   ui:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8800}
     image: sber/sokol-fe:master
     container_name: frontend
     hostname: frontend
     restart: unless-stopped
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://127.0.0.1:5180/').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 15s
     ports:
-      - "5180:5180"
-    environment:
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:8800}
-      - VITE_DEV_API_HOST=api
-      - VITE_DEV_API_PORT=8800
+      - "5180:80"
     networks:
       - sokol
 

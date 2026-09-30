@@ -1,3 +1,4 @@
+# Root build context for API / backup images (excludes UI sources).
 **/.git
 **/node_modules
 **/venv
@@ -10,6 +11,11 @@
 **/build
 **/.env
 **/.secrets
+**/coverage
+**/.coverage
 sokol-frontend
+sokol-instruments
 PLAN.md
 agent-transcripts
+docs
+**/*.md

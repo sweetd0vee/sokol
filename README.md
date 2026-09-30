@@ -42,8 +42,8 @@ Dev-логины (после seed, если `users` пуста): `Админ А.
 
 ```
 sokol/
-├── docker-compose.yml
-├── docker/backup/          # ночные снимки Postgres + MinIO
+├── docker-compose.yml      # include docker/compose.*.yml
+├── docker/                 # compose-фрагменты + backup sidecar
 ├── DOCKER.md
 ├── PLAN.md                 # исторический go-live план (04.09.2026)
 ├── docs/                   # продуктовая документация

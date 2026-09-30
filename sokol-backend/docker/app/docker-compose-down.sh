@@ -1,6 +1,5 @@
-#!/bin/bash
-
-
-export COMPOSE_PROJECT_NAME=sokol-be
-
-docker-compose -f docker-compose.yml --env-file .env down
+#!/usr/bin/env bash
+set -euo pipefail
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+cd "$script_dir"
+docker compose down "$@"

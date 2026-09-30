@@ -1,19 +1,22 @@
-# Docker (UI)
+# Docker (UI) — production static (nginx)
 
-Сеть `sokol` должна уже существовать (поднимается корневым `docker compose` или backend compose). API ожидается на **8800**.
+Сеть `sokol` должна уже существовать (корневой `docker compose` или backend-only). API на хосте **8800**.
+
+Образ: Node 22 multi-stage `npm run build` → nginx. `VITE_API_URL` задаётся **build-arg** (вшивается в бандл).
 
 ```bash
 cd sokol-frontend
-docker compose -f docker/docker-compose.yml up --build -d
-# или хелперы: docker/docker-compose-up.sh · docker-compose-up.bat
+# при смене API URL нужна пересборка:
+docker compose -f docker/docker-compose.yml build --build-arg VITE_API_URL=http://localhost:8800
+docker compose -f docker/docker-compose.yml up -d
 ```
 
-| Переменная | Типичное значение |
-|------------|-------------------|
-| `VITE_API_URL` | `http://localhost:8800` |
-| `VITE_DEV_API_HOST` | `api` (внутри compose-сети) |
-| `VITE_DEV_API_PORT` | `8800` |
+| Переменная / arg | Типичное значение |
+|------------------|-------------------|
+| `VITE_API_URL` | `http://localhost:8800` (URL API **как его видит браузер**) |
 
-Образ: `sber/sokol-fe:master`. UI: http://localhost:5180.
+Порт с хоста: http://localhost:5180 → контейнер `:80`.
 
-Для полного стека предпочтительнее корневой [DOCKER.md](../../DOCKER.md).
+Локальная разработка без Docker: `npm run dev` в `sokol-frontend/` (не этот образ).
+
+Полный стек: [DOCKER.md](../../DOCKER.md).

@@ -395,11 +395,14 @@ export function sharpenConstructorDrawingXml(xml: string): string {
 
 export async function sharpenConstructorXlsxBuffer(
   data: ArrayBuffer | Uint8Array,
-): Promise<Uint8Array> {
+): Promise<ArrayBuffer> {
   const zip = await JSZip.loadAsync(data);
   const drawings = Object.keys(zip.files).filter((name) => /^xl\/drawings\/drawing\d+\.xml$/.test(name));
   if (drawings.length === 0) {
-    return data instanceof Uint8Array ? data : new Uint8Array(data);
+    if (data instanceof ArrayBuffer) {
+      return data;
+    }
+    return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
   }
   await Promise.all(
     drawings.map(async (name) => {
@@ -410,7 +413,7 @@ export async function sharpenConstructorXlsxBuffer(
       zip.file(name, sharpenConstructorDrawingXml(xml));
     }),
   );
-  return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+  return zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
 }
 
 export function constructorXlsxHasChartImages(workbook: ExcelJS.Workbook): boolean {

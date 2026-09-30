@@ -1,0 +1,28 @@
+# Production UI (nginx static). Зависит от healthy api.
+# Пути относительно каталога docker/.
+
+services:
+  ui:
+    build:
+      context: ../sokol-frontend
+      dockerfile: docker/Dockerfile
+      args:
+        # Вшивается в бандл на этапе build (браузер ходит на API с хоста).
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8800}
+    image: sber/sokol-fe:master
+    container_name: frontend
+    hostname: frontend
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "5180:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - sokol

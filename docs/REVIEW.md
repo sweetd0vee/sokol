@@ -25,7 +25,7 @@
 
 Кратко. Полная таблица с путями и effort — [PROD_CODE_REVIEW.md](PROD_CODE_REVIEW.md).
 
-1. **UI Docker = Vite dev** (`sokol-frontend/docker/Dockerfile`) — нужен static/nginx build.
+1. **~~UI Docker = Vite dev~~** → static nginx (`sokol-frontend/docker/Dockerfile`). `VITE_API_URL` — build-arg.
 2. **Legacy plaintext verify** + строки users не только PBKDF2; **python-multipart 0.0.9**.
 3. **Ops:** `SOKOL_ENV=prod`, JWT/CORS/пароли, restore drill, off-host бэкап, required CI.
 4. **Сессия в `localStorage`** — accepted risk за VPN; для open contour нужен cookie/OIDC.

@@ -36,7 +36,7 @@ Dev-пользователи (если таблица `users` пуста и ср
 
 ## Docker
 
-Полный стек — [DOCKER.md](../DOCKER.md). Backend-only: `docker/app/docker-compose.yml` (тот же сервис `backup`). Compose может поднимать Mailhog с profile `extras` — API его не использует.
+Полный стек — [DOCKER.md](../DOCKER.md). Backend-only (без UI): `docker/app/docker-compose.yml` → db + minio + api + backup.
 
 ## Переменные окружения
 

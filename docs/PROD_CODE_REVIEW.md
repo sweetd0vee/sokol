@@ -45,7 +45,7 @@
 
 | ID | Сторона | Что | Почему важно | Severity | Пилот VPN | Действие | Effort |
 |----|---------|-----|--------------|----------|-----------|----------|--------|
-| **FE-SEC-03** | FE | Docker UI крутит `npm run dev` (`sokol-frontend/docker/Dockerfile`) | Dev-сервер, HMR, исходники на `:5180` — это не prod-артефакт | **blocker** | **да** | Multi-stage: `npm run build` + nginx/static, CSP headers | M |
+| **FE-SEC-03** | FE | ~~Vite `dev` в Docker~~ → **закрыто** (nginx static + CSP) | Dev-сервер на проде | **done** | — | Смена API URL → rebuild с `--build-arg VITE_API_URL` | — |
 | **SEC-01** | BE | `verify_password` принимает legacy plaintext (`app/core/security.py`) | Утечка `password_hash` = рабочие пароли для немигрированных строк | **blocker** | **да** | В prod отклонять non-`pbkdf2_sha256$`; мигрировать хеши | S |
 | **SEC-05** | BE | `python-multipart==0.0.9` | Известные DoS CVE на multipart (upload/tools) | **blocker** | **да** | Обновить до ≥0.0.27 и прогнать upload/tools тесты | S |
 | **OPS-A** | Ops | Env не заточен под prod | Без `SOKOL_ENV=prod`, своего JWT (≥32), явного CORS и своих seed-паролей стенд стартует «как dev» | **ops / blocker** | **да** | Заполнить `.env`; demo/replace выключены | S |
@@ -83,13 +83,9 @@
 
 ## Блокеры пилота (сделать до выката)
 
-### 1. FE-SEC-03 — UI Docker = Vite dev
+### 1. ~~FE-SEC-03 — UI Docker = Vite dev~~ (закрыто)
 
-**Где:** `sokol-frontend/docker/Dockerfile` → `CMD npm run dev`.
-
-**Почему:** на «проде» отдаётся режим разработки, а не собранный бандл. Это и безопасность (лишняя поверхность), и нестабильность.
-
-**Сделать:** образ `build` → nginx (или аналог) со static; `VITE_API_URL` на этапе build/runtime.
+Образ: `npm run build` → nginx. Порт хоста `5180:80`. `VITE_API_URL` — build-arg.
 
 ### 2. SEC-01 — plaintext пароли всё ещё валидны
 
@@ -134,7 +130,7 @@
 | DATA-06 | Batch status refresh |
 | FE-UX-01… | Server pagination (баннер truncation уже есть) |
 | FE-OPS-01 | Error beacon URL |
-| FE-SEC-03 | Prod UI image (nginx), не Vite dev |
+| FE-SEC-03 | ~~Prod UI image~~ **сделано** (nginx) |
 
 ---
 
@@ -154,7 +150,7 @@
 ## Зависимости между работами
 
 ```text
-FE-SEC-03 (prod UI image) ──► можно выкатывать UI
+FE-SEC-03 ✓ (nginx static)
 SEC-01 + OPS-B (PBKDF2) ──► безопасные учётки
 SEC-05 (multipart) ──► безопасные upload/tools
 OPS-A (env) ──► всё остальное имеет смысл

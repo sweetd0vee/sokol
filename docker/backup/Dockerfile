@@ -1,3 +1,7 @@
+# Nightly Postgres + MinIO snapshots. Build context = repository root.
+#
+#   docker build -f docker/backup/Dockerfile -t sber/sokol-backup:master .
+
 FROM postgres:16-bookworm
 
 USER root
