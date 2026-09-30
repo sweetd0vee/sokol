@@ -4,6 +4,7 @@
 import re
 from typing import List, Optional, Tuple
 
+from app.services.reports.ooxml import local_tag
 from app.services.reports.memorandum.models import (
     MemorandumAuditObject,
     MemorandumRecommendation,
@@ -51,17 +52,12 @@ OBSERVATION_PREFIX_RE = re.compile(
 _ROW_WRAPPER_TAGS = frozenset({"sdt", "sdtContent", "customXml", "smartTag", "ins", "del"})
 
 
-def _local_tag(el) -> str:
-    tag = getattr(el, "tag", "") or ""
-    return tag.split("}")[-1] if "}" in tag else tag
-
-
 def _iter_wrapped(el, target_tag: str) -> List[object]:
     found: List[object] = []
 
     def walk(node) -> None:
         for child in node:
-            tag = _local_tag(child)
+            tag = local_tag(child)
             if tag == target_tag:
                 found.append(child)
             elif tag == "tbl":

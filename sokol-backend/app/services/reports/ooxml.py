@@ -28,3 +28,16 @@ def register_word_namespaces() -> None:
             ET.register_namespace(prefix, uri)
         except (ValueError, KeyError):
             pass
+
+
+def local_name(tag: str) -> str:
+    """Local part of a Clark notation tag (`{namespace}local`) or a bare name."""
+    return tag.split("}")[-1] if "}" in tag else tag
+
+
+def local_tag(el: object) -> str:
+    """Local name of an ElementTree-like node. Non-element tags yield an empty string."""
+    tag = getattr(el, "tag", "") or ""
+    if not isinstance(tag, str):
+        return ""
+    return local_name(tag)

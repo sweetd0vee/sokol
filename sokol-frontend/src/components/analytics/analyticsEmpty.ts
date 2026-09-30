@@ -1,4 +1,11 @@
-import type { RecommendationsSummary } from '../../api/analytics';
+import type { ChecksAnalyticsSummary, RecommendationsSummary } from '../../api/analytics';
+
+export const EMPTY_CHECKS_SUMMARY: ChecksAnalyticsSummary = {
+  total: 0,
+  not_started: 0,
+  in_progress: 0,
+  completed: 0,
+};
 
 export const EMPTY_RECOMMENDATION_SUMMARY: RecommendationsSummary = {
   total: 0,

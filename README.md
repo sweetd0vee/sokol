@@ -64,6 +64,7 @@ sokol/
 | [docs/DATA_AND_DB.md](docs/DATA_AND_DB.md) | Модель, seed, import, миграции |
 | [docs/ANALYTICS.md](docs/ANALYTICS.md) | Дашборды, планирование, конструктор |
 | [docs/APP_LIMITS_AND_GOTCHAS.md](docs/APP_LIMITS_AND_GOTCHAS.md) | Лимиты, тонкости и типовые проблемы |
+| [docs/REVIEW.md](docs/REVIEW.md) | Код-ревью и готовность к продакшену |
 | [docs/CI.md](docs/CI.md) | CI workflow и GitHub merge gate |
 | [sokol-backend/README.md](sokol-backend/README.md) | Запуск, env, тесты |
 | [sokol-frontend/README.md](sokol-frontend/README.md) | Скрипты, маршруты, env |

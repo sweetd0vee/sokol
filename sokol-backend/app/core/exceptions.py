@@ -9,9 +9,6 @@ class DomainError(Exception):
     http_status: int = 500
 
 
-CrudServiceError = DomainError
-
-
 class ResourceNotFoundError(DomainError):
     http_status = 404
 

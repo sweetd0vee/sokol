@@ -21,6 +21,7 @@ import { ChartCard, CHART_AXIS_TICK, CHART_VALUE_LABEL_SIZE, CHART_VALUE_LABEL_W
 import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableTreemapChart } from './FocusableTreemapChart';
 import { EffectivenessMatrixChart } from './EffectivenessMatrixChart';
+import { EMPTY_CHECKS_SUMMARY } from './analyticsEmpty';
 import { CHECKS_PALETTE, getValueBasedColors, MONITORING_STATUS_COLORS, VALUE_BLUE_SCALE } from './analyticsPalette';
 import { useAnalyticsDashboardController } from './useAnalyticsDashboardController';
 import { toAnalyticsFilterSidebarProps } from './analyticsFilterSidebarProps';
@@ -39,7 +40,6 @@ import { useAddToConstructor } from './constructor/useAddToConstructor';
 import { buildChecksConstructorDrafts } from './constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
 
-const EMPTY_CHECKS_SUMMARY = { total: 0, not_started: 0, in_progress: 0, completed: 0 };
 const EMPTY_FLOW_SERIES: never[] = [];
 const EMPTY_VIEW_DISTRIBUTION: never[] = [];
 const EMPTY_TYPE_DISTRIBUTION: never[] = [];

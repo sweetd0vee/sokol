@@ -24,6 +24,7 @@ def serialize_fragment(el: ET.Element) -> str:
 
 
 def _tag_local_name(qname: str) -> str:
+    # Prefixed raw XML (`w:p`), not Clark notation (`{ns}p`). Do not use ooxml.local_name.
     return qname.split(":", 1)[-1]
 
 

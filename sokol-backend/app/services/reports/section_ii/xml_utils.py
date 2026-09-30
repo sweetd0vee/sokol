@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import List, Optional, Tuple
 
-from app.services.reports.ooxml import W_NS
+from app.services.reports.ooxml import W_NS, local_tag
 from app.services.reports.section_ii.field_parser import roman_to_int
 from app.services.reports.section_ii.patterns import OBS_BLOCK_START_RE, SECTION2_START_RE
 
@@ -36,11 +36,6 @@ _MAJOR_SECTION_HEADING_LOOSE_RE = re.compile(
 
 
 XML_WRAPPER_TAGS = frozenset({"sdt", "sdtContent", "customXml", "smartTag", "ins", "del"})
-
-
-def local_tag(el) -> str:
-    tag = getattr(el, "tag", "") or ""
-    return tag.split("}")[-1] if "}" in tag else tag
 
 
 def iter_unwrapped(parent, *target_tags: str):

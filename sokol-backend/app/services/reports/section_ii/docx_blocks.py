@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple
 
 import xml.etree.ElementTree as ET
 
+from app.services.reports.ooxml import local_name
 from app.services.reports.section_ii.models import RunFragment
 from app.services.reports.section_ii.patterns import OBS_BLOCK_START_RE, W_NS
 from app.services.reports.section_ii.xml_utils import iter_unwrapped
@@ -161,10 +162,6 @@ def runs_to_text(runs: List[RunFragment]) -> str:
             parts.append("\n")
         parts.append(frag.text or "")
     return "".join(parts)
-
-
-def local_name(tag: str) -> str:
-    return tag.split("}")[-1] if "}" in tag else tag
 
 
 def iter_txbx_contents(el: ET.Element) -> List[ET.Element]:

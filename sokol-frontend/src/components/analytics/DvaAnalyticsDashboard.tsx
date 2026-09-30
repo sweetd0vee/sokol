@@ -14,7 +14,7 @@ import {
   MONITORING_STATUS_COLORS,
   RECOMMENDATIONS_MATERIALITY_CHART_COLORS,
 } from './analyticsPalette';
-import { EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
+import { EMPTY_CHECKS_SUMMARY, EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardController } from './useAnalyticsDashboardController';
 import { toAnalyticsFilterSidebarProps } from './analyticsFilterSidebarProps';
 import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
@@ -26,7 +26,6 @@ import { useAddToConstructor } from './constructor/useAddToConstructor';
 import { buildDvaConstructorDrafts } from './constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
 
-const EMPTY_CHECK_SUMMARY = { total: 0, not_started: 0, in_progress: 0, completed: 0 };
 const EMPTY_AUDITOR_CHECKS_MAP: never[] = [];
 const EMPTY_AUDITOR_IMPACT: never[] = [];
 const EMPTY_AUDITOR_EXECUTION: never[] = [];
@@ -86,7 +85,7 @@ export function DvaAnalyticsDashboard() {
   const exportSections = useExportSections(DVA_EXPORT_SECTIONS.map((section) => section.id) as DvaExportSectionId[]);
   const { addToConstructor, justAdded } = useAddToConstructor();
 
-  const checkSummary = data?.checkSummary ?? EMPTY_CHECK_SUMMARY;
+  const checkSummary = data?.checkSummary ?? EMPTY_CHECKS_SUMMARY;
   const recSummary = data?.recommendationSummary ?? EMPTY_RECOMMENDATION_SUMMARY;
   const auditorChecksMap = data?.auditorChecksTreemap ?? EMPTY_AUDITOR_CHECKS_MAP;
   const auditorImpact = useMemo(
