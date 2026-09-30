@@ -7,6 +7,7 @@
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, маршруты, auth, инварианты, куда смотреть в коде |
 | [API.md](API.md) | HTTP `/api/v1`, лимиты, типовые ошибки |
 | [DATA.md](DATA.md) | Postgres, seed, миграции, MinIO, бэкап |
+| [DEMO.md](DEMO.md) | Демо Excel, синтетика, presentation, вложения |
 | [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md) | Автостатус рекомендаций |
 | [ANALYTICS.md](ANALYTICS.md) | Дашборды, планирование, конструктор |
 | [REPORTS.md](REPORTS.md) | Раздел II, докладная, файл контроля, parse |

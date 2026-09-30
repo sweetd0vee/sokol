@@ -51,7 +51,7 @@ python -m app.db.sync_check_buckets
 
 Пароли seed: `SOKOL_ADMIN_PASSWORD` (default `admin`) для admin и department_head, `SOKOL_DEFAULT_USER_PASSWORD` (default `auditor`) для аудиторов. Если `users` пуста: `Админ А.А.` / `admin`, `Ковалев С.С.` / `admin` (`department_head`), аудиторы (ФИО) / `auditor`.
 
-Прочие команды: `sync_dictionaries`, `seed_demo_data`, `bootstrap_presentation_demo`, `seed_demo_attachments`. Docker: `SOKOL_LOAD_DEMO_DATA` в entrypoint по умолчанию включён и пропускается, если проверки уже есть и нет `SOKOL_SEED_REPLACE`. Prod demo запрещает.
+Демо Excel / синтетика / presentation / вложения — команды в [DEMO.md](DEMO.md). Прочее: `sync_dictionaries`.
 
 `python -m app.db.migrations --list|--bootstrap|--all|NAME`. Docker гоняет `--bootstrap`: патчи с `in_bootstrap=True`, включая `record_created_by`. `--all` догоняет стенды старше `create_all` и пропускает `recommendation_indicators` (одноразовый remap, только по имени). Перед `--replace` и ручным migrate на общем стенде — бэкап.
 

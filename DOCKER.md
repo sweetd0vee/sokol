@@ -35,7 +35,7 @@ docker compose up --build -d ui
 
 - Корневой `.env` — опционально (дефолты в compose).
 - `sokol-backend/docker/app/.env` — обязателен для API (`DATABASE_URL`, `SOKOL_JWT_SECRET`, MinIO).
-- Compose по умолчанию грузит demo Excel: `SOKOL_LOAD_DEMO_DATA=1`. Для UAT/prod: `SOKOL_ENV=prod` и `SOKOL_LOAD_DEMO_DATA=0`.
+- Compose по умолчанию **не** грузит demo Excel (`SOKOL_LOAD_DEMO_DATA=0`). Локально Excel: `SOKOL_LOAD_DEMO_DATA=1`. Для UAT/prod: `SOKOL_ENV=prod` (demo запрещён). Команды — [docs/DEMO.md](docs/DEMO.md).
 - В prod смените пароли. Файлы `.env` не коммитятся.
 
 ## Данные на диске
@@ -68,6 +68,6 @@ Bearer JWT на `/api/v1/*`, кроме публичных:
 |---------|----------|
 | UI не видит API | http://localhost:8800/docs, CORS `http://localhost:5180` |
 | Порт занят | Освободить 5180 / 8800 / 5433 / 9000 / 9001 |
-| Неожиданные demo-данные | `SOKOL_LOAD_DEMO_DATA=0` в env API |
+| Неожиданные demo-данные | не ставить `SOKOL_LOAD_DEMO_DATA=1`; в prod demo запрещён |
 
 Частичный стек: `sokol-backend/docker/app/docker-compose.yml`, `sokol-frontend/docker/docker-compose.yml`.

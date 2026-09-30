@@ -53,7 +53,7 @@ async def run_docker_bootstrap() -> None:
     )
     await sync_check_buckets()
 
-    load_demo = env_flag_enabled(os.getenv("SOKOL_LOAD_DEMO_DATA"), default=True)
+    load_demo = env_flag_enabled(os.getenv("SOKOL_LOAD_DEMO_DATA"), default=False)
     force_replace = env_flag_enabled(os.getenv("SOKOL_SEED_REPLACE"), default=False)
     assert_demo_data_safe_for_env(env=settings.sokol_env, load_demo=load_demo)
     assert_seed_replace_safe_for_env(env=settings.sokol_env, replace=force_replace)

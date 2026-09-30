@@ -24,7 +24,7 @@
 | Канцлер | Убран из nav и routes. Неизвестный URL → `/checks` |
 | БД | PostgreSQL + `create_all` + `migrate_*`. Alembic **не внедрён** |
 | Import | Excel → checks/recommendations; `--replace` в prod только с `--confirm-prod-replace`. Нет dry-run и reject report: неизвестные справочники **досоздаются**, а не отклоняются |
-| Demo | `SOKOL_ENV=prod` запрещает demo load и seed replace. Compose default `SOKOL_LOAD_DEMO_DATA=1` сохранён для local Docker |
+| Demo | `SOKOL_ENV=prod` запрещает demo load и seed replace. Compose default `SOKOL_LOAD_DEMO_DATA=0`; Excel demo только явным `=1`. Синтетика `seed_demo_data` — ручной throwaway, не Docker |
 | CI | Workflow `Backend (Python 3.12)` и `Frontend (Node 22)` есть. Required checks в GitHub branch protection ещё нужно включить |
 | Storage UX | Backend `GET /attachments/storage/status` + frontend `useStorageStatus`: banner, disabled upload, retry |
 | Эксплуатация | Документы MinIO/backup есть. UAT URL, пилотные данные, restore drill, runbook сопровождения — не закрыты |
@@ -74,7 +74,7 @@
 |----|--------|-----------------|-----|
 | P0-02 | Явно пометить `Планирование` как limited/beta | Раздел в nav, дашборд и export рабочие — без пометки выглядит как полноценный модуль | На `/planning` видно, что модуль ограниченный |
 | P0-03 | Подключить `check_kinds` к форме и фильтрам проверок | **сделано** (`useCheckKindOptions`) | Форма и фильтры читают `/settings/check_kinds` |
-| P0-04 | Demo-load не должен быть default на UAT/prod | Compose default всё ещё `SOKOL_LOAD_DEMO_DATA=1`; пустой стенд без `SOKOL_ENV=prod` сам загрузит demo | UAT/prod: `SOKOL_ENV=prod` и `SOKOL_LOAD_DEMO_DATA=0`. Предпочтительно default `0` в root/backend compose; demo только явным opt-in |
+| P0-04 | Demo-load не должен быть default на UAT/prod | **сделано** (compose и bootstrap default `SOKOL_LOAD_DEMO_DATA=0`) | UAT/prod: `SOKOL_ENV=prod`. Demo Excel только явным `SOKOL_LOAD_DEMO_DATA=1` |
 | P0-06 | Alembic baseline или утверждённый временный DB migration gate | Схема = `create_all` + ad-hoc `migrate_*` | Предпочтительно: `alembic upgrade head` на пустой БД. Минимальный fallback: зафиксированный порядок `migrate_*`, проверенный на чистой БД, подписанный runbook |
 | P0-07 | Import dry-run + reject report | Сейчас import досоздаёт справочники и пишет в БД без отчёта ошибок | `python -m app.db.import_seed_data --dry-run --report reject_report.csv` не меняет БД и показывает ok/reject counts |
 

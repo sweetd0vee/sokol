@@ -53,7 +53,7 @@ Dev-пользователи (если таблица `users` пуста и ср
 | `SOKOL_DOCX_MAX_CONCURRENT` | сколько DOCX-jobs крутятся одновременно (default 2) |
 | `SOKOL_DOCX_MAX_QUEUE` | сколько запросов ждут слот (default 8); сверх лимита — 503 |
 | `SOKOL_DOCX_QUEUE_WAIT_SECONDS` | сколько секунд ждать слот (default 180) |
-| `SOKOL_LOAD_DEMO_DATA` / `SOKOL_SEED_REPLACE` | Docker bootstrap: demo Excel и TRUNCATE; в entrypoint demo default on; в prod запрещены |
+| `SOKOL_LOAD_DEMO_DATA` / `SOKOL_SEED_REPLACE` | Docker: Excel demo только при `SOKOL_LOAD_DEMO_DATA=1`; TRUNCATE — `SOKOL_SEED_REPLACE`. В prod оба запрещены |
 | `SOKOL_STATUS_SCHEDULER` | Ежедневный пересчёт статусов рекомендаций и проверок (default on; `0` выключает) |
 | `SOKOL_LOG_LEVEL` | Уровень логов `app.*` (default `INFO`) |
 | `SOKOL_LOG_JSON` | JSON-логи; по умолчанию on в prod, off в development |
