@@ -2,6 +2,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAnalyticsConstructor } from './analyticsConstructorState';
 import type { ConstructorWidgetDraft } from './constructorTypes';
 
+/** Add drafts to the constructor board; clear export section selection when anything was added. */
+export function commitConstructorDrafts(
+  addToConstructor: (drafts: ConstructorWidgetDraft[]) => number,
+  drafts: ConstructorWidgetDraft[],
+  clearAll: () => void,
+): number {
+  const added = addToConstructor(drafts);
+  if (added > 0) {
+    clearAll();
+  }
+  return added;
+}
+
 export function useAddToConstructor() {
   const { addWidgets } = useAnalyticsConstructor();
   const [justAdded, setJustAdded] = useState(false);

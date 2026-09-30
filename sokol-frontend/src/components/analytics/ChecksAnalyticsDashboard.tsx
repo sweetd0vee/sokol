@@ -36,7 +36,7 @@ import {
 } from '../../utils/analyticsPeriodSeries';
 import { topByValue } from '../../utils/analyticsDistribution';
 import { runAnalyticsExport } from '../../utils/runAnalyticsExport';
-import { useAddToConstructor } from './constructor/useAddToConstructor';
+import { useAddToConstructor, commitConstructorDrafts } from './constructor/useAddToConstructor';
 import { buildChecksConstructorDrafts } from './constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
 
@@ -138,7 +138,8 @@ export function ChecksAnalyticsDashboard() {
   };
 
   const handleAddToConstructor = () => {
-    const added = addToConstructor(
+    commitConstructorDrafts(
+      addToConstructor,
       buildChecksConstructorDrafts({
         selectedSections: exportSections.selectedSections,
         filterCaption: buildConstructorFilterCaption({
@@ -159,10 +160,8 @@ export function ChecksAnalyticsDashboard() {
         departmentMapTop,
         effectivenessMatrix,
       }),
+      exportSections.clearAll,
     );
-    if (added > 0) {
-      exportSections.clearAll();
-    }
   };
 
   const cards = useMemo<AnalyticsGridCard[]>(

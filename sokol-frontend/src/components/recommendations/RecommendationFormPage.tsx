@@ -3,7 +3,6 @@ import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
-import { ErrorState, LoadingState } from '../ui/StateMessage';
 import { ConfirmDialog } from '../ui/Modal';
 import type {
   MaterialityLevel,
@@ -25,9 +24,9 @@ import { ADDITIONAL_INDICATOR_ICONS } from './indicatorIcons';
 import { CollapsibleFormBlock, RecommendationClosureSection } from './RecommendationClosureSection';
 import { FileAttachmentsPanel } from '../attachments/FileAttachmentsPanel';
 import { FormPageShell } from '../forms/FormPageShell';
+import { FormEntityLoadGate } from '../forms/FormEntityLoadGate';
 import { FormActionFooter } from '../forms/FormActionFooter';
 import { useRecommendationForm } from '../../hooks/useRecommendationForm';
-import { getErrorMessage } from '../../api/errors';
 import { RECOMMENDATION_ATTACHMENT_SLOTS } from '../../constants/recommendationClosure';
 import {
   FORM_EQUAL_CONTROL_CLASS,
@@ -36,6 +35,7 @@ import {
   FORM_INPUT_CLASS,
   FORM_LABEL_CLASS,
   FORM_OUTLINE_BUTTON_CLASS,
+  FORM_READONLY_CONTROLS_CLASS,
   FORM_ROW_3,
   FORM_ROW_4,
   FORM_SECTION_CLASS,
@@ -53,30 +53,18 @@ export function RecommendationFormPage() {
   const form = useRecommendationForm();
   const { fields, setField, requiredFieldErrors, showValidationErrors } = form;
 
-  if (form.isEditMode && form.isFetching && !form.source) {
-    return (
-      <FormPageShell title={form.heading} backTo="/recommendations">
-        <LoadingState description="Загружаем рекомендацию для редактирования." />
-      </FormPageShell>
-    );
-  }
-
-  if (form.isEditMode && !form.source && !form.isFetching) {
-    return (
-      <FormPageShell title={form.heading} backTo="/recommendations">
-        <ErrorState
-          title="Рекомендация не загружена"
-          description={getErrorMessage(
-            form.recommendationQuery.error,
-            'Не удалось загрузить рекомендацию для редактирования.',
-          )}
-          action={{ label: 'Повторить', onClick: () => void form.recommendationQuery.refetch() }}
-        />
-      </FormPageShell>
-    );
-  }
-
   return (
+    <FormEntityLoadGate
+      title={form.heading}
+      backTo="/recommendations"
+      isLoading={form.isEditMode && form.isFetching && !form.source}
+      isError={form.isEditMode && !form.source && !form.isFetching}
+      error={form.recommendationQuery.error}
+      loadingDescription="Загружаем рекомендацию для редактирования."
+      errorTitle="Рекомендация не загружена"
+      errorFallback="Не удалось загрузить рекомендацию для редактирования."
+      onRetry={() => void form.recommendationQuery.refetch()}
+    >
     <FormPageShell
       title={form.heading}
       actions={(
@@ -112,7 +100,7 @@ export function RecommendationFormPage() {
         onSubmit={form.handleSubmit}
         className={`${FORM_STACK_CLASS}${
           form.isEditMode && !form.canManageRecommendation
-            ? ' [&_input]:pointer-events-none [&_select]:pointer-events-none [&_textarea]:pointer-events-none'
+            ? ` ${FORM_READONLY_CONTROLS_CLASS}`
             : ''
         }`}
       >
@@ -418,5 +406,6 @@ export function RecommendationFormPage() {
         />
       )}
     </FormPageShell>
+    </FormEntityLoadGate>
   );
 }

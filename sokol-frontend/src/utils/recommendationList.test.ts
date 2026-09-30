@@ -47,7 +47,6 @@ const emptyFilters: RecommendationListFilters = {
   idFilter: '',
   keyFilter: '',
   nameFilter: '',
-  statuses: [],
   additionalIndicators: [],
   auditObjects: [],
   indicators: [],

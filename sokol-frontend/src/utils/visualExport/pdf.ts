@@ -27,7 +27,7 @@ import {
   STATUS_MATRIX_LEGEND,
   type StatusMatrixRow,
 } from '../statusMatrix';
-import { getMaterialityChartColor } from '../../components/analytics/analyticsPalette';
+import { getMaterialityChartColor } from '../../constants/analyticsPalette';
 import type { DashboardChartCapture } from '../dashboardChartRegistry';
 import { fitImageSize, stamp } from './shared';
 import type { VisualExportMetaRow } from './types';

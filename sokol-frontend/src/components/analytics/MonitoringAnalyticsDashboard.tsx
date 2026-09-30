@@ -28,7 +28,7 @@ import {
   sortStatusMatrixRows,
   type StatusMatrixCountSortConfig,
 } from '../../utils/statusMatrix';
-import { useAddToConstructor } from './constructor/useAddToConstructor';
+import { commitConstructorDrafts, useAddToConstructor } from './constructor/useAddToConstructor';
 import { buildMonitoringConstructorDrafts } from './constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
 import { completeNamedDistribution, distributionHasValues } from '../../utils/analyticsDistribution';
@@ -153,7 +153,8 @@ export function MonitoringAnalyticsDashboard() {
   };
 
   const handleAddToConstructor = () => {
-    const added = addToConstructor(
+    commitConstructorDrafts(
+      addToConstructor,
       buildMonitoringConstructorDrafts({
         selectedSections: exportSections.selectedSections,
         filterCaption: buildConstructorFilterCaption({
@@ -173,10 +174,8 @@ export function MonitoringAnalyticsDashboard() {
         completedDuringAuditShortNames: Object.fromEntries(completedDuringAuditShortNames),
         statusMatrix,
       }),
+      exportSections.clearAll,
     );
-    if (added > 0) {
-      exportSections.clearAll();
-    }
   };
 
   const cards = useMemo<AnalyticsGridCard[]>(

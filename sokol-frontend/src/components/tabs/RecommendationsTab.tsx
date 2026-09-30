@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
-import { Input } from '../ui/Input';
-import { EmptyState, ErrorState, LoadingState } from '../ui/StateMessage';
+import { EmptyState } from '../ui/StateMessage';
 import type { Recommendation } from '../../types/recommendation';
 import {
   ADDITIONAL_INDICATOR_OPTIONS,
@@ -38,14 +37,20 @@ import {
   getRecommendationSortValue,
   type RecommendationSortKey,
 } from '../../utils/recommendationList';
-import { getErrorMessage } from '../../api/errors';
+import { buildClientTableResetKey, joinFilterValues } from '../../utils/clientTableResetKey';
 import { useClientTable } from '../../hooks/useClientTable';
 import { useListExport } from '../../hooks/useListExport';
 import { EntityListHeader } from '../lists/EntityListHeader';
+import { EntityListLoadGate } from '../lists/EntityListLoadGate';
 import { ListExportControls } from '../lists/ListExportControls';
 import { ListPagination } from '../lists/ListPagination';
 import { ListColumnHeaderCell, ListSortHeader } from '../lists/ListSortHeader';
-import { ListDateRangeFilter, ListFilterCell, ListResetFiltersButton } from '../lists/ListFilterCell';
+import {
+  ListDateRangeFilter,
+  ListFilterCell,
+  ListResetFiltersButton,
+  ListTextFilterCell,
+} from '../lists/ListFilterCell';
 import { ListEditActionLink } from '../lists/ListEditActionLink';
 import { ListEmptyNotice, ListFilterCount, ListTableFooter, ListTableShell } from '../lists/ListTableShell';
 
@@ -97,7 +102,6 @@ export function RecommendationsTab() {
           idFilter,
           keyFilter,
           nameFilter,
-          statuses: [],
           additionalIndicators,
           auditObjects,
           indicators,
@@ -153,22 +157,22 @@ export function RecommendationsTab() {
   } = useClientTable({
     items: filteredRecommendations,
     getSortValue,
-    resetKey: [
+    resetKey: buildClientTableResetKey([
       idFilter,
       keyFilter,
       nameFilter,
-      additionalIndicators.join('\u0000'),
-      auditObjects.join('\u0000'),
-      indicators.join('\u0000'),
-      checkViews.join('\u0000'),
-      materialityLevels.join('\u0000'),
-      auditors.join('\u0000'),
-      managers.join('\u0000'),
+      joinFilterValues(additionalIndicators),
+      joinFilterValues(auditObjects),
+      joinFilterValues(indicators),
+      joinFilterValues(checkViews),
+      joinFilterValues(materialityLevels),
+      joinFilterValues(auditors),
+      joinFilterValues(managers),
       deadlineFrom?.getTime() ?? '',
       deadlineTo?.getTime() ?? '',
       showOnlyMe,
       trimmedMyName,
-    ].join('\u0001'),
+    ]),
   });
 
   const handleResetFilters = () => {
@@ -212,21 +216,15 @@ export function RecommendationsTab() {
     />
   );
 
-  if (isRecommendationsLoading) {
-    return <LoadingState title="Загрузка рекомендаций..." />;
-  }
-
-  if (isRecommendationsError) {
-    return (
-      <ErrorState
-        title="Не удалось загрузить рекомендации"
-        description={getErrorMessage(recommendationsError, 'Проверьте подключение к API и повторите попытку.')}
-        action={{ label: 'Повторить', onClick: () => void refetch() }}
-      />
-    );
-  }
-
   return (
+    <EntityListLoadGate
+      isLoading={isRecommendationsLoading}
+      isError={isRecommendationsError}
+      error={recommendationsError}
+      loadingTitle="Загрузка рекомендаций..."
+      errorTitle="Не удалось загрузить рекомендации"
+      onRetry={() => void refetch()}
+    >
     <div className="space-y-6">
       <EntityListHeader
         title="Рекомендации"
@@ -289,30 +287,10 @@ export function RecommendationsTab() {
           </colgroup>
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              <ListFilterCell>
-                <Input
-                  value={idFilter}
-                  onChange={setIdFilter}
-                  placeholder="ID"
-                  inputClassName={listFilterClass(Boolean(idFilter.trim()))}
-                />
-              </ListFilterCell>
-              <ListFilterCell>
-                <Input
-                  value={keyFilter}
-                  onChange={setKeyFilter}
-                  placeholder="Ключ"
-                  inputClassName={listFilterClass(Boolean(keyFilter.trim()))}
-                />
-              </ListFilterCell>
-              <ListFilterCell>
-                <Input
-                  value={nameFilter}
-                  onChange={setNameFilter}
-                  placeholder="Название"
-                  inputClassName={listFilterClass(Boolean(nameFilter.trim()))}
-                />
-              </ListFilterCell>
+              <ListTextFilterCell value={idFilter} onChange={setIdFilter} placeholder="ID" />
+              <ListTextFilterCell value={keyFilter} onChange={setKeyFilter} placeholder="Ключ" />
+              <ListTextFilterCell value={nameFilter} onChange={setNameFilter} placeholder="Название" />
+
               <ListFilterCell>
                 <MultiCheckboxSelect
                   value={auditObjects}
@@ -512,5 +490,6 @@ export function RecommendationsTab() {
         </table>
       </ListTableShell>
     </div>
+    </EntityListLoadGate>
   );
 }

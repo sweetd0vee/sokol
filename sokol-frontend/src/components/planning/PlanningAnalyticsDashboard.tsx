@@ -12,7 +12,7 @@ import { DepartmentUnresolvedBarChart } from '../analytics/DepartmentUnresolvedB
 import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
 import { useExportSections } from '../../hooks/useExportSections';
 import { PLANNING_EXPORT_SECTIONS, type PlanningExportSectionId } from '../../constants/analyticsExportSections';
-import { useAddToConstructor } from '../analytics/constructor/useAddToConstructor';
+import { commitConstructorDrafts, useAddToConstructor } from '../analytics/constructor/useAddToConstructor';
 import { buildPlanningConstructorDrafts } from '../analytics/constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from '../analytics/constructor/constructorFilterCaption';
 import { useAnalyticsDashboardController } from '../analytics/useAnalyticsDashboardController';
@@ -93,7 +93,8 @@ export function PlanningAnalyticsDashboard() {
   };
 
   const handleAddToConstructor = () => {
-    const added = addToConstructor(
+    commitConstructorDrafts(
+      addToConstructor,
       buildPlanningConstructorDrafts({
         selectedSections: exportSections.selectedSections,
         filterCaption: buildConstructorFilterCaption({
@@ -110,10 +111,8 @@ export function PlanningAnalyticsDashboard() {
         universeChecksTotal,
         universeRecommendationsTotal,
       }),
+      exportSections.clearAll,
     );
-    if (added > 0) {
-      exportSections.clearAll();
-    }
   };
 
   const cards = useMemo<AnalyticsGridCard[]>(

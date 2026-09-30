@@ -4,7 +4,7 @@ import {
   namespaceSvgMarkupForEmbed,
   type DashboardChartCapture,
 } from '../dashboardChartRegistry';
-import { RECOMMENDATIONS_MATERIALITY_CHART_COLORS } from '../../components/analytics/analyticsPalette';
+import { RECOMMENDATIONS_MATERIALITY_CHART_COLORS } from '../../constants/analyticsPalette';
 import { escapeHtml, stamp } from './shared';
 import type { VisualExportMetaRow } from './types';
 

@@ -22,7 +22,7 @@ import { DVA_EXPORT_SECTIONS, type DvaExportSectionId } from '../../constants/an
 import { useExportSections } from '../../hooks/useExportSections';
 import { rankAuditorRows } from '../../utils/dvaAnalytics';
 import { runAnalyticsExport } from '../../utils/runAnalyticsExport';
-import { useAddToConstructor } from './constructor/useAddToConstructor';
+import { commitConstructorDrafts, useAddToConstructor } from './constructor/useAddToConstructor';
 import { buildDvaConstructorDrafts } from './constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
 
@@ -129,7 +129,8 @@ export function DvaAnalyticsDashboard() {
   };
 
   const handleAddToConstructor = () => {
-    const added = addToConstructor(
+    commitConstructorDrafts(
+      addToConstructor,
       buildDvaConstructorDrafts({
         selectedSections: exportSections.selectedSections,
         filterCaption: buildConstructorFilterCaption({
@@ -150,10 +151,8 @@ export function DvaAnalyticsDashboard() {
         auditorDocuments,
         checkLifecycle,
       }),
+      exportSections.clearAll,
     );
-    if (added > 0) {
-      exportSections.clearAll();
-    }
   };
 
   const cards = useMemo<AnalyticsGridCard[]>(

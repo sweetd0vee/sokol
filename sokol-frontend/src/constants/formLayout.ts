@@ -6,6 +6,10 @@ export const FORM_PAGE_CLASS = 'w-full max-w-7xl';
 /** Vertical gap between major form sections. */
 export const FORM_STACK_CLASS = 'space-y-8';
 
+/** Disable pointer interaction on native form controls in read-only mode. */
+export const FORM_READONLY_CONTROLS_CLASS =
+  '[&_input]:pointer-events-none [&_select]:pointer-events-none [&_textarea]:pointer-events-none';
+
 /** Shared inner spacing inside a form section (matches section space-y). */
 export const FORM_SECTION_INNER_STACK_CLASS = 'space-y-5';
 

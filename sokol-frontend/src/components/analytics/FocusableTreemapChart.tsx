@@ -10,23 +10,9 @@ import {
 } from './analyticsPalette';
 import { CHART_TOOLTIP_STYLE } from './AnalyticsChartPrimitives';
 import { formatTreemapExportLabel } from '../../utils/treemapExportLabel';
+import type { TreemapDatum, TreemapViewBreakdown } from '../../types/analyticsCharts';
 
-export type TreemapViewBreakdown = {
-  name: string;
-  value: number;
-};
-
-export type TreemapDatum = {
-  name: string;
-  value: number;
-  fill?: string;
-  materiality?: {
-    низкий: number;
-    средний: number;
-    высокий: number;
-  };
-  views?: TreemapViewBreakdown[];
-};
+export type { TreemapDatum, TreemapViewBreakdown };
 
 type FocusableTreemapChartProps = {
   data: TreemapDatum[];

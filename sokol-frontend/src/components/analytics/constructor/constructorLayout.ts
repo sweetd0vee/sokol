@@ -1,8 +1,9 @@
+import { CONSTRUCTOR_GRID_COLS } from '../../../constants/constructorGrid';
 import type { ConstructorPayload, ConstructorWidget, ConstructorWidgetLayout } from './constructorTypes';
 
 export type ConstructorSizeHint = Pick<ConstructorWidgetLayout, 'w' | 'h' | 'minW' | 'minH'>;
 
-export const CONSTRUCTOR_GRID_COLS = 12;
+export { CONSTRUCTOR_GRID_COLS };
 export const CONSTRUCTOR_GRID_MARGIN = 10;
 export const CONSTRUCTOR_ROW_HEIGHT = 56;
 

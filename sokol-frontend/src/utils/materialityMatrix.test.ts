@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getMaterialityChartColor } from '../components/analytics/analyticsPalette';
+import { getMaterialityChartColor } from '../constants/analyticsPalette';
 import {
   buildMaterialityMatrixHtmlMarkup,
   cycleMaterialityMatrixCountSort,

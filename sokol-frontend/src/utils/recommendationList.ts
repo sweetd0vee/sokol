@@ -127,7 +127,6 @@ export type RecommendationListFilters = {
   idFilter: string;
   keyFilter: string;
   nameFilter: string;
-  statuses: string[];
   additionalIndicators: string[];
   auditObjects: string[];
   indicators: string[];
@@ -166,9 +165,6 @@ export function filterRecommendations(
       if (!searchableName.includes(query)) {
         return false;
       }
-    }
-    if (!matchesSelected(filters.statuses, recommendation.status)) {
-      return false;
     }
     if (
       !matchesSelected(

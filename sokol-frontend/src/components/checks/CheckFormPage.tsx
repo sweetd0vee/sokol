@@ -2,10 +2,9 @@ import { DatePicker } from '../ui/DatePicker';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
-import { ErrorState, LoadingState } from '../ui/StateMessage';
 import { CheckDeleteConfirmDialog } from './CheckDeleteConfirmDialog';
-import { getErrorMessage } from '../../api/errors';
 import { FormPageShell } from '../forms/FormPageShell';
+import { FormEntityLoadGate } from '../forms/FormEntityLoadGate';
 import { FormActionFooter } from '../forms/FormActionFooter';
 import { CHECK_QUARTER_OPTIONS, CHECK_TYPE_OPTIONS } from '../../constants/checks';
 import { useCheckForm } from '../../hooks/useCheckForm';
@@ -16,6 +15,7 @@ import {
   FORM_FIELD_SPAN_2_CLASS,
   FORM_INPUT_CLASS,
   FORM_LABEL_CLASS,
+  FORM_READONLY_CONTROLS_CLASS,
   FORM_ROW_3,
   FORM_ROW_4,
   FORM_SECTION_CLASS,
@@ -30,34 +30,23 @@ export function CheckFormPage() {
   const form = useCheckForm();
   const { fields, setField, requiredFieldErrors, showValidationErrors } = form;
 
-  if (form.isEditMode && !form.existing && form.checkQuery.isLoading) {
-    return (
-      <FormPageShell title={form.heading} backTo="/checks">
-        <LoadingState description="Загружаем проверку для редактирования." />
-      </FormPageShell>
-    );
-  }
-
-  if (form.isEditMode && !form.existing && form.checkQuery.isError) {
-    return (
-      <FormPageShell title={form.heading} backTo="/checks">
-        <ErrorState
-          title="Проверка не загружена"
-          description={getErrorMessage(form.checkQuery.error, 'Не удалось загрузить проверку для редактирования.')}
-          action={{ label: 'Повторить', onClick: () => void form.checkQuery.refetch() }}
-        />
-      </FormPageShell>
-    );
-  }
-
   return (
+    <FormEntityLoadGate
+      title={form.heading}
+      backTo="/checks"
+      isLoading={form.isEditMode && !form.existing && form.checkQuery.isLoading}
+      isError={form.isEditMode && !form.existing && form.checkQuery.isError}
+      error={form.checkQuery.error}
+      loadingDescription="Загружаем проверку для редактирования."
+      errorTitle="Проверка не загружена"
+      errorFallback="Не удалось загрузить проверку для редактирования."
+      onRetry={() => void form.checkQuery.refetch()}
+    >
     <FormPageShell title={form.heading} backTo="/checks">
       <form
         onSubmit={form.handleSubmit}
         className={`${FORM_STACK_CLASS}${
-          form.isEditMode && !form.canManageCheck
-            ? ' [&_input]:pointer-events-none [&_select]:pointer-events-none [&_textarea]:pointer-events-none'
-            : ''
+          form.isEditMode && !form.canManageCheck ? ` ${FORM_READONLY_CONTROLS_CLASS}` : ''
         }`}
       >
         {form.isEditMode && !form.canManageCheck && (
@@ -288,5 +277,6 @@ export function CheckFormPage() {
         />
       )}
     </FormPageShell>
+    </FormEntityLoadGate>
   );
 }

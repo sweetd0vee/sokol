@@ -2,7 +2,7 @@
  * Interactive constructor HTML: widgets stay on the 12-col board,
  * charts are embedded SVG/HTML (with hover tooltips), not one screenshot.
  */
-import { CONSTRUCTOR_GRID_COLS } from '../components/analytics/constructor/constructorLayout';
+import { CONSTRUCTOR_GRID_COLS } from '../constants/constructorGrid';
 import {
   CONSTRUCTOR_SOURCE_LABELS,
   type ConstructorWidget,
@@ -14,7 +14,7 @@ import {
   namespaceSvgMarkupForEmbed,
   type DashboardChartCapture,
 } from './dashboardChartRegistry';
-import { RECOMMENDATIONS_MATERIALITY_CHART_COLORS } from '../components/analytics/analyticsPalette';
+import { RECOMMENDATIONS_MATERIALITY_CHART_COLORS } from '../constants/analyticsPalette';
 import { escapeHtml } from './escapeHtml';
 
 export function resolveConstructorHtmlChartBody(chart: DashboardChartCapture, index: number): string {

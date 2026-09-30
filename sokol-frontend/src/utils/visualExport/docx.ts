@@ -44,7 +44,7 @@ import {
   getMaterialityChartColor,
   VALUE_BLUE_SCALE,
   VALUE_TEAL_SCALE,
-} from '../../components/analytics/analyticsPalette';
+} from '../../constants/analyticsPalette';
 import type { DvaCheckLifecycleRow } from '../../api/analytics';
 import {
   averageLifecycleDurationDays,

@@ -3,12 +3,9 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { getValueBasedColors, PALETTE } from './analyticsPalette';
 import { ChartLegend, CHART_LEGEND_STYLE, CHART_SLICE_PERCENT_FONT_SIZE, CHART_TOOLTIP_STYLE, CHART_VALUE_LABEL_WEIGHT } from './AnalyticsChartPrimitives';
 import { formatChartLegendText } from './formatChartLegendText';
+import type { DonutDatum } from '../../types/analyticsCharts';
 
-export type DonutDatum = {
-  name: string;
-  value: number;
-  color?: string;
-};
+export type { DonutDatum };
 
 type FocusableDonutChartProps = {
   data: DonutDatum[];

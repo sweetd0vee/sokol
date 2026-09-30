@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { DatePicker } from '../ui/DatePicker';
+import { Input } from '../ui/Input';
 import { listFilterClass, LIST_RESET_FILTERS_BUTTON_CLASS } from '../../constants/formLayout';
 
 export function ListFilterCell({
@@ -15,6 +16,27 @@ export function ListFilterCell({
     <th colSpan={colSpan} className={alignEnd ? 'px-0 pr-4 py-2 font-normal' : 'px-2 py-2 font-normal'}>
       {children}
     </th>
+  );
+}
+
+export function ListTextFilterCell({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <ListFilterCell>
+      <Input
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        inputClassName={listFilterClass(Boolean(value.trim()))}
+      />
+    </ListFilterCell>
   );
 }
 

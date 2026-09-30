@@ -1,4 +1,4 @@
-import { getMaterialityChartColor } from '../components/analytics/analyticsPalette';
+import { getMaterialityChartColor } from '../constants/analyticsPalette';
 import { escapeHtmlQuoted as escapeHtml } from './escapeHtml';
 import type { SortDirection } from './listTable';
 

@@ -23,7 +23,7 @@ import {
   type IBorderOptions,
   type ITableBordersOptions,
 } from 'docx';
-import { CONSTRUCTOR_GRID_COLS } from '../components/analytics/constructor/constructorLayout';
+import { CONSTRUCTOR_GRID_COLS } from '../constants/constructorGrid';
 import {
   CONSTRUCTOR_SOURCE_LABELS,
   type ConstructorWidget,

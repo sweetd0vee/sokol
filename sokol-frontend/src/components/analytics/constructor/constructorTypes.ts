@@ -13,8 +13,7 @@ import type {
   RecommendationPeriodPoint,
   RecommendationsSummary,
 } from '../../../api/analytics';
-import type { DonutDatum } from '../FocusableDonutChart';
-import type { TreemapDatum } from '../FocusableTreemapChart';
+import type { DonutDatum, TreemapDatum } from '../../../types/analyticsCharts';
 import type { PeriodGranularity } from '../../../utils/analyticsPeriod';
 import type { EffectivenessMatrixRow, NamedCount } from '../../../utils/checkAnalytics';
 import type { MaterialityMatrixRow } from '../../../utils/materialityMatrix';

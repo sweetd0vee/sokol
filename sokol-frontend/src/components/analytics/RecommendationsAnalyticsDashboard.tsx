@@ -53,7 +53,7 @@ import {
 } from '../../utils/analyticsPeriodSeries';
 import { runAnalyticsExport } from '../../utils/runAnalyticsExport';
 import { useAnalyticsDashboardController } from './useAnalyticsDashboardController';
-import { useAddToConstructor } from './constructor/useAddToConstructor';
+import { commitConstructorDrafts, useAddToConstructor } from './constructor/useAddToConstructor';
 import { buildRecommendationsConstructorDrafts } from './constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from './constructor/constructorFilterCaption';
 import {
@@ -161,7 +161,8 @@ export function RecommendationsAnalyticsDashboard() {
   };
 
   const handleAddToConstructor = () => {
-    const added = addToConstructor(
+    commitConstructorDrafts(
+      addToConstructor,
       buildRecommendationsConstructorDrafts({
         selectedSections: exportSections.selectedSections,
         filterCaption: buildConstructorFilterCaption({
@@ -180,10 +181,8 @@ export function RecommendationsAnalyticsDashboard() {
         materialityMatrix,
         granularity,
       }),
+      exportSections.clearAll,
     );
-    if (added > 0) {
-      exportSections.clearAll();
-    }
   };
 
   const cards = useMemo<AnalyticsGridCard[]>(

@@ -6,7 +6,7 @@
  */
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
-import { CONSTRUCTOR_GRID_COLS } from '../components/analytics/constructor/constructorLayout';
+import { CONSTRUCTOR_GRID_COLS } from '../constants/constructorGrid';
 import type { ConstructorWidget } from '../components/analytics/constructor/constructorTypes';
 import type { DashboardChartCapture } from './dashboardChartRegistry';
 import { chartHasPngPayload } from './dashboardChartRegistry';

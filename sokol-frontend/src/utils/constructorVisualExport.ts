@@ -9,7 +9,7 @@ import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import type { AnalyticsExportFormat } from './analyticsExport';
 import { captureDashboardCharts, chartHasPngPayload } from './dashboardChartRegistry';
 import type { ConstructorWidget } from '../components/analytics/constructor/constructorTypes';
-import { CONSTRUCTOR_GRID_COLS } from '../components/analytics/constructor/constructorLayout';
+import { CONSTRUCTOR_GRID_COLS } from '../constants/constructorGrid';
 import { buildConstructorDashboardHtml } from './constructorHtmlExport';
 import { buildConstructorDashboardDocument } from './constructorDocxExport';
 import { buildConstructorDashboardWorkbook, sharpenConstructorXlsxBuffer } from './constructorXlsxLayout';

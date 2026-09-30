@@ -17,7 +17,6 @@ import { toNameOptions, useAuditorOptions } from './useReferenceOptions';
 import { useAuditObjectOptions } from './useAuditObjectOptions';
 import { applyRecommendationFormAutoStatus } from '../utils/recommendationFormAutoStatus';
 import { toIsoDate } from '../utils/dates';
-import { auditorMatchesCurrentUser, userCanManageCheck, userCanManageRecommendation } from '../utils/personMatch';
 import { resolveRecommendationYearlyDisplayNumber } from '../utils/recommendationYearlyNumber';
 import {
   type CheckFormLocationState,
@@ -39,7 +38,10 @@ import {
   recommendationFormPrefillFromNavigation,
   type RecommendationFormFields,
 } from '../utils/recommendationFormState';
-
+import {
+  getRecommendationFormHeading,
+  resolveRecommendationFormAccess,
+} from '../utils/recommendationFormAccess';
 export function useRecommendationForm() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -156,33 +158,21 @@ export function useRecommendationForm() {
     [],
   );
 
-  const canManageLinkedCheck = Boolean(
-    linkedCheck
-    && userCanManageCheck({
-      isAdmin,
-      userName: myName,
-      checkLeader: linkedCheck.check_leader,
-      createdBy: linkedCheck.created_by,
-    }),
-  );
-  const canEditCheckLeader = isAdmin || canManageLinkedCheck || (!isEditMode && !linkedCheck);
-  const recommendationAccessKnown =
-    !isEditMode
-    || isAdmin
-    || auditorMatchesCurrentUser(source?.auditor ?? '', myName)
-    || auditorMatchesCurrentUser(source?.created_by ?? '', myName)
-    || Boolean(linkedCheck)
-    || !resolvedSerialNumber;
-  const canManageRecommendation =
-    !isEditMode
-    || userCanManageRecommendation({
-      isAdmin,
-      userName: myName,
-      auditor: source?.auditor ?? '',
-      createdBy: source?.created_by,
-      checkLeader: linkedCheck?.check_leader,
-      checkCreatedBy: linkedCheck?.created_by,
-    });
+  const {
+    canEditCheckLeader,
+    recommendationAccessKnown,
+    canManageRecommendation,
+  } = resolveRecommendationFormAccess({
+    isEditMode,
+    isAdmin,
+    userName: myName,
+    auditor: source?.auditor ?? '',
+    createdBy: source?.created_by,
+    checkLeader: linkedCheck?.check_leader,
+    checkCreatedBy: linkedCheck?.created_by,
+    hasLinkedCheck: Boolean(linkedCheck),
+    resolvedSerialNumber,
+  });
 
   const setField = useCallback(<K extends keyof RecommendationFormFields>(
     key: K,
@@ -290,15 +280,7 @@ export function useRecommendationForm() {
     requiredFieldErrors.closureInformation,
   ]);
 
-  const heading = (() => {
-    if (isEditMode) {
-      return 'Редактирование рекомендации';
-    }
-    if (fromCheckForm) {
-      return 'Рекомендация к проверке';
-    }
-    return 'Создание рекомендации';
-  })();
+  const heading = getRecommendationFormHeading(isEditMode, fromCheckForm);
   const backToCheckPath = linkedCheck ? `/checks/${linkedCheck.id}/edit` : null;
 
   const withUpdatedCheckLeaderDraft = (draft: NonNullable<RecommendationFormLocationState['checkFormDraft']>) => ({
