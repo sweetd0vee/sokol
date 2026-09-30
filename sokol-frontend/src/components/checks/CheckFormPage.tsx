@@ -3,7 +3,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { ErrorState, LoadingState } from '../ui/StateMessage';
-import { ConfirmDialog } from '../ui/Modal';
+import { CheckDeleteConfirmDialog } from './CheckDeleteConfirmDialog';
 import { getErrorMessage } from '../../api/errors';
 import { FormPageShell } from '../forms/FormPageShell';
 import { FormActionFooter } from '../forms/FormActionFooter';
@@ -274,11 +274,17 @@ export function CheckFormPage() {
         />
       </form>
       {form.deleteConfirmOpen && form.existing && (
-        <ConfirmDialog
-          title="Удаление проверки"
-          message={`Вы действительно хотите удалить проверку «${form.existing.serial_number}»?`}
+        <CheckDeleteConfirmDialog
+          serialNumber={form.existing.serial_number}
+          confirmToken={form.deleteConfirmToken}
+          recommendationCount={form.linkedRecommendationCount}
+          isDeleting={form.isDeleting}
           onConfirm={form.handleConfirmDelete}
-          onCancel={() => form.setDeleteConfirmOpen(false)}
+          onCancel={() => {
+            if (!form.isDeleting) {
+              form.setDeleteConfirmOpen(false);
+            }
+          }}
         />
       )}
     </FormPageShell>

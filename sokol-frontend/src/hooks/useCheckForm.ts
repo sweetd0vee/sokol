@@ -28,12 +28,13 @@ import {
   toCheckFormDraft,
   type CheckFormFields,
 } from '../utils/checkFormState';
+import { checkDeleteConfirmToken } from '../utils/checkDeleteConfirm';
 
 export function useCheckForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { checks, addCheck, updateCheck, deleteCheck } = useSokolData();
+  const { checks, addCheck, updateCheck, deleteCheck, getRecommendationsByCheckKey } = useSokolData();
   const { isAdmin } = useAuth();
   const myName = useCurrentUserName();
 
@@ -136,6 +137,10 @@ export function useCheckForm() {
   );
   const checkKey = existing?.serial_number ?? '';
   const keySourceChanged = isCheckKeySourceChanged(existing, fields);
+  const linkedRecommendationCount = existing?.serial_number
+    ? getRecommendationsByCheckKey(existing.serial_number).length
+    : 0;
+  const deleteConfirmToken = existing ? checkDeleteConfirmToken(existing) : '';
 
   const buildCheckFormDraft = useCallback(
     (): CheckFormDraft => toCheckFormDraft(fields, existing),
@@ -242,6 +247,8 @@ export function useCheckForm() {
     status,
     checkKey,
     keySourceChanged,
+    linkedRecommendationCount,
+    deleteConfirmToken,
     missingKeyFields,
     requiredFieldErrors,
     showValidationErrors,
