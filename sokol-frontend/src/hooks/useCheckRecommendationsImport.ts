@@ -14,6 +14,7 @@ import {
   type ParsedPreviewItem,
   type RecentUploadSession,
 } from '../utils/checkRecommendationsPreview';
+import { resolveRecommendationAuditor } from '../utils/recommendationFormState';
 
 export function useCheckRecommendationsImport({
   checkKey,
@@ -98,7 +99,7 @@ export function useCheckRecommendationsImport({
               observation_name: item.observation_name ?? '',
               audit_object: formatRecommendationAuditObjects(item.audit_object),
               deadline: normalizeRecommendationDeadline(item.deadline),
-              auditor: checkLeader,
+              auditor: resolveRecommendationAuditor(undefined, checkLeader),
               manager: item.manager,
               status: 'on_control',
               additional_status: 'on_control',

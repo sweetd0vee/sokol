@@ -42,6 +42,34 @@ export type RecommendationFormPrefill = {
   checkLeader?: string;
 };
 
+const UNSPECIFIED_AUDITOR_RE = /^не\s+указан$/i;
+
+export function resolveRecommendationAuditor(
+  auditor: string | null | undefined,
+  checkLeader: string | null | undefined,
+): string {
+  const trimmedAuditor = (auditor ?? '').trim();
+  if (trimmedAuditor && !UNSPECIFIED_AUDITOR_RE.test(trimmedAuditor)) {
+    return trimmedAuditor;
+  }
+  return (checkLeader ?? '').trim();
+}
+
+export function applyLinkedCheckLeader(
+  fields: RecommendationFormFields,
+  checkLeader: string,
+): RecommendationFormFields {
+  const leader = checkLeader.trim();
+  if (!leader) {
+    return fields;
+  }
+  const auditor = resolveRecommendationAuditor(fields.auditor, leader);
+  if (fields.checkLeader === leader && fields.auditor === auditor) {
+    return fields;
+  }
+  return { ...fields, checkLeader: leader, auditor };
+}
+
 export function emptyRecommendationFormFields(
   prefill: RecommendationFormPrefill = {},
 ): RecommendationFormFields {
@@ -73,7 +101,7 @@ export function recommendationFormFieldsFromSource(
     description: source.description || source.name,
     auditObject: formatRecommendationAuditObjects(source.audit_object),
     deadline: toInputDate(getLatestDeadlineExtensionDate(source) ?? source.deadline),
-    auditor: source.auditor,
+    auditor: resolveRecommendationAuditor(source.auditor, checkLeader),
     checkLeader,
     manager: source.manager,
     status: normalizeRecommendationStatus(source.status),
@@ -94,9 +122,10 @@ export function recommendationFormPrefillFromNavigation(navigation: {
   checkLeader?: string;
   checkFormDraft?: { checkLeader?: string } | null;
 }): RecommendationFormPrefill {
+  const checkLeader = navigation.checkLeader || navigation.checkFormDraft?.checkLeader || '';
   return {
     serialNumber: navigation.serialNumber,
-    auditor: navigation.auditor,
-    checkLeader: navigation.checkLeader || navigation.checkFormDraft?.checkLeader || '',
+    auditor: resolveRecommendationAuditor(navigation.auditor, checkLeader),
+    checkLeader,
   };
 }

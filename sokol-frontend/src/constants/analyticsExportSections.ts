@@ -44,7 +44,7 @@ export const DVA_EXPORT_SECTIONS = [
   { id: 'auditorExecution', label: 'Результативность исполнения', sheetName: 'Исполнение', headerFill: '0E7490' },
   {
     id: 'auditorChecksMap',
-    label: 'Карта сотрудников по проверкам',
+    label: 'Карта по руководителям проверок',
     sheetName: 'Карта проверки',
     headerFill: '312E81',
   },

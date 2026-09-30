@@ -34,6 +34,7 @@ import {
 } from '../utils/recommendationFormPayload';
 import {
   emptyRecommendationFormFields,
+  applyLinkedCheckLeader,
   recommendationFormFieldsFromSource,
   recommendationFormPrefillFromNavigation,
   type RecommendationFormFields,
@@ -135,15 +136,13 @@ export function useRecommendationForm() {
   const linkedCheck = linkedCheckFromContext ?? fetchedLinkedCheck ?? undefined;
 
   useEffect(() => {
-    if (linkedCheck) {
-      setFields((prev) => ({ ...prev, checkLeader: linkedCheck.check_leader ?? '' }));
+    const leader = linkedCheck
+      ? (linkedCheck.check_leader ?? '')
+      : (navigationState.checkLeader || navigationState.checkFormDraft?.checkLeader || '');
+    if (!leader.trim()) {
       return;
     }
-    const prefillingLeader =
-      navigationState.checkLeader || navigationState.checkFormDraft?.checkLeader || '';
-    if (prefillingLeader) {
-      setFields((prev) => ({ ...prev, checkLeader: prefillingLeader }));
-    }
+    setFields((prev) => applyLinkedCheckLeader(prev, leader));
   }, [
     linkedCheck,
     linkedCheck?.id,

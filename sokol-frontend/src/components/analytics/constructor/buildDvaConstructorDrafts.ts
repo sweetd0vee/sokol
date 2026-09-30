@@ -41,7 +41,7 @@ export function buildDvaConstructorDrafts(input: DvaConstructorInput): Construct
       );
     } else if (sectionId === 'auditorChecksMap') {
       drafts.push(
-        draft(kind, sectionId, 'Карта сотрудников по проверкам', caption, SIZE.treemap, {
+        draft(kind, sectionId, 'Карта по руководителям проверок', caption, SIZE.treemap, {
           chart: 'treemap',
           data: input.auditorChecksMap,
           palette: 'indigo',

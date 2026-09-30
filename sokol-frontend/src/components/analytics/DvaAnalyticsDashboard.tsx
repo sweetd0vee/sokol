@@ -267,7 +267,7 @@ export function DvaAnalyticsDashboard() {
         defaultLayout: { x: 4, y: 5, w: 8, h: 3, minW: 3, minH: 2 },
         render: () => (
           <ChartCard
-            title="Карта сотрудников по проверкам"
+            title="Карта по руководителям проверок"
             description=""
             {...exportSections.sectionProps('auditorChecksMap')}
           >

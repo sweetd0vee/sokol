@@ -81,7 +81,7 @@ const TABS = [
         title: 'Количество и доля рекомендаций со статусом "Не решено"',
         file: 'dva-auditor-execution.png',
       },
-      { title: 'Карта сотрудников по проверкам', file: 'dva-auditor-checks-map.png' },
+      { title: 'Карта по руководителям проверок', file: 'dva-auditor-checks-map.png' },
       {
         title: 'Жизненный цикл проверки: от приказа до ДЗ',
         file: 'dva-check-lifecycle.png',

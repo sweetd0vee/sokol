@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Recommendation } from '../types/recommendation';
 import {
+  applyLinkedCheckLeader,
   emptyRecommendationFormFields,
   recommendationFormFieldsFromSource,
   recommendationFormPrefillFromNavigation,
@@ -69,8 +70,36 @@ describe('recommendationFormState', () => {
       }),
     ).toEqual({
       serialNumber: 'П-3',
-      auditor: undefined,
+      auditor: 'Черновик',
       checkLeader: 'Черновик',
     });
+  });
+
+  it('оставляет выбранного аудитора, если он уже заполнен', () => {
+    expect(
+      recommendationFormPrefillFromNavigation({
+        serialNumber: 'П-3',
+        auditor: 'Иванов И.И.',
+        checkLeader: 'Важник Д.С.',
+      }),
+    ).toEqual({
+      serialNumber: 'П-3',
+      auditor: 'Иванов И.И.',
+      checkLeader: 'Важник Д.С.',
+    });
+  });
+
+  it('подставляет руководителя проверки, если аудитор в рекомендации пустой', () => {
+    const fields = recommendationFormFieldsFromSource(
+      recommendation({ auditor: '' }),
+      'Важник Д.С.',
+    );
+    expect(fields.auditor).toBe('Важник Д.С.');
+    expect(fields.checkLeader).toBe('Важник Д.С.');
+  });
+
+  it('подставляет руководителя проверки вместо «Не указан»', () => {
+    const empty = emptyRecommendationFormFields({ checkLeader: 'Важник Д.С.', auditor: 'Не указан' });
+    expect(applyLinkedCheckLeader(empty, 'Важник Д.С.').auditor).toBe('Важник Д.С.');
   });
 });
