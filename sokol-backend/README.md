@@ -6,8 +6,8 @@ Python 3.12, async SQLAlchemy, PostgreSQL.
 
 | Режим | API / Swagger | Postgres |
 |-------|---------------|----------|
-| Локально | http://localhost:8802/docs | localhost:5433 |
-| Docker | http://localhost:8800/docs | localhost:5433 |
+| Локально | http://localhost:8802/docs | localhost:5433 (свой Postgres) |
+| Docker | http://localhost:8800/docs | внутри сети `db:5432` (с хоста не опубликован) |
 
 Фронт в dev: `VITE_DEV_API_PORT=8802`. При смене порта обновите `SOKOL_CORS_ORIGINS`.
 

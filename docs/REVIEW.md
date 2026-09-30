@@ -34,7 +34,7 @@
 - [ ] `SOKOL_ENV=prod`, свой `SOKOL_JWT_SECRET`, явный `SOKOL_CORS_ORIGINS`.
 - [ ] `SOKOL_LOAD_DEMO_DATA=0`, `SOKOL_SEED_REPLACE` выключен, свои пароли seed.
 - [ ] В БД только PBKDF2-хеши.
-- [ ] Postgres и MinIO не торчат в интернет; `/docs` закрыт сетью, если Swagger снаружи не нужен.
+- [x] Postgres и MinIO не публикуются на хост (только сеть `sokol`); `/docs` закрыть сетью/VPN, если Swagger снаружи не нужен.
 - [x] Снимки Postgres и MinIO в 00:05 Europe/Moscow, хранение 14 дней (`~/docker-share/sokol-backups`). Один раз прогнать restore на копии стенда — [DATA.md](DATA.md).
 - [ ] Решение по чтению зафиксировано: «все свои» или отдельный ACL.
 - [ ] В GitHub для default branch включены required checks (см. ниже). Сам workflow их не включает.

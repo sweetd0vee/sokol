@@ -1,6 +1,6 @@
 # Данные
 
-PostgreSQL 16 (хост **5433**) и MinIO. Схема — `create_all` плюс идемпотентные патчи `python -m app.db.migrations`. Alembic нет. Прямой SQL по `serial_number`, labels и `attachments.bucket` ломает связи: ключи и бакеты двигает только каскад в сервисе.
+PostgreSQL 16 и MinIO. В Docker compose порты БД/MinIO на хост **не** публикуются (API → `db:5432`, `minio:9000`). Локальный loopback — [DOCKER.md](../DOCKER.md) (`docker-compose.dev-ports.yml` → `127.0.0.1:5433` / `9000`). Схема — `create_all` плюс идемпотентные патчи `python -m app.db.migrations`. Alembic нет. Прямой SQL по `serial_number`, labels и `attachments.bucket` ломает связи: ключи и бакеты двигает только каскад в сервисе.
 
 ## Таблицы
 
@@ -78,7 +78,7 @@ Create проверки делает `make_bucket`, если MinIO включё�
 | `SOKOL_MINIO_SECURE` | `0` HTTP / `1` HTTPS |
 | `SOKOL_MAX_UPLOAD_MB` | default 100 |
 
-Порты 9000 / 9001, том `~/docker-share/minio-data-sokol`. Консоль: `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (default `sokol` / `change-me`). Не делать `mc anonymous set public` и не подменять объекты через `mc cp`, если `object_key` должен остаться верным. Боевые снимки пишет сервис `backup`, не ручной `mc mirror`.
+Том `~/docker-share/minio-data-sokol`. Консоль с хоста — только после `dev-ports` на `127.0.0.1:9001`. Логин: `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (default `sokol` / `change-me`). Не делать `mc anonymous set public` и не подменять объекты через `mc cp`, если `object_key` должен остаться верным. Боевые снимки пишет сервис `backup`, не ручной `mc mirror`.
 
 ```bash
 mc alias set sokol http://127.0.0.1:9000 sokol change-me
@@ -114,7 +114,7 @@ docker compose start api ui
 
 После restore из контейнера API: `python -m app.db.sync_check_buckets`. Dump без файлов не бывает: MinIO входит в тот же снимок. Том `sokol-backups` лежит рядом с данными — скопируйте его ещё на другую машину или диск.
 
-Без Docker, вручную:
+Без Docker sidecar, вручную (нужен `docker-compose.dev-ports.yml` или свой Postgres/MinIO на loopback):
 
 ```bash
 pg_dump -h 127.0.0.1 -p 5433 -U postgres -d sokol_db -F c -f sokol_db.dump

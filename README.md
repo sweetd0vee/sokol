@@ -7,9 +7,9 @@
 | Режим | UI | API / Swagger | Postgres | MinIO |
 |-------|-----|---------------|----------|-------|
 | Локальная разработка | http://localhost:5180 | http://localhost:8802/docs | localhost:5433 | 9000 / 9001 |
-| Docker | http://localhost:5180 | http://localhost:8800/docs | localhost:5433 | 9000 / 9001 |
+| Docker (по умолчанию) | http://localhost:5180 | http://localhost:8800/docs | только внутри сети `sokol` | только внутри сети `sokol` |
 
-Локально API слушает **8802**, фронт проксирует `/api` туда же. В Docker API на **8800**.
+Локально API слушает **8802**, фронт проксирует `/api` туда же. В Docker API на **8800**; Postgres/MinIO с хоста не торчат — см. [DOCKER.md](DOCKER.md).
 
 ## Быстрый старт
 

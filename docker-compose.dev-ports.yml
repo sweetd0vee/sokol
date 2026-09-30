@@ -1,0 +1,17 @@
+# Опционально для локальной разработки: Postgres/MinIO только на loopback хоста.
+# Внешняя сеть по-прежнему не видит 5433/9000/9001.
+#
+# Из корня репозитория:
+#   docker compose -f docker-compose.yml -f docker-compose.dev-ports.yml up -d
+#
+# На UAT/prod этот файл не подключать.
+
+services:
+  db:
+    ports:
+      - "127.0.0.1:5433:5432"
+
+  minio:
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"

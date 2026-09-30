@@ -2,12 +2,29 @@
 
 ## Порты
 
-| Сервис | URL |
-|--------|-----|
-| UI | http://localhost:5180 |
-| API / Swagger | http://localhost:8800/docs |
-| Postgres | localhost:5433 |
-| MinIO API / Console | http://localhost:9000 / http://localhost:9001 |
+| Сервис | С хоста (compose по умолчанию) | Внутри Docker |
+|--------|--------------------------------|---------------|
+| UI | http://localhost:5180 | `frontend:5180` |
+| API / Swagger | http://localhost:8800 | `backend:8800` |
+| Postgres | **не опубликован** | `db:5432` |
+| MinIO API / Console | **не опубликованы** | `minio:9000` / `minio:9001` |
+
+Postgres и MinIO слушают только docker-сеть `sokol`. С LAN/интернета к ним не подключиться: снаружи остаются UI и API (их держите за VPN / reverse proxy).
+
+Локально нужен `psql` / MinIO Console с хоста — только loopback:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev-ports.yml up -d
+# → 127.0.0.1:5433, 127.0.0.1:9000, 127.0.0.1:9001
+```
+
+Без публикации портов:
+
+```bash
+docker compose exec db psql -U postgres -d sokol_db
+```
+
+На UAT/prod файл `docker-compose.dev-ports.yml` не подключать.
 
 Образ MinIO — `quay.io/minio/minio` (Docker Hub `minio/minio` больше не отдаёт pull). Образ бэкапа ставит Python-клиент `minio` из PyPI и не качает `mc` с dl.min.io.
 
@@ -67,7 +84,8 @@ Bearer JWT на `/api/v1/*`, кроме публичных:
 | Симптом | Действие |
 |---------|----------|
 | UI не видит API | http://localhost:8800/docs, CORS `http://localhost:5180` |
-| Порт занят | Освободить 5180 / 8800 / 5433 / 9000 / 9001 |
+| Порт занят | Освободить 5180 / 8800 (и 5433/9000/9001, если подключён `dev-ports`) |
+| Нет доступа к Postgres/MinIO с хоста | Норма без `dev-ports`; либо `docker compose exec db …`, либо подключить `docker-compose.dev-ports.yml` |
 | Неожиданные demo-данные | не ставить `SOKOL_LOAD_DEMO_DATA=1`; в prod demo запрещён |
 
 Частичный стек: `sokol-backend/docker/app/docker-compose.yml`, `sokol-frontend/docker/docker-compose.yml`.
