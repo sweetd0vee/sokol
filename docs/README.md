@@ -13,6 +13,7 @@
 | [REPORTS.md](REPORTS.md) | Раздел II, докладная, файл контроля, parse |
 | [UI_STANDARDS.md](UI_STANDARDS.md) | Каркас, цвета, формы и списки |
 | [REVIEW.md](REVIEW.md) | Готовность к продакшену и CI |
+| [PROD_CODE_REVIEW.md](PROD_CODE_REVIEW.md) | Дотошное код-ревью: таблица остатка до прода |
 
 Скриншоты и DOCX аналитики: [SOKOL_Аналитика.docx](SOKOL_Аналитика.docx), [analytics-screenshots/](analytics-screenshots/). Генерация из `sokol-frontend`: `npm run docs:analytics-tz:full`.
 

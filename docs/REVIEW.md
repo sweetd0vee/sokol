@@ -1,6 +1,6 @@
 # Готовность к продакшену
 
-Снимок на **30.09.2026**. Правила автостатуса — [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md). Слои — [ARCHITECTURE.md](ARCHITECTURE.md).
+Снимок на **30.09.2026**. Правила автостатуса — [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md). Слои — [ARCHITECTURE.md](ARCHITECTURE.md). Детальная таблица остатка до прода — [PROD_CODE_REVIEW.md](PROD_CODE_REVIEW.md).
 
 Внутренний инструмент одного департамента: **чтение общее** — любой вошедший видит все проверки, рекомендации и дашборды (зафиксировано 30.09.2026). Запись по-прежнему режется ролями. Для нескольких независимых заказчиков такой модели недостаточно.
 
@@ -23,10 +23,13 @@
 
 ## Что блокирует прод
 
-1. **Нет Alembic.** Схема — `create_all` и идемпотентные патчи. Часть патчей не входит в bootstrap, два стенда могут разъехаться.
-2. **Секреты по умолчанию.** Пустой CORS → `*`. Seed-пароли `admin` / `auditor`. Legacy-пароли без PBKDF2 принимаются как текст. Новый пароль — от 4 символов. JWT живёт 480 минут. Лимита на login нет. `/docs` в development открыт; в `SOKOL_ENV=prod` Swagger/OpenAPI выключены.
-3. **Сессия в `localStorage`.** XSS забирает access token. HttpOnly cookie нет.
-4. **Нагрузка.** Фронт тянет до 10 000 проверок и рекомендаций. Ночной пересчёт грузит обе таблицы в память. Посещённые вкладки аналитики остаются смонтированными.
+Кратко. Полная таблица с путями и effort — [PROD_CODE_REVIEW.md](PROD_CODE_REVIEW.md).
+
+1. **UI Docker = Vite dev** (`sokol-frontend/docker/Dockerfile`) — нужен static/nginx build.
+2. **Legacy plaintext verify** + строки users не только PBKDF2; **python-multipart 0.0.9**.
+3. **Ops:** `SOKOL_ENV=prod`, JWT/CORS/пароли, restore drill, off-host бэкап, required CI.
+4. **Сессия в `localStorage`** — accepted risk за VPN; для open contour нужен cookie/OIDC.
+5. **Нагрузка / схема** (should-fix): Alembic/migrate gate, списки 10k, analytics keep-alive, ночной refresh в память.
 
 ## Чеклист
 
