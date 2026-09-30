@@ -47,7 +47,7 @@
 |----|---------|-----|--------------|----------|-----------|----------|--------|
 | **FE-SEC-03** | FE | ~~Vite `dev` в Docker~~ → **закрыто** (nginx static + CSP) | Dev-сервер на проде | **done** | — | Смена API URL → rebuild с `--build-arg VITE_API_URL` | — |
 | **SEC-01** | BE | `verify_password` принимает legacy plaintext (`app/core/security.py`) | Утечка `password_hash` = рабочие пароли для немигрированных строк | **blocker** | **да** | В prod отклонять non-`pbkdf2_sha256$`; мигрировать хеши | S |
-| **SEC-05** | BE | `python-multipart==0.0.9` | Известные DoS CVE на multipart (upload/tools) | **blocker** | **да** | Обновить до ≥0.0.27 и прогнать upload/tools тесты | S |
+| **SEC-05** | BE | ~~`python-multipart==0.0.9`~~ → **`0.0.32`** | Известные DoS CVE на multipart | **done** | — | upload/tools тесты OK | — |
 | **OPS-A** | Ops | Env не заточен под prod | Без `SOKOL_ENV=prod`, своего JWT (≥32), явного CORS и своих seed-паролей стенд стартует «как dev» | **ops / blocker** | **да** | Заполнить `.env`; demo/replace выключены | S |
 | **OPS-B** | Ops | В БД могут остаться plaintext пароли | Код всё ещё примет их (SEC-01), пока строки не PBKDF2 | **ops / blocker** | **да** | Сверить/перехешировать всех users | S |
 | **OPS-C** | Ops | Restore drill не зафиксирован | Бэкап есть, но восстановление не доказано | **ops** | **да** | Один restore на копии стенда → запись в runbook | M |
@@ -95,13 +95,9 @@
 
 **Сделать:** в `SOKOL_ENV=prod` не принимать legacy; заранее перегнать всех users на PBKDF2.
 
-### 3. SEC-05 — старый python-multipart
+### 3. ~~SEC-05 — старый python-multipart~~ (закрыто)
 
-**Где:** `sokol-backend/requirements.txt` → `python-multipart==0.0.9`.
-
-**Почему:** multipart используется uploads и tools; известные DoS.
-
-**Сделать:** bump + регресс upload/tools.
+`requirements.txt` → `python-multipart==0.0.32`. Регресс: `test_api_attachments`, `test_instruments_reports`, `test_docx_queue`, `test_memorandum`.
 
 ### 4. Ops-чеклист стенда
 
@@ -152,7 +148,7 @@
 ```text
 FE-SEC-03 ✓ (nginx static)
 SEC-01 + OPS-B (PBKDF2) ──► безопасные учётки
-SEC-05 (multipart) ──► безопасные upload/tools
+SEC-05 ✓ (multipart 0.0.32)
 OPS-A (env) ──► всё остальное имеет смысл
      │
      ▼
