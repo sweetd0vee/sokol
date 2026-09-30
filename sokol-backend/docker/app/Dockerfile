@@ -10,7 +10,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     SOKOL_DATA_DIR=/app/data \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    PIP_ROOT_USER_ACTION=ignore
 
 RUN groupadd --system --gid 10001 sokol \
   && useradd --system --uid 10001 --gid sokol --home-dir /app --shell /usr/sbin/nologin sokol
