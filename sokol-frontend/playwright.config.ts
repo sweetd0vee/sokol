@@ -6,6 +6,9 @@ export default defineConfig({
   expect: {
     timeout: 5_000,
   },
+  forbidOnly: Boolean(process.env.CI),
+  retries: process.env.CI ? 1 : 0,
+  workers: process.env.CI ? 1 : undefined,
   use: {
     baseURL: 'http://127.0.0.1:15730',
     trace: 'on-first-retry',
@@ -13,7 +16,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev -- --host 127.0.0.1 --port 15730 --strictPort',
     url: 'http://127.0.0.1:15730',
-    reuseExistingServer: false,
+    reuseExistingServer: !process.env.CI,
     timeout: 60_000,
   },
   projects: [

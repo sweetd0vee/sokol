@@ -74,6 +74,14 @@ python -m app.db.seed_users
 
 Seed/import/бэкапы: [DATA_AND_DB.md](../docs/DATA_AND_DB.md). Excel seed лежит в корневом `data/`, не в `sokol-backend/data/`.
 
+## Health / metrics
+
+| Endpoint | Назначение |
+|----------|------------|
+| `GET /api/v1/status` | liveness + счётчики HTTP и очередь DOCX |
+| `GET /api/v1/ready` | Postgres `SELECT 1` (Docker HEALTHCHECK) |
+| `GET /api/v1/metrics` | Prometheus text, без auth |
+
 ## Инструменты
 
 | Endpoint | Назначение |

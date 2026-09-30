@@ -1,13 +1,15 @@
 import asyncio
 import logging
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Response, status
 from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.logging import log_caught_exception
-from app.core.metrics import snapshot_metrics
+from app.core.metrics import prometheus_text, snapshot_metrics
+from app.core.startup_validation import is_production_env
 from app.db.session import AsyncSessionLocal
+from app.services.reports.docx_queue import get_docx_job_limiter
 
 
 logger = logging.getLogger(__name__)
@@ -16,8 +18,19 @@ router = APIRouter()
 
 
 @router.get("/status")
-async def status() -> dict[str, object]:
-    return {"status": "ok", **snapshot_metrics()}
+async def status_endpoint() -> dict[str, object]:
+    return {
+        "status": "ok",
+        "env": "prod" if is_production_env(settings.sokol_env) else "development",
+        **snapshot_metrics(),
+        **get_docx_job_limiter().snapshot(),
+    }
+
+
+@router.get("/metrics")
+async def metrics_endpoint() -> Response:
+    body = prometheus_text(snapshot_metrics(), get_docx_job_limiter().snapshot())
+    return Response(content=body, media_type="text/plain; version=0.0.4; charset=utf-8")
 
 
 @router.get("/ready")

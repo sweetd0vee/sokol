@@ -1,4 +1,4 @@
-"""Request-id, exception type logging, and /status metrics."""
+"""Request-id, exception type logging, /status and Prometheus /metrics."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 
 from app.core.exceptions import ResourceNotFoundError
 from app.core.logging import format_caught_error, log_caught_exception
+from app.core.metrics import prometheus_text
 from app.main import app
 from app.core.roles import Role
 from tests.auth_test_utils import override_current_user
@@ -60,6 +61,17 @@ class ObservabilityApiTests(unittest.TestCase):
         self.assertGreaterEqual(body["requests_total"], 1)
         self.assertIn("requests_4xx", body)
         self.assertIn("requests_5xx", body)
+        self.assertIn("env", body)
+        self.assertIn("docx_jobs_inflight", body)
+
+    def test_metrics_is_prometheus_text(self) -> None:
+        response = self.client.get("/api/v1/metrics")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/plain", response.headers.get("content-type", ""))
+        body = response.text
+        self.assertIn("sokol_http_requests_total", body)
+        self.assertIn("sokol_docx_jobs_inflight", body)
+        self.assertTrue(body.endswith("\n"))
 
     def test_status_generates_request_id_when_missing(self) -> None:
         response = self.client.get("/api/v1/status")
@@ -95,6 +107,23 @@ class ObservabilityApiTests(unittest.TestCase):
         response = self.client.get("/api/v1/checks")
         self.assertEqual(response.status_code, 401)
         self.assertIn("detail", response.json())
+
+
+class PrometheusTextTests(unittest.TestCase):
+    def test_prometheus_text_includes_help_and_type(self) -> None:
+        text = prometheus_text(
+            {
+                "uptime_seconds": 3,
+                "requests_total": 10,
+                "requests_4xx": 1,
+                "requests_5xx": 2,
+            },
+            {"docx_jobs_inflight": 0},
+        )
+        self.assertIn("# HELP sokol_http_requests_total", text)
+        self.assertIn("# TYPE sokol_http_requests_total counter", text)
+        self.assertIn("sokol_http_requests_total 10", text)
+        self.assertIn("sokol_docx_jobs_inflight 0", text)
 
 
 if __name__ == "__main__":

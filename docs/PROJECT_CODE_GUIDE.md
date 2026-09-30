@@ -124,7 +124,7 @@ cd sokol-frontend && npm run lint && npm test && npm run build
 cd sokol-backend && python -m compileall app tests && python -m unittest discover -s tests
 ```
 
-Playwright (не в CI): `cd sokol-frontend && npm run test:e2e`.
+Playwright (в CI, API мокается): `cd sokol-frontend && npm run test:e2e`.
 
 ## С чего начать
 

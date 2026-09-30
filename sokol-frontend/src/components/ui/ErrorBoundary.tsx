@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { reportClientError } from '../../utils/clientObservability';
 import { ErrorState } from './StateMessage';
 
 type ErrorBoundaryProps = {
@@ -20,7 +21,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('ErrorBoundary', error, info.componentStack);
+    reportClientError({
+      source: 'boundary',
+      message: error.message || 'ErrorBoundary',
+      stack: [error.stack, info.componentStack].filter(Boolean).join('\n'),
+    });
   }
 
   private handleRetry = () => {

@@ -34,11 +34,11 @@ app/
 └── utils/                  # check_key, paths, dictionary_text
 ```
 
-Prefix `/api/v1`. Auth на всех роутерах, кроме `/`, `/status`, `/ready`, `/capabilities`, `POST /auth/login`. HTTP Basic: on в non-prod, off в prod, пока не `SOKOL_ENABLE_BASIC_AUTH=true`. Роль читается из БД на каждый запрос, не из JWT.
+Prefix `/api/v1`. Auth на всех роутерах, кроме `/`, `/status`, `/ready`, `/metrics`, `/capabilities`, `POST /auth/login`. HTTP Basic: on в non-prod, off в prod, пока не `SOKOL_ENABLE_BASIC_AUTH=true`. Роль читается из БД на каждый запрос, не из JWT.
 
 | Prefix | Домен |
 |--------|-------|
-| `/status`, `/ready`, `/capabilities` | liveness + счётчики, DB readiness, лимиты upload и очереди DOCX (публичные) |
+| `/status`, `/ready`, `/metrics`, `/capabilities` | liveness + счётчики, DB readiness, Prometheus-текст, лимиты upload и очереди DOCX (публичные) |
 | `/auth` | login, `/me`, смена пароля |
 | `/users` | список и создание `auditor` (admin) |
 | `/checks`, `/recommendations` | домен |

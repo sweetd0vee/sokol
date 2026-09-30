@@ -21,6 +21,7 @@ _QUIET_PATHS = frozenset(
         "/",
         "/api/v1/status",
         "/api/v1/ready",
+        "/api/v1/metrics",
         "/docs",
         "/redoc",
         "/openapi.json",

@@ -28,6 +28,18 @@ describe('toApiError', () => {
     expect(apiError.message).toContain('Field required');
   });
 
+  it('keeps X-Request-ID from the response', () => {
+    const error = new AxiosError('Bad Request');
+    error.response = {
+      status: 400,
+      data: { detail: 'Нет' },
+      statusText: 'Bad Request',
+      headers: { 'x-request-id': 'req-42' },
+      config: {} as never,
+    };
+    expect(toApiError(error).requestId).toBe('req-42');
+  });
+
   it('maps timeout to dedicated code', () => {
     const error = new AxiosError('timeout');
     error.code = 'ECONNABORTED';

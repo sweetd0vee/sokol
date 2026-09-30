@@ -7,7 +7,7 @@ Workflow: `.github/workflows/ci.yml`.
 | Job | Проверки |
 |-----|----------|
 | `Backend (Python 3.12)` | `compileall app scripts tests`, `unittest discover -s tests -p "test_*.py"` |
-| `Frontend (Node 22)` | `npm run lint`, `npm test` (Vitest), `npm run build` |
+| `Frontend (Node 22)` | `npm run lint`, `npm test` (Vitest), `npm run build`, Playwright e2e (auth + constructor, API мокается) |
 
 Backend поднимает PostgreSQL 16 и гоняет тесты с:
 
@@ -17,7 +17,7 @@ SOKOL_JWT_SECRET=ci-test-jwt-secret
 SOKOL_RUN_DB_INTEGRATION_TESTS=1
 ```
 
-**Не входит в CI:** Playwright (`npm run test:e2e` — auth + constructor). Его нужно гонять локально или отдельным job.
+**Не входит в CI:** живой бэкенд для e2e. Playwright поднимает только Vite и мокает `/api`.
 
 ## Обязательный merge gate
 

@@ -6,13 +6,13 @@
 
 # Test info
 
-- Name: list-header-height.spec.ts >> checks and recommendations list column headers have the same height
-- Location: e2e\list-header-height.spec.ts:46:1
+- Name: auth.spec.ts >> unauthenticated users land on the login page
+- Location: e2e\auth.spec.ts:69:1
 
 # Error details
 
 ```
-Error: browserType.launch: Executable doesn't exist at C:\Users\audit\AppData\Local\ms-playwright\chromium_headless_shell-1234\chrome-headless-shell-win64\chrome-headless-shell.exe
+Error: browserType.launch: Executable doesn't exist at C:\Users\audit\AppData\Local\Temp\cursor-sandbox-cache\15c58a894be22433a70a5e0f99489383\playwright\chromium_headless_shell-1234\chrome-headless-shell-win64\chrome-headless-shell.exe
 ╔════════════════════════════════════════════════════════════╗
 ║ Looks like Playwright was just installed or updated.       ║
 ║ Please run the following command to download new browsers: ║

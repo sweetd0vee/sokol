@@ -7,6 +7,7 @@ export type ApiError = {
   status?: number;
   details?: unknown;
   retryAfterSeconds?: number;
+  requestId?: string;
 };
 
 const NOT_FOUND_MESSAGE = 'Запись не найдена.';
@@ -134,17 +135,23 @@ export function toApiError(error: unknown): ApiError {
     const data = (error.response?.data ?? {}) as ErrorPayload;
     const code = data.code ?? (status ? `http_${status}` : 'network_error');
     const payloadMessage = formatPayloadMessage(data);
+    const requestId =
+      readHeader(error.response?.headers, 'x-request-id')
+      ?? readHeader(error.config?.headers, 'x-request-id')
+      ?? readHeader(error.config?.headers, 'X-Request-ID');
     if (error.code === 'ECONNABORTED') {
       return {
         code: 'timeout',
         message: 'Превышено время ожидания ответа от сервера. Попробуйте ещё раз.',
         status,
+        requestId,
       };
     }
     if (!error.response) {
       return {
         code: 'network_error',
         message: API_UNAVAILABLE_HINT,
+        requestId,
       };
     }
     const message = payloadMessage ?? defaultStatusMessage(status);
@@ -157,6 +164,7 @@ export function toApiError(error: unknown): ApiError {
       status,
       details: data.details ?? error.response?.data,
       ...(retryAfterSeconds ? { retryAfterSeconds } : {}),
+      ...(requestId ? { requestId } : {}),
     };
   }
 

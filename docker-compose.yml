@@ -37,6 +37,11 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me}
     volumes:
       - ~/docker-share/minio-data-sokol:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     networks:
       - sokol
 
@@ -68,9 +73,21 @@ services:
       db:
         condition: service_healthy
       minio:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8800:8800"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8800/api/v1/ready', timeout=2)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     networks:
       - sokol
 
@@ -83,9 +100,22 @@ services:
     hostname: frontend
     restart: unless-stopped
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
       - "5180:5180"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:5180/').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     environment:
       # Браузер ходит на опубликованный порт API на хосте
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8800}

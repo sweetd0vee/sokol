@@ -29,7 +29,7 @@ UI: http://localhost:5180
 docker compose up --build -d ui
 ```
 
-Сервис `ui` зависит от `api` в корневом compose — один `ui` без стека API не поднимется с нуля.
+Сервис `ui` ждёт healthy `api` (`GET /api/v1/ready`). Скрейп метрик API: `http://localhost:8800/api/v1/metrics`.
 
 ## Env
 
@@ -52,6 +52,8 @@ docker compose up --build -d ui
 Bearer JWT на `/api/v1/*`, кроме публичных:
 
 - `GET /api/v1/status`
+- `GET /api/v1/ready`
+- `GET /api/v1/metrics`
 - `GET /api/v1/capabilities`
 - `POST /api/v1/auth/login`
 

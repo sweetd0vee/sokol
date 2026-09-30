@@ -2,6 +2,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../config/env';
 import { AUTH_UNAUTHORIZED_EVENT } from '../constants/paths';
 import { clearStoredAuth, readAccessToken } from '../utils/authSession';
+import { createRequestId } from '../utils/clientObservability';
 import { toApiError } from './errors';
 
 export const api = axios.create({
@@ -13,6 +14,14 @@ api.interceptors.request.use((config) => {
   const token = readAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  const headers = config.headers;
+  if (headers && typeof headers.get === 'function') {
+    if (!headers.get('X-Request-ID')) {
+      headers.set('X-Request-ID', createRequestId());
+    }
+  } else if (headers && !headers['X-Request-ID'] && !headers['x-request-id']) {
+    headers['X-Request-ID'] = createRequestId();
   }
   // Let the browser set multipart boundary for FormData.
   if (typeof FormData !== 'undefined' && config.data instanceof FormData) {

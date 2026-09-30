@@ -50,9 +50,21 @@ services:
       db:
         condition: service_healthy
       minio:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8800:8800"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8800/api/v1/ready', timeout=2)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     networks:
       - sokol
 
@@ -69,6 +81,11 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me}
     volumes:
       - ~/docker-share/minio-data-sokol:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     networks:
       - sokol
     restart: unless-stopped

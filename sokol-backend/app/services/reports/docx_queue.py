@@ -73,6 +73,14 @@ class DocxJobLimiter:
         async with self._lock:
             self._inflight = max(0, self._inflight - 1)
 
+    def snapshot(self) -> dict[str, int]:
+        return {
+            "docx_jobs_inflight": self._inflight,
+            "docx_jobs_capacity": self.capacity,
+            "docx_max_concurrent": self.max_concurrent,
+            "docx_max_queue": self.max_queue,
+        }
+
     @asynccontextmanager
     async def slot(self) -> AsyncIterator[None]:
         await self._enter()
