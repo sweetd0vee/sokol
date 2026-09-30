@@ -214,20 +214,25 @@ async def delete_check(session: AsyncSession, check_id: int, user: CurrentUser) 
     serial_number = check.serial_number
     attachment_rows = await attachments_crud.list_attachments_by_serial(session, serial_number)
     storage = get_storage()
+    pending_objects = [(row.bucket, row.object_key) for row in attachment_rows]
 
     async with rollback_on_error(session):
         for attachment in attachment_rows:
-            if storage is not None:
-                try:
-                    await storage.delete_object(attachment.bucket, attachment.object_key)
-                except Exception:  # noqa: BLE001
-                    log_caught_exception(logger, "Failed to delete attachment object %s", attachment.id)
             await attachments_crud.delete_attachment(session, attachment)
 
         await checks_crud.delete_check(session, check)
         await session.commit()
 
     if storage is not None:
+        for bucket, object_key in pending_objects:
+            try:
+                await storage.delete_object(bucket, object_key)
+            except Exception:  # noqa: BLE001
+                log_caught_exception(
+                    logger,
+                    "Failed to delete attachment object after check %s commit",
+                    check_id,
+                )
         try:
             await storage.delete_check_bucket(serial_number)
         except Exception:  # noqa: BLE001

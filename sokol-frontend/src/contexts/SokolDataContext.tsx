@@ -42,6 +42,10 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
     () => recommendationsQuery.data?.items ?? [],
     [recommendationsQuery.data?.items],
   );
+  const checksTotal = checksQuery.data?.total ?? checks.length;
+  const recommendationsTotal = recommendationsQuery.data?.total ?? recommendations.length;
+  const checksTruncated = checksTotal > checks.length;
+  const recommendationsTruncated = recommendationsTotal > recommendations.length;
 
   const invalidateAll = useCallback(async () => {
     await Promise.all([

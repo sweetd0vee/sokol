@@ -2,7 +2,7 @@ from datetime import date
 from enum import Enum
 from typing import Any
 
-from sqlalchemy import ForeignKey, Index, Integer, JSON, String, Text
+from sqlalchemy import ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -36,6 +36,11 @@ class RecommendationAdditionalStatus(str, Enum):
 class Recommendation(Base):
     __tablename__ = "recommendations"
     __table_args__ = (
+        UniqueConstraint(
+            "check_id",
+            "sequence_number",
+            name="uq_recommendations_check_id_sequence_number",
+        ),
         Index("ix_recommendations_deadline", "deadline"),
         Index("ix_recommendations_status", "status"),
         Index("ix_recommendations_materiality_level", "materiality_level"),

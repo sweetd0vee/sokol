@@ -63,6 +63,63 @@ async def _ensure_normalized_rows(
     return inserted
 
 
+async def _list_missing_normalized_labels(
+    session: AsyncSession,
+    *,
+    model: type[DeclarativeBase],
+    column,
+    values: Iterable[str],
+) -> list[str]:
+    missing: list[str] = []
+    seen: set[str] = set()
+    for raw in values:
+        label = normalize_dictionary_label(str(raw or "").strip())
+        if not label or label in seen:
+            continue
+        seen.add(label)
+        existing = await find_dictionary_duplicate_by_label(session, model, column, label)
+        if existing is None:
+            missing.append(label)
+    return missing
+
+
+async def find_missing_department_names(session: AsyncSession, names: Iterable[str]) -> list[str]:
+    await ensure_unspecified_department(session)
+    return await _list_missing_normalized_labels(
+        session,
+        model=Department,
+        column=Department.name,
+        values=names,
+    )
+
+
+async def find_missing_check_kind_labels(session: AsyncSession, labels: Iterable[str]) -> list[str]:
+    return await _list_missing_normalized_labels(
+        session,
+        model=CheckKind,
+        column=CheckKind.label,
+        values=labels,
+    )
+
+
+async def find_missing_effectiveness_labels(session: AsyncSession, labels: Iterable[str]) -> list[str]:
+    return await _list_missing_normalized_labels(
+        session,
+        model=EffectivenessRating,
+        column=EffectivenessRating.label,
+        values=labels,
+    )
+
+
+async def find_missing_auditor_names(session: AsyncSession, names: Iterable[str]) -> list[str]:
+    return await _list_missing_normalized_labels(
+        session,
+        model=Auditor,
+        column=Auditor.full_name,
+        values=names,
+    )
+
+
 async def ensure_department_names(session: AsyncSession, names: Iterable[str]) -> int:
     await ensure_unspecified_department(session)
     return await _ensure_normalized_rows(

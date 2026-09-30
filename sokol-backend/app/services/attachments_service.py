@@ -278,14 +278,20 @@ async def delete_attachment(
         await _ensure_user_can_manage_check(session, user, attachment.entity_id)
 
     storage = require_storage()
-    try:
-        await storage.delete_object(attachment.bucket, attachment.object_key)
-    except Exception as exc:  # noqa: BLE001
-        log_caught_exception(logger, "MinIO delete failed for attachment %s", attachment_id)
-        raise StorageOperationError("Не удалось удалить файл из хранилища.") from exc
-
+    bucket = attachment.bucket
+    object_key = attachment.object_key
     await attachments_crud.delete_attachment(session, attachment)
     await session.commit()
+    try:
+        await storage.delete_object(bucket, object_key)
+    except Exception:  # noqa: BLE001
+        log_caught_exception(
+            logger,
+            "MinIO delete after commit failed for attachment %s (%s/%s)",
+            attachment_id,
+            bucket,
+            object_key,
+        )
 
 
 async def delete_attachments_for_entity(
@@ -293,19 +299,34 @@ async def delete_attachments_for_entity(
     *,
     entity_type: str,
     entity_id: int,
-) -> None:
+) -> list[tuple[str, str]]:
+    """Delete attachment rows. Returns MinIO (bucket, key) pairs to purge AFTER commit."""
     attachment_rows = await attachments_crud.list_attachments(
         session,
         entity_type=entity_type,
         entity_id=entity_id,
     )
-    storage = get_storage()
+    pending: list[tuple[str, str]] = []
     for attachment in attachment_rows:
-        if storage is not None:
-            try:
-                await storage.delete_object(attachment.bucket, attachment.object_key)
-            except Exception as exc:  # noqa: BLE001
-                log_caught_exception(logger, "MinIO delete failed for attachment %s", attachment.id)
-                raise StorageOperationError("Не удалось удалить файл из хранилища.") from exc
+        pending.append((attachment.bucket, attachment.object_key))
         await attachments_crud.delete_attachment(session, attachment)
+    return pending
+
+
+async def purge_storage_objects(objects: list[tuple[str, str]]) -> None:
+    if not objects:
+        return
+    storage = get_storage()
+    if storage is None:
+        return
+    for bucket, object_key in objects:
+        try:
+            await storage.delete_object(bucket, object_key)
+        except Exception:  # noqa: BLE001
+            log_caught_exception(
+                logger,
+                "MinIO purge after commit failed for %s/%s",
+                bucket,
+                object_key,
+            )
 

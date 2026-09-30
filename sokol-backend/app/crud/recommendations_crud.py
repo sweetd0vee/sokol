@@ -3,6 +3,7 @@ from typing import Optional, Sequence
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.checks import Check
 from app.models.recommendations import Recommendation
 
 
@@ -30,6 +31,8 @@ def _apply_filters(
 
 
 async def get_next_sequence_number(session: AsyncSession, check_id: int) -> int:
+    # Serialize allocates for one check (pairs with UNIQUE(check_id, sequence_number)).
+    await session.execute(select(Check.id).where(Check.id == check_id).with_for_update())
     result = await session.execute(
         select(func.coalesce(func.max(Recommendation.sequence_number), 0)).where(
             Recommendation.check_id == check_id

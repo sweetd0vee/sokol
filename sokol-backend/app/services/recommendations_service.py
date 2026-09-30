@@ -104,13 +104,14 @@ async def _insert_recommendation(
 async def _delete_recommendation_and_files(
     session: AsyncSession,
     recommendation: Recommendation,
-) -> None:
-    await attachments_service.delete_attachments_for_entity(
+) -> list[tuple[str, str]]:
+    pending = await attachments_service.delete_attachments_for_entity(
         session,
         entity_type="recommendation",
         entity_id=recommendation.id,
     )
     await recommendations_crud.delete_recommendation_row(session, recommendation)
+    return pending
 
 
 async def create_recommendation(
@@ -186,10 +187,12 @@ async def batch_recommendations(
     ):
         if payload.mode == "replace":
             existing = await recommendations_crud.list_recommendations_for_check(session, check.id)
+            pending_objects: list[tuple[str, str]] = []
             for recommendation in existing:
-                await _delete_recommendation_and_files(session, recommendation)
+                pending_objects.extend(await _delete_recommendation_and_files(session, recommendation))
             next_sequence = 1
         else:
+            pending_objects = []
             next_sequence = await recommendations_crud.get_next_sequence_number(session, check.id)
 
         created = []
@@ -204,6 +207,7 @@ async def batch_recommendations(
             )
 
         await session.commit()
+        await attachments_service.purge_storage_objects(pending_objects)
         for recommendation in created:
             await session.refresh(recommendation)
         return RecommendationListResponse(items=list(created), total=len(created))
@@ -328,9 +332,10 @@ async def delete_recommendation(
         message="Failed to delete recommendation %s",
         message_args=(recommendation_id,),
     ):
-        await _delete_recommendation_and_files(session, recommendation)
+        pending = await _delete_recommendation_and_files(session, recommendation)
         await recommendations_crud.renumber_recommendations_for_check(session, recommendation.check_id)
         await session.commit()
+        await attachments_service.purge_storage_objects(pending)
 
 
 async def delete_recommendations_batch(
@@ -351,6 +356,7 @@ async def delete_recommendations_batch(
         recommendations.append(recommendation)
 
     check_ids: set[int] = set()
+    pending_objects: list[tuple[str, str]] = []
     async with rollback_on_error(
         session,
         logger=logger,
@@ -358,9 +364,10 @@ async def delete_recommendations_batch(
         message_args=(len(unique_ids),),
     ):
         for recommendation in recommendations:
-            await _delete_recommendation_and_files(session, recommendation)
+            pending_objects.extend(await _delete_recommendation_and_files(session, recommendation))
             check_ids.add(recommendation.check_id)
 
         for check_id in check_ids:
             await recommendations_crud.renumber_recommendations_for_check(session, check_id)
         await session.commit()
+    await attachments_service.purge_storage_objects(pending_objects)

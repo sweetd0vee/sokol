@@ -12,6 +12,10 @@ from app.db.ensure_dictionary_refs import (
     ensure_check_kind_labels,
     ensure_department_names,
     ensure_effectiveness_labels,
+    find_missing_auditor_names,
+    find_missing_check_kind_labels,
+    find_missing_department_names,
+    find_missing_effectiveness_labels,
 )
 from app.db.init_db import init_db
 from app.db.runtime import truncate_operational_tables
@@ -52,12 +56,17 @@ async def import_seed_data(
     confirm_prod_replace: bool = False,
     checks_path: Path | None = None,
     recommendations_path: Path | None = None,
+    dry_run: bool = False,
+    strict: bool = False,
 ) -> None:
     assert_seed_replace_safe_for_env(
         env=settings.sokol_env,
         replace=replace,
         confirm_prod_replace=confirm_prod_replace,
     )
+    if dry_run and replace:
+        raise ValueError("--dry-run нельзя сочетать с --replace")
+
     checks_path = checks_path or (DATA_DIR / "checks.xlsx")
     recommendations_path = recommendations_path or (DATA_DIR / "recommendations.xlsx")
     if not checks_path.is_file():
@@ -71,6 +80,55 @@ async def import_seed_data(
     await init_db()
 
     async with AsyncSessionLocal() as session:
+        missing = {
+            "auditors": await find_missing_auditor_names(
+                session,
+                [
+                    *(str(row.get("check_leader") or "").strip() for row in check_rows),
+                    *(str(row.get("auditor") or "").strip() for row in recommendation_rows),
+                ],
+            ),
+            "check_kinds": await find_missing_check_kind_labels(
+                session,
+                (str(row.get("check_view") or "").strip() for row in check_rows),
+            ),
+            "effectiveness": await find_missing_effectiveness_labels(
+                session,
+                (
+                    str(row.get(field) or "").strip()
+                    for row in check_rows
+                    for field in EFFECTIVENESS_FIELDS
+                ),
+            ),
+            "departments": await find_missing_department_names(
+                session,
+                (
+                    part
+                    for row in recommendation_rows
+                    for part in split_audit_object_values(row.get("audit_object"))
+                ),
+            ),
+        }
+        missing_total = sum(len(items) for items in missing.values())
+        if dry_run or strict:
+            for dictionary, labels in missing.items():
+                if labels:
+                    print(f"Missing {dictionary} ({len(labels)}): {', '.join(labels)}")
+            if missing_total == 0:
+                print("Dictionary check: OK (no unknown labels).")
+            if dry_run:
+                print(
+                    f"Dry-run: checks.xlsx rows={len(check_rows)}, "
+                    f"recommendations.xlsx rows={len(recommendation_rows)}, "
+                    f"unknown_labels={missing_total}"
+                )
+                return
+            if strict and missing_total:
+                raise ValueError(
+                    f"Import --strict: {missing_total} unknown dictionary label(s). "
+                    "Исправьте Excel или уберите --strict."
+                )
+
         if replace:
             await truncate_operational_tables(session)
 
@@ -278,6 +336,16 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Путь к XLSX рекомендаций (лист recommendations). По умолчанию data/recommendations.xlsx.",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Только проверить Excel и неизвестные labels; БД не менять.",
+    )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Не досоздавать справочники: неизвестные labels → ошибка.",
+    )
     return parser.parse_args()
 
 
@@ -289,6 +357,8 @@ def main() -> None:
             confirm_prod_replace=args.confirm_prod_replace,
             checks_path=args.checks,
             recommendations_path=args.recommendations,
+            dry_run=args.dry_run,
+            strict=args.strict,
         )
     )
 

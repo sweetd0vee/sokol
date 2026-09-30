@@ -210,12 +210,13 @@ async def _upload_specs(
     existing_names = {item.original_name for item in existing.items}
 
     if replace and existing.items:
-        await attachments_service.delete_attachments_for_entity(
+        pending = await attachments_service.delete_attachments_for_entity(
             session,
             entity_type=entity_type,
             entity_id=entity_id,
         )
         await session.commit()
+        await attachments_service.purge_storage_objects(pending)
         existing_names = set()
 
     for spec in specs:
