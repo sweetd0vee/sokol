@@ -14,7 +14,7 @@ os.environ.setdefault(
 )
 os.environ.setdefault("SOKOL_JWT_SECRET", "test-jwt-secret")
 
-from fastapi import HTTPException
+from app.core.exceptions import ServiceUnavailableError
 from fastapi.testclient import TestClient
 
 from app.api.v1.endpoints.instruments_reports import DOCX_MIME
@@ -64,11 +64,11 @@ class DocxJobLimiterTests(unittest.IsolatedAsyncioTestCase):
         await waiter_started.wait()
         await asyncio.sleep(0.05)
 
-        with self.assertRaises(HTTPException) as ctx:
+        with self.assertRaises(ServiceUnavailableError) as ctx:
             async with limiter.slot():
                 pass
-        self.assertEqual(ctx.exception.status_code, 503)
-        self.assertIn("очеред", ctx.exception.detail.lower())
+        self.assertEqual(ctx.exception.http_status, 503)
+        self.assertIn("очеред", str(ctx.exception).lower())
         self.assertEqual(ctx.exception.headers.get("Retry-After"), "15")
 
         release.set()
@@ -88,11 +88,11 @@ class DocxJobLimiterTests(unittest.IsolatedAsyncioTestCase):
         holder_task = asyncio.create_task(holder())
         await started.wait()
 
-        with self.assertRaises(HTTPException) as ctx:
+        with self.assertRaises(ServiceUnavailableError) as ctx:
             async with limiter.slot():
                 pass
-        self.assertEqual(ctx.exception.status_code, 503)
-        self.assertIn("ждал", ctx.exception.detail.lower())
+        self.assertEqual(ctx.exception.http_status, 503)
+        self.assertIn("ждал", str(ctx.exception).lower())
 
         release.set()
         await holder_task
@@ -116,9 +116,8 @@ class SectionIIQueueApiTests(unittest.TestCase):
         class BusyLimiter:
             @asynccontextmanager
             async def slot(self):
-                raise HTTPException(
-                    status_code=503,
-                    detail=QUEUE_BUSY_DETAIL,
+                raise ServiceUnavailableError(
+                    QUEUE_BUSY_DETAIL,
                     headers={"Retry-After": "15"},
                 )
                 yield

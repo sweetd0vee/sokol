@@ -26,7 +26,7 @@ from app.services.dictionary_integrity import (
 from app.services.dictionary_validation import assert_unique_dictionary_value
 from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT, normalize_dictionary_label
 
-__all__ = ["DictionaryCrud", "DictionaryService"]
+__all__ = ["DictionaryService"]
 
 
 class DictionaryService:

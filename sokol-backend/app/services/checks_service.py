@@ -5,7 +5,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.current_user import CurrentUser
-from app.core.exceptions import DictionaryRefError, ResourceNotFoundError
+from app.core.exceptions import ConflictError, DictionaryRefError, ResourceNotFoundError
+from app.core.logging import log_caught_exception
 from app.core.recommendation_access import ensure_user_can_manage_check
 from app.crud import attachments_crud, checks_crud
 from app.crud.check_serial import (
@@ -94,10 +95,10 @@ async def create_check(
         else:
             if last_integrity_error is not None:
                 raise last_integrity_error
-            raise RuntimeError("Failed to create check.")
+            raise ConflictError("Не удалось создать проверку: конфликт уникальности.")
 
         if check is None:
-            raise RuntimeError("Failed to create check.")
+            raise ConflictError("Не удалось создать проверку.")
         await session.commit()
         await session.refresh(check)
 
@@ -106,7 +107,7 @@ async def create_check(
         try:
             await storage.ensure_check_bucket(check.serial_number)
         except Exception:  # noqa: BLE001
-            logger.exception("Failed to create MinIO bucket for check %s", check.serial_number)
+            log_caught_exception(logger, "Failed to create MinIO bucket for check %s", check.serial_number)
 
     return check
 
@@ -220,7 +221,7 @@ async def delete_check(session: AsyncSession, check_id: int, user: CurrentUser) 
                 try:
                     await storage.delete_object(attachment.bucket, attachment.object_key)
                 except Exception:  # noqa: BLE001
-                    logger.exception("Failed to delete attachment object %s", attachment.id)
+                    log_caught_exception(logger, "Failed to delete attachment object %s", attachment.id)
             await attachments_crud.delete_attachment(session, attachment)
 
         await checks_crud.delete_check(session, check)
@@ -230,4 +231,4 @@ async def delete_check(session: AsyncSession, check_id: int, user: CurrentUser) 
         try:
             await storage.delete_check_bucket(serial_number)
         except Exception:  # noqa: BLE001
-            logger.exception("Failed to delete MinIO bucket for check %s", serial_number)
+            log_caught_exception(logger, "Failed to delete MinIO bucket for check %s", serial_number)

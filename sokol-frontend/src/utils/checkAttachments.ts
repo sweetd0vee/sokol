@@ -1,5 +1,3 @@
-import { filesWord } from './fileHelpers';
-
 export type AttachmentSlot = 'order' | 'program' | 'az' | 'dz';
 
 export type AttachmentFileGroup = AttachmentSlot | 'dz_appendix';
@@ -58,5 +56,3 @@ export function shouldExportStorageSlot(storageSlot: string, selectedSlots: Atta
   }
   return false;
 }
-
-export { filesWord };

@@ -1,6 +1,5 @@
 import {
   createAttachmentId,
-  filesWord,
   formatFileSize,
   getFileExtension,
 } from './fileHelpers';
@@ -15,4 +14,4 @@ export type PersistedAttachmentListItem = {
   slot?: string;
 };
 
-export { createAttachmentId, filesWord, formatFileSize, getFileExtension };
+export { createAttachmentId, formatFileSize, getFileExtension };

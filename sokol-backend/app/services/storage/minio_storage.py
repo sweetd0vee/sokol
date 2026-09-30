@@ -15,6 +15,7 @@ from minio.commonconfig import CopySource
 from minio.error import S3Error
 
 from app.core.config import settings
+from app.core.exceptions import StorageDisabledError
 
 _BUCKET_PREFIX = "check-"
 _BUCKET_RE = re.compile(r"[^a-z0-9.-]")
@@ -180,5 +181,5 @@ def get_storage() -> MinioStorage | None:
 def require_storage() -> MinioStorage:
     storage = get_storage()
     if storage is None:
-        raise RuntimeError("MinIO storage is not configured.")
+        raise StorageDisabledError("MinIO storage is not configured.")
     return storage

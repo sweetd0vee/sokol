@@ -1,5 +1,5 @@
 import { Paperclip } from 'lucide-react';
-import { filesWord } from '../../utils/checkAttachments';
+import { filesWord } from '../../utils/fileHelpers';
 
 export function AttachmentSlotCard({
   label,

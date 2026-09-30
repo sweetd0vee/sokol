@@ -17,7 +17,8 @@ from app.services.dictionary_integrity import (
     dictionary_identity,
     normalize_optional_dictionary_label,
 )
-from app.services.dictionary_service import DictionaryCrud, DictionaryService
+from app.crud.dictionary_crud import DictionaryCrud
+from app.services.dictionary_service import DictionaryService
 from app.utils.dictionary_text import UNSPECIFIED_AUDIT_OBJECT
 
 

@@ -87,7 +87,7 @@ Login матчит `username` и `aliases`. Неактивные не прохо
 ## Bootstrap
 
 1. `DATABASE_URL` обязателен. Config: `.env` и `.secrets/sokol.env`.
-2. Prod не стартует со слабым или дефолтным JWT, с demo-load и с `SOKOL_SEED_REPLACE` без `--confirm-prod-replace`.
+2. Prod не стартует со слабым или дефолтным JWT, с demo-load и с `SOKOL_SEED_REPLACE` без `--confirm-prod-replace`. В prod `/docs`/`/redoc`/`/openapi.json` выключены.
 3. Docker entrypoint: `init_db` → `BOOTSTRAP_MIGRATIONS` → seed справочников и users → `sync_check_buckets`. Excel demo только если явно `SOKOL_LOAD_DEMO_DATA=1` (в prod запрещён).
 4. `sync_dictionaries` в prod — только merge. В development destructive prune включён (`SOKOL_DESTRUCTIVE_DICTIONARY_SYNC`).
 

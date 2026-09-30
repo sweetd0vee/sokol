@@ -14,7 +14,6 @@ const STACKED_TOTAL_RESERVE = STACKED_TOTAL_FONT_SIZE + STACKED_TOTAL_OFFSET;
 export const STACKED_PERIOD_CHART_TOP_MARGIN = 72;
 export const STACKED_PERIOD_CHART_SIDE_MARGIN = 36;
 export const STACKED_HORIZONTAL_CHART_RIGHT_MARGIN = 48;
-export const HORIZONTAL_BAR_MAX_SIZE = 28;
 /** Cap for simple horizontal bars whose labels sit outside the bar. */
 export const HORIZONTAL_STRIP_MAX_SIZE = 12;
 

@@ -55,7 +55,7 @@ async def domain_error_handler(request: Request, exc: DomainError) -> JSONRespon
     return JSONResponse(
         status_code=status_code,
         content={"detail": str(exc)},
-        headers=_request_id_headers(),
+        headers={**_request_id_headers(), **(exc.headers or {})},
     )
 
 

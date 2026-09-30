@@ -5,7 +5,7 @@ from collections.abc import Awaitable, Callable
 from datetime import date
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,6 +21,8 @@ from app.api.uploads import (
     stream_result_file,
     validate_docx_upload,
 )
+from app.core.exceptions import DomainError, InvalidReferenceError, ResourceNotFoundError
+from app.core.logging import log_caught_exception
 from app.db.session import get_db_session
 from app.schemas.tools import ParsedRecommendationItem
 from app.services.dictionary_validation import canonicalize_audit_objects
@@ -36,7 +38,6 @@ from app.services.reports.memorandum import docx_generator as memorandum_generat
 from app.services.reports.memorandum.parser import parse_az_for_memorandum
 from app.services.reports.docx_queue import docx_job_slot
 from app.services.reports.section_ii import docx_generator
-from app.core.logging import log_caught_exception
 
 logger = logging.getLogger(__name__)
 
@@ -50,25 +51,25 @@ _canonicalize_memorandum_source = canonicalize_memorandum_source
 def _normalize_control_file_check_leader(value: str) -> str:
     normalized = re.sub(r"\s+", " ", (value or "").strip())
     if not normalized:
-        raise HTTPException(status_code=400, detail="Укажите руководителя проверки.")
+        raise InvalidReferenceError("Укажите руководителя проверки.")
     return normalized
 
 
 def _normalize_control_file_check_date(value: str) -> str:
     normalized = re.sub(r"\s+", " ", (value or "").strip())
     if not normalized:
-        raise HTTPException(status_code=400, detail="Укажите дату проверки.")
+        raise InvalidReferenceError("Укажите дату проверки.")
     if re.fullmatch(r"\d{1,2}\.\d{2}\.\d{4}", normalized):
         day, month, year = normalized.split(".")
         try:
             date(int(year), int(month), int(day))
         except ValueError as exc:
-            raise HTTPException(status_code=400, detail="Некорректная дата проверки.") from exc
+            raise InvalidReferenceError("Некорректная дата проверки.") from exc
         return f"{day.zfill(2)}.{month}.{year}"
     try:
         parsed = date.fromisoformat(normalized)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail="Некорректная дата проверки.") from exc
+        raise InvalidReferenceError("Некорректная дата проверки.") from exc
     return parsed.strftime("%d.%m.%Y")
 
 
@@ -85,9 +86,9 @@ def _require_tool_output(
     missing_detail: str,
 ) -> None:
     if error:
-        raise HTTPException(status_code=400, detail=error)
+        raise InvalidReferenceError(error)
     if not result_path or not output_path.is_file():
-        raise HTTPException(status_code=500, detail=missing_detail)
+        raise DomainError(missing_detail)
 
 
 async def _run_uploaded_tool(
@@ -99,7 +100,7 @@ async def _run_uploaded_tool(
 ) -> FileResponse:
     try:
         return await work()
-    except HTTPException:
+    except DomainError:
         cleanup_files(str(input_path), str(output_path))
         raise
     except Exception:
@@ -177,7 +178,7 @@ async def generate_section_ii_with_links(
 @router.get("/control-file-template")
 async def download_control_file_template():
     if not CONTROL_FILE_TEMPLATE_PATH.is_file():
-        raise HTTPException(status_code=404, detail="Шаблон файла контроля не найден.")
+        raise ResourceNotFoundError("Шаблон файла контроля не найден.")
     result_bytes = await asyncio.to_thread(CONTROL_FILE_TEMPLATE_PATH.read_bytes)
     return Response(
         content=result_bytes,
@@ -246,11 +247,10 @@ async def generate_memorandum(
         async with docx_job_slot():
             source, error = await asyncio.to_thread(parse_az_for_memorandum, str(input_path))
             if error:
-                raise HTTPException(status_code=400, detail=error)
+                raise InvalidReferenceError(error)
             if source is None:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Не удалось разобрать рекомендации из аудиторского заключения.",
+                raise InvalidReferenceError(
+                    "Не удалось разобрать рекомендации из аудиторского заключения.",
                 )
             source = await canonicalize_memorandum_source(session, source)
 
@@ -292,7 +292,7 @@ async def parse_recommendations_from_docx_endpoint(
         async with docx_job_slot():
             items, error = await asyncio.to_thread(parse_recommendations_from_docx, str(input_path))
         if error:
-            raise HTTPException(status_code=400, detail=error)
+            raise InvalidReferenceError(error)
         for item in items:
             item.audit_object = await canonicalize_audit_objects(session, item.audit_object)
         return items

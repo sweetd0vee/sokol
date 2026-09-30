@@ -13,23 +13,10 @@ import { CONSTRUCTOR_GRID_COLS } from '../components/analytics/constructor/const
 import { buildConstructorDashboardHtml } from './constructorHtmlExport';
 import { buildConstructorDashboardDocument } from './constructorDocxExport';
 import { buildConstructorDashboardWorkbook, sharpenConstructorXlsxBuffer } from './constructorXlsxLayout';
+import { downloadBlob } from './download';
+import { fitImageSize, stamp } from './visualExport/shared';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
-
-function stamp() {
-  const now = new Date();
-  const pad = (value: number) => String(value).padStart(2, '0');
-  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
-}
-
-function triggerDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
 
 function delay(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -42,14 +29,6 @@ function imageSize(dataUrl: string): Promise<{ width: number; height: number }> 
     image.onerror = () => reject(new Error('Не удалось прочитать снимок дашборда'));
     image.src = dataUrl;
   });
-}
-
-function fitImageSize(width: number, height: number, maxWidth: number, maxHeight: number) {
-  const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
-  return {
-    width: Math.max(Math.round(width * ratio), 1),
-    height: Math.max(Math.round(height * ratio), 1),
-  };
 }
 
 async function captureConstructorWidgetCharts(
@@ -168,7 +147,7 @@ export async function exportConstructorDashboard(options: {
   if (format === 'html') {
     const captures = await captureConstructorWidgetCharts(widgets, { skipPng: true });
     const html = buildConstructorDashboardHtml({ title, meta, widgets, captures });
-    triggerDownload(new Blob([html], { type: 'text/html;charset=utf-8' }), `${filenamePrefix}-${stamp()}.html`);
+    downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), `${filenamePrefix}-${stamp()}.html`);
     return;
   }
 
@@ -176,7 +155,7 @@ export async function exportConstructorDashboard(options: {
     const captures = await captureConstructorWidgetCharts(widgets);
     const workbook = buildConstructorDashboardWorkbook({ title, meta, widgets, captures });
     const buffer = await sharpenConstructorXlsxBuffer(await workbook.xlsx.writeBuffer());
-    triggerDownload(
+    downloadBlob(
       new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
       `${filenamePrefix}-${stamp()}.xlsx`,
     );
@@ -187,7 +166,7 @@ export async function exportConstructorDashboard(options: {
     const captures = await captureConstructorWidgetCharts(widgets);
     const doc = buildConstructorDashboardDocument({ title, meta, widgets, captures });
     const blob = await Packer.toBlob(doc);
-    triggerDownload(blob, `${filenamePrefix}-${stamp()}.docx`);
+    downloadBlob(blob, `${filenamePrefix}-${stamp()}.docx`);
     return;
   }
 

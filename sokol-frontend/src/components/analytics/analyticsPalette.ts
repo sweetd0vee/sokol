@@ -39,29 +39,6 @@ export const CHECKS_PALETTE = [
 ];
 
 /**
- * Greyscale palette for Recommendations treemaps / discrete colored blocks.
- * Ordered to alternate dark ↔ light ↔ mid so neighbouring segments stay distinct.
- */
-export const RECOMMENDATIONS_PALETTE = [
-  '#0F172A', // deep ink grey
-  '#E5E7EB', // soft grey
-  '#6B7280', // vivid mid-grey
-  '#F3F4F6', // pale grey
-  '#374151', // dark slate
-  '#CBD5E1', // light slate
-  '#64748B', // mid slate
-  '#D1D5DB', // light grey
-  '#94A3B8', // bright slate
-  '#F8FAFC', // mist
-  '#334155', // indigo-slate
-  '#BFC7D0', // orchid-grey
-  '#1F2937', // ink slate
-  '#AEB7C2', // soft grey
-  '#5B6776', // muted slate
-  '#E2E8F0', // light slate
-];
-
-/**
  * Sequential scale for quantitative charts.
  * Values move from light ice-blue to dark navy so color intensity communicates magnitude.
  */
@@ -72,18 +49,6 @@ export const VALUE_BLUE_SCALE = [
   '#0E7490',
   '#075985',
   '#002B55',
-] as const;
-
-/**
- * Same ramp as `VALUE_BLUE_SCALE` without the deepest navy —
- * used on Recommendations where #002B55 felt too accented.
- */
-export const VALUE_BLUE_SCALE_SOFT = [
-  '#93C5FD',
-  '#60A5FA',
-  '#3B82F6',
-  '#0E7490',
-  '#075985',
 ] as const;
 
 /**

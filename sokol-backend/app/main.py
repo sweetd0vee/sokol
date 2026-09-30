@@ -26,6 +26,8 @@ assert_app_startup_safe(
     replace=env_flag_enabled(os.getenv("SOKOL_SEED_REPLACE"), default=False),
 )
 
+_docs_enabled = not settings.is_production
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -46,7 +48,13 @@ async def lifespan(_app: FastAPI):
                 pass
 
 
-app = FastAPI(title=settings.app_name, lifespan=lifespan)
+app = FastAPI(
+    title=settings.app_name,
+    lifespan=lifespan,
+    docs_url="/docs" if _docs_enabled else None,
+    redoc_url="/redoc" if _docs_enabled else None,
+    openapi_url="/openapi.json" if _docs_enabled else None,
+)
 register_exception_handlers(app)
 app.add_middleware(RequestContextMiddleware)
 cors_origins = settings.cors_origins

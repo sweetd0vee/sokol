@@ -74,38 +74,6 @@ export function getRecommendationAdditionalStatusLabel(value: RecommendationAddi
   );
 }
 
-export function getRecommendationStatusBadgeClass(value: RecommendationStatus | '' | null | undefined) {
-  switch (value) {
-    case 'completed':
-      return 'bg-green-100 text-gray-800';
-    case 'unresolved':
-      return 'bg-red-100 text-gray-800';
-    case 'on_control':
-      return 'bg-gray-200 text-gray-800';
-    case 'in_progress':
-      return 'bg-yellow-100 text-gray-800';
-    default:
-      return 'bg-white text-gray-900';
-  }
-}
-
-export function getRecommendationAdditionalStatusBadgeClass(
-  value: RecommendationAdditionalStatus | '' | null | undefined,
-) {
-  switch (value) {
-    case 'on_time':
-      return 'bg-green-100 text-gray-800';
-    case 'deadline_violated':
-      return 'bg-red-100 text-gray-800';
-    case 'on_control':
-      return 'bg-gray-200 text-gray-800';
-    case 'in_progress':
-      return 'bg-yellow-100 text-gray-800';
-    default:
-      return 'bg-white text-gray-900';
-  }
-}
-
 /** Same table badge colors for form selects (inline — native <select> ignores many Tailwind bg utilities). */
 export function getRecommendationStatusFieldStyle(
   value: RecommendationStatus | '' | null | undefined,
@@ -191,11 +159,6 @@ export const INDICATOR_OPTIONS: {
   { value: 'исполнено', label: 'Исполнено', dotClassName: 'bg-[rgb(37,235,103)]' },
   { value: 'исполнено в ходе аудита', label: 'Исполнено в ходе аудита', dotClassName: 'bg-[#003366]' },
 ];
-
-/** Indicators shown on analytics charts (excludes placeholder "не указан"). */
-export const INDICATOR_ANALYTICS_OPTIONS = INDICATOR_OPTIONS.filter(
-  (option) => option.value !== 'не указан',
-);
 
 export function getIndicatorLabel(value: RecommendationIndicator | '' | null | undefined) {
   return INDICATOR_OPTIONS.find((option) => option.value === value)?.label ?? 'Не указан';

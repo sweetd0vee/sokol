@@ -6,7 +6,7 @@ import { fetchCapabilities } from '../../api/capabilities';
 import { queryKeys } from '../../api/queryKeys';
 import { useEntityAttachments } from '../../hooks/useEntityAttachments';
 import { useStorageStatus } from '../../hooks/useStorageStatus';
-import { filesWord } from '../../utils/fileAttachments';
+import { filesWord } from '../../utils/fileHelpers';
 import {
   DEFAULT_MAX_UPLOAD_BYTES,
   DEFAULT_MAX_UPLOAD_MB,

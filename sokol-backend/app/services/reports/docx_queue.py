@@ -10,9 +10,8 @@ import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import HTTPException
-
 from app.core.config import settings
+from app.core.exceptions import ServiceUnavailableError
 
 QUEUE_BUSY_DETAIL = (
     "Сейчас обрабатывается слишком много документов. "
@@ -23,6 +22,10 @@ QUEUE_TIMEOUT_DETAIL = (
     "Повторите попытку через минуту."
 )
 RETRY_AFTER_SECONDS = "15"
+
+
+def _queue_unavailable(detail: str) -> ServiceUnavailableError:
+    return ServiceUnavailableError(detail, headers={"Retry-After": RETRY_AFTER_SECONDS})
 
 
 class DocxJobLimiter:
@@ -47,22 +50,14 @@ class DocxJobLimiter:
     async def _enter(self) -> None:
         async with self._lock:
             if self._inflight >= self.capacity:
-                raise HTTPException(
-                    status_code=503,
-                    detail=QUEUE_BUSY_DETAIL,
-                    headers={"Retry-After": RETRY_AFTER_SECONDS},
-                )
+                raise _queue_unavailable(QUEUE_BUSY_DETAIL)
             self._inflight += 1
         try:
             await asyncio.wait_for(self._semaphore.acquire(), timeout=self.wait_seconds)
         except asyncio.TimeoutError:
             async with self._lock:
                 self._inflight -= 1
-            raise HTTPException(
-                status_code=503,
-                detail=QUEUE_TIMEOUT_DETAIL,
-                headers={"Retry-After": RETRY_AFTER_SECONDS},
-            ) from None
+            raise _queue_unavailable(QUEUE_TIMEOUT_DETAIL) from None
         except BaseException:
             async with self._lock:
                 self._inflight -= 1

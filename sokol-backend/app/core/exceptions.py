@@ -8,6 +8,10 @@ class DomainError(Exception):
 
     http_status: int = 500
 
+    def __init__(self, message: str = "", *, headers: dict[str, str] | None = None) -> None:
+        super().__init__(message)
+        self.headers = headers or {}
+
 
 class ResourceNotFoundError(DomainError):
     http_status = 404
@@ -27,6 +31,10 @@ class AuthenticationError(DomainError):
 
 class ConflictError(DomainError):
     http_status = 409
+
+
+class ServiceUnavailableError(DomainError):
+    http_status = 503
 
 
 class StorageDisabledError(DomainError):
