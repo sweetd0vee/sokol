@@ -41,12 +41,9 @@ class Check(Base):
     start_date: Mapped[date] = required_date()
     end_date: Mapped[date | None] = optional_date()
     check_leader: Mapped[str] = auditor_fk("fk_checks_check_leader", index=True)
+    # Persist by enum member name (NOT_STARTED); DB predates values_callable.
     status: Mapped[CheckStatus] = mapped_column(
-        SAEnum(
-            CheckStatus,
-            name="check_status",
-            values_callable=lambda cls: [item.value for item in cls],
-        ),
+        SAEnum(CheckStatus, name="check_status"),
         nullable=False,
     )
     created_at: Mapped[date] = required_date()
