@@ -1,203 +1,142 @@
 # HTTP API
 
-Базовый prefix: **`/api/v1`**. Swagger: `http://127.0.0.1:8802/docs`.
+Prefix **`/api/v1`**. Swagger: `http://127.0.0.1:8802/docs` (Docker — порт 8800).
 
-Auth: **JWT Bearer**. Публичны `GET /`, `GET /api/v1/status`, `GET /api/v1/ready`, `GET /api/v1/metrics`, `GET /api/v1/capabilities`, `POST /api/v1/auth/login`.  
-`GET /auth/me` и `POST /auth/change-password` требуют авторизации.  
-HTTP Basic: в non-prod включён по умолчанию; при `SOKOL_ENV` ∈ `{prod, production}` выключен, пока не `SOKOL_ENABLE_BASIC_AUTH=true`.  
-Роль берётся из БД при каждом запросе, не из JWT. Неактивные пользователи (и login по `aliases`) не проходят. Login матчит `username` и `aliases`.
+JWT Bearer. Публичны `GET /`, `/status`, `/ready`, `/metrics`, `/capabilities` и `POST /auth/login`. Роль берётся из БД. Login матчит `username` и `aliases`. Неактивные не проходят.
 
-**Роли:** `auditor`, `department_head`, `admin`.  
-`ADMIN_ROLES = {admin, department_head}` — всё, что проверяет `require_admin`, доступно обеим.
+Роли: `auditor`, `department_head`, `admin`. `require_admin` пускает admin и department_head. «Своя» запись — `person_match` по руководителю проверки, аудитору рекомендации или `created_by`. Правила владения — [ARCHITECTURE.md](ARCHITECTURE.md).
 
-| Действие | `auditor` | `admin` / `department_head` |
-|----------|-----------|-----------------------------|
-| Read checks/recommendations | ✅ | ✅ |
-| Create check | ✅, автор записывается в `created_by` | ✅ |
-| Update/delete check | свои: руководитель проверки или `created_by` | ✅ |
-| Create recommendation | своя проверка или себя в `auditor` | ✅ |
-| Update/delete recommendation и batch-delete | свои: аудитор, руководитель проверки, `created_by` рекомендации или проверки | ✅ |
-| `POST /recommendations/batch` `replace` | только своя проверка | ✅ |
-| Upload/delete attachment | той же проверке или рекомендации, что update | ✅ |
-| Settings mutate | ❌ | ✅ |
-| Settings GET | ✅ | ✅ |
-| `GET/POST /users` | ❌ | ✅ |
-| Analytics / tools | ✅ | ✅ |
+| Действие | auditor | admin / department_head |
+|----------|---------|-------------------------|
+| Чтение checks, recommendations, analytics, tools, settings | да | да |
+| Create check / recommendation | свои (автор или своя проверка) | да |
+| Update / delete check, recommendation, вложения | свои | да |
+| `POST /recommendations/batch` `replace` | только своя проверка | да |
+| Settings mutate, `GET/POST /users` | нет | да |
 
-«Своя» запись: `person_match` сравнивает `username` с руководителем проверки, аудитором рекомендации или `created_by`. У старых строк `created_by` пустой — остаётся совпадение по ФИО.
+`POST /auth/login` → `{ access_token, token_type, role, username, display_name }`. TTL — `SOKOL_JWT_EXPIRE_MINUTES` (480). `GET /auth/me` → `{ username, display_name, role }`. `POST /auth/change-password` `{ current_password, new_password }` (min 4) → **204**; неверный текущий или тот же новый → **400**.
 
-Логин: `POST /auth/login` → `{ access_token, token_type: "bearer", role, username, display_name }`. TTL: `SOKOL_JWT_EXPIRE_MINUTES` (default 480).  
-`GET /auth/me` → `{ username, display_name, role }` (без id и аватара).  
-`POST /auth/change-password` — `{ current_password, new_password }` (min 4), **204**. Неверный текущий или совпадение с новым → **400**.
-
-Списки: `{ "items": [...], "total": N }`.
-
----
+Списки: `{ "items", "total" }`. Ответ несёт `X-Request-ID`. Необработанное исключение → **500** `{ "detail": "Внутренняя ошибка сервера." }` без traceback.
 
 ## Health
 
 | Method | Path | Ответ |
 |--------|------|--------|
-| `GET` | `/api/v1/status` | Liveness + счётчики: `{ status, env, uptime_seconds, requests_total, requests_4xx, requests_5xx, docx_jobs_* }` |
-| `GET` | `/api/v1/metrics` | Prometheus text (HTTP counters + очередь DOCX). Скрейп без auth |
-| `GET` | `/api/v1/ready` | Readiness: `{ status, database }`. DB недоступна → **503** |
-| `GET` | `/api/v1/capabilities` | `{ "max_upload_mb", "max_upload_bytes", "docx_max_concurrent", "docx_max_queue", "docx_queue_wait_seconds" }` |
-| `GET` | `/` | `{ "service": "SOKOL API", "version": "v1" }` |
+| `GET` | `/status` | liveness и счётчики HTTP / очереди DOCX |
+| `GET` | `/metrics` | Prometheus text, без auth |
+| `GET` | `/ready` | `{ status, database }`; БД недоступна → **503** |
+| `GET` | `/capabilities` | лимиты upload и очереди DOCX |
+| `GET` | `/` | `{ service, version }` |
 
-Ответ всегда несёт заголовок `X-Request-ID` (входной или сгенерированный). Корреляция ошибок в логах — по этому id. 4xx `DomainError` пишутся в лог с именем класса (`[ResourceNotFoundError]`); необработанные исключения → **500** `{ "detail": "Внутренняя ошибка сервера." }` без утечки traceback клиенту.
+## Checks — `/checks`
 
----
+`POST` 201, `GET` список и `/{id}`, `PATCH` (не меняет `created_at`), `DELETE` 204 (cascade рекомендаций и объектов MinIO).
 
-## Checks — `/api/v1/checks`
+List: `skip` (default 0), `limit` (1…10000, default 200), `search`, `status` (`not_started` \| `in_progress` \| `completed`), `check_type` (`planned` \| `unscheduled` \| `thematic`).
 
-| Method | Path | Описание |
-|--------|------|----------|
-| `POST` | `/checks` | 201 `CheckRead` |
-| `GET` | `/checks` | список |
-| `GET` | `/checks/{id}` | одна |
-| `PATCH` | `/checks/{id}` | частичное; `created_at` не меняется |
-| `DELETE` | `/checks/{id}` | 204; cascade rec + вложения MinIO; admin или своя проверка |
+Create: `check_name`, `check_type`, `check_view`, `check_quarter` (1–4), `start_date`, `check_leader`, `status`, опционально даты и документы приказа / программы / АЗ / ДЗ, оценки эффективности. `serial_number` клиент не шлёт. Присланный `status` перезаписывается автостатусом (дата ДЗ → `completed`, начало в будущем → `not_started`, иначе `in_progress`). Неизвестный `check_leader` / `check_view` / оценка → **400**.
 
-**Query list:** `skip` (≥0, default 0), `limit` (1…10000, default 200), `search?` (min 1; имя / руководитель / ключ), `status?` (`not_started` \| `in_progress` \| `completed`), `check_type?` (`planned` \| `unscheduled` \| `thematic`).
+## Recommendations — `/recommendations`
 
-**Create:** `check_name`, `short_name?`, `check_type` (строка ≤32; в ключе: `planned`→P, `unscheduled`→V, `thematic`→K, иначе пустой type-code), `check_view`, **`check_quarter`** (1–4), `start_date`, `end_date?`, `check_leader`, `status`, `created_at?` (default сегодня), `description?`, `*_effectiveness?`, документы приказа/программы/АЗ/ДЗ. `serial_number` клиент не шлёт: backend генерирует и пересчитывает при смене `start_date` / `check_quarter` / `check_leader` / `check_type` (синхронизация rec serial + MinIO bucket).
+| Method | Path | |
+|--------|------|--|
+| `POST` | `/recommendations` | проверка ищется по `serial_number` |
+| `POST` | `/recommendations/batch` | `{ serial_number, mode: append\|replace, items }` 1…200; `replace` удаляет рекомендации и их объекты MinIO |
+| `POST` | `/recommendations/batch-delete` | 204, 1…200 id |
+| `GET` / `PATCH` / `DELETE` | `/recommendations`, `/{id}` | смена `serial_number` переносит на другую проверку |
 
-Автостатус проверки при create/update и ежедневно в 00:05 Europe/Moscow (тот же `SOKOL_STATUS_SCHEDULER`): проставлена `dz_document_date` → `completed`; `start_date` позже сегодняшнего дня Москвы → `not_started` (Запланировано); иначе `in_progress`. Присланный `status` перезаписывается. `end_date` на статус не влияет.
+List: `skip`, `limit` (как у checks), `search`, `serial_number`.
 
-**Read:** те же поля + `id`, `serial_number`, `created_at`.
+`status`: `completed`, `unresolved`, `on_control`, `in_progress`. `additional_status`: `on_time`, `deadline_violated`, `on_control`, `in_progress`. Ещё: `sequence_number` (сервер), `audit_object` (массив или строка с `,`/`;`), `deadline`, `execution_deadline`, `deadline_extensions` / `control_removals`. Автостатус — [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md). Неизвестный аудитор или объект аудита, нет проверки → **400**. Сбой MinIO при delete → **502**.
 
-Неизвестный `check_leader` / `check_view` / непустая оценка ∉ ratings → **400**.
+## Analytics — `/analytics`
 
----
+Агрегаты по всей БД, camelCase, отдельных таблиц нет. Конструктора на backend нет.
 
-## Recommendations — `/api/v1/recommendations`
+| `GET` | Основные блоки |
+|-------|----------------|
+| `/analytics/checks` | summary, динамика, виды, типы, карта департаментов, матрица эффективности |
+| `/analytics/recommendations` | summary, период, существенность, статусы, карта, индикаторы, `checkLinks` |
+| `/analytics/monitoring` | summary, доп. статусы, матрица, переносы, исполнено в ходе аудита |
+| `/analytics/dva` | портфель, нагрузка и сроки аудиторов, документы, lifecycle |
+| `/analytics/planning` | охват, «не решено», высокая существенность; в `filterOptions` нет `auditors` |
 
-| Method | Path | Описание |
-|--------|------|----------|
-| `POST` | `/recommendations` | 201; проверка ищется по `serial_number` |
-| `POST` | `/recommendations/batch` | atomic append/replace для проверки; body `{ serial_number, mode: append\|replace, items: [...] }`, 1…200 items; `serial_number` item'ов перезаписывается с проверки; 201 `{ items, total }`. `append` — если можно создать каждую рекомендацию; `replace` — только если можно менять проверку. `mode=replace` удаляет существующие рекомендации **и их MinIO-вложения** |
-| `POST` | `/recommendations/batch-delete` | 204, 1…200 ids; та же модель владения, что `DELETE` |
-| `GET` | `/recommendations` | список |
-| `GET` | `/recommendations/{id}` | одна |
-| `PATCH` | `/recommendations/{id}` | своя рекомендация; смена `serial_number` переносит её на другую проверку |
-| `DELETE` | `/recommendations/{id}` | 204; auditor — только своя |
+Общее: `universeTotal` / `filteredTotal`, `granularity`, `filterOptions`. Query: `granularity` (`year` \| `quarter` \| `month`), `years` / `quarters` / `months` (OR), `auditors`, `departments`. Recommendations и monitoring также принимают `statuses`, `additionalStatuses`, `materialityLevels` — в UI этих фильтров нет. UI — [ANALYTICS.md](ANALYTICS.md).
 
-**Query list:** `skip`, `limit` (как checks), `search?`, `serial_number?`.  
-Search: название, наблюдение, описание, объект аудита, аудитор, руководитель, ключ проверки.
+## Attachments — `/attachments`
 
-| Поле | Значения |
-|------|----------|
-| `status` | `completed`, `unresolved`, `on_control`, `in_progress` |
-| `additional_status` | `on_time`, `deadline_violated`, `on_control`, `in_progress` |
+Metadata в Postgres, байты в MinIO. Layout — [DATA.md](DATA.md).
 
-Ещё: `sequence_number` (сервер), `description`, `observation_name`, `indicator` / `additional_indicator` (default `не указан`), `materiality_level` (default `средний`), `audit_object: list[str]` (строка с `,`/`;` тоже принимается), `deadline` (срок контроля), `execution_deadline` (срок исполнения), продления и снятие с контроля, `deadline_extensions` / `control_removals` (`{date?, comment?}`), `closure_*`.
+| Method | Path |
+|--------|------|
+| `GET` | `/attachments/storage/status` → `{ enabled, reachable, bucket_layout }` |
+| `GET` | `/attachments?entity_type=&entity_id=` (`slot` необязателен) |
+| `POST` | multipart `entity_type`, `entity_id`, `slot`, `file` |
+| `GET` | `/attachments/{id}/download` |
+| `DELETE` | `/attachments/{id}` |
 
-Автостатус рекомендаций при create/update и ежедневно в 00:05 Europe/Moscow (`SOKOL_STATUS_SCHEDULER=0` выключает). Правила и приоритет — [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md). Колонка `execution_deadline` автостатус не читает.
+Слоты check: `order`, `program`, `az`, `dz`, `dz_appendix`. Слоты recommendation: `recommendation_files`, `control_removal_files`. Upload и delete требуют тех же прав, что update сущности.
 
-`auditor` ∈ auditors, иначе **400**. `manager` — свободный текст. `audit_object` канонизируется по `departments`; неизвестное → **400**. Нет проверки → **400**. Сбой MinIO при delete/replace → **502**.
+Ошибки: слот или пустое тело → **400**; размер → **413**; MIME → **415**; MinIO не настроен → **503**; сбой MinIO → **502**; нет прав → **403**.
 
----
+## Settings и users
 
-## Analytics — `/api/v1/analytics`
-
-Агрегаты по всей БД, без лимита list API. Ответы в **camelCase** (`serialization_alias`). Отдельных таблиц нет. Конструктор дашбордов на backend **нет**. Схемы: `app/schemas/analytics.py`.
-
-| Method | Path | Что в ответе (основные блоки) |
-|--------|------|----------------|
-| `GET` | `/analytics/checks` | `summary`, `completionShare`, `periodSeries`, `viewDistribution`, `typeDistribution`, `departmentMap`, `effectivenessMatrix`, `filterOptions` |
-| `GET` | `/analytics/recommendations` | `summary` (+ `withExtensions`, `withCompletionDate`, `completionRate`, `violationRate`), `periodSeries` (в т.ч. `low`/`medium`/`high`, `cumulativeCompleted`), `materialityDistribution`, `statusDistribution`, `additionalStatusDistribution`, `viewDistribution`, `materialityMatrix`, `objectDistribution`, индикаторы, `checkLinks` |
-| `GET` | `/analytics/monitoring` | `summary`, `periodSeries`, `additionalStatusDistribution`, `statusMatrix`, `deadlineExtensionsByCheck`, `completedDuringAuditByCheck`, `filterOptions` |
-| `GET` | `/analytics/dva` | `universeChecksTotal` / `universeRecommendationsTotal` (+ filtered), `checkSummary`, `recommendationSummary`, `completionShare`, `averageCheckDurationDays`, `portfolioSeries`, `auditorLoad` / `auditorImpact` / `auditorExecution` / `auditorTimeliness` / `auditorDocuments`, `auditorMatrix`, treemap'ы, `departmentMap`, `documentReadiness`, `checkLifecycle` |
-| `GET` | `/analytics/planning` | `coverage` (rates, donut, covered/uncovered, `checksByDepartment`), `unresolvedByDepartment`, `highMaterialityByDepartment` (красные рекомендации, доля от рекомендаций департамента, проверки), `highMaterialityTotal`, universe/filtered totals; **без** `auditors` в `filterOptions` |
-
-Все ответы: `universeTotal` / `filteredTotal` (у dva/planning — отдельно checks и recommendations), `granularity`, `filterOptions` (`auditors?`, `departments`, `anchorDates`).
-
-**Query:** `granularity` (`year` \| `quarter` \| `month`, default `year`); `years`, `quarters`, `months` — ключи (`2025`, `2025-Q1`, `2025-08`), OR между измерениями; `auditors`, `departments`. Shared deps: `app/api/v1/analytics_deps.py`.  
-Recommendations/monitoring: `statuses` / `additional_statuses` / `materiality_levels` (есть camelCase-алиасы `additionalStatuses`, `materialityLevels`). Фильтры уходят в SQL (`sql_filters.py`); департаменты — `audit_object.overlap`.
-
-UI-контракт: [ANALYTICS.md](ANALYTICS.md).
-
----
-
-## Attachments — `/api/v1/attachments`
-
-Метаданные в PostgreSQL, файлы в MinIO. См. [STORAGE.md](STORAGE.md).
-
-| Method | Path | Описание |
-|--------|------|----------|
-| `GET` | `/attachments/storage/status` | `{ enabled, reachable, bucket_layout }` |
-| `GET` | `/attachments` | обязательны `entity_type`, `entity_id`; `slot?` |
-| `POST` | `/attachments` | 201 `{ attachment }`; multipart `entity_type`, `entity_id`, `slot`, `file` |
-| `GET` | `/attachments/{id}/download` | байты + `Content-Disposition` |
-| `DELETE` | `/attachments/{id}` | 204 |
-
-Слоты check: `order`, `program`, `az`, `dz`, `dz_appendix`.  
-Слоты recommendation: `recommendation_files`, `control_removal_files`.
-
-Ошибки: слот/пустое тело → **400**; слишком большой → **413**; MIME → **415**; MinIO не настроен → **503**; сбой MinIO → **502**; нет прав → **403**.
-
----
-
-## Settings
-
-Один factory (`dictionary_registry.py` + `make_dictionary_router`), пять prefix. Паттерн: `POST`, `GET` (list + total), `GET/{id}`, `PATCH/{id}`, `DELETE/{id}`.  
-List: `skip` (default 0), `limit` (1…200, default 50), `search?`.  
-Чтение — любой authenticated. Мутации — **admin**. Дубликаты labels → **409** (кроме `audit_types`). In-use delete и «Не указан» → **409**. Переименование каскадно обновляет FK; массив `audit_object` синхронизируется отдельно. Смена `auditors.code` каскадно переписывает ключи проверок и MinIO buckets.
+Один factory, пять prefix: `POST`, `GET`, `GET/{id}`, `PATCH/{id}`, `DELETE/{id}`. List: `skip`, `limit` 1…200 (default 50), `search`. Чтение — любой вошедший, мутации — admin. Дубликат label, in-use и «Не указан» → **409** (у `audit_types` дубликаты не 409).
 
 | Prefix | Тело |
 |--------|------|
-| `/settings/auditors` | `{ full_name, code }` — `code` ровно 3 латинские буквы, uppercase, unique |
-| `/settings/audit_types` | `{ code, name }` — 409 на дубликаты нет |
-| `/settings/check_kinds` | `{ label }` |
-| `/settings/effectiveness_ratings` | `{ label }` |
+| `/settings/auditors` | `{ full_name, code }` — `code` ровно 3 латинские буквы |
+| `/settings/audit_types` | `{ code, name }` |
+| `/settings/check_kinds`, `/effectiveness_ratings` | `{ label }` |
 | `/settings/departments` | `{ name }` |
 
-### Users — `/api/v1/users`
+`GET/POST /users` — admin. Create только с ролью `auditor`, иначе **400**; дубликат username → **409**. Пароль min 4. PATCH/DELETE users нет. Ответ без `password_hash`.
 
-| Method | Path | Описание |
-|--------|------|----------|
-| `GET` | `/users` | admin; `skip`/`limit` 1…200 (default 50); пагинация в памяти |
-| `POST` | `/users` | admin; только роль `auditor` иначе **400**; дубликат username → **409**. При create пытается добавить строку в `auditors` (`full_name` = username, `code` = инициалы); дубликат аудитора игнорируется. PATCH/DELETE нет |
+## Tools — `/tools`
 
-Create: `username`, `password` (min 4), опционально `role` (`auditor`), `display_name`, `aliases`.  
-Ответ: `{ id, username, display_name, role, aliases, is_active }`.
+Вход DOCX — поле `file`, лимит `SOKOL_MAX_UPLOAD_MB` (100). Очередь слотов; переполнение или timeout ожидания → **503** и `Retry-After`. Правила разбора — [REPORTS.md](REPORTS.md).
 
----
-
-## Tools — `/api/v1/tools`
-
-DOCX — multipart поле **`file`**. Лимит `SOKOL_MAX_UPLOAD_MB` (default 100). Тяжёлая работа в `asyncio.to_thread` под очередью слотов. Переполнение очереди → **503**. Подробно: [REPORTS.md](REPORTS.md).
-
-| Method | Path | Ответ |
-|--------|------|--------|
-| `POST` | `/tools/section-ii` | DOCX `*_section_ii.docx` |
-| `POST` | `/tools/section-ii-links` | DOCX `*_section_ii_links.docx` |
-| `GET` | `/tools/control-file-template` | XLSX шаблон |
+| Method | Path | Результат |
+|--------|------|-----------|
+| `POST` | `/tools/section-ii` | `*_section_ii.docx` |
+| `POST` | `/tools/section-ii-links` | `*_section_ii_links.docx` |
+| `GET` | `/tools/control-file-template` | XLSX |
 | `POST` | `/tools/control-file` | XLSX; form `file`, `check_leader`, `check_date` |
-| `POST` | `/tools/memorandum` | DOCX `*_dz.docx` |
-| `POST` | `/tools/parse-recommendations` | JSON массив `{ name, observation_name, audit_object, manager, deadline }` |
+| `POST` | `/tools/memorandum` | `*_dz.docx` |
+| `POST` | `/tools/parse-recommendations` | JSON черновиков рекомендаций |
 
----
+Парсинг → **400**, нет шаблона контроля → **404**, слишком большой файл → **413**.
 
-## Чего нет
+## Лимиты
 
-OIDC · Alembic HTTP · WebSocket · batch Excel через HTTP (CLI `import_seed_data`) · CRUD наблюдений · profile/avatar · users PATCH/DELETE · drill-down / сохранённые серверные отчёты.
-
----
+| Что | Значение |
+|-----|----------|
+| `GET /checks`, `/recommendations` | default 200, max 10 000. UI забирает 10 000 и пагинирует на клиенте; отдельного предупреждения, что в БД больше, нет |
+| users и справочники | default 50, max 200 |
+| batch рекомендаций | 1…200 |
+| upload | `SOKOL_MAX_UPLOAD_MB`, default 100. Пока `/capabilities` не пришли, UI считает 100 |
+| DOCX | одновременно `SOKOL_DOCX_MAX_CONCURRENT` (2), в очереди ещё `SOKOL_DOCX_MAX_QUEUE` (8), ждать слот `SOKOL_DOCX_QUEUE_WAIT_SECONDS` (180). Клиент tools ждёт 10 минут |
+| JWT | 480 минут. 401 вне login → logout |
+| кэш аналитики / capabilities / MinIO status | 60 с / 5 мин / 15 с |
 
 ## Ошибки
 
 | Код | Когда |
 |-----|--------|
-| 422 | FastAPI validation |
-| 400 | DOCX/XLSX, неизвестные labels, неверный пароль при смене |
-| 401 | нет/битый токен, неверный login |
-| 403 | нет прав на рекомендацию/вложение |
-| 404 | не найдено (русский `detail`) |
-| 409 | дубликат справочника / in-use / «Не указан» / username |
-| 413 | слишком большой upload |
-| 415 | MIME вложения |
-| 503 | MinIO не настроен; очередь DOCX tools переполнена |
-| 502 | сбой MinIO / операция с объектом |
+| 400 | домен, неизвестный label, пароль, битый DOCX |
+| 401 | нет или битый токен, неверный login |
+| 403 | нет прав на запись или вложение |
+| 404 | не найдено |
+| 409 | дубликат справочника, in-use, username |
+| 413 / 415 | размер / MIME |
+| 502 | сбой MinIO |
+| 503 | MinIO не настроен, очередь DOCX полна, БД не ready |
 
-CORS: origins из env; при `*` credentials отключены.
+| Симптом | Куда смотреть |
+|---------|----------------|
+| UI не видит API | dev **8802**, Docker **8800** |
+| CORS | `SOKOL_CORS_ORIGINS`, рестарт API |
+| 503 на вложении | не заданы `SOKOL_MINIO_*` |
+| 502 на вложении | MinIO не запущен или объекта нет |
+| 503 на tools | очередь DOCX, повторить позже |
+| DOCX «висит» | размер, очередь, вёрстка АЗ, логи backend |

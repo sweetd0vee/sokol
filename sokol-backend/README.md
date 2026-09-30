@@ -58,7 +58,7 @@ Dev-пользователи (если таблица `users` пуста и ср
 | `SOKOL_LOG_LEVEL` | Уровень логов `app.*` (default `INFO`) |
 | `SOKOL_LOG_JSON` | JSON-логи; по умолчанию on в prod, off в development |
 | `SOKOL_DESTRUCTIVE_DICTIONARY_SYNC` | в development удаляет лишние справочники/users при sync (default on); в prod всегда merge-only |
-| `SOKOL_MINIO_ENDPOINT` / `ACCESS_KEY` / `SECRET_KEY` / `SECURE` / `REGION` | MinIO — [STORAGE.md](../docs/STORAGE.md) |
+| `SOKOL_MINIO_ENDPOINT` / `ACCESS_KEY` / `SECRET_KEY` / `SECURE` / `REGION` | MinIO — [DATA.md](../docs/DATA.md) |
 
 ## Инициализация БД
 
@@ -72,7 +72,7 @@ python -m app.db.seed_effectiveness_ratings
 python -m app.db.seed_users
 ```
 
-Seed/import/бэкапы: [DATA_AND_DB.md](../docs/DATA_AND_DB.md). Excel seed лежит в корневом `data/`, не в `sokol-backend/data/`.
+Seed/import/бэкапы: [DATA.md](../docs/DATA.md). Excel seed лежит в корневом `data/`, не в `sokol-backend/data/`.
 
 ## Health / metrics
 
@@ -97,7 +97,7 @@ Seed/import/бэкапы: [DATA_AND_DB.md](../docs/DATA_AND_DB.md). Excel seed �
 
 ## Документация
 
-Каталог [docs/README.md](../docs/README.md): архитектура, API, БД, хранилище, reports. Исторический план — [PLAN.md](../PLAN.md).
+Каталог [docs/README.md](../docs/README.md): архитектура, API, данные, reports. Исторический план — [PLAN.md](../PLAN.md).
 
 ## Тесты
 

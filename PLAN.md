@@ -1,6 +1,6 @@
 # План оставшихся работ SOKOL до 15.09.2026
 
-> **Исторический снимок.** Зафиксирован **04.09.2026** (цель go-live 15.09.2026). Не является текущим статусом продукта. Актуальный онбординг: [README.md](README.md), [docs/README.md](docs/README.md). Открытый backlog того спринта: [docs/HISTORY.md](docs/HISTORY.md).
+> **Исторический снимок.** Зафиксирован **04.09.2026** (цель go-live 15.09.2026). Не является текущим статусом продукта. Актуальный онбординг: [README.md](README.md), [docs/README.md](docs/README.md). Что ещё открыто: [docs/REVIEW.md](docs/REVIEW.md).
 
 **Актуально на дату снимка:** 4 сентября 2026  
 **Исходный go-live:** 1 сентября 2026 — не уложились, перенос на **один спринт**.  
@@ -85,7 +85,7 @@
 | P1-01 | Включить required CI checks в branch protection | Workflow есть, без required gate его можно обойти | `Backend (Python 3.12)` и `Frontend (Node 22)` обязательны для merge |
 | P1-02 | Import validation на bulk-загрузке | API CRUD валидирует справочники; import сейчас `ensure_*` (досоздаёт labels) | Import канонизирует и валидирует аудиторов, виды, объекты аудита; неизвестные значения — reject в report, а не silent insert в справочник |
 | P1-03 | Storage status UX для MinIO | **сделано** | UI показывает `storage disabled/unreachable`, upload disabled, есть retry |
-| P1-04 | Backup/restore drill MinIO + PostgreSQL | Документы `docs/STORAGE.md` и dump-команды есть; операционный drill не подтверждён | Restore PostgreSQL на чистый том успешен; MinIO volume/object backup проверен; сверка `attachments` |
+| P1-04 | Backup/restore drill MinIO + PostgreSQL | Команды бэкапа есть в `docs/DATA.md`; операционный drill не подтверждён | Restore PostgreSQL на чистый том успешен; MinIO volume/object backup проверен; сверка `attachments` |
 | P1-05 | UAT deploy checklist | Нужен воспроизводимый запуск в банковском контуре | `.env`/секреты/порты/DNS/TLS/CORS описаны; `/api/v1/status` и UI открываются |
 | P1-06 | Загрузка пилотных данных 10–20 проверок | Ранний контроль маппинга до полной загрузки | 10–20 проверок и рекомендации видны в UI; 3 карточки сверены бизнесом |
 | P1-07 | Полная загрузка согласованного объёма на UAT | Go-live без данных бессмысленен | Count checks/recommendations в API совпадает с freeze-файлом |
@@ -224,8 +224,6 @@ Fallback при No-Go: ограниченный read-only/UAT-pilot режим, 
 
 | Документ | Для чего |
 |----------|----------|
-| [docs/HISTORY.md](docs/HISTORY.md) | Снимок качества 04.09 и открытый backlog |
-| [docs/CI.md](docs/CI.md) | Как включить required CI checks |
-| [docs/APP_LIMITS_AND_GOTCHAS.md](docs/APP_LIMITS_AND_GOTCHAS.md) | Лимиты пилотной версии |
-| [docs/DATA_AND_DB.md](docs/DATA_AND_DB.md) | Модель, seed, import, миграции, backup |
-| [docs/STORAGE.md](docs/STORAGE.md) | MinIO, вложения, консоль, backup файлов |
+| [docs/REVIEW.md](docs/REVIEW.md) | Текущая готовность, CI и открытый backlog |
+| [docs/API.md](docs/API.md) | Лимиты пилотной версии |
+| [docs/DATA.md](docs/DATA.md) | Модель, seed, import, миграции, MinIO, backup |

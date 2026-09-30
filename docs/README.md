@@ -1,25 +1,18 @@
 # Документация SOKOL
 
-Вся продуктовая документация лежит в этом каталоге. README в `sokol-backend/` и `sokol-frontend/` — только запуск, env и скрипты.
-
-## Живые документы
+Продуктовые документы. Запуск, env и скрипты — в README корня, `sokol-backend/` и `sokol-frontend/`.
 
 | Документ | Содержание |
 |----------|------------|
-| [PROJECT_CODE_GUIDE.md](PROJECT_CODE_GUIDE.md) | Карта кода для нового разработчика |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Слои backend/frontend, auth, инварианты, bootstrap |
-| [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md) | Автостатус и индикаторы рекомендаций: правила, приоритет, код |
-| [API.md](API.md) | HTTP `/api/v1` |
-| [DATA_AND_DB.md](DATA_AND_DB.md) | Модель, enum'ы, FK, seed, import, миграции, бэкапы |
-| [STORAGE.md](STORAGE.md) | MinIO: layout, API, консоль, `mc`, бэкап |
-| [ANALYTICS.md](ANALYTICS.md) | Дашборды `/analytics`, `/planning`, конструктор `/constructor` |
-| [REPORTS.md](REPORTS.md) | Раздел II, ДЗ, файл контроля, parse |
-| [UI_STANDARDS.md](UI_STANDARDS.md) | Каркас, формы, списки, цвета, UI kit |
-| [APP_LIMITS_AND_GOTCHAS.md](APP_LIMITS_AND_GOTCHAS.md) | Лимиты, тонкости, типовые ошибки |
-| [CI.md](CI.md) | GitHub Actions и merge gate |
-| [REVIEW.md](REVIEW.md) | Код-ревью и готовность к продакшену |
-| [../README.md](../README.md) · [../DOCKER.md](../DOCKER.md) | Быстрый старт |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, маршруты, auth, инварианты, куда смотреть в коде |
+| [API.md](API.md) | HTTP `/api/v1`, лимиты, типовые ошибки |
+| [DATA.md](DATA.md) | Postgres, seed, миграции, MinIO, бэкап |
+| [RECOMMENDATION_INDICATORS.md](RECOMMENDATION_INDICATORS.md) | Автостатус рекомендаций |
+| [ANALYTICS.md](ANALYTICS.md) | Дашборды, планирование, конструктор |
+| [REPORTS.md](REPORTS.md) | Раздел II, докладная, файл контроля, parse |
+| [UI_STANDARDS.md](UI_STANDARDS.md) | Каркас, цвета, формы и списки |
+| [REVIEW.md](REVIEW.md) | Готовность к продакшену и CI |
 
-Скриншоты и DOCX аналитики: [SOKOL_Аналитика.docx](SOKOL_Аналитика.docx), [ANALYTICS_TZ.docx](ANALYTICS_TZ.docx), [analytics-screenshots/](analytics-screenshots/). Генерация: из `sokol-frontend` — `npm run docs:analytics-tz:full`.
+Скриншоты и DOCX аналитики: [SOKOL_Аналитика.docx](SOKOL_Аналитика.docx), [analytics-screenshots/](analytics-screenshots/). Генерация из `sokol-frontend`: `npm run docs:analytics-tz:full`.
 
-Запуск: [../sokol-backend/README.md](../sokol-backend/README.md), [../sokol-frontend/README.md](../sokol-frontend/README.md). Оценка продакшена — [REVIEW.md](REVIEW.md). Исторический backlog — [HISTORY.md](HISTORY.md), календарь того спринта — [PLAN.md](../PLAN.md).
+Исторический календарь спринта 04.09.2026 — [PLAN.md](../PLAN.md).
