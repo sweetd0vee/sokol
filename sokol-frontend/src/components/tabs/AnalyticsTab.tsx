@@ -1,4 +1,4 @@
-import { Suspense, useState, type ComponentType, type ReactNode } from 'react';
+import { Suspense, useState, type ComponentType } from 'react';
 import { PageHeader } from '../ui/PageHeader';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { LoadingState } from '../ui/StateMessage';
@@ -37,25 +37,9 @@ type AnalyticsTabId = (typeof ANALYTICS_TABS)[number]['value'];
 const PRIMARY_ANALYTICS_TABS = ANALYTICS_TABS.slice(0, 2).map(({ value, label }) => ({ value, label }));
 const SECONDARY_ANALYTICS_TABS = ANALYTICS_TABS.slice(2).map(({ value, label }) => ({ value, label }));
 
-function KeepAlivePanel({ active, children }: { active: boolean; children: ReactNode }) {
-  return <div className={active ? 'w-full' : 'hidden'}>{children}</div>;
-}
-
 export function AnalyticsTab() {
   const [activeTab, setActiveTab] = useState<AnalyticsTabId>('checks');
-  const [visited, setVisited] = useState<Set<AnalyticsTabId>>(() => new Set(['checks']));
-
-  const openTab = (next: AnalyticsTabId) => {
-    setActiveTab(next);
-    setVisited((prev) => {
-      if (prev.has(next)) {
-        return prev;
-      }
-      const copy = new Set(prev);
-      copy.add(next);
-      return copy;
-    });
-  };
+  const ActivePanel = ANALYTICS_TABS.find((tab) => tab.value === activeTab)?.Panel;
 
   return (
     <div className="w-full space-y-5 text-left">
@@ -65,25 +49,21 @@ export function AnalyticsTab() {
           <SegmentedControl
             value={activeTab}
             options={PRIMARY_ANALYTICS_TABS}
-            onChange={openTab}
+            onChange={setActiveTab}
           />
           <SegmentedControl
             value={activeTab}
             options={SECONDARY_ANALYTICS_TABS}
-            onChange={openTab}
+            onChange={setActiveTab}
           />
         </div>
       </div>
 
-      {ANALYTICS_TABS.map(({ value, Panel }) =>
-        visited.has(value) ? (
-          <KeepAlivePanel key={value} active={activeTab === value}>
-            <Suspense fallback={<LoadingState title="Загрузка дашборда…" />}>
-              <Panel />
-            </Suspense>
-          </KeepAlivePanel>
-        ) : null,
-      )}
+      {ActivePanel ? (
+        <Suspense fallback={<LoadingState title="Загрузка дашборда…" />}>
+          <ActivePanel />
+        </Suspense>
+      ) : null}
     </div>
   );
 }

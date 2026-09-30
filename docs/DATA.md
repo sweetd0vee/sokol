@@ -61,7 +61,9 @@ python -m app.db.seed_audit_types
 python -m app.db.seed_check_kinds
 python -m app.db.seed_effectiveness_ratings
 python -m app.db.seed_users
-python -m app.db.import_seed_data                 # новые serial
+python -m app.db.import_seed_data                 # новые serial (unknown labels → ensure)
+python -m app.db.import_seed_data --dry-run       # только отчёт, БД не трогает
+python -m app.db.import_seed_data --strict        # unknown labels → ошибка (боевой import)
 python -m app.db.import_seed_data --replace       # TRUNCATE; в prod ещё --confirm-prod-replace
 python -m app.db.sync_check_buckets
 ```

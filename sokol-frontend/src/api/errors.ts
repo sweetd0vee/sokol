@@ -177,7 +177,11 @@ export function toApiError(error: unknown): ApiError {
 
 export function getErrorMessage(error: unknown, fallback?: string) {
   const apiError = toApiError(error);
-  return apiError.message || fallback || 'Произошла ошибка';
+  const message = apiError.message || fallback || 'Произошла ошибка';
+  if (apiError.requestId) {
+    return `${message} (код запроса: ${apiError.requestId})`;
+  }
+  return message;
 }
 
 export function getRetryAfterSeconds(error: unknown): number | undefined {
@@ -192,9 +196,9 @@ export function shouldRetryRequest(failureCount: number, error: unknown, maxRetr
   return failureCount < maxRetries;
 }
 
-const API_UNAVAILABLE_HINT =
-  'Не удалось связаться с API. Запустите бэкенд: python -m uvicorn app.main:app --reload --port 8802 ' +
-  `(ожидается ${API_DISPLAY_URL}).`;
+const API_UNAVAILABLE_HINT = import.meta.env.DEV
+  ? `Не удалось связаться с API. Запустите бэкенд: python -m uvicorn app.main:app --reload --port 8802 (ожидается ${API_DISPLAY_URL}).`
+  : 'Не удалось связаться с API. Повторите попытку позже или обратитесь к администратору.';
 
 async function readResponseBody(data: unknown): Promise<string> {
   if (data instanceof Blob) {

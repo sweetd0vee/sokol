@@ -91,9 +91,9 @@ describe('getErrorMessage', () => {
     expect(getErrorMessage(error, 'fallback')).toBe('Запись не найдена.');
   });
 
-  it('uses fallback when api error message is empty', () => {
-    const error = { code: 'custom', message: '' };
-    expect(getErrorMessage(error, 'fallback')).toBe('fallback');
+  it('appends request id when present', () => {
+    const error = { code: 'http_500', message: 'Сбой', requestId: 'abc-123' };
+    expect(getErrorMessage(error)).toBe('Сбой (код запроса: abc-123)');
   });
 });
 

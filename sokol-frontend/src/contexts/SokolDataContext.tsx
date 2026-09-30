@@ -133,6 +133,11 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
     () => ({
       checks,
       recommendations,
+      checksTotal,
+      recommendationsTotal,
+      checksTruncated,
+      recommendationsTruncated,
+      listFetchLimit: LIST_FETCH_LIMIT,
       isChecksLoading: checksQuery.isLoading,
       isRecommendationsLoading: recommendationsQuery.isLoading,
       isChecksError: checksQuery.isError,
@@ -157,6 +162,10 @@ export function SokolDataProvider({ children }: SokolDataProviderProps) {
     [
       checks,
       recommendations,
+      checksTotal,
+      recommendationsTotal,
+      checksTruncated,
+      recommendationsTruncated,
       checksQuery.isLoading,
       checksQuery.isError,
       checksQuery.error,

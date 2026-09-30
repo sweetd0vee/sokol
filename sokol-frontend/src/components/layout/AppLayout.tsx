@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { isCompactFormPath } from '../../constants/paths';
 import { AppHeader } from './AppHeader';
+import { DataTruncationBanner } from './DataTruncationBanner';
 import { Sidebar } from './Sidebar';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { LoadingState } from '../ui/StateMessage';
@@ -20,6 +21,7 @@ export function AppLayout() {
             isCompactFormPage ? 'px-4 py-4' : 'p-8'
           }`}
         >
+          <DataTruncationBanner />
           <ErrorBoundary
             key={location.pathname}
             title="Не удалось показать страницу"

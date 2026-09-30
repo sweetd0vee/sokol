@@ -60,15 +60,15 @@
 | **FE-SEC-01** | FE | JWT в `localStorage` (`authSession.ts`) | XSS = полный захват сессии | accepted risk за VPN; **blocker** open contour | принято | HttpOnly cookie / OIDC позже; до этого — жёсткий CSP | L |
 | **FE-SEC-02** | FE | Роль в UI из login+storage, без `/me` | Подмена storage открывает admin UI (API всё равно откажет запись) | should-fix | нет | При старте сверка роли с API | M |
 | **DATA-01** | BE | ~~Нет Alembic~~ → **закрыто 30.09.2026** (`alembic/`, baseline `20260930_0001`, `ensure_schema`) | Версионирование схемы | ~~should-fix~~ **done** | — | Новые изменения только через `alembic revision` | — |
-| **DATA-02** | BE | Import Excel `ensure_*` досоздаёт справочники | Плохой Excel тихо портит словари (в отличие от UI CRUD) | should-fix | нет | `--strict` / dry-run reject report | M |
-| **DATA-04** | BE | MinIO delete до `commit` (check/attachments) | Rollback БД после удаления объектов → потеря файлов | should-fix | нет | Удалять объекты после успешного commit | M |
-| **DATA-03** | BE | Нет UNIQUE(`check_id`,`sequence_number`) | Гонка двух create → дубликаты sequence | should-fix | нет при низкой нагрузке | Unique + lock | M |
+| **DATA-02** | BE | ~~Import без dry-run/strict~~ → **закрыто** (`--dry-run`, `--strict`) | Плохой Excel | **done** | — | Боевой import: `--strict` | — |
+| **DATA-04** | BE | ~~MinIO delete до commit~~ → **закрыто** (purge after commit) | Потеря файлов | **done** | — | — | — |
+| **DATA-03** | BE | ~~Нет UNIQUE sequence~~ → **закрыто** (`20260930_0002` + `FOR UPDATE`) | Дубликаты sequence | **done** | — | — | — |
 | **DATA-06** | BE | Ночной refresh грузит все checks/recs в память | Рост таблиц → пик RAM в том же процессе, что API | should-fix | нет при ~15×5 лет | Batch / `yield_per` | M |
-| **FE-UX-01** | FE | Списки `limit: 10000`, `total` не сверяется | Тихая обрезка данных выше 10k | should-fix | нет при текущем объёме | Warn по `total`; потом pagination | L |
-| **FE-UX-02** | FE | Analytics KeepAlive держит посещённые вкладки | Рост RAM после обхода дашбордов | should-fix | нет | Unmount / лимит keep-alive | S |
-| **FE-UX-03** | FE | `requestId` не показывается в UI | Нельзя быстро свести ошибку с логами API | should-fix | желательно | Показать «Код запроса» на ErrorState | S |
+| **FE-UX-01** | FE | ~~Тихая обрезка 10k~~ → баннер `DataTruncationBanner` | Неполнота UI | **done** | — | Полная pagination — позже | — |
+| **FE-UX-02** | FE | ~~Analytics KeepAlive~~ → только активная вкладка | RAM | **done** | — | — | — |
+| **FE-UX-03** | FE | ~~requestId скрыт~~ → в `getErrorMessage` | Support | **done** | — | — | — |
 | **FE-OPS-01** | FE | `VITE_ERROR_REPORT_URL` не задан | Клиентские падения только в console | should-fix | желательно | Beacon/Sentry URL в prod | S–M |
-| **FE-OPS-02** | FE | У Axios нет default timeout | Зависший API → вечный spinner | should-fix | желательно | Timeout 30–60s (tools — отдельно) | S |
+| **FE-OPS-02** | FE | ~~Нет axios timeout~~ → 60s default | Вечный spinner | **done** | — | — | — |
 | **OPS-01** | Ops | API наружу `:8800`, TLS только на gateway | Без reverse proxy трафик plain HTTP | ops | **да** | VPN и/или TLS proxy; задокументировать | S |
 | **OPS-02** | Ops | Бэкапы рядом с данными на том же хосте | Потеря хоста = данные + бэкапы | ops | **да** | Копия снимков off-host | S |
 | **CODE-01** | BE | Login/auth: полный `list_users` + линейный поиск | Медленнее с ростом users | nice | нет | Lookup по username/alias | M |
@@ -131,9 +131,10 @@
 | SEC-03 | Rate limit login |
 | SEC-06 / SEC-07 | Короткий JWT TTL, пароль ≥8 |
 | FE-SEC-02 | `/me` или сверка роли при boot |
-| DATA-02 | Strict import / dry-run |
-| DATA-04 | MinIO delete after commit |
-| FE-UX-01…03, FE-OPS-01…02 | Truncation warn, keep-alive, requestId в UI, timeout, error beacon |
+| DATA-06 | Batch status refresh |
+| FE-UX-01… | Server pagination (баннер truncation уже есть) |
+| FE-OPS-01 | Error beacon URL |
+| FE-SEC-03 | Prod UI image (nginx), не Vite dev |
 
 ---
 

@@ -4,20 +4,20 @@
 
 Внутренний инструмент одного департамента: **чтение общее** — любой вошедший видит все проверки, рекомендации и дашборды (зафиксировано 30.09.2026). Запись по-прежнему режется ролями. Для нескольких независимых заказчиков такой модели недостаточно.
 
-**Продукт: 7.7 / 10.** Пилот за VPN — да, после чеклиста. Открытый контур — нет.
+**Продукт: 8.0 / 10.** Пилот за VPN — да, после чеклиста. Открытый контур — нет.
 
 | | Backend | Frontend |
 |--|--------:|---------:|
 | Архитектура | 10 | 10 |
 | Безопасность | 5.5 | 5.5 |
-| Данные / состояние | 5 | 6.5 |
+| Данные / состояние | 8 | 8.5 |
 | Бизнес-логика и аналитика | 10 | 10 |
 | Тесты | 10 | 10 |
 | Наблюдаемость и devops | 8.5 | 8 |
 
 ## Уже в порядке
 
-Слои держатся: endpoint → service → CRUD, CRUD не коммитит (`tests/test_crud_layer_boundary.py`). UI режется по ролям: `AuthGuard`, `/settings` за `AdminGuard`. Роль читается из БД. Запись проходит `ensure_user_can_manage_*`. В prod старт падает на слабом JWT, demo-load и seed replace.
+Слои держатся: endpoint → service → CRUD, CRUD не коммитит (`tests/test_crud_layer_boundary.py`). UI режется по ролям: `AuthGuard`, `/settings` за `AdminGuard`. Роль читается из БД. Запись проходит `ensure_user_can_manage_*`. В prod старт падает на слабом JWT, demo-load и seed replace. Схема — Alembic; import `--dry-run`/`--strict`; MinIO delete после commit; UNIQUE(`check_id`,`sequence_number`). На фронте: баннер обрезки 10k, analytics без KeepAlive, `requestId` в ошибках, axios timeout 60s.
 
 Ошибки домена — `{detail}` без traceback. Логи с request-id, в prod JSON. `/metrics` — Prometheus. Healthcheck у compose, UI шлёт `X-Request-ID`. Сервис `backup` в 00:05 Europe/Moscow пишет Postgres dump и зеркало MinIO в `~/docker-share/sokol-backups` (14 дней). Автостатус, KPI переносов, парсер Раздела II, фильтры аналитики и черновики конструктора закрыты тестами. Золотой набор — [fixtures/auto_status_golden.json](fixtures/auto_status_golden.json).
 
@@ -29,7 +29,7 @@
 2. **Legacy plaintext verify** + строки users не только PBKDF2; **python-multipart 0.0.9**.
 3. **Ops:** `SOKOL_ENV=prod`, JWT/CORS/пароли, restore drill, off-host бэкап, required CI.
 4. **Сессия в `localStorage`** — accepted risk за VPN; для open contour нужен cookie/OIDC.
-5. **Нагрузка / схема** (should-fix): списки 10k, analytics keep-alive, ночной refresh в память. Alembic baseline внедрён — [DATA.md](DATA.md).
+5. **Нагрузка** (should-fix): server pagination вместо bulk 10k; ночной refresh в память. Truncation уже предупреждает в UI.
 
 ## Чеклист
 
@@ -58,6 +58,6 @@ Workflow: `.github/workflows/ci.yml`.
 
 ## Ещё открыто
 
-Import без `--dry-run`: неизвестные labels досоздаются, а не отклоняются. На `/planning` нет метки limited. Дальше, не блокер пилота: server pagination, OIDC, audit log, users PATCH/DELETE, серверные дашборды.
+Import: для боевых Excel — `python -m app.db.import_seed_data --strict` (или `--dry-run`). На `/planning` нет метки limited. Дальше, не блокер пилота: server pagination, OIDC, audit log, users PATCH/DELETE, серверные дашборды.
 
 Календарь спринта 04.09.2026 — [PLAN.md](../PLAN.md). Это исторический снимок, не текущий статус.
