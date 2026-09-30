@@ -68,19 +68,20 @@ src/
 ```
 QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvider → BrowserRouter
   /login          — публичный
-  /*              — AuthGuard → AppLayout
+  /*              — AuthGuard → AppLayout (Suspense по разделам)
+  /settings       — AdminGuard (`isAdmin`)
 ```
 
-Отдельного `AdminGuard` нет: `useAuth().isAdmin`. Неизвестный путь → `/checks`. Kantsler нет.
+`React.lazy` режет тяжёлые разделы (аналитика, конструктор, tools, формы). Вкладки аналитики подгружаются по посещению. Неизвестный путь → `/checks`. Kantsler нет.
 
 | Route | Компонент |
 |-------|-----------|
 | `/checks`, `/recommendations` | списки + form pages (`/new`, `/:id/edit`) |
-| `/analytics` | 4 вкладки, keep-alive посещённых |
+| `/analytics` | 4 вкладки, keep-alive посещённых, lazy-панели |
 | `/planning` | `PlanningAnalyticsDashboard` |
 | `/constructor`, `/constructor/:id` | история и холст (только localStorage) |
 | `/tools` | АЗ / ДЗ |
-| `/settings` | mutate — `isAdmin` |
+| `/settings` | mutate — `AdminGuard` |
 | `/profile` | аватар (localStorage), смена пароля; admin — создание users |
 
 State: Context + React Query, без Redux. Списки — bulk-fetch 10000, фильтр/сорт/пагинация (по 50) на клиенте. Конструктор — `sokol.constructor.library.v1`. Токены форм: `src/constants/formLayout.ts`.

@@ -53,6 +53,10 @@ class CheckStatusCalcTests(unittest.TestCase):
             ),
             CheckStatus.IN_PROGRESS,
         )
+        self.assertEqual(
+            choose_check_status(start_date=None, dz_document_date=None, today=TODAY),
+            CheckStatus.IN_PROGRESS,
+        )
 
     def test_end_date_does_not_complete_the_check(self) -> None:
         payload = overlay_check_status(

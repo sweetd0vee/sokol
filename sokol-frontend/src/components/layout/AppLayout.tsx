@@ -1,8 +1,10 @@
+import { Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { isCompactFormPath } from '../../constants/paths';
 import { AppHeader } from './AppHeader';
 import { Sidebar } from './Sidebar';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
+import { LoadingState } from '../ui/StateMessage';
 
 export function AppLayout() {
   const location = useLocation();
@@ -23,7 +25,9 @@ export function AppLayout() {
             title="Не удалось показать страницу"
             description="Ошибка на этой вкладке. Можно попробовать снова или открыть другой раздел."
           >
-            <Outlet />
+            <Suspense fallback={<LoadingState title="Загрузка раздела…" />}>
+              <Outlet />
+            </Suspense>
           </ErrorBoundary>
         </main>
       </div>

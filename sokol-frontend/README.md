@@ -61,7 +61,7 @@ VITE_DEV_API_PORT=8802
 | `/settings` | справочники (admin) |
 | `/profile` | профиль |
 
-Неизвестный путь → `/checks`.
+Неизвестный путь → `/checks`. `/settings` — только `isAdmin` (`AdminGuard`).
 
 ## Структура `src/`
 

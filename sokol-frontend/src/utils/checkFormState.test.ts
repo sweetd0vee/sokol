@@ -27,9 +27,9 @@ function check(overrides: Partial<Check> = {}): Check {
 }
 
 describe('deriveCheckStatus', () => {
-  it('keeps existing status when start date is empty', () => {
-    expect(deriveCheckStatus(null, null, 'in_progress', now)).toBe('in_progress');
-    expect(deriveCheckStatus(null, null, undefined, now)).toBe('');
+  it('matches backend: no start and no DZ is in progress, ignoring stored status', () => {
+    expect(deriveCheckStatus(null, null, 'completed', now)).toBe('in_progress');
+    expect(deriveCheckStatus(null, null, undefined, now)).toBe('in_progress');
   });
 
   it('marks completed when the DZ date is set, even if the start is still ahead', () => {

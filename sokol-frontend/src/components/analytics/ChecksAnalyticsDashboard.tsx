@@ -24,7 +24,7 @@ import { EffectivenessMatrixChart } from './EffectivenessMatrixChart';
 import { EMPTY_CHECKS_SUMMARY } from './analyticsEmpty';
 import { CHECKS_PALETTE, getValueBasedColors, MONITORING_STATUS_COLORS, VALUE_BLUE_SCALE } from './analyticsPalette';
 import { useAnalyticsDashboardController } from './useAnalyticsDashboardController';
-import { toAnalyticsFilterSidebarProps } from './analyticsFilterSidebarProps';
+import { toAnalyticsDashboardShellProps } from './analyticsDashboardShellProps';
 import { exportChecksDashboard } from '../../utils/analyticsExport';
 import { CHECK_EXPORT_SECTIONS, type CheckExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
@@ -48,39 +48,7 @@ const EMPTY_EFFECTIVENESS_MATRIX: never[] = [];
 const QUARTER_AXIS_TICK = { fontSize: 12 } as const;
 
 export function ChecksAnalyticsDashboard() {
-  const {
-    selectedAuditors,
-    selectedDepartments,
-    exportFormat,
-    setExportFormat,
-    isExporting,
-    setIsExporting,
-    removeAuditor,
-    removeDepartment,
-    setSelectedAuditors,
-    setSelectedDepartments,
-    periodSlice,
-    selectedYears,
-    selectedQuarters,
-    setSelectedYears,
-    setSelectedQuarters,
-    yearOptions,
-    quarterOptions,
-    selectedYearKeys,
-    selectedQuarterKeys,
-    periodSliceLabel,
-    activePeriodValues,
-    handlePeriodSliceChange,
-    removeActivePeriodValue,
-    granularity,
-    bootstrapQuery,
-    analyticsQuery,
-    data,
-    auditorOptions,
-    departmentOptions,
-    isWaitingForFilteredData,
-    resetFilters,
-  } = useAnalyticsDashboardController({
+  const dashboard = useAnalyticsDashboardController({
     resource: 'checks',
     bootstrapQueryKey: queryKeys.analytics.checksBootstrap,
     fetchBootstrap: () =>
@@ -95,6 +63,20 @@ export function ChecksAnalyticsDashboard() {
     fetchFiltered: fetchChecksAnalytics,
     preferFilteredData: true,
   });
+  const {
+    selectedAuditors,
+    selectedDepartments,
+    exportFormat,
+    setIsExporting,
+    isExporting,
+    selectedYearKeys,
+    selectedQuarterKeys,
+    periodSliceLabel,
+    activePeriodValues,
+    granularity,
+    analyticsQuery,
+    data,
+  } = dashboard;
 
   const exportSections = useExportSections(
     CHECK_EXPORT_SECTIONS.map((section) => section.id) as CheckExportSectionId[],
@@ -392,51 +374,18 @@ export function ChecksAnalyticsDashboard() {
 
   return (
     <AnalyticsDashboardShell
-      loadingTitle="Загрузка аналитики проверок…"
-      errorTitle="Не удалось загрузить аналитику проверок"
-      bootstrapQuery={bootstrapQuery}
-      analyticsQuery={analyticsQuery}
-      data={data}
-      isWaitingForFilteredData={isWaitingForFilteredData}
-      showFetchingBadge
-      mainClassName={ANALYTICS_DASHBOARD_MAIN_CLASS}
-      selectionMetrics={[{ label: 'Проверок', value: filteredTotal, hint: `из ${universeTotal}` }]}
-      periodSliceLabel={periodSliceLabel}
-      activePeriodValues={activePeriodValues}
-      removeActivePeriodValue={removeActivePeriodValue}
-      selectedAuditors={selectedAuditors}
-      removeAuditor={removeAuditor}
-      selectedDepartments={selectedDepartments}
-      removeDepartment={removeDepartment}
-      filterSidebar={toAnalyticsFilterSidebarProps(
-        {
-          periodSlice,
-          handlePeriodSliceChange,
-          yearOptions,
-          quarterOptions,
-          selectedYears,
-          selectedQuarters,
-          setSelectedYears,
-          setSelectedQuarters,
-          auditorOptions,
-          selectedAuditors,
-          setSelectedAuditors,
-          departmentOptions,
-          selectedDepartments,
-          setSelectedDepartments,
-          resetFilters,
-          exportFormat,
-          setExportFormat,
-          isExporting,
-        },
-        {
-          canExport: filteredTotal > 0 && !analyticsQuery.isFetching,
-          onExport: handleExport,
-          selectedCount: exportSections.selectedCount,
-          justAdded,
-          onAddToConstructor: handleAddToConstructor,
-        },
-      )}
+      {...toAnalyticsDashboardShellProps(dashboard, {
+        loadingTitle: 'Загрузка аналитики проверок…',
+        errorTitle: 'Не удалось загрузить аналитику проверок',
+        selectionMetrics: [{ label: 'Проверок', value: filteredTotal, hint: `из ${universeTotal}` }],
+        canExport: filteredTotal > 0 && !analyticsQuery.isFetching,
+        onExport: handleExport,
+        selectedCount: exportSections.selectedCount,
+        justAdded,
+        onAddToConstructor: handleAddToConstructor,
+        showFetchingBadge: true,
+        mainClassName: ANALYTICS_DASHBOARD_MAIN_CLASS,
+      })}
     >
       <AnalyticsDashboardGrid cards={cards} />
     </AnalyticsDashboardShell>

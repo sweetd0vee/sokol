@@ -104,6 +104,16 @@ test('logout clears session and returns to login', async ({ page }) => {
   await expect(page.evaluate(() => localStorage.getItem('sokol_auth'))).resolves.toBeNull();
 });
 
+test('auditor cannot open settings', async ({ page }) => {
+  await mockAuthenticatedApi(page);
+  await loginAsAuditor(page);
+
+  await expect(page.getByRole('link', { name: 'Настройки' })).toHaveCount(0);
+
+  await page.goto('/settings');
+  await expect(page).toHaveURL(/\/checks$/);
+});
+
 test('profile change password handles success and API error', async ({ page }) => {
   await mockAuthenticatedApi(page);
   await loginAsAuditor(page);

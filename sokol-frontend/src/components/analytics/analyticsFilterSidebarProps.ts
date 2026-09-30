@@ -2,7 +2,7 @@ import type { AnalyticsExportFormat } from '../../utils/analyticsExport';
 import type { MultiCheckboxOption } from '../ui/MultiCheckboxSelect';
 import type { AnalyticsFilterSidebarProps, AnalyticsPeriodSlice } from './AnalyticsFilterSidebar';
 
-type AnalyticsFilterController = {
+export type AnalyticsFilterController = {
   periodSlice: AnalyticsPeriodSlice;
   handlePeriodSliceChange: (next: AnalyticsPeriodSlice) => void;
   yearOptions: MultiCheckboxOption[];

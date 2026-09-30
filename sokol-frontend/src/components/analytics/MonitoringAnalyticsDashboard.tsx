@@ -18,7 +18,7 @@ import { FocusableDonutChart } from './FocusableDonutChart';
 import { FocusableSquareCirclesChart } from './FocusableSquareCirclesChart';
 import { StatusMatrixChart } from './StatusMatrixChart';
 import { MonitoringCheckKeyBarChart } from './MonitoringCheckKeyBarChart';
-import { toAnalyticsFilterSidebarProps } from './analyticsFilterSidebarProps';
+import { toAnalyticsDashboardShellProps } from './analyticsDashboardShellProps';
 import { useAnalyticsDashboardController } from './useAnalyticsDashboardController';
 import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
 import { MONITORING_EXPORT_SECTIONS, type MonitoringExportSectionId } from '../../constants/analyticsExportSections';
@@ -41,40 +41,22 @@ const EMPTY_DEADLINE_EXTENSIONS: never[] = [];
 const EMPTY_COMPLETED_DURING_AUDIT: never[] = [];
 
 export function MonitoringAnalyticsDashboard() {
-  const {
-    selectedAuditors,
-    selectedDepartments,
-    exportFormat,
-    setExportFormat,
-    isExporting,
-    setIsExporting,
-    removeAuditor,
-    removeDepartment,
-    setSelectedAuditors,
-    setSelectedDepartments,
-    periodSlice,
-    selectedYears,
-    selectedQuarters,
-    setSelectedYears,
-    setSelectedQuarters,
-    yearOptions,
-    quarterOptions,
-    periodSliceLabel,
-    activePeriodValues,
-    handlePeriodSliceChange,
-    removeActivePeriodValue,
-    bootstrapQuery,
-    analyticsQuery,
-    data,
-    auditorOptions,
-    departmentOptions,
-    resetFilters,
-  } = useAnalyticsDashboardController({
+  const dashboard = useAnalyticsDashboardController({
     resource: 'monitoring',
     bootstrapQueryKey: queryKeys.analytics.monitoringBootstrap,
     fetchBootstrap: () => fetchMonitoringAnalytics({ granularity: 'year' }),
     fetchFiltered: fetchMonitoringAnalytics,
   });
+  const {
+    selectedAuditors,
+    selectedDepartments,
+    exportFormat,
+    isExporting,
+    setIsExporting,
+    periodSliceLabel,
+    activePeriodValues,
+    data,
+  } = dashboard;
 
   const exportSections = useExportSections(
     MONITORING_EXPORT_SECTIONS.map((section) => section.id) as MonitoringExportSectionId[],
@@ -375,49 +357,17 @@ export function MonitoringAnalyticsDashboard() {
 
   return (
     <AnalyticsDashboardShell
-      loadingTitle="Загрузка мониторинга…"
-      errorTitle="Не удалось загрузить мониторинг"
-      bootstrapQuery={bootstrapQuery}
-      analyticsQuery={analyticsQuery}
-      data={data}
-      mainClassName={ANALYTICS_DASHBOARD_MAIN_CLASS}
-      selectionMetrics={[{ label: 'Рекомендаций', value: filteredTotal, hint: `из ${universeTotal}` }]}
-      periodSliceLabel={periodSliceLabel}
-      activePeriodValues={activePeriodValues}
-      removeActivePeriodValue={removeActivePeriodValue}
-      selectedAuditors={selectedAuditors}
-      removeAuditor={removeAuditor}
-      selectedDepartments={selectedDepartments}
-      removeDepartment={removeDepartment}
-      filterSidebar={toAnalyticsFilterSidebarProps(
-        {
-          periodSlice,
-          handlePeriodSliceChange,
-          yearOptions,
-          quarterOptions,
-          selectedYears,
-          selectedQuarters,
-          setSelectedYears,
-          setSelectedQuarters,
-          auditorOptions,
-          selectedAuditors,
-          setSelectedAuditors,
-          departmentOptions,
-          selectedDepartments,
-          setSelectedDepartments,
-          resetFilters,
-          exportFormat,
-          setExportFormat,
-          isExporting,
-        },
-        {
-          canExport: filteredTotal > 0,
-          onExport: handleExport,
-          selectedCount: exportSections.selectedCount,
-          justAdded,
-          onAddToConstructor: handleAddToConstructor,
-        },
-      )}
+      {...toAnalyticsDashboardShellProps(dashboard, {
+        loadingTitle: 'Загрузка мониторинга…',
+        errorTitle: 'Не удалось загрузить мониторинг',
+        selectionMetrics: [{ label: 'Рекомендаций', value: filteredTotal, hint: `из ${universeTotal}` }],
+        canExport: filteredTotal > 0,
+        onExport: handleExport,
+        selectedCount: exportSections.selectedCount,
+        justAdded,
+        onAddToConstructor: handleAddToConstructor,
+        mainClassName: ANALYTICS_DASHBOARD_MAIN_CLASS,
+      })}
     >
       <AnalyticsDashboardGrid cards={cards} />
     </AnalyticsDashboardShell>

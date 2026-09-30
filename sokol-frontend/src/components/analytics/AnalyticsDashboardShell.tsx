@@ -18,7 +18,7 @@ import { getErrorMessage } from '../../api/errors';
 export const ANALYTICS_DASHBOARD_MAIN_CLASS =
   'relative flex min-w-0 flex-1 flex-col lg:-mt-[84px] lg:self-start';
 
-type AnalyticsDashboardShellProps = {
+export type AnalyticsDashboardShellProps = {
   loadingTitle: string;
   errorTitle: string;
   bootstrapQuery: UseQueryResult<unknown>;

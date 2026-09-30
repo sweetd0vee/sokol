@@ -1,19 +1,28 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { LoginPage } from './components/auth/LoginPage';
 import { AuthGuard } from './components/auth/AuthGuard';
+import { AdminGuard } from './components/auth/AdminGuard';
 import { AppLayout } from './components/layout/AppLayout';
 import { AuthLayout } from './components/layout/AuthLayout';
-import { ProfilePage } from './components/profile/ProfilePage';
-import { RecommendationsTab } from './components/tabs/RecommendationsTab';
-import { RecommendationFormPage } from './components/recommendations/RecommendationFormPage';
-import { ChecksTab } from './components/tabs/ChecksTab';
-import { CheckFormPage } from './components/checks/CheckFormPage';
-import { AnalyticsTab } from './components/tabs/AnalyticsTab';
-import { PlanningTab } from './components/tabs/PlanningTab';
-import { ConstructorTab } from './components/tabs/ConstructorTab';
-import { ConstructorEditorPage } from './components/analytics/constructor/ConstructorEditorPage';
-import { SettingsTab } from './components/tabs/SettingsTab';
-import { ToolsTab } from './components/tabs/ToolsTab';
+import { lazyNamed } from './utils/lazyNamed';
+
+const ProfilePage = lazyNamed(() => import('./components/profile/ProfilePage'), 'ProfilePage');
+const RecommendationsTab = lazyNamed(() => import('./components/tabs/RecommendationsTab'), 'RecommendationsTab');
+const RecommendationFormPage = lazyNamed(
+  () => import('./components/recommendations/RecommendationFormPage'),
+  'RecommendationFormPage',
+);
+const ChecksTab = lazyNamed(() => import('./components/tabs/ChecksTab'), 'ChecksTab');
+const CheckFormPage = lazyNamed(() => import('./components/checks/CheckFormPage'), 'CheckFormPage');
+const AnalyticsTab = lazyNamed(() => import('./components/tabs/AnalyticsTab'), 'AnalyticsTab');
+const PlanningTab = lazyNamed(() => import('./components/tabs/PlanningTab'), 'PlanningTab');
+const ConstructorTab = lazyNamed(() => import('./components/tabs/ConstructorTab'), 'ConstructorTab');
+const ConstructorEditorPage = lazyNamed(
+  () => import('./components/analytics/constructor/ConstructorEditorPage'),
+  'ConstructorEditorPage',
+);
+const SettingsTab = lazyNamed(() => import('./components/tabs/SettingsTab'), 'SettingsTab');
+const ToolsTab = lazyNamed(() => import('./components/tabs/ToolsTab'), 'ToolsTab');
 
 export function AppRoutes() {
   return (
@@ -35,8 +44,10 @@ export function AppRoutes() {
           <Route path="/constructor" element={<ConstructorTab />} />
           <Route path="/constructor/:id" element={<ConstructorEditorPage />} />
           <Route path="/tools" element={<ToolsTab />} />
-          <Route path="/settings" element={<SettingsTab />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route element={<AdminGuard />}>
+            <Route path="/settings" element={<SettingsTab />} />
+          </Route>
           <Route path="*" element={<Navigate to="/checks" replace />} />
         </Route>
       </Route>

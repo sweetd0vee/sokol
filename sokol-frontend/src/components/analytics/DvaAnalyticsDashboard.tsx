@@ -16,7 +16,7 @@ import {
 } from './analyticsPalette';
 import { EMPTY_CHECKS_SUMMARY, EMPTY_RECOMMENDATION_SUMMARY } from './analyticsEmpty';
 import { useAnalyticsDashboardController } from './useAnalyticsDashboardController';
-import { toAnalyticsFilterSidebarProps } from './analyticsFilterSidebarProps';
+import { toAnalyticsDashboardShellProps } from './analyticsDashboardShellProps';
 import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
 import { DVA_EXPORT_SECTIONS, type DvaExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
@@ -47,40 +47,22 @@ const TIMELINESS_SERIES = [
 ] as const;
 
 export function DvaAnalyticsDashboard() {
-  const {
-    selectedAuditors,
-    selectedDepartments,
-    exportFormat,
-    setExportFormat,
-    isExporting,
-    setIsExporting,
-    removeAuditor,
-    removeDepartment,
-    setSelectedAuditors,
-    setSelectedDepartments,
-    periodSlice,
-    selectedYears,
-    selectedQuarters,
-    setSelectedYears,
-    setSelectedQuarters,
-    yearOptions,
-    quarterOptions,
-    periodSliceLabel,
-    activePeriodValues,
-    handlePeriodSliceChange,
-    removeActivePeriodValue,
-    bootstrapQuery,
-    analyticsQuery,
-    data,
-    auditorOptions,
-    departmentOptions,
-    resetFilters,
-  } = useAnalyticsDashboardController({
+  const dashboard = useAnalyticsDashboardController({
     resource: 'dva',
     bootstrapQueryKey: queryKeys.analytics.dvaBootstrap,
     fetchBootstrap: () => fetchDvaAnalytics({ granularity: 'year' }),
     fetchFiltered: fetchDvaAnalytics,
   });
+  const {
+    selectedAuditors,
+    selectedDepartments,
+    exportFormat,
+    isExporting,
+    setIsExporting,
+    periodSliceLabel,
+    activePeriodValues,
+    data,
+  } = dashboard;
 
   const exportSections = useExportSections(DVA_EXPORT_SECTIONS.map((section) => section.id) as DvaExportSectionId[]);
   const { addToConstructor, justAdded } = useAddToConstructor();
@@ -319,51 +301,19 @@ export function DvaAnalyticsDashboard() {
 
   return (
     <AnalyticsDashboardShell
-      loadingTitle="Загрузка аналитики ДВА…"
-      errorTitle="Не удалось загрузить аналитику ДВА"
-      bootstrapQuery={bootstrapQuery}
-      analyticsQuery={analyticsQuery}
-      data={data}
-      selectionMetrics={[
-        { label: 'Проверок', value: filteredChecksTotal, hint: `из ${universeChecksTotal}` },
-        { label: 'Рекомендаций', value: filteredRecommendationsTotal, hint: `из ${universeRecommendationsTotal}` },
-      ]}
-      periodSliceLabel={periodSliceLabel}
-      activePeriodValues={activePeriodValues}
-      removeActivePeriodValue={removeActivePeriodValue}
-      selectedAuditors={selectedAuditors}
-      removeAuditor={removeAuditor}
-      selectedDepartments={selectedDepartments}
-      removeDepartment={removeDepartment}
-      filterSidebar={toAnalyticsFilterSidebarProps(
-        {
-          periodSlice,
-          handlePeriodSliceChange,
-          yearOptions,
-          quarterOptions,
-          selectedYears,
-          selectedQuarters,
-          setSelectedYears,
-          setSelectedQuarters,
-          auditorOptions,
-          selectedAuditors,
-          setSelectedAuditors,
-          departmentOptions,
-          selectedDepartments,
-          setSelectedDepartments,
-          resetFilters,
-          exportFormat,
-          setExportFormat,
-          isExporting,
-        },
-        {
-          canExport: filteredChecksTotal > 0 || filteredRecommendationsTotal > 0,
-          onExport: handleExport,
-          selectedCount: exportSections.selectedCount,
-          justAdded,
-          onAddToConstructor: handleAddToConstructor,
-        },
-      )}
+      {...toAnalyticsDashboardShellProps(dashboard, {
+        loadingTitle: 'Загрузка аналитики ДВА…',
+        errorTitle: 'Не удалось загрузить аналитику ДВА',
+        selectionMetrics: [
+          { label: 'Проверок', value: filteredChecksTotal, hint: `из ${universeChecksTotal}` },
+          { label: 'Рекомендаций', value: filteredRecommendationsTotal, hint: `из ${universeRecommendationsTotal}` },
+        ],
+        canExport: filteredChecksTotal > 0 || filteredRecommendationsTotal > 0,
+        onExport: handleExport,
+        selectedCount: exportSections.selectedCount,
+        justAdded,
+        onAddToConstructor: handleAddToConstructor,
+      })}
     >
       <AnalyticsDashboardGrid cards={cards} maxChartArea={440} />
     </AnalyticsDashboardShell>

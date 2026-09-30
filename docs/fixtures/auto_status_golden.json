@@ -1,0 +1,205 @@
+{
+  "today": "2026-09-10",
+  "cases": [
+    {
+      "id": "open-before-deadline",
+      "input": {
+        "controlDeadline": "2026-09-11",
+        "executionDate": null,
+        "removedFromControl": false,
+        "currentIndicator": null
+      },
+      "expected": {
+        "status": "on_control",
+        "indicator": "на контроле",
+        "additionalStatus": "on_control",
+        "additionalIndicator": "на контроле"
+      }
+    },
+    {
+      "id": "open-on-deadline",
+      "input": {
+        "controlDeadline": "2026-09-10",
+        "executionDate": null,
+        "removedFromControl": false,
+        "currentIndicator": null
+      },
+      "expected": {
+        "status": "in_progress",
+        "indicator": "в процессе",
+        "additionalStatus": "in_progress",
+        "additionalIndicator": "в процессе"
+      }
+    },
+    {
+      "id": "open-after-deadline",
+      "input": {
+        "controlDeadline": "2026-09-09",
+        "executionDate": null,
+        "removedFromControl": false,
+        "currentIndicator": null
+      },
+      "expected": {
+        "status": "in_progress",
+        "indicator": "в процессе",
+        "additionalStatus": "in_progress",
+        "additionalIndicator": "в процессе"
+      }
+    },
+    {
+      "id": "executed-on-time-early",
+      "input": {
+        "controlDeadline": "2026-09-10",
+        "executionDate": "2026-09-09",
+        "removedFromControl": false,
+        "currentIndicator": null
+      },
+      "expected": {
+        "status": "completed",
+        "indicator": "исполнено",
+        "additionalStatus": "on_time",
+        "additionalIndicator": "в срок"
+      }
+    },
+    {
+      "id": "executed-on-time-same-day",
+      "input": {
+        "controlDeadline": "2026-09-10",
+        "executionDate": "2026-09-10",
+        "removedFromControl": false,
+        "currentIndicator": null
+      },
+      "expected": {
+        "status": "completed",
+        "indicator": "исполнено",
+        "additionalStatus": "on_time",
+        "additionalIndicator": "в срок"
+      }
+    },
+    {
+      "id": "executed-late",
+      "input": {
+        "controlDeadline": "2026-09-01",
+        "executionDate": "2026-09-15",
+        "removedFromControl": false,
+        "currentIndicator": null
+      },
+      "expected": {
+        "status": "completed",
+        "indicator": "исполнено",
+        "additionalStatus": "deadline_violated",
+        "additionalIndicator": "срок нарушен"
+      }
+    },
+    {
+      "id": "removed-overrides-execution",
+      "input": {
+        "controlDeadline": "2026-12-01",
+        "executionDate": "2026-09-09",
+        "removedFromControl": true,
+        "currentIndicator": null
+      },
+      "expected": {
+        "status": "unresolved",
+        "indicator": "не решено",
+        "additionalStatus": "deadline_violated",
+        "additionalIndicator": "срок нарушен"
+      }
+    },
+    {
+      "id": "completed-during-audit-overrides-late-execution",
+      "input": {
+        "controlDeadline": "2026-08-01",
+        "executionDate": "2026-09-15",
+        "removedFromControl": false,
+        "currentIndicator": "исполнено в ходе аудита"
+      },
+      "expected": {
+        "status": "completed",
+        "indicator": "исполнено в ходе аудита",
+        "additionalStatus": "on_time",
+        "additionalIndicator": "в срок"
+      }
+    },
+    {
+      "id": "completed-during-audit-casefold",
+      "input": {
+        "controlDeadline": "2026-08-01",
+        "executionDate": null,
+        "removedFromControl": false,
+        "currentIndicator": "Исполнено В Ходе Аудита"
+      },
+      "expected": {
+        "status": "completed",
+        "indicator": "исполнено в ходе аудита",
+        "additionalStatus": "on_time",
+        "additionalIndicator": "в срок"
+      }
+    },
+    {
+      "id": "recompute-open-even-if-was-completed",
+      "input": {
+        "controlDeadline": "2026-08-01",
+        "executionDate": null,
+        "removedFromControl": false,
+        "currentIndicator": null
+      },
+      "expected": {
+        "status": "in_progress",
+        "indicator": "в процессе",
+        "additionalStatus": "in_progress",
+        "additionalIndicator": "в процессе"
+      }
+    },
+    {
+      "id": "restore-on-control-when-deadline-moves-future",
+      "input": {
+        "controlDeadline": "2026-12-01",
+        "executionDate": null,
+        "removedFromControl": false,
+        "currentIndicator": null
+      },
+      "expected": {
+        "status": "on_control",
+        "indicator": "на контроле",
+        "additionalStatus": "on_control",
+        "additionalIndicator": "на контроле"
+      }
+    },
+    {
+      "id": "no-deadline-is-noop",
+      "input": {
+        "controlDeadline": null,
+        "executionDate": null,
+        "removedFromControl": false,
+        "currentIndicator": null
+      },
+      "expected": null
+    },
+    {
+      "id": "execution-without-deadline-is-noop",
+      "input": {
+        "controlDeadline": null,
+        "executionDate": "2026-09-09",
+        "removedFromControl": false,
+        "currentIndicator": null
+      },
+      "expected": null
+    },
+    {
+      "id": "removal-without-dates",
+      "input": {
+        "controlDeadline": null,
+        "executionDate": null,
+        "removedFromControl": true,
+        "currentIndicator": null
+      },
+      "expected": {
+        "status": "unresolved",
+        "indicator": "не решено",
+        "additionalStatus": "deadline_violated",
+        "additionalIndicator": "срок нарушен"
+      }
+    }
+  ]
+}

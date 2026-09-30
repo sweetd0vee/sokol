@@ -16,7 +16,7 @@ import { useAddToConstructor } from '../analytics/constructor/useAddToConstructo
 import { buildPlanningConstructorDrafts } from '../analytics/constructor/buildConstructorWidgets';
 import { buildConstructorFilterCaption } from '../analytics/constructor/constructorFilterCaption';
 import { useAnalyticsDashboardController } from '../analytics/useAnalyticsDashboardController';
-import { toAnalyticsFilterSidebarProps } from '../analytics/analyticsFilterSidebarProps';
+import { toAnalyticsDashboardShellProps } from '../analytics/analyticsDashboardShellProps';
 import { runAnalyticsExport } from '../../utils/runAnalyticsExport';
 
 const EMPTY_COVERAGE = {
@@ -36,41 +36,23 @@ const PLANNING_EXPORT_SECTION_IDS = PLANNING_EXPORT_SECTIONS.map(
 ) as PlanningExportSectionId[];
 
 export function PlanningAnalyticsDashboard() {
-  const {
-    selectedAuditors,
-    selectedDepartments,
-    exportFormat,
-    setExportFormat,
-    isExporting,
-    setIsExporting,
-    setSelectedAuditors,
-    setSelectedDepartments,
-    removeAuditor,
-    removeDepartment,
-    periodSlice,
-    selectedYears,
-    selectedQuarters,
-    setSelectedYears,
-    setSelectedQuarters,
-    yearOptions,
-    quarterOptions,
-    periodSliceLabel,
-    activePeriodValues,
-    handlePeriodSliceChange,
-    removeActivePeriodValue,
-    bootstrapQuery,
-    analyticsQuery,
-    data,
-    departmentOptions,
-    auditorOptions,
-    resetFilters,
-  } = useAnalyticsDashboardController({
+  const dashboard = useAnalyticsDashboardController({
     resource: 'planning',
     bootstrapQueryKey: queryKeys.analytics.planningBootstrap,
     fetchBootstrap: () => fetchPlanningAnalytics({ granularity: 'year' }),
     fetchFiltered: fetchPlanningAnalytics,
     includeAuditors: false,
   });
+  const {
+    selectedDepartments,
+    exportFormat,
+    isExporting,
+    setIsExporting,
+    periodSlice,
+    periodSliceLabel,
+    activePeriodValues,
+    data,
+  } = dashboard;
   const exportSections = useExportSections(PLANNING_EXPORT_SECTION_IDS);
   const { addToConstructor, justAdded } = useAddToConstructor();
 
@@ -224,58 +206,25 @@ export function PlanningAnalyticsDashboard() {
 
   return (
     <AnalyticsDashboardShell
-      loadingTitle="Загрузка аналитики планирования…"
-      errorTitle="Не удалось загрузить аналитику планирования"
-      bootstrapQuery={bootstrapQuery}
-      analyticsQuery={analyticsQuery}
-      data={data}
-      mainClassName="flex min-h-0 min-w-0 flex-1 flex-col"
-      includeAuditors={false}
-      selectionMetrics={[
-        { label: 'Проверок', value: filteredChecksTotal, hint: `из ${universeChecksTotal}` },
-        {
-          label: 'Рекомендаций',
-          value: filteredRecommendationsTotal,
-          hint: `из ${universeRecommendationsTotal}`,
-        },
-      ]}
-      periodSliceLabel={periodSliceLabel}
-      activePeriodValues={activePeriodValues}
-      removeActivePeriodValue={removeActivePeriodValue}
-      selectedAuditors={selectedAuditors}
-      removeAuditor={removeAuditor}
-      selectedDepartments={selectedDepartments}
-      removeDepartment={removeDepartment}
-      filterSidebar={toAnalyticsFilterSidebarProps(
-        {
-          periodSlice,
-          handlePeriodSliceChange,
-          yearOptions,
-          quarterOptions,
-          selectedYears,
-          selectedQuarters,
-          setSelectedYears,
-          setSelectedQuarters,
-          auditorOptions,
-          selectedAuditors,
-          setSelectedAuditors,
-          departmentOptions,
-          selectedDepartments,
-          setSelectedDepartments,
-          resetFilters,
-          exportFormat,
-          setExportFormat,
-          isExporting,
-        },
-        {
-          canExport: Boolean(data),
-          onExport: () => void handleExport(),
-          selectedCount: exportSections.selectedCount,
-          justAdded,
-          onAddToConstructor: handleAddToConstructor,
-          includeAuditors: false,
-        },
-      )}
+      {...toAnalyticsDashboardShellProps(dashboard, {
+        loadingTitle: 'Загрузка аналитики планирования…',
+        errorTitle: 'Не удалось загрузить аналитику планирования',
+        selectionMetrics: [
+          { label: 'Проверок', value: filteredChecksTotal, hint: `из ${universeChecksTotal}` },
+          {
+            label: 'Рекомендаций',
+            value: filteredRecommendationsTotal,
+            hint: `из ${universeRecommendationsTotal}`,
+          },
+        ],
+        canExport: Boolean(data),
+        onExport: () => void handleExport(),
+        selectedCount: exportSections.selectedCount,
+        justAdded,
+        onAddToConstructor: handleAddToConstructor,
+        includeAuditors: false,
+        mainClassName: 'flex min-h-0 min-w-0 flex-1 flex-col',
+      })}
     >
       <AnalyticsDashboardGrid cards={cards} maxChartArea={440} />
     </AnalyticsDashboardShell>

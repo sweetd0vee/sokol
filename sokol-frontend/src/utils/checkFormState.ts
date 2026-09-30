@@ -126,20 +126,17 @@ export function resolveInitialCheckFormFields(
 export function deriveCheckStatus(
   startDate: Date | null,
   dzDocumentDate: Date | null,
-  existingStatus: string | undefined,
+  _existingStatus?: string,
   now = new Date(),
 ): string {
   if (dzDocumentDate) {
     return 'completed';
   }
-  if (!startDate) {
-    return existingStatus ?? '';
+  const start = startDate ? toIsoDate(startDate) : null;
+  if (start && start > moscowTodayIso(now)) {
+    return 'not_started';
   }
-  const start = toIsoDate(startDate);
-  if (!start) {
-    return existingStatus ?? '';
-  }
-  return start > moscowTodayIso(now) ? 'not_started' : 'in_progress';
+  return 'in_progress';
 }
 
 export function getMissingCheckKeyFieldLabels(

@@ -67,9 +67,9 @@ sokol/
 QueryClient → AuthProvider → SokolDataProvider → AnalyticsConstructorProvider → BrowserRouter
 ```
 
-Маршруты (все кроме `/login` за `AuthGuard`): `/checks`, `/recommendations`, `/analytics`, `/planning`, `/constructor`, `/tools`, `/settings`, `/profile`. Неизвестный путь → `/checks`. Kantsler нет.
+Маршруты (все кроме `/login` за `AuthGuard`): `/checks`, `/recommendations`, `/analytics`, `/planning`, `/constructor`, `/tools`, `/settings` (`AdminGuard`), `/profile`. Разделы грузятся через `React.lazy`. Неизвестный путь → `/checks`. Kantsler нет.
 
-Права в UI: `useAuth().isAdmin`, отдельного `AdminGuard` нет.
+Права в UI: `useAuth().isAdmin`. Справочники — `/settings`, только admin / department_head.
 
 `src/api/client.ts` — axios, Bearer, 401 → logout. Доменные клиенты: `checks`, `recommendations`, `attachments`, `analytics`, `settings`, `tools`, `auth`, `users`, `capabilities`. Поля API ↔ UI: `mappers.ts`.
 

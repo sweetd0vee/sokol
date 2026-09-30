@@ -1,10 +1,25 @@
-import { useState, type ComponentType, type ReactNode } from 'react';
+import { Suspense, useState, type ComponentType, type ReactNode } from 'react';
 import { PageHeader } from '../ui/PageHeader';
 import { SegmentedControl } from '../ui/SegmentedControl';
-import { ChecksAnalyticsDashboard } from '../analytics/ChecksAnalyticsDashboard';
-import { RecommendationsAnalyticsDashboard } from '../analytics/RecommendationsAnalyticsDashboard';
-import { MonitoringAnalyticsDashboard } from '../analytics/MonitoringAnalyticsDashboard';
-import { DvaAnalyticsDashboard } from '../analytics/DvaAnalyticsDashboard';
+import { LoadingState } from '../ui/StateMessage';
+import { lazyNamed } from '../../utils/lazyNamed';
+
+const ChecksAnalyticsDashboard = lazyNamed(
+  () => import('../analytics/ChecksAnalyticsDashboard'),
+  'ChecksAnalyticsDashboard',
+);
+const RecommendationsAnalyticsDashboard = lazyNamed(
+  () => import('../analytics/RecommendationsAnalyticsDashboard'),
+  'RecommendationsAnalyticsDashboard',
+);
+const MonitoringAnalyticsDashboard = lazyNamed(
+  () => import('../analytics/MonitoringAnalyticsDashboard'),
+  'MonitoringAnalyticsDashboard',
+);
+const DvaAnalyticsDashboard = lazyNamed(
+  () => import('../analytics/DvaAnalyticsDashboard'),
+  'DvaAnalyticsDashboard',
+);
 
 const ANALYTICS_TABS = [
   { value: 'checks' as const, label: 'Проверки', Panel: ChecksAnalyticsDashboard },
@@ -63,7 +78,9 @@ export function AnalyticsTab() {
       {ANALYTICS_TABS.map(({ value, Panel }) =>
         visited.has(value) ? (
           <KeepAlivePanel key={value} active={activeTab === value}>
-            <Panel />
+            <Suspense fallback={<LoadingState title="Загрузка дашборда…" />}>
+              <Panel />
+            </Suspense>
           </KeepAlivePanel>
         ) : null,
       )}

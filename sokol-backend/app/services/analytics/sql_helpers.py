@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
-from sqlalchemy import ColumnElement, extract, func, or_, select
+from sqlalchemy import ColumnElement, and_, extract, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.sql import Select
@@ -51,10 +51,20 @@ def recommendation_materiality_count_columns():
 
 
 def recommendation_has_extensions() -> ColumnElement[bool]:
-    return or_(
+    """True, если есть хотя бы один перенос: JSON-строки, legacy-даты или комментарии.
+
+    Пустой JSON ``[]`` не считается переносом. ``extension_2_reason`` — дата второго
+    переноса (как в статусах и в графике «Перенос срока»).
+    """
+    has_json_rows = and_(
         Recommendation.deadline_extensions.isnot(None),
+        func.json_array_length(Recommendation.deadline_extensions) > 0,
+    )
+    return or_(
+        has_json_rows,
         Recommendation.extension_1_date.isnot(None),
         Recommendation.extension_1_comment.isnot(None),
+        Recommendation.extension_2_reason.isnot(None),
         Recommendation.extension_2_comment.isnot(None),
     )
 
