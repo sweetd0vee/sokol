@@ -2,12 +2,11 @@
  * Interactive constructor HTML: widgets stay on the 12-col board,
  * charts are embedded SVG/HTML (with hover tooltips), not one screenshot.
  */
-import { CONSTRUCTOR_GRID_COLS } from '../constants/constructorGrid';
+import { CONSTRUCTOR_GRID_COLS, clampConstructorGridRect } from '../constants/constructorGrid';
 import {
   CONSTRUCTOR_SOURCE_LABELS,
   type ConstructorWidget,
 } from '../components/analytics/constructor/constructorTypes';
-import { clampConstructorGridRect } from './constructorXlsxLayout';
 import {
   chartHasPngPayload,
   isUsefulSvgMarkup,
@@ -49,18 +48,11 @@ export function constructorHtmlGridStyle(layout: { x: number; y: number; w: numb
 
 export function buildConstructorDashboardHtml(options: {
   title: string;
-  meta: Array<[string, string]>;
   widgets: ConstructorWidget[];
   captures: DashboardChartCapture[];
 }): string {
-  const { title, meta, widgets, captures } = options;
+  const { title, widgets, captures } = options;
   const byId = new Map(captures.map((item) => [item.id, item]));
-  const metaRows = meta
-    .map(
-      ([label, value]) =>
-        `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`,
-    )
-    .join('');
 
   const cells = widgets
     .map((widget, index) => {
@@ -105,38 +97,6 @@ export function buildConstructorDashboardHtml(options: {
       line-height: 1.5;
     }
     .page { width: min(1280px, calc(100% - 32px)); margin: 24px auto 48px; }
-    .hero {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-top: 3px solid var(--brand);
-      border-radius: 12px;
-      padding: 22px 24px;
-      margin-bottom: 14px;
-    }
-    .hero .brand {
-      margin: 0 0 8px;
-      color: var(--brand);
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-    h1 { margin: 0; color: var(--brand); font-size: 1.6rem; }
-    .meta {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 16px;
-    }
-    .meta table { width: 100%; border-collapse: collapse; }
-    .meta th, .meta td {
-      padding: 8px 12px;
-      border-bottom: 1px solid var(--line);
-      text-align: left;
-      font-size: 0.9rem;
-    }
-    .meta th { width: 220px; color: var(--brand); background: var(--brand-soft); }
     .board {
       display: grid;
       grid-template-columns: repeat(${CONSTRUCTOR_GRID_COLS}, minmax(0, 1fr));
@@ -228,11 +188,6 @@ export function buildConstructorDashboardHtml(options: {
 </head>
 <body>
   <div class="page">
-    <section class="hero">
-      <p class="brand">SOKOL</p>
-      <h1>${escapeHtml(title)}</h1>
-    </section>
-    <section class="meta"><table>${metaRows}</table></section>
     <section class="board" aria-label="${escapeHtml(title)}">
       ${cells}
     </section>

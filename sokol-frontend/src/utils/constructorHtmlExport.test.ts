@@ -61,7 +61,6 @@ describe('constructor HTML export', () => {
     ];
     const html = buildConstructorDashboardHtml({
       title: 'Мой дашборд',
-      meta: [['Графиков на листе', '2']],
       widgets,
       captures: widgets.map((item) => ({
         id: item.instanceId,
@@ -75,6 +74,9 @@ describe('constructor HTML export', () => {
       })),
     });
     expect(html).toContain('class="board"');
+    expect(html).not.toContain('class="hero"');
+    expect(html).not.toContain('class="meta"');
+    expect(html).not.toContain('Графиков на листе');
     expect(html).toContain('grid-column:1 / span 6');
     expect(html).toContain('grid-column:7 / span 6');
     expect(html).toContain('class="chart-svg"');

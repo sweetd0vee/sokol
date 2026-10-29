@@ -53,12 +53,11 @@ MANAGERS = [
 # so the planning dashboard keeps a realistic uncovered list.
 DEMO_UNCOVERED_DEPARTMENTS = (
     "Не указан",
-    "Департамент мотивации и льгот",
-    "Архивный отдел",
-    "Департамент маркетинга",
-    "Департамент закупок и АХД",
-    "Центр обработки данных",
-    "Департамент трансформации",
+    'ЗАО "Водород"',
+    'ЗАО "СБЛ-Лизинг"',
+    'ООО "СБ-Глобал"',
+    'СООО "Сбер Страхование"',
+    'ЗАСО "ТАСК"',
 )
 AUDIT_OBJECTS = [name for name in DEPARTMENTS if name not in DEMO_UNCOVERED_DEPARTMENTS]
 

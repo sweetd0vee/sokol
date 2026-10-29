@@ -38,13 +38,28 @@ class AzImportCompletedDuringAuditTests(unittest.TestCase):
             extract_deadline_from_text("Срок – 15.10.2026"),
             "15.10.2026",
         )
+        self.assertEqual(
+            extract_deadline_from_text("Срок исполнения — исправлено в ходе аудита"),
+            "исполнено в ходе аудита",
+        )
         self.assertTrue(is_completed_during_audit("исполнено в ходе аудита"))
+        self.assertTrue(is_completed_during_audit("Исправлено в ходе аудита"))
         self.assertFalse(is_completed_during_audit("Срок – 15.10.2026"))
 
     def test_parse_marks_completed_during_audit_instead_of_date(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             az_path = Path(tmp) / "az.docx"
             _build_az(az_path, deadline_line="Срок исполнения — исполнено в ходе аудита")
+            items, error = parse_recommendations_from_docx(str(az_path))
+            self.assertIsNone(error, msg=error)
+            self.assertEqual(len(items), 1)
+            self.assertTrue(items[0].completed_during_audit)
+            self.assertEqual(items[0].deadline, "")
+
+    def test_parse_marks_corrected_during_audit_as_blue_star(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            az_path = Path(tmp) / "az.docx"
+            _build_az(az_path, deadline_line="Срок исполнения — исправлено в ходе аудита")
             items, error = parse_recommendations_from_docx(str(az_path))
             self.assertIsNone(error, msg=error)
             self.assertEqual(len(items), 1)

@@ -1,22 +1,25 @@
 /**
  * Constructor board export: one visual sheet matching the assembled dashboard.
  */
-import { Packer } from 'docx';
 import { toPng } from 'html-to-image';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
-import type { AnalyticsExportFormat } from './analyticsExport';
-import { captureDashboardCharts, chartHasPngPayload } from './dashboardChartRegistry';
 import type { ConstructorWidget } from '../components/analytics/constructor/constructorTypes';
 import { CONSTRUCTOR_GRID_COLS } from '../constants/constructorGrid';
 import { buildConstructorDashboardHtml } from './constructorHtmlExport';
-import { buildConstructorDashboardDocument } from './constructorDocxExport';
-import { buildConstructorDashboardWorkbook, sharpenConstructorXlsxBuffer } from './constructorXlsxLayout';
+import { captureDashboardCharts, chartHasPngPayload } from './dashboardChartRegistry';
 import { downloadBlob } from './download';
 import { fitImageSize, stamp } from './visualExport/shared';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
+
+export const CONSTRUCTOR_EXPORT_FORMATS = [
+  { value: 'html', label: 'HTML' },
+  { value: 'pdf', label: 'PDF' },
+] as const;
+
+export type ConstructorExportFormat = (typeof CONSTRUCTOR_EXPORT_FORMATS)[number]['value'];
 
 function delay(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -130,13 +133,12 @@ function fileSafeName(name: string) {
 }
 
 export async function exportConstructorDashboard(options: {
-  format: AnalyticsExportFormat;
+  format: ConstructorExportFormat;
   boardNode: HTMLElement;
   widgets: ConstructorWidget[];
-  meta: Array<[string, string]>;
   title?: string;
 }) {
-  const { format, boardNode, widgets, meta } = options;
+  const { format, boardNode, widgets } = options;
   if (widgets.length === 0) {
     throw new Error('На холсте нет графиков');
   }
@@ -146,55 +148,21 @@ export async function exportConstructorDashboard(options: {
 
   if (format === 'html') {
     const captures = await captureConstructorWidgetCharts(widgets, { skipPng: true });
-    const html = buildConstructorDashboardHtml({ title, meta, widgets, captures });
+    const html = buildConstructorDashboardHtml({ title, widgets, captures });
     downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), `${filenamePrefix}-${stamp()}.html`);
     return;
   }
 
-  if (format === 'xlsx') {
-    const captures = await captureConstructorWidgetCharts(widgets);
-    const workbook = buildConstructorDashboardWorkbook({ title, meta, widgets, captures });
-    const buffer = await sharpenConstructorXlsxBuffer(await workbook.xlsx.writeBuffer());
-    downloadBlob(
-      new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-      `${filenamePrefix}-${stamp()}.xlsx`,
-    );
-    return;
-  }
-
-  if (format === 'docx') {
-    const captures = await captureConstructorWidgetCharts(widgets);
-    const doc = buildConstructorDashboardDocument({ title, meta, widgets, captures });
-    const blob = await Packer.toBlob(doc);
-    downloadBlob(blob, `${filenamePrefix}-${stamp()}.docx`);
-    return;
-  }
-
-  const dataUrl = await captureConstructorBoard(boardNode, widgets);
-  const size = await imageSize(dataUrl);
-
   if (format === 'pdf') {
+    const dataUrl = await captureConstructorBoard(boardNode, widgets);
+    const size = await imageSize(dataUrl);
     const pageWidth = 1122;
-    const headerHeight = 88 + meta.length * 16;
     const fitted = fitImageSize(size.width, size.height, pageWidth - 48, 2200);
-    const pageHeight = Math.max(794, headerHeight + fitted.height + 48);
+    const pageHeight = Math.max(794, fitted.height + 48);
     const docDefinition: TDocumentDefinitions = {
       pageSize: { width: pageWidth, height: pageHeight },
       pageMargins: [24, 24, 24, 24],
       content: [
-        { text: title, fontSize: 18, bold: true, color: '#003366', margin: [0, 0, 0, 6] },
-        { text: 'Собранный дашборд — один лист в компоновке конструктора', fontSize: 10, color: '#64748B', margin: [0, 0, 0, 10] },
-        {
-          table: {
-            widths: [180, '*'],
-            body: meta.map(([label, value]) => [
-              { text: label, bold: true, color: '#003366', fontSize: 9 },
-              { text: value, fontSize: 9, color: '#334155' },
-            ]),
-          },
-          layout: 'lightHorizontalLines',
-          margin: [0, 0, 0, 12],
-        },
         {
           image: dataUrl,
           width: fitted.width,
@@ -202,8 +170,5 @@ export async function exportConstructorDashboard(options: {
       ],
     };
     pdfMake.createPdf(docDefinition).download(`${filenamePrefix}-${stamp()}.pdf`);
-    return;
   }
-
-  throw new Error(`Неизвестный формат экспорта: ${format}`);
 }

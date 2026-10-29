@@ -97,7 +97,7 @@ Create проверки делает `make_bucket`, если MinIO включё�
 | `SOKOL_MINIO_SECURE` | `0` HTTP / `1` HTTPS |
 | `SOKOL_MAX_UPLOAD_MB` | default 100 |
 
-Том `~/docker-share/minio-data-sokol`. Консоль с хоста — только после `dev-ports` на `127.0.0.1:9001`. Логин: `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (default `sokol` / `change-me`). Не делать `mc anonymous set public` и не подменять объекты через `mc cp`, если `object_key` должен остаться верным. Боевые снимки пишет сервис `backup`, не ручной `mc mirror`.
+Том `${SOKOL_DOCKER_SHARE:-~/docker-share}/minio-data-sokol`. Консоль с хоста — только после `dev-ports` на `127.0.0.1:9001`. Логин: `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (default `sokol` / `change-me`). Не делать `mc anonymous set public` и не подменять объекты через `mc cp`, если `object_key` должен остаться верным. Боевые снимки пишет сервис `backup`, не ручной `mc mirror`.
 
 ```bash
 mc alias set sokol http://127.0.0.1:9000 sokol change-me
@@ -117,7 +117,7 @@ MIME: PDF, Office, jpeg/png/gif/webp, text/plain, zip, `octet-stream`. Код: `
 
 ## Бэкап
 
-Сервис `backup` в Compose (образ `docker/backup/Dockerfile`) сам снимает Postgres и MinIO в **00:05 Europe/Moscow (UTC+3)**. Снимки: `~/docker-share/sokol-backups/<UTC-штамп>/` — `postgres.dump`, каталог `minio/`, `MANIFEST.txt`. Хранит 14 дней и не меньше трёх снимков. Успех пишет `LAST_OK`; healthcheck красный, если снимка нет 48 часов.
+Сервис `backup` в Compose (образ `docker/backup/Dockerfile`) сам снимает Postgres и MinIO в **00:05 Europe/Moscow (UTC+3)**. Снимки: `${SOKOL_DOCKER_SHARE:-~/docker-share}/sokol-backups/<UTC-штамп>/` — `postgres.dump`, каталог `minio/`, `MANIFEST.txt`. Хранит 14 дней и не меньше трёх снимков. Успех пишет `LAST_OK`; healthcheck красный, если снимка нет 48 часов.
 
 ```bash
 docker compose exec backup /opt/sokol-backup/backup.sh

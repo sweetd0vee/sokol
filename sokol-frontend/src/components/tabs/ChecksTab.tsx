@@ -21,6 +21,7 @@ import { useAuditorOptions, useCheckKindOptions } from '../../hooks/useReference
 import { useSokolData } from '../../contexts/sokolData';
 import {
   LIST_ACTION_GROUP_CLASS,
+  LIST_COLUMN_FILTER_CLASS,
   LIST_EXPORT_BUTTON_CLASS,
   LIST_TABLE_COLUMN_HEADER_ROW_CLASS,
   listFilterClass,
@@ -282,14 +283,14 @@ export function ChecksTab() {
             </ListTableFooter>
           }
         >
-          <table className="w-full text-base table-fixed min-w-[1616px]">
+          <table className="w-full text-base table-fixed min-w-[1696px]">
             <colgroup>
               <col className="w-24" />
               <col className="w-40" />
               <col />
-              <col className="w-32" />
-              <col className="w-36" />
-              <col className="w-32" />
+              <col className="w-40" />
+              <col className="w-40" />
+              <col className="w-40" />
               <col className="w-40" />
               <col className="w-[160px]" />
               <col className="w-[190px]" />
@@ -305,6 +306,7 @@ export function ChecksTab() {
                     onChange={setCheckTypes}
                     options={CHECK_TYPE_OPTIONS}
                     placeholder="Все"
+                    className={LIST_COLUMN_FILTER_CLASS}
                     inputClassName={listFilterClass(checkTypes.length > 0)}
                   />
                 </ListFilterCell>
@@ -314,6 +316,7 @@ export function ChecksTab() {
                     onChange={setCheckViews}
                     options={checkViewOptions}
                     placeholder="Все"
+                    className={LIST_COLUMN_FILTER_CLASS}
                     inputClassName={listFilterClass(checkViews.length > 0)}
                   />
                 </ListFilterCell>
@@ -323,6 +326,7 @@ export function ChecksTab() {
                     to={startDateTo}
                     onFromChange={setStartDateFrom}
                     onToChange={setStartDateTo}
+                    className={LIST_COLUMN_FILTER_CLASS}
                   />
                 </ListFilterCell>
                 <ListFilterCell>
@@ -331,6 +335,7 @@ export function ChecksTab() {
                     onChange={setCheckLeaders}
                     options={leaderOptions}
                     placeholder="Все"
+                    className={LIST_COLUMN_FILTER_CLASS}
                     inputClassName={listFilterClass(checkLeaders.length > 0)}
                   />
                 </ListFilterCell>
@@ -341,7 +346,7 @@ export function ChecksTab() {
                       onChange={setStatuses}
                       options={CHECK_STATUS_OPTIONS}
                       placeholder="Все"
-                      className="w-[160px]"
+                      className={LIST_COLUMN_FILTER_CLASS}
                       inputClassName={listFilterClass(statuses.length > 0)}
                     />
                     <ListResetFiltersButton onClick={handleResetFilters} />

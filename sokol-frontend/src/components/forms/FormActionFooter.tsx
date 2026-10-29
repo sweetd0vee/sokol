@@ -29,7 +29,7 @@ export function FormActionFooter({
     <div className="space-y-5">
       <FormValidationBanner visible={showValidation} />
       {saveError && <ErrorState description={saveError} />}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="relative z-40 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap justify-start gap-3">
           {saveVisible ? (
             <button

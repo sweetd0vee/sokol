@@ -308,7 +308,7 @@ RECOMMENDATION_STATUSES = SqlPatch(
     message=(
         "recommendation status enums updated: "
         "completed/unresolved/on_control/in_progress; "
-        "on_time/deadline_violated/on_control"
+        "on_time/deadline_violated/on_control/in_progress"
     ),
     statements=(
         """
@@ -335,7 +335,8 @@ RECOMMENDATION_STATUSES = SqlPatch(
         CREATE TYPE recommendation_additional_status_new AS ENUM (
           'on_time',
           'deadline_violated',
-          'on_control'
+          'on_control',
+          'in_progress'
         );
       END IF;
     END $$;
@@ -378,6 +379,8 @@ RECOMMENDATION_STATUSES = SqlPatch(
         WHEN 'REMOVED_CONTROL' THEN 'on_time'
         WHEN 'none' THEN 'on_time'
         WHEN 'NONE' THEN 'on_time'
+        WHEN 'in_progress' THEN 'in_progress'
+        WHEN 'IN_PROGRESS' THEN 'in_progress'
         ELSE 'on_control'
       END
     )::recommendation_additional_status_new

@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Optional
 
 import logging
@@ -31,6 +32,27 @@ from app.services.dictionary_validation import (
 from app.services.recommendation_status import overlay_computed_status_fields, today_moscow
 
 logger = logging.getLogger(__name__)
+
+_JSON_CLOSURE_FIELDS = ("deadline_extensions", "control_removals")
+
+
+def json_ready_closure_lists(data: dict) -> dict:
+    """JSON-колонки не принимают ``datetime.date`` — в списки пишется ISO-строка."""
+    for key in _JSON_CLOSURE_FIELDS:
+        items = data.get(key)
+        if not isinstance(items, list):
+            continue
+        ready = []
+        for item in items:
+            if not isinstance(item, dict):
+                ready.append(item)
+                continue
+            raw_date = item.get("date")
+            if isinstance(raw_date, date):
+                item = {**item, "date": raw_date.isoformat()}
+            ready.append(item)
+        data[key] = ready
+    return data
 
 
 async def _check_by_serial(session: AsyncSession, serial_number: str) -> Check:
@@ -77,7 +99,7 @@ async def _prepare_create_payload(session: AsyncSession, data: dict) -> dict:
     )
     if not payload.get("created_at"):
         payload["created_at"] = today_moscow()
-    return overlay_computed_status_fields(payload)
+    return json_ready_closure_lists(overlay_computed_status_fields(payload))
 
 
 async def _insert_recommendation(
@@ -265,9 +287,11 @@ async def update_recommendation(
         check = await _check_by_serial(session, recommendation_in.serial_number)
         check_id = check.id
 
-    update_data = overlay_computed_status_fields(
-        recommendation_in.model_dump(exclude_unset=True),
-        existing=recommendation,
+    update_data = json_ready_closure_lists(
+        overlay_computed_status_fields(
+            recommendation_in.model_dump(exclude_unset=True),
+            existing=recommendation,
+        )
     )
     update_data.pop("created_by", None)
     if "audit_object" in update_data:

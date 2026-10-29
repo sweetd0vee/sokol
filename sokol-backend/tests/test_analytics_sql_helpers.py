@@ -14,6 +14,10 @@ os.environ.setdefault(
 )
 
 from app.models.checks import CheckStatus
+from app.services.analytics.sql_aggregates.checks_sql import (
+    average_check_duration_days,
+    check_duration_days,
+)
 from app.services.analytics.sql_aggregates.recommendations_sql import (
     _count_recommendation_deadline_extensions,
 )
@@ -54,7 +58,7 @@ class AnalyticsSqlHelperTests(unittest.TestCase):
 
     def test_extension_predicate_matches_chart_counter(self) -> None:
         sql = _compiled(recommendation_has_extensions())
-        self.assertIn("json_array_length", sql.lower())
+        self.assertIn("jsonb_array_length", sql.lower())
         self.assertIn("extension_2_reason", sql)
         self.assertIn("extension_1_date", sql)
         self.assertIn("deadline_extensions", sql)
@@ -110,3 +114,39 @@ class AnalyticsSqlHelperTests(unittest.TestCase):
         self.assertIn("2024-06-01", padded)
         self.assertIn("2025-01-01", padded)
         self.assertIn("2026-01-01", padded)
+
+
+class CheckDurationTests(unittest.TestCase):
+    def test_duration_runs_from_order_to_report_not_fieldwork_dates(self) -> None:
+        self.assertEqual(
+            check_duration_days(
+                date(2026, 1, 10),
+                date(2026, 1, 20),
+                date(2026, 2, 15),
+                date(2026, 2, 20),
+            ),
+            41,
+        )
+
+    def test_duration_stops_at_the_last_filled_stage_when_report_is_missing(self) -> None:
+        self.assertEqual(
+            check_duration_days(date(2026, 1, 10), date(2026, 1, 20), None, None),
+            10,
+        )
+        self.assertEqual(
+            check_duration_days(date(2026, 1, 10), None, date(2026, 2, 15), None),
+            36,
+        )
+
+    def test_duration_skips_checks_without_an_order_or_a_later_stage(self) -> None:
+        self.assertIsNone(check_duration_days(None, date(2026, 1, 20), date(2026, 2, 15), None))
+        self.assertIsNone(check_duration_days(date(2026, 1, 10), None, None, None))
+
+    def test_average_rounds_and_ignores_checks_outside_the_sample(self) -> None:
+        spans = [
+            check_duration_days(date(2026, 1, 10), None, None, date(2026, 1, 20)),
+            check_duration_days(date(2026, 3, 1), date(2026, 3, 2), None, None),
+            check_duration_days(None, date(2026, 1, 1), None, date(2026, 6, 1)),
+        ]
+        self.assertEqual(average_check_duration_days([days for days in spans if days is not None]), 6)
+        self.assertEqual(average_check_duration_days([]), 0)

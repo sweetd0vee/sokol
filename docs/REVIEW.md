@@ -19,7 +19,7 @@
 
 Слои держатся: endpoint → service → CRUD, CRUD не коммитит (`tests/test_crud_layer_boundary.py`). UI режется по ролям: `AuthGuard`, `/settings` за `AdminGuard`. Роль читается из БД. Запись проходит `ensure_user_can_manage_*`. В prod старт падает на слабом JWT, demo-load и seed replace. Схема — Alembic; import `--dry-run`/`--strict`; MinIO delete после commit; UNIQUE(`check_id`,`sequence_number`). На фронте: баннер обрезки 10k, analytics без KeepAlive, `requestId` в ошибках, axios timeout 60s.
 
-Ошибки домена — `{detail}` без traceback. Логи с request-id, в prod JSON. `/metrics` — Prometheus. Healthcheck у compose, UI шлёт `X-Request-ID`. Сервис `backup` в 00:05 Europe/Moscow пишет Postgres dump и зеркало MinIO в `~/docker-share/sokol-backups` (14 дней). Автостатус, KPI переносов, парсер Раздела II, фильтры аналитики и черновики конструктора закрыты тестами. Золотой набор — [fixtures/auto_status_golden.json](fixtures/auto_status_golden.json).
+Ошибки домена — `{detail}` без traceback. Логи с request-id, в prod JSON. `/metrics` — Prometheus. Healthcheck у compose, UI шлёт `X-Request-ID`. Сервис `backup` в 00:05 Europe/Moscow пишет Postgres dump и зеркало MinIO в `${SOKOL_DOCKER_SHARE}/sokol-backups` (14 дней; локально `M:/PROJECTS/Arina/docker-share`). Автостатус, KPI переносов, парсер Раздела II, фильтры аналитики и черновики конструктора закрыты тестами. Золотой набор — [fixtures/auto_status_golden.json](fixtures/auto_status_golden.json).
 
 ## Что блокирует прод
 
@@ -37,7 +37,7 @@
 - [ ] `SOKOL_LOAD_DEMO_DATA=0`, `SOKOL_SEED_REPLACE` выключен, свои пароли seed.
 - [ ] В БД только PBKDF2-хеши.
 - [x] Postgres и MinIO не публикуются на хост (только сеть `sokol`); в `SOKOL_ENV=prod` `/docs`/`/redoc`/`/openapi.json` выключены.
-- [x] Снимки Postgres и MinIO в 00:05 Europe/Moscow, хранение 14 дней (`~/docker-share/sokol-backups`). Один раз прогнать restore на копии стенда — [DATA.md](DATA.md).
+- [x] Снимки Postgres и MinIO в 00:05 Europe/Moscow, хранение 14 дней (`${SOKOL_DOCKER_SHARE}/sokol-backups`). Один раз прогнать restore на копии стенда — [DATA.md](DATA.md).
 - [x] Чтение: «все вошедшие видят всё» — осознанная модель одного департамента; отдельный ACL на чтение не нужен.
 - [ ] В GitHub для default branch включены required checks (см. ниже). Сам workflow их не включает.
 

@@ -5,8 +5,7 @@ import {
   FORM_OUTLINE_BUTTON_CLASS,
   FORM_SAVE_BUTTON_CLASS,
 } from '../../../constants/formLayout';
-import { ANALYTICS_EXPORT_FORMATS, type AnalyticsExportFormat } from '../../../utils/analyticsExport';
-import { exportConstructorDashboard } from '../../../utils/constructorVisualExport';
+import { CONSTRUCTOR_EXPORT_FORMATS, exportConstructorDashboard, type ConstructorExportFormat } from '../../../utils/constructorVisualExport';
 import { useAnalyticsConstructor } from './analyticsConstructorState';
 import { ConstructorWidgetCard } from './ConstructorWidgetCard';
 import {
@@ -84,7 +83,7 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
     [dashboards, dashboardId],
   );
   const widgets = useMemo(() => dashboard?.widgets ?? [], [dashboard]);
-  const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('pdf');
+  const [exportFormat, setExportFormat] = useState<ConstructorExportFormat>('pdf');
   const [isExporting, setIsExporting] = useState(false);
   const [containerWidth, setContainerWidth] = useState(1200);
   const [isDesktop, setIsDesktop] = useState(() =>
@@ -214,11 +213,6 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
         boardNode,
         widgets,
         title: dashboard?.name,
-        meta: [
-          ['Графиков на листе', String(widgets.length)],
-          ['Источники', [...new Set(widgets.map((widget) => CONSTRUCTOR_SOURCE_LABELS[widget.kind]))].join(', ')],
-          ['Сформировано', new Date().toLocaleString('ru-RU')],
-        ],
       });
     } catch (error) {
       console.error('Constructor export failed', error);
@@ -316,10 +310,10 @@ export function ConstructorDashboard({ dashboardId }: { dashboardId: string }) {
           </button>
           <select
             value={exportFormat}
-            onChange={(event) => setExportFormat(event.target.value as AnalyticsExportFormat)}
+            onChange={(event) => setExportFormat(event.target.value as ConstructorExportFormat)}
             className="form-equal-control h-10 w-32 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20"
           >
-            {ANALYTICS_EXPORT_FORMATS.map((format) => (
+            {CONSTRUCTOR_EXPORT_FORMATS.map((format) => (
               <option key={format.value} value={format.value}>
                 {format.label}
               </option>

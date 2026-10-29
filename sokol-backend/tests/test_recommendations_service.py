@@ -40,6 +40,22 @@ def _recommendation_create(name: str = "Рекомендация") -> Recommenda
 
 
 class RecommendationsServiceTests(unittest.TestCase):
+    def test_closure_lists_store_dates_as_iso_strings(self) -> None:
+        import json
+
+        payload = recommendations_service.json_ready_closure_lists(
+            {
+                "deadline": date(2026, 10, 15),
+                "deadline_extensions": [{"date": date(2026, 10, 15), "comment": None}],
+                "control_removals": [{"date": date(2026, 11, 1), "comment": "Снято"}],
+            }
+        )
+        self.assertEqual(payload["deadline"], date(2026, 10, 15))
+        self.assertEqual(payload["deadline_extensions"][0]["date"], "2026-10-15")
+        self.assertEqual(payload["control_removals"][0]["date"], "2026-11-01")
+        json.dumps(payload["deadline_extensions"])
+        json.dumps(payload["control_removals"])
+
     def test_delete_recommendation_cleans_attachments_and_renumbers(self) -> None:
         session = AsyncMock()
         recommendation = Recommendation(

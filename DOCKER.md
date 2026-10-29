@@ -84,11 +84,13 @@ sokol-frontend/docker/          # Dockerfile UI, nginx.conf, UI-only compose
 
 ## Данные на диске
 
+Корень томов задаётся `SOKOL_DOCKER_SHARE` (по умолчанию `~/docker-share`). На этой машине: `M:/PROJECTS/Arina/docker-share`.
+
 | Том | Путь |
 |-----|------|
-| Postgres | `~/docker-share/postgres-data-sokol` |
-| MinIO | `~/docker-share/minio-data-sokol` |
-| Бэкапы | `~/docker-share/sokol-backups` |
+| Postgres | `${SOKOL_DOCKER_SHARE}/postgres-data-sokol` |
+| MinIO | `${SOKOL_DOCKER_SHARE}/minio-data-sokol` |
+| Бэкапы | `${SOKOL_DOCKER_SHARE}/sokol-backups` |
 
 Сервис `backup` раз в сутки в **00:05 Europe/Moscow (UTC+3)** пишет снимок Postgres (`pg_dump -Fc`) и зеркало MinIO. Держит 14 дней и минимум 3 снимка. Ручной прогон: `docker compose exec backup /opt/sokol-backup/backup.sh`. Restore — [DATA.md](docs/DATA.md). Том бэкапов лучше копировать ещё и вне этой машины.
 

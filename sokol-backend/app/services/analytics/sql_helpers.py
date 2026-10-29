@@ -7,7 +7,8 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
-from sqlalchemy import ColumnElement, and_, extract, func, or_, select
+from sqlalchemy import ColumnElement, and_, cast, extract, func, or_, select
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.sql import Select
@@ -55,10 +56,14 @@ def recommendation_has_extensions() -> ColumnElement[bool]:
 
     Пустой JSON ``[]`` не считается переносом. ``extension_2_reason`` — дата второго
     переноса (как в статусах и в графике «Перенос срока»).
+
+    Колонка бывает и JSON (create_all), и JSONB (legacy patch). ``json_array_length``
+    принимает только json, поэтому длину считаем через ``jsonb_array_length``.
     """
+    extensions_jsonb = cast(Recommendation.deadline_extensions, JSONB)
     has_json_rows = and_(
         Recommendation.deadline_extensions.isnot(None),
-        func.json_array_length(Recommendation.deadline_extensions) > 0,
+        func.jsonb_array_length(extensions_jsonb) > 0,
     )
     return or_(
         has_json_rows,

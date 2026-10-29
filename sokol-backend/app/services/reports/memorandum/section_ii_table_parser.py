@@ -13,7 +13,12 @@ from app.services.reports.memorandum.models import (
 from app.services.reports.section_ii import xml_utils
 from app.services.reports.section_ii.docx_blocks import get_cell_text, load_document_xml
 from app.services.reports.section_ii.field_parser import int_to_roman
-from app.services.reports.section_ii.patterns import OBS_START_RE, SROK_TAIL_RE, W_NS
+from app.services.reports.section_ii.patterns import (
+    COMPLETED_DURING_AUDIT_PATTERN,
+    OBS_START_RE,
+    SROK_TAIL_RE,
+    W_NS,
+)
 
 __all__ = [
     "cell_texts",
@@ -39,7 +44,7 @@ MANAGER_RE = re.compile(
     rf"^((?:{PERSON_INITIALS_RE})(?:\s*,\s*{PERSON_INITIALS_RE})*)\.?",
 )
 DEADLINE_VALUE_RE = re.compile(
-    r"(\d{1,2}\.\d{2}\.\d{4}|на\s+постоянной\s+основе\.?|постоянно\.?|исполнено\s+в\s+ходе\s+аудита)",
+    rf"(\d{{1,2}}\.\d{{2}}\.\d{{4}}|на\s+постоянной\s+основе\.?|постоянно\.?|{COMPLETED_DURING_AUDIT_PATTERN})",
     re.IGNORECASE,
 )
 SROK_INLINE_RE = re.compile(r"Срок\s*[–\-—]\s*", re.IGNORECASE)

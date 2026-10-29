@@ -45,14 +45,16 @@ export function ListDateRangeFilter({
   to,
   onFromChange,
   onToChange,
+  className = '',
 }: {
   from: Date | null;
   to: Date | null;
   onFromChange: (value: Date | null) => void;
   onToChange: (value: Date | null) => void;
+  className?: string;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
+    <div className={['flex min-w-0 flex-col gap-1.5', className].filter(Boolean).join(' ')}>
       <DatePicker
         selected={from}
         onChange={onFromChange}

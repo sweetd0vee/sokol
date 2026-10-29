@@ -57,6 +57,9 @@ export const LIST_ACTION_BUTTON_CLASS =
   'inline-flex h-[38px] w-[160px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium';
 export const LIST_ACTION_GROUP_CLASS = 'ml-auto flex w-[334px] items-center justify-end gap-3.5 whitespace-nowrap';
 
+/** Same box width for list-table column filters (selects and the date range). */
+export const LIST_COLUMN_FILTER_CLASS = 'w-36 min-w-36 max-w-36';
+
 /** 1px table card border + action cell pr-4 — keeps header chrome aligned with list buttons. */
 export const LIST_CHROME_RIGHT_INSET_CLASS = 'pr-[17px]';
 

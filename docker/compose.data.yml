@@ -17,7 +17,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
-      - ~/docker-share/postgres-data-sokol:/var/lib/postgresql/data
+      - ${SOKOL_DOCKER_SHARE:-~/docker-share}/postgres-data-sokol:/var/lib/postgresql/data
     networks:
       - sokol
     healthcheck:
@@ -37,7 +37,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-sokol}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me}
     volumes:
-      - ~/docker-share/minio-data-sokol:/data
+      - ${SOKOL_DOCKER_SHARE:-~/docker-share}/minio-data-sokol:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 15s

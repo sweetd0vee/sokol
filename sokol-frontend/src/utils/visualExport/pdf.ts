@@ -480,12 +480,6 @@ export async function buildVisualPdf(options: {
       fontSize: 20,
       bold: true,
       color: '#003366',
-      margin: [0, 0, 0, 8],
-    },
-    {
-      text: 'Отчёт по выбранным дашбордам — графики как на экране',
-      fontSize: 11,
-      color: '#64748B',
       margin: [0, 0, 0, 16],
     },
     {

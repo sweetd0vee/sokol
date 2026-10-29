@@ -44,7 +44,7 @@ class PresentationPlanningDemoTests(unittest.TestCase):
         always_uncovered = [name for name in DEMO_UNCOVERED_DEPARTMENTS if name != "Не указан"]
 
         self.assertGreaterEqual(len(uncovered), 5)
-        self.assertLessEqual(len(uncovered), 12)
+        self.assertLessEqual(len(uncovered), 16)
         for name in always_uncovered:
             self.assertIn(name, uncovered)
         self.assertTrue(set(COVERABLE_DEPARTMENTS).issuperset(covered))

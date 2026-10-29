@@ -125,6 +125,7 @@ function DateCommentRows({
                 selected={toInputDate(row.date)}
                 onChange={(date) => updateRow(row.id, { date: toIsoDate(date) ?? '' })}
                 placeholder={datePlaceholder}
+                popperPlacement="top-start"
                 labelClassName={labelClassName}
                 inputClassName={[inputClassName, incomplete ? FORM_FIELD_ERROR_CLASS : '']
                   .filter(Boolean)

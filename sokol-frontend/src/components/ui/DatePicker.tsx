@@ -12,6 +12,7 @@ interface DatePickerProps {
   labelClassName?: string;
   minDate?: Date | null;
   maxDate?: Date | null;
+  popperPlacement?: 'bottom-start' | 'top-start';
 }
 
 export function DatePicker({
@@ -25,6 +26,7 @@ export function DatePicker({
   labelClassName = '',
   minDate,
   maxDate,
+  popperPlacement = 'bottom-start',
 }: DatePickerProps) {
   return (
     <div className={className}>
@@ -49,6 +51,8 @@ export function DatePicker({
           minDate={minDate ?? undefined}
           maxDate={maxDate ?? undefined}
           wrapperClassName="w-full min-w-0"
+          popperPlacement={popperPlacement}
+          popperClassName="!z-30"
           className={[
             'w-full min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-sber-dark focus:ring-2 focus:ring-sber-dark/20 ',
             inputClassName,

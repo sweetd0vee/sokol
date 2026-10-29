@@ -23,6 +23,7 @@ import { ADDITIONAL_INDICATOR_ICONS } from '../recommendations/indicatorIcons';
 import { ListIndicatorIcon } from '../recommendations/ListIndicatorIcon';
 import { RecommendationNameHoverCard } from '../recommendations/RecommendationNameHoverCard';
 import {
+  LIST_COLUMN_FILTER_CLASS,
   LIST_TABLE_COLUMN_HEADER_ROW_CLASS,
   listFilterClass,
 } from '../../constants/formLayout';
@@ -270,19 +271,19 @@ export function RecommendationsTab() {
           </ListTableFooter>
         }
       >
-        <table className="w-full min-w-0 text-base table-fixed">
+        <table className="w-full min-w-[1920px] text-base table-fixed">
           <colgroup>
             <col className="w-24" />
             <col className="w-28" />
             <col />
-            <col className="w-36" />
-            <col className="w-32" />
-            <col className="w-36" />
-            <col className="w-28" />
-            <col className="w-36" />
-            <col className="w-20" />
-            <col className="w-32" />
-            <col className="w-44" />
+            <col className="w-40" />
+            <col className="w-40" />
+            <col className="w-40" />
+            <col className="w-40" />
+            <col className="w-40" />
+            <col className="w-40" />
+            <col className="w-40" />
+            <col className="w-40" />
             <col className="w-[176px]" />
           </colgroup>
           <thead>
@@ -297,6 +298,7 @@ export function RecommendationsTab() {
                   onChange={setAuditObjects}
                   options={auditObjectOptions}
                   placeholder="Все"
+                  className={LIST_COLUMN_FILTER_CLASS}
                   inputClassName={listFilterClass(auditObjects.length > 0)}
                 />
               </ListFilterCell>
@@ -306,6 +308,7 @@ export function RecommendationsTab() {
                   onChange={setIndicators}
                   options={INDICATOR_OPTIONS}
                   placeholder="Все"
+                  className={LIST_COLUMN_FILTER_CLASS}
                   inputClassName={listFilterClass(indicators.length > 0)}
                 />
               </ListFilterCell>
@@ -315,6 +318,7 @@ export function RecommendationsTab() {
                   onChange={setAdditionalIndicators}
                   options={ADDITIONAL_INDICATOR_OPTIONS}
                   placeholder="Все"
+                  className={LIST_COLUMN_FILTER_CLASS}
                   inputClassName={listFilterClass(additionalIndicators.length > 0)}
                 />
               </ListFilterCell>
@@ -324,6 +328,7 @@ export function RecommendationsTab() {
                   onChange={setCheckViews}
                   options={checkViewOptions}
                   placeholder="Все"
+                  className={LIST_COLUMN_FILTER_CLASS}
                   inputClassName={listFilterClass(checkViews.length > 0)}
                 />
               </ListFilterCell>
@@ -333,6 +338,7 @@ export function RecommendationsTab() {
                   to={deadlineTo}
                   onFromChange={setDeadlineFrom}
                   onToChange={setDeadlineTo}
+                  className={LIST_COLUMN_FILTER_CLASS}
                 />
               </ListFilterCell>
               <ListFilterCell>
@@ -341,6 +347,7 @@ export function RecommendationsTab() {
                   onChange={setMaterialityLevels}
                   options={MATERIALITY_LEVEL_OPTIONS}
                   placeholder="Все"
+                  className={LIST_COLUMN_FILTER_CLASS}
                   inputClassName={listFilterClass(materialityLevels.length > 0)}
                 />
               </ListFilterCell>
@@ -350,6 +357,7 @@ export function RecommendationsTab() {
                   onChange={setAuditors}
                   options={auditorOptions}
                   placeholder="Все"
+                  className={LIST_COLUMN_FILTER_CLASS}
                   inputClassName={listFilterClass(auditors.length > 0)}
                 />
               </ListFilterCell>
@@ -359,6 +367,7 @@ export function RecommendationsTab() {
                   onChange={setManagers}
                   options={managerOptions}
                   placeholder="Все"
+                  className={LIST_COLUMN_FILTER_CLASS}
                   inputClassName={listFilterClass(managers.length > 0)}
                 />
               </ListFilterCell>

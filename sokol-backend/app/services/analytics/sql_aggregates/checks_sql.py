@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
-from sqlalchemy import Integer, cast, func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.checks import Check
@@ -35,24 +36,53 @@ async def summarize_checks_sql(session: AsyncSession, **filters: Any) -> ChecksS
     )
 
 
+def check_duration_days(
+    order_date: date | None,
+    program_date: date | None,
+    az_date: date | None,
+    dz_date: date | None,
+) -> int | None:
+    """Calendar days from the order to the report, or to the last filled later stage.
+
+    «Окончание» field is not the duration. The end point is ДЗ, otherwise АЗ,
+    otherwise the program. A check with no order or no later stage is skipped.
+    """
+    if order_date is None:
+        return None
+    end_date = dz_date or az_date or program_date
+    if end_date is None:
+        return None
+    return abs((end_date - order_date).days)
+
+
+def average_check_duration_days(spans: list[int]) -> int:
+    if not spans:
+        return 0
+    return int(round(sum(spans) / len(spans)))
+
+
 async def average_check_duration_days_sql(session: AsyncSession, **filters: Any) -> int:
-    """Average calendar days between start_date and end_date for filtered checks."""
-    duration_days = cast(Check.end_date - Check.start_date, Integer)
+    """Mean calendar days from the order to ДЗ (or the last filled stage) in the filter."""
     statement = apply_check_filters(
-        select(func.avg(duration_days)).select_from(Check).where(
-            Check.end_date.isnot(None),
-            Check.end_date >= Check.start_date,
-        ),
+        select(
+            Check.order_document_date,
+            Check.program_document_date,
+            Check.az_document_date,
+            Check.dz_document_date,
+        ).select_from(Check),
         **filters,
     )
-    value = await fetch_one(session, statement)
-    if value is None:
-        return 0
-    # fetch_one may return a Row or a bare scalar depending on the select shape.
-    scalar = value[0] if hasattr(value, "__getitem__") else value
-    if scalar is None:
-        return 0
-    return int(round(float(scalar)))
+    spans: list[int] = []
+    for row in await fetch_all(session, statement):
+        days = check_duration_days(
+            row.order_document_date,
+            row.program_document_date,
+            row.az_document_date,
+            row.dz_document_date,
+        )
+        if days is not None:
+            spans.append(days)
+    return average_check_duration_days(spans)
 
 
 

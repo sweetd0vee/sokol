@@ -12,7 +12,7 @@
 | Demo | Compose default `SOKOL_LOAD_DEMO_DATA=0`; в `SOKOL_ENV=prod` demo и seed-replace запрещены |
 | Swagger | В prod `/docs`, `/redoc`, `/openapi.json` выключены |
 | Postgres / MinIO | Порты на хост **не** публикуются; доступ только из сети Docker `sokol` |
-| Бэкапы | Сервис `backup`, 00:05 Europe/Moscow, 14 дней, том `~/docker-share/sokol-backups` |
+| Бэкапы | Сервис `backup`, 00:05 Europe/Moscow, 14 дней, том `${SOKOL_DOCKER_SHARE}/sokol-backups` |
 | Freeze (не ломать без золотых тестов) | автостатус, SQL аналитики, парсер Раздела II, `person_match`, каскад serial, section id экспорта |
 
 **Вердикт:** для пилота за VPN продукт можно выкатывать после **операционного чеклиста** и закрытия короткого списка блокер-находок ниже. Открытый интернет-контур — нет.

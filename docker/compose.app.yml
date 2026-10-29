@@ -72,7 +72,7 @@ services:
       SOKOL_BACKUP_AT: ${SOKOL_BACKUP_AT:-00:05}
       SOKOL_BACKUP_TZ: ${SOKOL_BACKUP_TZ:-Europe/Moscow}
     volumes:
-      - ~/docker-share/sokol-backups:/backups
+      - ${SOKOL_DOCKER_SHARE:-~/docker-share}/sokol-backups:/backups
     depends_on:
       db:
         condition: service_healthy

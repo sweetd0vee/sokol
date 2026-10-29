@@ -30,7 +30,7 @@ export type RecentUploadSession = {
 
 export type EditablePreviewField = 'name' | 'observation_name' | 'audit_object' | 'manager' | 'deadline';
 
-const COMPLETED_DURING_AUDIT_RE = /исполнено\s+в\s+ходе\s+аудита/i;
+const COMPLETED_DURING_AUDIT_RE = /(?:исполнено|исправлено)\s+в\s+ходе\s+аудита/i;
 
 export function isCompletedDuringAudit(value?: string | boolean | null): boolean {
   if (value === true) {
