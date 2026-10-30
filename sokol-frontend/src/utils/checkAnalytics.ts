@@ -1,122 +1,13 @@
 import type { Check } from '../types/check';
-import type { Recommendation } from '../types/recommendation';
-import { parseDateValue } from './dates';
-import { getRecommendationAuditObjects } from './auditObjects';
-import {
-  isDateInAnySelectedPeriods,
-  isDateInSelectedPeriods,
-  type PeriodBucket,
-  type PeriodGranularity,
-} from './analyticsPeriod';
+import { type PeriodBucket, type PeriodGranularity } from './analyticsPeriod';
 import { MATERIALITY_COLORS } from './recommendationAnalytics';
 
 export type { PeriodGranularity, PeriodBucket };
-
-export type EffectivenessArea = 'any' | 'process' | 'svk' | 'sur' | 'svik';
-
-export type CheckAnalyticsFilters = {
-  auditors: string[];
-  granularity: PeriodGranularity;
-  selectedPeriods: string[];
-  selectedYears?: string[];
-  selectedQuarters?: string[];
-  selectedMonths?: string[];
-  departments?: string[];
-  recommendations?: Recommendation[];
-  effectivenessArea: EffectivenessArea;
-  selectedEffectivenessRatings: string[];
-};
-
-const EFFECTIVENESS_UNSET_LABEL = 'не указано';
-
-function getCheckEffectivenessValue(check: Check, area: Exclude<EffectivenessArea, 'any'>): string {
-  const raw =
-    area === 'process'
-      ? check.process_effectiveness
-      : area === 'svk'
-        ? check.svk_effectiveness
-        : area === 'sur'
-          ? check.sur_effectiveness
-          : check.svik_effectiveness;
-  const trimmed = raw?.trim();
-  return trimmed ? trimmed : EFFECTIVENESS_UNSET_LABEL;
-}
-
-function getCheckEffectivenessValues(check: Check, area: EffectivenessArea): string[] {
-  if (area === 'any') {
-    return (['process', 'svk', 'sur', 'svik'] as const).map((key) => getCheckEffectivenessValue(check, key));
-  }
-  return [getCheckEffectivenessValue(check, area)];
-}
 
 export type NamedCount = {
   name: string;
   value: number;
 };
-
-export function filterChecksForAnalytics(checks: Check[], filters: CheckAnalyticsFilters): Check[] {
-  const auditorSet = new Set(filters.auditors.filter(Boolean));
-  const ratingSet = new Set(filters.selectedEffectivenessRatings.filter(Boolean));
-  const departmentSet = new Set((filters.departments ?? []).filter(Boolean));
-  const recommendationsByCheck = new Map<string, Recommendation[]>();
-
-  if (departmentSet.size > 0 || auditorSet.size > 0) {
-    (filters.recommendations ?? []).forEach((recommendation) => {
-      const serial = recommendation.serial_number.trim();
-      if (!serial) {return;}
-      const bucket = recommendationsByCheck.get(serial) ?? [];
-      bucket.push(recommendation);
-      recommendationsByCheck.set(serial, bucket);
-    });
-  }
-
-  return checks.filter((check) => {
-    const startMs = parseDateValue(check.start_date);
-    if (startMs === null) {
-      return false;
-    }
-    if (auditorSet.size > 0) {
-      const linked = recommendationsByCheck.get(check.serial_number) ?? [];
-      const matchesAuditor =
-        auditorSet.has(check.check_leader)
-        || linked.some((item) => auditorSet.has(item.auditor));
-      if (!matchesAuditor) {
-        return false;
-      }
-    }
-    const hasMultiPeriodFilter =
-      (filters.selectedYears?.length ?? 0) > 0
-      || (filters.selectedQuarters?.length ?? 0) > 0
-      || (filters.selectedMonths?.length ?? 0) > 0;
-    const matchesPeriod = hasMultiPeriodFilter
-      ? isDateInAnySelectedPeriods(startMs, {
-          years: filters.selectedYears ?? [],
-          quarters: filters.selectedQuarters ?? [],
-          months: filters.selectedMonths ?? [],
-        })
-      : isDateInSelectedPeriods(startMs, filters.granularity, filters.selectedPeriods);
-    if (!matchesPeriod) {
-      return false;
-    }
-    if (departmentSet.size > 0) {
-      const linked = recommendationsByCheck.get(check.serial_number) ?? [];
-      if (
-        !linked.some((item) =>
-          getRecommendationAuditObjects(item.audit_object).some((department) => departmentSet.has(department)),
-        )
-      ) {
-        return false;
-      }
-    }
-    if (ratingSet.size > 0) {
-      const values = getCheckEffectivenessValues(check, filters.effectivenessArea);
-      if (!values.some((value) => ratingSet.has(value))) {
-        return false;
-      }
-    }
-    return true;
-  });
-}
 
 export const EFFECTIVENESS_MATRIX_COLUMNS = [
   { key: 'process', label: 'Процесс', field: 'process_effectiveness' },

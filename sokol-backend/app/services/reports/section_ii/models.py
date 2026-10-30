@@ -17,6 +17,7 @@ class RunFragment:
 class RecommendationEntry:
     text: str
     runs: Optional[List[RunFragment]] = None
+    auditor: str = ""
 
 
 @dataclass
@@ -36,3 +37,4 @@ class Observation:
     rec_entries: Optional[List[RecommendationEntry]] = None
     audit_object: str = ""
     manager: str = ""
+    auditor: str = ""

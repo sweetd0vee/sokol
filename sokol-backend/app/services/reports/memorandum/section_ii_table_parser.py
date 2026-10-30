@@ -12,7 +12,11 @@ from app.services.reports.memorandum.models import (
 )
 from app.services.reports.section_ii import xml_utils
 from app.services.reports.section_ii.docx_blocks import get_cell_text, load_document_xml
-from app.services.reports.section_ii.field_parser import int_to_roman
+from app.services.reports.section_ii.field_parser import (
+    extract_auditor_name,
+    int_to_roman,
+    strip_auditor_lines,
+)
 from app.services.reports.section_ii.patterns import (
     COMPLETED_DURING_AUDIT_PATTERN,
     OBS_START_RE,
@@ -269,7 +273,8 @@ def parse_section_ii_for_memorandum(file_path: str) -> Tuple[Optional[Memorandum
         if not raw_recommendation.strip():
             continue
 
-        audit_object, manager, body_text = _parse_audit_object_header(raw_recommendation)
+        auditor = extract_auditor_name(raw_recommendation)
+        audit_object, manager, body_text = _parse_audit_object_header(strip_auditor_lines(raw_recommendation))
         recommendations = _split_body_into_recommendations(body_text)
         if not recommendations and body_text:
             clean_body = SROK_TAIL_RE.sub("", body_text).strip()
@@ -278,6 +283,8 @@ def parse_section_ii_for_memorandum(file_path: str) -> Tuple[Optional[Memorandum
             recommendations = [MemorandumRecommendation(paragraphs=[clean_body], deadline=deadline)]
         for recommendation in recommendations:
             recommendation.observation_name = current_observation_name
+            if auditor and not (recommendation.auditor or "").strip():
+                recommendation.auditor = auditor
 
         _append_to_groups(groups, group_index, audit_object, manager, recommendations)
 

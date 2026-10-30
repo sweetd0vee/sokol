@@ -26,11 +26,12 @@ export function ParsedPreviewTable({
       <colgroup>
         <col className={expanded ? 'w-14' : 'w-12'} />
         <col />
-        <col className={expanded ? 'w-[22%]' : 'w-[20%]'} />
-        <col className={expanded ? 'w-[18%]' : 'w-[16%]'} />
-        <col className={expanded ? 'w-[16%]' : 'w-[14%]'} />
-        <col className={expanded ? 'w-44' : 'w-[8.5rem]'} />
-        <col className="w-12" />
+        <col className={expanded ? 'w-[16%]' : 'w-[15%]'} />
+        <col className={expanded ? 'w-[14%]' : 'w-[13%]'} />
+        <col className={expanded ? 'w-[12%]' : 'w-[11%]'} />
+        <col className={expanded ? 'w-[12%]' : 'w-[11%]'} />
+        <col className={expanded ? 'w-40' : 'w-32'} />
+        <col className="w-10" />
       </colgroup>
       <thead className="sticky top-0 z-10">
         <tr className="bg-gray-100 text-gray-800">
@@ -39,6 +40,7 @@ export function ParsedPreviewTable({
           <th className="px-3 py-2.5 text-left font-medium">Наблюдение</th>
           <th className="px-3 py-2.5 text-left font-medium">Объект аудита</th>
           <th className="px-3 py-2.5 text-left font-medium">Руководитель</th>
+          <th className="px-3 py-2.5 text-left font-medium">Аудитор</th>
           <th className="px-3 py-2.5 text-left font-medium">Срок исполнения</th>
           <th className="px-2 py-2.5 text-center font-medium">
             <span className="sr-only">Удалить</span>
@@ -105,6 +107,19 @@ export function ParsedPreviewTable({
                 />
               ) : (
                 <span className={`${cellClamp} break-words`}>{item.manager}</span>
+              )}
+            </td>
+            <td className="px-3 py-2.5 align-top text-gray-700">
+              {editable ? (
+                <input
+                  type="text"
+                  value={item.auditor}
+                  onChange={(event) => onChange?.(item.previewKey, 'auditor', event.target.value)}
+                  className={cellInputClass}
+                  aria-label={`Аудитор ${index + 1}`}
+                />
+              ) : (
+                <span className={`${cellClamp} break-words`}>{item.auditor || '—'}</span>
               )}
             </td>
             <td className="px-3 py-2.5 align-top whitespace-nowrap text-gray-700">

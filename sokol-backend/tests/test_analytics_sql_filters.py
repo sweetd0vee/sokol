@@ -93,6 +93,20 @@ class AnalyticsSqlFiltersTests(unittest.TestCase):
         )
         self.assertEqual([(item.name, item.value) for item in selected_rows], [("ИТ", 1)])
 
+    def test_department_map_counts_checks_not_recommendations(self) -> None:
+        rows = department_map_from_pairs(
+            [
+                (1, ["ИТ"]),
+                (1, ["ИТ"]),
+                (1, ["Финансы"]),
+                (2, ["ИТ", "Финансы"]),
+            ]
+        )
+        self.assertEqual(
+            {item.name: item.value for item in rows},
+            {"ИТ": 2, "Финансы": 2},
+        )
+
     def test_collect_analytics_auditors_excludes_recommendation_managers(self) -> None:
         auditors = collect_analytics_auditors(
             [SimpleNamespace(check_leader="Ярмошевич И.Н")],

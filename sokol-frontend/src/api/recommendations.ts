@@ -14,6 +14,7 @@ export type ParsedRecommendation = {
   observation_name?: string;
   audit_object: string[] | string;
   manager: string;
+  auditor?: string;
   deadline: string;
   completed_during_audit?: boolean;
 };

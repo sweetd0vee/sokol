@@ -582,6 +582,7 @@ class SectionIIParserTest(unittest.TestCase):
         text = entries[0].text
         self.assertNotIn("Уровень существенности", text)
         self.assertNotIn("Аудитор: Каминская", text)
+        self.assertEqual(entries[0].auditor, "Каминская В.В.")
         self.assertIn("Объект аудита: ДРТБ", text)
         self.assertIn("Руководитель объекта аудита: Филианова О.В.", text)
         self.assertNotIn("Аудиторская рекомендация:", text)
@@ -648,6 +649,7 @@ class SectionIIParserTest(unittest.TestCase):
         rec_text = observation.rec_entries[0].text
         self.assertNotIn("Уровень существенности", rec_text)
         self.assertNotIn("Аудитор: Каминская", rec_text)
+        self.assertEqual(observation.rec_entries[0].auditor, "Каминская В.В.")
         self.assertIn("Объект аудита: Департамент развития транзакционного бизнеса", rec_text)
         self.assertIn("Руководитель объекта аудита: Филианова О.В.", rec_text)
         self.assertNotIn("Аудиторская рекомендация:", rec_text)
@@ -677,6 +679,7 @@ class SectionIIParserTest(unittest.TestCase):
         rec_text = observations[0].rec_entries[0].text
         self.assertNotIn("Уровень существенности", rec_text)
         self.assertNotIn("Аудитор: Иванов", rec_text)
+        self.assertEqual(observations[0].rec_entries[0].auditor, "Иванов И.И.")
         self.assertIn("Объект аудита: ДРТБ", rec_text)
         self.assertIn("Руководитель объекта аудита: Петров П.П.", rec_text)
         self.assertIn("Проработать порядок контроля", rec_text)

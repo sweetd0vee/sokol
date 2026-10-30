@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Парсинг АЗ с Разделом II для генерации докладной записки."""
 
+import re
 from typing import Optional, Tuple
 
 from app.services.reports.memorandum.models import (
@@ -16,6 +17,7 @@ from app.services.reports.memorandum.section_ii_table_parser import (
 from app.services.reports.section_ii import xml_utils
 from app.services.reports.section_ii.docx_blocks import load_document_xml
 from app.services.reports.section_ii.docx_parser import parse_observations_from_file_with_runs
+from app.services.reports.section_ii.field_parser import extract_auditor_name
 from app.services.reports.section_ii.models import Observation
 from app.services.reports.section_ii.patterns import W_NS
 
@@ -57,6 +59,17 @@ def document_has_section_ii(file_path: str) -> bool:
     return False
 
 
+def _observation_auditor(obs: Observation) -> str:
+    for entry in obs.rec_entries or []:
+        name = (entry.auditor or "").strip()
+        if name:
+            return name
+    stored = (obs.auditor or "").strip()
+    if stored:
+        return stored
+    return extract_auditor_name(obs.recommendations or "")
+
+
 def _observation_recommendation_text(obs: Observation) -> str:
     if obs.rec_entries:
         joined = " ".join(entry.text for entry in obs.rec_entries if (entry.text or "").strip())
@@ -76,6 +89,7 @@ def memorandum_source_from_observations(observations: list[Observation]) -> Opti
             paragraphs=[rec_text] if rec_text else [],
             deadline=(obs.deadline or "").strip(),
             observation_name=(obs.name or "").strip(),
+            auditor=_observation_auditor(obs),
         )
         _append_to_groups(
             groups,
@@ -89,9 +103,37 @@ def memorandum_source_from_observations(observations: list[Observation]) -> Opti
     return MemorandumSource(groups=groups)
 
 
+def _name_key(value: str) -> str:
+    return re.sub(r"\s+", " ", (value or "").strip()).casefold()
+
+
+def _fill_missing_auditors(source: MemorandumSource, observations: list[Observation]) -> None:
+    """Если таблица Раздела II без строки «Аудитор:», берём имя из рамки наблюдения."""
+    by_name: dict[str, str] = {}
+    for obs in observations:
+        key = _name_key(obs.name or "")
+        auditor = _observation_auditor(obs)
+        if key and auditor and key not in by_name:
+            by_name[key] = auditor
+    if not by_name:
+        return
+    for group in source.groups:
+        for recommendation in group.recommendations:
+            if (recommendation.auditor or "").strip():
+                continue
+            auditor = by_name.get(_name_key(recommendation.observation_name or ""))
+            if auditor:
+                recommendation.auditor = auditor
+
+
 def parse_az_for_memorandum(file_path: str) -> Tuple[Optional[MemorandumSource], Optional[str]]:
     source, table_error = parse_section_ii_for_memorandum(file_path)
     if source is not None:
+        try:
+            observations = parse_observations_from_file_with_runs(file_path)
+        except Exception:
+            observations = []
+        _fill_missing_auditors(source, observations)
         return source, None
 
     observations = parse_observations_from_file_with_runs(file_path)

@@ -25,14 +25,6 @@ export const CHECK_ATTACHMENT_EXPORT_SLOTS: AttachmentSlot[] = [
   'dz',
 ];
 
-/** Слоты хранилища, соответствующие выбранному слоту экспорта. */
-export function getStorageSlotsForExportSlot(slot: AttachmentSlot): AttachmentFileGroup[] {
-  if (slot === 'dz') {
-    return ['dz', 'dz_appendix'];
-  }
-  return [slot];
-}
-
 export function getExportFolderName(storageSlot: string): string | null {
   switch (storageSlot) {
     case 'order':

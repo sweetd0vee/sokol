@@ -12,14 +12,6 @@ def stripped_values(values: list[str] | None) -> list[str]:
     return [item.strip() for item in (values or []) if item and item.strip()]
 
 
-def stripped_set(values: list[str] | None) -> set[str]:
-    return set(stripped_values(values))
-
-
-def enum_str(value: object) -> str:
-    return value.value if hasattr(value, "value") else str(value)
-
-
 def named_counts(counts: dict[str, int], *, positive_only: bool = False) -> list[NamedCount]:
     items = counts.items()
     if positive_only:

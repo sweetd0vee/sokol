@@ -89,7 +89,3 @@ async def run_status_scheduler() -> None:
             await asyncio.sleep(seconds_until_next_moscow_run())
         except asyncio.CancelledError:
             raise
-
-
-async def run_recommendation_status_scheduler() -> None:
-    await run_status_scheduler()

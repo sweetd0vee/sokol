@@ -10,7 +10,7 @@ from app.services.reports.az_import import is_completed_during_audit, parse_reco
 from app.services.reports.section_ii.field_parser import extract_deadline_from_text
 
 
-def _build_az(path: Path, *, deadline_line: str) -> None:
+def _build_az(path: Path, *, deadline_line: str, auditor_line: str | None = None) -> None:
     doc = Document()
     title = doc.add_paragraph("АУДИТОРСКОЕ ЗАКЛЮЧЕНИЕ")
     title.add_run().add_break(WD_BREAK.PAGE)
@@ -22,6 +22,8 @@ def _build_az(path: Path, *, deadline_line: str) -> None:
     doc.add_paragraph("III. Детальные результаты аудита")
     doc.add_paragraph("Наблюдение 3.1. Контроль остатков")
     doc.add_paragraph("Уровень существенности: средний")
+    if auditor_line:
+        doc.add_paragraph(auditor_line)
     doc.add_paragraph("Объект аудита: Департамент ИТ Руководитель объекта аудита: Важник Д.С.")
     doc.add_paragraph("Аудиторская рекомендация: Сверить остатки.")
     doc.add_paragraph(deadline_line)
@@ -65,6 +67,20 @@ class AzImportCompletedDuringAuditTests(unittest.TestCase):
             self.assertEqual(len(items), 1)
             self.assertTrue(items[0].completed_during_audit)
             self.assertEqual(items[0].deadline, "")
+
+    def test_parse_keeps_auditor_from_service_line(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            az_path = Path(tmp) / "az.docx"
+            _build_az(
+                az_path,
+                deadline_line="Срок – 15.10.2026",
+                auditor_line="Аудитор: Каминская В.В.",
+            )
+            items, error = parse_recommendations_from_docx(str(az_path))
+            self.assertIsNone(error, msg=error)
+            self.assertEqual(len(items), 1)
+            self.assertEqual(items[0].auditor, "Каминская В.В.")
+            self.assertNotIn("Аудитор:", items[0].name)
 
 
 if __name__ == "__main__":

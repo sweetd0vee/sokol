@@ -1,7 +1,6 @@
 import { escapeHtmlQuoted as escapeHtml } from './escapeHtml';
 import type { SortDirection } from './listTable';
-import { getRecommendationStatusColor, STATUS_COLORS } from './recommendationAnalytics';
-import type { RecommendationStatus } from '../types/recommendation';
+import { STATUS_COLORS } from './recommendationAnalytics';
 
 export type StatusMatrixCounts = {
   completed: number;
@@ -103,10 +102,6 @@ export function formatStatusChecksCount(count: number): string {
     return `${count} проверки`;
   }
   return `${count} проверок`;
-}
-
-export function getStatusMatrixCellColor(status: RecommendationStatus): string {
-  return getRecommendationStatusColor(status);
 }
 
 export function buildStatusMatrixColumnShares(rows: StatusMatrixRow[]) {

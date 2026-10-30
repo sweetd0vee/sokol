@@ -16,6 +16,7 @@ from app.services.reports.section_ii.docx_blocks import (
     run_has_payload,
     runs_to_text,
 )
+from app.services.reports.section_ii.field_parser import extract_auditor_name
 from app.services.reports.section_ii.models import RecommendationEntry, RunFragment
 from app.services.reports.section_ii.patterns import AUDIT_REC_LABEL_RE, REC_LABEL_RE, SROK_MARK_RE
 
@@ -476,7 +477,13 @@ def extract_rec_entries_from_runs(runs: List[RunFragment]) -> List[Recommendatio
     rec_text = "\n".join(lines).strip()
     if not rec_text:
         return []
-    return [RecommendationEntry(text=rec_text, runs=rec_runs or None)]
+    return [
+        RecommendationEntry(
+            text=rec_text,
+            runs=rec_runs or None,
+            auditor=extract_auditor_name(text),
+        )
+    ]
 
 
 def combine_block_runs(blocks: List[DocumentBlock]) -> List[RunFragment]:

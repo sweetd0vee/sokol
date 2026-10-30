@@ -116,8 +116,6 @@ export const RECOMMENDATION_TABLE_COLUMN_KEYS = [
   'Дополнительный статус',
 ] as const;
 
-export const TIMES_NEW_ROMAN_12 = { name: 'Times New Roman', sz: 12 };
-
 export function getHeaders(rows: ExportRow[], fallbackHeaders: readonly string[]) {
   return rows.length > 0 ? Object.keys(rows[0]!) : [...fallbackHeaders];
 }

@@ -58,11 +58,3 @@ async def ensure_schema() -> None:
         return
 
     await asyncio.to_thread(command.upgrade, cfg, "head")
-
-
-def stamp_head_sync() -> None:
-    command.stamp(alembic_config(), "head")
-
-
-def upgrade_head_sync() -> None:
-    command.upgrade(alembic_config(), "head")

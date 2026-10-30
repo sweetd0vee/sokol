@@ -7,6 +7,7 @@ class MemorandumRecommendation:
     paragraphs: List[str] = field(default_factory=list)
     deadline: str = ""
     observation_name: str = ""
+    auditor: str = ""
 
 
 @dataclass

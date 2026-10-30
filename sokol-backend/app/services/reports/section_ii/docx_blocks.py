@@ -35,16 +35,6 @@ def load_document_xml(file_path: str) -> ET.Element:
             return ET.parse(f).getroot()
 
 
-def get_text_from_xml(root: ET.Element) -> str:
-    """Извлекает весь текст из document.xml с сохранением структуры параграфов."""
-    parts = []
-    for p in root.iter(f"{{{W_NS}}}p"):
-        p_text = "".join(t.text or "" for t in p.iter(f"{{{W_NS}}}t") if t.text)
-        if p_text.strip():
-            parts.append(p_text)
-    return "\n".join(parts)
-
-
 def get_run_text(r: ET.Element) -> str:
     parts: List[str] = []
     for child in r.iter():

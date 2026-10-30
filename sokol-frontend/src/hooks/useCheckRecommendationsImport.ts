@@ -99,7 +99,7 @@ export function useCheckRecommendationsImport({
               observation_name: item.observation_name ?? '',
               audit_object: formatRecommendationAuditObjects(item.audit_object),
               deadline: normalizeRecommendationDeadline(item.deadline),
-              auditor: resolveRecommendationAuditor(undefined, checkLeader),
+              auditor: resolveRecommendationAuditor(item.auditor, checkLeader),
               manager: item.manager,
               status: 'on_control',
               additional_status: 'on_control',

@@ -155,19 +155,6 @@ def check_canonical_department_distribution_from_links(
     return counts
 
 
-def check_department_map(checks: list[Check]) -> list[NamedCount]:
-    groups: list[set[str]] = []
-    for check in checks:
-        groups.append(
-            {
-                part
-                for item in (check.recommendations or [])
-                for part in parse_audit_object_parts(item.audit_object)
-            }
-        )
-    return named_counts(count_unique_labels_per_group(groups))
-
-
 def department_map_from_pairs(
     pairs: list[tuple[int, str | list[str]]],
     *,

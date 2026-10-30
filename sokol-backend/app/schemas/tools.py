@@ -7,4 +7,5 @@ class ParsedRecommendationItem(BaseModel):
     audit_object: list[str]
     manager: str
     deadline: str
+    auditor: str = ""
     completed_during_audit: bool = False

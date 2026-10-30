@@ -134,10 +134,16 @@ describe('patchPreviewItem', () => {
     });
   });
 
-  it('clips audit object and manager to 255 chars', () => {
+  it('clips audit object, manager and auditor to 255 chars', () => {
     const long = 'x'.repeat(300);
     expect(patchPreviewItem(item, 'audit_object', long, (value) => value).audit_object).toHaveLength(255);
     expect(patchPreviewItem(item, 'manager', long, (value) => value).manager).toHaveLength(255);
+    expect(patchPreviewItem(item, 'auditor', long, (value) => value).auditor).toHaveLength(255);
+  });
+
+  it('сохраняет аудитора из разбора АЗ', () => {
+    const next = patchPreviewItem(item, 'auditor', 'Каминская В.В.', (value) => value);
+    expect(next.auditor).toBe('Каминская В.В.');
   });
 });
 

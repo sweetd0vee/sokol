@@ -28,7 +28,13 @@ export type RecentUploadSession = {
   fileName: string | null;
 };
 
-export type EditablePreviewField = 'name' | 'observation_name' | 'audit_object' | 'manager' | 'deadline';
+export type EditablePreviewField =
+  | 'name'
+  | 'observation_name'
+  | 'audit_object'
+  | 'manager'
+  | 'auditor'
+  | 'deadline';
 
 const COMPLETED_DURING_AUDIT_RE = /(?:исполнено|исправлено)\s+в\s+ходе\s+аудита/i;
 
@@ -128,6 +134,9 @@ export function patchPreviewItem(
   }
   if (field === 'audit_object') {
     return { ...item, audit_object: value.slice(0, 255) };
+  }
+  if (field === 'auditor') {
+    return { ...item, auditor: value.slice(0, 255) };
   }
   return { ...item, manager: value.slice(0, 255) };
 }

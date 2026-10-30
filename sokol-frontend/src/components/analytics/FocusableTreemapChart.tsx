@@ -248,7 +248,8 @@ export function FocusableTreemapChart({
       ];
     }
     if (!materiality) {
-      return [total, hasViews ? 'Проверки' : 'Количество рекомендаций'];
+      // Без разбивки по видам и существенности это карта проверок: площадь — число проверок.
+      return [total, hasViews ? 'Проверки' : 'Количество проверок'];
     }
     return [
       <>

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { Check } from '../types/check';
 import {
   getExportFolderName,
-  getStorageSlotsForExportSlot,
   shouldExportStorageSlot,
 } from './checkAttachments';
 import { buildCheckFolderName, sanitizePathSegment } from './exportCheckAttachments';
@@ -42,10 +41,6 @@ describe('buildCheckFolderName', () => {
 });
 
 describe('check attachment export mapping', () => {
-  it('maps dz export slot to both storage slots', () => {
-    expect(getStorageSlotsForExportSlot('dz')).toEqual(['dz', 'dz_appendix']);
-  });
-
   it('exports appendix files into the dz folder', () => {
     expect(getExportFolderName('dz_appendix')).toBe('ДЗ');
   });

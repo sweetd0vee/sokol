@@ -100,6 +100,31 @@ def parse_heading_line(p_text: str) -> Tuple[Optional[str], str, str]:
     return (None, "", "")
 
 
+_AUDITOR_LINE_RE = re.compile(r"^\s*Аудитор\s*:\s*(.+?)\s*$", re.IGNORECASE)
+
+
+def extract_auditor_name(text: str) -> str:
+    """Имя из служебной строки «Аудитор: Фамилия И.О.» внутри блока наблюдения."""
+    for raw_line in (text or "").splitlines():
+        line = raw_line.replace("\t", " ").strip()
+        match = _AUDITOR_LINE_RE.match(line)
+        if not match:
+            continue
+        name = re.sub(r"\s+", " ", match.group(1)).strip()
+        if name:
+            return name[:255]
+    return ""
+
+
+def strip_auditor_lines(text: str) -> str:
+    kept = [
+        line
+        for line in (text or "").splitlines()
+        if not _AUDITOR_LINE_RE.match(line.replace("\t", " ").strip())
+    ]
+    return "\n".join(kept)
+
+
 def extract_materiality_from_text(text: str) -> str:
     mat_match = re.search(
         r"Уровень\s+существенности\s*[:—–\-]\s*(низкий|средний|высокий)",
@@ -278,6 +303,7 @@ def parse_text_observations(text: str) -> List[Observation]:
                 rec_label=rec_label,
                 audit_object=audit_object,
                 manager=manager,
+                auditor=extract_auditor_name(block),
             )
         )
 

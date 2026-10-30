@@ -120,10 +120,6 @@ async def run_bootstrap_migrations() -> None:
         await migrate()
 
 
-async def run_named_migration(name: str) -> None:
-    await get_migration(name).migrate()
-
-
 async def run_all_migrations(*, include_destructive: bool = False) -> None:
     for item in ALL_MIGRATIONS:
         if item.rewrites_data and not include_destructive:
