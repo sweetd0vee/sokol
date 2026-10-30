@@ -33,12 +33,26 @@ const CHECK_XLSX_COLUMN_WIDTHS: Record<string, number> = {
   'Название проверки': 48,
   'Тип проверки': 16,
   Вид: 22,
+  'Краткое название': 28,
   'Квартал проверки': 16,
   'Дата начала': 14,
+  'Дата окончания': 16,
   'Руководитель проверки': 26,
   Статус: 16,
+  'Номер приказа': 16,
+  'Дата приказа': 14,
+  'Номер программы': 16,
+  'Дата программы': 16,
+  'Номер АЗ': 14,
+  'Дата АЗ': 14,
+  'Номер ДЗ': 14,
+  'Дата ДЗ': 14,
+  Процесс: 16,
+  СВК: 14,
+  СУР: 14,
+  СВИК: 14,
 };
-const CHECK_XLSX_WRAP_HEADERS = new Set(['Название проверки']);
+const CHECK_XLSX_WRAP_HEADERS = new Set(['Название проверки', 'Краткое название']);
 
 export function getRecommendationXlsxColumnWidth(header: string) {
   return RECOMMENDATION_XLSX_COLUMN_WIDTHS[header] ?? RECOMMENDATION_XLSX_DEFAULT_COLUMN_WIDTH;

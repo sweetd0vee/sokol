@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { useCheckListFilters } from '../../hooks/usePersistedListFilters';
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { EmptyState } from '../ui/StateMessage';
 import type { Check } from '../../types/check';
@@ -48,16 +49,29 @@ import { CheckStatusBadge } from '../checks/CheckStatusBadge';
 
 export function ChecksTab() {
   const myName = useCurrentUserName();
-  const [idFilter, setIdFilter] = useState('');
-  const [keyFilter, setKeyFilter] = useState('');
-  const [nameFilter, setNameFilter] = useState('');
-  const [checkTypes, setCheckTypes] = useState<string[]>([]);
-  const [checkViews, setCheckViews] = useState<string[]>([]);
-  const [statuses, setStatuses] = useState<string[]>([]);
-  const [checkLeaders, setCheckLeaders] = useState<string[]>([]);
-  const [showOnlyMe, setShowOnlyMe] = useState(false);
-  const [startDateFrom, setStartDateFrom] = useState<Date | null>(null);
-  const [startDateTo, setStartDateTo] = useState<Date | null>(null);
+  const {
+    idFilter,
+    setIdFilter,
+    keyFilter,
+    setKeyFilter,
+    nameFilter,
+    setNameFilter,
+    checkTypes,
+    setCheckTypes,
+    checkViews,
+    setCheckViews,
+    statuses,
+    setStatuses,
+    checkLeaders,
+    setCheckLeaders,
+    showOnlyMe,
+    setShowOnlyMe,
+    startDateFrom,
+    setStartDateFrom,
+    startDateTo,
+    setStartDateTo,
+    resetFilters,
+  } = useCheckListFilters();
   const { format: exportFormat, setFormat: setExportFormat, isExporting, runExport } = useListExport();
   const [attachmentExportGroups, setAttachmentExportGroups] = useState<string[]>([
     ...CHECK_ATTACHMENT_EXPORT_SLOTS,
@@ -143,16 +157,7 @@ export function ChecksTab() {
   });
 
   const handleResetFilters = () => {
-    setIdFilter('');
-    setKeyFilter('');
-    setNameFilter('');
-    setCheckTypes([]);
-    setCheckViews([]);
-    setStatuses([]);
-    setCheckLeaders([]);
-    setStartDateFrom(null);
-    setStartDateTo(null);
-    setShowOnlyMe(false);
+    resetFilters();
   };
 
   const handleExport = () => {

@@ -43,15 +43,32 @@ export function getPdfColumnWidths(headers: string[]): Array<number | '*'> {
     Статус: 40,
     'Дополнительный статус': 54,
     'Название проверки': '*',
-    'Тип проверки': 48,
-    'Квартал проверки': 44,
-    'Дата начала': 44,
-    'Руководитель проверки': 62,
+    'Краткое название': 48,
+    'Тип проверки': 36,
+    'Квартал проверки': 32,
+    'Дата начала': 36,
+    'Дата окончания': 36,
+    'Руководитель проверки': 48,
+    'Номер приказа': 32,
+    'Дата приказа': 36,
+    'Номер программы': 32,
+    'Дата программы': 36,
+    'Номер АЗ': 28,
+    'Дата АЗ': 32,
+    'Номер ДЗ': 28,
+    'Дата ДЗ': 32,
+    Процесс: 28,
+    СВК: 24,
+    СУР: 24,
+    СВИК: 24,
   };
   return headers.map((header) => widthByHeader[header] ?? '*');
 }
 
 export function getPdfFontSize(columnCount: number) {
+  if (columnCount >= 18) {
+    return 6;
+  }
   if (columnCount >= 10) {
     return 6.5;
   }
@@ -175,7 +192,7 @@ export function exportRowsPdf(
   ] as Content[];
 
   const docDefinition: TDocumentDefinitions = {
-    pageSize: 'A4',
+    pageSize: headers.length >= 18 ? 'A3' : 'A4',
     pageOrientation: 'landscape',
     pageMargins: isWideTable ? [10, 12, 10, 12] : [24, 24, 24, 24],
     defaultStyle: {

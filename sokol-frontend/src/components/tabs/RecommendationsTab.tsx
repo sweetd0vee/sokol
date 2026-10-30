@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, type ReactNode } from 'react';
+import { useRecommendationListFilters } from '../../hooks/usePersistedListFilters';
 import { MultiCheckboxSelect } from '../ui/MultiCheckboxSelect';
 import { EmptyState } from '../ui/StateMessage';
 import type { Recommendation } from '../../types/recommendation';
@@ -57,19 +58,35 @@ import { ListEmptyNotice, ListFilterCount, ListTableFooter, ListTableShell } fro
 
 export function RecommendationsTab() {
   const myName = useCurrentUserName();
-  const [idFilter, setIdFilter] = useState('');
-  const [keyFilter, setKeyFilter] = useState('');
-  const [nameFilter, setNameFilter] = useState('');
-  const [additionalIndicators, setAdditionalIndicators] = useState<string[]>([]);
-  const [auditObjects, setAuditObjects] = useState<string[]>([]);
-  const [indicators, setIndicators] = useState<string[]>([]);
-  const [checkViews, setCheckViews] = useState<string[]>([]);
-  const [materialityLevels, setMaterialityLevels] = useState<string[]>([]);
-  const [auditors, setAuditors] = useState<string[]>([]);
-  const [managers, setManagers] = useState<string[]>([]);
-  const [showOnlyMe, setShowOnlyMe] = useState(false);
-  const [deadlineFrom, setDeadlineFrom] = useState<Date | null>(null);
-  const [deadlineTo, setDeadlineTo] = useState<Date | null>(null);
+  const {
+    idFilter,
+    setIdFilter,
+    keyFilter,
+    setKeyFilter,
+    nameFilter,
+    setNameFilter,
+    additionalIndicators,
+    setAdditionalIndicators,
+    auditObjects,
+    setAuditObjects,
+    indicators,
+    setIndicators,
+    checkViews,
+    setCheckViews,
+    materialityLevels,
+    setMaterialityLevels,
+    auditors,
+    setAuditors,
+    managers,
+    setManagers,
+    showOnlyMe,
+    setShowOnlyMe,
+    deadlineFrom,
+    setDeadlineFrom,
+    deadlineTo,
+    setDeadlineTo,
+    resetFilters,
+  } = useRecommendationListFilters();
   const { format: exportFormat, setFormat: setExportFormat, isExporting, runExport } = useListExport();
   const trimmedMyName = useMemo(() => myName.trim(), [myName]);
   const { options: auditorOptions } = useAuditorOptions();
@@ -177,19 +194,7 @@ export function RecommendationsTab() {
   });
 
   const handleResetFilters = () => {
-    setIdFilter('');
-    setKeyFilter('');
-    setNameFilter('');
-    setAdditionalIndicators([]);
-    setAuditObjects([]);
-    setIndicators([]);
-    setCheckViews([]);
-    setMaterialityLevels([]);
-    setAuditors([]);
-    setManagers([]);
-    setDeadlineFrom(null);
-    setDeadlineTo(null);
-    setShowOnlyMe(false);
+    resetFilters();
   };
 
   const handleExport = () => {
