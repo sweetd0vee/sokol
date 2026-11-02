@@ -117,36 +117,20 @@ class AnalyticsSqlHelperTests(unittest.TestCase):
 
 
 class CheckDurationTests(unittest.TestCase):
-    def test_duration_runs_from_order_to_report_not_fieldwork_dates(self) -> None:
-        self.assertEqual(
-            check_duration_days(
-                date(2026, 1, 10),
-                date(2026, 1, 20),
-                date(2026, 2, 15),
-                date(2026, 2, 20),
-            ),
-            41,
-        )
+    def test_duration_is_calendar_days_from_order_to_report(self) -> None:
+        self.assertEqual(check_duration_days(date(2026, 1, 10), date(2026, 2, 20)), 41)
+        self.assertEqual(check_duration_days(date(2026, 1, 10), date(2026, 1, 10)), 0)
 
-    def test_duration_stops_at_the_last_filled_stage_when_report_is_missing(self) -> None:
-        self.assertEqual(
-            check_duration_days(date(2026, 1, 10), date(2026, 1, 20), None, None),
-            10,
-        )
-        self.assertEqual(
-            check_duration_days(date(2026, 1, 10), None, date(2026, 2, 15), None),
-            36,
-        )
-
-    def test_duration_skips_checks_without_an_order_or_a_later_stage(self) -> None:
-        self.assertIsNone(check_duration_days(None, date(2026, 1, 20), date(2026, 2, 15), None))
-        self.assertIsNone(check_duration_days(date(2026, 1, 10), None, None, None))
+    def test_duration_skips_open_checks_and_inverted_dates(self) -> None:
+        self.assertIsNone(check_duration_days(date(2026, 1, 10), None))
+        self.assertIsNone(check_duration_days(None, date(2026, 2, 20)))
+        self.assertIsNone(check_duration_days(date(2026, 3, 1), date(2026, 2, 1)))
 
     def test_average_rounds_and_ignores_checks_outside_the_sample(self) -> None:
         spans = [
-            check_duration_days(date(2026, 1, 10), None, None, date(2026, 1, 20)),
-            check_duration_days(date(2026, 3, 1), date(2026, 3, 2), None, None),
-            check_duration_days(None, date(2026, 1, 1), None, date(2026, 6, 1)),
+            check_duration_days(date(2026, 1, 10), date(2026, 1, 20)),
+            check_duration_days(date(2026, 3, 1), None),
+            check_duration_days(None, date(2026, 6, 1)),
         ]
-        self.assertEqual(average_check_duration_days([days for days in spans if days is not None]), 6)
+        self.assertEqual(average_check_duration_days([days for days in spans if days is not None]), 10)
         self.assertEqual(average_check_duration_days([]), 0)

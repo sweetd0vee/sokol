@@ -36,23 +36,16 @@ async def summarize_checks_sql(session: AsyncSession, **filters: Any) -> ChecksS
     )
 
 
-def check_duration_days(
-    order_date: date | None,
-    program_date: date | None,
-    az_date: date | None,
-    dz_date: date | None,
-) -> int | None:
-    """Calendar days from the order to the report, or to the last filled later stage.
+def check_duration_days(order_date: date | None, dz_date: date | None) -> int | None:
+    """Calendar days from the order to the report (ДЗ).
 
-    «Окончание» field is not the duration. The end point is ДЗ, otherwise АЗ,
-    otherwise the program. A check with no order or no later stage is skipped.
+    A check is finished only when both dates are filled and the report is not
+    earlier than the order. Program, АЗ, «Начало» and «Окончание» are not the
+    duration: an open check has no known length yet.
     """
-    if order_date is None:
+    if order_date is None or dz_date is None or dz_date < order_date:
         return None
-    end_date = dz_date or az_date or program_date
-    if end_date is None:
-        return None
-    return abs((end_date - order_date).days)
+    return (dz_date - order_date).days
 
 
 def average_check_duration_days(spans: list[int]) -> int:
@@ -62,24 +55,14 @@ def average_check_duration_days(spans: list[int]) -> int:
 
 
 async def average_check_duration_days_sql(session: AsyncSession, **filters: Any) -> int:
-    """Mean calendar days from the order to ДЗ (or the last filled stage) in the filter."""
+    """Mean calendar days from the order to ДЗ. Checks without both dates are excluded."""
     statement = apply_check_filters(
-        select(
-            Check.order_document_date,
-            Check.program_document_date,
-            Check.az_document_date,
-            Check.dz_document_date,
-        ).select_from(Check),
+        select(Check.order_document_date, Check.dz_document_date).select_from(Check),
         **filters,
     )
     spans: list[int] = []
     for row in await fetch_all(session, statement):
-        days = check_duration_days(
-            row.order_document_date,
-            row.program_document_date,
-            row.az_document_date,
-            row.dz_document_date,
-        )
+        days = check_duration_days(row.order_document_date, row.dz_document_date)
         if days is not None:
             spans.append(days)
     return average_check_duration_days(spans)
