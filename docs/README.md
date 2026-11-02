@@ -4,6 +4,7 @@
 
 | Документ | Содержание |
 |----------|------------|
+| [SOKOL_Документация_продукта_Confluence.docx](SOKOL_Документация_продукта_Confluence.docx) | Описание продукта для Confluence и технический раздел (02.11.2026) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, маршруты, auth, инварианты, куда смотреть в коде |
 | [API.md](API.md) | HTTP `/api/v1`, лимиты, типовые ошибки |
 | [DATA.md](DATA.md) | Postgres, seed, миграции, MinIO, бэкап |

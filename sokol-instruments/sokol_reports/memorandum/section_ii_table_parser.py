@@ -41,7 +41,11 @@ DEADLINE_VALUE_RE = re.compile(
     r"(\d{1,2}\.\d{2}\.\d{4}|на\s+постоянной\s+основе\.?|постоянно\.?)",
     re.IGNORECASE,
 )
-SROK_INLINE_RE = re.compile(r"Срок\s*[–\-—]\s*", re.IGNORECASE)
+# «Срок — …» и «Срок исполнения — …» / «Срок исполнения: до …».
+SROK_INLINE_RE = re.compile(
+    r"\bСрок(?:\s+(?:исполнения|реализации|выполнения))?\s*[—–\-‒―−:]\s*(?:до\s*)?",
+    re.IGNORECASE,
+)
 
 
 def is_recommendation_row(first_cell: str) -> bool:

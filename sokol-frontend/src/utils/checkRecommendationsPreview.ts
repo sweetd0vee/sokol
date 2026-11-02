@@ -2,6 +2,7 @@ import type { Recommendation } from '../types/recommendation';
 import { getRecommendationAuditObjects } from './auditObjects';
 import { computeRecommendationAutoStatus } from './recommendationAutoStatus';
 import { indicatorFromRecommendationAdditionalStatus, indicatorFromRecommendationStatus } from '../constants/recommendations';
+import { formatRuDate } from './dates';
 
 export type ParsedPreviewItem = Omit<Recommendation, 'audit_object'> & {
   audit_object: string;

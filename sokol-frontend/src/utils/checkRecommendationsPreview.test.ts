@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildParsedPreviewItem, patchPreviewItem, toRecommendationPayload } from './checkRecommendationsPreview';
+import {
+  buildParsedPreviewItem,
+  formatPreviewDeadline,
+  patchPreviewItem,
+  toRecommendationPayload,
+} from './checkRecommendationsPreview';
 
 const draft = {
   name: '  Текст  ',
@@ -33,6 +38,17 @@ describe('buildParsedPreviewItem', () => {
       additional_status: 'on_control',
       additional_indicator: 'на контроле',
     });
+  });
+
+  it('показывает «исполнено в ходе аудита» в колонке срока, а не прочерк', () => {
+    const item = buildParsedPreviewItem(
+      { ...draft, deadline: 'исполнено в ходе аудита' },
+      0,
+      'П-1',
+      0,
+    );
+    expect(item.deadline).toBe('');
+    expect(formatPreviewDeadline(item)).toBe('исполнено в ходе аудита');
   });
 
   it('ставит синюю звезду, если в сроке написано «исправлено в ходе аудита»', () => {

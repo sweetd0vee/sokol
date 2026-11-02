@@ -20,7 +20,11 @@ import { toAnalyticsDashboardShellProps } from './analyticsDashboardShellProps';
 import { exportGenericAnalyticsDashboard } from '../../utils/analyticsExport';
 import { DVA_EXPORT_SECTIONS, type DvaExportSectionId } from '../../constants/analyticsExportSections';
 import { useExportSections } from '../../hooks/useExportSections';
-import { rankAuditorRows } from '../../utils/dvaAnalytics';
+import {
+  averageLifecycleDurationDays,
+  buildCheckLifecycleChartModel,
+  rankAuditorRows,
+} from '../../utils/dvaAnalytics';
 import { runAnalyticsExport } from '../../utils/runAnalyticsExport';
 import { commitConstructorDrafts, useAddToConstructor } from './constructor/useAddToConstructor';
 import { buildDvaConstructorDrafts } from './constructor/buildConstructorWidgets';
@@ -91,6 +95,10 @@ export function DvaAnalyticsDashboard() {
   );
   const auditorDocuments = data?.auditorDocuments ?? EMPTY_AUDITOR_DOCUMENTS;
   const checkLifecycle = data?.checkLifecycle ?? EMPTY_CHECK_LIFECYCLE;
+  const averageCheckDurationDays = useMemo(
+    () => averageLifecycleDurationDays(buildCheckLifecycleChartModel(checkLifecycle).rows)?.averageDays ?? 0,
+    [checkLifecycle],
+  );
   const filteredChecksTotal = data?.filteredChecksTotal ?? 0;
   const filteredRecommendationsTotal = data?.filteredRecommendationsTotal ?? 0;
   const universeChecksTotal = data?.universeChecksTotal ?? 0;
@@ -143,7 +151,7 @@ export function DvaAnalyticsDashboard() {
         recTotal: recSummary.total,
         employeeCount,
         highMateriality,
-        averageCheckDurationDays: data?.averageCheckDurationDays ?? 0,
+        averageCheckDurationDays,
         auditorChecksMap,
         auditorImpact,
         auditorExecution,
@@ -183,7 +191,7 @@ export function DvaAnalyticsDashboard() {
                     проверки
                   </>
                 }
-                value={data?.averageCheckDurationDays ?? 0}
+                value={averageCheckDurationDays}
                 suffix=" дн."
                 accentColor={MONITORING_STATUS_COLORS.in_progress}
               />
@@ -289,8 +297,8 @@ export function DvaAnalyticsDashboard() {
       auditorImpact,
       auditorTimeliness,
       checkLifecycle,
+      averageCheckDurationDays,
       checkSummary.total,
-      data?.averageCheckDurationDays,
       employeeCount,
       exportSections,
       highMateriality,

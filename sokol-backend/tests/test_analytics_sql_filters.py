@@ -93,7 +93,7 @@ class AnalyticsSqlFiltersTests(unittest.TestCase):
         )
         self.assertEqual([(item.name, item.value) for item in selected_rows], [("ИТ", 1)])
 
-    def test_department_map_counts_checks_not_recommendations(self) -> None:
+    def test_department_map_counts_unique_check_keys_in_each_department(self) -> None:
         rows = department_map_from_pairs(
             [
                 (1, ["ИТ"]),
@@ -106,6 +106,16 @@ class AnalyticsSqlFiltersTests(unittest.TestCase):
             {item.name: item.value for item in rows},
             {"ИТ": 2, "Финансы": 2},
         )
+
+        minority = department_map_from_pairs(
+            [
+                (1, ["ИТ"]),
+                (1, ["ИТ"]),
+                (1, ["Финансы"]),
+            ],
+            selected_departments=["Финансы"],
+        )
+        self.assertEqual([(item.name, item.value) for item in minority], [("Финансы", 1)])
 
     def test_collect_analytics_auditors_excludes_recommendation_managers(self) -> None:
         auditors = collect_analytics_auditors(

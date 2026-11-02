@@ -1,6 +1,6 @@
 import { Trash2 } from 'lucide-react';
-import { formatRuDate } from '../../utils/dates';
 import type { EditablePreviewField, ParsedPreviewItem } from '../../utils/checkRecommendationsPreview';
+import { formatPreviewDeadline } from '../../utils/checkRecommendationsPreview';
 
 const cellInputClass =
   'w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm outline-none transition focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/30';
@@ -122,17 +122,17 @@ export function ParsedPreviewTable({
                 <span className={`${cellClamp} break-words`}>{item.auditor || '—'}</span>
               )}
             </td>
-            <td className="px-3 py-2.5 align-top whitespace-nowrap text-gray-700">
-              {editable ? (
+            <td className="px-3 py-2.5 align-top text-gray-700">
+              {editable && item.deadline ? (
                 <input
                   type="date"
-                  value={item.deadline || ''}
+                  value={item.deadline}
                   onChange={(event) => onChange?.(item.previewKey, 'deadline', event.target.value)}
                   className={cellInputClass}
                   aria-label={`Срок ${index + 1}`}
                 />
               ) : (
-                formatRuDate(item.deadline)
+                <span className="break-words">{formatPreviewDeadline(item)}</span>
               )}
             </td>
             <td className="px-2 py-2.5 align-top text-center">

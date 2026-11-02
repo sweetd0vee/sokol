@@ -160,13 +160,25 @@ def department_map_from_pairs(
     *,
     selected_departments: list[str] | None = None,
 ) -> list[NamedCount]:
+    """Unique check keys per department.
+
+    A key is counted for a department when at least one recommendation of that
+    check lists the department. Several recommendations of the same check for
+    the same department count as one key. A check with several departments is
+    counted in each of them.
+    """
     selected = {item.strip() for item in (selected_departments or []) if item.strip()}
     by_check: dict[int, set[str]] = defaultdict(set)
+    seen: list[int] = []
+    seen_ids: set[int] = set()
     for check_id, audit_object in pairs:
+        if check_id not in seen_ids:
+            seen.append(check_id)
+            seen_ids.add(check_id)
         by_check[check_id].update(parse_audit_object_parts(audit_object))
     return named_counts(
         count_unique_labels_per_group(
-            by_check.values(),
+            (by_check[check_id] for check_id in seen),
             selected=selected or None,
         )
     )

@@ -59,6 +59,7 @@ sokol/
 | Раздел | Содержание |
 |--------|------------|
 | [docs/README.md](docs/README.md) | Индекс |
+| [docs/SOKOL_Документация_продукта_Confluence.docx](docs/SOKOL_Документация_продукта_Confluence.docx) | Описание продукта и технический раздел |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Слои, auth, инварианты, карта кода |
 | [docs/API.md](docs/API.md) | HTTP `/api/v1`, лимиты |
 | [docs/DATA.md](docs/DATA.md) | Postgres, MinIO, seed, миграции, бэкап |

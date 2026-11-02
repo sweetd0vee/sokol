@@ -51,7 +51,11 @@ DEADLINE_VALUE_RE = re.compile(
     rf"(\d{{1,2}}\.\d{{2}}\.\d{{4}}|на\s+постоянной\s+основе\.?|постоянно\.?|{COMPLETED_DURING_AUDIT_PATTERN})",
     re.IGNORECASE,
 )
-SROK_INLINE_RE = re.compile(r"Срок\s*[–\-—]\s*", re.IGNORECASE)
+# «Срок — …» и «Срок исполнения — …» / «Срок исполнения: до …».
+SROK_INLINE_RE = re.compile(
+    r"\bСрок(?:\s+(?:исполнения|реализации|выполнения))?\s*[—–\-‒―−:]\s*(?:до\s*)?",
+    re.IGNORECASE,
+)
 OBSERVATION_PREFIX_RE = re.compile(
     r"^Наблюдени[ея]?\s*(?:№?\s*\d+|[IVXLC]+)?\s*[:.)\-–—]*\s*",
     re.IGNORECASE,
