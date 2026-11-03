@@ -49,6 +49,14 @@ export function isCompletedDuringAudit(value?: string | boolean | null): boolean
   return COMPLETED_DURING_AUDIT_RE.test(value);
 }
 
+/** Срок в превью: фраза «исполнено в ходе аудита» остаётся текстом, дата — в формате дд.мм.гггг. */
+export function formatPreviewDeadline(item: Pick<ParsedPreviewItem, 'deadline' | 'indicator'>): string {
+  if (item.indicator === 'исполнено в ходе аудита' || isCompletedDuringAudit(item.deadline)) {
+    return 'исполнено в ходе аудита';
+  }
+  return formatRuDate(item.deadline);
+}
+
 export function toRecommendationPayload({ previewKey: _previewKey, audit_object, ...payload }: ParsedPreviewItem): Recommendation {
   return {
     ...payload,
